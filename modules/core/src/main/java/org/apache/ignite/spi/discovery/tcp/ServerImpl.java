@@ -2059,6 +2059,23 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * Sweeps failedNodes collection in msg and fills it with failed nodes observed by local node.
+     *
+     * @param msg {@link TcpDiscoveryAbstractMessage} to sweep failed nodes from.
+     */
+    private void sweepMessageFailedNodes(TcpDiscoveryAbstractMessage msg) {
+        msg.failedNodes(null);
+
+        synchronized (mux) {
+            for (TcpDiscoveryNode n : failedNodes.keySet())
+                msg.addFailedNode(n.id());
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Message failed nodes were replaced with failed nodes observed by local node: " + msg.failedNodes());
+    }
+
+    /**
      * Adds failed nodes specified in the received message to the local failed nodes list.
      *
      * @param msg Message.
@@ -2076,6 +2093,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ", failedNodes=" + msgFailedNodes + ']');
                     }
 
+                    sweepMessageFailedNodes(msg);
+
                     return;
                 }
 
@@ -2086,6 +2105,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 log.debug("Ignore message failed nodes, sender node is in fail list [nodeId=" + sndId +
                                     ", failedNodes=" + msgFailedNodes + ']');
                             }
+
+                            sweepMessageFailedNodes(msg);
 
                             return;
                         }
