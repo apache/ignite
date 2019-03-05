@@ -44,6 +44,8 @@ import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.ClusterActivationEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -315,12 +317,24 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
         try {
             ctx.state().changeGlobalState(active, baselineNodes(), false).get();
+
+            recordEvent(active ? EventType.EVT_CLUSTER_ACTIVATED : EventType.EVT_CLUSTER_DEACTIVATED);
         }
         catch (IgniteCheckedException e) {
+            recordEvent(EventType.EVT_CLUSTER_ACTIVATION_FAILED);
+
             throw U.convertException(e);
         }
         finally {
             unguard();
+        }
+    }
+
+    /** */
+    private void recordEvent(int evtType) {
+        if (ctx.event().isRecordable(evtType)) {
+            ClusterActivationEvent evt = new ClusterActivationEvent(null, null, evtType);
+            ctx.event().record(evt);
         }
     }
 
