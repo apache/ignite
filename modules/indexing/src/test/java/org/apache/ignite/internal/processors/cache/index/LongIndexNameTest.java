@@ -51,11 +51,16 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
      */
     private static final int SEGMENTS_CNT = 12;
 
+    /** Cache name. */
+    private static final String CACHE_NAME = "cache";
+
     /**
      * Create configuration with persistence disabled.
+     *
+     * @param enablePersistence whether to enable persistence for default data region.
      */
     protected IgniteConfiguration createConfiguration(boolean enablePersistence) throws Exception {
-        IgniteConfiguration cfg = getConfiguration("ignite-inmemory");
+        IgniteConfiguration cfg = getConfiguration("ignite");
 
         if (enablePersistence) {
             DataStorageConfiguration dataStorage = new DataStorageConfiguration();
@@ -75,7 +80,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
      *
      * @param ageIdxName name of the index on the "age" field. If {@code null}, then no index will be added.
      */
-    protected CacheConfiguration cacheConfiguration(@Nullable String ageIdxName) {
+    protected CacheConfiguration<String, Person> cacheConfiguration(@Nullable String ageIdxName) {
         QueryEntity tab = new QueryEntity(String.class.getName(), Person.class.getName());
 
         LinkedHashMap<String, String> fieldsMap = new LinkedHashMap<>();
@@ -98,7 +103,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
             tab.setIndexes(indices);
         }
 
-        return new CacheConfiguration("cache")
+        return new CacheConfiguration<String, Person>(CACHE_NAME)
             .setQueryEntities(Collections.singleton(tab))
             .setQueryParallelism(SEGMENTS_CNT);
     }
@@ -122,7 +127,6 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testStartupIndexLongNameWithPersistence() throws Exception {
-
         int maxAllowedIdxName = maxIdxNameLength(SEGMENTS_CNT);
 
         Callable<IgniteConfiguration> withLongOKLen = () -> createConfiguration(true)
@@ -172,7 +176,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
 
         IgniteConfiguration pdsCfgWithoutCache = createConfiguration(true);
 
-        CacheConfiguration cfgWithTooLongIdxName = cacheConfiguration(generateName(maxAllowedIdxName + 1));
+        CacheConfiguration<?, ?> cfgWithTooLongIdxName = cacheConfiguration(generateName(maxAllowedIdxName + 1));
 
         Throwable th = GridTestUtils.assertThrows(log(), () -> {
             try (IgniteEx ign = startGrid(pdsCfgWithoutCache)) {
@@ -199,7 +203,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
 
         Callable<IgniteConfiguration> withLongOKLen = () -> createConfiguration(true);
 
-        CacheConfiguration cfgWithOKIdxName = cacheConfiguration(generateName(maxAllowedIdxName));
+        CacheConfiguration<?, ?> cfgWithOKIdxName = cacheConfiguration(generateName(maxAllowedIdxName));
 
         // Insert data and check idx vs scan:
         try (Ignite ignite = startGrid(withLongOKLen.call())) {
@@ -220,7 +224,6 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
         }
     }
 
-
     /**
      * Check: dynamic index creation, index is of max allowed length.
      */
@@ -235,7 +238,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
         try (Ignite ignite = startGrid(withLongOKLen.call())) {
             ignite.cluster().active(true);
 
-            ignite.cache("cache").query(new SqlFieldsQuery(
+            ignite.cache(CACHE_NAME).query(new SqlFieldsQuery(
                 "CREATE INDEX " + generateName(maxAllowedIdxName) + " ON Person(age)"));
 
             insertSomeData(ignite);
@@ -265,7 +268,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
             try (IgniteEx ignite = startGrid(withNoIdx)) {
                 ignite.cluster().active(true);
 
-                ignite.cache("cache").query(new SqlFieldsQuery(
+                ignite.cache(CACHE_NAME).query(new SqlFieldsQuery(
                     "CREATE INDEX " + generateName(maxAllowedIdxName + 1) + " ON Person(age)"));
 
                 return null;
@@ -278,11 +281,11 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
      * corrupt the results.
      */
     @Test
-    public void testLongStartupIndexNameInmemory() throws Exception {
-        int maxAllowedPdsIdxName = maxIdxNameLength(SEGMENTS_CNT);
+    public void testStartupIndexLongNameInmemory() throws Exception {
+        int sureTooLongForPdsLen = IndexStorageImpl.MAX_IDX_NAME_LEN + 1;
 
         IgniteConfiguration withIdxCfg = createConfiguration(false)
-            .setCacheConfiguration(cacheConfiguration(generateName(maxAllowedPdsIdxName + 1)));
+            .setCacheConfiguration(cacheConfiguration(generateName(sureTooLongForPdsLen)));
 
         try (Ignite ignite = startGrid(withIdxCfg)) {
             insertSomeData(ignite);
@@ -292,17 +295,39 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Same as {@link #testLongStartupIndexNameInmemory()}, but creates indexes dynamically using CREATE INDEX.
+     * Same as {@link #testStartupIndexLongNameInmemory()}, but creates using CREATE INDEX.
      */
     @Test
-    public void testLongDynamicIndexNameInMemory() throws Exception {
+    public void testCreateIndexLongNameInMemory() throws Exception {
+        int sureTooLongForPdsLen = IndexStorageImpl.MAX_IDX_NAME_LEN + 1;
+
         IgniteConfiguration noidxCfg = createConfiguration(false)
             .setCacheConfiguration(cacheConfiguration(null));
 
         try (Ignite ignite = startGrid(noidxCfg)) {
             insertSomeData(ignite);
 
-            ignite.cache("cache").query(new SqlFieldsQuery("CREATE INDEX AGE_IDX ON Person(age)"));
+            ignite.cache(CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX " + generateName(sureTooLongForPdsLen) + " ON Person(age)"));
+
+            compareIndexVsScan(ignite);
+        }
+    }
+
+    /**
+     * Same as {@link #testStartupIndexLongNameInmemory()}, but creates index with dynamically started cache.
+     */
+    @Test
+    public void testDynamicIndexLongNameInMemory() throws Exception {
+        int sureTooLongForPdsLen = IndexStorageImpl.MAX_IDX_NAME_LEN + 1;
+
+        IgniteConfiguration noidxCfg = createConfiguration(false);
+
+        CacheConfiguration<?, ?> cacheCfgWithLongIndex = cacheConfiguration(generateName(sureTooLongForPdsLen));
+
+        try (Ignite ignite = startGrid(noidxCfg)) {
+            ignite.createCache(cacheCfgWithLongIndex);
+
+            insertSomeData(ignite);
 
             compareIndexVsScan(ignite);
         }
@@ -352,8 +377,13 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
         return IndexStorageImpl.MAX_IDX_NAME_LEN - otherLen;
     }
 
+    /**
+     * Assert that select that uses index and select that uses scan index return the same number of elements.
+     *
+     * @param ignite Ignite.
+     */
     private void compareIndexVsScan(Ignite ignite) {
-        IgniteCache<String, Person> cache = ignite.cache("cache");
+        IgniteCache<String, Person> cache = ignite.cache(CACHE_NAME);
 
         QueryCursor cursor1 = cache.query(new SqlFieldsQuery("SELECT * FROM Person where name like '%Name 0'"));
         QueryCursor cursor1Idx = cache.query(new SqlFieldsQuery("SELECT * FROM Person where name = 'Name 0'"));
@@ -366,13 +396,13 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     *
+     * Inserts data.
      */
     @NotNull private IgniteCache insertSomeData(Ignite ignite) {
         if (!ignite.active())
             ignite.active(true);
 
-        IgniteCache<String, Person> cache = ignite.cache("cache");
+        IgniteCache<String, Person> cache = ignite.cache(CACHE_NAME);
 
         for (int i = 0; i < 10; i++)
             cache.put(String.valueOf(System.currentTimeMillis()), new Person("Name " + i, i));
