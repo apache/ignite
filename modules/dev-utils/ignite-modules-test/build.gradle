@@ -27,7 +27,7 @@ targetCompatibility = 11
 
 ext {
     ignVer = '2.8.0-SNAPSHOT'
-    //ignVer = '2.7.0'
+    // ignVer = '2.7.0'
     moduleName = 'ignite_modules_test'
 }
 
@@ -68,26 +68,18 @@ dependencies {
         exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts.
     }
 
-    def luceneVer = '7.7.1'
-    // compile 'org.apache.lucene:lucene-core:' + luceneVer
     /*
-    compile ('org.apache.lucene:lucene-analyzers-common:' + luceneVer) {
-        transitive=false;
+    compile (group: 'org.apache.ignite', name: 'ignite-direct-io', version: ignVer) {
+        exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts
     }
     */
-    /*
-    compile ('org.apache.lucene:lucene-queryparser:' + luceneVer){
-        transitive = false; // to remove "lucene-sandbox"
-       // exclude group: 'org.apache.lucene', module: 'lucene-sandbox'
-    }
-    /**/
-    
-    // compile group: 'org.apache.ignite', name: 'ignite-direct-io', version: ignVer
+
+    // module reads package org.apache.ignite.internal.processors.compress from both ignite.compress and ignite.core
     // compile group: 'org.apache.ignite', name: 'ignite-compress', version: ignVer
     /* compile (group: 'org.apache.ignite', name: 'ignite-spring', version: ignVer) {
         exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts.
     }*/
-    // compile group: 'org.apache.ignite', name: 'ignite-ml', version: ignVer
+    compile group: 'org.apache.ignite', name: 'ignite-ml', version: ignVer
 
     compile group: 'org.apache.ignite', name: 'ignite-log4j', version: ignVer
     compile group: 'org.apache.ignite', name: 'ignite-log4j2', version: ignVer
@@ -115,6 +107,19 @@ dependencies {
     compile group: "org.slf4j", name: "slf4j-api", version: "1.7.25"
     compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: "2.11.2"
 
+    /*
+    compile (group: 'org.apache.ignite', name: 'ignite-spring-data_2.0', version: ignVer) {
+        exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts.
+    }
+    */
+
+    // compile group: 'org.apache.ignite', name: 'ignite-compress', version: ignVer
+
+    compile (group: 'org.apache.ignite', name: 'ignite-cassandra-store', version: ignVer) {
+        exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts.
+
+        exclude group: 'org.apache.ignite', module: 'ignite-spring'
+    }
 }
 
 test {

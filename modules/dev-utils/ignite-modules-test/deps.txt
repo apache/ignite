@@ -23,6 +23,23 @@ compile - Dependencies for source set 'main' (deprecated, use 'implementation' i
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    +--- commons-codec:commons-codec:1.11
 |    \--- com.h2database:h2:1.4.197
++--- org.apache.ignite:ignite-ml:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- com.h2database:h2:1.4.197
+|    +--- it.unimi.dsi:fastutil:7.0.12
+|    +--- com.github.fommil.netlib:core:1.1.2
+|    |    \--- net.sourceforge.f2j:arpack_combined_all:0.1
+|    +--- org.apache.commons:commons-rng-core:1.0
+|    |    \--- org.apache.commons:commons-rng-client-api:1.0
+|    +--- org.apache.commons:commons-rng-simple:1.0
+|    |    \--- org.apache.commons:commons-rng-core:1.0 (*)
+|    +--- com.zaxxer:SparseBitSet:1.0
+|    +--- org.tensorflow:tensorflow:1.12.0
+|    |    +--- org.tensorflow:libtensorflow:1.12.0
+|    |    \--- org.tensorflow:libtensorflow_jni:1.12.0
+|    +--- org.tensorflow:proto:1.12.0
+|    |    \--- com.google.protobuf:protobuf-java:3.5.1
+|    \--- org.apache.commons:commons-math3:3.6.1
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
@@ -65,7 +82,12 @@ compile - Dependencies for source set 'main' (deprecated, use 'implementation' i
 |    |         |    +--- jline:jline:0.9.94
 |    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
 |    |         |    \--- io.netty:netty:3.10.6.Final
-|    |         +--- com.google.guava:guava:16.0.1
+|    |         +--- com.google.guava:guava:16.0.1 -> 25.1-jre
+|    |         |    +--- com.google.code.findbugs:jsr305:3.0.2
+|    |         |    +--- org.checkerframework:checker-qual:2.0.0
+|    |         |    +--- com.google.errorprone:error_prone_annotations:2.1.3
+|    |         |    +--- com.google.j2objc:j2objc-annotations:1.1
+|    |         |    \--- org.codehaus.mojo:animal-sniffer-annotations:1.14
 |    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
 |    +--- org.apache.curator:curator-recipes:2.9.1
 |    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
@@ -74,16 +96,82 @@ compile - Dependencies for source set 'main' (deprecated, use 'implementation' i
 |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
 |    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.apache.curator:curator-client:2.9.1 (*)
-|    +--- com.google.guava:guava:16.0.1
+|    +--- com.google.guava:guava:16.0.1 -> 25.1-jre (*)
 |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
 |    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
 |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
 +--- org.slf4j:slf4j-api:1.7.25
-\--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
-     +--- org.slf4j:slf4j-api:1.7.25
-     +--- org.apache.logging.log4j:log4j-api:2.11.2
-     \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
++--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+|    +--- org.slf4j:slf4j-api:1.7.25
+|    +--- org.apache.logging.log4j:log4j-api:2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
+\--- org.apache.ignite:ignite-cassandra-store:2.8.0-SNAPSHOT
+     +--- commons-beanutils:commons-beanutils:1.9.2
+     |    +--- commons-logging:commons-logging:1.1.1 -> 1.2
+     |    \--- commons-collections:commons-collections:3.2.1
+     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     +--- org.apache.ignite:ignite-spring:2.8.0-SNAPSHOT
+     |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     |    +--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT (*)
+     |    +--- org.springframework:spring-core:4.3.18.RELEASE
+     |    |    \--- commons-logging:commons-logging:1.2
+     |    +--- org.springframework:spring-aop:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE
+     |    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-context:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-aop:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-expression:4.3.18.RELEASE
+     |    |         \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-expression:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-tx:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-jdbc:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-tx:4.3.18.RELEASE (*)
+     |    \--- commons-logging:commons-logging:1.1.1 -> 1.2
+     +--- com.datastax.cassandra:cassandra-driver-core:3.2.0
+     |    +--- io.netty:netty-handler:4.0.44.Final -> 4.1.27.Final
+     |    |    +--- io.netty:netty-buffer:4.1.27.Final
+     |    |    |    \--- io.netty:netty-common:4.1.27.Final
+     |    |    +--- io.netty:netty-transport:4.1.27.Final
+     |    |    |    +--- io.netty:netty-buffer:4.1.27.Final (*)
+     |    |    |    \--- io.netty:netty-resolver:4.1.27.Final
+     |    |    |         \--- io.netty:netty-common:4.1.27.Final
+     |    |    \--- io.netty:netty-codec:4.1.27.Final
+     |    |         \--- io.netty:netty-transport:4.1.27.Final (*)
+     |    +--- com.google.guava:guava:19.0 -> 25.1-jre (*)
+     |    +--- io.dropwizard.metrics:metrics-core:3.1.2
+     |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
+     |    +--- com.github.jnr:jnr-ffi:2.0.7
+     |    |    +--- com.github.jnr:jffi:1.2.10
+     |    |    +--- org.ow2.asm:asm:5.0.3
+     |    |    +--- org.ow2.asm:asm-commons:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3
+     |    |    |         \--- org.ow2.asm:asm:5.0.3
+     |    |    +--- org.ow2.asm:asm-analysis:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    +--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    +--- org.ow2.asm:asm-util:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    \--- com.github.jnr:jnr-x86asm:1.0.2
+     |    \--- com.github.jnr:jnr-posix:3.0.27
+     |         +--- com.github.jnr:jnr-ffi:2.0.7 (*)
+     |         \--- com.github.jnr:jnr-constants:0.9.0
+     +--- io.netty:netty-handler:4.1.27.Final (*)
+     +--- io.netty:netty-buffer:4.1.27.Final (*)
+     +--- io.netty:netty-common:4.1.27.Final
+     +--- io.netty:netty-transport:4.1.27.Final (*)
+     +--- io.netty:netty-codec:4.1.27.Final (*)
+     +--- com.google.guava:guava:25.1-jre (*)
+     \--- com.codahale.metrics:metrics-core:3.0.2
+          \--- org.slf4j:slf4j-api:1.7.5 -> 1.7.25
 
 compileClasspath - Compile classpath for source set 'main'.
 +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
@@ -94,6 +182,23 @@ compileClasspath - Compile classpath for source set 'main'.
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    +--- commons-codec:commons-codec:1.11
 |    \--- com.h2database:h2:1.4.197
++--- org.apache.ignite:ignite-ml:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- com.h2database:h2:1.4.197
+|    +--- it.unimi.dsi:fastutil:7.0.12
+|    +--- com.github.fommil.netlib:core:1.1.2
+|    |    \--- net.sourceforge.f2j:arpack_combined_all:0.1
+|    +--- org.apache.commons:commons-rng-core:1.0
+|    |    \--- org.apache.commons:commons-rng-client-api:1.0
+|    +--- org.apache.commons:commons-rng-simple:1.0
+|    |    \--- org.apache.commons:commons-rng-core:1.0 (*)
+|    +--- com.zaxxer:SparseBitSet:1.0
+|    +--- org.tensorflow:tensorflow:1.12.0
+|    |    +--- org.tensorflow:libtensorflow:1.12.0
+|    |    \--- org.tensorflow:libtensorflow_jni:1.12.0
+|    +--- org.tensorflow:proto:1.12.0
+|    |    \--- com.google.protobuf:protobuf-java:3.5.1
+|    \--- org.apache.commons:commons-math3:3.6.1
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
@@ -136,7 +241,12 @@ compileClasspath - Compile classpath for source set 'main'.
 |    |         |    +--- jline:jline:0.9.94
 |    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
 |    |         |    \--- io.netty:netty:3.10.6.Final
-|    |         +--- com.google.guava:guava:16.0.1
+|    |         +--- com.google.guava:guava:16.0.1 -> 25.1-jre
+|    |         |    +--- com.google.code.findbugs:jsr305:3.0.2
+|    |         |    +--- org.checkerframework:checker-qual:2.0.0
+|    |         |    +--- com.google.errorprone:error_prone_annotations:2.1.3
+|    |         |    +--- com.google.j2objc:j2objc-annotations:1.1
+|    |         |    \--- org.codehaus.mojo:animal-sniffer-annotations:1.14
 |    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
 |    +--- org.apache.curator:curator-recipes:2.9.1
 |    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
@@ -145,15 +255,81 @@ compileClasspath - Compile classpath for source set 'main'.
 |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
 |    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.apache.curator:curator-client:2.9.1 (*)
-|    +--- com.google.guava:guava:16.0.1
+|    +--- com.google.guava:guava:16.0.1 -> 25.1-jre (*)
 |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
 |    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
 |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
 +--- org.slf4j:slf4j-api:1.7.25
-\--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
-     +--- org.slf4j:slf4j-api:1.7.25
-     \--- org.apache.logging.log4j:log4j-api:2.11.2
++--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+|    +--- org.slf4j:slf4j-api:1.7.25
+|    \--- org.apache.logging.log4j:log4j-api:2.11.2
+\--- org.apache.ignite:ignite-cassandra-store:2.8.0-SNAPSHOT
+     +--- commons-beanutils:commons-beanutils:1.9.2
+     |    +--- commons-logging:commons-logging:1.1.1 -> 1.2
+     |    \--- commons-collections:commons-collections:3.2.1
+     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     +--- org.apache.ignite:ignite-spring:2.8.0-SNAPSHOT
+     |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     |    +--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT (*)
+     |    +--- org.springframework:spring-core:4.3.18.RELEASE
+     |    |    \--- commons-logging:commons-logging:1.2
+     |    +--- org.springframework:spring-aop:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE
+     |    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-context:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-aop:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-expression:4.3.18.RELEASE
+     |    |         \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-expression:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-tx:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-jdbc:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-tx:4.3.18.RELEASE (*)
+     |    \--- commons-logging:commons-logging:1.1.1 -> 1.2
+     +--- com.datastax.cassandra:cassandra-driver-core:3.2.0
+     |    +--- io.netty:netty-handler:4.0.44.Final -> 4.1.27.Final
+     |    |    +--- io.netty:netty-buffer:4.1.27.Final
+     |    |    |    \--- io.netty:netty-common:4.1.27.Final
+     |    |    +--- io.netty:netty-transport:4.1.27.Final
+     |    |    |    +--- io.netty:netty-buffer:4.1.27.Final (*)
+     |    |    |    \--- io.netty:netty-resolver:4.1.27.Final
+     |    |    |         \--- io.netty:netty-common:4.1.27.Final
+     |    |    \--- io.netty:netty-codec:4.1.27.Final
+     |    |         \--- io.netty:netty-transport:4.1.27.Final (*)
+     |    +--- com.google.guava:guava:19.0 -> 25.1-jre (*)
+     |    +--- io.dropwizard.metrics:metrics-core:3.1.2
+     |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
+     |    +--- com.github.jnr:jnr-ffi:2.0.7
+     |    |    +--- com.github.jnr:jffi:1.2.10
+     |    |    +--- org.ow2.asm:asm:5.0.3
+     |    |    +--- org.ow2.asm:asm-commons:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3
+     |    |    |         \--- org.ow2.asm:asm:5.0.3
+     |    |    +--- org.ow2.asm:asm-analysis:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    +--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    +--- org.ow2.asm:asm-util:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    \--- com.github.jnr:jnr-x86asm:1.0.2
+     |    \--- com.github.jnr:jnr-posix:3.0.27
+     |         +--- com.github.jnr:jnr-ffi:2.0.7 (*)
+     |         \--- com.github.jnr:jnr-constants:0.9.0
+     +--- io.netty:netty-handler:4.1.27.Final (*)
+     +--- io.netty:netty-buffer:4.1.27.Final (*)
+     +--- io.netty:netty-common:4.1.27.Final
+     +--- io.netty:netty-transport:4.1.27.Final (*)
+     +--- io.netty:netty-codec:4.1.27.Final (*)
+     +--- com.google.guava:guava:25.1-jre (*)
+     \--- com.codahale.metrics:metrics-core:3.0.2
+          \--- org.slf4j:slf4j-api:1.7.5 -> 1.7.25
 
 compileOnly - Compile only dependencies for source set 'main'.
 No dependencies
@@ -167,6 +343,23 @@ default - Configuration for default artifacts.
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    +--- commons-codec:commons-codec:1.11
 |    \--- com.h2database:h2:1.4.197
++--- org.apache.ignite:ignite-ml:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- com.h2database:h2:1.4.197
+|    +--- it.unimi.dsi:fastutil:7.0.12
+|    +--- com.github.fommil.netlib:core:1.1.2
+|    |    \--- net.sourceforge.f2j:arpack_combined_all:0.1
+|    +--- org.apache.commons:commons-rng-core:1.0
+|    |    \--- org.apache.commons:commons-rng-client-api:1.0
+|    +--- org.apache.commons:commons-rng-simple:1.0
+|    |    \--- org.apache.commons:commons-rng-core:1.0 (*)
+|    +--- com.zaxxer:SparseBitSet:1.0
+|    +--- org.tensorflow:tensorflow:1.12.0
+|    |    +--- org.tensorflow:libtensorflow:1.12.0
+|    |    \--- org.tensorflow:libtensorflow_jni:1.12.0
+|    +--- org.tensorflow:proto:1.12.0
+|    |    \--- com.google.protobuf:protobuf-java:3.5.1
+|    \--- org.apache.commons:commons-math3:3.6.1
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
@@ -209,7 +402,12 @@ default - Configuration for default artifacts.
 |    |         |    +--- jline:jline:0.9.94
 |    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
 |    |         |    \--- io.netty:netty:3.10.6.Final
-|    |         +--- com.google.guava:guava:16.0.1
+|    |         +--- com.google.guava:guava:16.0.1 -> 25.1-jre
+|    |         |    +--- com.google.code.findbugs:jsr305:3.0.2
+|    |         |    +--- org.checkerframework:checker-qual:2.0.0
+|    |         |    +--- com.google.errorprone:error_prone_annotations:2.1.3
+|    |         |    +--- com.google.j2objc:j2objc-annotations:1.1
+|    |         |    \--- org.codehaus.mojo:animal-sniffer-annotations:1.14
 |    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
 |    +--- org.apache.curator:curator-recipes:2.9.1
 |    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
@@ -218,16 +416,82 @@ default - Configuration for default artifacts.
 |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
 |    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.apache.curator:curator-client:2.9.1 (*)
-|    +--- com.google.guava:guava:16.0.1
+|    +--- com.google.guava:guava:16.0.1 -> 25.1-jre (*)
 |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
 |    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
 |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
 +--- org.slf4j:slf4j-api:1.7.25
-\--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
-     +--- org.slf4j:slf4j-api:1.7.25
-     +--- org.apache.logging.log4j:log4j-api:2.11.2
-     \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
++--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+|    +--- org.slf4j:slf4j-api:1.7.25
+|    +--- org.apache.logging.log4j:log4j-api:2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
+\--- org.apache.ignite:ignite-cassandra-store:2.8.0-SNAPSHOT
+     +--- commons-beanutils:commons-beanutils:1.9.2
+     |    +--- commons-logging:commons-logging:1.1.1 -> 1.2
+     |    \--- commons-collections:commons-collections:3.2.1
+     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     +--- org.apache.ignite:ignite-spring:2.8.0-SNAPSHOT
+     |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     |    +--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT (*)
+     |    +--- org.springframework:spring-core:4.3.18.RELEASE
+     |    |    \--- commons-logging:commons-logging:1.2
+     |    +--- org.springframework:spring-aop:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE
+     |    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-context:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-aop:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-expression:4.3.18.RELEASE
+     |    |         \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-expression:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-tx:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-jdbc:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-tx:4.3.18.RELEASE (*)
+     |    \--- commons-logging:commons-logging:1.1.1 -> 1.2
+     +--- com.datastax.cassandra:cassandra-driver-core:3.2.0
+     |    +--- io.netty:netty-handler:4.0.44.Final -> 4.1.27.Final
+     |    |    +--- io.netty:netty-buffer:4.1.27.Final
+     |    |    |    \--- io.netty:netty-common:4.1.27.Final
+     |    |    +--- io.netty:netty-transport:4.1.27.Final
+     |    |    |    +--- io.netty:netty-buffer:4.1.27.Final (*)
+     |    |    |    \--- io.netty:netty-resolver:4.1.27.Final
+     |    |    |         \--- io.netty:netty-common:4.1.27.Final
+     |    |    \--- io.netty:netty-codec:4.1.27.Final
+     |    |         \--- io.netty:netty-transport:4.1.27.Final (*)
+     |    +--- com.google.guava:guava:19.0 -> 25.1-jre (*)
+     |    +--- io.dropwizard.metrics:metrics-core:3.1.2
+     |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
+     |    +--- com.github.jnr:jnr-ffi:2.0.7
+     |    |    +--- com.github.jnr:jffi:1.2.10
+     |    |    +--- org.ow2.asm:asm:5.0.3
+     |    |    +--- org.ow2.asm:asm-commons:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3
+     |    |    |         \--- org.ow2.asm:asm:5.0.3
+     |    |    +--- org.ow2.asm:asm-analysis:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    +--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    +--- org.ow2.asm:asm-util:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    \--- com.github.jnr:jnr-x86asm:1.0.2
+     |    \--- com.github.jnr:jnr-posix:3.0.27
+     |         +--- com.github.jnr:jnr-ffi:2.0.7 (*)
+     |         \--- com.github.jnr:jnr-constants:0.9.0
+     +--- io.netty:netty-handler:4.1.27.Final (*)
+     +--- io.netty:netty-buffer:4.1.27.Final (*)
+     +--- io.netty:netty-common:4.1.27.Final
+     +--- io.netty:netty-transport:4.1.27.Final (*)
+     +--- io.netty:netty-codec:4.1.27.Final (*)
+     +--- com.google.guava:guava:25.1-jre (*)
+     \--- com.codahale.metrics:metrics-core:3.0.2
+          \--- org.slf4j:slf4j-api:1.7.5 -> 1.7.25
 
 implementation - Implementation only dependencies for source set 'main'. (n)
 No dependencies
@@ -241,6 +505,23 @@ runtime - Runtime dependencies for source set 'main' (deprecated, use 'runtimeOn
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    +--- commons-codec:commons-codec:1.11
 |    \--- com.h2database:h2:1.4.197
++--- org.apache.ignite:ignite-ml:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- com.h2database:h2:1.4.197
+|    +--- it.unimi.dsi:fastutil:7.0.12
+|    +--- com.github.fommil.netlib:core:1.1.2
+|    |    \--- net.sourceforge.f2j:arpack_combined_all:0.1
+|    +--- org.apache.commons:commons-rng-core:1.0
+|    |    \--- org.apache.commons:commons-rng-client-api:1.0
+|    +--- org.apache.commons:commons-rng-simple:1.0
+|    |    \--- org.apache.commons:commons-rng-core:1.0 (*)
+|    +--- com.zaxxer:SparseBitSet:1.0
+|    +--- org.tensorflow:tensorflow:1.12.0
+|    |    +--- org.tensorflow:libtensorflow:1.12.0
+|    |    \--- org.tensorflow:libtensorflow_jni:1.12.0
+|    +--- org.tensorflow:proto:1.12.0
+|    |    \--- com.google.protobuf:protobuf-java:3.5.1
+|    \--- org.apache.commons:commons-math3:3.6.1
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
@@ -283,7 +564,12 @@ runtime - Runtime dependencies for source set 'main' (deprecated, use 'runtimeOn
 |    |         |    +--- jline:jline:0.9.94
 |    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
 |    |         |    \--- io.netty:netty:3.10.6.Final
-|    |         +--- com.google.guava:guava:16.0.1
+|    |         +--- com.google.guava:guava:16.0.1 -> 25.1-jre
+|    |         |    +--- com.google.code.findbugs:jsr305:3.0.2
+|    |         |    +--- org.checkerframework:checker-qual:2.0.0
+|    |         |    +--- com.google.errorprone:error_prone_annotations:2.1.3
+|    |         |    +--- com.google.j2objc:j2objc-annotations:1.1
+|    |         |    \--- org.codehaus.mojo:animal-sniffer-annotations:1.14
 |    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
 |    +--- org.apache.curator:curator-recipes:2.9.1
 |    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
@@ -292,16 +578,82 @@ runtime - Runtime dependencies for source set 'main' (deprecated, use 'runtimeOn
 |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
 |    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.apache.curator:curator-client:2.9.1 (*)
-|    +--- com.google.guava:guava:16.0.1
+|    +--- com.google.guava:guava:16.0.1 -> 25.1-jre (*)
 |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
 |    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
 |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
 +--- org.slf4j:slf4j-api:1.7.25
-\--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
-     +--- org.slf4j:slf4j-api:1.7.25
-     +--- org.apache.logging.log4j:log4j-api:2.11.2
-     \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
++--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+|    +--- org.slf4j:slf4j-api:1.7.25
+|    +--- org.apache.logging.log4j:log4j-api:2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
+\--- org.apache.ignite:ignite-cassandra-store:2.8.0-SNAPSHOT
+     +--- commons-beanutils:commons-beanutils:1.9.2
+     |    +--- commons-logging:commons-logging:1.1.1 -> 1.2
+     |    \--- commons-collections:commons-collections:3.2.1
+     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     +--- org.apache.ignite:ignite-spring:2.8.0-SNAPSHOT
+     |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     |    +--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT (*)
+     |    +--- org.springframework:spring-core:4.3.18.RELEASE
+     |    |    \--- commons-logging:commons-logging:1.2
+     |    +--- org.springframework:spring-aop:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE
+     |    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-context:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-aop:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-expression:4.3.18.RELEASE
+     |    |         \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-expression:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-tx:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-jdbc:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-tx:4.3.18.RELEASE (*)
+     |    \--- commons-logging:commons-logging:1.1.1 -> 1.2
+     +--- com.datastax.cassandra:cassandra-driver-core:3.2.0
+     |    +--- io.netty:netty-handler:4.0.44.Final -> 4.1.27.Final
+     |    |    +--- io.netty:netty-buffer:4.1.27.Final
+     |    |    |    \--- io.netty:netty-common:4.1.27.Final
+     |    |    +--- io.netty:netty-transport:4.1.27.Final
+     |    |    |    +--- io.netty:netty-buffer:4.1.27.Final (*)
+     |    |    |    \--- io.netty:netty-resolver:4.1.27.Final
+     |    |    |         \--- io.netty:netty-common:4.1.27.Final
+     |    |    \--- io.netty:netty-codec:4.1.27.Final
+     |    |         \--- io.netty:netty-transport:4.1.27.Final (*)
+     |    +--- com.google.guava:guava:19.0 -> 25.1-jre (*)
+     |    +--- io.dropwizard.metrics:metrics-core:3.1.2
+     |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
+     |    +--- com.github.jnr:jnr-ffi:2.0.7
+     |    |    +--- com.github.jnr:jffi:1.2.10
+     |    |    +--- org.ow2.asm:asm:5.0.3
+     |    |    +--- org.ow2.asm:asm-commons:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3
+     |    |    |         \--- org.ow2.asm:asm:5.0.3
+     |    |    +--- org.ow2.asm:asm-analysis:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    +--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    +--- org.ow2.asm:asm-util:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    \--- com.github.jnr:jnr-x86asm:1.0.2
+     |    \--- com.github.jnr:jnr-posix:3.0.27
+     |         +--- com.github.jnr:jnr-ffi:2.0.7 (*)
+     |         \--- com.github.jnr:jnr-constants:0.9.0
+     +--- io.netty:netty-handler:4.1.27.Final (*)
+     +--- io.netty:netty-buffer:4.1.27.Final (*)
+     +--- io.netty:netty-common:4.1.27.Final
+     +--- io.netty:netty-transport:4.1.27.Final (*)
+     +--- io.netty:netty-codec:4.1.27.Final (*)
+     +--- com.google.guava:guava:25.1-jre (*)
+     \--- com.codahale.metrics:metrics-core:3.0.2
+          \--- org.slf4j:slf4j-api:1.7.5 -> 1.7.25
 
 runtimeClasspath - Runtime classpath of source set 'main'.
 +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT
@@ -312,6 +664,23 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    +--- commons-codec:commons-codec:1.11
 |    \--- com.h2database:h2:1.4.197
++--- org.apache.ignite:ignite-ml:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- com.h2database:h2:1.4.197
+|    +--- it.unimi.dsi:fastutil:7.0.12
+|    +--- com.github.fommil.netlib:core:1.1.2
+|    |    \--- net.sourceforge.f2j:arpack_combined_all:0.1
+|    +--- org.apache.commons:commons-rng-core:1.0
+|    |    \--- org.apache.commons:commons-rng-client-api:1.0
+|    +--- org.apache.commons:commons-rng-simple:1.0
+|    |    \--- org.apache.commons:commons-rng-core:1.0 (*)
+|    +--- com.zaxxer:SparseBitSet:1.0
+|    +--- org.tensorflow:tensorflow:1.12.0
+|    |    +--- org.tensorflow:libtensorflow:1.12.0
+|    |    \--- org.tensorflow:libtensorflow_jni:1.12.0
+|    +--- org.tensorflow:proto:1.12.0
+|    |    \--- com.google.protobuf:protobuf-java:3.5.1
+|    \--- org.apache.commons:commons-math3:3.6.1
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
@@ -354,7 +723,12 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    |         |    +--- jline:jline:0.9.94
 |    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
 |    |         |    \--- io.netty:netty:3.10.6.Final
-|    |         +--- com.google.guava:guava:16.0.1
+|    |         +--- com.google.guava:guava:16.0.1 -> 25.1-jre
+|    |         |    +--- com.google.code.findbugs:jsr305:3.0.2
+|    |         |    +--- org.checkerframework:checker-qual:2.0.0
+|    |         |    +--- com.google.errorprone:error_prone_annotations:2.1.3
+|    |         |    +--- com.google.j2objc:j2objc-annotations:1.1
+|    |         |    \--- org.codehaus.mojo:animal-sniffer-annotations:1.14
 |    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
 |    +--- org.apache.curator:curator-recipes:2.9.1
 |    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
@@ -363,16 +737,82 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
 |    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.apache.curator:curator-client:2.9.1 (*)
-|    +--- com.google.guava:guava:16.0.1
+|    +--- com.google.guava:guava:16.0.1 -> 25.1-jre (*)
 |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
 |    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
 |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
 +--- org.slf4j:slf4j-api:1.7.25
-\--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
-     +--- org.slf4j:slf4j-api:1.7.25
-     +--- org.apache.logging.log4j:log4j-api:2.11.2
-     \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
++--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
+|    +--- org.slf4j:slf4j-api:1.7.25
+|    +--- org.apache.logging.log4j:log4j-api:2.11.2
+|    \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
+\--- org.apache.ignite:ignite-cassandra-store:2.8.0-SNAPSHOT
+     +--- commons-beanutils:commons-beanutils:1.9.2
+     |    +--- commons-logging:commons-logging:1.1.1 -> 1.2
+     |    \--- commons-collections:commons-collections:3.2.1
+     +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     +--- org.apache.ignite:ignite-spring:2.8.0-SNAPSHOT
+     |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+     |    +--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT (*)
+     |    +--- org.springframework:spring-core:4.3.18.RELEASE
+     |    |    \--- commons-logging:commons-logging:1.2
+     |    +--- org.springframework:spring-aop:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE
+     |    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-context:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-aop:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-expression:4.3.18.RELEASE
+     |    |         \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-expression:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-tx:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    +--- org.springframework:spring-jdbc:4.3.18.RELEASE
+     |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+     |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+     |    |    \--- org.springframework:spring-tx:4.3.18.RELEASE (*)
+     |    \--- commons-logging:commons-logging:1.1.1 -> 1.2
+     +--- com.datastax.cassandra:cassandra-driver-core:3.2.0
+     |    +--- io.netty:netty-handler:4.0.44.Final -> 4.1.27.Final
+     |    |    +--- io.netty:netty-buffer:4.1.27.Final
+     |    |    |    \--- io.netty:netty-common:4.1.27.Final
+     |    |    +--- io.netty:netty-transport:4.1.27.Final
+     |    |    |    +--- io.netty:netty-buffer:4.1.27.Final (*)
+     |    |    |    \--- io.netty:netty-resolver:4.1.27.Final
+     |    |    |         \--- io.netty:netty-common:4.1.27.Final
+     |    |    \--- io.netty:netty-codec:4.1.27.Final
+     |    |         \--- io.netty:netty-transport:4.1.27.Final (*)
+     |    +--- com.google.guava:guava:19.0 -> 25.1-jre (*)
+     |    +--- io.dropwizard.metrics:metrics-core:3.1.2
+     |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
+     |    +--- com.github.jnr:jnr-ffi:2.0.7
+     |    |    +--- com.github.jnr:jffi:1.2.10
+     |    |    +--- org.ow2.asm:asm:5.0.3
+     |    |    +--- org.ow2.asm:asm-commons:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3
+     |    |    |         \--- org.ow2.asm:asm:5.0.3
+     |    |    +--- org.ow2.asm:asm-analysis:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    +--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    +--- org.ow2.asm:asm-util:5.0.3
+     |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+     |    |    \--- com.github.jnr:jnr-x86asm:1.0.2
+     |    \--- com.github.jnr:jnr-posix:3.0.27
+     |         +--- com.github.jnr:jnr-ffi:2.0.7 (*)
+     |         \--- com.github.jnr:jnr-constants:0.9.0
+     +--- io.netty:netty-handler:4.1.27.Final (*)
+     +--- io.netty:netty-buffer:4.1.27.Final (*)
+     +--- io.netty:netty-common:4.1.27.Final
+     +--- io.netty:netty-transport:4.1.27.Final (*)
+     +--- io.netty:netty-codec:4.1.27.Final (*)
+     +--- com.google.guava:guava:25.1-jre (*)
+     \--- com.codahale.metrics:metrics-core:3.0.2
+          \--- org.slf4j:slf4j-api:1.7.5 -> 1.7.25
 
 runtimeElements - Elements of runtime for main. (n)
 No dependencies
@@ -392,6 +832,23 @@ testCompile - Dependencies for source set 'test' (deprecated, use 'testImplement
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    +--- commons-codec:commons-codec:1.11
 |    \--- com.h2database:h2:1.4.197
++--- org.apache.ignite:ignite-ml:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- com.h2database:h2:1.4.197
+|    +--- it.unimi.dsi:fastutil:7.0.12
+|    +--- com.github.fommil.netlib:core:1.1.2
+|    |    \--- net.sourceforge.f2j:arpack_combined_all:0.1
+|    +--- org.apache.commons:commons-rng-core:1.0
+|    |    \--- org.apache.commons:commons-rng-client-api:1.0
+|    +--- org.apache.commons:commons-rng-simple:1.0
+|    |    \--- org.apache.commons:commons-rng-core:1.0 (*)
+|    +--- com.zaxxer:SparseBitSet:1.0
+|    +--- org.tensorflow:tensorflow:1.12.0
+|    |    +--- org.tensorflow:libtensorflow:1.12.0
+|    |    \--- org.tensorflow:libtensorflow_jni:1.12.0
+|    +--- org.tensorflow:proto:1.12.0
+|    |    \--- com.google.protobuf:protobuf-java:3.5.1
+|    \--- org.apache.commons:commons-math3:3.6.1
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
@@ -434,7 +891,12 @@ testCompile - Dependencies for source set 'test' (deprecated, use 'testImplement
 |    |         |    +--- jline:jline:0.9.94
 |    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
 |    |         |    \--- io.netty:netty:3.10.6.Final
-|    |         +--- com.google.guava:guava:16.0.1
+|    |         +--- com.google.guava:guava:16.0.1 -> 25.1-jre
+|    |         |    +--- com.google.code.findbugs:jsr305:3.0.2
+|    |         |    +--- org.checkerframework:checker-qual:2.0.0
+|    |         |    +--- com.google.errorprone:error_prone_annotations:2.1.3
+|    |         |    +--- com.google.j2objc:j2objc-annotations:1.1
+|    |         |    \--- org.codehaus.mojo:animal-sniffer-annotations:1.14
 |    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
 |    +--- org.apache.curator:curator-recipes:2.9.1
 |    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
@@ -443,7 +905,7 @@ testCompile - Dependencies for source set 'test' (deprecated, use 'testImplement
 |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
 |    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.apache.curator:curator-client:2.9.1 (*)
-|    +--- com.google.guava:guava:16.0.1
+|    +--- com.google.guava:guava:16.0.1 -> 25.1-jre (*)
 |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
 |    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
@@ -453,6 +915,72 @@ testCompile - Dependencies for source set 'test' (deprecated, use 'testImplement
 |    +--- org.slf4j:slf4j-api:1.7.25
 |    +--- org.apache.logging.log4j:log4j-api:2.11.2
 |    \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
++--- org.apache.ignite:ignite-cassandra-store:2.8.0-SNAPSHOT
+|    +--- commons-beanutils:commons-beanutils:1.9.2
+|    |    +--- commons-logging:commons-logging:1.1.1 -> 1.2
+|    |    \--- commons-collections:commons-collections:3.2.1
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.ignite:ignite-spring:2.8.0-SNAPSHOT
+|    |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    |    +--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT (*)
+|    |    +--- org.springframework:spring-core:4.3.18.RELEASE
+|    |    |    \--- commons-logging:commons-logging:1.2
+|    |    +--- org.springframework:spring-aop:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE
+|    |    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-context:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-aop:4.3.18.RELEASE (*)
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-expression:4.3.18.RELEASE
+|    |    |         \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-expression:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-tx:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-jdbc:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-tx:4.3.18.RELEASE (*)
+|    |    \--- commons-logging:commons-logging:1.1.1 -> 1.2
+|    +--- com.datastax.cassandra:cassandra-driver-core:3.2.0
+|    |    +--- io.netty:netty-handler:4.0.44.Final -> 4.1.27.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.27.Final
+|    |    |    |    \--- io.netty:netty-common:4.1.27.Final
+|    |    |    +--- io.netty:netty-transport:4.1.27.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.27.Final (*)
+|    |    |    |    \--- io.netty:netty-resolver:4.1.27.Final
+|    |    |    |         \--- io.netty:netty-common:4.1.27.Final
+|    |    |    \--- io.netty:netty-codec:4.1.27.Final
+|    |    |         \--- io.netty:netty-transport:4.1.27.Final (*)
+|    |    +--- com.google.guava:guava:19.0 -> 25.1-jre (*)
+|    |    +--- io.dropwizard.metrics:metrics-core:3.1.2
+|    |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
+|    |    +--- com.github.jnr:jnr-ffi:2.0.7
+|    |    |    +--- com.github.jnr:jffi:1.2.10
+|    |    |    +--- org.ow2.asm:asm:5.0.3
+|    |    |    +--- org.ow2.asm:asm-commons:5.0.3
+|    |    |    |    \--- org.ow2.asm:asm-tree:5.0.3
+|    |    |    |         \--- org.ow2.asm:asm:5.0.3
+|    |    |    +--- org.ow2.asm:asm-analysis:5.0.3
+|    |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+|    |    |    +--- org.ow2.asm:asm-tree:5.0.3 (*)
+|    |    |    +--- org.ow2.asm:asm-util:5.0.3
+|    |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+|    |    |    \--- com.github.jnr:jnr-x86asm:1.0.2
+|    |    \--- com.github.jnr:jnr-posix:3.0.27
+|    |         +--- com.github.jnr:jnr-ffi:2.0.7 (*)
+|    |         \--- com.github.jnr:jnr-constants:0.9.0
+|    +--- io.netty:netty-handler:4.1.27.Final (*)
+|    +--- io.netty:netty-buffer:4.1.27.Final (*)
+|    +--- io.netty:netty-common:4.1.27.Final
+|    +--- io.netty:netty-transport:4.1.27.Final (*)
+|    +--- io.netty:netty-codec:4.1.27.Final (*)
+|    +--- com.google.guava:guava:25.1-jre (*)
+|    \--- com.codahale.metrics:metrics-core:3.0.2
+|         \--- org.slf4j:slf4j-api:1.7.5 -> 1.7.25
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -465,6 +993,23 @@ testCompileClasspath - Compile classpath for source set 'test'.
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    +--- commons-codec:commons-codec:1.11
 |    \--- com.h2database:h2:1.4.197
++--- org.apache.ignite:ignite-ml:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- com.h2database:h2:1.4.197
+|    +--- it.unimi.dsi:fastutil:7.0.12
+|    +--- com.github.fommil.netlib:core:1.1.2
+|    |    \--- net.sourceforge.f2j:arpack_combined_all:0.1
+|    +--- org.apache.commons:commons-rng-core:1.0
+|    |    \--- org.apache.commons:commons-rng-client-api:1.0
+|    +--- org.apache.commons:commons-rng-simple:1.0
+|    |    \--- org.apache.commons:commons-rng-core:1.0 (*)
+|    +--- com.zaxxer:SparseBitSet:1.0
+|    +--- org.tensorflow:tensorflow:1.12.0
+|    |    +--- org.tensorflow:libtensorflow:1.12.0
+|    |    \--- org.tensorflow:libtensorflow_jni:1.12.0
+|    +--- org.tensorflow:proto:1.12.0
+|    |    \--- com.google.protobuf:protobuf-java:3.5.1
+|    \--- org.apache.commons:commons-math3:3.6.1
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
@@ -507,7 +1052,12 @@ testCompileClasspath - Compile classpath for source set 'test'.
 |    |         |    +--- jline:jline:0.9.94
 |    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
 |    |         |    \--- io.netty:netty:3.10.6.Final
-|    |         +--- com.google.guava:guava:16.0.1
+|    |         +--- com.google.guava:guava:16.0.1 -> 25.1-jre
+|    |         |    +--- com.google.code.findbugs:jsr305:3.0.2
+|    |         |    +--- org.checkerframework:checker-qual:2.0.0
+|    |         |    +--- com.google.errorprone:error_prone_annotations:2.1.3
+|    |         |    +--- com.google.j2objc:j2objc-annotations:1.1
+|    |         |    \--- org.codehaus.mojo:animal-sniffer-annotations:1.14
 |    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
 |    +--- org.apache.curator:curator-recipes:2.9.1
 |    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
@@ -516,7 +1066,7 @@ testCompileClasspath - Compile classpath for source set 'test'.
 |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
 |    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.apache.curator:curator-client:2.9.1 (*)
-|    +--- com.google.guava:guava:16.0.1
+|    +--- com.google.guava:guava:16.0.1 -> 25.1-jre (*)
 |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
 |    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
@@ -525,6 +1075,72 @@ testCompileClasspath - Compile classpath for source set 'test'.
 +--- org.apache.logging.log4j:log4j-slf4j-impl:2.11.2
 |    +--- org.slf4j:slf4j-api:1.7.25
 |    \--- org.apache.logging.log4j:log4j-api:2.11.2
++--- org.apache.ignite:ignite-cassandra-store:2.8.0-SNAPSHOT
+|    +--- commons-beanutils:commons-beanutils:1.9.2
+|    |    +--- commons-logging:commons-logging:1.1.1 -> 1.2
+|    |    \--- commons-collections:commons-collections:3.2.1
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.ignite:ignite-spring:2.8.0-SNAPSHOT
+|    |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    |    +--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT (*)
+|    |    +--- org.springframework:spring-core:4.3.18.RELEASE
+|    |    |    \--- commons-logging:commons-logging:1.2
+|    |    +--- org.springframework:spring-aop:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE
+|    |    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-context:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-aop:4.3.18.RELEASE (*)
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-expression:4.3.18.RELEASE
+|    |    |         \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-expression:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-tx:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-jdbc:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-tx:4.3.18.RELEASE (*)
+|    |    \--- commons-logging:commons-logging:1.1.1 -> 1.2
+|    +--- com.datastax.cassandra:cassandra-driver-core:3.2.0
+|    |    +--- io.netty:netty-handler:4.0.44.Final -> 4.1.27.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.27.Final
+|    |    |    |    \--- io.netty:netty-common:4.1.27.Final
+|    |    |    +--- io.netty:netty-transport:4.1.27.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.27.Final (*)
+|    |    |    |    \--- io.netty:netty-resolver:4.1.27.Final
+|    |    |    |         \--- io.netty:netty-common:4.1.27.Final
+|    |    |    \--- io.netty:netty-codec:4.1.27.Final
+|    |    |         \--- io.netty:netty-transport:4.1.27.Final (*)
+|    |    +--- com.google.guava:guava:19.0 -> 25.1-jre (*)
+|    |    +--- io.dropwizard.metrics:metrics-core:3.1.2
+|    |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
+|    |    +--- com.github.jnr:jnr-ffi:2.0.7
+|    |    |    +--- com.github.jnr:jffi:1.2.10
+|    |    |    +--- org.ow2.asm:asm:5.0.3
+|    |    |    +--- org.ow2.asm:asm-commons:5.0.3
+|    |    |    |    \--- org.ow2.asm:asm-tree:5.0.3
+|    |    |    |         \--- org.ow2.asm:asm:5.0.3
+|    |    |    +--- org.ow2.asm:asm-analysis:5.0.3
+|    |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+|    |    |    +--- org.ow2.asm:asm-tree:5.0.3 (*)
+|    |    |    +--- org.ow2.asm:asm-util:5.0.3
+|    |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+|    |    |    \--- com.github.jnr:jnr-x86asm:1.0.2
+|    |    \--- com.github.jnr:jnr-posix:3.0.27
+|    |         +--- com.github.jnr:jnr-ffi:2.0.7 (*)
+|    |         \--- com.github.jnr:jnr-constants:0.9.0
+|    +--- io.netty:netty-handler:4.1.27.Final (*)
+|    +--- io.netty:netty-buffer:4.1.27.Final (*)
+|    +--- io.netty:netty-common:4.1.27.Final
+|    +--- io.netty:netty-transport:4.1.27.Final (*)
+|    +--- io.netty:netty-codec:4.1.27.Final (*)
+|    +--- com.google.guava:guava:25.1-jre (*)
+|    \--- com.codahale.metrics:metrics-core:3.0.2
+|         \--- org.slf4j:slf4j-api:1.7.5 -> 1.7.25
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -543,6 +1159,23 @@ testRuntime - Runtime dependencies for source set 'test' (deprecated, use 'testR
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    +--- commons-codec:commons-codec:1.11
 |    \--- com.h2database:h2:1.4.197
++--- org.apache.ignite:ignite-ml:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- com.h2database:h2:1.4.197
+|    +--- it.unimi.dsi:fastutil:7.0.12
+|    +--- com.github.fommil.netlib:core:1.1.2
+|    |    \--- net.sourceforge.f2j:arpack_combined_all:0.1
+|    +--- org.apache.commons:commons-rng-core:1.0
+|    |    \--- org.apache.commons:commons-rng-client-api:1.0
+|    +--- org.apache.commons:commons-rng-simple:1.0
+|    |    \--- org.apache.commons:commons-rng-core:1.0 (*)
+|    +--- com.zaxxer:SparseBitSet:1.0
+|    +--- org.tensorflow:tensorflow:1.12.0
+|    |    +--- org.tensorflow:libtensorflow:1.12.0
+|    |    \--- org.tensorflow:libtensorflow_jni:1.12.0
+|    +--- org.tensorflow:proto:1.12.0
+|    |    \--- com.google.protobuf:protobuf-java:3.5.1
+|    \--- org.apache.commons:commons-math3:3.6.1
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
@@ -585,7 +1218,12 @@ testRuntime - Runtime dependencies for source set 'test' (deprecated, use 'testR
 |    |         |    +--- jline:jline:0.9.94
 |    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
 |    |         |    \--- io.netty:netty:3.10.6.Final
-|    |         +--- com.google.guava:guava:16.0.1
+|    |         +--- com.google.guava:guava:16.0.1 -> 25.1-jre
+|    |         |    +--- com.google.code.findbugs:jsr305:3.0.2
+|    |         |    +--- org.checkerframework:checker-qual:2.0.0
+|    |         |    +--- com.google.errorprone:error_prone_annotations:2.1.3
+|    |         |    +--- com.google.j2objc:j2objc-annotations:1.1
+|    |         |    \--- org.codehaus.mojo:animal-sniffer-annotations:1.14
 |    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
 |    +--- org.apache.curator:curator-recipes:2.9.1
 |    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
@@ -594,7 +1232,7 @@ testRuntime - Runtime dependencies for source set 'test' (deprecated, use 'testR
 |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
 |    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.apache.curator:curator-client:2.9.1 (*)
-|    +--- com.google.guava:guava:16.0.1
+|    +--- com.google.guava:guava:16.0.1 -> 25.1-jre (*)
 |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
 |    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
@@ -604,6 +1242,72 @@ testRuntime - Runtime dependencies for source set 'test' (deprecated, use 'testR
 |    +--- org.slf4j:slf4j-api:1.7.25
 |    +--- org.apache.logging.log4j:log4j-api:2.11.2
 |    \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
++--- org.apache.ignite:ignite-cassandra-store:2.8.0-SNAPSHOT
+|    +--- commons-beanutils:commons-beanutils:1.9.2
+|    |    +--- commons-logging:commons-logging:1.1.1 -> 1.2
+|    |    \--- commons-collections:commons-collections:3.2.1
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.ignite:ignite-spring:2.8.0-SNAPSHOT
+|    |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    |    +--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT (*)
+|    |    +--- org.springframework:spring-core:4.3.18.RELEASE
+|    |    |    \--- commons-logging:commons-logging:1.2
+|    |    +--- org.springframework:spring-aop:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE
+|    |    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-context:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-aop:4.3.18.RELEASE (*)
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-expression:4.3.18.RELEASE
+|    |    |         \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-expression:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-tx:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-jdbc:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-tx:4.3.18.RELEASE (*)
+|    |    \--- commons-logging:commons-logging:1.1.1 -> 1.2
+|    +--- com.datastax.cassandra:cassandra-driver-core:3.2.0
+|    |    +--- io.netty:netty-handler:4.0.44.Final -> 4.1.27.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.27.Final
+|    |    |    |    \--- io.netty:netty-common:4.1.27.Final
+|    |    |    +--- io.netty:netty-transport:4.1.27.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.27.Final (*)
+|    |    |    |    \--- io.netty:netty-resolver:4.1.27.Final
+|    |    |    |         \--- io.netty:netty-common:4.1.27.Final
+|    |    |    \--- io.netty:netty-codec:4.1.27.Final
+|    |    |         \--- io.netty:netty-transport:4.1.27.Final (*)
+|    |    +--- com.google.guava:guava:19.0 -> 25.1-jre (*)
+|    |    +--- io.dropwizard.metrics:metrics-core:3.1.2
+|    |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
+|    |    +--- com.github.jnr:jnr-ffi:2.0.7
+|    |    |    +--- com.github.jnr:jffi:1.2.10
+|    |    |    +--- org.ow2.asm:asm:5.0.3
+|    |    |    +--- org.ow2.asm:asm-commons:5.0.3
+|    |    |    |    \--- org.ow2.asm:asm-tree:5.0.3
+|    |    |    |         \--- org.ow2.asm:asm:5.0.3
+|    |    |    +--- org.ow2.asm:asm-analysis:5.0.3
+|    |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+|    |    |    +--- org.ow2.asm:asm-tree:5.0.3 (*)
+|    |    |    +--- org.ow2.asm:asm-util:5.0.3
+|    |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+|    |    |    \--- com.github.jnr:jnr-x86asm:1.0.2
+|    |    \--- com.github.jnr:jnr-posix:3.0.27
+|    |         +--- com.github.jnr:jnr-ffi:2.0.7 (*)
+|    |         \--- com.github.jnr:jnr-constants:0.9.0
+|    +--- io.netty:netty-handler:4.1.27.Final (*)
+|    +--- io.netty:netty-buffer:4.1.27.Final (*)
+|    +--- io.netty:netty-common:4.1.27.Final
+|    +--- io.netty:netty-transport:4.1.27.Final (*)
+|    +--- io.netty:netty-codec:4.1.27.Final (*)
+|    +--- com.google.guava:guava:25.1-jre (*)
+|    \--- com.codahale.metrics:metrics-core:3.0.2
+|         \--- org.slf4j:slf4j-api:1.7.5 -> 1.7.25
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
@@ -616,6 +1320,23 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    +--- commons-codec:commons-codec:1.11
 |    \--- com.h2database:h2:1.4.197
++--- org.apache.ignite:ignite-ml:2.8.0-SNAPSHOT
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- com.h2database:h2:1.4.197
+|    +--- it.unimi.dsi:fastutil:7.0.12
+|    +--- com.github.fommil.netlib:core:1.1.2
+|    |    \--- net.sourceforge.f2j:arpack_combined_all:0.1
+|    +--- org.apache.commons:commons-rng-core:1.0
+|    |    \--- org.apache.commons:commons-rng-client-api:1.0
+|    +--- org.apache.commons:commons-rng-simple:1.0
+|    |    \--- org.apache.commons:commons-rng-core:1.0 (*)
+|    +--- com.zaxxer:SparseBitSet:1.0
+|    +--- org.tensorflow:tensorflow:1.12.0
+|    |    +--- org.tensorflow:libtensorflow:1.12.0
+|    |    \--- org.tensorflow:libtensorflow_jni:1.12.0
+|    +--- org.tensorflow:proto:1.12.0
+|    |    \--- com.google.protobuf:protobuf-java:3.5.1
+|    \--- org.apache.commons:commons-math3:3.6.1
 +--- org.apache.ignite:ignite-log4j:2.8.0-SNAPSHOT
 |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
 |    \--- log4j:log4j:1.2.17
@@ -658,7 +1379,12 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    |         |    +--- jline:jline:0.9.94
 |    |         |    +--- org.apache.yetus:audience-annotations:0.5.0
 |    |         |    \--- io.netty:netty:3.10.6.Final
-|    |         +--- com.google.guava:guava:16.0.1
+|    |         +--- com.google.guava:guava:16.0.1 -> 25.1-jre
+|    |         |    +--- com.google.code.findbugs:jsr305:3.0.2
+|    |         |    +--- org.checkerframework:checker-qual:2.0.0
+|    |         |    +--- com.google.errorprone:error_prone_annotations:2.1.3
+|    |         |    +--- com.google.j2objc:j2objc-annotations:1.1
+|    |         |    \--- org.codehaus.mojo:animal-sniffer-annotations:1.14
 |    |         \--- org.slf4j:slf4j-api:1.7.6 -> 1.7.25
 |    +--- org.apache.curator:curator-recipes:2.9.1
 |    |    \--- org.apache.curator:curator-framework:2.9.1 (*)
@@ -667,7 +1393,7 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    |    \--- org.codehaus.jackson:jackson-mapper-asl:1.9.13
 |    |         \--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.apache.curator:curator-client:2.9.1 (*)
-|    +--- com.google.guava:guava:16.0.1
+|    +--- com.google.guava:guava:16.0.1 -> 25.1-jre (*)
 |    +--- org.codehaus.jackson:jackson-core-asl:1.9.13
 |    +--- org.codehaus.jackson:jackson-mapper-asl:1.9.13 (*)
 |    +--- org.apache.zookeeper:zookeeper:3.4.13 (*)
@@ -677,6 +1403,72 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    +--- org.slf4j:slf4j-api:1.7.25
 |    +--- org.apache.logging.log4j:log4j-api:2.11.2
 |    \--- org.apache.logging.log4j:log4j-core:2.11.2 (*)
++--- org.apache.ignite:ignite-cassandra-store:2.8.0-SNAPSHOT
+|    +--- commons-beanutils:commons-beanutils:1.9.2
+|    |    +--- commons-logging:commons-logging:1.1.1 -> 1.2
+|    |    \--- commons-collections:commons-collections:3.2.1
+|    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    +--- org.apache.ignite:ignite-spring:2.8.0-SNAPSHOT
+|    |    +--- org.apache.ignite:ignite-core:2.8.0-SNAPSHOT (*)
+|    |    +--- org.apache.ignite:ignite-indexing:2.8.0-SNAPSHOT (*)
+|    |    +--- org.springframework:spring-core:4.3.18.RELEASE
+|    |    |    \--- commons-logging:commons-logging:1.2
+|    |    +--- org.springframework:spring-aop:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE
+|    |    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-context:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-aop:4.3.18.RELEASE (*)
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-expression:4.3.18.RELEASE
+|    |    |         \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-expression:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-tx:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    +--- org.springframework:spring-jdbc:4.3.18.RELEASE
+|    |    |    +--- org.springframework:spring-beans:4.3.18.RELEASE (*)
+|    |    |    +--- org.springframework:spring-core:4.3.18.RELEASE (*)
+|    |    |    \--- org.springframework:spring-tx:4.3.18.RELEASE (*)
+|    |    \--- commons-logging:commons-logging:1.1.1 -> 1.2
+|    +--- com.datastax.cassandra:cassandra-driver-core:3.2.0
+|    |    +--- io.netty:netty-handler:4.0.44.Final -> 4.1.27.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.27.Final
+|    |    |    |    \--- io.netty:netty-common:4.1.27.Final
+|    |    |    +--- io.netty:netty-transport:4.1.27.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.27.Final (*)
+|    |    |    |    \--- io.netty:netty-resolver:4.1.27.Final
+|    |    |    |         \--- io.netty:netty-common:4.1.27.Final
+|    |    |    \--- io.netty:netty-codec:4.1.27.Final
+|    |    |         \--- io.netty:netty-transport:4.1.27.Final (*)
+|    |    +--- com.google.guava:guava:19.0 -> 25.1-jre (*)
+|    |    +--- io.dropwizard.metrics:metrics-core:3.1.2
+|    |    |    \--- org.slf4j:slf4j-api:1.7.7 -> 1.7.25
+|    |    +--- com.github.jnr:jnr-ffi:2.0.7
+|    |    |    +--- com.github.jnr:jffi:1.2.10
+|    |    |    +--- org.ow2.asm:asm:5.0.3
+|    |    |    +--- org.ow2.asm:asm-commons:5.0.3
+|    |    |    |    \--- org.ow2.asm:asm-tree:5.0.3
+|    |    |    |         \--- org.ow2.asm:asm:5.0.3
+|    |    |    +--- org.ow2.asm:asm-analysis:5.0.3
+|    |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+|    |    |    +--- org.ow2.asm:asm-tree:5.0.3 (*)
+|    |    |    +--- org.ow2.asm:asm-util:5.0.3
+|    |    |    |    \--- org.ow2.asm:asm-tree:5.0.3 (*)
+|    |    |    \--- com.github.jnr:jnr-x86asm:1.0.2
+|    |    \--- com.github.jnr:jnr-posix:3.0.27
+|    |         +--- com.github.jnr:jnr-ffi:2.0.7 (*)
+|    |         \--- com.github.jnr:jnr-constants:0.9.0
+|    +--- io.netty:netty-handler:4.1.27.Final (*)
+|    +--- io.netty:netty-buffer:4.1.27.Final (*)
+|    +--- io.netty:netty-common:4.1.27.Final
+|    +--- io.netty:netty-transport:4.1.27.Final (*)
+|    +--- io.netty:netty-codec:4.1.27.Final (*)
+|    +--- com.google.guava:guava:25.1-jre (*)
+|    \--- com.codahale.metrics:metrics-core:3.0.2
+|         \--- org.slf4j:slf4j-api:1.7.5 -> 1.7.25
 \--- junit:junit:4.12
      \--- org.hamcrest:hamcrest-core:1.3
 
