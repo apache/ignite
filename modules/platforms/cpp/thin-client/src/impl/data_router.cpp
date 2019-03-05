@@ -141,15 +141,15 @@ namespace ignite
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
 
-                cache::SP_CacheAffinityInfo newMapping(new cache::CacheAffinityInfo(nodeParts));
+                cache::SP_AffinityAssignment newMapping(new cache::AffinityAssignment(nodeParts));
 
                 common::concurrent::CsLockGuard lock(cacheAffinityMappingMutex);
 
-                cache::SP_CacheAffinityInfo& affinityInfo = cacheAffinityMapping[cacheId];
+                cache::SP_AffinityAssignment& affinityInfo = cacheAffinityMapping[cacheId];
                 affinityInfo.Swap(newMapping);
             }
 
-            cache::SP_CacheAffinityInfo DataRouter::GetAffinityMapping(int32_t cacheId)
+            cache::SP_AffinityAssignment DataRouter::GetAffinityAssignment(int32_t cacheId)
             {
                 common::concurrent::CsLockGuard lock(cacheAffinityMappingMutex);
 

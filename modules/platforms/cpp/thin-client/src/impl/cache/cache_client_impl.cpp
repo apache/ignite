@@ -49,7 +49,7 @@ namespace ignite
                 template<typename ReqT, typename RspT>
                 void CacheClientImpl::SyncCacheKeyMessage(const WritableKey& key, const ReqT& req, RspT& rsp)
                 {
-                    SP_CacheAffinityInfo affinityInfo = router.Get()->GetAffinityMapping(id);
+                    SP_AffinityAssignment affinityInfo = router.Get()->GetAffinityAssignment(id);
 
                     if (!affinityInfo.IsValid() || affinityInfo.Get()->GetPartitionsNum() == 0)
                     {
@@ -57,9 +57,9 @@ namespace ignite
                     }
                     else
                     {
-                        const IgniteNodes& nodes = affinityInfo.Get()->GetMapping(key);
+                        const Guid& guid= affinityInfo.Get()->GetNodeGuid(key);
 
-                        router.Get()->SyncMessage(req, rsp, nodes);
+                        router.Get()->SyncMessage(req, rsp, guid);
                     }
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)

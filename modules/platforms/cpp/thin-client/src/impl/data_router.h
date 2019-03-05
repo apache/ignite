@@ -33,7 +33,7 @@
 #include <ignite/network/tcp_range.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
-#include "impl/cache/cache_affinity_info.h"
+#include "impl/affinity/affinity_assignment.h"
 #include "impl/data_channel.h"
 
 namespace ignite
@@ -171,7 +171,7 @@ namespace ignite
                  * @param cacheId Cache ID.
                  * @return Mapping.
                  */
-                cache::SP_CacheAffinityInfo GetAffinityMapping(int32_t cacheId);
+                cache::SP_AffinityAssignment GetAffinityAssignment(int32_t cacheId);
 
                 /**
                  * Clear affinity mapping for the cache.
@@ -253,7 +253,7 @@ namespace ignite
                 common::concurrent::CriticalSection channelsMutex;
 
                 /** Cache affinity mapping. */
-                std::map<int32_t, cache::SP_CacheAffinityInfo> cacheAffinityMapping;
+                std::map<int32_t, cache::SP_AffinityAssignment> cacheAffinityMapping;
 
                 /** Cache affinity mapping mutex. */
                 common::concurrent::CriticalSection cacheAffinityMappingMutex;
