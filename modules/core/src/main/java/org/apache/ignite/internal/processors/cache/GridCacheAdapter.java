@@ -4311,7 +4311,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     throw e;
                 }
                 catch (RuntimeException e) {
-                    tx.rollback();
+                    try {
+                        tx.rollback();
+                    }
+                    catch (IgniteCheckedException | AssertionError | RuntimeException e1) {
+                        U.error(log, "Failed to rollback transaction " + CU.txString(tx), e1);
+                    }
 
                     throw e;
                 }
