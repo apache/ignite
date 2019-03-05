@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
@@ -108,6 +109,7 @@ import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.h2.command.Prepared;
@@ -123,7 +125,6 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
@@ -161,6 +162,9 @@ public class CommandProcessor {
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
+    /** KILL COMMAND support added since. */
+    private static final IgniteProductVersion KILL_COMMAND_SINCE_VER = IgniteProductVersion.fromString("2.8.0");
+
     /** Local node message handler */
     private final CIX2<ClusterNode, Message> locNodeMsgHnd = new CIX2<ClusterNode, Message>() {
         @Override public void applyx(ClusterNode locNode, Message msg) {
@@ -192,6 +196,8 @@ public class CommandProcessor {
             @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
+                List<GridFutureAdapter<String>> futs = new ArrayList<>();
+
                 lock.writeLock().lock();
 
                 try {
@@ -201,9 +207,7 @@ public class CommandProcessor {
                         KillQueryRun qryRun = it.next();
 
                         if (qryRun.nodeId().equals(nodeId)) {
-                            qryRun.cancelFuture().onDone(
-                                "Cancellation query has unknown result due to node has left[nodeId=" + nodeId +
-                                    ",qryId=" + qryRun.nodeQryId()+"]");
+                            futs.add(qryRun.cancelFuture());
 
                             it.remove();
                         }
@@ -212,6 +216,8 @@ public class CommandProcessor {
                 finally {
                     lock.writeLock().unlock();
                 }
+
+                futs.forEach(f -> f.onDone("Query node has left the grid: [nodeId=" + nodeId + "]"));
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
     }
@@ -230,8 +236,7 @@ public class CommandProcessor {
             while (it.hasNext()) {
                 KillQueryRun qryRun = it.next();
 
-                qryRun.cancelFuture().onDone("Failed to cancel query due to node is stopped" +
-                    "[nodeId=" + qryRun.nodeId() + ",qryId=" + qryRun.nodeQryId() + "]");
+                qryRun.cancelFuture().onDone("Local node is stopping: [nodeId=" + ctx.localNodeId() + "]");
 
                 it.remove();
             }
@@ -246,29 +251,24 @@ public class CommandProcessor {
      * @param msg Message.
      */
     public void onMessage(UUID nodeId, Object msg) {
-        try {
-            assert msg != null;
+        assert msg != null;
 
-            ClusterNode node = ctx.discovery().node(nodeId);
+        ClusterNode node = ctx.discovery().node(nodeId);
 
-            if (node == null)
-                return; // Node left, ignore.
+        if (node == null)
+            return; // Node left, ignore.
 
-            boolean processed = true;
+        boolean processed = true;
 
-            if (msg instanceof GridQueryKillRequest)
-                onQueryKillRequest((GridQueryKillRequest)msg, node);
-            if (msg instanceof GridQueryKillResponse)
-                onQueryKillResponse((GridQueryKillResponse)msg);
-            else
-                processed = false;
+        if (msg instanceof GridQueryKillRequest)
+            onQueryKillRequest((GridQueryKillRequest)msg, node);
+        if (msg instanceof GridQueryKillResponse)
+            onQueryKillResponse((GridQueryKillResponse)msg);
+        else
+            processed = false;
 
-            if (processed && log.isDebugEnabled())
-                log.debug("Processed response: " + nodeId + "->" + ctx.localNodeId() + " " + msg);
-        }
-        catch(Throwable th) {
-            U.error(log, "Failed to process message: " + msg, th);
-        }
+        if (processed && log.isDebugEnabled())
+            log.debug("Processed response: " + nodeId + "->" + ctx.localNodeId() + " " + msg);
     }
 
     /**
@@ -281,9 +281,9 @@ public class CommandProcessor {
         String err = null;
 
         try {
-            boolean qryIsExist = idx.runningQueryManager().queryInProgress(msg.nodeQryId());
+            GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().runningQueryInfo(msg.nodeQryId());
 
-            if (!qryIsExist)
+            if (runningQryInfo == null)
                 err = "Failed to cancel query due to query doesn't exist" +
                     "[nodeId=" + ctx.localNodeId() + ",qryId=" + msg.nodeQryId() + "]";
 
@@ -298,8 +298,8 @@ public class CommandProcessor {
                     false);
             }
 
-            if (qryIsExist)
-                idx.cancelQueries(singletonList(msg.nodeQryId()));
+            if (runningQryInfo != null)
+                runningQryInfo.cancel();
         }
         catch (Exception e) {
             err = e.toString();
@@ -331,7 +331,7 @@ public class CommandProcessor {
         lock.readLock().lock();
 
         try {
-            qryRun = cancellationRuns.remove(msg.cancelRequestId());
+            qryRun = cancellationRuns.remove(msg.requestId());
         }
         finally {
             lock.readLock().unlock();
@@ -404,6 +404,8 @@ public class CommandProcessor {
      * @param cmd Command.
      */
     private void processKillQueryCommand(SqlKillQueryCommand cmd) {
+        GridFutureAdapter<String> fut = new GridFutureAdapter<>();
+
         lock.readLock().lock();
 
         try {
@@ -414,11 +416,9 @@ public class CommandProcessor {
             ClusterNode node = ctx.discovery().node(cmd.nodeId()); //)getAlive
 
             if (node != null) {
-                if (!node.version().greaterThanEqual(2, 8, 0))
+                if (node.version().compareTo(KILL_COMMAND_SINCE_VER) < 0)
                     throw new IgniteSQLException("Failed to cancel query: KILL QUERY operation are supported in " +
                         "versions 2.8.0 and newer");
-
-                GridFutureAdapter<String> fut = new GridFutureAdapter<>();
 
                 KillQueryRun qryRun = new KillQueryRun(cmd.nodeId(), cmd.nodeQueryId(), fut);
 
@@ -442,18 +442,6 @@ public class CommandProcessor {
                     throw new IgniteSQLException("Failed to cancel query due comunication problem" +
                         "[nodeId=" + cmd.nodeId() + ",qryId=" + cmd.nodeQueryId() + "]");
                 }
-
-                try {
-                    String err = fut.get();
-
-                    if (err != null)
-                        throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
-                            + cmd.nodeQueryId() + "err=" + err + "]");
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
-                        + cmd.nodeQueryId() + "err=" + e + "]", e);
-                }
             }
             else {
                 throw new IgniteSQLException("Failed to cancel query, node is not alive [nodeId=" + cmd.nodeId() + ",qryId="
@@ -462,6 +450,18 @@ public class CommandProcessor {
         }
         finally {
             lock.readLock().unlock();
+        }
+
+        try {
+            String err = fut.get();
+
+            if (err != null)
+                throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
+                    + cmd.nodeQueryId() + "err=" + err + "]");
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
+                + cmd.nodeQueryId() + "err=" + e + "]", e);
         }
     }
 

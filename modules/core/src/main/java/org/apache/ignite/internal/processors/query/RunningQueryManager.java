@@ -205,11 +205,12 @@ public class RunningQueryManager {
     }
 
     /**
+     * Gets info about running query by their id.
      * @param qryId
-     * @return {@code true} in case query with given id are running.
+     * @return Running query info or {@code null} in case no running query for given id.
      */
-    public boolean queryInProgress(Long qryId) {
-        return runs.containsKey(qryId);
+    public @Nullable GridRunningQueryInfo runningQueryInfo(Long qryId) {
+        return runs.get(qryId);
     }
 
     /**

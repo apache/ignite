@@ -31,8 +31,8 @@ public class GridQueryKillResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Cancel request id.*/
-    private long cancelReqId;
+    /** Request id.*/
+    private long reqId;
 
     /** Error text. */
     private String errMsg;
@@ -46,19 +46,19 @@ public class GridQueryKillResponse implements Message {
     }
 
     /**
-     * @param cancelReqId Cancel request id.
+     * @param reqId Request id.
      * @param errMsg Error message.
      */
-    public GridQueryKillResponse(long cancelReqId, String errMsg) {
-        this.cancelReqId = cancelReqId;
+    public GridQueryKillResponse(long reqId, String errMsg) {
+        this.reqId = reqId;
         this.errMsg = errMsg;
     }
 
     /**
-     * @return Cancel request id.
+     * @return Request id.
      */
-    public long cancelRequestId() {
-        return cancelReqId;
+    public long requestId() {
+        return reqId;
     }
 
     /**
@@ -87,7 +87,7 @@ public class GridQueryKillResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("cancelReqId", cancelReqId))
+                if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
@@ -110,7 +110,7 @@ public class GridQueryKillResponse implements Message {
 
         switch (reader.state()) {
             case 0:
-                cancelReqId = reader.readLong("cancelReqId");
+                reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
                     return false;
