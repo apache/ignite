@@ -59,11 +59,9 @@ public class ExchangeDiscoveryEvents {
     /** All events. */
     private List<DiscoveryEvent> evts = new ArrayList<>();
 
-    /** Server join flag. */
-    private boolean srvJoin;
+    private List<ClusterNode> joinedSrvNodes = new ArrayList<>();
 
-    /** Sever left flag. */
-    private boolean srvLeft;
+    private List<ClusterNode> leftSrvNodes = new ArrayList<>();
 
     /**
      * @param fut Current exchange future.
@@ -120,15 +118,15 @@ public class ExchangeDiscoveryEvents {
 
         ClusterNode node = evt.eventNode();
 
-        if (!node.isClient()) {
+        if (!node.isClient() && !node.isDaemon()) {
             lastSrvEvt = evt;
 
             srvEvtTopVer = new AffinityTopologyVersion(evt.topologyVersion(), 0);
 
             if (evt.type()== EVT_NODE_JOINED)
-                srvJoin = true;
+                joinedSrvNodes.add(evt.eventNode());
             else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
-                srvLeft = !node.isClient();
+                leftSrvNodes.add(evt.eventNode());
         }
     }
 
@@ -180,14 +178,28 @@ public class ExchangeDiscoveryEvents {
      * @return {@code True} if has event for server join.
      */
     public boolean hasServerJoin() {
-        return srvJoin;
+        return !joinedSrvNodes.isEmpty();
     }
 
     /**
      * @return {@code True} if has event for server leave.
      */
     public boolean hasServerLeft() {
-        return srvLeft;
+        return !leftSrvNodes.isEmpty();
+    }
+
+    /**
+     *
+     */
+    public List<ClusterNode> joinedServerNodes() {
+        return joinedSrvNodes;
+    }
+
+    /**
+     *
+     */
+    public List<ClusterNode> leftServerNodes() {
+        return leftSrvNodes;
     }
 
     /**

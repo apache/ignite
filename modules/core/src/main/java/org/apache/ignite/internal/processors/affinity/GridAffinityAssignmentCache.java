@@ -242,8 +242,15 @@ public class GridAffinityAssignmentCache {
     /**
      * @return Assignment.
      */
-    @Nullable public List<List<ClusterNode>> idealAssignment() {
+    @Nullable public List<List<ClusterNode>> idealAssignmentRaw() {
         return idealAssignment != null ? idealAssignment.assignment() : null;
+    }
+
+    /**
+     *
+     */
+    @Nullable public IdealAffinityAssignment idealAssignment() {
+        return idealAssignment;
     }
 
     /**
@@ -802,9 +809,9 @@ public class GridAffinityAssignmentCache {
      */
     public void init(GridAffinityAssignmentCache aff) {
         assert aff.lastVersion().compareTo(lastVersion()) >= 0;
-        assert aff.idealAssignment() != null;
+        assert aff.idealAssignmentRaw() != null;
 
-        idealAssignment(aff.lastVersion(), aff.idealAssignment());
+        idealAssignment(aff.lastVersion(), aff.idealAssignmentRaw());
 
         AffinityAssignment assign = aff.cachedAffinity(aff.lastVersion());
 
