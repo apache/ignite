@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewColumns;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -104,14 +105,12 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     @SuppressWarnings("unchecked")
     private List<List<?>> execSql(Ignite ignite, String sql, Object... args) {
-        IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
-
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
         if (args != null && args.length > 0)
             qry.setArgs(args);
 
-        return cache.query(qry).getAll();
+        return ((IgniteEx)ignite).context().query().querySqlFields(qry, false).getAll();
     }
 
     /**
@@ -869,7 +868,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testTablesDropAndCreate() throws Exception {
-        IgniteEx ignite = startGrid(getConfiguration());
+        startGrid();
 
         final String selectTabNameCacheName = "SELECT TABLE_NAME, CACHE_NAME FROM IGNITE.TABLES ORDER BY TABLE_NAME";
 
@@ -912,7 +911,148 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertTrue("All tables should be dropped", execSql(selectTabNameCacheName).isEmpty());
     }
 
+    /**
+     * Test for all column types {@link SqlSystemViewColumns}
+     *
+     * @throws Exception On error.
+     */
+    @Test
+    public void testColumnsViewAllTypes() throws Exception {
+        startGrid();
 
+        execSql("CREATE TABLE test (" +
+            "ID0 INT, " +
+            "ID_AFF INT, " +
+            "VAL_BOOL BOOLEAN, " +
+            "VAL_TINYINT TINYINT, " +
+            "VAL_SMALLINT SMALLINT, " +
+            "VAL_LONG LONG, " +
+            "VAL_REAL REAL, " +
+            "VAL_DBL DOUBLE, " +
+            "VAL_UUID UUID, " +
+            "VAL_DEC DECIMAL(10, 3), " +
+            "VAL_CHAR CHAR(10), " +
+            "VAL_VARCHAR VARCHAR(80), " +
+            "VAL_VARCHAR_IC VARCHAR_IGNORECASE(80), " +
+            "VAL_BIN BINARY(10), " +
+            "VAL_VARBIN VARBINARY(80), " +
+            "VAL_TIME TIME, " +
+            "VAL_DATE DATE, " +
+            "VAL_TIMESTAMP TIMESTAMP, " +
+            "PRIMARY KEY (ID0, ID_AFF))" +
+            "WITH \"AFFINITY_KEY=ID_AFF\"");
+
+        execSql("CREATE INDEX IDX0 ON test (VAL_UUID, VAL_REAL)");
+        execSql("CREATE INDEX IDX1 ON test (VAL_VARCHAR, VAL_LONG)");
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "ID0", "INTEGER", true, 11, 10, 0, "PRI", false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='ID0'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "ID_AFF", "INTEGER", true, 11, 10, 0, "PRI", true)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='ID_AFF'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_BOOL", "BOOLEAN", true, 5, 1, 0, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_BOOL'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_TINYINT", "TINYINT", true, 4, 3, 0, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_TINYINT'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_SMALLINT", "SMALLINT", true, 6, 5, 0, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_SMALLINT'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_LONG", "BIGINT", true, 20, 19, 0, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_LONG'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_REAL", "REAL", true, 15, 7, 0, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_REAL'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_DBL", "DOUBLE", true, 24, 17, 0, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_DBL'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_UUID", "UUID", true, 2147483647, 2147483647, 0, "MUL", false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_UUID'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_DEC", "DECIMAL", true, 65535, 65535, 32767, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_DEC'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_CHAR", "VARCHAR", true, 10, 10, 0, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_CHAR'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_VARCHAR", "VARCHAR", true, 80, 80, 0, "MUL", false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_VARCHAR'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_VARCHAR_IC", "VARCHAR", true, 80, 80, 0, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_VARCHAR_IC'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_BIN", "VARBINARY", true, 2147483647, 2147483647, 0, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_BIN'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_VARBIN", "VARBINARY", true, 2147483647, 2147483647, 0, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_VARBIN'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_TIME", "TIME", true, 8, 8, 0, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_TIME'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_DATE", "DATE", true, 10, 10, 0, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_DATE'"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_TIMESTAMP", "TIMESTAMP", true, 26, 26, 6, null, false)),
+            execSql("SELECT * " +
+                "FROM IGNITE.COLUMNS " +
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_TIMESTAMP'"));
+    }
 
     /**
      * Dummy implementation of the mapper. Required to test "AFFINITY_KEY_COLUMN".

@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBase
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroups;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroupsIOStatistics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCaches;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewColumns;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewIndexes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
@@ -172,6 +173,7 @@ public class SchemaManager {
         views.add(new SqlSystemViewRunningQueries(ctx));
         views.add(new SqlSystemViewTables(ctx, this));
         views.add(new SqlSystemViewIndexes(ctx, this));
+        views.add(new SqlSystemViewColumns(ctx, this));
 
         return views;
     }

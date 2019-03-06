@@ -102,13 +102,9 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
      * otherwise.
      */
     private @Nullable String computeAffinityColumn(GridH2Table tbl) {
-        IndexColumn affCol = tbl.getAffinityKeyColumn();
+        IndexColumn affCol = tbl.getExplicictAffinityKeyColumn();
 
         if (affCol == null)
-            return null;
-
-        // Only explicit affinity column should be shown. Do not do this for _KEY or it's alias.
-        if (tbl.rowDescriptor().isKeyColumn(affCol.column.getColumnId()))
             return null;
 
         return affCol.columnName;
