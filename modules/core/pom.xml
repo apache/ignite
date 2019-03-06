@@ -335,7 +335,7 @@
 #
                                     ]]>
                                 </argument>
-                                <argument>org.gridgain</argument>
+                                <argument>org.apache.ignite</argument>
                             </arguments>
                         </configuration>
                     </execution>
