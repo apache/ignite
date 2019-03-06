@@ -150,12 +150,12 @@ public interface GridComponent {
     public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data);
 
     /** */
-    default public Serializable getHandshakeResponseData() {
+    public default Serializable getTcpHandshakeResponseData() {
         return null;
     }
 
     /** */
-    default public void onHandshakeResponseDataReceived(Serializable componentData) {
+    public default void onTcpHandshakeResponseDataReceived(Serializable componentData) {
     }
 
     /**

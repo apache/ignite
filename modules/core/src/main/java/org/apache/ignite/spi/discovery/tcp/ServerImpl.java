@@ -6345,7 +6345,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     srvSock = !req.client();
 
                     //TODO
-                    boolean prefetchData = req.client() && req.supportsDataPrefetch();
+                    boolean prefetchData = req.client() && req.prefetch();
 
                     UUID nodeId = req.creatorNodeId();
 

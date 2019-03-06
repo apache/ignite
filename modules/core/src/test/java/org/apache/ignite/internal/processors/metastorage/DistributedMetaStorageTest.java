@@ -30,6 +30,7 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -326,6 +327,65 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         metastorage(0).write("key1", "value1");
 
         assertEquals(2, metastorage(0).getUpdatesCount());
+    }
+
+    /** */
+    @Test
+    public void testClient() throws Exception {
+        startGrid(0).cluster().active(true);
+
+        metastorage(0).write("key0", "value0");
+
+        startClient(1);
+
+        assertEquals(1, metastorage(1).getUpdatesCount());
+
+        assertEquals("value0", metastorage(1).read("key0"));
+
+        metastorage(1).write("key1", "value1");
+
+        assertEquals("value1", metastorage(1).read("key1"));
+
+        assertEquals("value1", metastorage(0).read("key1"));
+    }
+
+    /** */
+    @Test
+    public void testClientReconnect() throws Exception {
+        startGrid(0).cluster().active(true);
+
+        startClient(1);
+
+        metastorage(0).write("key0", "value0");
+
+        startGrid(2);
+
+        stopGrid(0);
+
+        stopGrid(2);
+
+        startGrid(2).cluster().active(true);
+
+        metastorage(2).write("key1", "value1");
+
+        metastorage(2).write("key2", "value2");
+
+        int expUpdatesCnt = isPersistent() ? 3 : 2;
+
+        // Wait enough to cover failover timeout.
+        GridTestUtils.waitForCondition(() -> metastorage(1).getUpdatesCount() == expUpdatesCnt, 15_000);
+
+        if (isPersistent())
+            assertEquals("value0", metastorage(1).read("key0"));
+
+        assertEquals("value1", metastorage(1).read("key1"));
+
+        assertEquals("value2", metastorage(1).read("key2"));
+    }
+
+    /** */
+    protected IgniteEx startClient(int idx) throws Exception {
+        return startGrid(getConfiguration(getTestIgniteInstanceName(idx)).setClientMode(true));
     }
 
     /**

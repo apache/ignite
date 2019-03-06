@@ -950,7 +950,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         if (dataExchangeType == null)
                             continue;
 
-                        Serializable componentData = c.getHandshakeResponseData();
+                        Serializable componentData = c.getTcpHandshakeResponseData();
 
                         if (componentData != null) {
                             try {
@@ -1003,7 +1003,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             log.warning("Cannot unmarshal handshake response data", e);
                         }
 
-                        c.onHandshakeResponseDataReceived(componentData);
+                        c.onTcpHandshakeResponseDataReceived(componentData);
                     }
                 }
             });

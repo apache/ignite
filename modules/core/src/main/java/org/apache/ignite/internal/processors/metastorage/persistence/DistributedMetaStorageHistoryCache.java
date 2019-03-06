@@ -102,15 +102,11 @@ final class DistributedMetaStorageHistoryCache {
     }
 
     /**
-     * Remove history item from the cache.
+     * Remove oldest history item from the cache.
      *
-     * @param ver Specific version, expected to be the version of the oldest stored history item.
-     *      Required for assertion only.
      * @return Removed value.
      */
-    public DistributedMetaStorageHistoryItem remove(long ver) {
-        assert startingVer == ver;
-
+    public DistributedMetaStorageHistoryItem removeOldest() {
         DistributedMetaStorageHistoryItem oldItem = items[from];
 
         sizeApproximation -= oldItem.estimateSize();

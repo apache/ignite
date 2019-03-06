@@ -716,11 +716,15 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 req.client(true);
 
+                if (!recon)
+                    req.prefetch(true);
+
                 spi.writeToSocket(sock, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
 
-                spi.handshakeResponseDataReceived(res.componentsData());
+                if (!recon)
+                    spi.handshakeResponseDataReceived(res.componentsData());
 
                 UUID rmtNodeId = res.creatorNodeId();
 

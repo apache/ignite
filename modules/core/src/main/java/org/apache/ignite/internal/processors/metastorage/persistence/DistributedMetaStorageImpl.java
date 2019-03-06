@@ -37,6 +37,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -92,8 +94,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /** */
     private final boolean isClient;
 
+    /** */
+    private final boolean isPersistenceEnabled;
+
     /** Cached subscription processor instance. Exists to make code shorter. */
-    private final GridInternalSubscriptionProcessor subscrProcessor;
+    private final GridInternalSubscriptionProcessor isp; // Short name to avoid long lines.
 
     /** Bridge. Has some "phase-specific" code. Exists to avoid countless {@code if}s in code. */
     private volatile DistributedMetaStorageBridge bridge = new NotAvailableDistributedMetaStorageBridge();
@@ -168,18 +173,17 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         isClient = ctx.clientNode();
 
-        subscrProcessor = ctx.internalSubscriptionProcessor();
+        isPersistenceEnabled = !isClient && isPersistenceEnabled(ctx.config());
+
+        isp = ctx.internalSubscriptionProcessor();
 
         marshaller = ctx.marshallerContext().jdkMarshaller();
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (isClient)
-            return;
-
-        if (isPersistenceEnabled(ctx.config())) {
-            subscrProcessor.registerMetastorageListener(new MetastorageLifecycleListener() {
+        if (isPersistenceEnabled) {
+            isp.registerMetastorageListener(new MetastorageLifecycleListener() {
                 /** {@inheritDoc} */
                 @Override public void onReadyForRead(
                     ReadOnlyMetastorage metastorage
@@ -216,11 +220,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        if (isClient)
-            return;
-
-        if (!isPersistenceEnabled(ctx.config())) {
-            for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
+        if (!isPersistenceEnabled) {
+            for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
                 subscriber.onReadyForRead(this);
         }
 
@@ -230,10 +231,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        if (isClient)
-            return;
-
-        if (!isPersistenceEnabled(ctx.config())) {
+        if (!isPersistenceEnabled) {
             if (!(bridge instanceof InMemoryCachedDistributedMetaStorageBridge)) {
                 synchronized (innerStateLock) {
                     assert startupExtras != null;
@@ -251,7 +249,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 }
             }
 
-            for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
+            for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
                 subscriber.onReadyForWrite(this);
 
             writeAvailable.countDown();
@@ -266,7 +264,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         synchronized (innerStateLock) {
             wasDeactivated = true;
 
-            if (isPersistenceEnabled(ctx.config())) {
+            if (isPersistenceEnabled) {
                 try {
                     DistributedMetaStorageKeyValuePair[] locFullData = bridge.localFullData();
 
@@ -300,7 +298,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @see MetastorageLifecycleListener#onReadyForRead(ReadOnlyMetastorage)
      */
     private void onMetaStorageReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
-        assert isPersistenceEnabled(ctx.config());
+        assert isPersistenceEnabled;
 
         assert startupExtras != null;
 
@@ -323,7 +321,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         bridge = readOnlyBridge;
 
-        for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
+        for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
             subscriber.onReadyForRead(this);
     }
 
@@ -336,7 +334,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @see MetastorageLifecycleListener#onReadyForReadWrite(ReadWriteMetastorage)
      */
     private void onMetaStorageReadyForWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
-        assert isPersistenceEnabled(ctx.config());
+        assert isPersistenceEnabled;
 
         synchronized (innerStateLock) {
             WritableDistributedMetaStorageBridge writableBridge = new WritableDistributedMetaStorageBridge(this, metastorage);
@@ -359,7 +357,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             startupExtras = null;
         }
 
-        for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
+        for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
             subscriber.onReadyForWrite(this);
 
         writeAvailable.countDown();
@@ -464,7 +462,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public Long getHandshakeResponseData() {
+    @Override public Long getTcpHandshakeResponseData() {
         synchronized (innerStateLock) {
             long ver = getActualVersion().id;
 
@@ -473,7 +471,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void onHandshakeResponseDataReceived(Serializable componentData) {
+    @Override public void onTcpHandshakeResponseDataReceived(Serializable componentData) {
         synchronized (innerStateLock) {
             assert startupExtras != null;
 
@@ -487,9 +485,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        if (isClient)
-            return;
-
         assert startupExtras != null;
 
         DistributedMetaStorageVersion verToSnd = bridge instanceof ReadOnlyDistributedMetaStorageBridge
@@ -500,7 +495,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         DistributedMetaStorageHistoryItem[] hist;
 
-        if (verToSnd.id <= clusterVer)
+        if (verToSnd.id <= clusterVer) // This is always true for client nodes.
             hist = EMPTY_ARRAY;
         else if (clusterVer + histCache.size() < verToSnd.id)
             hist = histCache.toArray();
@@ -533,8 +528,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ClusterNode node,
         DiscoveryDataBag.JoiningNodeDiscoveryData discoData
     ) {
-        if (isClient)
-            return null;
+        assert !isClient;
 
         synchronized (innerStateLock) {
             DistributedMetaStorageVersion locVer = getActualVersion();
@@ -560,7 +554,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 return new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
             }
 
-            if (!isPersistenceEnabled(ctx.config()))
+            if (!isPersistenceEnabled)
                 return null;
 
             DistributedMetaStorageVersion remoteVer = joiningData.ver;
@@ -691,8 +685,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (isClient)
-            return;
+        assert !isClient;
 
         if (dataBag.commonDataCollectedFor(COMPONENT_ID))
             return;
@@ -796,6 +789,41 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             return null;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        assert isClient;
+
+        synchronized (innerStateLock) {
+            startupExtras = new StartupExtras();
+
+            bridge = new EmptyDistributedMetaStorageBridge();
+
+            if (writeAvailable.getCount() > 0)
+                writeAvailable.countDown();
+
+            writeAvailable = new CountDownLatch(1);
+
+            ver = DistributedMetaStorageVersion.INITIAL_VERSION;
+
+            wasDeactivated = false;
+
+            for (GridFutureAdapter<Boolean> fut : updateFuts.values())
+                fut.onDone(new IgniteCheckedException("Client was disconnected during the operation."));
+
+            updateFuts.clear();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        assert isClient;
+
+        if (isActive())
+            onActivate(ctx);
+
+        return null;
     }
 
     /**
@@ -1185,16 +1213,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @param histItem Update itself.
      */
     void addToHistoryCache(long ver, DistributedMetaStorageHistoryItem histItem) {
-        histCache.put(ver, histItem);
-    }
-
-    /**
-     * Remove specific update from the in-memory history cache.
-     *
-     * @param ver Version of the update.
-     */
-    void removeFromHistoryCache(long ver) {
-        histCache.remove(ver);
+        if (!isClient)
+            histCache.put(ver, histItem);
     }
 
     /**
@@ -1219,7 +1239,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 while (histCache.sizeInBytes() > maxBytes && histCache.size() > 1) {
                     bridge.removeHistoryItem(ver.id + 1 - histCache.size());
 
-                    removeFromHistoryCache(ver.id + 1 - histCache.size());
+                    histCache.removeOldest();
                 }
             }
             finally {
