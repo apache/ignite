@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -130,7 +130,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
             else if (val instanceof char[])
                 return Arrays.hashCode((char[])val);
             else
-                throw new RuntimeException("Wrong cache index type:" + val.getClass().getName());
+                throw new IgniteException("Wrong cache index type: " + val.getClass().getName());
         } else
             return val.hashCode();
     }
@@ -233,7 +233,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
             else if (val instanceof char[])
                 return Arrays.equals((char[])val, (char[])other.val);
             else
-                throw new RuntimeException("Wrong cache index type:" + val.getClass().getName());
+                throw new IgniteException("Wrong cache index type: " + val.getClass().getName());
         }
 
         return val.equals(other.val);

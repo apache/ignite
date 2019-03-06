@@ -34,9 +34,7 @@ import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteBinary;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.*;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -1202,7 +1200,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     }
 
     /**
-     * IGNITE-11282
      * There is test for cases when Array used as cache key
      * The issue with primitive arrys as key has been fixed whenever multidementional arrays will couse exception
      *
@@ -1210,59 +1207,56 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      */
     @Test
     public void testPrimitiveArrayAsCacheKey() throws Exception {
-        IgniteKernal ignite = (IgniteKernal) grid(0);
+        Ignite ignite = grid(0);
 
         Object[] testIdx = new Object[]{
-            new byte[]{1,0,1},
-            new int[]{1,2,3},
-            new boolean[]{true,true,false},
-            new float[]{1,2,3},
-            new double[]{1,2,3},
-            new long[]{1,2,3},
-            new char[]{'a','b','c'},
+            new byte[]{1, 0, 1},
+            new int[]{1, 2, 3},
+            new boolean[]{true, true, false},
+            new float[]{1, 2, 3},
+            new double[]{1, 2, 3},
+            new long[]{1, 2, 3},
+            new char[]{'a', 'b', 'c'},
         };
 
-        assert new KeyCacheObjectImpl(testIdx[0],null,1).
-            equals(new KeyCacheObjectImpl(new byte[]{1,0,1},null,1)) : "Not equals";
+        assertEquals (new KeyCacheObjectImpl(testIdx[0],null,1),
+            new KeyCacheObjectImpl(new byte[]{1, 0, 1},null,1));
 
-        assert new KeyCacheObjectImpl(testIdx[1],null,1).
-                equals(new KeyCacheObjectImpl(new int[]{1,2,3},null,1)) : "Not equals";
+        assertEquals (new KeyCacheObjectImpl(testIdx[1],null,1),
+            new KeyCacheObjectImpl(new int[]{1, 2, 3},null,1));
 
-        assert new KeyCacheObjectImpl(testIdx[2],null,1).
-                equals(new KeyCacheObjectImpl(new boolean[]{true,true,false},null,1)) : "Not equals";
+        assertEquals (new KeyCacheObjectImpl(testIdx[2],null,1),
+            new KeyCacheObjectImpl(new boolean[]{true, true, false},null,1));
 
-        assert new KeyCacheObjectImpl(testIdx[3],null,1).
-                equals(new KeyCacheObjectImpl(new float[]{1,2,3},null,1)) : "Not equals";
+        assertEquals (new KeyCacheObjectImpl(testIdx[3],null,1),
+            new KeyCacheObjectImpl(new float[]{1, 2, 3},null,1));
 
-        assert new KeyCacheObjectImpl(testIdx[4],null,1).
-                equals(new KeyCacheObjectImpl(new double[]{1,2,3},null,1)) : "Not equals";
+        assertEquals (new KeyCacheObjectImpl(testIdx[4],null,1),
+            new KeyCacheObjectImpl(new double[]{1, 2, 3},null,1));
 
-        assert new KeyCacheObjectImpl(testIdx[5],null,1).
-                equals(new KeyCacheObjectImpl(new long[]{1,2,3},null,1)) : "Not equals";
+        assertEquals (new KeyCacheObjectImpl(testIdx[5],null,1),
+            new KeyCacheObjectImpl(new long[]{1, 2, 3},null,1));
 
-        assert new KeyCacheObjectImpl(testIdx[6],null,1).
-                equals(new KeyCacheObjectImpl(new char[]{'a','b','c'},null,1)) : "Not equals";
+        assertEquals(new KeyCacheObjectImpl(testIdx[6],null,1),
+            new KeyCacheObjectImpl(new char[]{'a', 'b', 'c'},null,1));
 
-        CacheConfiguration<Object,Object> ccfg = new CacheConfiguration<>("default2")
-            .setAtomicityMode(TRANSACTIONAL);
+        CacheConfiguration<Object,Object> ccfg = new CacheConfiguration<>("default2");
 
         IgniteCache<Object,Object> jcache = ignite.createCache(ccfg);
 
         for (Object idx : testIdx) {
             jcache.put(idx, "testValue");
 
-            assert jcache.get(idx) != null : "No record of type:" + idx.getClass().getName();
+            assert jcache.get(idx) != null : "No record of type: " + idx.getClass().getName();
         }
-
-        boolean isCatched = false;
 
         try {
             new KeyCacheObjectImpl(new char[][]{{'a'}, {'b'}}, null, 1).hashCode();
-        }catch (RuntimeException ex){
-            isCatched = ex.getMessage().contains("Wrong cache index type");
+            throw new AssertionError("Exception wasn't catched");
+        }catch (IgniteException ignored){
+            //No-op
         }
 
-        assert isCatched : "No exception was catched";
     }
 
     /**
