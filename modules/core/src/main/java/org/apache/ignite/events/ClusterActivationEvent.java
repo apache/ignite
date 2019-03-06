@@ -17,7 +17,9 @@
 
 package org.apache.ignite.events;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -58,6 +60,8 @@ import org.apache.ignite.lang.IgnitePredicate;
  * @see EventType#EVT_CLUSTER_ACTIVATION_FAILED
  */
 public class ClusterActivationEvent extends EventAdapter {
+    /** Baseline nodes. */
+    private final Collection<BaselineNode> baselineNodes;
 
     /**
      * Creates deployment event with given parameters.
@@ -65,8 +69,22 @@ public class ClusterActivationEvent extends EventAdapter {
      * @param node Node.
      * @param msg Optional event message.
      * @param type Event type.
+     * @param baselineNodes Baseline nodes.
      */
-    public ClusterActivationEvent(ClusterNode node, String msg, int type) {
+    public ClusterActivationEvent(ClusterNode node, String msg, int type, Collection<BaselineNode> baselineNodes) {
         super(node, msg, type);
+
+        assert baselineNodes != null;
+
+        this.baselineNodes = baselineNodes;
+    }
+
+    /**
+     * Gets baseline nodes.
+     *
+     * @return Baseline nodes.
+     */
+    public Collection<BaselineNode> baselineNodes() {
+        return baselineNodes;
     }
 }

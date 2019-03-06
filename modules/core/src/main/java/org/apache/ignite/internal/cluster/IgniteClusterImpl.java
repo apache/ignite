@@ -316,13 +316,16 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.state().changeGlobalState(active, baselineNodes(), false).get();
+            Collection<BaselineNode> baselineNodes = baselineNodes();
 
-            recordEvent(active ? EventType.EVT_CLUSTER_ACTIVATED : EventType.EVT_CLUSTER_DEACTIVATED);
+            ctx.state().changeGlobalState(active, baselineNodes, false).get();
+
+            if (active)
+                recordEvent("Cluster activated.", EventType.EVT_CLUSTER_ACTIVATED, baselineNodes);
+            else
+                recordEvent("Cluster deactivated.", EventType.EVT_CLUSTER_DEACTIVATED, baselineNodes);
         }
         catch (IgniteCheckedException e) {
-            recordEvent(EventType.EVT_CLUSTER_ACTIVATION_FAILED);
-
             throw U.convertException(e);
         }
         finally {
@@ -330,10 +333,14 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         }
     }
 
-    /** */
-    private void recordEvent(int evtType) {
+    /**
+     * @param msg Event message.
+     * @param evtType Event type.
+     * @param baselineNodes Baseline nodes.
+     */
+    private void recordEvent(String msg, int evtType, Collection<BaselineNode> baselineNodes) {
         if (ctx.event().isRecordable(evtType)) {
-            ClusterActivationEvent evt = new ClusterActivationEvent(null, null, evtType);
+            ClusterActivationEvent evt = new ClusterActivationEvent(ctx.discovery().localNode(), msg, evtType, baselineNodes);
             ctx.event().record(evt);
         }
     }
