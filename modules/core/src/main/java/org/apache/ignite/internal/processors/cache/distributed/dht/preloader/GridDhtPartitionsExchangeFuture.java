@@ -4401,7 +4401,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             for (int i = 0; i < grp.affinity().partitions(); i++)
                 affAssignment.add(empty);
 
-            grp.affinity().idealAssignment(affAssignment);
+            grp.affinity().idealAssignment(initialVersion(), affAssignment);
 
             grp.affinity().initialize(initialVersion(), affAssignment);
 
