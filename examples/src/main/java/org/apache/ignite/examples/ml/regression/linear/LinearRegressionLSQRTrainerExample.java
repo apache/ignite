@@ -72,11 +72,7 @@ public class LinearRegressionLSQRTrainerExample {
              // extracting features.
             FeatureLabelExtractor<Integer, Vector, Double> extractor = new DummyVectorizer<Integer>().labeled(0);
 
-            LinearRegressionModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                extractor
-            );
+            LinearRegressionModel mdl = trainer.fit(ignite, dataCache, extractor);
 
             double rmse = Evaluator.evaluate(
                 dataCache,
