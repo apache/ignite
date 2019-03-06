@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private bool _disposed;
 
         /** Current affinity topology version. */
-        private AffinityTopologyVersion? _affinityTopologyVersion;
+        private AffinityTopologyVersion? _affinityTopologyVersion; // TODO: Update from underlying socket on each operation? Add a callback?
 
         /** Map from node ID to connected socket. */
         private Dictionary<Guid, ClientSocket> _nodeSocketMap = new Dictionary<Guid, ClientSocket>(); // TODO: Populate
