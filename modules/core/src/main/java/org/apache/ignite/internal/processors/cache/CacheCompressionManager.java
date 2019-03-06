@@ -45,6 +45,12 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
+        if (cctx.kernalContext().clientNode()) {
+            diskPageCompression = DiskPageCompression.DISABLED;
+
+            return;
+        }
+
         compressProc = cctx.kernalContext().compress();
 
         CacheConfiguration cfg = cctx.config();
@@ -52,12 +58,6 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
         diskPageCompression = cfg.getDiskPageCompression();
 
         if (diskPageCompression != DiskPageCompression.DISABLED) {
-            if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null) {
-                diskPageCompression = DiskPageCompression.DISABLED;
-
-                return;
-            }
-
             if (!cctx.dataRegion().config().isPersistenceEnabled())
                 throw new IgniteCheckedException("Disk page compression makes sense only with enabled persistence.");
 

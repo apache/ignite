@@ -168,7 +168,7 @@ public class DataStorageConfiguration implements Serializable {
     public static final int DFLT_WAL_COMPACTION_LEVEL = Deflater.BEST_SPEED;
 
     /** Default compression algorithm for WAL page snapshot records. */
-    public static final DiskPageCompression DFLT_WAL_PAGE_COMPRESSION = DiskPageCompression.LZ4;
+    public static final DiskPageCompression DFLT_WAL_PAGE_COMPRESSION = DiskPageCompression.DISABLED;
 
     /** Initial size of a memory chunk reserved for system cache. */
     private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;
