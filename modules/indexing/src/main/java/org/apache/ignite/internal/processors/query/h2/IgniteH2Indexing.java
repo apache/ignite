@@ -1804,7 +1804,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (twoStepQry != null) {
             if (log.isInfoEnabled())
-                log.info("Executing distributed query: '" + qry + "' into two step query: " + twoStepQry);
+                log.info("Executing query distributed: '" + qry + "' into two step query: " + twoStepQry);
 
             checkQueryType(qry, true);
 
@@ -1812,7 +1812,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 cancel));
         } else {
             if (log.isInfoEnabled())
-                log.info("Executing query on local node: '" + qry+ "'");
+                log.info("Executing query local: '" + qry+ "'");
         }
 
         // We've encountered a local query, let's just run it.
