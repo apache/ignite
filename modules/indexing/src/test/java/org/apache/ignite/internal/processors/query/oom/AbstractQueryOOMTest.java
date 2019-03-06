@@ -81,7 +81,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected List<String> additionalRemoteJvmArgs() {
-        return Arrays.asList("-Xmx64m");
+        return Arrays.asList("-Xmx64m", "-Xms64m");
     }
 
     /** {@inheritDoc} */
