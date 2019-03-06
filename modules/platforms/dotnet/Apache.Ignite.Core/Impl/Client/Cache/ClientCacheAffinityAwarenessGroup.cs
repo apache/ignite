@@ -23,21 +23,27 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
+    /// <summary>
+    /// Partition mapping associated with the group of caches.
+    /// Mirrors corresponding Java class.
+    /// </summary>
     internal class ClientCacheAffinityAwarenessGroup
     {
+        /** */
         private readonly List<ClientCacheKeyConfiguration> _keyConfigs;
 
+        /** */
         private readonly List<KeyValuePair<Guid, List<int>>> _partitionMap;
 
         public ClientCacheAffinityAwarenessGroup(IBinaryStream stream)
         {
             // Whether this group is eligible for client-side partition awareness.
-            bool applicable = stream.ReadBool();
+            var applicable = stream.ReadBool();
 
             var cachesCount = stream.ReadInt();
             _keyConfigs = new List<ClientCacheKeyConfiguration>(cachesCount);
 
-            for (int i = 0; i < cachesCount; i++)
+            for (var i = 0; i < cachesCount; i++)
             {
                 var cacheId = stream.ReadInt();
                 if (!applicable)
@@ -59,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
 
-            for (int i = 0; i < partMapSize; i++)
+            for (var i = 0; i < partMapSize; i++)
             {
                 var nodeId = reader.ReadGuid();
                 Debug.Assert(nodeId != null);
@@ -76,11 +82,17 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             }
         }
 
+        /// <summary>
+        /// Gets the key configurations.
+        /// </summary>
         public ICollection<ClientCacheKeyConfiguration> KeyConfigs
         {
             get { return _keyConfigs; }
         }
 
+        /// <summary>
+        /// Gets the partition map: node id -> partitions.
+        /// </summary>
         public ICollection<KeyValuePair<Guid, List<int>>> PartitionMap
         {
             get { return _partitionMap; }
