@@ -2133,7 +2133,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         partReservationMgr.onCacheStop(cacheName);
 
         // Drop schema (needs to be called after callback to DML processor because the latter depends on schema).
-        schemaMgr.onCacheDestroyed(cacheName, rmvIdx);
+        if (!cacheInfo.config().getQueryEntities().isEmpty())
+            schemaMgr.onCacheDestroyed(cacheName, rmvIdx);
 
         // Unregister connection.
         connMgr.onCacheDestroyed();

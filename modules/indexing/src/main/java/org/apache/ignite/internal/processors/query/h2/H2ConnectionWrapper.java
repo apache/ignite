@@ -71,7 +71,7 @@ public class H2ConnectionWrapper implements AutoCloseable {
      * @return Connection.
      */
     public Connection connection(@Nullable String schema) {
-        if (!F.isEmpty(schema) && !F.eq(this.schema, schema)) {
+        if (schema != null && !F.eq(this.schema, schema)) {
             try {
                 conn.setSchema(schema);
 

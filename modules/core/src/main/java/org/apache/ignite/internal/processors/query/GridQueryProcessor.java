@@ -114,6 +114,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -2231,8 +2232,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
         return executeQuerySafe(cctx, () -> {
-            final String schemaName = qry.getSchema() != null ? qry.getSchema()
-                : (cctx != null ? idx.schema(cctx.name()) : QueryUtils.DFLT_SCHEMA);
+            final String schemaName = getSchemaName(cctx, qry);
 
             IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
                 new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
@@ -2260,6 +2260,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             return executeQuery(qryType, qry.getSql(), cctx, clo, true);
         });
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @return Schema name.
+     */
+    @Nullable private String getSchemaName(@NotNull GridCacheContext<?, ?> cctx, SqlFieldsQuery qry) {
+        if (qry.getSchema() != null)
+            return qry.getSchema();
+        else if (cctx != null) {
+            String cacheSchemaName = idx.schema(cctx.name());
+
+            if (!F.isEmpty(cacheSchemaName))
+                return cacheSchemaName;
+        }
+
+        return QueryUtils.DFLT_SCHEMA;
     }
 
     /**
