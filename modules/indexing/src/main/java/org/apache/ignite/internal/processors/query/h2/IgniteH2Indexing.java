@@ -328,16 +328,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void dynamicIndexCreate(String schemaName, String tblName, QueryIndexDescriptorImpl idxDesc,
         boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException {
-
-        if (!ctx.clientNode()) {
-            String cacheName = idxDesc.typeDescriptor().cacheName();
-
-            CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
-
-            if (CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
-                H2TreeIndex.validatePdsIndexName(idxDesc.name(), ccfg, idxDesc.typeDescriptor().typeId());
-        }
-
         schemaMgr.createIndex(schemaName, tblName, idxDesc, ifNotExists, cacheVisitor);
     }
 
@@ -1785,6 +1775,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public void validateCreateIndex(CacheConfiguration<?, ?> ccfg, String idxName, int typeId)
+        throws IgniteCheckedException {
+        assert !ctx.clientNode() : "Cannot validate index on a client node.";
+
+        boolean persistenceEnabled = CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration());
+
+        if (persistenceEnabled)
+            H2TreeIndex.validatePdsIndexName(idxName, ccfg, typeId);
+    }
+
+
 
     /** {@inheritDoc} */
     @Override public GridCacheContextInfo registeredCacheInfo(String cacheName) {

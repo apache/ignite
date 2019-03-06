@@ -317,7 +317,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
 
                 return null;
             }
-        }, IgniteSQLException.class, "Schema change operation failed: Index name is too long in UTF-8 encoding [maxAllowed=255, encodedLength=256,");
+        }, IgniteSQLException.class, "Index name is too long in UTF-8 encoding [maxAllowed=255, encodedLength=256,");
     }
 
     /**

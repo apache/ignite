@@ -411,6 +411,12 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public void validateCreateIndex(CacheConfiguration<?, ?> ccfg, String idxName,
+            int typeId) throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public String schema(String cacheName) {
             return null;
         }

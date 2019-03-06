@@ -363,6 +363,17 @@ public interface GridQueryIndexing {
     public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
 
     /**
+     * Check that index with provided name and type id could be created in cache with specified configuration.
+     *
+     * @param idxName index name.
+     * @param ccfg configuration of the cache, index to be created in.
+     * @param typeId type id of the table, index to be created for.
+     * @throws IgniteCheckedException if index couldn't be created.
+     */
+    public void validateCreateIndex(CacheConfiguration<?, ?> ccfg, String idxName, int typeId)
+        throws IgniteCheckedException;
+
+    /**
      * Return context for registered cache info.
      *
      * @param cacheName Cache name.
