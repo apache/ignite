@@ -59,6 +59,9 @@ import org.apache.ignite.lang.IgnitePredicate;
  * @see EventType#EVT_CLUSTER_DEACTIVATED
  */
 public class ClusterActivationEvent extends EventAdapter {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Baseline nodes. */
     private final Collection<BaselineNode> baselineNodes;
 
