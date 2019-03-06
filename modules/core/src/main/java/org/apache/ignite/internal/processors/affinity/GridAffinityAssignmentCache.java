@@ -640,6 +640,13 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
+     * @param topVer Topology version.
+     */
+    public Set<Integer> partitionPrimariesDifferentToIdeal(AffinityTopologyVersion topVer) {
+        return cachedAffinity(topVer).partitionPrimariesDifferentToIdeal();
+    }
+
+    /**
      * Get primary partitions for specified node ID.
      *
      * @param nodeId Node ID to get primary partitions for.

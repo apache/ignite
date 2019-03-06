@@ -56,12 +56,17 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     /** Diff with ideal. */
     private final Map<Integer, char[]> assignmentDiff;
 
+    /** Partition primaries different to ideal. */
+    private final Set<Integer> partitionPrimariesDifferentToIdeal;
+
     /**
      * @param assign Assignment.
      * @param backups Backups.
      */
     public HistoryAffinityAssignment(AffinityAssignment assign, int backups) {
         topVer = assign.topologyVersion();
+
+        partitionPrimariesDifferentToIdeal = assign.partitionPrimariesDifferentToIdeal();
 
         if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION || backups > IGNITE_AFFINITY_BACKUPS_THRESHOLD) {
             assignment = assign.assignment();
@@ -317,6 +322,11 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
         }
 
         return Collections.unmodifiableSet(res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<Integer> partitionPrimariesDifferentToIdeal() {
+        return Collections.unmodifiableSet(partitionPrimariesDifferentToIdeal);
     }
 
     /** {@inheritDoc} */

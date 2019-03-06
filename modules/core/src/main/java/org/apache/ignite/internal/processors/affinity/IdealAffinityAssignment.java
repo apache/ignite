@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -35,7 +37,7 @@ public class IdealAffinityAssignment {
     private final List<List<ClusterNode>> assignment;
 
     /** Ideal primaries. */
-    private final Map<Object, List<Integer>> idealPrimaries;
+    private final Map<Object, Set<Integer>> idealPrimaries;
 
     /**
      * @param topologyVersion Topology version.
@@ -45,7 +47,7 @@ public class IdealAffinityAssignment {
     private IdealAffinityAssignment(
         AffinityTopologyVersion topologyVersion,
         List<List<ClusterNode>> assignment,
-        Map<Object, List<Integer>> idealPrimaries
+        Map<Object, Set<Integer>> idealPrimaries
     ) {
         this.topologyVersion = topologyVersion;
         this.assignment = assignment;
@@ -55,12 +57,12 @@ public class IdealAffinityAssignment {
     /**
      * @param clusterNode Cluster node.
      */
-    public List<Integer> idealPrimaries(ClusterNode clusterNode) {
+    public Set<Integer> idealPrimaries(ClusterNode clusterNode) {
         Object consistentId = clusterNode.consistentId();
 
         assert consistentId != null : clusterNode;
 
-        return idealPrimaries.get(consistentId);
+        return idealPrimaries.getOrDefault(consistentId, Collections.emptySet());
     }
 
     /**
@@ -88,13 +90,13 @@ public class IdealAffinityAssignment {
      * @param nodes Nodes.
      * @param assignment Assignment.
      */
-    private static Map<Object, List<Integer>> calculatePrimaries(
+    private static Map<Object, Set<Integer>> calculatePrimaries(
         @Nullable List<ClusterNode> nodes,
         List<List<ClusterNode>> assignment
     ) {
         int nodesSize = nodes != null ? nodes.size() : 100;
 
-        Map<Object, List<Integer>> primaryPartitions = U.newHashMap(nodesSize);
+        Map<Object, Set<Integer>> primaryPartitions = U.newHashMap(nodesSize);
 
         for (int size = assignment.size(), p = 0; p < size; p++) {
             List<ClusterNode> affinityNodes = assignment.get(p);
@@ -102,7 +104,8 @@ public class IdealAffinityAssignment {
             if (!affinityNodes.isEmpty()) {
                 ClusterNode primary = affinityNodes.get(0);
 
-                primaryPartitions.computeIfAbsent(primary.consistentId(), id -> new ArrayList<>(size / nodesSize * 2)).add(p);
+                primaryPartitions.computeIfAbsent(primary.consistentId(),
+                    id -> new HashSet<>(U.capacity(size / nodesSize * 2))).add(p);
             }
         }
 

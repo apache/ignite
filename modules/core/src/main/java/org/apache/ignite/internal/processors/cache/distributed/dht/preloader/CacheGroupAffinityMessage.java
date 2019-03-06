@@ -59,6 +59,8 @@ public class CacheGroupAffinityMessage implements Message {
     @GridDirectMap(keyType = Integer.class, valueType = GridLongList.class)
     private Map<Integer, GridLongList> assignsDiff;
 
+    private boolean diffToIdeal;
+
     /**
      *
      */
