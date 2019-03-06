@@ -1154,7 +1154,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 ", ctx=" + ctx);
 
             throw new IgniteException("Unable to find " + cnt + " required keys. [affPartsToNodes=" +
-                aff.mapPartitionsToNodes(IntStream.rangeClosed(0, parts)
+                aff.mapPartitionsToNodes(IntStream.range(0, parts)
                 .boxed().collect(Collectors.toList())) + ", cache=" + cache + "]");
         }
 
