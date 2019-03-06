@@ -23,9 +23,12 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -54,7 +57,10 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     /** */
-    private static final long KEY_CNT = 2_000_000L;
+    private static final long KEY_CNT = 1_000_000L;
+
+    /** */
+    private static final int BATCH_SIZE = 10_000;
 
     /** */
     private static final String CACHE_NAME = "test_cache";
@@ -75,7 +81,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected List<String> additionalRemoteJvmArgs() {
-        return Arrays.asList("-Xmx256m");
+        return Arrays.asList("-Xmx64m");
     }
 
     /** {@inheritDoc} */
@@ -126,13 +132,27 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
         local.cluster().active(true);
 
-        try (IgniteDataStreamer streamer = local.dataStreamer(CACHE_NAME)) {
-            for (long i = 0; i < KEY_CNT; ++i) {
-                streamer.addData(i, new Value(i));
+        IgniteCache c = local.cache(CACHE_NAME);
 
-                if (i % 100_000 == 0)
-                    log.info("Populate " + i + " values");
+        Map<Long, Value> batch = new HashMap<>(BATCH_SIZE);
+
+        for (long i = 0; i < KEY_CNT; ++i) {
+            batch.put(i, new Value(i));
+
+            if (batch.size() >= BATCH_SIZE) {
+                c.putAll(batch);
+
+                batch.clear();
             }
+
+            if (i % 100_000 == 0)
+                log.info("Populate " + i + " values");
+        }
+
+        if (!batch.isEmpty()) {
+            c.putAll(batch);
+
+            batch.clear();
         }
 
         awaitPartitionMapExchange(true, true, null);
@@ -313,6 +333,8 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
         try {
             checkQuery(sql, 0, lazy, collocated);
+
+            fail("Query is not produce OOM");
         }
         catch (Exception e) {
             if (hangTimeout.get()) {
