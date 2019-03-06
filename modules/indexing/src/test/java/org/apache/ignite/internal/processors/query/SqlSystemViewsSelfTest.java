@@ -175,9 +175,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testSchemasView() throws Exception {
-        IgniteEx srv = startGrid(getConfiguration());
+        IgniteEx srv = startGrid(getConfiguration().setSqlSchemas("PREDIFINED_SCHEMA_1"));
 
-        IgniteEx client = startGrid(getConfiguration().setClientMode(true).setIgniteInstanceName("CLIENT"));
+        IgniteEx client = startGrid(getConfiguration().setClientMode(true).setIgniteInstanceName("CLIENT").setSqlSchemas("PREDIFINED_SCHEMA_2"));
 
         srv.createCache(cacheConfiguration("TST1"));
 
@@ -187,13 +187,17 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         List<List<?>> clientNodeSchemas = execSql(client, schemasSql);
 
-        Assert.assertEquals(srvNodeSchemas.toString(), clientNodeSchemas.toString());
+        String[] expSchemasSrv = new String[] {"PREDIFINED_SCHEMA_1", "default", "IGNITE", "ignite-sys-cache", "PUBLIC", "TST1"};
 
-        String[] expSchemas = new String[] {"default", "IGNITE", "ignite-sys-cache", "PUBLIC", "TST1"};
+        String[] schemasSrv = srvNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).toArray(String[]::new);
 
-        String[] schemas = srvNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).toArray(String[]::new);
+        Assert.assertArrayEquals(expSchemasSrv, schemasSrv);
 
-        Assert.assertArrayEquals(expSchemas, schemas);
+        String[] expSchemasCli = new String[] {"PREDIFINED_SCHEMA_2", "default", "IGNITE", "ignite-sys-cache", "PUBLIC", "TST1"};
+
+        String[] schemasCli = clientNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).toArray(String[]::new);
+
+        Assert.assertArrayEquals(expSchemasCli, schemasCli);
     }
 
 
