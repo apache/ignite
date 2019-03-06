@@ -19,6 +19,8 @@ package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
@@ -152,10 +154,8 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         ids.setUrl("jdbc:ignite:thin://127.0.0.1");
 
         try (Connection conn = ids.getConnection()) {
-            Map<UUID, JdbcThinTcpIo> nodeToConnMap =
-                GridTestUtils.getFieldValue(conn, JdbcThinConnection.class, "nodeToConnMap");
 
-            for (JdbcThinTcpIo io: nodeToConnMap.values()) {
+            for (JdbcThinTcpIo io: ios(conn)) {
                 assertFalse(io.connectionProperties().isAutoCloseServerCursor());
                 assertFalse(io.connectionProperties().isCollocated());
                 assertFalse(io.connectionProperties().isEnforceJoinOrder());
@@ -173,10 +173,8 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         ids.setReplicatedOnly(true);
 
         try (Connection conn = ids.getConnection()) {
-            Map<UUID, JdbcThinTcpIo> nodeToConnMap =
-                GridTestUtils.getFieldValue(conn, JdbcThinConnection.class, "nodeToConnMap");
 
-            for (JdbcThinTcpIo io: nodeToConnMap.values()) {
+            for (JdbcThinTcpIo io: ios(conn)) {
                 assertTrue(io.connectionProperties().isAutoCloseServerCursor());
                 assertTrue(io.connectionProperties().isCollocated());
                 assertTrue(io.connectionProperties().isEnforceJoinOrder());
@@ -197,20 +195,16 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         ids.setUrl("jdbc:ignite:thin://127.0.0.1");
 
         try (Connection conn = ids.getConnection()) {
-            Map<UUID, JdbcThinTcpIo> nodeToConnMap =
-                GridTestUtils.getFieldValue(conn, JdbcThinConnection.class, "nodeToConnMap");
 
-            for (JdbcThinTcpIo io: nodeToConnMap.values())
+            for (JdbcThinTcpIo io: ios(conn))
                 assertTrue(io.connectionProperties().isTcpNoDelay());
         }
 
         ids.setTcpNoDelay(false);
 
         try (Connection conn = ids.getConnection()) {
-            Map<UUID, JdbcThinTcpIo> nodeToConnMap =
-                GridTestUtils.getFieldValue(conn, JdbcThinConnection.class, "nodeToConnMap");
 
-            for (JdbcThinTcpIo io: nodeToConnMap.values())
+            for (JdbcThinTcpIo io: ios(conn))
                 assertFalse(io.connectionProperties().isTcpNoDelay());
         }
     }
@@ -227,10 +221,8 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         ids.setSocketSendBuffer(111);
 
         try (Connection conn = ids.getConnection()) {
-            Map<UUID, JdbcThinTcpIo> nodeToConnMap =
-                GridTestUtils.getFieldValue(conn, JdbcThinConnection.class, "nodeToConnMap");
 
-            for (JdbcThinTcpIo io: nodeToConnMap.values()) {
+            for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(111, io.connectionProperties().getSocketReceiveBuffer());
                 assertEquals(111, io.connectionProperties().getSocketSendBuffer());
             }
@@ -279,6 +271,25 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         @Override public Context getInitialContext(Hashtable<?, ?> environment) throws NamingException {
             return new JndiMockContext();
         }
+    }
+
+    /**
+     * Get client endpoints for connection.
+     *
+     * @param conn Connection.
+     * @return Collection of endpoints.
+     * @throws Exception If failed.
+     */
+    private static Collection<JdbcThinTcpIo> ios(Connection conn) throws Exception {
+        JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
+
+        Collection<JdbcThinTcpIo> ios = bestEffortAffinity ? ((Map<UUID, JdbcThinTcpIo>)
+            GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "ios")).values() :
+            Collections.singleton(GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "singleIo"));
+
+        assert !ios.isEmpty();
+
+        return ios;
     }
 
     /**

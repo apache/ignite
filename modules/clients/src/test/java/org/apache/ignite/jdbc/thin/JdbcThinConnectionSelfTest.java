@@ -30,6 +30,7 @@ import java.sql.SQLWarning;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -556,12 +557,16 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @return Collection of endpoints.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private static Collection<JdbcThinTcpIo> ios(Connection conn) throws Exception {
         JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
 
-        return ((Map<UUID, JdbcThinTcpIo>)
-            GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "nodeToConnMap")).values();
+        Collection<JdbcThinTcpIo> ios = bestEffortAffinity ? ((Map<UUID, JdbcThinTcpIo>)
+            GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "ios")).values() :
+            Collections.singleton(GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "singleIo"));
+
+        assert !ios.isEmpty();
+
+        return ios;
     }
 
     /**
