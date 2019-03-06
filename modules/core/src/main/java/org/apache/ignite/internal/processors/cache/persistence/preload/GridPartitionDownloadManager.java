@@ -74,7 +74,7 @@ public class GridPartitionDownloadManager {
     private GridCacheSharedContext<?, ?> cctx;
 
     /** */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final ConcurrentMap<UUID, RebalanceDownloadFuture> futMap = new ConcurrentHashMap<>();
@@ -109,14 +109,14 @@ public class GridPartitionDownloadManager {
             // Register channel listeners for the rebalance thread.
             cctx.gridIO().addChannelListener(rebalanceThreadTopic(), new GridIoChannelListener() {
                 @Override public void onChannelCreated(UUID nodeId, IgniteSocketChannel channel) {
+                    final RebalanceDownloadFuture fut0 = futMap.get(nodeId);
+
+                    if (fut0 == null || fut0.isComplete())
+                        return;
+
                     lock.readLock().lock();
 
                     try {
-                        RebalanceDownloadFuture fut0 = futMap.get(nodeId);
-
-                        if (fut0 == null || fut0.isComplete())
-                            return;
-
                         onChannelCreated0(nodeId, channel, fut0);
                     }
                     finally {
@@ -143,6 +143,9 @@ public class GridPartitionDownloadManager {
         RebalanceDownloadFuture rebFut
     ) {
         assert rebFut.nodeId.equals(nodeId);
+
+        if (rebFut.isComplete())
+            return;
 
         U.log(log, "Channel created. Start handling partition files [channel=" + channel + ']');
 
@@ -176,8 +179,8 @@ public class GridPartitionDownloadManager {
                 AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
                 // WAL should be enabled for rebalancing cache groups by partition files
-                // to provide recovery guaranties over switching from temp-WAL to original
-                // cache put operations (additional WAL record will be flushed in this case).
+                // to provide recovery guaranties over switching from temp-WAL to the original
+                // partition file by flushing a special WAL-record.
                 assert grp.localWalEnabled() : "WAL must be enabled to rebalance via files: " + grp;
 
                 if (aff.get(partId).contains(cctx.localNode())) {
@@ -219,11 +222,11 @@ public class GridPartitionDownloadManager {
 
                             U.log(log, "Partition delta pages applied successfully");
 
-                            // TODO Validate partition
+                            // TODO Validate CRC partition
 
                             // TODO Rebuild indexes by partition
 
-                            // Own partition here.
+                            // TODO Owning partition here, but must own on switch from temp-WAl
                             // There is no need to check grp.localWalEnabled() as for the partition
                             // file transfer process it has no meaning. We always apply this partiton
                             // without any records to the WAL.
