@@ -96,6 +96,9 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
+        cfg.setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2");
+
+
         return cfg;
     }
 
@@ -532,6 +535,10 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 assertEquals("There is only one possible catalog.",
                     JdbcUtils.CATALOG_NAME, rs.getString(2));
             }
+
+            assertFalse(schemas.contains("PREDEFINED_SCHEMAS_1"));
+
+            assertFalse(schemas.contains("PREDEFINED_SCHEMAS_2"));
 
             assertEquals(expectedSchemas, schemas);
         }
