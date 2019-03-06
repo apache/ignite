@@ -51,6 +51,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanToByte;
+
 /**
  * JDBC IO layer implementation based on blocking IPC streams.
  */
@@ -238,6 +240,9 @@ public class JdbcThinTcpIo {
 
         if (ver.compareTo(VER_2_7_0) >= 0)
             writer.writeString(connProps.nestedTxMode());
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            writer.writeByte(nullableBooleanToByte(connProps.isDataPageScanEnabled()));
 
         if (!F.isEmpty(connProps.getUsername())) {
             assert ver.compareTo(VER_2_5_0) >= 0 : "Authentication is supported since 2.5";

@@ -67,6 +67,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionSerializationException;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
@@ -165,11 +166,23 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param actx Authentication context.
      * @param protocolVer Protocol version.
      */
-    public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock,
-        ClientListenerResponseSender sender, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate, NestedTxMode nestedTxMode,
-        AuthorizationContext actx, ClientListenerProtocolVersion protocolVer) {
+    public JdbcRequestHandler(
+        GridKernalContext ctx,
+        GridSpinBusyLock busyLock,
+        ClientListenerResponseSender sender,
+        int maxCursors,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean collocated,
+        boolean replicatedOnly,
+        boolean autoCloseCursors,
+        boolean lazy,
+        boolean skipReducerOnUpdate,
+        NestedTxMode nestedTxMode,
+        @Nullable Boolean dataPageScanEnabled,
+        AuthorizationContext actx,
+        ClientListenerProtocolVersion protocolVer
+    ) {
         this.ctx = ctx;
         this.sender = sender;
 
@@ -189,7 +202,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             collocated,
             replicatedOnly,
             lazy,
-            skipReducerOnUpdate
+            skipReducerOnUpdate,
+            dataPageScanEnabled
         );
 
         this.busyLock = busyLock;
@@ -553,6 +567,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setNestedTxMode(nestedTxMode);
             qry.setAutoCommit(req.autoCommit());
 
+            if (cliCtx.dataPageScanEnabled() != null)
+                qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
+
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
 
@@ -865,6 +882,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qry.setLazy(cliCtx.isLazy());
                     qry.setNestedTxMode(nestedTxMode);
                     qry.setAutoCommit(req.autoCommit());
+
+                    if (cliCtx.dataPageScanEnabled() != null)
+                        qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
 
                     qry.setSchema(schemaName);
                 }
