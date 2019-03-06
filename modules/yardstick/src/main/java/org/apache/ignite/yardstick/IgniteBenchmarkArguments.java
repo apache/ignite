@@ -255,6 +255,14 @@ public class IgniteBenchmarkArguments {
     private String walMode = "LOG_ONLY";
 
     /** */
+    @Parameter(names = {"-wpc", "--walPageCompression"}, description = "WAL page snapshot records compression algorithm")
+    private String walPageCompression = "DISABLED";
+
+    /** */
+    @Parameter(names = {"-wpcl", "--walPageCompressionLevel"}, description = "WAL page compression level")
+    private Integer walPageCompressionLevel = null;
+
+    /** */
     @Parameter(names = {"-stcp", "--streamerCachesPrefix"}, description = "Cache name prefix for streamer benchmark")
     private String streamerCachesPrefix = "streamer";
 
@@ -310,6 +318,20 @@ public class IgniteBenchmarkArguments {
      */
     public String walMode() {
         return walMode;
+    }
+
+    /**
+     * @return WAL page compression.
+     */
+    public String walPageCompression() {
+        return walPageCompression;
+    }
+
+    /**
+     * @return WAL page compression level.
+     */
+    public Integer walPageCompressionLevel() {
+        return walPageCompressionLevel;
     }
 
     /**

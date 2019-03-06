@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -201,6 +202,10 @@ public class IgniteNode implements BenchmarkServer {
             pcCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
             pcCfg.setWalMode(WALMode.valueOf(args.walMode()));
+
+            pcCfg.setWalPageCompression(DiskPageCompression.valueOf(args.walPageCompression()));
+
+            pcCfg.setWalPageCompressionLevel(args.walPageCompressionLevel());
 
             c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
