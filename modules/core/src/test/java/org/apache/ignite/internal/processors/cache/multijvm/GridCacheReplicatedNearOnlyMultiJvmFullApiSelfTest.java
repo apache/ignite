@@ -28,10 +28,4 @@ public class GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest extends
     protected boolean isMultiJvm() {
         return true;
     }
-
-    /** {@inheritDoc} */
-    @Override public void testNearDhtKeySize() throws Exception {
-        if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
-    }
 }
