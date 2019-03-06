@@ -1419,6 +1419,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** */
         private volatile CacheDataStore delegate;
 
+        /**
+         * Cache id which should be throttled.
+         */
+        private volatile int lastThrottledCacheId;
+
+        /**
+         * Timestamp when next clean try will be allowed for the current partition
+         * in accordance with the value of {@code lastThrottledCacheId}.
+         * Used for fine-grained throttling on per-partition basis.
+         */
+        private volatile long nextStoreCleanTime;
+
         /** */
         private final boolean exists;
 
@@ -2308,12 +2320,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         ) throws IgniteCheckedException {
             CacheDataStore delegate0 = init0(true);
 
-            if (delegate0 == null)
+            long now = U.currentTimeMillis();
+
+            if (delegate0 == null || (cctx.cacheId() == lastThrottledCacheId && nextStoreCleanTime > now))
                 return 0;
 
             assert pendingTree != null : "Partition data store was not initialized.";
 
-            return purgeExpiredInternal(cctx, c, amount);
+            int cleared = purgeExpiredInternal(cctx, c, amount);
+
+            // Throttle if there is nothing to clean anymore.
+            if (cleared < amount) {
+                lastThrottledCacheId = cctx.cacheId();
+
+                nextStoreCleanTime = now + GridCacheTtlManager.UNWIND_THROTTLING_TIMEOUT;
+            }
+
+            return cleared;
         }
 
         /**
