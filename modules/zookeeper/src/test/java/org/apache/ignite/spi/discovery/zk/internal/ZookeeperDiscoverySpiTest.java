@@ -134,6 +134,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
@@ -255,6 +256,9 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         zkSpi.setSessionTimeout(sesTimeout > 0 ? sesTimeout : 10_000);
 
         zkSpi.setClientReconnectDisabled(clientReconnectDisabled);
+
+        cfg.setFailureDetectionTimeout(2000);
+        cfg.setClientFailureDetectionTimeout(2000);
 
         // Set authenticator for basic sanity tests.
         if (auth != null) {
@@ -694,7 +698,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 assertEquals(String.valueOf(grid.cluster().node(crdNodeId)), bean.getCoordinatorNodeFormatted());
                 assertEquals(String.valueOf(grid.cluster().localNode()), bean.getLocalNodeFormatted());
                 assertEquals(zkCluster.getConnectString(), bean.getZkConnectionString());
-                assertEquals((long)grid.configuration().getFailureDetectionTimeout(), bean.getZkSessionTimeout());
+
+                long zkSesTimeout = ((ZookeeperDiscoverySpi)grid.configuration().getDiscoverySpi()).getSessionTimeout();
+                assertEquals(zkSesTimeout == 0 ? (long)grid.configuration().getFailureDetectionTimeout(): zkSesTimeout,
+                    bean.getZkSessionTimeout());
             }
         }
         finally {
@@ -1285,8 +1292,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSegmentation3() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8183");
-
         sesTimeout = 5000;
 
         Ignite node0 = startGrid(0);
@@ -1309,7 +1314,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             srvs.get(0).stop();
             srvs.get(1).stop();
 
-            assertTrue(l.await(20, TimeUnit.SECONDS));
+            QuorumPeer qp = srvs.get(2).getQuorumPeer();
+
+            // Zookeeper's socket timeout [tickTime * initLimit] + 5 additional seconds for other logic
+            assertTrue(l.await(qp.getTickTime() * qp.getInitLimit() + 5000, TimeUnit.MILLISECONDS));
         }
         finally {
             zkCluster.close();
@@ -1324,8 +1332,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQuorumRestore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8180");
-
         sesTimeout = 15_000;
 
         startGrids(3);
@@ -2984,8 +2990,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCommunicationFailureResolve_KillRandom() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8179");
-
         sesTimeout = 2000;
 
         testCommSpi = true;
@@ -3785,8 +3789,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReconnectServersRestart_1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8178");
-
         reconnectServersRestart(1);
     }
 
@@ -3794,8 +3796,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReconnectServersRestart_2() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8178");
-
         reconnectServersRestart(3);
     }
 
