@@ -75,6 +75,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private boolean lazy;
 
     /** Partitions for query */
+    @GridToStringInclude
     private int[] parts;
 
     /** Schema. */

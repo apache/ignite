@@ -106,8 +106,8 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     @Override public CacheQueryFuture<?> queryFieldsLocal(GridCacheQueryBean qry) {
         assert cctx.config().getCacheMode() == LOCAL;
 
-        if (log.isDebugEnabled())
-            log.debug("Executing query on local node: " + qry);
+        if (log.isInfoEnabled())
+            log.info("Executing query on local node: " + qry);
 
         GridCacheLocalFieldsQueryFuture fut = new GridCacheLocalFieldsQueryFuture(cctx, qry);
 
