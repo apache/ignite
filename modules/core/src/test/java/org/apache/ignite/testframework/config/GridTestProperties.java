@@ -90,9 +90,6 @@ public final class GridTestProperties {
     private static final Map<String, Map<String, String>> pathProps = new HashMap<>();
 
     /** */
-    public static final String MARSH_CLASS_NAME = "marshaller.class";
-
-    /** */
     public static final String ENTRY_PROCESSOR_CLASS_NAME = "entry.processor.class";
 
     /** Binary marshaller compact footers property. */

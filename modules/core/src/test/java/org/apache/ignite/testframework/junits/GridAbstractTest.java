@@ -173,9 +173,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /** Null name for execution map. */
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
-    /** */
-    private static final boolean BINARY_MARSHALLER = false;
-
     /** Ip finder for TCP discovery. */
     public static final TcpDiscoveryIpFinder LOCAL_IP_FINDER = new TcpDiscoveryVmIpFinder(false) {{
         setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
@@ -240,9 +237,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
         System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
         System.setProperty(IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT, "1000");
-
-        if (BINARY_MARSHALLER)
-            GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
         if (GridTestClockTimer.startTestTimer()) {
             Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");

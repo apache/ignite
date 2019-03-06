@@ -47,8 +47,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -67,13 +65,8 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
     /** Statement. */
     protected Statement stmt;
 
-    /** */
-    private String marshallerBackup = GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
@@ -117,11 +110,6 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
         IgniteCache<String, BinaryObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put("0", binObj);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, marshallerBackup);
     }
 
     /** {@inheritDoc} */
