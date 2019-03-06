@@ -49,12 +49,12 @@ import org.apache.ignite.internal.processors.cache.persistence.file.meta.Partiti
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_REBALANCE_TIMEOUT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -175,8 +175,13 @@ public class GridPartitionDownloadManager {
                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
                 AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
+                // WAL should be enabled for rebalancing cache groups by partition files
+                // to provide recovery guaranties over switching from temp-WAL to original
+                // cache put operations (additional WAL record will be flushed in this case).
+                assert grp.localWalEnabled() : "WAL must be enabled to rebalance via files: " + grp;
+
                 if (aff.get(partId).contains(cctx.localNode())) {
-                    GridDhtLocalPartition part = grp.topology().localPartition(partId);
+                    GridDhtLocalPartition part = grp.topology().localPartition(partId, topVer, true);
 
                     assert part != null;
 
@@ -218,7 +223,10 @@ public class GridPartitionDownloadManager {
 
                             // TODO Rebuild indexes by partition
 
-                            // Own partition
+                            // Own partition here.
+                            // There is no need to check grp.localWalEnabled() as for the partition
+                            // file transfer process it has no meaning. We always apply this partiton
+                            // without any records to the WAL.
                             boolean isOwned = grp.topology().own(part);
 
                             assert isOwned : "Partition must be owned: " + part;
@@ -246,7 +254,7 @@ public class GridPartitionDownloadManager {
                 }
             }
 
-            rebFut.onCompleteSuccess(true);
+            rebFut.onCompleteSuccess();
         }
         catch (IOException | IgniteCheckedException e) {
             U.error(log, "An error during receiving binary data from channel: " + channel, e);
@@ -364,6 +372,10 @@ public class GridPartitionDownloadManager {
             headFut0.cancel();
 
         // TODO Start eviction.
+        // Assume that the partition tag will be changed on eviction process finished,
+        // so we will have no additional writes (via writeInternal method) to current
+        // MOVING partition if checkpoint thread occures. So the current partition file
+        // can be easily replaced with the new one received from the socket.
 
         lock.writeLock().lock();
 
@@ -373,7 +385,7 @@ public class GridPartitionDownloadManager {
 
             U.log(log, "Prepare the chain to demand assignments: " + nodeOrderAssignsMap);
 
-            // Clear the previous rebalance futures.
+            // Clear the previous rebalance futures if exists.
             futMap.clear();
 
             for (Map<ClusterNode, Map<Integer, GridIntList>> descNodeMap : nodeOrderAssignsMap.descendingMap().values()) {
@@ -403,20 +415,10 @@ public class GridPartitionDownloadManager {
                 }
             }
 
-            headFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                @Override public void apply(IgniteInternalFuture<Boolean> f) {
-                    try {
-                        if (f.get()) {
-                            U.log(log, "Partitions have been scheduled to resend. Rebalance is done " +
-                                "[nodeId=" + cctx.localNodeId() + ']');
-
-                            cctx.exchange().scheduleResendPartitions();
-                        }
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Cluster partition rebalancing finished with error [" +
-                            "nodeId=" + cctx.localNodeId() + ']', e);
-                    }
+            headFut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
+                @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
+                    if (fut0.get())
+                        U.log(log, "The final persistence rebalance future is done [result=" + fut0.isDone() + ']');
                 }
             });
 
@@ -468,7 +470,7 @@ public class GridPartitionDownloadManager {
     }
 
     /** */
-    private static class RebalanceDownloadFuture extends GridFutureAdapter<Boolean> {
+    private class RebalanceDownloadFuture extends GridFutureAdapter<Boolean> {
         /** */
         private UUID nodeId;
 
@@ -518,13 +520,17 @@ public class GridPartitionDownloadManager {
             return onCancelled();
         }
 
-        /**
-         * @param res Result to set.
-         */
-        public synchronized void onCompleteSuccess(Boolean res) {
+        /** */
+        public synchronized void onCompleteSuccess() {
             assert remaining.isEmpty();
 
-            onDone(res);
+            U.log(log, "Partitions have been scheduled to resend. Files have been transferred " +
+                "[from=" + nodeId + ", to=" + cctx.localNodeId() + ']');
+
+            // Late affinity assignment
+            cctx.exchange().scheduleResendPartitions();
+
+            onDone(true);
         }
 
         /**

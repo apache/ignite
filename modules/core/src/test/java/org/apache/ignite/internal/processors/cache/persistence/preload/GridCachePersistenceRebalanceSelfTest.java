@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.preload;
 
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -98,10 +99,6 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCacheRebalancingS
 
         ignite1.cluster().setBaselineTopology(ignite1.cluster().nodes());
 
-        awaitPartitionMapExchange(true, true, null, true);
-
-        awaitPartitionMessagesAbsent();
-
-        assert ignite0.cluster().active();
+        awaitPartitionMapExchange(true, true, Collections.singleton(ignite1.localNode()), true);
     }
 }
