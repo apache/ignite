@@ -1,14 +1,14 @@
-Apache Ignite TensorFlow Integration Module
+GridGain TensorFlow Integration Module
 ------------------------
 
-Apache Ignite TensorFlow Integration Module allowed using TensorFlow with Apache Ignite. In this scenario Apache Ignite
+GridGain TensorFlow Integration Module allowed using TensorFlow with GridGain. In this scenario GridGain
 will be a datasource for any TensorFlow model training.
 
-Import Apache Ignite TensorFlow Integration Module In Maven Project
+Import GridGain TensorFlow Integration Module In Maven Project
 -------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add TensorFlow module
-dependency like this (replace '${ignite.version}' with actual Ignite version you are
+dependency like this (replace '${ignite.version}' with actual GridGain version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -19,7 +19,7 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-tensorflow</artifactId>
             <version>${ignite.version}</version>
         </dependency>
@@ -30,13 +30,13 @@ interested in):
 -------------------------------------
 
 TensorFlow integration module provides command line tool that allows to start, maintain and stop distributed deep
-learning utilizing Apache Ignite infrastructure and data. This tool provides several commands that are shown here:
+learning utilizing GridGain infrastructure and data. This tool provides several commands that are shown here:
 
 Usage: ignite-tf [-hV] [-c=<cfg>] [COMMAND]
-Apache Ignite and TensorFlow integration command line utility that allows to
-start, maintain and stop distributed deep learning utilizing Apache Ignite
+GridGain and TensorFlow integration command line utility that allows to
+start, maintain and stop distributed deep learning utilizing GridGain
 infrastructure and data.
-  -c, --config=<cfg>   Apache Ignite client configuration.
+  -c, --config=<cfg>   GridGain client configuration.
   -h, --help           Show this help message and exit.
   -V, --version        Print version information and exit.
 Commands:
@@ -55,7 +55,7 @@ Starts a new TensorFlow cluster and attaches to user script process.
       JOB_DIR          Job folder (or zip archive).
       JOB_CMD          Job command.
       [JOB_ARGS...]    Job arguments.
-  -c, --config=<cfg>   Apache Ignite client configuration.
+  -c, --config=<cfg>   GridGain client configuration.
   -h, --help           Show this help message and exit.
   -V, --version        Print version information and exit.
 
@@ -65,16 +65,16 @@ commands accepts cluster identifier as a parameter:
 Usage: ignite-tf attach [-hV] [-c=<cfg>] CLUSTER_ID
 Attaches to running TensorFlow cluster (user script process).
       CLUSTER_ID       Cluster identifier.
-  -c, --config=<cfg>   Apache Ignite client configuration.
+  -c, --config=<cfg>   GridGain client configuration.
   -h, --help           Show this help message and exit.
   -V, --version        Print version information and exit.
 
 Usage: ignite-tf stop [-hV] [-c=<cfg>] CLUSTER_ID
 Stops a running TensorFlow cluster.
       CLUSTER_ID       Cluster identifier.
-  -c, --config=<cfg>   Apache Ignite client configuration.
+  -c, --config=<cfg>   GridGain client configuration.
   -h, --help           Show this help message and exit.
   -V, --version        Print version information and exit.
 
-To find out what TensorFlow clusters are currently running on top of Apache Ignite you can use "ps" command that doesn't
+To find out what TensorFlow clusters are currently running on top of GridGain you can use "ps" command that doesn't
 require arguments.

@@ -1,10 +1,13 @@
-Apache Ignite In-Memory Database and Caching Platform
-=====================================================
+GridGain Community Edition
+===========================
 
-Ignite is a memory-centric distributed database, caching, and processing platform for transactional, analytical,
-and streaming workloads delivering in-memory speeds at petabyte scale.
+The GridGain Community Edition (GCE) is a source-available in-memory computing platform built on Apache Ignite. 
+GCE includes the Apache Ignite code base plus improvements and additional functionality developed by GridGain Systems 
+to enhance the performance and reliability of Apache Ignite. GCE is a hardened, high-performance version of Apache Ignite 
+for mission-critical in-memory computing applications.
 
-The main feature set of Ignite includes:
+
+The main feature set of GridGain Community Edition includes:
 * Memory-Centric Storage
 * Advanced Clustering
 * Distributed Key-Value
@@ -16,11 +19,6 @@ The main feature set of Ignite includes:
 * Distributed Events
 * Streaming & CEP
 
-For information on how to get started with Apache Ignite please visit:
+For information on how to get started with GridGain please visit:
 
-    http://apacheignite.readme.io/docs/getting-started
-
-
-You can find Apache Ignite documentation here:
-
-    http://apacheignite.readme.io/docs
+    https://docs.gridgain.com/docs

@@ -1,7 +1,7 @@
-Apache Ignite Kafka Streamer Module
+GridGain Kafka Streamer Module
 -----------------------------------
 
-Apache Ignite Kafka Streamer module provides streaming from Kafka to Ignite cache.
+GridGain Kafka Streamer module provides streaming from Kafka to GridGain cache.
 
 There are two ways this can be achieved:
 - importing Kafka Streamer module in your Maven project and instantiate KafkaStreamer for data streaming;
@@ -9,10 +9,10 @@ There are two ways this can be achieved:
 
 Below are the details.
 
-## Importing Ignite Kafka Streamer Module In Maven Project
+## Importing GridGain Kafka Streamer Module In Maven Project
 
 If you are using Maven to manage dependencies of your project, you can add Kafka module
-dependency like this (replace '${ignite.version}' with actual Ignite version you are
+dependency like this (replace '${ignite.version}' with actual GridGain version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -23,7 +23,7 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-kafka</artifactId>
             <version>${ignite.version}</version>
         </dependency>
@@ -33,9 +33,9 @@ interested in):
 </project>
 
 
-## Streaming Data to Ignite via Kafka Connect
+## Streaming Data to GridGain via Kafka Connect
 
-Sink Connector will help you export data from Kafka to Ignite cache. It polls data from Kafka topics and writes it to the user-specified cache.
+Sink Connector will help you export data from Kafka to GridGain cache. It polls data from Kafka topics and writes it to the user-specified cache.
 For more information on Kafka Connect, see [Kafka Documentation](http://kafka.apache.org/documentation.html#connect).
 
 Connector can be found in 'optional/ignite-kafka.' It and its dependencies have to be on the classpath of a Kafka running instance,
@@ -93,7 +93,7 @@ where 'cacheName' is the name of the cache you specify in '/some-path/ignite.xml
 will be pulled and stored. 'cacheAllowOverwrite' is set to true if you want to enable overwriting existing values in cache.
 You can also set 'cachePerNodeDataSize' and 'cachePerNodeParOps' to adjust per-node buffer and the maximum number
 of parallel stream operations for a single node.
-If you need to create an Ignite key from a Kafka value, implement StreamSingleTupleExtractor and specify it as 'singleTupleExtractorCls'.
+If you need to create an GridGain key from a Kafka value, implement StreamSingleTupleExtractor and specify it as 'singleTupleExtractorCls'.
 
 See example-ignite.xml in tests for a simple cache configuration file example.
 
@@ -134,7 +134,7 @@ http://node1:8080/ignite?cmd=size&cacheName=cache1
 
 ## Streaming Cache Event Data to Kafka via Kafka Connect
 
-Source connector enables listening to Ignite cache events and, upon filtering, stream them to Kafka.
+Source connector enables listening to GridGain cache events and, upon filtering, stream them to Kafka.
 
 Connector can be found in 'optional/ignite-kafka.' It and its dependencies have to be on the classpath of a Kafka running instance,
 as described in the following subsection.
@@ -191,7 +191,7 @@ igniteCfg=/some-path/ignite.xml
 ```
 where 'cacheName' is the name of the cache you specify in '/some-path/ignite.xml' and the data from 'testTopic1,testTopic2'
 will be pulled and stored. Also consider using 'evtBufferSize' and 'evtBatchSize' for tuning the internal queue
-used to safely transfer data from Ignite cache to Kafka.
+used to safely transfer data from GridGain cache to Kafka.
 
 The following cache events can be specified in the connector configurations:
 - CREATED

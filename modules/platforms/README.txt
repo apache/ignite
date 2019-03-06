@@ -1,6 +1,6 @@
-Apache Ignite Platforms
+GridGain Platforms
 ==================================
 
 Contains integrations with other platforms, most notably:
- * Apache Ignite.NET
- * Apache Ignite C++
+ * GridGain.NET
+ * GridGain C++

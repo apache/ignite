@@ -1,21 +1,21 @@
-Apache Ignite.NET
+GridGain.NET
 ==================================
 
-Apache Ignite.NET provides a full featured .NET data grid and .NET compute grid functionality.
-Using Apache Ignite.NET APIs you can execute any computation closure on the grid,
+GridGain.NET provides a full featured .NET data grid and .NET compute grid functionality.
+Using GridGain.NET APIs you can execute any computation closure on the grid,
 perform concurrent operations on the data stored in cache, start ACID transactions,
 create distributed locks, subscribe for event listeners, etc.
 
 Files list:
 
- * Apache.Ignite.exe - executable to start standalone Ignite.NET node.
+ * Apache.Ignite.exe - executable to start standalone GridGain.NET node.
  * Apache.Ignite.exe.config - standalone node configuration file.
- * Apache.Ignite.Core.dll - Ignite.NET API library.
+ * Apache.Ignite.Core.dll - GridGain.NET API library.
  * Apache.Ignite.Core.xml - Library XML documentation.
- * Apache.Ignite.Linq.dll - Ignite LINQ Provider library.
- * Apache.Ignite.AspNet.dll - Ignite ASP.NET integration.
- * Apache.Ignite.NLog.dll - Ignite NLog logger.
- * Apache.Ignite.Log4Net.dll - Ignite Log4Net logger.
+ * Apache.Ignite.Linq.dll - GridGain LINQ Provider library.
+ * Apache.Ignite.AspNet.dll - GridGain ASP.NET integration.
+ * Apache.Ignite.NLog.dll - GridGain NLog logger.
+ * Apache.Ignite.Log4Net.dll - GridGain Log4Net logger.
  * IgniteConfigurationSection.xsd - Configuration XML schema.
 
 
@@ -32,7 +32,7 @@ Development
  
  * Add Apache.Ignite.Core.dll to your project references.
 
- * To start Apache Ignite as a standalone node or Windows service use Apache.Ignite.exe.
+ * To start GridGain as a standalone node or Windows service use Apache.Ignite.exe.
 
 Links
 

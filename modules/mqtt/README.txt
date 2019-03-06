@@ -1,14 +1,14 @@
-Apache Ignite MQTT Module
+GridGain MQTT Module
 -------------------------
 
-Apache Ignite MQTT module provides a streamer to consume MQTT topic messages into
-Apache Ignite caches.
+GridGain MQTT module provides a streamer to consume MQTT topic messages into
+GridGain caches.
 
-Importing Apache Ignite MQTT Module In Maven Project
+Importing GridGain MQTT Module In Maven Project
 ----------------------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add the MQTT module
-dependency like this (replace '${ignite.version}' with actual Ignite version you are
+dependency like this (replace '${ignite.version}' with actual GridGain version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -19,7 +19,7 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-mqtt</artifactId>
             <version>${ignite.version}</version>
         </dependency>
