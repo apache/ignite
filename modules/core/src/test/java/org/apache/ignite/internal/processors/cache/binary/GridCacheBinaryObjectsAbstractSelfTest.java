@@ -34,7 +34,11 @@ import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -1200,14 +1204,38 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     }
 
     /**
-     * There is test for cases when Array used as cache key
-     * The issue with primitive arrys as key has been fixed whenever multidementional arrays will couse exception
+     * Test primitive arrays using standalone server node
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testPrimitiveArrayAsCacheKey() throws Exception {
-        Ignite ignite = grid(0);
+    public void testPrimitiveArrayAsCacheKeyOnServerNode() throws Exception{
+        testPrimitiveArrayAsCacheKey(false);
+    }
+
+    /**
+     * Test primitive arrays using server with client node
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPrimitiveArrayAsCacheKeyOnClientNode() throws Exception{
+        testPrimitiveArrayAsCacheKey(true);
+    }
+
+    /**
+     * There is test for cases when Array used as cache key
+     * The issue with primitive arrys as key has been fixed whenever multidementional arrays will couse exception
+     */
+    private void testPrimitiveArrayAsCacheKey(boolean withClient) throws Exception {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        Ignite srv = startGrid("server",cfg);
+
+        Ignition.setClientMode(true);
+
+        Ignite ignite = withClient ? startGrid("client",cfg) : srv;
+
 
         Object[] testIdx = new Object[]{
             new byte[]{1, 0, 1},
@@ -1256,7 +1284,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         }catch (IgniteException ignored){
             //No-op
         }
-
     }
 
     /**
