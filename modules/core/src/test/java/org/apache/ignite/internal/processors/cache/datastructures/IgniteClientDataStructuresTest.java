@@ -25,4 +25,10 @@ public class IgniteClientDataStructuresTest extends IgniteClientDataStructuresAb
     @Override protected boolean clientDiscovery() {
         return false;
     }
+
+    //testReentrantLock
+
+    @Override public void testReentrantLock() throws Exception {
+        super.testReentrantLock();
+    }
 }
