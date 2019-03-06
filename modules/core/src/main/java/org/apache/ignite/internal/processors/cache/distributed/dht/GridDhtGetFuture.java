@@ -322,6 +322,18 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         try {
             int keyPart = cctx.affinity().partition(key);
 
+            if (cctx.mvccEnabled()) {
+                boolean noOwners = cctx.topology().owners(keyPart, topVer).isEmpty();
+
+                // Force key request is disabled for MVCC. So if there are no partition owners for the given key
+                // (we have a not strict partition loss policy if we've got here) we need to set flag forceKeys to true
+                // to avoid useless remapping to other non-owning partitions. For non-mvcc caches the force key request
+                // is also useless in the such situations, so the same flow is here: allegedly we've made a force key
+                // request with no results and therefore forceKeys flag may be set to true here.
+                if (noOwners)
+                    forceKeys = true;
+            }
+
             GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
                 cache().topology().localPartition(keyPart, topVer, true) :
                 cache().topology().localPartition(keyPart);
@@ -342,14 +354,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             if (parts == null || !F.contains(parts, part.id())) {
                 // By reserving, we make sure that partition won't be unloaded while processed.
                 if (part.reserve()) {
-                    boolean mvccNoOwners = false;
-
-                    // Force key request is disabled for MVCC. So if there are no partition owners for the given key
-                    // we need to set flag forceKeys to true to avoid useless remapping to other non-owning partitions.
-                    if (cctx.mvccEnabled())
-                        mvccNoOwners = cctx.topology().owners(cctx.affinity().partition(key), topVer).isEmpty();
-
-                    if (forceKeys || (part.state() == OWNING || part.state() == LOST) || mvccNoOwners) {
+                    if (forceKeys || (part.state() == OWNING || part.state() == LOST)) {
                         parts = parts == null ? new int[1] : Arrays.copyOf(parts, parts.length + 1);
 
                         parts[parts.length - 1] = part.id();

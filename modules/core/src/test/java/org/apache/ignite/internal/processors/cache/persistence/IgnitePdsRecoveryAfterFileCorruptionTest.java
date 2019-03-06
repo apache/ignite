@@ -24,6 +24,7 @@ import java.util.Collection;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -71,7 +73,10 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);
         ccfg.setAffinity(new RendezvousAffinityFunction(true, 1));
 
-        ccfg.setRebalanceDelay(Long.MAX_VALUE);
+        if (MvccFeatureChecker.forcedMvcc())
+            ccfg.setRebalanceDelay(Long.MAX_VALUE);
+        else
+            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
