@@ -74,8 +74,8 @@
     <feature name="ignite-core" version="${project.version}" description="Apache Ignite :: Core">
         <details><![CDATA[The Apache Ignite core module. This feature also installs the JCache 1.0 specification API.]]></details>
         <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.javax-cache-api/${javax.cache.bundle.version}</bundle>
-        <bundle dependency="true">mvn:org.apache.ignite/ignite-osgi/${project.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-core/${project.version}</bundle>
+        <bundle dependency="true">mvn:org.gridgain/ignite-osgi/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-core/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-aop" version="${project.version}" description="Apache Ignite :: AOP">
@@ -83,7 +83,7 @@
         <feature dependency="true" version="[${spring41.osgi.feature.version},4.2)">spring-aspects</feature>
         <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aopalliance/${aopalliance.bundle.version}</bundle>        
         <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aspectj/${aspectj.bundle.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-aop/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-aop/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-aws" version="${project.version}" description="Apache Ignite :: AWS">
@@ -96,7 +96,7 @@
         <bundle start="true" dependency="true">wrap:mvn:com.amazonaws/aws-java-sdk-elasticloadbalancing/${aws.sdk.version}$Bundle-SymbolicName=aws-java-sdk-elasticloadbalancing&amp;Bundle-Version=${aws.sdk.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:com.amazonaws/aws-java-sdk-ec2/${aws.sdk.version}$Bundle-SymbolicName=aws-java-sdk-ec2&amp;Bundle-Version=${aws.sdk.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:com.amazonaws/aws-java-sdk-core/${aws.sdk.version}$Bundle-SymbolicName=aws-java-sdk-core&amp;Bundle-Version=${aws.sdk.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-aws/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-aws/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-camel" version="${project.version}" description="Apache Ignite :: Camel">
@@ -110,7 +110,7 @@
             Installing this feature will trigger the installation of the 'camel-core' feature from the Camel repository.]]>
         </details>
         <feature>camel-core</feature>
-        <bundle start="true">mvn:org.apache.ignite/ignite-camel/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-camel/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-flume" version="${project.version}" description="Apache Ignite :: Flume">
@@ -119,7 +119,7 @@
         </details>
         <feature prerequisite="true">wrap</feature>
         <bundle start="true" dependency="true">wrap:mvn:org.apache.flume/flume-ng-core/${flume.ng.version}$Bundle-SymbolicName=flume-ng-core&amp;Bundle-Version=${flume.ng.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-flume/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-flume/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-hibernate" version="${project.version}" description="Apache Ignite :: Hibernate">
@@ -131,7 +131,7 @@
             NOTE: Take into account that certain parts of Hibernate are offered under the LGPL license.]]>
         </details>
         <feature>hibernate</feature>
-        <bundle start="true">mvn:org.apache.ignite/ignite-hibernate_4.2/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-hibernate_4.2/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-indexing" version="${project.version}" description="Apache Ignite :: Indexing">
@@ -146,14 +146,14 @@
         <bundle start="true" dependency="true">wrap:mvn:com.h2database/h2/${h2.version}$overwrite=merge&amp;Export-Package=*;version=&quot;${h2.version}&quot;</bundle>
         <bundle start="true" dependency="true">wrap:mvn:org.apache.lucene/lucene-analyzers-common/${lucene.version}$Bundle-SymbolicName=lucene-analyzers-common&amp;Bundle-Version=${lucene.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:org.apache.lucene/lucene-queryparser/${lucene.version}$Bundle-SymbolicName=lucene-queryparser&amp;Bundle-Version=${lucene.version}</bundle>
-        <bundle start="false">mvn:org.apache.ignite/ignite-indexing/${project.version}</bundle>
+        <bundle start="false">mvn:org.gridgain/ignite-indexing/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-jcl" version="${project.version}" description="Apache Ignite :: JCL">
         <details>
             <![CDATA[The Apache Ignite JCL integration module. In Apache Karaf, this module will integrate with Pax Logging.]]>
         </details>
-        <bundle start="true">mvn:org.apache.ignite/ignite-jcl/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-jcl/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-jms11" version="${project.version}" description="Apache Ignite :: JMS 1.1">
@@ -161,7 +161,7 @@
             <![CDATA[The Apache Ignite JMS 1.1 module. Make sure to install your broker's JMS client bundle as well.]]>
         </details>
         <bundle start="true" dependency="true">mvn:org.apache.geronimo.specs/geronimo-jms_1.1_spec/${jms.spec.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-jms11/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-jms11/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-jta" version="${project.version}" description="Apache Ignite :: JTA">
@@ -173,7 +173,7 @@
             Installing this feature will trigger the installation of the 'transaction' feature from the Apache Karaf distribution.]]>
         </details>
         <feature dependency="true">transaction</feature>
-        <bundle start="true">mvn:org.apache.ignite/ignite-jta/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-jta/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-kafka" version="${project.version}" description="Apache Ignite :: Kafka">
@@ -187,7 +187,7 @@
         <bundle start="true" dependency="true">wrap:mvn:org.apache.kafka/connect-api/${kafka.version}$Bundle-SymbolicName=connect-api&amp;Bundle-Version=${kafka.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:org.apache.kafka/kafka_2.11/${kafka.version}$Bundle-SymbolicName=kafka_2.11&amp;Bundle-Version=${kafka.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:org.apache.kafka/kafka-clients/${kafka.version}$Bundle-SymbolicName=kafka-clients&amp;Bundle-Version=${kafka.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-kafka/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-kafka/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-log4j" version="${project.version}" description="Apache Ignite :: log4j">
@@ -198,8 +198,8 @@
             
             Be sure to refresh the Pax Logging bundles manually in case this does not happen automatically.]]>
         </details>
-        <bundle dependency="true" start-level="8">mvn:org.apache.ignite/ignite-osgi-paxlogging/${project.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-log4j/${project.version}</bundle>
+        <bundle dependency="true" start-level="8">mvn:org.gridgain/ignite-osgi-paxlogging/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-log4j/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-mqtt" version="${project.version}" description="Apache Ignite :: MQTT">
@@ -210,7 +210,7 @@
         <bundle start="true" dependency="true">mvn:com.google.guava/guava/${guava.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.eclipse.paho/org.eclipse.paho.client.mqttv3/${paho.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:com.github.rholder/guava-retrying/${guava.retrying.version}$Bundle-SymbolicName=guava-retrying&amp;Bundle-SymbolicName=guava-retrying&amp;Bundle-Version=${guava.retrying.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-mqtt/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-mqtt/${project.version}</bundle>
     </feature>   
 
     <feature name="ignite-rest-http" version="${project.version}" description="Apache Ignite :: REST HTTP">
@@ -230,7 +230,7 @@
         <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson.version}</bundle>
         <bundle start="true" dependency="true">mvn:commons-lang/commons-lang/${commons.lang.version}</bundle>
         <bundle start="true" dependency="true">mvn:commons-collections/commons-collections/${commons.collections.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-rest-http/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-rest-http/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-scalar-2.10" version="${project.version}" description="Apache Ignite :: Scala 2.10">
@@ -238,7 +238,7 @@
             <![CDATA[The Apache Ignite Scala 2.11 integration module + dependencies. This module installs the Scala 2.10 library bundle.]]>
         </details>
         <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala210.library.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-scalar_2.10/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-scalar_2.10/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-scalar-2.11" version="${project.version}" description="Apache Ignite :: Scala 2.11">
@@ -246,7 +246,7 @@
             <![CDATA[The Apache Ignite Scala 2.11 integration module + dependencies. This module installs the Scala 2.11 library bundle.]]>
         </details>
         <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala.library.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-scalar/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-scalar/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-schedule" version="${project.version}" description="Apache Ignite :: Schedule">
@@ -255,14 +255,14 @@
         </details>
         <feature prerequisite="true">wrap</feature>
         <bundle start="true" dependency="true">wrap:mvn:it.sauronsoftware.cron4j/cron4j/${cron4j.version}$Bundle-SymbolicName=cron4j&amp;Bundle-Version=${cron4j.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-schedule/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-schedule/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-slf4j" version="${project.version}" description="Apache Ignite :: slf4j">
         <details>
             <![CDATA[The Apache Ignite slf4j module.]]>
         </details>
-        <bundle start="true">mvn:org.apache.ignite/ignite-slf4j/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-slf4j/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-spring" version="${project.version}" description="Apache Ignite :: Spring Support">
@@ -283,7 +283,7 @@
         <feature dependency="true" version="[${spring41.osgi.feature.version},4.2)">spring-aspects</feature>
         <feature dependency="true" version="[${spring41.osgi.feature.version},4.2)">spring-tx</feature>
         <feature dependency="true" version="[${spring41.osgi.feature.version},4.2)">spring-jdbc</feature>
-        <bundle start="true">mvn:org.apache.ignite/ignite-spring/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-spring/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-ssh" version="${project.version}" description="Apache Ignite :: SSH">
@@ -291,7 +291,7 @@
             <![CDATA[The Apache Ignite SSH module + dependencies.]]>
         </details>
         <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.jsch/${jsch.bundle.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-ssh/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-ssh/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-twitter" version="${project.version}" description="Apache Ignite :: Twitter">
@@ -302,7 +302,7 @@
         <bundle start="true" dependency="true">mvn:com.google.guava/guava/${guava14.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:com.twitter/hbc-core/${twitter.hbc.version}$Bundle-SymbolicName=Hosebird Client Core&amp;Bundle-Version=${twitter.hbc.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:com.twitter/hbc-twitter4j/${twitter.hbc.version}$Bundle-SymbolicName=Hosebird Client Twitter4J&amp;Bundle-Version=${twitter.hbc.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-twitter/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-twitter/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-urideploy" version="${project.version}" description="Apache Ignite :: URI Deploy">
@@ -322,7 +322,7 @@
         <feature dependency="true" version="[${spring41.osgi.feature.version},4.2)">spring-tx</feature>
         <bundle start="true" dependency="true">wrap:mvn:net.sf.jtidy/jtidy/${jtidy.version}$Bundle-SymbolicName=JTidy&amp;Bundle-Version=938</bundle>
         <bundle start="true" dependency="true">mvn:commons-codec/commons-codec/${commons.codec.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-urideploy/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-urideploy/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-web" version="${project.version}" description="Apache Ignite :: Web">
@@ -332,7 +332,7 @@
             This feature installs the 'http' feature from the Apache Karaf distribution.]]>
         </details>
         <feature dependency="true">http</feature>
-        <bundle start="true">mvn:org.apache.ignite/ignite-web/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-web/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-zookeeper" version="${project.version}" description="Apache Ignite :: ZooKeeper">
@@ -347,7 +347,7 @@
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-framework/${curator.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-recipes/${curator.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-x-discovery/${curator.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-zookeeper/${project.version}</bundle>
+        <bundle start="true">mvn:org.gridgain/ignite-zookeeper/${project.version}</bundle>
     </feature>
 
 </features>
