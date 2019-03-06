@@ -216,11 +216,6 @@ public class GridAffinityAssignmentCache {
 
         head.set(assignment);
 
-        assert existing == null || existing.requiresHistoryCleanup() == newHistEntry.requiresHistoryCleanup() :
-            "We can replace client affinity assignment only by client one and vice versa " +
-                "[existing.requiresHistoryCleanup=" + existing.requiresHistoryCleanup() +
-                ", newHistEntry.requiresHistoryCleanup=" + newHistEntry.requiresHistoryCleanup() + ']';
-
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
             if (entry.getKey().compareTo(topVer) <= 0) {
                 if (log.isDebugEnabled())
@@ -231,9 +226,7 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        // If value already exists there is no sense to clean the history.
-        if (existing == null)
-            onHistoryAdded(newHistEntry.requiresHistoryCleanup());
+        onHistoryAdded(existing, newHistEntry);
 
         if (log.isTraceEnabled()) {
             log.trace("New affinity assignment [grp=" + cacheOrGrpName
@@ -501,7 +494,11 @@ public class GridAffinityAssignmentCache {
 
         GridAffinityAssignmentV2 assignmentCpy = new GridAffinityAssignmentV2(topVer, aff);
 
-        Map.Entry<AffinityTopologyVersion, HistoryAffinityAssignment> prevHistEntry = affCache.lastEntry();
+        AffinityTopologyVersion prevVer = topVer.minorTopologyVersion() == 0 ?
+            new AffinityTopologyVersion(topVer.topologyVersion() - 1, Integer.MAX_VALUE) :
+            new AffinityTopologyVersion(topVer.topologyVersion(), topVer.minorTopologyVersion() - 1);
+
+        Map.Entry<AffinityTopologyVersion, HistoryAffinityAssignment> prevHistEntry = affCache.floorEntry(prevVer);
 
         HistoryAffinityAssignment newHistEntry = (prevHistEntry == null) ?
             new HistoryAffinityAssignmentImpl(assignmentCpy, backups) :
@@ -510,11 +507,6 @@ public class GridAffinityAssignmentCache {
         HistoryAffinityAssignment existing = affCache.put(topVer, newHistEntry);
 
         head.set(assignmentCpy);
-
-        assert existing == null || existing.requiresHistoryCleanup() == newHistEntry.requiresHistoryCleanup() :
-            "We can replace client affinity assignment only by client one and vice versa " +
-                "[existing.requiresHistoryCleanup=" + existing.requiresHistoryCleanup() +
-                ", newHistEntry.requiresHistoryCleanup=" + newHistEntry.requiresHistoryCleanup() + ']';
 
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
             if (entry.getKey().compareTo(topVer) <= 0) {
@@ -526,9 +518,7 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        // If value already exists there is no sense to clean the history.
-        if (existing == null)
-            onHistoryAdded(newHistEntry.requiresHistoryCleanup());
+        onHistoryAdded(existing, newHistEntry);
     }
 
     /**
@@ -848,10 +838,37 @@ public class GridAffinityAssignmentCache {
     /**
      * Cleaning the affinity history.
      *
-     * @param fullHistCleanupRequired <code>false</code> if we have added shallow copy of another history entry.
+     * @param replaced Replaced entry in case history item was already present, null otherwise.
+     * @param added New history item.
      */
-    private void onHistoryAdded(boolean fullHistCleanupRequired) {
-        int fullSize = fullHistCleanupRequired ? fullHistSize.incrementAndGet() : fullHistSize.get();
+    private void onHistoryAdded(
+        HistoryAffinityAssignment replaced,
+        HistoryAffinityAssignment added
+    ) {
+        boolean cleanupNeeded = false;
+
+        if (replaced == null) {
+            cleanupNeeded = true;
+
+            if (added.requiresHistoryCleanup())
+                fullHistSize.incrementAndGet();
+        }
+        else {
+            if (replaced.requiresHistoryCleanup() != added.requiresHistoryCleanup()) {
+                if (added.requiresHistoryCleanup()) {
+                    cleanupNeeded = true;
+
+                    fullHistSize.incrementAndGet();
+                }
+                else
+                    fullHistSize.decrementAndGet();
+            }
+        }
+
+        if (!cleanupNeeded)
+            return;
+
+        int fullSize = fullHistSize.get();
 
         int linksSize = affCache.size();
 
