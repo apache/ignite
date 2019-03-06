@@ -1405,6 +1405,12 @@ public class JdbcThinConnection implements Connection {
 
                             cliIo.timeout(netTimeout);
 
+                            JdbcThinTcpIo ioToSameNode = ios.get(cliIo.nodeId());
+
+                            // This can happen if the same node has several IPs.
+                            if (ioToSameNode != null)
+                                ioToSameNode.close();
+
                             ios.put(cliIo.nodeId(), cliIo);
 
                             connected = true;
