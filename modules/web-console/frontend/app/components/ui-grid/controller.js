@@ -142,6 +142,9 @@ export default class IgniteUiGrid {
 
                 this.resizeObserver = new ResizeObserver(() => api.core.handleWindowResize());
                 this.resizeObserver.observe(this.$element[0]);
+
+                if (this.onApiRegistered)
+                    this.onApiRegistered();
             }
         };
 
