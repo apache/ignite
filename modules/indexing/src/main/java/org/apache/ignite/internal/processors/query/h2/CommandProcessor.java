@@ -228,6 +228,20 @@ public class CommandProcessor {
     public void stop() {
         stopped = true;
 
+        completeCancellationFutures("Local node is stopping: [nodeId=" + ctx.localNodeId() + "]");
+    }
+
+    /**
+     * Client disconnected callback.
+     */
+    public void onDisconnected() {
+        completeCancellationFutures("Query was cancelled, client node disconnected.");
+    }
+
+    /**
+     * @param err Text of error to complete futures.
+     */
+    private void completeCancellationFutures(@Nullable String err) {
         lock.writeLock().lock();
 
         try {
@@ -236,7 +250,7 @@ public class CommandProcessor {
             while (it.hasNext()) {
                 KillQueryRun qryRun = it.next();
 
-                qryRun.cancelFuture().onDone("Local node is stopping: [nodeId=" + ctx.localNodeId() + "]");
+                qryRun.cancelFuture().onDone(err);
 
                 it.remove();
             }
@@ -278,46 +292,52 @@ public class CommandProcessor {
      * @param node Cluster node.
      */
     private void onQueryKillRequest(GridQueryKillRequest msg, ClusterNode node) {
+        long qryId = msg.nodeQryId();
+
         String err = null;
 
+        boolean snd = false;
+
+        GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().runningQueryInfo(qryId);
+
+        if (runningQryInfo == null)
+            err = "Failed to cancel query due to query doesn't exist" +
+                "[nodeId=" + ctx.localNodeId() + ",qryId=" + qryId + "]";
+
+        if (msg.asyncResponse()) {
+            snd = idx.send(GridTopic.TOPIC_QUERY,
+                GridTopic.TOPIC_QUERY.ordinal(),
+                Collections.singleton(node),
+                new GridQueryKillResponse(msg.requestId(), err),
+                null,
+                locNodeMsgHnd,
+                GridIoPolicy.QUERY_POOL,
+                false);
+        }
+
         try {
-            GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().runningQueryInfo(msg.nodeQryId());
-
-            if (runningQryInfo == null)
-                err = "Failed to cancel query due to query doesn't exist" +
-                    "[nodeId=" + ctx.localNodeId() + ",qryId=" + msg.nodeQryId() + "]";
-
-            if (msg.asyncResponse()) {
-                idx.send(GridTopic.TOPIC_QUERY,
-                    GridTopic.TOPIC_QUERY.ordinal(),
-                    Collections.singleton(node),
-                    new GridQueryKillResponse(msg.requestId(), err),
-                    null,
-                    locNodeMsgHnd,
-                    GridIoPolicy.QUERY_POOL,
-                    false);
-            }
-
             if (runningQryInfo != null)
                 runningQryInfo.cancel();
         }
         catch (Exception e) {
             err = e.toString();
 
-            throw e;
+            U.warn(log, "Error during query cancelation: [qryId=" + qryId + "]", e);
         }
-        finally {
-            if (!msg.asyncResponse()) {
-                idx.send(GridTopic.TOPIC_QUERY,
-                    GridTopic.TOPIC_QUERY.ordinal(),
-                    Collections.singleton(node),
-                    new GridQueryKillResponse(msg.requestId(), err),
-                    null,
-                    locNodeMsgHnd,
-                    GridIoPolicy.QUERY_POOL,
-                    false);
-            }
+
+        if (!msg.asyncResponse()) {
+            snd = idx.send(GridTopic.TOPIC_QUERY,
+                GridTopic.TOPIC_QUERY.ordinal(),
+                Collections.singleton(node),
+                new GridQueryKillResponse(msg.requestId(), err),
+                null,
+                locNodeMsgHnd,
+                GridIoPolicy.QUERY_POOL,
+                false);
         }
+
+        if (!snd)
+            U.warn(log, "Resposne on query cancellation wasn't send back: [qryId=" + qryId + "]");
     }
 
     /**
