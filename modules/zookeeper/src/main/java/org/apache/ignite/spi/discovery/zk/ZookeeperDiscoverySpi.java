@@ -511,6 +511,13 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /**
+     * @return Local node attributes
+     */
+    public Map<String, Object> getLocNodeAttrs() {
+        return locNodeAttrs;
+    }
+
+    /**
      * @return Local node instance.
      */
     private ZookeeperClusterNode initLocalNode() {

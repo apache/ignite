@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +34,8 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -382,7 +386,11 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
         assertNull(creator.reentrantLock("lock1", true, false, false));
         assertNull(other.reentrantLock("lock1", true, false, false));
 
+        List<IgniteLock> locks = new ArrayList<>(2);
+
         try (IgniteLock lock = creator.reentrantLock("lock1", true, false, true)) {
+            locks.add(lock);
+
             assertNotNull(lock);
 
             assertFalse(lock.isLocked());
@@ -392,6 +400,8 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
             IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     IgniteLock lock0 = other.reentrantLock("lock1", true, false, false);
+
+                    locks.add(lock0);
 
                     lock0.lock();
 
@@ -426,8 +436,24 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
             assertFalse(lock.isLocked());
         }
 
-        assertNull(creator.reentrantLock("lock1", true, false, false));
-        assertNull(other.reentrantLock("lock1", true, false, false));
+        for (IgniteLock lock : locks) {
+            try {
+                lock.tryLock(5_000L, TimeUnit.MILLISECONDS);
+
+                fail("Operations with closed lock must fail");
+            }
+            catch (Throwable ignore) {
+                // No-op.
+            }
+        }
+
+        for (Ignite ignite : F.asList(creator, other)) {
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return ignite.reentrantLock("lock1", true, false, false) == null;
+                }
+            }, 3_000L));
+        }
     }
 
     /**

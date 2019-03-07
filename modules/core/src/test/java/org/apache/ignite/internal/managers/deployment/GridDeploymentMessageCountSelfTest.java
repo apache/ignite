@@ -20,9 +20,7 @@ package org.apache.ignite.internal.managers.deployment;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -120,49 +118,6 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
                 res = (Integer)taskFut.get();
 
                 assertEquals(Integer.valueOf(2), res);
-            }
-
-            for (MessageCountingCommunicationSpi spi : commSpis.values())
-                assertEquals(0, spi.deploymentMessageCount());
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCacheValueDeploymentOnPut() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4551");
-
-        ClassLoader ldr = getExternalClassLoader();
-
-        Class valCls = ldr.loadClass(TEST_VALUE);
-
-        try {
-            startGrids(2);
-
-            IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
-
-            cache.put("key", valCls.newInstance());
-
-            for (int i = 0; i < 2; i++)
-                assertNotNull("For grid: " + i, grid(i).cache(DEFAULT_CACHE_NAME).localPeek("key", CachePeekMode.ONHEAP));
-
-            for (MessageCountingCommunicationSpi spi : commSpis.values()) {
-                assertTrue(spi.deploymentMessageCount() > 0);
-
-                spi.resetCount();
-            }
-
-            for (int i = 0; i < 10; i++) {
-                String key = "key" + i;
-
-                cache.put(key, valCls.newInstance());
-
-                for (int k = 0; k < 2; k++)
-                    assertNotNull(grid(k).cache(DEFAULT_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP));
             }
 
             for (MessageCountingCommunicationSpi spi : commSpis.values())

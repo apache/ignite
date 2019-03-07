@@ -37,7 +37,7 @@ class ZkRuntimeState {
     volatile Exception errForClose;
 
     /** */
-    final boolean prevJoined;
+    final boolean reconnect;
 
     /** */
     ZookeeperClient zkClient;
@@ -90,10 +90,10 @@ class ZkRuntimeState {
     boolean updateAlives;
 
     /**
-     * @param prevJoined {@code True} if joined topology before reconnect attempt.
+     * @param reconnect {@code True} if joined topology before reconnect attempt.
      */
-    ZkRuntimeState(boolean prevJoined) {
-        this.prevJoined = prevJoined;
+    ZkRuntimeState(boolean reconnect) {
+        this.reconnect = reconnect;
     }
 
     /**

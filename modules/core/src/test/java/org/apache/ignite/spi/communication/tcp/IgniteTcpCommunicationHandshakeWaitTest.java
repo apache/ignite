@@ -44,7 +44,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractTest {
     /** */
-    private static final long COMMUNICATION_TIMEOUT = 2000;
+    private static final long COMMUNICATION_TIMEOUT = 1000;
 
     /** */
     private static final long DISCOVERY_MESSAGE_DELAY = 500;
@@ -73,8 +73,8 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setConnectTimeout(COMMUNICATION_TIMEOUT);
-        commSpi.setMaxConnectTimeout(COMMUNICATION_TIMEOUT);
-        commSpi.setReconnectCount(1);
+        commSpi.setMaxConnectTimeout(4 * COMMUNICATION_TIMEOUT);
+        commSpi.setReconnectCount(3);
 
         cfg.setCommunicationSpi(commSpi);
 

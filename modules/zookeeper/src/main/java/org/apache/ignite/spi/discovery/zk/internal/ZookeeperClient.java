@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -39,17 +40,18 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT;
+
 /**
  * Zookeeper Client.
  */
 public class ZookeeperClient implements Watcher {
     /** */
-    private static final long RETRY_TIMEOUT =
-        IgniteSystemProperties.getLong("IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT", 2000);
+    private static final int DFLT_RETRY_TIMEOUT = 2000;
 
     /** */
-    private static final int MAX_RETRY_COUNT =
-        IgniteSystemProperties.getInteger("IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT", 10);
+    private static final int DFLT_MAX_RETRY_COUNT = 10;
 
     /** */
     private static final boolean PINGER_ENABLED =
@@ -300,35 +302,64 @@ public class ZookeeperClient implements Watcher {
     }
 
     /**
-     *
      * @param paths Paths to create.
      * @param createMode Create mode.
-     * @throws KeeperException.NodeExistsException If at least one of target node already exists.
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
     void createAll(List<String> paths, CreateMode createMode)
-        throws ZookeeperClientFailedException, InterruptedException, KeeperException.NodeExistsException
-    {
-        // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8188
-        List<Op> ops = new ArrayList<>(paths.size());
+        throws ZookeeperClientFailedException, InterruptedException {
+        if (paths.isEmpty())
+            return;
 
-        for (String path : paths)
-            ops.add(Op.create(path, EMPTY_BYTES, ZK_ACL, createMode));
+        List<List<Op>> batches = new LinkedList<>();
 
-        for (;;) {
-            long connStartTime = this.connStartTime;
+        int batchSize = 0;
 
-            try {
-                zk.multi(ops);
+        List<Op> batch = new LinkedList<>();
 
-                return;
+        for (String path : paths) {
+            //TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8187
+            int size = requestOverhead(path) + 48 /* overhead */;
+
+            assert size <= MAX_REQ_SIZE;
+
+            if (batchSize + size > MAX_REQ_SIZE) {
+                batches.add(batch);
+
+                batch = new LinkedList<>();
+
+                batchSize = 0;
             }
-            catch (KeeperException.NodeExistsException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                onZookeeperError(connStartTime, e);
+
+            batch.add(Op.create(path, EMPTY_BYTES, ZK_ACL, createMode));
+
+            batchSize += size;
+        }
+
+        batches.add(batch);
+
+        for (List<Op> ops : batches) {
+            for (;;) {
+                long connStartTime = this.connStartTime;
+
+                try {
+                    zk.multi(ops);
+
+                    break;
+                }
+                catch (KeeperException.NodeExistsException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to create nodes using bulk operation: " + e);
+
+                    for (Op op : ops)
+                        createIfNeeded(op.getPath(), null, createMode);
+
+                    break;
+                }
+                catch (Exception e) {
+                    onZookeeperError(connStartTime, e);
+                }
             }
         }
     }
@@ -488,9 +519,7 @@ public class ZookeeperClient implements Watcher {
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
-    List<String> getChildren(String path)
-        throws ZookeeperClientFailedException, InterruptedException
-    {
+    List<String> getChildren(String path) throws ZookeeperClientFailedException, InterruptedException {
         for (;;) {
             long connStartTime = this.connStartTime;
 
@@ -504,29 +533,23 @@ public class ZookeeperClient implements Watcher {
     }
 
     /**
+     * Get children paths.
+     *
      * @param path Path.
-     * @return Children nodes.
-     * @throws KeeperException.NoNodeException If provided path does not exist.
+     * @return Children paths.
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
-    List<String> getChildrenIfPathExists(String path) throws
-        KeeperException.NoNodeException, InterruptedException, ZookeeperClientFailedException {
-        for (;;) {
-            long connStartTime = this.connStartTime;
+    List<String> getChildrenPaths(String path) throws ZookeeperClientFailedException, InterruptedException {
+        List<String> children = getChildren(path);
 
-            try {
-                return zk.getChildren(path, false);
-            }
-            catch (KeeperException.NoNodeException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                onZookeeperError(connStartTime, e);
-            }
-        }
+        ArrayList<String> paths = new ArrayList(children.size());
+
+        for (String child : children)
+            paths.add(path + "/" + child);
+
+        return paths;
     }
-
 
     /**
      * @param path Path.
@@ -573,38 +596,62 @@ public class ZookeeperClient implements Watcher {
     /**
      * @param paths Children paths.
      * @param ver Version.
-     * @throws KeeperException.NoNodeException If at least one of nodes does not exist.
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
-    void deleteAll(@Nullable String parent, List<String> paths, int ver)
-        throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
-    {
+    void deleteAll(List<String> paths, int ver)
+        throws ZookeeperClientFailedException, InterruptedException {
         if (paths.isEmpty())
             return;
 
-        // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8188
-        List<Op> ops = new ArrayList<>(paths.size());
+        List<List<Op>> batches = new LinkedList<>();
+
+        int batchSize = 0;
+
+        List<Op> batch = new LinkedList<>();
 
         for (String path : paths) {
-            String path0 = parent != null ? parent + "/" + path : path;
+            //TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8187
+            int size = requestOverhead(path) + 17 /* overhead */;
 
-            ops.add(Op.delete(path0, ver));
+            assert size <= MAX_REQ_SIZE;
+
+            if (batchSize + size > MAX_REQ_SIZE) {
+                batches.add(batch);
+
+                batch = new LinkedList<>();
+
+                batchSize = 0;
+            }
+
+            batch.add(Op.delete(path, ver));
+
+            batchSize += size;
         }
 
-        for (;;) {
-            long connStartTime = this.connStartTime;
+        batches.add(batch);
 
-            try {
-                zk.multi(ops);
+        for (List<Op> ops : batches) {
+            for (;;) {
+                long connStartTime = this.connStartTime;
 
-                return;
-            }
-            catch (KeeperException.NoNodeException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                onZookeeperError(connStartTime, e);
+                try {
+                    zk.multi(ops);
+
+                    break;
+                }
+                catch (KeeperException.NoNodeException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to delete nodes using bulk operation: " + e);
+
+                    for (Op op : ops)
+                        deleteIfExists(op.getPath(), ver);
+
+                    break;
+                }
+                catch (Exception e) {
+                    onZookeeperError(connStartTime, e);
+                }
             }
         }
     }
@@ -840,13 +887,16 @@ public class ZookeeperClient implements Watcher {
                 }
 
                 if (err == null) {
+                    long retryTimeout = IgniteSystemProperties.getLong(IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT,
+                        DFLT_RETRY_TIMEOUT);
+
                     U.warn(log, "ZooKeeper operation failed, will retry [err=" + e +
-                        ", retryTimeout=" + RETRY_TIMEOUT +
+                        ", retryTimeout=" + retryTimeout +
                         ", connLossTimeout=" + connLossTimeout +
                         ", path=" + ((KeeperException)e).getPath() +
                         ", remainingWaitTime=" + remainingTime + ']');
 
-                    stateMux.wait(RETRY_TIMEOUT);
+                    stateMux.wait(retryTimeout);
 
                     if (closing)
                         throw new ZookeeperClientFailedException("ZooKeeper client is closed.");
@@ -880,7 +930,10 @@ public class ZookeeperClient implements Watcher {
             code == KeeperException.Code.OPERATIONTIMEOUT.intValue();
 
         if (retryByErrorCode) {
-            if (MAX_RETRY_COUNT <= 0 || retryCount.incrementAndGet() < MAX_RETRY_COUNT)
+            int maxRetryCount = IgniteSystemProperties.getInteger(IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT,
+                DFLT_MAX_RETRY_COUNT);
+
+            if (maxRetryCount <= 0 || retryCount.incrementAndGet() < maxRetryCount)
                 return true;
             else
                 return false;
