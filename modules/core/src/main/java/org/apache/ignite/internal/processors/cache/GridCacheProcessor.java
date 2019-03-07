@@ -138,7 +138,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTa
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
-import org.apache.ignite.internal.processors.security.IgniteSecuritySession;
+import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -3341,7 +3341,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
                 if (secCtx != null && cacheInfo.cacheType() == CacheType.USER) {
-                    try (IgniteSecuritySession s = ctx.security().startSession(secCtx)) {
+                    try (SecurityContextHolder s = ctx.security().replaceContext(secCtx)) {
                         authorizeCacheCreate(cacheInfo.cacheData().config());
                     }
                     catch (SecurityException ex) {

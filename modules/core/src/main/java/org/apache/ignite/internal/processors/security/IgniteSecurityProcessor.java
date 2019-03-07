@@ -33,7 +33,7 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  * The differences between {@code IgniteSecurityProcessor} and {@code GridSecurityProcessor} are:
  * <ul>
  * <li>{@code IgniteSecurityProcessor} allows to define a current security context by
- * {@link #startSession(SecurityContext)} or {@link #startSession(UUID)} methods.
+ * {@link #replaceContext(SecurityContext)} or {@link #replaceContext(UUID)} methods.
  * <li>{@code IgniteSecurityProcessor} doesn't require to pass {@code SecurityContext} to authorize operations.
  * <li>{@code IgniteSecurityProcessor} doesn't extend {@code GridProcessor} interface
  * sequentially it doesn't have any methods of the lifecycle of {@code GridProcessor}.
@@ -41,27 +41,27 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  */
 public interface IgniteSecurityProcessor {
     /**
-     * Creates {@link IgniteSecuritySession}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
+     * Creates {@link SecurityContextHolder}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
-     * session {@link IgniteSecuritySession} will be closed.
+     * holder {@link SecurityContextHolder} will be closed.
      *
      * @param secCtx Security Context.
-     * @return Grid security Session.
+     * @return Security context holder.
      */
-    public IgniteSecuritySession startSession(SecurityContext secCtx);
+    public SecurityContextHolder replaceContext(SecurityContext secCtx);
 
     /**
-     * Creates {@link IgniteSecuritySession}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
+     * Creates {@link SecurityContextHolder}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of {@link SecurityContext} that is owned by
-     * node with given nodeId until session {@link IgniteSecuritySession} will be closed.
+     * node with given nodeId until holder {@link SecurityContextHolder} will be closed.
      *
      * @param nodeId Node id.
-     * @return Grid security Session.
+     * @return Security context holder.
      */
-    public IgniteSecuritySession startSession(UUID nodeId);
+    public SecurityContextHolder replaceContext(UUID nodeId);
 
     /**
-     * @return SecurityContext of opened session {@link IgniteSecuritySession}.
+     * @return SecurityContext of holder {@link SecurityContextHolder}.
      */
     public SecurityContext securityContext();
 

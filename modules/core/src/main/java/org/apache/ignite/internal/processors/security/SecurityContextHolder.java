@@ -18,26 +18,9 @@
 package org.apache.ignite.internal.processors.security;
 
 /**
- *
+ * Representation of Security Context Holder.
  */
-public class IgniteSecuritySessionImpl implements IgniteSecuritySession {
-    /** Grid Security Manager. */
-    private final IgniteSecurityProcessor proc;
-
-    /** Security context. */
-    private final SecurityContext secCtx;
-
-    /**
-     * @param proc Grid Security Manager.
-     * @param secCtx Security context.
-     */
-    public IgniteSecuritySessionImpl(IgniteSecurityProcessor proc, SecurityContext secCtx) {
-        this.proc = proc;
-        this.secCtx = secCtx;
-    }
-
+public interface SecurityContextHolder extends AutoCloseable {
     /** {@inheritDoc} */
-    @Override public void close() {
-        proc.startSession(secCtx);
-    }
+    @Override public void close();
 }

@@ -45,8 +45,8 @@ public class NoOpIgniteSecurityProcessor implements IgniteSecurityProcessor, Gri
         "is not equal to remote node's ignite security processor class " +
         "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
 
-    /** No operation Security session. */
-    private static final IgniteSecuritySession NO_OP_SECURITY_SESSION = new IgniteSecuritySession() {
+    /** No operation security holder. */
+    private static final SecurityContextHolder NO_OP_SECURITY_HOLDER = new SecurityContextHolder() {
         @Override public void close() {
             //no-op
         }
@@ -63,13 +63,13 @@ public class NoOpIgniteSecurityProcessor implements IgniteSecurityProcessor, Gri
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteSecuritySession startSession(SecurityContext secCtx) {
-        return NO_OP_SECURITY_SESSION;
+    @Override public SecurityContextHolder replaceContext(SecurityContext secCtx) {
+        return NO_OP_SECURITY_HOLDER;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteSecuritySession startSession(UUID nodeId) {
-        return NO_OP_SECURITY_SESSION;
+    @Override public SecurityContextHolder replaceContext(UUID nodeId) {
+        return NO_OP_SECURITY_HOLDER;
     }
 
     /** {@inheritDoc} */

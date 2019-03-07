@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
-import org.apache.ignite.internal.processors.security.IgniteSecuritySession;
+import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -175,7 +175,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             if (authCtx != null)
                 AuthorizationContext.context(authCtx);
 
-            try(IgniteSecuritySession s = ctx.security().startSession(connCtx.securityContext())) {
+            try(SecurityContextHolder s = ctx.security().replaceContext(connCtx.securityContext())) {
                 resp = handler.handle(req);
             }
             finally {
