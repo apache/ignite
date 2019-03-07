@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 /**
  * Key for cached two-step query.
  */
-public class QueryParserCacheKey {
+public class QueryDescriptor {
     /** */
     private final String schemaName;
 
@@ -28,7 +28,7 @@ public class QueryParserCacheKey {
     private final String sql;
 
     /** */
-    private final boolean grpByCollocated;
+    private final boolean collocated;
 
     /** */
     private final boolean distributedJoins;
@@ -48,16 +48,16 @@ public class QueryParserCacheKey {
     /**
      * @param schemaName Schema name.
      * @param sql Sql.
-     * @param grpByCollocated Collocated GROUP BY.
+     * @param collocated Collocated GROUP BY.
      * @param distributedJoins Distributed joins enabled.
      * @param enforceJoinOrder Enforce join order of tables.
      * @param loc Query is local flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      */
-    QueryParserCacheKey(
+    QueryDescriptor(
         String schemaName,
         String sql,
-        boolean grpByCollocated,
+        boolean collocated,
         boolean distributedJoins,
         boolean enforceJoinOrder,
         boolean loc,
@@ -66,7 +66,7 @@ public class QueryParserCacheKey {
     ) {
         this.schemaName = schemaName;
         this.sql = sql;
-        this.grpByCollocated = grpByCollocated;
+        this.collocated = collocated;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
         this.loc = loc;
@@ -91,8 +91,8 @@ public class QueryParserCacheKey {
     /**
      * @return Collocated GROUP BY flag.
      */
-    public boolean groupByCollocated() {
-        return grpByCollocated;
+    public boolean collocated() {
+        return collocated;
     }
 
     /**
@@ -139,9 +139,9 @@ public class QueryParserCacheKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        QueryParserCacheKey that = (QueryParserCacheKey)o;
+        QueryDescriptor that = (QueryDescriptor)o;
 
-        if (grpByCollocated != that.grpByCollocated)
+        if (collocated != that.collocated)
             return false;
 
         if (distributedJoins != that.distributedJoins)
@@ -168,7 +168,7 @@ public class QueryParserCacheKey {
         int res = schemaName != null ? schemaName.hashCode() : 0;
 
         res = 31 * res + sql.hashCode();
-        res = 31 * res + (grpByCollocated ? 1 : 0);
+        res = 31 * res + (collocated ? 1 : 0);
 
         res = res + (distributedJoins ? 2 : 0);
         res = res + (enforceJoinOrder ? 4 : 0);

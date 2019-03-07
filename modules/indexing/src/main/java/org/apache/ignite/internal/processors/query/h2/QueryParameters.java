@@ -22,9 +22,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 
+import java.util.List;
+
 /**
  * Query parameters which vary between requests having the same execution plan. Essentially, these are the arguments
- * of original {@link org.apache.ignite.cache.query.SqlFieldsQuery} which are not part of {@link QueryParserCacheKey}.
+ * of original {@link org.apache.ignite.cache.query.SqlFieldsQuery} which are not part of {@link QueryDescriptor}.
  */
 public class QueryParameters {
     /** Arguments. */
@@ -39,6 +41,9 @@ public class QueryParameters {
     /** Lazy flag. */
     private final boolean lazy;
 
+    /** Page size. */
+    private final int pageSize;
+
     /** Data page scan enabled flag. */
     private final Boolean dataPageScanEnabled;
 
@@ -47,6 +52,9 @@ public class QueryParameters {
 
     /** Auto-commit flag. */
     private final boolean autoCommit;
+
+    /** Batched arguments. */
+    private final List<Object[]> batchedArgs;
 
     /**
      * Create parameters from query.
@@ -57,6 +65,7 @@ public class QueryParameters {
     public static QueryParameters fromQuery(SqlFieldsQuery qry) {
         NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
         boolean autoCommit = true;
+        List<Object[]> batchedArgs = null;
 
         if (qry instanceof SqlFieldsQueryEx) {
             SqlFieldsQueryEx qry0 = (SqlFieldsQueryEx)qry;
@@ -65,6 +74,8 @@ public class QueryParameters {
                 nestedTxMode = qry0.getNestedTxMode();
 
             autoCommit = qry0.isAutoCommit();
+
+            batchedArgs = qry0.batchedArguments();
         }
 
         return new QueryParameters(
@@ -72,9 +83,11 @@ public class QueryParameters {
             qry.getPartitions(),
             qry.getTimeout(),
             qry.isLazy(),
+            qry.getPageSize(),
             qry.isDataPageScanEnabled(),
             nestedTxMode,
-            autoCommit
+            autoCommit,
+            batchedArgs
         );
     }
 
@@ -85,7 +98,11 @@ public class QueryParameters {
      * @param parts Partitions.
      * @param timeout Timeout.
      * @param lazy Lazy flag.
+     * @param pageSize Page size.
      * @param dataPageScanEnabled Data page scan enabled flag.
+     * @param nestedTxMode Nested TX mode.
+     * @param autoCommit Auto-commit flag.
+     * @param batchedArgs Batched arguments.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     private QueryParameters(
@@ -93,17 +110,21 @@ public class QueryParameters {
         int[] parts,
         int timeout,
         boolean lazy,
+        int pageSize,
         Boolean dataPageScanEnabled,
         NestedTxMode nestedTxMode,
-        boolean autoCommit
+        boolean autoCommit,
+        List<Object[]> batchedArgs
     ) {
         this.args = args;
         this.parts = parts;
         this.timeout = timeout;
         this.lazy = lazy;
+        this.pageSize = pageSize;
         this.dataPageScanEnabled = dataPageScanEnabled;
         this.nestedTxMode = nestedTxMode;
         this.autoCommit = autoCommit;
+        this.batchedArgs = batchedArgs;
     }
 
     /**
@@ -137,6 +158,13 @@ public class QueryParameters {
     }
 
     /**
+     * @return Page size.
+     */
+    public int pageSize() {
+        return pageSize;
+    }
+
+    /**
      * @return Data page scan enabled flag.
      */
     public Boolean dataPageScanEnabled() {
@@ -155,5 +183,33 @@ public class QueryParameters {
      */
     public boolean autoCommit() {
         return autoCommit;
+    }
+
+    /**
+     * @return Batched arguments.
+     */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public List<Object[]> batchedArguments() {
+        return batchedArgs;
+    }
+
+    /**
+     * Convert current batched arguments to a form with single arguments.
+     *
+     * @param args Arguments.
+     * @return Result.
+     */
+    public QueryParameters toSingleBatchedArguments(Object[] args) {
+        return new QueryParameters(
+            args,
+            this.parts,
+            this.timeout,
+            this.lazy,
+            this.pageSize,
+            this.dataPageScanEnabled,
+            this.nestedTxMode,
+            this.autoCommit,
+            null
+        );
     }
 }

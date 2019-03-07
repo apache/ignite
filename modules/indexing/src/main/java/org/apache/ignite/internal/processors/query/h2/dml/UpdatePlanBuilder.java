@@ -40,7 +40,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.QueryParserCacheKey;
+import org.apache.ignite.internal.processors.query.h2.QueryDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
@@ -94,7 +94,7 @@ public final class UpdatePlanBuilder {
      */
     @SuppressWarnings("ConstantConditions")
     public static UpdatePlan planForStatement(
-        QueryParserCacheKey planKey,
+        QueryDescriptor planKey,
         GridSqlStatement stmt,
         boolean mvccEnabled,
         IgniteH2Indexing idx
@@ -120,7 +120,7 @@ public final class UpdatePlanBuilder {
      */
     @SuppressWarnings("ConstantConditions")
     private static UpdatePlan planForInsert(
-        QueryParserCacheKey planKey,
+        QueryDescriptor planKey,
         GridSqlStatement stmt,
         IgniteH2Indexing idx,
         boolean mvccEnabled
@@ -334,7 +334,7 @@ public final class UpdatePlanBuilder {
      * @throws IgniteCheckedException if failed.
      */
     private static UpdatePlan planForUpdate(
-        QueryParserCacheKey planKey,
+        QueryDescriptor planKey,
         GridSqlStatement stmt,
         IgniteH2Indexing idx,
         boolean mvccEnabled
@@ -860,7 +860,7 @@ public final class UpdatePlanBuilder {
     private static DmlDistributedPlanInfo checkPlanCanBeDistributed(
         IgniteH2Indexing idx,
         boolean mvccEnabled,
-        QueryParserCacheKey planKey,
+        QueryDescriptor planKey,
         String selectQry,
         String cacheName
     )
@@ -874,7 +874,7 @@ public final class UpdatePlanBuilder {
                 GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(
                     conn,
                     GridSqlQueryParser.prepared(stmt),
-                    planKey.groupByCollocated(),
+                    planKey.collocated(),
                     planKey.distributedJoins(),
                     planKey.enforceJoinOrder(),
                     false,
