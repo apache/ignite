@@ -684,6 +684,33 @@ namespace ignite
                     return error;
                 }
 
+                /**
+                 * Get affinity topology version.
+                 *
+                 * @return Affinity topology version, or null if it has not changed.
+                 */
+                const AffinityTopologyVersion* GetAffinityTopologyVersion() const
+                {
+                    if (!IsAffinityTopologyChanged())
+                        return 0;
+
+                    return &ver;
+                }
+
+                /**
+                 * Check if affinity topology failed.
+                 *
+                 * @return @c true affinity topology failed.
+                 */
+                bool IsAffinityTopologyChanged() const;
+
+                /**
+                 * Check if operation failed.
+                 *
+                 * @return @c true if operation failed.
+                 */
+                bool IsFailure() const;
+
             protected:
                 /**
                  * Read data if response status is ResponseStatus::SUCCESS.
@@ -694,6 +721,12 @@ namespace ignite
                 }
 
             private:
+                /** Flags. */
+                int16_t flags;
+
+                /** Affinity topology version. */
+                AffinityTopologyVersion ver;
+
                 /** Request processing status. */
                 int32_t status;
 

@@ -48,6 +48,13 @@ namespace ignite
                     /**
                      * Update affinity.
                      *
+                     * @param ver Affinity topology version.
+                     */
+                    void UpdateAffinity(AffinityTopologyVersion ver);
+
+                    /**
+                     * Update affinity.
+                     *
                      * @param groups Affinity awareness groups.
                      * @param ver Affinity topology version.
                      */
@@ -86,6 +93,13 @@ namespace ignite
                      * @param caches Caches.
                      */
                     void GetTrackedCaches(std::vector<int32_t>& caches) const;
+
+                    /**
+                     * Check if the update required.
+                     *
+                     * @return @c true if the update required.
+                     */
+                    bool IsUpdateNeeded() const;
 
                 private:
                     /** Current affinity topology version. */

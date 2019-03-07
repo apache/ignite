@@ -83,6 +83,7 @@ namespace ignite
             }
 
             Response::Response():
+                flags(),
                 status(ResponseStatus::FAILED)
             {
                 // No-op.
@@ -97,16 +98,16 @@ namespace ignite
             {
                 if (ver >= DataChannel::VERSION_1_3_0)
                 {
-                    int16_t flags = reader.ReadInt16();
+                    flags = reader.ReadInt16();
 
-                    if (flags & Flag::AFFINITY_TOPOLOGY_CHANGED)
+                    if (IsAffinityTopologyChanged())
                     {
                         AffinityTopologyVersion topVer;
 
                         topVer.Read(reader);
                     }
 
-                    if (!(flags & Flag::FAILURE))
+                    if (!IsFailure())
                     {
                         status = ResponseStatus::SUCCESS;
 
@@ -122,6 +123,16 @@ namespace ignite
                     ReadOnSuccess(reader, ver);
                 else
                     reader.ReadString(error);
+            }
+
+            bool Response::IsAffinityTopologyChanged() const
+            {
+                return (flags & Flag::AFFINITY_TOPOLOGY_CHANGED) != 0;
+            }
+
+            bool Response::IsFailure() const
+            {
+                return (flags & Flag::FAILURE) != 0;
             }
 
             ClientCacheNodePartitionsResponse::ClientCacheNodePartitionsResponse(

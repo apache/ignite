@@ -129,6 +129,17 @@ namespace ignite
                 legacyChannels.clear();
             }
 
+            void DataRouter::ProcessMeta(int32_t metaVer)
+            {
+                if (typeMgr.IsUpdatedSince(metaVer))
+                {
+                    IgniteError err;
+
+                    if (!typeMgr.ProcessPendingUpdates(err))
+                        throw err;
+                }
+            }
+
             void DataRouter::StartTrackingAffinity(int32_t cacheId)
             {
                 affinityManager.StartTrackingCache(cacheId);
@@ -144,18 +155,6 @@ namespace ignite
                 std::vector<int32_t> ids;
 
                 affinityManager.GetTrackedCaches(ids);
-
-                RefreshAffinityMapping(ids);
-            }
-
-            void DataRouter::RefreshAffinityMapping(int32_t cacheId)
-            {
-                affinity::SP_AffinityAssignment assignment = affinityManager.GetAffinityAssignment(cacheId);
-
-                if (assignment.IsValid())
-                    return;
-
-                std::vector<int32_t> ids(1, cacheId);
 
                 RefreshAffinityMapping(ids);
             }

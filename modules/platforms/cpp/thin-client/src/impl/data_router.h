@@ -90,6 +90,27 @@ namespace ignite
                 void Close();
 
                 /**
+                 * Update affinity if needed.
+                 *
+                 * @param rsp Response.
+                 */
+                template <typename RspT>
+                void CheckAffinity(RspT& rsp)
+                {
+                    const AffinityTopologyVersion* ver = rsp.GetAffinityTopologyVersion();
+
+                    if (ver != 0)
+                        affinityManager.UpdateAffinity(*ver);
+                }
+
+                /**
+                 * Process meta if needed.
+                 *
+                 * @param metaVer Version of meta.
+                 */
+                void ProcessMeta(int32_t metaVer);
+
+                /**
                  * Synchronously send request message and receive response.
                  * Uses provided timeout.
                  *
@@ -106,13 +127,12 @@ namespace ignite
 
                     channel.Get()->SyncMessage(req, rsp, ioTimeout);
 
-                    if (typeMgr.IsUpdatedSince(metaVer))
-                    {
-                        IgniteError err;
+                    CheckAffinity(rsp);
 
-                        if (!typeMgr.ProcessPendingUpdates(err))
-                            throw err;
-                    }
+                    if (affinityManager.IsUpdateNeeded())
+                        RefreshAffinityMapping();
+
+                    ProcessMeta(metaVer);
                 }
 
                 /**
@@ -132,13 +152,12 @@ namespace ignite
 
                     channel.Get()->SyncMessage(req, rsp, ioTimeout);
 
-                    if (typeMgr.IsUpdatedSince(metaVer))
-                    {
-                        IgniteError err;
-                        
-                        if (!typeMgr.ProcessPendingUpdates(err))
-                            throw err;
-                    }
+                    CheckAffinity(rsp);
+
+                    if (affinityManager.IsUpdateNeeded())
+                        RefreshAffinityMapping();
+
+                    ProcessMeta(metaVer);
                 }
 
                 /**
@@ -156,6 +175,8 @@ namespace ignite
                     SP_DataChannel channel = GetRandomChannel();
 
                     channel.Get()->SyncMessage(req, rsp, ioTimeout);
+
+                    CheckAffinity(rsp);
                 }
 
                 /**
@@ -176,13 +197,6 @@ namespace ignite
                  * Update affinity mapping for the cache.
                  */
                 void RefreshAffinityMapping();
-
-                /**
-                 * Update affinity mapping for the cache.
-                 *
-                 * @param cacheId Cache ID.
-                 */
-                void RefreshAffinityMapping(int32_t cacheId);
 
                 /**
                  * Update affinity mapping for caches.

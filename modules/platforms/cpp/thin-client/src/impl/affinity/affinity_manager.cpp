@@ -30,6 +30,24 @@ namespace ignite
                     // No-op.
                 }
 
+                void AffinityManager::UpdateAffinity(AffinityTopologyVersion ver)
+                {
+                    if (topologyVersion > ver)
+                        return;
+
+                    common::concurrent::CsLockGuard lock(mutex);
+
+                    if (topologyVersion > ver)
+                        return;
+
+                    if (topologyVersion < ver)
+                    {
+                        topologyVersion = ver;
+
+                        cacheAffinityMapping.clear();
+                    }
+                }
+
                 void AffinityManager::UpdateAffinity(const std::vector<AffinityAwarenessGroup>& groups, 
                     AffinityTopologyVersion ver)
                 {
@@ -37,6 +55,9 @@ namespace ignite
                         return;
 
                     common::concurrent::CsLockGuard lock(mutex);
+
+                    if (topologyVersion > ver)
+                        return;
 
                     if (topologyVersion < ver)
                     {
@@ -95,6 +116,11 @@ namespace ignite
 
                     for (cache = trackedCaches.begin(); cache != trackedCaches.end(); ++cache)
                         caches.push_back(cache->first);
+                }
+
+                bool AffinityManager::IsUpdateNeeded() const
+                {
+                    return false;
                 }
             }
         }
