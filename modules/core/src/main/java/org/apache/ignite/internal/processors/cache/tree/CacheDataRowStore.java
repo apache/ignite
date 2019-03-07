@@ -69,7 +69,7 @@ public class CacheDataRowStore extends RowStore {
      * @return Search row.
      */
     MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr, int opCntr) {
-        MvccDataRow dataRow = new MvccDataRow(grp,
+        MvccDataRow row = new MvccDataRow(grp,
             hash,
             link,
             partId,
@@ -78,7 +78,7 @@ public class CacheDataRowStore extends RowStore {
             mvccCntr,
             opCntr);
 
-        return initDataRow(dataRow, cacheId);
+        return initDataRow(row, cacheId);
     }
 
     /**
