@@ -29,6 +29,15 @@ import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
  * Ignite Security Processor.
+ * <p>
+ * The differences between {@code IgniteSecurityProcessor} and {@code GridSecurityProcessor} are:
+ * <ul>
+ * <li>{@code IgniteSecurityProcessor} allows to define a current security context by
+ * {@link #startSession(SecurityContext)} or {@link #startSession(UUID)} methods.
+ * <li>{@code IgniteSecurityProcessor} doesn't require to pass {@code SecurityContext} to authorize operations.
+ * <li>{@code IgniteSecurityProcessor} doesn't extend {@code GridProcessor} interface
+ * sequentially it doesn't have any methods of the lifecycle of {@code GridProcessor}.
+ * </ul>
  */
 public interface IgniteSecurityProcessor {
     /**
