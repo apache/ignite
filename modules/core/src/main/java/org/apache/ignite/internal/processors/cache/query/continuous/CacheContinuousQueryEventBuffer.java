@@ -74,6 +74,8 @@ public class CacheContinuousQueryEventBuffer {
             if (backupEntry.updateCounter() <= updateCntr)
                 it.remove();
         }
+
+        //System.out.println("cleanupBackupQueue backupQ=" + hashCode() + ", backupQ.sizex()=" + backupQ.sizex() + ", updateCntr=" + updateCntr);
     }
 
     /**
@@ -96,6 +98,8 @@ public class CacheContinuousQueryEventBuffer {
                     break;
             }
         }
+
+        System.out.println("flushOnExchange backupQ=" + hashCode() + ", backupQ.sizex()=" + backupQ.sizex() + ", flushed=" + (ret == null ? 0 : ret.size()));
 
         Batch batch = curBatch.get();
 
