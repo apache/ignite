@@ -28,7 +28,7 @@ import org.junit.runners.model.Statement;
  */
 @SuppressWarnings({"TransientFieldInNonSerializableClass", "ExtendsUtilityClass"})
 @Deprecated
-public abstract class JUnit3TestLegacySupport extends JUnit3TestLegacyAssert {
+public abstract class JUnit3TestLegacySupport extends JUnitAssertAware {
     /**
      * Supports obtaining test name for JUnit4 framework in a way that makes it available for legacy methods invoked
      * from {@code runTest(Statement)}.
