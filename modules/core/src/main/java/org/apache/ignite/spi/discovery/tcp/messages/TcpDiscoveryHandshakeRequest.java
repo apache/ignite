@@ -76,12 +76,22 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     }
 
     /** */
-    public boolean prefetch() {
-        return getFlag(CLIENT_DATA_PREFETCH);
+    public boolean sendComponentsData() {
+        return getFlag(SEND_COMPONENTS_DATA_FLAG_POS);
     }
 
     /** */
-    public void prefetch(boolean prefetch) {
-        setFlag(CLIENT_DATA_PREFETCH, prefetch);
+    public void sendComponentsData(boolean snd) {
+        setFlag(SEND_COMPONENTS_DATA_FLAG_POS, snd);
+    }
+
+    /** */
+    public boolean prefetchClientData() {
+        return getFlag(CLIENT_DATA_PREFETCH_FLAG_POS);
+    }
+
+    /** */
+    public void prefetchClientData(boolean prefetch) {
+        setFlag(CLIENT_DATA_PREFETCH_FLAG_POS, prefetch);
     }
 }

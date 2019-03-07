@@ -114,6 +114,16 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     }
 
     /** */
+    public boolean hasComponentsData() {
+        return getFlag(SEND_COMPONENTS_DATA_FLAG_POS);
+    }
+
+    /** */
+    public void hasComponentsData(boolean hasComponentsData) {
+        setFlag(SEND_COMPONENTS_DATA_FLAG_POS, hasComponentsData);
+    }
+
+    /** */
     public Map<Integer, byte[]> componentsData() {
         return componentsData;
     }

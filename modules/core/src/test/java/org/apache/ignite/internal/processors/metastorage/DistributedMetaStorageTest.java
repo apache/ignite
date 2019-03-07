@@ -338,11 +338,17 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         startClient(1);
 
+        AtomicInteger clientLsnrUpdatesCnt = new AtomicInteger();
+
         assertEquals(1, metastorage(1).getUpdatesCount());
 
         assertEquals("value0", metastorage(1).read("key0"));
 
+        metastorage(1).listen(key -> true, (key, oldVal, newVal) -> clientLsnrUpdatesCnt.incrementAndGet());
+
         metastorage(1).write("key1", "value1");
+
+        assertEquals(1, clientLsnrUpdatesCnt.get());
 
         assertEquals("value1", metastorage(1).read("key1"));
 
@@ -373,7 +379,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         int expUpdatesCnt = isPersistent() ? 3 : 2;
 
         // Wait enough to cover failover timeout.
-        GridTestUtils.waitForCondition(() -> metastorage(1).getUpdatesCount() == expUpdatesCnt, 15_000);
+        assertTrue(GridTestUtils.waitForCondition(() -> metastorage(1).getUpdatesCount() == expUpdatesCnt, 15_000));
 
         if (isPersistent())
             assertEquals("value0", metastorage(1).read("key0"));

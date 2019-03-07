@@ -462,7 +462,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public Long getTcpHandshakeResponseData() {
+    @Override public Long collectTcpHandshakeResponseData() {
         synchronized (innerStateLock) {
             long ver = getActualVersion().id;
 
@@ -475,6 +475,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         synchronized (innerStateLock) {
             assert startupExtras != null;
 
+            if (isClient)
+                startupExtras = new StartupExtras();
+
             if (componentData != null) {
                 assert componentData instanceof Long;
 
@@ -484,12 +487,84 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public Serializable collectTcpClientPrefetchData() {
+        assert !isClient;
+
+        if (!isSupported(ctx))
+            return null;
+
+        synchronized (innerStateLock) {
+            //TODO Store it precalculated? Maybe later.
+            DistributedMetaStorageVersion actualVer = getActualVersion();
+
+            int availableHistSize = getAvailableHistorySize();
+
+            if (actualVer.id <= availableHistSize) {
+                DistributedMetaStorageHistoryItem[] hist = histCache.toArray();
+
+                return new DistributedMetaStorageClusterNodeData(ver, null, null, hist);
+            }
+            else {
+                DistributedMetaStorageVersion ver0;
+
+                DistributedMetaStorageKeyValuePair[] fullData;
+
+                if (startupExtras == null || startupExtras.fullNodeData == null) {
+                    ver0 = ver;
+
+                    try {
+                        fullData = bridge.localFullData();
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw criticalError(e);
+                    }
+                }
+                else {
+                    ver0 = startupExtras.fullNodeData.ver;
+
+                    fullData = startupExtras.fullNodeData.fullData;
+                }
+
+                DistributedMetaStorageHistoryItem[] updates;
+
+                if (startupExtras != null)
+                    updates = startupExtras.deferredUpdates.toArray(EMPTY_ARRAY);
+                else
+                    updates = null;
+
+                return new DistributedMetaStorageClusterNodeData(ver0, fullData, null, updates);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTcpClientPrefetchDataReceived(Serializable prefetchData) {
+        if (prefetchData == null)
+            return;
+
+        synchronized (innerStateLock) {
+            DistributedMetaStorageClusterNodeData nodeData = (DistributedMetaStorageClusterNodeData)prefetchData;
+
+            if (nodeData.fullData == null) {
+                if (nodeData.updates != null) {
+                    for (DistributedMetaStorageHistoryItem update : nodeData.updates)
+                        updateLater(update);
+                }
+            }
+            else
+                writeFullDataLater(nodeData);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
         assert startupExtras != null;
 
-        DistributedMetaStorageVersion verToSnd = bridge instanceof ReadOnlyDistributedMetaStorageBridge
-            ? ((ReadOnlyDistributedMetaStorageBridge)bridge).version()
-            : ver;
+        DistributedMetaStorageVersion verToSnd = isClient
+            ? DistributedMetaStorageVersion.INITIAL_VERSION.nextVersion(startupExtras.deferredUpdates)
+            : bridge instanceof ReadOnlyDistributedMetaStorageBridge
+                ? ((ReadOnlyDistributedMetaStorageBridge)bridge).version()
+                : ver;
 
         long clusterVer = startupExtras.verFromDiscoveryClusterData;
 

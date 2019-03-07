@@ -15,21 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp.internal;
+package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
-public interface DiscoveryTcpSpiDataExchange {
+public class TcpDiscoveryClientDataPrefetchMessage extends TcpDiscoveryAbstractMessage {
     /** */
-    Map<Integer,byte[]> collectHandshakeResponseData();
+    private static final long serialVersionUID = 0L;
 
     /** */
-    void handshakeResponseDataReceived(Map<Integer, byte[]> componentsData);
+    private Map<Integer, byte[]> prefetchData;
+
+    /**
+     * Constructor.
+     *  @param creatorNodeId Creator node ID.
+     *
+     */
+    public TcpDiscoveryClientDataPrefetchMessage(UUID creatorNodeId, Map<Integer, byte[]> prefetchData) {
+        super(creatorNodeId);
+
+        this.prefetchData = prefetchData;
+    }
 
     /** */
-    Map<Integer,byte[]> collectClientPrefetchData();
+    public Map<Integer, byte[]> prefetchData() {
+        return prefetchData;
+    }
 
-    /** */
-    void clientPrefetchDataReceived(Map<Integer, byte[]> prefetchData);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryClientDataPrefetchMessage.class, this, "super", super.toString());
+    }
 }

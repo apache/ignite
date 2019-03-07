@@ -150,12 +150,21 @@ public interface GridComponent {
     public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data);
 
     /** */
-    public default Serializable getTcpHandshakeResponseData() {
+    public default Serializable collectTcpHandshakeResponseData() {
         return null;
     }
 
     /** */
     public default void onTcpHandshakeResponseDataReceived(Serializable componentData) {
+    }
+
+    /** */
+    public default Serializable collectTcpClientPrefetchData() {
+        return null;
+    }
+
+    /** */
+    public default void onTcpClientPrefetchDataReceived(Serializable prefetchData) {
     }
 
     /**
