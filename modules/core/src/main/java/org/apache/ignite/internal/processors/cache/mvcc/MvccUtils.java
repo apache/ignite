@@ -788,16 +788,17 @@ public class MvccUtils {
     /**
      * Initialises MVCC filter and returns MVCC query tracker if needed.
      * @param cctx Cache context.
-     * @param startTx Start transaction flag.
+     * @param autoStartTx Start transaction flag.
      * @return MVCC query tracker.
      * @throws IgniteCheckedException If failed.
      */
-    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean startTx) throws IgniteCheckedException {
+    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean autoStartTx)
+        throws IgniteCheckedException {
         assert cctx != null && cctx.mvccEnabled();
 
         GridNearTxLocal tx = tx(cctx.kernalContext());
 
-        if (tx == null && startTx)
+        if (tx == null && autoStartTx)
             tx = txStart(cctx, 0);
 
         return mvccTracker(cctx, tx);
