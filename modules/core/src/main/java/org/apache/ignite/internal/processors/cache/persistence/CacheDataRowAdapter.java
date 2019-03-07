@@ -336,7 +336,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             }
 
             // Assume that row header is always located entirely on the very first page.
-            hdrLen = readHeader(pageAddr, data.offset());
+            hdrLen = readHeader(sharedCtx, pageAddr, data.offset(), rowData);
 
             if (rowData == LINK_WITH_HEADER)
                 return null;
@@ -363,11 +363,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /**
      * Reads row header (i.e. MVCC info) which should be located on the very first page od data.
      *
+     * @param sharedCtx Shared context.
      * @param addr Address.
      * @param off Offset
+     * @param rowData Required row data.
      * @return Number of bytes read.
      */
-    protected int readHeader(long addr, int off) {
+    protected int readHeader(GridCacheSharedContext<?, ?> sharedCtx, long addr, int off, RowData rowData) {
         // No-op.
         return 0;
     }
@@ -478,7 +480,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
     ) throws IgniteCheckedException {
         int off = 0;
 
-        off += readHeader(addr, off);
+        off += readHeader(sharedCtx, addr, off, rowData);
 
         if (rowData == LINK_WITH_HEADER)
             return;
@@ -495,7 +497,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int len = PageUtils.getInt(addr, off);
         off += 4;
 
-        if (rowData != RowData.NO_KEY) {
+        if (rowData != RowData.NO_KEY && rowData != RowData.NO_KEY_WITH_HINTS) {
             byte type = PageUtils.getByte(addr, off);
             off++;
 
@@ -873,7 +875,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
         LINK_ONLY,
 
         /** */
-        LINK_WITH_HEADER
+        LINK_WITH_HEADER,
+
+        /** Force instant hints actualization for rebalance (to avoid races with vacuum). */
+        FULL_WITH_HINTS,
+
+        /** Force instant hints actualization for update operation with history (to avoid races with vacuum). */
+        NO_KEY_WITH_HINTS
     }
 
     /** {@inheritDoc} */

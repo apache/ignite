@@ -120,6 +120,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
         List<KeyCacheObject> keys,
         List<Message> vals) {
         super(cacheId, dhtFutId, lockVer, op, batchId, snapshot.operationCounter(), keys, vals);
+
         this.cacheId = cacheId;
         this.subjId = subjId;
         this.topVer = topVer;

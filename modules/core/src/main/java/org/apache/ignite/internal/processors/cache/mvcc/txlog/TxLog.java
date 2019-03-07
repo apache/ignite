@@ -47,6 +47,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -65,8 +66,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 
 /**
  *
@@ -394,7 +393,6 @@ public class TxLog implements DbCheckpointListener {
         /** {@inheritDoc} */
         @Override public boolean apply(BPlusTree<TxKey, TxRow> tree, BPlusIO<TxKey> io, long pageAddr,
                                        int idx) throws IgniteCheckedException {
-
             if (rows == null)
                 rows = new ArrayList<>();
 
@@ -448,7 +446,8 @@ public class TxLog implements DbCheckpointListener {
          * @param primary Flag if this is primary node.
          */
         TxLogUpdateClosure(long major, long minor, byte newState, boolean primary) {
-            assert major > MVCC_CRD_COUNTER_NA && minor > MVCC_COUNTER_NA && newState != TxState.NA;
+            assert MvccUtils.mvccVersionIsValid(major, minor) && newState != TxState.NA;
+
             this.major = major;
             this.minor = minor;
             this.newState = newState;

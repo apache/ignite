@@ -2190,8 +2190,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             int curCacheId = CU.UNDEFINED_CACHE_ID;
 
             try {
-                GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(KEY_ONLY);
-
                 KeyCacheObject prevKey = null;
 
                 Object rest = null;
@@ -2207,6 +2205,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 if (!shared && (cctx = F.first(part.group().caches())) == null)
                     return metrics;
 
+                GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(KEY_ONLY);
+
                 while (cursor.next()) {
                     if (isCancelled())
                         throw new IgniteInterruptedCheckedException("Operation has been cancelled.");
@@ -2216,14 +2216,14 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     if (prevKey == null)
                         prevKey = row.key();
 
-                    if (cctx == null) {
+                    if (cctx == null) { // Shared group.
                         cctx = part.group().shared().cacheContext(curCacheId = row.cacheId());
 
                         if (cctx == null)
-                            return metrics;
+                            continue;
                     }
 
-                    if (!prevKey.equals(row.key()) || (shared && curCacheId != row.cacheId())) {
+                    if ((shared && curCacheId != row.cacheId()) || !prevKey.equals(row.key())) {
                         if (rest != null || !F.isEmpty(cleanupRows))
                             cleanup(part, prevKey, cleanupRows, rest, cctx, metrics);
 
@@ -2235,7 +2235,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                             cctx = part.group().shared().cacheContext(curCacheId = row.cacheId());
 
                             if (cctx == null)
-                                return metrics;
+                                continue;
                         }
 
                         prevKey = row.key();

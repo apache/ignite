@@ -742,8 +742,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @return History entries.
      * @throws IgniteCheckedException, if failed.
      */
-    private CacheEntryInfoCollection fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist)
-        throws IgniteCheckedException {
+    private CacheEntryInfoCollection fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist) {
         List<GridCacheEntryInfo> res = new ArrayList<>();
 
         for (int i = 0; i < hist.size(); i++) {
@@ -753,7 +752,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 row0.hash(),
                 row0.link(),
                 key.partition(),
-                CacheDataRowAdapter.RowData.NO_KEY,
+                CacheDataRowAdapter.RowData.NO_KEY_WITH_HINTS,
                 row0.mvccCoordinatorVersion(),
                 row0.mvccCounter(),
                 row0.mvccOperationCounter(),
@@ -762,22 +761,24 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
             GridCacheMvccEntryInfo entry = new GridCacheMvccEntryInfo();
 
+            entry.cacheId(cctx.cacheId());
             entry.version(row.version());
-            entry.mvccVersion(row);
-            entry.newMvccVersion(row);
             entry.value(row.value());
             entry.expireTime(row.expireTime());
 
-            if (MvccUtils.compare(mvccSnapshot, row.mvccCoordinatorVersion(), row.mvccCounter()) != 0) {
-                entry.mvccTxState(row.mvccTxState() != TxState.NA ? row.mvccTxState() :
-                    MvccUtils.state(cctx, row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter()));
-            }
+            // Row should be retrieved with actual hints.
+            entry.mvccVersion(row);
+            entry.newMvccVersion(row);
 
-            if (MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0) {
-                entry.newMvccTxState(row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
-                    MvccUtils.state(cctx, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
-                    row.newMvccOperationCounter()));
-            }
+            if (MvccUtils.compare(mvccSnapshot, row.mvccCoordinatorVersion(), row.mvccCounter()) != 0)
+                entry.mvccTxState(row.mvccTxState());
+
+            if (row.newMvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA
+                && MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0)
+                entry.newMvccTxState(row.newMvccTxState());
+
+
+            assert mvccSnapshot.coordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA;
 
             res.add(entry);
         }
