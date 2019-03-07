@@ -45,6 +45,9 @@ public class QueryParameters {
     /** Nexted transactional mode. */
     private final NestedTxMode nestedTxMode;
 
+    /** Auto-commit flag. */
+    private final boolean autoCommit;
+
     /**
      * Create parameters from query.
      *
@@ -52,13 +55,26 @@ public class QueryParameters {
      * @return Parameters.
      */
     public static QueryParameters fromQuery(SqlFieldsQuery qry) {
+        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
+        boolean autoCommit = true;
+
+        if (qry instanceof SqlFieldsQueryEx) {
+            SqlFieldsQueryEx qry0 = (SqlFieldsQueryEx)qry;
+
+            if (qry0.getNestedTxMode() != null)
+                nestedTxMode = qry0.getNestedTxMode();
+
+            autoCommit = qry0.isAutoCommit();
+        }
+
         return new QueryParameters(
             qry.getArgs(),
             qry.getPartitions(),
             qry.getTimeout(),
             qry.isLazy(),
             qry.isDataPageScanEnabled(),
-            qry instanceof SqlFieldsQueryEx ? ((SqlFieldsQueryEx)qry).getNestedTxMode() : NestedTxMode.DEFAULT
+            nestedTxMode,
+            autoCommit
         );
     }
 
@@ -78,7 +94,8 @@ public class QueryParameters {
         int timeout,
         boolean lazy,
         Boolean dataPageScanEnabled,
-        NestedTxMode nestedTxMode
+        NestedTxMode nestedTxMode,
+        boolean autoCommit
     ) {
         this.args = args;
         this.parts = parts;
@@ -86,6 +103,7 @@ public class QueryParameters {
         this.lazy = lazy;
         this.dataPageScanEnabled = dataPageScanEnabled;
         this.nestedTxMode = nestedTxMode;
+        this.autoCommit = autoCommit;
     }
 
     /**
@@ -130,5 +148,12 @@ public class QueryParameters {
      */
     public NestedTxMode nestedTxMode() {
         return nestedTxMode;
+    }
+
+    /**
+     * @return Auto-commit flag.
+     */
+    public boolean autoCommit() {
+        return autoCommit;
     }
 }

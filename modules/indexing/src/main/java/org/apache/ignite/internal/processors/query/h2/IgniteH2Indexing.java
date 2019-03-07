@@ -994,7 +994,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Queries individual fields (generally used by JDBC drivers).
      *
      * @param schemaName Schema name.
-     * @param qry Query.
+     * @param planKey Plan key.
+     * @param params Parameters.
      * @param keepBinary Keep binary flag.
      * @param filter Cache name and key filter.
      * @param cancel Query cancel.
@@ -1003,27 +1004,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private FieldsQueryCursor<List<?>> executeQueryLocal(
         String schemaName,
-        SqlFieldsQuery qry,
+        QueryParserCacheKey planKey,
+        QueryParameters params,
         List<GridQueryFieldMetadata> meta,
         final boolean keepBinary,
         IndexingQueryFilter filter,
         GridQueryCancel cancel,
         Long qryId
     ) throws IgniteCheckedException {
-        boolean startTx = autoStartTx(qry);
+        boolean startTx = autoStartTx(params);
 
         final GridQueryFieldsResult res = executeQueryLocal0(
             schemaName,
-            qry.getSql(),
-            F.asList(qry.getArgs()),
+            planKey.sql(),
+            F.asList(params.arguments()),
             meta,
             filter,
-            qry.isEnforceJoinOrder(),
+            planKey.enforceJoinOrder(),
             startTx,
-            qry.getTimeout(),
+            params.timeout(),
             cancel,
             null,
-            qry.isDataPageScanEnabled()
+            params.dataPageScanEnabled()
         );
 
         Iterable<List<?>> iter = () -> {
@@ -1301,6 +1303,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     List<? extends FieldsQueryCursor<List<?>>> qryRes = executeSelectOrDml(
                         schemaName,
                         newQry,
+                        newPlanKey,
+                        newParams,
                         parseRes.select(),
                         parseRes.dml(),
                         keepBinary,
@@ -1334,6 +1338,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Execute an all-ready {@link SqlFieldsQuery}.
      * @param schemaName Schema name.
      * @param qry Fields query with flags.
+     * @param planKey Plan key.
+     * @param params Parameters.
      * @param select Select.
      * @param dml DML.
      * @param keepBinary Whether binary objects must not be deserialized automatically.
@@ -1346,6 +1352,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private List<? extends FieldsQueryCursor<List<?>>> executeSelectOrDml(
         String schemaName,
         SqlFieldsQuery qry,
+        QueryParserCacheKey planKey,
+        QueryParameters params,
         @Nullable QueryParserResultSelect select,
         @Nullable QueryParserResultDml dml,
         boolean keepBinary,
@@ -1354,14 +1362,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel,
         boolean registerAsNewQry
     ) {
-        String sqlQry = qry.getSql();
-
-        boolean loc = qry.isLocal();
-
-        IndexingQueryFilter filter = (loc ? backupFilter(null, qry.getPartitions()) : null);
+        IndexingQueryFilter filter = (planKey.local() ? backupFilter(null, params.partitions()) : null);
 
         if (dml != null) {
-            Long qryId = registerRunningQuery(schemaName, cancel, sqlQry, loc, registerAsNewQry);
+            Long qryId = registerRunningQuery(schemaName, cancel, planKey.sql(), planKey.local(), registerAsNewQry);
 
             boolean fail = false;
 
@@ -1373,7 +1377,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         "\"-DIGNITE_ALLOW_DML_INSIDE_TRANSACTION=true\")");
                 }
 
-                if (!loc)
+                if (!planKey.local())
                     return executeUpdateDistributed(schemaName, dml , qry, cancel);
                 else {
                     UpdateResult updRes = executeUpdate(schemaName, dml , qry, true, filter, cancel);
@@ -1389,8 +1393,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             catch (IgniteCheckedException e) {
                 fail = true;
 
-                throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
-                    ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
+                throw new IgniteSQLException("Failed to execute DML statement [stmt=" + planKey.sql() +
+                    ", params=" + Arrays.deepToString(params.arguments()) + "]", e);
             }
             finally {
                 runningQryMgr.unregister(qryId, fail);
@@ -1425,12 +1429,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         else {
             // Local query.
-            Long qryId = registerRunningQuery(schemaName, cancel, sqlQry, loc, registerAsNewQry);
+            Long qryId = registerRunningQuery(schemaName, cancel, planKey.sql(), planKey.local(), registerAsNewQry);
 
             try {
                 FieldsQueryCursor<List<?>> res = executeQueryLocal(
                     schemaName,
-                    qry,
+                    planKey,
+                    params,
                     select.meta(),
                     keepBinary,
                     filter,
@@ -1443,8 +1448,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             catch (IgniteCheckedException e) {
                 runningQryMgr.unregister(qryId, true);
 
-                throw new IgniteSQLException("Failed to execute local statement [stmt=" + sqlQry +
-                    ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
+                throw new IgniteSQLException("Failed to execute local statement [stmt=" + planKey.sql() +
+                    ", params=" + Arrays.deepToString(params.arguments()) + "]", e);
             }
         }
     }
@@ -1486,12 +1491,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry Sql fields query.autoStartTx(qry)
      * @return {@code True} if need to start transaction.
      */
+    // TODO: Remove.
     @SuppressWarnings("SimplifiableIfStatement")
     private boolean autoStartTx(SqlFieldsQuery qry) {
         if (!mvccEnabled(ctx))
             return false;
 
         return qry instanceof SqlFieldsQueryEx && !((SqlFieldsQueryEx)qry).isAutoCommit() && tx(ctx) == null;
+    }
+
+    /**
+     * @param params Query parameters.
+     * @return {@code True} if need to start transaction.
+     */
+    @SuppressWarnings("SimplifiableIfStatement")
+    private boolean autoStartTx(QueryParameters params) {
+        if (!mvccEnabled(ctx))
+            return false;
+
+        return !params.autoCommit() && tx(ctx) == null;
     }
 
     /** {@inheritDoc} */
