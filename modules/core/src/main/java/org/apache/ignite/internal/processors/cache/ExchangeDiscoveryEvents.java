@@ -121,7 +121,7 @@ public class ExchangeDiscoveryEvents {
 
         ClusterNode node = evt.eventNode();
 
-        if (!node.isClient() && !node.isDaemon()) {
+        if (!node.isClient()) {
             lastSrvEvt = evt;
 
             srvEvtTopVer = new AffinityTopologyVersion(evt.topologyVersion(), 0);
