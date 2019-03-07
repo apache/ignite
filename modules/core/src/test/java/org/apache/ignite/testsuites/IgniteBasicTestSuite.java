@@ -229,8 +229,6 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         suite.addTestSuite(ListeningTestLoggerTest.class);
 
-        suite.addTestSuite(PluginNodeValidationTest.class);
-
         return suite;
     }
 }

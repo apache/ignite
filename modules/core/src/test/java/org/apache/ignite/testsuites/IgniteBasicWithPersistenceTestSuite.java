@@ -24,6 +24,7 @@ import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
+import org.apache.ignite.plugin.PluginNodeValidationTest;
 import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
@@ -61,6 +62,7 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(GridCommandHandlerTest.class);
         suite.addTestSuite(GridCommandHandlerSslTest.class);
         suite.addTestSuite(GridInternalTaskUnusedWalSegmentsTest.class);
+        suite.addTestSuite(PluginNodeValidationTest.class);
 
         return suite;
     }
