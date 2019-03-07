@@ -69,9 +69,9 @@ public class QueryParserResult {
     }
 
     /**
-     * @return Plan key.
+     * @return Query descriptor.
      */
-    public QueryParserCacheKey planKey() {
+    public QueryParserCacheKey queryDescriptor() {
         return planKey;
     }
 
