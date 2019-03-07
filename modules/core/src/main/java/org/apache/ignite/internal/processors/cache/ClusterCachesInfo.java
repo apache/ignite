@@ -1519,7 +1519,7 @@ class ClusterCachesInfo {
                 }
 
                 if (locCfg != null ||
-                    joinDiscoData.startCaches() ||
+                    joinDiscoData.startCaches() || reconnect ||
                     CU.affinityNode(ctx.discovery().localNode(), desc.groupDescriptor().config().getNodeFilter())) {
                     if (active)
                         locJoinStartCaches.add(new T2<>(desc, nearCfg));
