@@ -47,11 +47,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.Random;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.UUID;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -71,21 +70,21 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcCachePartitionsReques
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcCachePartitionsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultWithIo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultWithIo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionClientContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.HostAndPortRange;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -260,7 +259,7 @@ public class JdbcThinConnection implements Connection {
 
             ensureConnected();
 
-            JdbcThinTcpIo cliIo = cliIo();
+            JdbcThinTcpIo cliIo = cliIo(null);
 
             // Actual ON, if needed.
             if (newVal) {
@@ -816,7 +815,7 @@ public class JdbcThinConnection implements Connection {
      */
     IgniteProductVersion igniteVersion() {
         // TODO: IGNITE-11321: JDBC Thin: implement nodes multi version support.
-        return cliIo().igniteVersion();
+        return cliIo(null).igniteVersion();
     }
 
     /**
@@ -866,7 +865,7 @@ public class JdbcThinConnection implements Connection {
             try {
                 UUID nodeId = calculateNodeId(req);
 
-                JdbcThinTcpIo cliIo = stickyIo == null ? cliIo() : stickyIo;
+                JdbcThinTcpIo cliIo = stickyIo == null ? cliIo(nodeId) : stickyIo;
 
                 if (stmt != null && stmt.requestTimeout() != NO_TIMEOUT) {
                     reqTimeoutTimerTask = new RequestTimeoutTimerTask(
@@ -885,7 +884,7 @@ public class JdbcThinConnection implements Connection {
             if (req instanceof JdbcQueryExecuteRequest)
                 ((JdbcQueryExecuteRequest) req).partitionResponseRequest(reqPartRes);
 
-                JdbcResponse res = cliIo(nodeId).sendRequest(req, stmt);
+                JdbcResponse res = cliIo.sendRequest(req, stmt);
 
                 txIo = res.activeTransaction() ? cliIo : null;
 
@@ -940,9 +939,8 @@ public class JdbcThinConnection implements Connection {
      *
      * @param req Jdbc request for which we'll try to calculate node id.
      * @return node UUID or null if failed to calculate.
-     * @throws SQLException if failed to retrieve partition distribution.
      */
-    @Nullable private UUID calculateNodeId(JdbcRequest req) throws SQLException {
+    @Nullable private UUID calculateNodeId(JdbcRequest req) {
         UUID bestEffortAffinityNodeId = null;
 
         if (bestEffortAffinity && req instanceof JdbcQueryExecuteRequest && affinityCache != null &&
@@ -957,8 +955,31 @@ public class JdbcThinConnection implements Connection {
                     Map<Integer, UUID> cacheDistr = affinityCache.cacheDistribution(partRes.cacheName());
 
                     if (cacheDistr == null) {
-                        // TODO: 07.03.19 add validation logic: for example if sendRequest returnds exception.
-                        cacheDistr = tmpRevert(((JdbcCachePartitionsResult)sendRequest(new JdbcCachePartitionsRequest(Collections.singleton(partRes.cacheName())))).getPartitionsMap());
+                        JdbcResponse res;
+
+                        try {
+                            res = cliIo(null).sendRequest(
+                                new JdbcCachePartitionsRequest(Collections.singleton(partRes.cacheName())), null);
+                        }
+                        catch (IOException e) {
+                            // TODO: 07.03.19 log warning or smth.
+                            // Skip best effort affinity optimization in case of exception during retrieving
+                            // partition destribution.
+                            return null;
+                        }
+
+                        if (res.status() != ClientListenerResponse.STATUS_SUCCESS) {
+                            // TODO: 07.03.19 log warning or smth.
+                            // Skip best effort affinity optimization in case of any response status other then
+                            // STATUS_SUCCESS.
+                            return null;
+                        }
+
+                        if (res.affinityVersionChanged())
+                            affinityCache = new AffinityCache(res.affinityVersion());
+
+                        cacheDistr = tmpRevert(((JdbcCachePartitionsResult) res.response()).getPartitionsMap());
+
                         affinityCache.addCacheDistribution(partRes.cacheName(), cacheDistr);
                     }
 
@@ -971,6 +992,8 @@ public class JdbcThinConnection implements Connection {
                             if (bestEffortAffinityNodeId != null)
                                 break;
                         }
+
+                        // TODO: 07.03.19 if not found, at all.
                     }
                 }
             }
@@ -1376,17 +1399,26 @@ public class JdbcThinConnection implements Connection {
      */
     boolean isQueryCancellationSupported() {
         // TODO: IGNITE-11321: JDBC Thin: implement nodes multi version support.
-        return cliIo().isQueryCancellationSupported();
+        return cliIo(null).isQueryCancellationSupported();
     }
 
     /**
+     * @param nodeId Node UUID.
      * @return Ignite endpoint to use for request/response transferring.
      */
-    private JdbcThinTcpIo cliIo() {
+    private JdbcThinTcpIo cliIo(UUID nodeId) {
         if (txIo != null)
             return txIo;
 
-        return bestEffortAffinity ? iosArr[RND.nextInt(iosArr.length)] : singleIo;
+        if (!bestEffortAffinity)
+            return singleIo;
+
+        if (nodeId == null)
+            return iosArr[RND.nextInt(iosArr.length)];
+
+        JdbcThinTcpIo io = ios.get(nodeId);
+
+        return io != null ? io : iosArr[RND.nextInt(iosArr.length)];
     }
 
     /**
