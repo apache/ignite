@@ -2605,7 +2605,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 else {
                     // TODO: IGNITE-8865 if there is no ORDER BY statement it's no use to retain entries order on
                     // TODO: locking (sequential = false).
-                    SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), qryDesc.collocated())
+                    SqlFieldsQuery selectFieldsQry = new SqlFieldsQuery(plan.selectQuery(), qryDesc.collocated())
                         .setArgs(qryParams.arguments())
                         .setDistributedJoins(qryDesc.distributedJoins())
                         .setEnforceJoinOrder(qryDesc.enforceJoinOrder())
@@ -2614,9 +2614,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         .setTimeout((int)timeout, TimeUnit.MILLISECONDS)
                         .setDataPageScanEnabled(qryParams.dataPageScanEnabled());
 
+                    // TODO: Fixme: call specialized method.
                     FieldsQueryCursor<List<?>> cur = querySqlFields(
                         qryDesc.schemaName(),
-                        newFieldsQry,
+                        selectFieldsQry,
                         null,
                         true,
                         true,
