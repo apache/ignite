@@ -25,6 +25,9 @@ import java.util.Set;
  * A convinient adapter for default snapshot operation.
  */
 public class SnapshotOperationAdapter implements SnapshotOperation {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public Set<Integer> cacheGroupIds() {
         return new HashSet<>();

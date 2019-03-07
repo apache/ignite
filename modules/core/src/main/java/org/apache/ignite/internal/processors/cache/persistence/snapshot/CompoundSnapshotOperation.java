@@ -25,6 +25,9 @@ import java.util.Set;
 
 /** */
 public class CompoundSnapshotOperation implements SnapshotOperation {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * The list of operations. Taking snapshot operation by {@link IgniteCacheSnapshotManager}
      * will be always placed as the head of the list.
