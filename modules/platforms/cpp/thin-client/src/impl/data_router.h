@@ -34,6 +34,7 @@
 #include <ignite/impl/binary/binary_writer_impl.h>
 
 #include "impl/affinity/affinity_assignment.h"
+#include "impl/affinity/affinity_manager.h"
 #include "impl/data_channel.h"
 
 namespace ignite
@@ -161,9 +162,15 @@ namespace ignite
                  * Update affinity mapping for the cache.
                  *
                  * @param cacheId Cache ID.
-                 * @param binary Cache binary flag.
                  */
-                void RefreshAffinityMapping(int32_t cacheId, bool binary);
+                void RefreshAffinityMapping(int32_t cacheId);
+
+                /**
+                 * Update affinity mapping for caches.
+                 *
+                 * @param cacheIds Cache IDs.
+                 */
+                void RefreshAffinityMapping(const std::vector<int32_t>& cacheIds);
 
                 /**
                  * Get affinity mapping for the cache.
@@ -171,7 +178,7 @@ namespace ignite
                  * @param cacheId Cache ID.
                  * @return Mapping.
                  */
-                cache::SP_AffinityAssignment GetAffinityAssignment(int32_t cacheId);
+                affinity::SP_AffinityAssignment GetAffinityAssignment(int32_t cacheId);
 
                 /**
                  * Clear affinity mapping for the cache.
@@ -252,11 +259,8 @@ namespace ignite
                 /** Channels mutex. */
                 common::concurrent::CriticalSection channelsMutex;
 
-                /** Cache affinity mapping. */
-                std::map<int32_t, cache::SP_AffinityAssignment> cacheAffinityMapping;
-
-                /** Cache affinity mapping mutex. */
-                common::concurrent::CriticalSection cacheAffinityMappingMutex;
+                /** Cache affinity manager. */
+                affinity::AffinityManager affinityManager;
             };
 
             /** Shared pointer type. */

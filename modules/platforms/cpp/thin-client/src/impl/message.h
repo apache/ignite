@@ -756,6 +756,26 @@ namespace ignite
                  */
                 virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
+                /**
+                 * Get version.
+                 *
+                 * @return Topology version.
+                 */
+                const AffinityTopologyVersion& GetVersion() const
+                {
+                    return topologyVersion;
+                }
+
+                /**
+                 * Get affinity awareness groups.
+                 *
+                 * @return Affinity awareness groups.
+                 */
+                const std::vector<AffinityAwarenessGroup>& GetGroups() const
+                {
+                    return groups;
+                }
+
             private:
                 /** Affinity topology version. */
                 AffinityTopologyVersion topologyVersion;

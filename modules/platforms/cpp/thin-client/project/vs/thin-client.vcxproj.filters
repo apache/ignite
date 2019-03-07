@@ -58,6 +58,9 @@
     <ClCompile Include="..\..\src\impl\affinity\affinity_topology_version.cpp">
       <Filter>Code\impl\affinity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\affinity\affinity_manager.cpp">
+      <Filter>Code\impl\affinity</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h">
@@ -130,6 +133,9 @@
       <Filter>Code\impl\affinity</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\impl\affinity\node_partitions.h">
+      <Filter>Code\impl\affinity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\affinity\affinity_manager.h">
       <Filter>Code\impl\affinity</Filter>
     </ClInclude>
   </ItemGroup>

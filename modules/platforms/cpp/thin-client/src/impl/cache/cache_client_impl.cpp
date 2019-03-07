@@ -49,7 +49,7 @@ namespace ignite
                 template<typename ReqT, typename RspT>
                 void CacheClientImpl::SyncCacheKeyMessage(const WritableKey& key, const ReqT& req, RspT& rsp)
                 {
-                    SP_AffinityAssignment affinityInfo = router.Get()->GetAffinityAssignment(id);
+                    affinity::SP_AffinityAssignment affinityInfo = router.Get()->GetAffinityAssignment(id);
 
                     if (!affinityInfo.IsValid() || affinityInfo.Get()->GetPartitionsNum() == 0)
                     {
@@ -269,7 +269,7 @@ namespace ignite
 
                 void CacheClientImpl::RefreshAffinityMapping()
                 {
-                    router.Get()->RefreshAffinityMapping(id, binary);
+                    router.Get()->RefreshAffinityMapping(id);
                 }
             }
         }

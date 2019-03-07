@@ -129,38 +129,36 @@ namespace ignite
                 legacyChannels.clear();
             }
 
-            void DataRouter::RefreshAffinityMapping(int32_t cacheId, bool binary)
+            void DataRouter::RefreshAffinityMapping(int32_t cacheId)
             {
-                std::vector<NodePartitions> nodeParts;
+                std::vector<int32_t> ids(1, cacheId);
 
-                CacheRequest<RequestType::CACHE_NODE_PARTITIONS> req(cacheId, binary);
-                ClientCacheNodePartitionsResponse rsp(nodeParts);
+                RefreshAffinityMapping(ids);
+            }
+
+            void DataRouter::RefreshAffinityMapping(const std::vector<int32_t>& cacheIds)
+            {
+                std::vector<AffinityAwarenessGroup> groups;
+
+                CachePartitionsRequest req(cacheIds);
+                CachePartitionsResponse rsp(groups);
 
                 SyncMessageNoMetaUpdate(req, rsp);
 
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
 
-                cache::SP_AffinityAssignment newMapping(new cache::AffinityAssignment(nodeParts));
-
-                common::concurrent::CsLockGuard lock(cacheAffinityMappingMutex);
-
-                cache::SP_AffinityAssignment& affinityInfo = cacheAffinityMapping[cacheId];
-                affinityInfo.Swap(newMapping);
+                affinityManager.UpdateAffinity(rsp.GetGroups(), rsp.GetVersion());
             }
 
-            cache::SP_AffinityAssignment DataRouter::GetAffinityAssignment(int32_t cacheId)
+            affinity::SP_AffinityAssignment DataRouter::GetAffinityAssignment(int32_t cacheId)
             {
-                common::concurrent::CsLockGuard lock(cacheAffinityMappingMutex);
-
-                return cacheAffinityMapping[cacheId];
+                return affinityManager.GetAffinityAssignment(cacheId);
             }
 
             void DataRouter::ReleaseAffinityMapping(int32_t cacheId)
             {
-                common::concurrent::CsLockGuard lock(cacheAffinityMappingMutex);
-
-                cacheAffinityMapping.erase(cacheId);
+                affinityManager.StopTrackingCache(cacheId);
             }
 
             SP_DataChannel DataRouter::GetRandomChannel()
@@ -168,7 +166,6 @@ namespace ignite
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
                 return GetRandomChannelLocked();
-
             }
 
             SP_DataChannel DataRouter::GetRandomChannelLocked()

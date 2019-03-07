@@ -26,7 +26,7 @@ namespace ignite
     {
         namespace thin
         {
-            namespace cache
+            namespace affinity
             {
                 AffinityAssignment::AffinityAssignment(const std::vector<NodePartitions>& info)
                 {

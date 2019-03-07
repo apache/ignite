@@ -37,7 +37,7 @@ namespace ignite
             /* Forward declaration. */
             class NodePartitions;
 
-            namespace cache
+            namespace affinity
             {
                 /**
                  * Cache Affinity Info.
