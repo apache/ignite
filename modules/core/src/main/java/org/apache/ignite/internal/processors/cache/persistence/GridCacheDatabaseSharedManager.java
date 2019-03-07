@@ -4366,16 +4366,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) throws IgniteCheckedException {
         FullPageId[] pagesArr = new FullPageId[cpPagesTuple.get2()];
 
-        int arrIdx = 0;
+        int realPagesArrSize = 0;
 
         for (GridMultiCollectionWrapper<FullPageId> colWrapper : cpPagesTuple.get1()) {
             for (int i = 0; i < colWrapper.collectionsSize(); i++)
-                for (FullPageId page : colWrapper.innerCollection(i))
-                    pagesArr[arrIdx++] = page;
+                for (FullPageId page : colWrapper.innerCollection(i)) {
+                    if (realPagesArrSize == pagesArr.length)
+                        throw new AssertionError("Incorrect estimated dirty pages number: " + pagesArr.length);
+
+                    pagesArr[realPagesArrSize++] = page;
+                }
         }
 
-        assert pagesArr.length == arrIdx : "Incorrect dirty pages number " +
-            "[specified=" + pagesArr.length + ", actual=" + arrIdx + ']';
+        FullPageId fakeMaxFullPageId = new FullPageId(Long.MAX_VALUE, Integer.MAX_VALUE);
+
+        // Some pages may have been replaced, need to fill end of array with fake ones to prevent NPE during sort.
+        for (int i = realPagesArrSize; i < pagesArr.length; i++)
+            pagesArr[i] = fakeMaxFullPageId;
 
         if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL) {
             Comparator<FullPageId> cmp = new Comparator<FullPageId>() {
@@ -4401,9 +4408,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Collection[] pagesSubListArr = new Collection[pagesSubLists];
 
         for (int i = 0; i < pagesSubLists; i++) {
-            int from = (int)((long)pagesArr.length * i / pagesSubLists);
+            int from = (int)((long)realPagesArrSize * i / pagesSubLists);
 
-            int to = (int)((long)pagesArr.length * (i + 1) / pagesSubLists);
+            int to = (int)((long)realPagesArrSize * (i + 1) / pagesSubLists);
 
             pagesSubListArr[i] = new GridReadOnlyArrayView(pagesArr, from, to);
         }
