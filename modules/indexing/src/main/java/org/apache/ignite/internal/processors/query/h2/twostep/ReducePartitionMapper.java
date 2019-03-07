@@ -322,7 +322,7 @@ public class ReducePartitionMapper {
         List<GridCacheContext<?, ?>> cctxs = new ArrayList<>(cacheIds.size());
 
         GridCacheContext<?, ?> firstPartitioned = null;
-        Set<ClusterNode> replicatedOwners = null;
+        Set<ClusterNode> replicatedOwners = Collections.emptySet();
 
         // 1) Check whether all involved caches have the same partitions number and
         // find nodes owning all partitions of involved replicated caches if needed
@@ -370,7 +370,7 @@ public class ReducePartitionMapper {
         PrimitiveIterator.OfInt it = (parts != null ? Arrays.stream(parts) :
                     IntStream.range(0, firstPartitioned.affinity().partitions())).iterator();
 
-        Map<ClusterNode, Set<Integer>> nodeToParts = new HashMap<>();
+        Map<ClusterNode, IntArray> nodeToParts = new HashMap<>();
 
         // 2) Iterate over involved partitions and find all nodes having it excluding nodes
         // which do not have all partitions of involved replicated caches if needed
@@ -379,6 +379,7 @@ public class ReducePartitionMapper {
 
             Set<ClusterNode> nodes = replicatedOwners;
 
+            // Find nodes that are partition owner for all caches.
             for (GridCacheContext<?, ?> cctx : cctxs) {
                 List<ClusterNode> partOwners = cctx.topology().owners(p);
 
@@ -409,7 +410,9 @@ public class ReducePartitionMapper {
                     return null; // Retry.
                 }
 
-                nodes = new HashSet<>(partOwners);
+                // Narrow set of nodes if differs.
+                if (nodes.size() != partOwners.size())
+                    nodes = new HashSet<>(partOwners);
             }
 
             if (F.isEmpty(nodes)) {
@@ -419,24 +422,13 @@ public class ReducePartitionMapper {
                 return null; // Retry.
             }
 
-            for (ClusterNode node : nodes)
-                nodeToParts.computeIfAbsent(node, n -> new HashSet<>()).add(p);
+            // Balance node.
+            ClusterNode node = nodes.size() == 1 ? F.first(nodes) : F.rand(nodes);
+
+            nodeToParts.computeIfAbsent(node, n -> new IntArray()).add(p);
         }
 
-        return processPartitionsMappingTest(nodeToParts);
-    }
-
-    /** */
-    @NotNull private Map<ClusterNode, IntArray> processPartitionsMappingTest(Map<ClusterNode, Set<Integer>> nodeToParts) {
-        Map<Integer, List<ClusterNode>> partToNodes = nodeToParts.entrySet().stream()
-            .flatMap(e -> e.getValue().stream().map(p -> new IgniteBiTuple<>(e.getKey(), p)))
-            .collect(groupingBy(IgniteBiTuple::get2, mapping(IgniteBiTuple::get1, toList())));
-
-        Map<ClusterNode, IntArray> res = new HashMap<>();
-
-        partToNodes.forEach((key, value) -> res.computeIfAbsent(F.rand(value), n -> new IntArray()).add(key));
-
-        return res;
+        return nodeToParts;
     }
 
     /**
