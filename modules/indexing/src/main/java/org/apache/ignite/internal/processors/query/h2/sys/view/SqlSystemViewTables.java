@@ -46,10 +46,12 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
      */
     public SqlSystemViewTables(GridKernalContext ctx, SchemaManager schemaMgr) {
         super("TABLES", "Ignite tables", ctx, TABLE_NAME,
+            newColumn("CACHE_GROUP_ID", Value.INT),
+            newColumn("CACHE_GROUP_NAME"),
+            newColumn("CACHE_ID", Value.INT),
+            newColumn("CACHE_NAME"),
             newColumn("SCHEMA_NAME"),
             newColumn(TABLE_NAME),
-            newColumn("CACHE_NAME"),
-            newColumn("CACHE_ID", Value.INT),
             newColumn("AFFINITY_KEY_COLUMN"),
             newColumn("KEY_ALIAS"),
             newColumn("VALUE_ALIAS"),
@@ -77,11 +79,16 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
         return schemaMgr.dataTables().stream()
             .filter(filter)
             .map(tbl -> {
+                    int cacheGrpId = tbl.cacheInfo().groupId();
+                    String cacheGrpName = ctx.cache().cacheGroupDescriptors().get(cacheGrpId).cacheOrGroupName();
+
                     Object[] data = new Object[] {
+                        cacheGrpId,
+                        cacheGrpName,
+                        tbl.cacheId(),
+                        tbl.cacheName(),
                         tbl.getSchema().getName(),
                         tbl.getName(),
-                        tbl.cacheName(),
-                        tbl.cacheId(),
                         computeAffinityColumn(tbl),
                         tbl.rowDescriptor().type().keyFieldAlias(),
                         tbl.rowDescriptor().type().valueFieldAlias(),

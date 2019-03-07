@@ -46,17 +46,17 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
      */
     public SqlSystemViewIndexes(GridKernalContext ctx, SchemaManager schemaMgr) {
         super("INDEXES", "Ignite SQL indexes", ctx, "TABLE_NAME",
+            newColumn("CACHE_GROUP_ID", Value.INT),
+            newColumn("CACHE_GROUP_NAME"),
+            newColumn("CACHE_ID", Value.INT),
+            newColumn("CACHE_NAME"),
             newColumn("SCHEMA_NAME"),
             newColumn("TABLE_NAME"),
             newColumn("INDEX_NAME"),
-            newColumn("COLUMNS"),
             newColumn("INDEX_TYPE"),
+            newColumn("COLUMNS"),
             newColumn("IS_PK", Value.BOOLEAN),
             newColumn("IS_UNIQUE", Value.BOOLEAN),
-            newColumn("CACHE_ID", Value.INT),
-            newColumn("CACHE_NAME"),
-            newColumn("GROUP_ID", Value.INT),
-            newColumn("GROUP_NAME"),
             newColumn("INLINE_SIZE", Value.INT)
         );
 
@@ -82,8 +82,8 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
         schemaMgr.dataTables().stream().filter(filter).forEach(tbl -> {
             String schema = tbl.getSchema().getName();
             String tblName = tbl.getName();
-            int grpId = tbl.cacheInfo().groupId();
-            String grpName = ctx.cache().cacheGroupDescriptors().get(grpId).cacheOrGroupName();
+            int cacheGrpId = tbl.cacheInfo().groupId();
+            String cacheGrpName = ctx.cache().cacheGroupDescriptors().get(cacheGrpId).cacheOrGroupName();
             int cacheId = tbl.cacheId();
             String cacheName = tbl.cacheName();
 
@@ -91,17 +91,17 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
 
             for (IndexInformation idxInfo : idxInfoList) {
                 Object[] data = new Object[] {
+                    cacheGrpId,
+                    cacheGrpName,
+                    cacheId,
+                    cacheName,
                     schema,
                     tblName,
                     idxInfo.name(),
-                    idxInfo.keySql(),
                     idxInfo.type(),
+                    idxInfo.keySql(),
                     idxInfo.pk(),
                     idxInfo.unique(),
-                    cacheId,
-                    cacheName,
-                    grpId,
-                    grpName,
                     idxInfo.inlineSize()
                 };
 

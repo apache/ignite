@@ -156,15 +156,15 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertSqlError("ALTER TABLE IGNITE.NODES ADD COLUMN C VARCHAR");
 
-        assertSqlError("ALTER TABLE IGNITE.NODES DROP COLUMN ID");
+        assertSqlError("ALTER TABLE IGNITE.NODES DROP COLUMN NODE_ID");
 
-        assertSqlError("ALTER TABLE IGNITE.NODES RENAME COLUMN ID TO C");
+        assertSqlError("ALTER TABLE IGNITE.NODES RENAME COLUMN NODE_ID TO C");
 
-        assertSqlError("CREATE INDEX IDX ON IGNITE.NODES(ID)");
+        assertSqlError("CREATE INDEX IDX ON IGNITE.NODES(NODE_ID)");
 
-        assertSqlError("INSERT INTO IGNITE.NODES (ID) VALUES ('-')");
+        assertSqlError("INSERT INTO IGNITE.NODES (NODE_ID) VALUES ('-')");
 
-        assertSqlError("UPDATE IGNITE.NODES SET ID = '-'");
+        assertSqlError("UPDATE IGNITE.NODES SET NODE_ID = '-'");
 
         assertSqlError("DELETE IGNITE.NODES");
     }
@@ -208,32 +208,32 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         //ToDo: As of now we can see duplicates columns within index due to https://issues.apache.org/jira/browse/IGNITE-11125
 
         String[][] expectedResults = {
-            {"PUBLIC", "AFF_CACHE", "AFFINITY_KEY", "\"ID2\" ASC, \"ID1\" ASC", "BTREE", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "10"},
-            {"PUBLIC", "AFF_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
-            {"PUBLIC", "AFF_CACHE", "_key_PK", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "10"},
-            {"PUBLIC", "AFF_CACHE", "_key_PK_hash", "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", "HASH", "false", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "AFFINITY_KEY", "BTREE", "\"ID2\" ASC, \"ID1\" ASC", "false", "false", "10"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE","PUBLIC", "AFF_CACHE", "__SCAN_", "SCAN", "null", "false", "false", "null"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE","PUBLIC", "AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "true", "true", "10"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE","PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", "false", "true", "null"},
 
-            {"DEFAULT", "CACHE_SQL", "IDX_2", "\"ID\" DESC, \"ID\" ASC", "BTREE", "false", "false", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "13"},
-            {"DEFAULT", "CACHE_SQL", "__SCAN_", "null", "SCAN", "false", "false",  "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
-            {"DEFAULT", "CACHE_SQL", "_key_PK", "\"ID\" ASC", "BTREE", "true", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "5"},
-            {"DEFAULT", "CACHE_SQL", "_key_PK_hash", "\"ID\" ASC", "HASH", "false", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
+            {"683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "DEFAULT", "CACHE_SQL", "IDX_2", "BTREE", "\"ID\" DESC, \"ID\" ASC", "false", "false", "13"},
+            {"683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL","DEFAULT", "CACHE_SQL", "__SCAN_", "SCAN", "null", "false", "false",  "null"},
+            {"683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL","DEFAULT", "CACHE_SQL", "_key_PK", "BTREE", "\"ID\" ASC", "true", "true", "5"},
+            {"683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL","DEFAULT", "CACHE_SQL", "_key_PK_hash", "HASH", "\"ID\" ASC", "false", "true", "null"},
 
-            {"PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
-            {"PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", "BTREE", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
-            {"PUBLIC", "DFLT_AFF_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "null"},
-            {"PUBLIC", "DFLT_AFF_CACHE", "_key_PK", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
-            {"PUBLIC", "DFLT_AFF_CACHE", "_key_PK_hash", "\"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC", "HASH", "false", "true", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "null"},
+            {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "false", "false", "10"},
+            {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "BTREE", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", "false", "false", "10"},
+            {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "__SCAN_", "SCAN", "null", "false", "false", "null"},
+            {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "true", "true", "10"},
+            {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC", "false", "true", "null"},
 
-            {"PUBLIC", "DFLT_CACHE", "IDX_1", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"ID1\" ASC, \"ID2\" ASC", "BTREE", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
-            {"PUBLIC", "DFLT_CACHE", "IDX_3", "\"MY_VAL\" ASC, \"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC, \"ID2\" ASC", "BTREE", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
-            {"PUBLIC", "DFLT_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "null"},
-            {"PUBLIC", "DFLT_CACHE", "_key_PK", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
-            {"PUBLIC", "DFLT_CACHE", "_key_PK_hash", "\"ID1\" ASC, \"ID2\" ASC", "HASH", "false", "true", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "null"},
+            {"1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "IDX_1", "BTREE", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"ID1\" ASC, \"ID2\" ASC", "false", "false", "10"},
+            {"1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "IDX_3", "BTREE", "\"MY_VAL\" ASC, \"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC, \"ID2\" ASC", "false", "false", "10"},
+            {"1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "__SCAN_", "SCAN", "null", "false", "false", "null"},
+            {"1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "true", "true", "10"},
+            {"1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC, \"ID2\" ASC", "false", "true", "null"},
 
-            {"TST1", "VALUECLASS", "TST1_INDEX", "\"KEY\" ASC, \"_KEY\" ASC", "BTREE", "false", "false", "2584860", "TST1", "2584860", "TST1", "10"},
-            {"TST1", "VALUECLASS", "__SCAN_", "null", "SCAN", "false", "false", "2584860", "TST1", "2584860", "TST1", "null"},
-            {"TST1", "VALUECLASS", "_key_PK", "\"_KEY\" ASC", "BTREE", "true", "true", "2584860", "TST1", "2584860", "TST1", "10"},
-            {"TST1", "VALUECLASS", "_key_PK_hash", "\"_KEY\" ASC", "HASH", "false", "true", "2584860", "TST1", "2584860", "TST1", "null"},
+            {"2584860", "TST1", "2584860", "TST1", "TST1", "VALUECLASS", "TST1_INDEX", "BTREE", "\"KEY\" ASC, \"_KEY\" ASC", "false", "false", "10"},
+            {"2584860", "TST1", "2584860", "TST1", "TST1", "VALUECLASS", "__SCAN_", "SCAN", "null", "false", "false", "null"},
+            {"2584860", "TST1", "2584860", "TST1", "TST1", "VALUECLASS", "_key_PK", "BTREE", "\"_KEY\" ASC", "true", "true", "10"},
+            {"2584860", "TST1", "2584860", "TST1", "TST1", "VALUECLASS", "_key_PK_hash", "HASH", "\"_KEY\" ASC", "false", "true", "null"},
         };
 
         for (int i = 0; i < srvNodeIndexes.size(); i++) {
@@ -289,7 +289,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        String sql = "SELECT ID FROM IGNITE.NODES WHERE NODE_ORDER = 1";
+        String sql = "SELECT NODE_ID FROM IGNITE.NODES WHERE NODE_ORDER = 1";
 
         SqlFieldsQuery qry;
 
@@ -445,7 +445,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         awaitPartitionMapExchange();
 
-        List<List<?>> resAll = execSql("SELECT ID, CONSISTENT_ID, VERSION, IS_CLIENT, IS_DAEMON, " +
+        List<List<?>> resAll = execSql("SELECT NODE_ID, CONSISTENT_ID, VERSION, IS_CLIENT, IS_DAEMON, " +
             "NODE_ORDER, ADDRESSES, HOSTNAMES FROM IGNITE.NODES");
 
         assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class, Boolean.class,
@@ -454,7 +454,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals(3, resAll.size());
 
         List<List<?>> resSrv = execSql(
-            "SELECT ID, NODE_ORDER FROM IGNITE.NODES WHERE IS_CLIENT = FALSE AND IS_DAEMON = FALSE"
+            "SELECT NODE_ID, NODE_ORDER FROM IGNITE.NODES WHERE IS_CLIENT = FALSE AND IS_DAEMON = FALSE"
         );
 
         assertEquals(1, resSrv.size());
@@ -464,7 +464,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals(1, resSrv.get(0).get(1));
 
         List<List<?>> resCli = execSql(
-            "SELECT ID, NODE_ORDER FROM IGNITE.NODES WHERE IS_CLIENT = TRUE");
+            "SELECT NODE_ID, NODE_ORDER FROM IGNITE.NODES WHERE IS_CLIENT = TRUE");
 
         assertEquals(1, resCli.size());
 
@@ -473,7 +473,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals(2, resCli.get(0).get(1));
 
         List<List<?>> resDaemon = execSql(
-            "SELECT ID, NODE_ORDER FROM IGNITE.NODES WHERE IS_DAEMON = TRUE");
+            "SELECT NODE_ID, NODE_ORDER FROM IGNITE.NODES WHERE IS_DAEMON = TRUE");
 
         assertEquals(1, resDaemon.size());
 
@@ -482,30 +482,30 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals(3, resDaemon.get(0).get(1));
 
         // Check index on ID column.
-        assertEquals(0, execSql("SELECT ID FROM IGNITE.NODES WHERE ID = '-'").size());
+        assertEquals(0, execSql("SELECT NODE_ID FROM IGNITE.NODES WHERE NODE_ID = '-'").size());
 
-        assertEquals(1, execSql("SELECT ID FROM IGNITE.NODES WHERE ID = ?",
+        assertEquals(1, execSql("SELECT NODE_ID FROM IGNITE.NODES WHERE NODE_ID = ?",
             nodeId0).size());
 
-        assertEquals(1, execSql("SELECT ID FROM IGNITE.NODES WHERE ID = ?",
+        assertEquals(1, execSql("SELECT NODE_ID FROM IGNITE.NODES WHERE NODE_ID = ?",
             nodeId(2)).size());
 
         // Check index on ID column with disjunction.
-        assertEquals(3, execSql("SELECT ID FROM IGNITE.NODES WHERE ID = ? " +
+        assertEquals(3, execSql("SELECT NODE_ID FROM IGNITE.NODES WHERE NODE_ID = ? " +
             "OR node_order=1 OR node_order=2 OR node_order=3", nodeId0).size());
 
         // Check quick-count.
         assertEquals(3L, execSql("SELECT COUNT(*) FROM IGNITE.NODES").get(0).get(0));
 
         // Check joins
-        assertEquals(nodeId0, execSql("SELECT N1.ID FROM IGNITE.NODES N1 JOIN " +
-            "IGNITE.NODES N2 ON N1.NODE_ORDER = N2.NODE_ORDER JOIN IGNITE.NODES N3 ON N2.ID = N3.ID " +
+        assertEquals(nodeId0, execSql("SELECT N1.NODE_ID FROM IGNITE.NODES N1 JOIN " +
+            "IGNITE.NODES N2 ON N1.NODE_ORDER = N2.NODE_ORDER JOIN IGNITE.NODES N3 ON N2.NODE_ID = N3.NODE_ID " +
             "WHERE N3.NODE_ORDER = 1")
             .get(0).get(0));
 
         // Check sub-query
-        assertEquals(nodeId0, execSql("SELECT N1.ID FROM IGNITE.NODES N1 " +
-            "WHERE NOT EXISTS (SELECT 1 FROM IGNITE.NODES N2 WHERE N2.ID = N1.ID AND N2.NODE_ORDER <> 1)")
+        assertEquals(nodeId0, execSql("SELECT N1.NODE_ID FROM IGNITE.NODES N1 " +
+            "WHERE NOT EXISTS (SELECT 1 FROM IGNITE.NODES N2 WHERE N2.NODE_ID = N1.NODE_ID AND N2.NODE_ORDER <> 1)")
             .get(0).get(0));
 
         // Check node attributes view
@@ -574,7 +574,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         // Check join with nodes.
         assertEquals(3, execSql("SELECT NM.LAST_UPDATE_TIME FROM IGNITE.NODES N " +
-            "JOIN IGNITE.NODE_METRICS NM ON N.ID = NM.NODE_ID").size());
+            "JOIN IGNITE.NODE_METRICS NM ON N.NODE_ID = NM.NODE_ID").size());
 
         // Check index on NODE_ID column.
         assertEquals(1, execSql("SELECT LAST_UPDATE_TIME FROM IGNITE.NODE_METRICS WHERE NODE_ID = ?",
@@ -761,7 +761,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         for (int i = 0; i < 500; i++)
             execSql("INSERT INTO DEFAULT.TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
 
-        String sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.LOCAL_CACHE_GROUPS_IO";
+        String sql1 = "SELECT CACHE_GROUP_ID, CACHE_GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.LOCAL_CACHE_GROUPS_IO";
 
         List<List<?>> res1 = execSql(sql1);
 
@@ -775,8 +775,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertTrue(map.containsKey(DEFAULT_CACHE_NAME));
 
-        sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.LOCAL_CACHE_GROUPS_IO WHERE " +
-            "GROUP_NAME='SQL_default_TST'";
+        sql1 = "SELECT CACHE_GROUP_ID, CACHE_GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.LOCAL_CACHE_GROUPS_IO WHERE " +
+            "CACHE_GROUP_NAME='SQL_default_TST'";
 
         assertEquals(1, execSql(sql1).size());
     }
@@ -802,10 +802,12 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         List<List<?>> cacheSqlInfos = execSql("SELECT * FROM IGNITE.TABLES WHERE TABLE_NAME = 'CACHE_SQL'");
 
         List<?> expRow = asList(
+            cacheSqlId,          // CACHE_GROUP_ID
+            "cache_sql",         // CACHE_GROUP_NAME
+            cacheSqlId,          // CACHE_ID
+            "cache_sql",         // CACHE_NAME
             "DEFAULT",           // SCHEMA_NAME
             "CACHE_SQL",         // TABLE_NAME
-            "cache_sql",         // CACHE_NAME
-            cacheSqlId,          // CACHE_ID
             null,                // AFFINITY_KEY_COLUMN
             "ID",                // KEY_ALIAS
             null,                // VALUE_ALIAS
@@ -824,10 +826,12 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         List<?> allExpRows = asList(
             expRow,
             asList(
+                ddlTabId,                // CACHE_GROUP_ID
+                "SQL_PUBLIC_DFLT_CACHE", // CACHE_GROUP_NAME
+                ddlTabId,                // CACHE_ID
+                "SQL_PUBLIC_DFLT_CACHE", // CACHE_NAME
                 "PUBLIC",                // SCHEMA_NAME
                 "DFLT_CACHE",            // TABLE_NAME
-                "SQL_PUBLIC_DFLT_CACHE", // CACHE_NAME
-                ddlTabId,                // CACHE_ID
                 "ID2",                   // AFFINITY_KEY_COLUMN
                 null,                    // KEY_ALIAS
                 "MY_VAL",                // VALUE_ALIAS
@@ -857,10 +861,10 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             asList(
                 asList("DFLT_CACHE", "SQL_PUBLIC_DFLT_CACHE", "SQL_PUBLIC_DFLT_CACHE"),
                 asList("CACHE_SQL", "cache_sql", "cache_sql")),
-            execSql("SELECT TABLE_NAME, TAB.CACHE_NAME, C.NAME " +
+            execSql("SELECT TABLE_NAME, TAB.CACHE_NAME, C.CACHE_NAME " +
                 "FROM IGNITE.TABLES AS TAB JOIN IGNITE.CACHES AS C " +
                 "ON TAB.CACHE_ID = C.CACHE_ID " +
-                "ORDER BY C.NAME")
+                "ORDER BY C.CACHE_NAME")
         );
     }
 
@@ -1072,7 +1076,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         awaitPartitionMapExchange();
 
-        List<List<?>> resAll = execSql("SELECT NAME, CACHE_ID, CACHE_TYPE, GROUP_ID, GROUP_NAME, " +
+        List<List<?>> resAll = execSql("SELECT CACHE_GROUP_ID, CACHE_GROUP_NAME, CACHE_ID, CACHE_NAME, CACHE_TYPE," +
                 "CACHE_MODE, ATOMICITY_MODE, IS_ONHEAP_CACHE_ENABLED, IS_COPY_ON_READ, IS_LOAD_PREVIOUS_VALUE, " +
                 "IS_READ_FROM_BACKUP, PARTITION_LOSS_POLICY, NODE_FILTER, TOPOLOGY_VALIDATOR, IS_EAGER_TTL, " +
                 "WRITE_SYNCHRONIZATION_MODE, IS_INVALIDATE, IS_EVENTS_DISABLED, IS_STATISTICS_ENABLED, " +
@@ -1091,7 +1095,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                 "DATA_REGION_NAME FROM IGNITE.CACHES");
 
         assertColumnTypes(resAll.get(0),
-            String.class, Integer.class, String.class, Integer.class, String.class,
+            Integer.class, String.class, Integer.class, String.class, String.class,
             String.class, String.class, Boolean.class, Boolean.class, Boolean.class,
             Boolean.class, String.class, String.class, String.class, Boolean.class,
             String.class, Boolean.class, Boolean.class, Boolean.class,
@@ -1109,63 +1113,63 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             Integer.class, Integer.class, Integer.class, Integer.class,
             String.class);
 
-        assertEquals("cache_tx_part", execSql("SELECT NAME FROM IGNITE.CACHES WHERE " +
-            "CACHE_MODE = 'PARTITIONED' AND ATOMICITY_MODE = 'TRANSACTIONAL' AND NAME like 'cache%'").get(0).get(0));
+        assertEquals("cache_tx_part", execSql("SELECT CACHE_NAME FROM IGNITE.CACHES WHERE " +
+            "CACHE_MODE = 'PARTITIONED' AND ATOMICITY_MODE = 'TRANSACTIONAL' AND CACHE_NAME like 'cache%'").get(0).get(0));
 
-        assertEquals("cache_atomic_repl", execSql("SELECT NAME FROM IGNITE.CACHES WHERE " +
-            "CACHE_MODE = 'REPLICATED' AND ATOMICITY_MODE = 'ATOMIC' AND NAME like 'cache%'").get(0).get(0));
+        assertEquals("cache_atomic_repl", execSql("SELECT CACHE_NAME FROM IGNITE.CACHES WHERE " +
+            "CACHE_MODE = 'REPLICATED' AND ATOMICITY_MODE = 'ATOMIC' AND CACHE_NAME like 'cache%'").get(0).get(0));
 
-        assertEquals(2L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE GROUP_NAME = 'cache_grp'")
+        assertEquals(2L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_GROUP_NAME = 'cache_grp'")
             .get(0).get(0));
 
-        assertEquals("cache_atomic_repl", execSql("SELECT NAME FROM IGNITE.CACHES " +
+        assertEquals("cache_atomic_repl", execSql("SELECT CACHE_NAME FROM IGNITE.CACHES " +
             "WHERE DATA_REGION_NAME = 'dr1'").get(0).get(0));
 
-        assertEquals("cache_tx_repl", execSql("SELECT NAME FROM IGNITE.CACHES " +
+        assertEquals("cache_tx_repl", execSql("SELECT CACHE_NAME FROM IGNITE.CACHES " +
             "WHERE DATA_REGION_NAME = 'dr2'").get(0).get(0));
 
         assertEquals("PARTITIONED", execSql("SELECT CACHE_MODE FROM IGNITE.CACHES " +
-            "WHERE NAME = 'cache_atomic_part'").get(0).get(0));
+            "WHERE CACHE_NAME = 'cache_atomic_part'").get(0).get(0));
 
-        assertEquals("USER", execSql("SELECT CACHE_TYPE FROM IGNITE.CACHES WHERE NAME = 'cache_sql'")
+        assertEquals("USER", execSql("SELECT CACHE_TYPE FROM IGNITE.CACHES WHERE CACHE_NAME = 'cache_sql'")
             .get(0).get(0));
 
-        assertEquals(0L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME = 'no_such_cache'").get(0)
+        assertEquals(0L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME = 'no_such_cache'").get(0)
             .get(0));
 
-        assertEquals(0L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME = 1").get(0).get(0));
+        assertEquals(0L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME = 1").get(0).get(0));
 
-        assertEquals("TestNodeFilter", execSql("SELECT NODE_FILTER FROM IGNITE.CACHES WHERE NAME = " +
+        assertEquals("TestNodeFilter", execSql("SELECT NODE_FILTER FROM IGNITE.CACHES WHERE CACHE_NAME = " +
             "'cache_atomic_part'").get(0).get(0));
 
         assertEquals("TestEvictionFilter", execSql("SELECT EVICTION_FILTER FROM IGNITE.CACHES " +
-            "WHERE NAME = 'cache_tx_repl'").get(0).get(0));
+            "WHERE CACHE_NAME = 'cache_tx_repl'").get(0).get(0));
 
         assertEquals("TestEvictionPolicyFactory", execSql("SELECT EVICTION_POLICY_FACTORY " +
-            "FROM IGNITE.CACHES WHERE NAME = 'cache_tx_repl'").get(0).get(0));
+            "FROM IGNITE.CACHES WHERE CACHE_NAME = 'cache_tx_repl'").get(0).get(0));
 
         assertEquals("TestTopologyValidator", execSql("SELECT TOPOLOGY_VALIDATOR FROM IGNITE.CACHES " +
-            "WHERE NAME = 'cache_atomic_repl'").get(0).get(0));
+            "WHERE CACHE_NAME = 'cache_atomic_repl'").get(0).get(0));
 
         // Check quick count.
         assertEquals(execSql("SELECT COUNT(*) FROM IGNITE.CACHES").get(0).get(0),
             execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_ID <> CACHE_ID + 1").get(0).get(0));
 
         // Check that caches are the same on BLT, BLT filtered by node filter, non BLT and client nodes.
-        assertEquals(5L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME like 'cache%'").get(0)
+        assertEquals(5L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME like 'cache%'").get(0)
             .get(0));
 
-        assertEquals(5L, execSql(ignite1, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME like 'cache%'")
+        assertEquals(5L, execSql(ignite1, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME like 'cache%'")
             .get(0).get(0));
 
-        assertEquals(5L, execSql(ignite2, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME like 'cache%'")
+        assertEquals(5L, execSql(ignite2, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME like 'cache%'")
             .get(0).get(0));
 
-        assertEquals(5L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME like 'cache%'")
+        assertEquals(5L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME like 'cache%'")
             .get(0).get(0));
 
         // Check cache groups.
-        resAll = execSql("SELECT ID, GROUP_NAME, IS_SHARED, CACHE_COUNT, " +
+        resAll = execSql("SELECT CACHE_GROUP_ID, CACHE_GROUP_NAME, IS_SHARED, CACHE_COUNT, " +
             "CACHE_MODE, ATOMICITY_MODE, AFFINITY, PARTITIONS_COUNT, " +
             "NODE_FILTER, DATA_REGION_NAME, TOPOLOGY_VALIDATOR, PARTITION_LOSS_POLICY, " +
             "REBALANCE_MODE, REBALANCE_DELAY, REBALANCE_ORDER, BACKUPS " +
@@ -1178,28 +1182,30 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             String.class, Long.class, Integer.class, Integer.class);
 
         assertEquals(2, execSql("SELECT CACHE_COUNT FROM IGNITE.CACHE_GROUPS " +
-            "WHERE GROUP_NAME = 'cache_grp'").get(0).get(0));
+            "WHERE CACHE_GROUP_NAME = 'cache_grp'").get(0).get(0));
 
-        assertEquals("cache_grp", execSql("SELECT GROUP_NAME FROM IGNITE.CACHE_GROUPS " +
-            "WHERE IS_SHARED = true AND GROUP_NAME like 'cache%'").get(0).get(0));
+        assertEquals("cache_grp", execSql("SELECT CACHE_GROUP_NAME FROM IGNITE.CACHE_GROUPS " +
+            "WHERE IS_SHARED = true AND CACHE_GROUP_NAME like 'cache%'").get(0).get(0));
 
         // Check index on ID column.
-        assertEquals("cache_tx_repl", execSql("SELECT GROUP_NAME FROM IGNITE.CACHE_GROUPS " +
-            "WHERE ID = ?", ignite0.cachex("cache_tx_repl").context().groupId()).get(0).get(0));
+        assertEquals("cache_tx_repl", execSql("SELECT CACHE_GROUP_NAME FROM IGNITE.CACHE_GROUPS " +
+            "WHERE CACHE_GROUP_ID = ?", ignite0.cachex("cache_tx_repl").context().groupId()).get(0).get(0));
 
-        assertEquals(0, execSql("SELECT ID FROM IGNITE.CACHE_GROUPS WHERE ID = 0").size());
+        assertEquals(0, execSql("SELECT CACHE_GROUP_ID FROM IGNITE.CACHE_GROUPS WHERE CACHE_GROUP_ID = 0").size());
 
         // Check join by indexed column.
-        assertEquals("cache_tx_repl", execSql("SELECT CG.GROUP_NAME FROM IGNITE.CACHES C JOIN " +
-            "IGNITE.CACHE_GROUPS CG ON C.GROUP_ID = CG.ID WHERE C.NAME = 'cache_tx_repl'").get(0).get(0));
+        assertEquals("cache_tx_repl", execSql("SELECT CG.CACHE_GROUP_NAME FROM IGNITE.CACHES C JOIN " +
+            "IGNITE.CACHE_GROUPS CG ON C.CACHE_GROUP_ID = CG.CACHE_GROUP_ID WHERE C.CACHE_NAME = 'cache_tx_repl'")
+            .get(0).get(0));
 
         // Check join by non-indexed column.
-        assertEquals("cache_grp", execSql("SELECT CG.GROUP_NAME FROM IGNITE.CACHES C JOIN " +
-            "IGNITE.CACHE_GROUPS CG ON C.GROUP_NAME = CG.GROUP_NAME WHERE C.NAME = 'cache_tx_part'").get(0).get(0));
+        assertEquals("cache_grp", execSql("SELECT CG.CACHE_GROUP_NAME FROM IGNITE.CACHES C JOIN " +
+            "IGNITE.CACHE_GROUPS CG ON C.CACHE_GROUP_NAME = CG.CACHE_GROUP_NAME WHERE C.CACHE_NAME = 'cache_tx_part'")
+            .get(0).get(0));
 
         // Check configuration equality for cache and cache group views.
         assertEquals(3L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES C JOIN IGNITE.CACHE_GROUPS CG " +
-            "ON C.NAME = CG.GROUP_NAME WHERE C.NAME like 'cache%' " +
+            "ON C.CACHE_NAME = CG.CACHE_GROUP_NAME WHERE C.CACHE_NAME like 'cache%' " +
             "AND C.CACHE_MODE = CG.CACHE_MODE " +
             "AND C.ATOMICITY_MODE = CG.ATOMICITY_MODE " +
             "AND COALESCE(C.AFFINITY, '-') = COALESCE(CG.AFFINITY, '-') " +
@@ -1210,24 +1216,26 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             "AND C.REBALANCE_MODE = CG.REBALANCE_MODE " +
             "AND C.REBALANCE_DELAY = CG.REBALANCE_DELAY " +
             "AND C.REBALANCE_ORDER = CG.REBALANCE_ORDER " +
-            "AND C.BACKUPS = CG.BACKUPS").get(0).get(0));
+            "AND COALESCE(C.BACKUPS, -1) = COALESCE(CG.BACKUPS, -1)"
+        ).get(0).get(0));
 
         // Check quick count.
         assertEquals(execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS").get(0).get(0),
-            execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS WHERE ID <> ID + 1").get(0).get(0));
+            execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS WHERE CACHE_GROUP_ID <> CACHE_GROUP_ID + 1")
+                .get(0).get(0));
 
         // Check that cache groups are the same on different nodes.
         assertEquals(4L, execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
-            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
+            "WHERE CACHE_GROUP_NAME like 'cache%'").get(0).get(0));
 
         assertEquals(4L, execSql(ignite1, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
-            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
+            "WHERE CACHE_GROUP_NAME like 'cache%'").get(0).get(0));
 
         assertEquals(4L, execSql(ignite2, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
-            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
+            "WHERE CACHE_GROUP_NAME like 'cache%'").get(0).get(0));
 
         assertEquals(4L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
-            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
+            "WHERE CACHE_GROUP_NAME like 'cache%'").get(0).get(0));
     }
 
     /**

@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.sys.view;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -36,12 +38,12 @@ public class SqlSystemViewCaches extends SqlAbstractLocalSystemView {
      * @param ctx Grid context.
      */
     public SqlSystemViewCaches(GridKernalContext ctx) {
-        super("CACHES", "Ignite caches", ctx, "NAME",
-            newColumn("NAME"),
+        super("CACHES", "Ignite caches", ctx, "CACHE_NAME",
+            newColumn("CACHE_GROUP_ID", Value.INT),
+            newColumn("CACHE_GROUP_NAME"),
             newColumn("CACHE_ID", Value.INT),
+            newColumn("CACHE_NAME"),
             newColumn("CACHE_TYPE"),
-            newColumn("GROUP_ID", Value.INT),
-            newColumn("GROUP_NAME"),
             newColumn("CACHE_MODE"),
             newColumn("ATOMICITY_MODE"),
             newColumn("IS_ONHEAP_CACHE_ENABLED", Value.BOOLEAN),
@@ -101,9 +103,8 @@ public class SqlSystemViewCaches extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        SqlSystemViewColumnCondition nameCond = conditionForColumn("NAME", first, last);
+        SqlSystemViewColumnCondition nameCond = conditionForColumn("CACHE_NAME", first, last);
 
         Collection<DynamicCacheDescriptor> caches;
 
@@ -116,71 +117,76 @@ public class SqlSystemViewCaches extends SqlAbstractLocalSystemView {
             caches = ctx.cache().cacheDescriptors().values();
 
         return F.iterator(caches,
-            cache -> createRow(
-                ses,
-                cache.cacheName(),
-                cache.cacheId(),
-                cache.cacheType(),
-                cache.groupId(),
-                cache.groupDescriptor().cacheOrGroupName(),
-                cache.cacheConfiguration().getCacheMode(),
-                cache.cacheConfiguration().getAtomicityMode(),
-                cache.cacheConfiguration().isOnheapCacheEnabled(),
-                cache.cacheConfiguration().isCopyOnRead(),
-                cache.cacheConfiguration().isLoadPreviousValue(),
-                cache.cacheConfiguration().isReadFromBackup(),
-                cache.cacheConfiguration().getPartitionLossPolicy(),
-                cache.cacheConfiguration().getNodeFilter(),
-                cache.cacheConfiguration().getTopologyValidator(),
-                cache.cacheConfiguration().isEagerTtl(),
-                cache.cacheConfiguration().getWriteSynchronizationMode(),
-                cache.cacheConfiguration().isInvalidate(),
-                cache.cacheConfiguration().isEventsDisabled(),
-                cache.cacheConfiguration().isStatisticsEnabled(),
-                cache.cacheConfiguration().isManagementEnabled(),
-                cache.cacheConfiguration().getBackups(),
-                cache.cacheConfiguration().getAffinity(),
-                cache.cacheConfiguration().getAffinityMapper(),
-                cache.cacheConfiguration().getRebalanceMode(),
-                cache.cacheConfiguration().getRebalanceBatchSize(),
-                cache.cacheConfiguration().getRebalanceTimeout(),
-                cache.cacheConfiguration().getRebalanceDelay(),
-                cache.cacheConfiguration().getRebalanceThrottle(),
-                cache.cacheConfiguration().getRebalanceBatchesPrefetchCount(),
-                cache.cacheConfiguration().getRebalanceOrder(),
-                cache.cacheConfiguration().getEvictionFilter(),
-                cache.cacheConfiguration().getEvictionPolicyFactory(),
-                cache.cacheConfiguration().getNearConfiguration() != null,
-                cache.cacheConfiguration().getNearConfiguration() != null ?
-                    cache.cacheConfiguration().getNearConfiguration().getNearEvictionPolicyFactory() : null,
-                cache.cacheConfiguration().getNearConfiguration() != null ?
-                    cache.cacheConfiguration().getNearConfiguration().getNearStartSize() : null,
-                cache.cacheConfiguration().getDefaultLockTimeout(),
-                cache.cacheConfiguration().getInterceptor(),
-                cache.cacheConfiguration().getCacheStoreFactory(),
-                cache.cacheConfiguration().isStoreKeepBinary(),
-                cache.cacheConfiguration().isReadThrough(),
-                cache.cacheConfiguration().isWriteThrough(),
-                cache.cacheConfiguration().isWriteBehindEnabled(),
-                cache.cacheConfiguration().getWriteBehindCoalescing(),
-                cache.cacheConfiguration().getWriteBehindFlushSize(),
-                cache.cacheConfiguration().getWriteBehindFlushFrequency(),
-                cache.cacheConfiguration().getWriteBehindFlushThreadCount(),
-                cache.cacheConfiguration().getWriteBehindBatchSize(),
-                cache.cacheConfiguration().getMaxConcurrentAsyncOperations(),
-                cache.cacheConfiguration().getCacheLoaderFactory(),
-                cache.cacheConfiguration().getCacheWriterFactory(),
-                cache.cacheConfiguration().getExpiryPolicyFactory(),
-                cache.cacheConfiguration().isSqlEscapeAll(),
-                cache.cacheConfiguration().getSqlSchema(),
-                cache.cacheConfiguration().getSqlIndexMaxInlineSize(),
-                cache.cacheConfiguration().isSqlOnheapCacheEnabled(),
-                cache.cacheConfiguration().getSqlOnheapCacheMaxSize(),
-                cache.cacheConfiguration().getQueryDetailMetricsSize(),
-                cache.cacheConfiguration().getQueryParallelism(),
-                cache.cacheConfiguration().getMaxQueryIteratorsCount(),
-                cache.cacheConfiguration().getDataRegionName()
-            ), true);
+            cache -> {
+                CacheConfiguration ccfg = cache.cacheConfiguration();
+
+                return createRow(
+                    ses,
+                    cache.groupId(),
+                    cache.groupDescriptor().cacheOrGroupName(),
+                    cache.cacheId(),
+                    cache.cacheName(),
+                    cache.cacheType(),
+                    ccfg.getCacheMode(),
+                    ccfg.getAtomicityMode(),
+                    ccfg.isOnheapCacheEnabled(),
+                    ccfg.isCopyOnRead(),
+                    ccfg.isLoadPreviousValue(),
+                    ccfg.isReadFromBackup(),
+                    ccfg.getPartitionLossPolicy(),
+                    (ccfg.getNodeFilter() instanceof CacheConfiguration.IgniteAllNodesPredicate) ?
+                        null : ccfg.getNodeFilter(),
+                    ccfg.getTopologyValidator(),
+                    ccfg.isEagerTtl(),
+                    ccfg.getWriteSynchronizationMode(),
+                    ccfg.isInvalidate(),
+                    ccfg.isEventsDisabled(),
+                    ccfg.isStatisticsEnabled(),
+                    ccfg.isManagementEnabled(),
+                    ccfg.getCacheMode() == CacheMode.REPLICATED ? null : ccfg.getBackups(),
+                    ccfg.getAffinity(),
+                    ccfg.getAffinityMapper(),
+                    ccfg.getRebalanceMode(),
+                    ccfg.getRebalanceBatchSize(),
+                    ccfg.getRebalanceTimeout(),
+                    ccfg.getRebalanceDelay(),
+                    ccfg.getRebalanceThrottle(),
+                    ccfg.getRebalanceBatchesPrefetchCount(),
+                    ccfg.getRebalanceOrder(),
+                    ccfg.getEvictionFilter(),
+                    ccfg.getEvictionPolicyFactory(),
+                    ccfg.getNearConfiguration() != null,
+                    ccfg.getNearConfiguration() != null ?
+                        ccfg.getNearConfiguration().getNearEvictionPolicyFactory() : null,
+                    ccfg.getNearConfiguration() != null ?
+                        ccfg.getNearConfiguration().getNearStartSize() : null,
+                    ccfg.getDefaultLockTimeout(),
+                    ccfg.getInterceptor(),
+                    ccfg.getCacheStoreFactory(),
+                    ccfg.isStoreKeepBinary(),
+                    ccfg.isReadThrough(),
+                    ccfg.isWriteThrough(),
+                    ccfg.isWriteBehindEnabled(),
+                    ccfg.getWriteBehindCoalescing(),
+                    ccfg.getWriteBehindFlushSize(),
+                    ccfg.getWriteBehindFlushFrequency(),
+                    ccfg.getWriteBehindFlushThreadCount(),
+                    ccfg.getWriteBehindBatchSize(),
+                    ccfg.getMaxConcurrentAsyncOperations(),
+                    ccfg.getCacheLoaderFactory(),
+                    ccfg.getCacheWriterFactory(),
+                    ccfg.getExpiryPolicyFactory(),
+                    ccfg.isSqlEscapeAll(),
+                    ccfg.getSqlSchema(),
+                    ccfg.getSqlIndexMaxInlineSize(),
+                    ccfg.isSqlOnheapCacheEnabled(),
+                    ccfg.getSqlOnheapCacheMaxSize(),
+                    ccfg.getQueryDetailMetricsSize(),
+                    ccfg.getQueryParallelism(),
+                    ccfg.getMaxQueryIteratorsCount(),
+                    ccfg.getDataRegionName()
+                );
+            }, true);
     }
 
     /** {@inheritDoc} */
