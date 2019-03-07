@@ -1687,6 +1687,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         List<ClusterNode> idealOwners = idealAssignment.assignment().get(p);
 
+                        if (idealOwners.isEmpty()) {
+                            processedPartitions.set(p);
+
+                            continue;
+                        }
+
                         ClusterNode curPrimary = curOwners.get(0);
 
                         if (curPrimary.equals(leftNode)) {
@@ -1750,6 +1756,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         continue;
 
                     List<ClusterNode> idealOwners = idealAssignment.assignment().get(p);
+
+                    if (idealOwners.isEmpty())
+                        continue;
 
                     List<ClusterNode> newOwners = null;
 
