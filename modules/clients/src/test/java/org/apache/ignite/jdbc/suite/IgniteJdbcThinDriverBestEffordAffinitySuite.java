@@ -15,23 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.jdbc.suite;
 
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
+import org.apache.ignite.jdbc.thin.JdbcThinAbstractSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- *
+ * JDBC Thin driver test suite to run in best efford affinity mode.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({IgniteComputeGridTestSuite.class})
-public class IgniteBinaryObjectsSimpleNameMapperComputeGridTestSuite {
-    /** */
+@Suite.SuiteClasses({
+    JdbcThinConnectionSelfTest.class,
+    JdbcThinTcpIoTest.class,
+    JdbcThinStatementSelfTest.class,
+})
+public class IgniteJdbcThinDriverBestEffordAffinitySuite {
+
+    /**
+     * Setup best effort affinity mode.
+     */
     @BeforeClass
-    public static void init() {
-        GridTestProperties.setProperty(GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER, "true");
+    public static void setupBestEffortAffinity() {
+        GridTestUtils.setFieldValue(JdbcThinConnection.class, "bestEffortAffinity", true);
+        GridTestUtils.setFieldValue(JdbcThinAbstractSelfTest.class, "bestEffortAffinity", true);
     }
 }

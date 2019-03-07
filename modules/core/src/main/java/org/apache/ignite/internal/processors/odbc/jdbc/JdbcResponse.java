@@ -37,6 +37,9 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
     @GridToStringInclude
     private JdbcResult res;
 
+    /** Signals that there is active transactional context. */
+    private boolean activeTx;
+
     /** Affinity version. */
     private AffinityTopologyVersion affinityVer;
 
@@ -102,6 +105,13 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
         return affinityVer;
     }
 
+    /**
+     * @return True if there's an active transactional on server.
+     */
+    public boolean activeTransaction() {
+        return activeTx;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(JdbcResponse.class, this, "status", status(), "err", error());
@@ -122,6 +132,8 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
             writer.writeString(error());
 
         if (ver.compareTo(VER_2_8_0) >= 0) {
+            writer.writeBoolean(activeTx);
+
             writer.writeBoolean(affinityVer != null);
 
             if (affinityVer != null) {
@@ -144,6 +156,8 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
             error(reader.readString());
 
         if (ver.compareTo(VER_2_8_0) >= 0) {
+            activeTx = reader.readBoolean();
+
             boolean affinityVerChanged = reader.readBoolean();
 
             if (affinityVerChanged) {
