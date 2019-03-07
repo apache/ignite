@@ -604,6 +604,9 @@ public class H2Utils {
         if (precision != -1 && dbType.equalsIgnoreCase(H2DatabaseType.VARCHAR.dBTypeAsString()))
             return dbType + "(" + precision + ")";
 
+        if (precision != -1 && scale != -1 && dbType.equalsIgnoreCase(H2DatabaseType.DECIMAL.dBTypeAsString()))
+            return dbType + "(" + precision + ", " + scale + ")";
+
         return dbType;
     }
 

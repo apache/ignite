@@ -1012,7 +1012,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_DEC", 11, "DECIMAL", 6, true,
-                65535, 65535, 32767, false, false)),
+                10, 10, 3, false, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_DEC'"));
