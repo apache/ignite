@@ -56,8 +56,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -71,7 +69,6 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 /**
  * Basic continuous queries test with enabled mvcc.
  */
-@RunWith(JUnit4.class)
 public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /** */
     private static final long LATCH_TIMEOUT = 5000;
@@ -320,12 +317,12 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
         // prevent first transaction prepare on backups
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(primary);
 
-        final AtomicInteger dhtPrepLimiter = new AtomicInteger();
+        final AtomicInteger dhtPrepMsgLimiter = new AtomicInteger();
 
         spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
                     if (msg instanceof GridDhtTxPrepareRequest)
-                        return dhtPrepLimiter.getAndIncrement() < backups;
+                        return dhtPrepMsgLimiter.getAndIncrement() < backups;
 
                     if (msg instanceof GridContinuousMessage)
                         return true;
@@ -353,7 +350,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
                     .stream()
                     .allMatch(tx -> tx.state() == PREPARING);
 
-                boolean allPrepsSwallowed = dhtPrepLimiter.get() == backups;
+                boolean allPrepsSwallowed = dhtPrepMsgLimiter.get() == backups;
 
                 return preparing && allPrepsSwallowed;
             }
