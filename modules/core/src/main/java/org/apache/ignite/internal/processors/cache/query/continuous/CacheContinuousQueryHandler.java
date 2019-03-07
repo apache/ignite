@@ -447,20 +447,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         log.debug("Filter invoked for event [evt=" + evt + ", primary=" + primary
                             + ", notify=" + notify + ']');
 
-                    if (primary || skipPrimaryCheck) {
-                        if (fut == null)
-                            onEntryUpdate(evt, notify, loc, recordIgniteEvt);
-                        else {
-                            fut.addContinuousQueryClosure(new CI1<Boolean>() {
-                                @Override public void apply(Boolean suc) {
-                                    if (!suc)
-                                        evt.entry().markFiltered();
-
-                                    onEntryUpdate(evt, notify, loc, recordIgniteEvt);
-                                }
-                            }, sync);
-                        }
-                    }
+                    if (primary || skipPrimaryCheck)
+                        onEntryUpdate(evt, notify, loc, recordIgniteEvt);
                     else
                         handleBackupEntry(cctx, evt.entry());
                 }
