@@ -61,7 +61,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
             new int[] {5, 5},
             0,
             new int[] {0, 1},
-            1);
+            1,
+            true);
     }
 
     /** */
@@ -74,7 +75,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
             new int[] {5, 5},
             0,
             new int[] {0, 1},
-            1);
+            1,
+            true);
     }
 
     /** */
@@ -87,7 +89,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
             new int[] {5, 7, 3},
             1,
             new int[] {0, 1},
-            0
+            0,
+            true
         );
     }
 
@@ -101,7 +104,38 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
             new int[] {5, 7, 3},
             1,
             new int[] {0, 1},
-            0
+            0,
+            true
+        );
+    }
+
+    /** */
+    @Test
+    public void testStopAllOwnersWithPartialCommit_3_1() throws Exception {
+        doTestRestartAllOwnersAfterPartialCommit(false,
+            new int[] {0, 1, 2},
+            new int[] {0, 1, 2},
+            new int[] {1, 2, 0}, new int[] {2, 1, 0},
+            new int[] {5, 7, 3},
+            1,
+            new int[] {0, 1},
+            0,
+            false
+        );
+    }
+
+    /** */
+    @Test
+    public void testStopAllOwnersWithPartialCommit_3_2() throws Exception {
+        doTestRestartAllOwnersAfterPartialCommit(true,
+            new int[] {0, 1, 2},
+            new int[] {0, 1, 2},
+            new int[] {1, 2, 0}, new int[] {2, 1, 0},
+            new int[] {5, 7, 3},
+            1,
+            new int[] {0, 1},
+            0,
+            false
         );
     }
 
@@ -123,6 +157,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
      * @param waitCommitIdx Wait commit index.
      * @param backupsStartOrder Start order of backups (should work same for any order).
      * @param expectAliveNodes Expected alive nodes.
+     * @param failNodesOnBadCntr {@code True} to trigger FH if consistency can't be recovered.
      */
     private void doTestRestartAllOwnersAfterPartialCommit(
         boolean skipCheckpoint,
@@ -133,7 +168,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
         int[] sizes,
         int waitCommitIdx,
         int[] backupsStartOrder,
-        int expectAliveNodes) throws Exception {
+        int expectAliveNodes,
+        boolean failNodesOnBadCntr) throws Exception {
         Map<IgniteEx, int[]> commits = new HashMap<IgniteEx, int[]>();
 
         Map<Integer, T2<Ignite, List<Ignite>>> txTop = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
@@ -189,7 +225,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
         // All owners should be stopped.
         waitForTopology(0);
 
-        System.setProperty(IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY, "true");
+        if (failNodesOnBadCntr)
+            System.setProperty(IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY, "true");
 
         try {
             // Start only backups.
