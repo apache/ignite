@@ -140,12 +140,14 @@ import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
@@ -165,6 +167,7 @@ import org.h2.command.dml.NoOperation;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
+import org.h2.jdbc.JdbcResultSet;
 import org.h2.jdbc.JdbcStatement;
 import org.h2.server.web.WebServer;
 import org.h2.table.IndexColumn;
@@ -1253,7 +1256,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         long start = U.currentTimeMillis();
 
         try {
+
+            if (log.isInfoEnabled()) {
+                String msg = "Executing query sql=" + sql  + sql + '\'' +
+                    ", parameters=" + (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]" +
+                    ", lazy=" + (MapQueryLazyWorker.currentWorker() != null) ;
+
+                log.info(msg);
+            }
+
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
+
+            if (log.isInfoEnabled()) {
+                if (rs instanceof JdbcResultSet)
+                    log.info(" ResultSet: " + S.toString(JdbcResultSet.class, (JdbcResultSet)rs));
+                else
+                    log.info(" ResultSet class: " + rs.getClass());
+            }
 
             long time = U.currentTimeMillis() - start;
 
@@ -1302,6 +1321,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public FieldsQueryCursor<List<?>> queryLocalSqlFields(String schemaName, SqlFieldsQuery qry,
         final boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
+
+        if (log.isInfoEnabled()) {
+            GridStringBuilder sb = new GridStringBuilder("Local query stack trace:");
+
+            U.printStackTrace(
+                Thread.currentThread().getId(),
+                sb);
+
+            String msg = sb.toString();
+
+            log.info(msg);
+        }
+
         String sql = qry.getSql();
         Object[] args = qry.getArgs();
 
