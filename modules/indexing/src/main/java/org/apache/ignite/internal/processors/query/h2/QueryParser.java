@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
-import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -135,33 +134,25 @@ public class QueryParser {
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
     private QueryParserResult parse0(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
-        // First, let's check if we already have a two-step query for this statement...
-        QueryParserCacheKey cachedKey = new QueryParserCacheKey(
-            schemaName,
-            qry.getSql(),
-            qry.isCollocated(),
-            qry.isDistributedJoins(),
-            qry.isEnforceJoinOrder(),
-            qry.isLocal()
-        );
+        QueryParserCacheKey planKey = planKey(schemaName, qry);
 
-        QueryParserCacheEntry cached = cache.get(cachedKey);
+        QueryParserCacheEntry cached = cache.get(planKey);
 
         if (cached != null) 
-            return new QueryParserResult(qry, null, cached.select(), cached.dml(), cached.command());
+            return new QueryParserResult(planKey, qry, null, cached.select(), cached.dml(), cached.command());
 
         // Try parting as native command.
         QueryParserResult parseRes = parseNative(schemaName, qry, remainingAllowed);
 
         // Otherwise parse with H2.
         if (parseRes == null)
-            parseRes = parseH2(schemaName, qry, remainingAllowed);
+            parseRes = parseH2(schemaName, qry, planKey.batched(), remainingAllowed);
 
         // Add to cache if not multi-statement.
         if (parseRes.remainingQuery() == null) {
             cached = new QueryParserCacheEntry(parseRes.select(), parseRes.dml(), parseRes.command());
 
-            cache.put(cachedKey, cached);
+            cache.put(planKey, cached);
         }
 
         // Done.
@@ -209,6 +200,8 @@ public class QueryParser {
 
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.lastCommandSql());
 
+            QueryParserCacheKey newPlanKey = planKey(schemaName, newQry);
+
             SqlFieldsQuery remainingQry = null;
             
             if (!F.isEmpty(parser.remainingSql())) {
@@ -219,7 +212,7 @@ public class QueryParser {
 
             QueryParserResultCommand cmd = new QueryParserResultCommand(nativeCmd, null, false);
 
-            return new QueryParserResult(newQry, remainingQry, null, null, cmd);
+            return new QueryParserResult(newPlanKey, newQry, remainingQry, null, null, cmd);
         }
         catch (SqlStrictParseException e) {
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
@@ -246,11 +239,13 @@ public class QueryParser {
      *
      * @param schemaName Schema name.
      * @param qry Query.
+     * @param batched Batched flag.
      * @param remainingAllowed Whether multiple statements are allowed.              
      * @return Parsing result.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private QueryParserResult parseH2(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
+    private QueryParserResult parseH2(String schemaName, SqlFieldsQuery qry, boolean batched,
+        boolean remainingAllowed) {
         Connection c = connMgr.connectionForThread().connection(schemaName);
 
         // For queries that are explicitly local, we rely on the flag specified in the query
@@ -303,7 +298,7 @@ public class QueryParser {
             Object[] args = null;
             Object[] remainingArgs = null;
 
-            if (!DmlUtils.isBatched(qry) && paramsCnt > 0) {
+            if (!batched && paramsCnt > 0) {
                 if (argsOrig == null || argsOrig.length < paramsCnt)
                     // Not enough parameters, but we will handle this later on execution phase.
                     args = argsOrig;
@@ -319,6 +314,8 @@ public class QueryParser {
 
             newQry.setArgs(args);
 
+            QueryParserCacheKey newPlanKey = planKey(schemaName, newQry);
+
             if (remainingQry != null)
                 remainingQry.setArgs(remainingArgs);
 
@@ -328,17 +325,17 @@ public class QueryParser {
 
                 QueryParserResultCommand cmd = new QueryParserResultCommand(null, cmdH2, false);
 
-                return new QueryParserResult(newQry, remainingQry, null, null, cmd);
+                return new QueryParserResult(newPlanKey, newQry, remainingQry, null, null, cmd);
             }
             else if (CommandProcessor.isCommandNoOp(prepared)) {
                 QueryParserResultCommand cmd = new QueryParserResultCommand(null, null, true);
 
-                return new QueryParserResult(newQry, remainingQry, null, null, cmd);
+                return new QueryParserResult(newPlanKey, newQry, remainingQry, null, null, cmd);
             }
             else if (GridSqlQueryParser.isDml(prepared)) {
-                QueryParserResultDml dml = prepareDmlStatement(schemaName, qry, prepared);
+                QueryParserResultDml dml = prepareDmlStatement(newPlanKey, prepared);
 
-                return new QueryParserResult(newQry, remainingQry, null, dml, null);
+                return new QueryParserResult(newPlanKey, newQry, remainingQry, null, dml, null);
             }
             else if (!prepared.isQuery()) {
                 throw new IgniteSQLException("Unsupported statement: " + newQry.getSql(),
@@ -405,7 +402,7 @@ public class QueryParser {
                     forUpdate
                 );
 
-                return new QueryParserResult(newQry, remainingQry, select, null, null);
+                return new QueryParserResult(newPlanKey, newQry, remainingQry, select, null, null);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteSQLException("Failed to parse query: " + newQry.getSql(), IgniteQueryErrorCode.PARSING,
@@ -478,14 +475,13 @@ public class QueryParser {
     /**
      * Prepare DML statement.
      *
-     * @param schemaName Schema name.
-     * @param qry Query.
+     * @param planKey Plan key.
      * @param prepared Prepared.
      * @return Statement.
      */
-    private QueryParserResultDml prepareDmlStatement(String schemaName, SqlFieldsQuery qry, Prepared prepared) {
-        if (F.eq(QueryUtils.SCHEMA_SYS, schemaName))
-            throw new IgniteSQLException("DML statements are not supported on " + schemaName + " schema",
+    private QueryParserResultDml prepareDmlStatement(QueryParserCacheKey planKey, Prepared prepared) {
+        if (F.eq(QueryUtils.SCHEMA_SYS, planKey.schemaName()))
+            throw new IgniteSQLException("DML statements are not supported on " + planKey.schemaName() + " schema",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         // Prepare AST.
@@ -532,11 +528,10 @@ public class QueryParser {
 
         try {
             plan = UpdatePlanBuilder.planForStatement(
-                schemaName,
+                planKey,
                 stmt,
                 mvccEnabled,
-                idx,
-                qry
+                idx
             );
         }
         catch (Exception e) {
@@ -584,5 +579,35 @@ public class QueryParser {
      */
     private static SqlFieldsQuery cloneFieldsQuery(SqlFieldsQuery oldQry) {
         return oldQry.copy().setLocal(oldQry.isLocal()).setPageSize(oldQry.getPageSize());
+    }
+
+    /**
+     * Prepare plan key.
+     *
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @return Plan key.
+     */
+    private static QueryParserCacheKey planKey(String schemaName, SqlFieldsQuery qry) {
+        boolean skipReducerOnUpdate = false;
+        boolean batched = false;
+
+        if (qry instanceof SqlFieldsQueryEx) {
+            SqlFieldsQueryEx qry0 = (SqlFieldsQueryEx)qry;
+
+            skipReducerOnUpdate = !qry.isLocal() && qry0.isSkipReducerOnUpdate();
+            batched = qry0.isBatched();
+        }
+
+        return new QueryParserCacheKey(
+            schemaName,
+            qry.getSql(),
+            qry.isCollocated(),
+            qry.isDistributedJoins(),
+            qry.isEnforceJoinOrder(),
+            qry.isLocal(),
+            skipReducerOnUpdate,
+            batched
+        );
     }
 }

@@ -24,6 +24,9 @@ import org.jetbrains.annotations.Nullable;
  * Result of parsing and splitting SQL from {@link SqlFieldsQuery}.
  */
 public class QueryParserResult {
+    /** Plan key. */
+    private final QueryParserCacheKey planKey;
+
     /** New fields query that may be executed right away. */
     private final SqlFieldsQuery qry;
 
@@ -42,6 +45,7 @@ public class QueryParserResult {
     /**
      * Constructor.
      *
+     * @param planKey Plan key.
      * @param qry New query.
      * @param remainingQry Remaining query.
      * @param select Select.
@@ -49,17 +53,26 @@ public class QueryParserResult {
      * @param cmd Command.
      */
     public QueryParserResult(
+        QueryParserCacheKey planKey,
         SqlFieldsQuery qry,
         SqlFieldsQuery remainingQry,
         @Nullable QueryParserResultSelect select,
         @Nullable QueryParserResultDml dml,
         @Nullable QueryParserResultCommand cmd
     ) {
+        this.planKey = planKey;
         this.qry = qry;
         this.remainingQry = remainingQry;
         this.select = select;
         this.dml = dml;
         this.cmd = cmd;
+    }
+
+    /**
+     * @return Plan key.
+     */
+    public QueryParserCacheKey planKey() {
+        return planKey;
     }
 
     /**
