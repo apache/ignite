@@ -159,6 +159,25 @@ namespace ignite
                 }
 
                 /**
+                 * Start tracking affinity mapping for the cache.
+                 *
+                 * @param cacheId Cache ID.
+                 */
+                void StartTrackingAffinity(int32_t cacheId);
+
+                /**
+                 * Stop tracking affinity mapping for the cache.
+                 *
+                 * @param cacheId Cache ID.
+                 */
+                void StopTrackingAffinity(int32_t cacheId);
+
+                /**
+                 * Update affinity mapping for the cache.
+                 */
+                void RefreshAffinityMapping();
+
+                /**
                  * Update affinity mapping for the cache.
                  *
                  * @param cacheId Cache ID.
@@ -178,7 +197,7 @@ namespace ignite
                  * @param cacheId Cache ID.
                  * @return Mapping.
                  */
-                affinity::SP_AffinityAssignment GetAffinityAssignment(int32_t cacheId);
+                affinity::SP_AffinityAssignment GetAffinityAssignment(int32_t cacheId) const;
 
                 /**
                  * Clear affinity mapping for the cache.

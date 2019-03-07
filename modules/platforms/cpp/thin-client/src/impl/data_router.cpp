@@ -129,8 +129,32 @@ namespace ignite
                 legacyChannels.clear();
             }
 
+            void DataRouter::StartTrackingAffinity(int32_t cacheId)
+            {
+                affinityManager.StartTrackingCache(cacheId);
+            }
+
+            void DataRouter::StopTrackingAffinity(int32_t cacheId)
+            {
+                affinityManager.StopTrackingCache(cacheId);
+            }
+
+            void DataRouter::RefreshAffinityMapping()
+            {
+                std::vector<int32_t> ids;
+
+                affinityManager.GetTrackedCaches(ids);
+
+                RefreshAffinityMapping(ids);
+            }
+
             void DataRouter::RefreshAffinityMapping(int32_t cacheId)
             {
+                affinity::SP_AffinityAssignment assignment = affinityManager.GetAffinityAssignment(cacheId);
+
+                if (assignment.IsValid())
+                    return;
+
                 std::vector<int32_t> ids(1, cacheId);
 
                 RefreshAffinityMapping(ids);
@@ -151,7 +175,7 @@ namespace ignite
                 affinityManager.UpdateAffinity(rsp.GetGroups(), rsp.GetVersion());
             }
 
-            affinity::SP_AffinityAssignment DataRouter::GetAffinityAssignment(int32_t cacheId)
+            affinity::SP_AffinityAssignment DataRouter::GetAffinityAssignment(int32_t cacheId) const
             {
                 return affinityManager.GetAffinityAssignment(cacheId);
             }

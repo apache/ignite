@@ -123,8 +123,6 @@ namespace ignite
             {
                 cache::SP_CacheClientImpl cache(new cache::CacheClientImpl(router, name, id));
 
-                cache.Get()->RefreshAffinityMapping();
-
                 return cache;
             }
 

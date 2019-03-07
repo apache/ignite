@@ -38,12 +38,12 @@ namespace ignite
                     id(id),
                     binary(false)
                 {
-                    // No-op.
+                    this->router.Get()->StartTrackingAffinity(id);
                 }
 
                 CacheClientImpl::~CacheClientImpl()
                 {
-                    // No-op.
+                    router.Get()->StopTrackingAffinity(id);
                 }
 
                 template<typename ReqT, typename RspT>
@@ -265,11 +265,6 @@ namespace ignite
                     CacheValueResponse rsp(valOut);
 
                     SyncCacheKeyMessage(key, req, rsp);
-                }
-
-                void CacheClientImpl::RefreshAffinityMapping()
-                {
-                    router.Get()->RefreshAffinityMapping(id);
                 }
             }
         }
