@@ -45,7 +45,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Regression test for the long index name.
+ * Regression test for the long index name. This test is parameterized: we run all test cases in 2 configurations 1) 1
+ * server + 1 client (executing queries from client). 2) 2 servers
+ *
+ * Now in inmemory mode doesn't have index name length constraint, persistence mode does. Indexes are created in 3 ways:
+ * 1) CacheConfiguration in Ignite configuration, index is created at node startup; 2) dynamic index creation; 3) CREATE
+ * INDEX sql command.
  */
 @RunWith(Parameterized.class)
 public class LongIndexNameTest extends AbstractIndexingCommonTest {
@@ -58,9 +63,11 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
+    /** Whether second node is client. */
     @Parameterized.Parameter
     public boolean isSecondClientNode;
 
+    /** We need to run tests in two configurations : 1 server + 1 client and 2 servers. */
     @Parameterized.Parameters(name = "second node is client = {0}")
     public static Collection<Object[]> parameterValues() {
         return Arrays.asList(new Object[][] {
