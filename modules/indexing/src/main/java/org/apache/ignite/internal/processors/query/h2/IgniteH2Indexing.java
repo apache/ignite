@@ -419,32 +419,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Queries individual fields (generally used by JDBC drivers).
      *
-     * @param schemaName Schema name.
-     * @param qry Query.
-     * @param params Query parameters.
+     * @param qryDesc Query descriptor.
+     * @param qryParams Query parameters.
+     * @param select Select.
      * @param filter Cache name and key filter.
-     * @param enforceJoinOrder Enforce join order of tables in the query.
      * @param autoStartTx Start transaction flag.
-     * @param qryTimeout Query timeout in milliseconds.
      * @param cancel Query cancel.
      * @param mvccTracker Query tracker.
-     * @param dataPageScanEnabled If data page scan is enabled.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
+    // TODO: Possible bug with params - it is passed unchanged from DML query.
     private GridQueryFieldsResult executeSelectLocal(
-        final String schemaName,
-        String qry,
-        @Nullable final Collection<Object> params,
-        @Nullable List<GridQueryFieldMetadata> meta,
+        QueryDescriptor qryDesc,
+        QueryParameters qryParams,
+        QueryParserResultSelect select,
         final IndexingQueryFilter filter,
-        boolean enforceJoinOrder,
         boolean autoStartTx,
-        int qryTimeout,
         final GridQueryCancel cancel,
-        MvccQueryTracker mvccTracker,
-        Boolean dataPageScanEnabled
+        MvccQueryTracker mvccTracker
     ) throws IgniteCheckedException {
+        String qry = qryDesc.sql();
+
         GridNearTxLocal tx = null;
 
         boolean mvccEnabled = mvccEnabled(kernalContext());
@@ -452,44 +448,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert mvccEnabled || mvccTracker == null;
 
         try {
-            SqlFieldsQuery fieldsQry = new SqlFieldsQuery(qry)
-                .setLocal(true)
-                .setEnforceJoinOrder(enforceJoinOrder)
-                .setDataPageScanEnabled(dataPageScanEnabled)
-                .setTimeout(qryTimeout, TimeUnit.MILLISECONDS);
-
-            if (params != null)
-                fieldsQry.setArgs(params.toArray());
-
-            QueryParserResult parseRes = parser.parse(schemaName, fieldsQry, false);
-
-            if (parseRes.isDml()) {
-                QueryParserResultDml dml = parseRes.dml();
-
-                assert dml != null;
-
-                UpdateResult updRes = executeUpdate(
-                    parseRes.queryDescriptor(),
-                    parseRes.queryParameters(),
-                    dml,
-                    true,
-                    filter,
-                    cancel
-                );
-
-                List<?> updResRow = Collections.singletonList(updRes.counter());
-
-                return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META, new IgniteSingletonIterator<>(updResRow));
-            }
-            else if (parseRes.isCommand()) {
-                throw new IgniteSQLException("DDL statements are supported for the whole cluster only.",
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-            }
-
-            assert parseRes.isSelect();
-
-            QueryParserResultSelect select = parseRes.select();
-
             assert select != null;
 
             MvccSnapshot mvccSnapshot = null;
@@ -505,7 +463,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             GridNearTxSelectForUpdateFuture sfuFut = null;
 
-            int opTimeout = qryTimeout;
+            int opTimeout = qryParams.timeout();
 
             if (mvccEnabled) {
                 if (mvccTracker == null) {
@@ -569,7 +527,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 null
             );
 
-            return new GridQueryFieldsResultAdapter(meta, null) {
+            return new GridQueryFieldsResultAdapter(select.meta(), null) {
                 @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
                     assert qryCtxRegistry.getThreadLocal() == null;
 
@@ -578,12 +536,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn = connMgr.detachThreadConnection();
 
                     try {
-                        Connection conn0 = conn.object().connection(schemaName);
+                        Connection conn0 = conn.object().connection(qryDesc.schemaName());
+
+                        List<Object> args = F.asList(qryParams.arguments());
 
                         PreparedStatement stmt = preparedStatementWithParams(
                             conn0,
                             qry0,
-                            params,
+                            args,
                             true
                         );
 
@@ -591,10 +551,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             stmt,
                             conn0,
                             qry0,
-                            params,
+                            args,
                             timeout0,
                             cancel,
-                            dataPageScanEnabled
+                            qryParams.dataPageScanEnabled()
                         );
 
                         if (sfuFut0 != null) {
@@ -1409,17 +1369,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             try {
                 final GridQueryFieldsResult res = executeSelectLocal(
-                    qryDesc.schemaName(),
-                    qryDesc.sql(),
-                    F.asList(qryParams.arguments()),
-                    select.meta(),
+                    qryDesc,
+                    qryParams,
+                    select,
                     filter,
-                    qryDesc.enforceJoinOrder(),
                     autoStartTx,
-                    qryParams.timeout(),
                     cancel,
-                    null,
-                    qryParams.dataPageScanEnabled()
+                    null
                 );
 
                 Iterable<List<?>> iter = () -> {
@@ -1539,23 +1495,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // Force keepBinary for operation context to avoid binary deserialization inside entry processor
         DmlUtils.setKeepBinaryContext(planCctx);
 
+        SqlFieldsQuery selectFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fldsQry.isCollocated())
+            .setArgs(fldsQry.getArgs())
+            .setDistributedJoins(fldsQry.isDistributedJoins())
+            .setEnforceJoinOrder(fldsQry.isEnforceJoinOrder())
+            .setLocal(fldsQry.isLocal())
+            .setPageSize(fldsQry.getPageSize())
+            .setTimeout(fldsQry.getTimeout(), TimeUnit.MILLISECONDS)
+            .setDataPageScanEnabled(fldsQry.isDataPageScanEnabled());
+
         QueryCursorImpl<List<?>> cur;
 
         // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
         // sub-query and not some dummy stuff like "select 1, 2, 3;"
         if (!loc && !plan.isLocalSubquery()) {
-            SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fldsQry.isCollocated())
-                .setArgs(fldsQry.getArgs())
-                .setDistributedJoins(fldsQry.isDistributedJoins())
-                .setEnforceJoinOrder(fldsQry.isEnforceJoinOrder())
-                .setLocal(fldsQry.isLocal())
-                .setPageSize(fldsQry.getPageSize())
-                .setTimeout(fldsQry.getTimeout(), TimeUnit.MILLISECONDS)
-                .setDataPageScanEnabled(fldsQry.isDataPageScanEnabled());
-
+            // TODO: Fixme: execute specialized method.
             cur = (QueryCursorImpl<List<?>>)querySqlFields(
                 schema,
-                newFieldsQry,
+                selectFieldsQry,
                 null,
                 true,
                 true,
@@ -1565,19 +1522,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ).get(0);
         }
         else {
-            // TODO: FIXME: Local execution of SELECT
+            selectFieldsQry.setLocal(true);
+
+            QueryParserResult selectParseRes = parser.parse(schema, selectFieldsQry, false);
+
             GridQueryFieldsResult res = executeSelectLocal(
-                schema,
-                plan.selectQuery(),
-                F.asList(fldsQry.getArgs()),
-                null,
+                selectParseRes.queryDescriptor(),
+                selectParseRes.queryParameters(),
+                selectParseRes.select(),
                 filter,
-                fldsQry.isEnforceJoinOrder(),
                 false,
-                fldsQry.getTimeout(),
                 cancel,
-                new StaticMvccQueryTracker(planCctx, mvccSnapshot),
-                null
+                new StaticMvccQueryTracker(planCctx, mvccSnapshot)
             );
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
@@ -2519,6 +2475,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return result;
         }
 
+        SqlFieldsQuery selectFieldsQry = new SqlFieldsQuery(plan.selectQuery(), qryDesc.collocated())
+            .setArgs(qryParams.arguments())
+            .setDistributedJoins(qryDesc.distributedJoins())
+            .setEnforceJoinOrder(qryDesc.enforceJoinOrder())
+            .setLocal(qryDesc.local())
+            .setPageSize(qryParams.pageSize())
+            .setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS)
+            .setDataPageScanEnabled(qryParams.dataPageScanEnabled());
+
         Iterable<List<?>> cur;
 
         // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
@@ -2526,19 +2491,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!loc && !plan.isLocalSubquery()) {
             assert !F.isEmpty(plan.selectQuery());
 
-            SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), qryDesc.collocated())
-                .setArgs(qryParams.arguments())
-                .setDistributedJoins(qryDesc.distributedJoins())
-                .setEnforceJoinOrder(qryDesc.enforceJoinOrder())
-                .setLocal(qryDesc.local())
-                .setPageSize(qryParams.pageSize())
-                .setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS)
-                .setDataPageScanEnabled(qryParams.dataPageScanEnabled()
-            );
-
+            // TODO: Fixme: call specialized method.
             cur = querySqlFields(
                 qryDesc.schemaName(),
-                newFieldsQry,
+                selectFieldsQry,
                 null,
                 true,
                 true,
@@ -2550,18 +2506,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else if (plan.hasRows())
             cur = plan.createRows(qryParams.arguments());
         else {
-            // TODO: Local execution of SELECT
+            selectFieldsQry.setLocal(true);
+
+            QueryParserResult selectParseRes = parser.parse(qryDesc.schemaName(), selectFieldsQry, false);
+
             final GridQueryFieldsResult res = executeSelectLocal(
-                qryDesc.schemaName(),
-                plan.selectQuery(),
-                F.asList(qryParams.arguments()),
-                null,
+                selectParseRes.queryDescriptor(),
+                selectParseRes.queryParameters(),
+                selectParseRes.select(),
                 filters,
-                qryDesc.enforceJoinOrder(),
                 false,
-                qryParams.timeout(),
                 cancel,
-                null,
                 null
             );
 
