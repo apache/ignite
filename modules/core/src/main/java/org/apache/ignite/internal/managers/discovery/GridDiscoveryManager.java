@@ -1959,7 +1959,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache affinity nodes.
      */
-    public Collection<ClusterNode> cacheGroupAffinityNodes(int grpId, AffinityTopologyVersion topVer) {
+    public List<ClusterNode> cacheGroupAffinityNodes(int grpId, AffinityTopologyVersion topVer) {
         return resolveDiscoCache(grpId, topVer).cacheGroupAffinityNodes(grpId);
     }
 

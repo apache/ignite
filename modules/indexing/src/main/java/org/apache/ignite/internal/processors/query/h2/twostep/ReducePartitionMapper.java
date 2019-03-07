@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.PrimitiveIterator;
+import java.util.RandomAccess;
 import java.util.Set;
 import java.util.stream.IntStream;
 import javax.cache.CacheException;
@@ -37,6 +38,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
@@ -549,47 +551,59 @@ public class ReducePartitionMapper {
     private Set<ClusterNode> replicatedUnstableDataNodes(GridCacheContext<?,?> cctx, long qryId) {
         assert cctx.isReplicated() : cctx.name() + " must be replicated";
 
-        String cacheName = cctx.name();
-
-        Set<ClusterNode> dataNodes = new HashSet<>(dataNodes(cctx.groupId()));
+        List<ClusterNode> dataNodes = dataNodes(cctx.groupId());
 
         if (dataNodes.isEmpty())
-            throw new CacheServerNotFoundException("Failed to find data nodes for cache: " + cacheName);
+            throw new CacheServerNotFoundException("Failed to find data nodes for cache: " +  cctx.name());
+
+        // Nodes that has all partitions owned.
+        Set<ClusterNode> stableNodes = new HashSet<>(dataNodes.size());
+
+        int totalParts = cctx.affinity().partitions();
+
+        assert dataNodes instanceof RandomAccess;
 
         // Find all the nodes owning all the partitions for replicated cache.
-        for (int p = 0, parts = cctx.affinity().partitions(); p < parts; p++) {
-            List<ClusterNode> owners = cctx.topology().owners(p);
+        for (int i = 0; i < dataNodes.size(); i++) {
+            ClusterNode node = dataNodes.get(i);
 
-            if (F.isEmpty(owners)) {
-                logRetry("Failed to calculate nodes for SQL query (partition of a REPLICATED cache has no owners) [" +
-                    "qryId=" + qryId + ", cacheName=" + cctx.name() + ", cacheId=" + cctx.cacheId() +
-                    ", part=" + p + ']');
+            GridDhtPartitionMap parts = cctx.topology().partitions(node.id());
 
-                return null; // Retry.
+            if (parts == null || parts.map().size() < totalParts || parts.hasMovingPartitions())
+                continue; // Has missed or non-owning partitions;
+
+            boolean ownAllParts = true;
+
+            for (int p = 0; p < parts.size(); p++) {
+                if (parts.get(p) != GridDhtPartitionState.OWNING) {
+                    ownAllParts = false;
+
+                    break;
+                }
             }
 
-            dataNodes.retainAll(owners);
-
-            if (dataNodes.isEmpty()) {
-                logRetry("Failed to calculate nodes for SQL query (partitions of a REPLICATED has no common owners) [" +
-                    "qryId=" + qryId + ", cacheName=" + cctx.name() + ", cacheId=" + cctx.cacheId() +
-                    ", lastPart=" + p + ']');
-
-                return null; // Retry.
-            }
+            if (ownAllParts)
+                stableNodes.add(node);
         }
 
-        return dataNodes;
+        if (stableNodes.isEmpty()) {
+            logRetry("Failed to calculate nodes for SQL query (partitions of a REPLICATED has no common owners) [" +
+                "qryId=" + qryId + ", cacheName=" + cctx.name() + ", cacheId=" + cctx.cacheId() + ']');
+
+            return null; // Retry.
+        }
+
+        return stableNodes;
     }
 
     /**
      * @param grpId Cache group ID.
      * @return Collection of data nodes.
      */
-    private Collection<ClusterNode> dataNodes(int grpId) {
-        Collection<ClusterNode> res = ctx.discovery().cacheGroupAffinityNodes(grpId, AffinityTopologyVersion.NONE);
+    private List<ClusterNode> dataNodes(int grpId) {
+        List<ClusterNode> res = ctx.discovery().cacheGroupAffinityNodes(grpId, AffinityTopologyVersion.NONE);
 
-        return res != null ? res : Collections.emptySet();
+        return res != null ? res : Collections.emptyList();
     }
 
     /**
