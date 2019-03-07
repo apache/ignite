@@ -185,7 +185,7 @@ if %MAJOR_JAVA_VER% == 11 (
     --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
     --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
     --illegal-access=permit ^
-    ‑Djdk.tls.client.protocols=TLSv1.2 ^
+    -Djdk.tls.client.protocols=TLSv1.2 ^
     %JVM_OPTS_VISOR%
 )
 
