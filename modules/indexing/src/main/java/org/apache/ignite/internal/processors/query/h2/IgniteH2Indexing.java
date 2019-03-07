@@ -432,7 +432,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    private GridQueryFieldsResult executeQueryLocal0(
+    private GridQueryFieldsResult executeSelectLocal(
         final String schemaName,
         String qry,
         @Nullable final Collection<Object> params,
@@ -997,60 +997,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Queries individual fields (generally used by JDBC drivers).
-     *
-     * @param qryDesc Plan key.
-     * @param qryParams Parameters.
-     * @param keepBinary Keep binary flag.
-     * @param filter Cache name and key filter.
-     * @param cancel Query cancel.
-     * @param qryId Running query id. {@code null} in case query is not registered.
-     * @param autoStartTx Start TX flag.
-     * @return Cursor.
-     */
-    private FieldsQueryCursor<List<?>> executeQueryLocal(
-        QueryDescriptor qryDesc,
-        QueryParameters qryParams,
-        List<GridQueryFieldMetadata> meta,
-        final boolean keepBinary,
-        IndexingQueryFilter filter,
-        GridQueryCancel cancel,
-        Long qryId,
-        boolean autoStartTx
-    ) throws IgniteCheckedException {
-        final GridQueryFieldsResult res = executeQueryLocal0(
-            qryDesc.schemaName(),
-            qryDesc.sql(),
-            F.asList(qryParams.arguments()),
-            meta,
-            filter,
-            qryDesc.enforceJoinOrder(),
-            autoStartTx,
-            qryParams.timeout(),
-            cancel,
-            null,
-            qryParams.dataPageScanEnabled()
-        );
-
-        Iterable<List<?>> iter = () -> {
-            try {
-                return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), keepBinary);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        };
-
-        QueryCursorImpl<List<?>> cursor = qryId != null
-            ? new RegisteredQueryCursor<>(iter, cancel, runningQueryManager(), qryId)
-            : new QueryCursorImpl<>(iter, cancel);
-
-        cursor.fieldsMeta(res.metaData());
-
-        return cursor;
-    }
-
-    /**
      * @param schemaName Schema name.
      * @param qry Query.
      * @param keepCacheObj Flag to keep cache object.
@@ -1437,7 +1383,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (ctx.security().enabled())
                 checkSecurity(twoStepQry.cacheIds());
 
-            FieldsQueryCursor<List<?>> res = executeQueryWithSplit(
+            FieldsQueryCursor<List<?>> res = executeSelectDistributed(
                 qryDesc,
                 qryParams,
                 twoStepQry,
@@ -1462,18 +1408,36 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             );
 
             try {
-                FieldsQueryCursor<List<?>> res = executeQueryLocal(
-                    qryDesc,
-                    qryParams,
+                final GridQueryFieldsResult res = executeSelectLocal(
+                    qryDesc.schemaName(),
+                    qryDesc.sql(),
+                    F.asList(qryParams.arguments()),
                     select.meta(),
-                    keepBinary,
                     filter,
+                    qryDesc.enforceJoinOrder(),
+                    autoStartTx,
+                    qryParams.timeout(),
                     cancel,
-                    qryId,
-                    autoStartTx
+                    null,
+                    qryParams.dataPageScanEnabled()
                 );
 
-                return Collections.singletonList(res);
+                Iterable<List<?>> iter = () -> {
+                    try {
+                        return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), keepBinary);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                };
+
+                QueryCursorImpl<List<?>> cursor = qryId != null
+                    ? new RegisteredQueryCursor<>(iter, cancel, runningQueryManager(), qryId)
+                    : new QueryCursorImpl<>(iter, cancel);
+
+                cursor.fieldsMeta(res.metaData());
+
+                return Collections.singletonList(cursor);
             }
             catch (IgniteCheckedException e) {
                 runningQryMgr.unregister(qryId, true);
@@ -1601,7 +1565,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ).get(0);
         }
         else {
-            GridQueryFieldsResult res = executeQueryLocal0(
+            // TODO: FIXME: Local execution of SELECT
+            GridQueryFieldsResult res = executeSelectLocal(
                 schema,
                 plan.selectQuery(),
                 F.asList(fldsQry.getArgs()),
@@ -1645,7 +1610,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param registerAsNewQry {@code true} In case it's new query which should be registered as running query,
      * @return Cursor representing distributed query result.
      */
-    private FieldsQueryCursor<List<?>> executeQueryWithSplit(
+    private FieldsQueryCursor<List<?>> executeSelectDistributed(
         QueryDescriptor qryDesc,
         QueryParameters qryParams,
         GridCacheTwoStepQuery twoStepQry,
@@ -2585,7 +2550,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else if (plan.hasRows())
             cur = plan.createRows(qryParams.arguments());
         else {
-            final GridQueryFieldsResult res = executeQueryLocal0(
+            // TODO: Local execution of SELECT
+            final GridQueryFieldsResult res = executeSelectLocal(
                 qryDesc.schemaName(),
                 plan.selectQuery(),
                 F.asList(qryParams.arguments()),
