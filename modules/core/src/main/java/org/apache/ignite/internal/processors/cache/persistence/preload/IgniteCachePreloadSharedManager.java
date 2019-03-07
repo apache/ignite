@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -30,7 +31,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_REBALANCE;
@@ -133,6 +133,17 @@ public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapt
         return presistenceRebalanceEnabled &&
             grp.persistenceEnabled() &&
             IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.CACHE_PARTITION_FILE_REBALANCE);
+    }
+
+    /**
+     * @param grp The corresponding to assignments cache group context.
+     * @param assigns A generated cache assignments in a cut of cache group [grpId, [nodeId, parts]].
+     * @return {@code True} if cache must be rebalanced by sending files.
+     */
+    public boolean partitionRebalanceRequired(CacheGroupContext grp, GridDhtPreloaderAssignments assigns) {
+        return rebalanceByPartitionSupported(grp, assigns) &&
+            grp.config().getRebalanceDelay() != -1 &&
+            grp.config().getRebalanceMode() != CacheRebalanceMode.NONE;
     }
 
     /**

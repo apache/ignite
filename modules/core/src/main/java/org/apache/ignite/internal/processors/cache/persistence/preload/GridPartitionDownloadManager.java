@@ -341,7 +341,7 @@ public class GridPartitionDownloadManager {
             int grpId = grpEntry.getKey();
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-            if (cctx.preloadMgr().rebalanceByPartitionSupported(grp, grpEntry.getValue())) {
+            if (cctx.preloadMgr().partitionRebalanceRequired(grp, grpEntry.getValue())) {
                 int grpOrderNo = grp.config().getRebalanceOrder();
 
                 result.putIfAbsent(grpOrderNo, new HashMap<>());

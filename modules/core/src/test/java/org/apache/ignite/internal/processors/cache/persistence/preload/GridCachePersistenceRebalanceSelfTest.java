@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.preload;
 
 import java.util.Collections;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -30,7 +32,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +45,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR
 /**
  * Test cases for checking cancellation rebalancing process if some events occurs.
  */
-public class GridCachePersistenceRebalanceSelfTest extends GridCacheRebalancingSyncSelfTest {
+public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final int TEST_SIZE = GridTestUtils.SF.applyLB(100_000, 10_000);
+
     /** */
     @Before
     public void setBefore() throws Exception {
@@ -66,20 +72,28 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCacheRebalancingS
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                        .setMaxSize(100L * 1024 * 1024)
-                        .setPersistenceEnabled(true))
-                    .setWalMode(WALMode.LOG_ONLY))
-            .setCacheConfiguration(
-                new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
-                    .setCacheMode(CacheMode.PARTITIONED)
-                    .setRebalanceMode(CacheRebalanceMode.ASYNC)
-                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                    .setBackups(1)
-                    .setAffinity(new RendezvousAffinityFunction(false)
-                        .setPartitions(8)));
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setMaxSize(100L * 1024 * 1024)
+                    .setPersistenceEnabled(true))
+                .setWalMode(WALMode.LOG_ONLY));
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param name Cache name.
+     */
+    protected void loadData(Ignite ignite, String name) {
+        try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(name)) {
+            streamer.allowOverwrite(true);
+
+            for (int i = 0; i < TEST_SIZE; i++) {
+                if ((i + 1) % (TEST_SIZE / 10) == 0)
+                    log.info("Prepared " + (i + 1) * 100 / (TEST_SIZE) + "% entries.");
+
+                streamer.addData(i, i + name.hashCode());
+            }
+        }
     }
 
     /** */
@@ -89,15 +103,52 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCacheRebalancingS
 
         ignite0.cluster().active(true);
 
-        IgniteCache<Integer, byte[]> cache = ignite0.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, byte[]> cache = ignite0.getOrCreateCache(
+            new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setRebalanceMode(CacheRebalanceMode.ASYNC)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setBackups(1)
+                .setAffinity(new RendezvousAffinityFunction(false)
+                    .setPartitions(8)));
 
-        generateData(ignite0, DEFAULT_CACHE_NAME, 0, 0);
+        loadData(ignite0, DEFAULT_CACHE_NAME);
 
         assertTrue(!ignite0.cluster().baselineConfiguration().isBaselineAutoAdjustEnabled());
 
         IgniteEx ignite1 = startGrid(1);
 
         ignite1.cluster().setBaselineTopology(ignite1.cluster().nodes());
+
+        awaitPartitionMapExchange(true, true, Collections.singleton(ignite1.localNode()), true);
+    }
+
+    /** */
+    @Test
+    public void testPersistenceRebalanceManualCache() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        IgniteCache<Integer, byte[]> cache = ignite0.getOrCreateCache(
+            new CacheConfiguration<Integer, byte[]>("manual")
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setRebalanceMode(CacheRebalanceMode.ASYNC)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setBackups(1)
+                .setRebalanceDelay(-1)
+                .setAffinity(new RendezvousAffinityFunction(false)
+                    .setPartitions(8)));
+
+        loadData(ignite0, "manual");
+
+        assertTrue(!ignite0.cluster().baselineConfiguration().isBaselineAutoAdjustEnabled());
+
+        IgniteEx ignite1 = startGrid(1);
+
+        ignite1.cluster().setBaselineTopology(ignite1.cluster().nodes());
+
+        printPartitionState("manual", 0);
 
         awaitPartitionMapExchange(true, true, Collections.singleton(ignite1.localNode()), true);
     }
