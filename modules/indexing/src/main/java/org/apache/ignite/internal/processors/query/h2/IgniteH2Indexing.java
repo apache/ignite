@@ -1258,7 +1258,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
 
             if (log.isInfoEnabled()) {
-                String msg = "Executing query sql=" + sql  + sql + '\'' +
+                String msg = "Executing query sql=" + sql + '\'' +
                     ", parameters=" + (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]" +
                     ", lazy=" + (MapQueryLazyWorker.currentWorker() != null) ;
 
