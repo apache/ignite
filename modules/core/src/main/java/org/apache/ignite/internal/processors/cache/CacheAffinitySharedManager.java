@@ -2518,16 +2518,20 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (curNodes.isEmpty())
                     continue;
 
-                List<ClusterNode> newNodes = latePrimaryAssignment(aff,
-                    p,
-                    curNodes.get(0),
-                    idealAssignment.assignment().get(p),
-                    rebalanceInfo);
+                List<ClusterNode> idealOwners = idealAssignment.assignment().get(p);
 
-                if (newAssignment == null)
-                    newAssignment = new ArrayList<>(idealAssignment.assignment());
+                if (!curNodes.get(0).equals(idealOwners.get(0))) {
+                    List<ClusterNode> newNodes = latePrimaryAssignment(aff,
+                        p,
+                        curNodes.get(0),
+                        idealOwners,
+                        rebalanceInfo);
 
-                newAssignment.set(p, newNodes);
+                    if (newAssignment == null)
+                        newAssignment = new ArrayList<>(idealAssignment.assignment());
+
+                    newAssignment.set(p, newNodes);
+                }
             }
         }
 
