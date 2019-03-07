@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -55,9 +54,10 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -71,7 +71,7 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 /**
  * Basic continuous queries test with enabled mvcc.
  */
-@RunWith(Parameterized.class)
+@RunWith(JUnit4.class)
 public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /** */
     private static final long LATCH_TIMEOUT = 5000;
@@ -125,7 +125,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /**
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testAllEntries() throws Exception {
         Ignite node = startGrids(3);
 
@@ -222,7 +222,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /**
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCachingMaxSize() throws Exception {
         Ignite node = startGrids(1);
 
@@ -255,15 +255,10 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
         },  CacheException.class, "Transaction is too large. Consider reducing transaction size");
     }
 
-    @Parameterized.Parameters
-    public static Iterable<Object[]> data() {
-        return Arrays.asList(new Object[1000][0]);
-    }
-
     /**
      * @throws Exception  If failed.
      */
-    //@Ignore("https://issues.apache.org/jira/browse/IGNITE-10768")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10768")
     @Test
     public void testUpdateCountersGapClosedSimplePartitioned() throws Exception {
         checkUpdateCountersGapIsProcessedSimple(CacheMode.PARTITIONED);
@@ -272,7 +267,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /**
      * @throws Exception  If failed.
      */
-    //@Test
+    @Test
     public void testUpdateCountersGapClosedSimpleReplicated() throws Exception {
         checkUpdateCountersGapIsProcessedSimple(CacheMode.REPLICATED);
     }
@@ -419,7 +414,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /**
      * @throws Exception  If failed.
      */
-    //@Test
+    @Test
     public void testUpdateCountersGapClosedPartitioned() throws Exception {
         checkUpdateCountersGapsClosed(CacheMode.PARTITIONED);
     }
@@ -427,7 +422,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /**
      * @throws Exception  If failed.
      */
-    //@Test
+    @Test
     public void testUpdateCountersGapClosedReplicated() throws Exception {
         checkUpdateCountersGapsClosed(CacheMode.REPLICATED);
     }
