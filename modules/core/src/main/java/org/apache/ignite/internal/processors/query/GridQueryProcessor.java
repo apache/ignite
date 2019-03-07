@@ -2239,8 +2239,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     @Override public List<FieldsQueryCursor<List<?>>> applyx() {
                         GridQueryCancel cancel0 = cancel != null ? cancel : new GridQueryCancel();
 
-                        List<FieldsQueryCursor<List<?>>> res =
-                            idx.querySqlFields(
+                        List<FieldsQueryCursor<List<?>>> res = idx.querySqlFields(
                                 schemaName,
                                 qry,
                                 cliCtx,

@@ -198,12 +198,28 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
         static final Queue<SqlFieldsQuery> queries = new LinkedBlockingQueue<>();
 
         /** {@inheritDoc} */
-        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts,
-            MvccQueryTracker tracker, GridQueryCancel cancel, boolean registerAsNewQry) {
+        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(
+            String schemaName,
+            SqlFieldsQuery qry,
+            @Nullable SqlClientContext cliCtx,
+            boolean keepBinary,
+            boolean failOnMultipleStmts,
+            MvccQueryTracker tracker,
+            GridQueryCancel cancel,
+            boolean registerAsNewQry
+        ) {
             queries.add(qry);
 
-            return super.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, tracker, cancel, registerAsNewQry);
+            return super.querySqlFields(
+                schemaName,
+                qry,
+                cliCtx,
+                keepBinary,
+                failOnMultipleStmts,
+                tracker,
+                cancel,
+                registerAsNewQry
+            );
         }
     }
 }

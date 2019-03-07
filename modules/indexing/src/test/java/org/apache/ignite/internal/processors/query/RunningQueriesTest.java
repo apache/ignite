@@ -644,11 +644,27 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
      */
     private static class BlockingIndexing extends IgniteH2Indexing {
         /** {@inheritDoc} */
-        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts,
-            MvccQueryTracker tracker, GridQueryCancel cancel, boolean registerAsNewQry) {
-            List<FieldsQueryCursor<List<?>>> res = super.querySqlFields(schemaName, qry, cliCtx, keepBinary,
-                failOnMultipleStmts, tracker, cancel, registerAsNewQry);
+        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(
+            String schemaName,
+            SqlFieldsQuery qry,
+            @Nullable SqlClientContext cliCtx,
+            boolean keepBinary,
+            boolean failOnMultipleStmts,
+            MvccQueryTracker tracker,
+            GridQueryCancel cancel,
+            boolean registerAsNewQry
+        ) {
+            List<FieldsQueryCursor<List<?>>> res = super.querySqlFields(
+                schemaName,
+                qry,
+                cliCtx,
+                keepBinary,
+                failOnMultipleStmts,
+                tracker,
+                cancel,
+                registerAsNewQry
+            );
+
             try {
                 awaitTimeouted();
             }
