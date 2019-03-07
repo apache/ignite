@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionResult;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -44,7 +45,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     /** Update count. */
     private long updateCnt;
 
-    // TODO: 28.02.19 not sure that partRes should be only in JdbcQueryExecuteResult.
+    // TODO: 04.03.19 Check that if best effort affinity is not appliable on the server side, null will be set.
     /** Partition result. */
     private PartitionResult partRes;
 
@@ -75,6 +76,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
      * @param cursorId Cursor ID.
      * @param updateCnt Update count for DML queries.
      */
+    // TODO: 07.03.19 add part result to dml queries
     public JdbcQueryExecuteResult(long cursorId, long updateCnt) {
         super(QRY_EXEC);
 
@@ -163,7 +165,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         }
 
         if (reader.readBoolean())
-            partRes = PartitionResult.readResult(reader, ver);
+            partRes = JdbcThinPartitionResult.readResult(reader, ver);
     }
 
     /**

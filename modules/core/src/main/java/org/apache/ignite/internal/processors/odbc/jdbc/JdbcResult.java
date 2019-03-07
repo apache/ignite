@@ -75,6 +75,8 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** A result of the processing ordered batch request. */
     static final byte BATCH_EXEC_ORDERED = 18;
 
+    static final byte CACHE_PARTITIONS = 19;
+
     /** Success status. */
     private byte type;
 
@@ -188,6 +190,9 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case BATCH_EXEC_ORDERED:
                 res = new JdbcOrderedBatchExecuteResult();
+
+            case CACHE_PARTITIONS:
+                res = new JdbcCachePartitionsResult();
 
                 break;
 

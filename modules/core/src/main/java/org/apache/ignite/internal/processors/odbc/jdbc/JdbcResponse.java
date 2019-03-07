@@ -20,11 +20,14 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
 
 /**
  * SQL listener response.
@@ -33,6 +36,9 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
     /** Response object. */
     @GridToStringInclude
     private JdbcResult res;
+
+    /** Affinity version. */
+    private AffinityTopologyVersion affinityVer;
 
     /**
      * Default constructs is used for deserialization
@@ -50,6 +56,17 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
         super(STATUS_SUCCESS, null);
 
         this.res = res;
+    }
+
+    /**
+     * Constructs successful rest response.
+     *
+     * @param res Response result.
+     */
+    public JdbcResponse(JdbcResult res, @Nullable AffinityTopologyVersion affinityVer) {
+        this(res);
+
+        this.affinityVer = affinityVer;
     }
 
     /**
@@ -71,9 +88,23 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
         return res;
     }
 
+    /**
+     * @return Affinity affinityVersion changed.
+     */
+    public boolean affinityVersionChanged() {
+        return affinityVer != null;
+    }
+
+    /**
+     * @return Version.
+     */
+    public AffinityTopologyVersion affinityVersion() {
+        return affinityVer;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcResponse.class, this, "status", status(),"err", error());
+        return S.toString(JdbcResponse.class, this, "status", status(), "err", error());
     }
 
     /** {@inheritDoc} */
@@ -90,6 +121,14 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
         else
             writer.writeString(error());
 
+        if (ver.compareTo(VER_2_8_0) >= 0) {
+            writer.writeBoolean(affinityVer != null);
+
+            if (affinityVer != null) {
+                writer.writeLong(affinityVer.topologyVersion());
+                writer.writeInt(affinityVer.minorTopologyVersion());
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -103,5 +142,17 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
         }
         else
             error(reader.readString());
+
+        if (ver.compareTo(VER_2_8_0) >= 0) {
+            boolean affinityVerChanged = reader.readBoolean();
+
+            if (affinityVerChanged) {
+
+                long topVer = reader.readLong();
+                int minorTopVer = reader.readInt();
+
+                affinityVer = new AffinityTopologyVersion(topVer, minorTopVer);
+            }
+        }
     }
 }

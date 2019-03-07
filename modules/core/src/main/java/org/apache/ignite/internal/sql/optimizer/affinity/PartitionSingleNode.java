@@ -131,4 +131,8 @@ public abstract class PartitionSingleNode implements PartitionNode {
                 throw new IllegalArgumentException("Partition node type " + nodeType + " is not valid signle node.");
         }
     }
+
+    @Override public String cacheName() {
+        return tbl.cacheName();
+    }
 }

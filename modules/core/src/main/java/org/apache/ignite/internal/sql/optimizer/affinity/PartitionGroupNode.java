@@ -155,4 +155,11 @@ public class PartitionGroupNode implements PartitionNode {
 
         return new PartitionGroupNode(siblings);
     }
+
+    @Override public String cacheName() {
+        if (siblings != null)
+            return siblings.iterator().next().tbl.cacheName();
+
+        return null;
+    }
 }

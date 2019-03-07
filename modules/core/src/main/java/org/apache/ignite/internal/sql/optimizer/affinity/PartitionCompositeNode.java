@@ -435,4 +435,10 @@ public class PartitionCompositeNode implements PartitionNode {
 
         return new PartitionCompositeNode(left, right, op);
     }
+
+    @Override public String cacheName() {
+        String leftCacheName = left.cacheName();
+
+        return leftCacheName != null ? leftCacheName : right.cacheName();
+    }
 }

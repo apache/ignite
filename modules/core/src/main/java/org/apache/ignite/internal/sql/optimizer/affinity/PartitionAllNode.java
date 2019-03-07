@@ -64,4 +64,8 @@ public class PartitionAllNode implements PartitionNode {
         throws BinaryObjectException {
         // No-op.
     }
+
+    @Override public String cacheName() {
+        return null;
+    }
 }

@@ -49,30 +49,6 @@ public interface PartitionNode extends JdbcRawBinarylizable {
     static final byte PARAM_NODE = 6;
 
     /**
-     * Get partitions.
-     *
-     * @param cliCtx Thin client context (optional).
-     * @param args Query arguments.
-     * @return Partitions.
-     * @throws IgniteCheckedException If failed.
-     */
-    Collection<Integer> apply(@Nullable PartitionClientContext cliCtx, Object... args) throws IgniteCheckedException;
-
-    /**
-     * @return Join group for the given node.
-     */
-    int joinGroup();
-
-    /**
-     * Try optimizing partition nodes into a simpler form.
-     *
-     * @return Optimized node or {@code this} if optimization failed.
-     */
-    default PartitionNode optimize() {
-        return this;
-    }
-
-    /**
      * Returns debinarized partition node.
      *
      * @param reader Binary reader.
@@ -80,7 +56,7 @@ public interface PartitionNode extends JdbcRawBinarylizable {
      * @return Debinarized partition node.
      * @throws BinaryObjectException On error.
      */
-    public static PartitionNode readNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+    static PartitionNode readNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         int nodeType = reader.readByte();
 
@@ -106,5 +82,32 @@ public interface PartitionNode extends JdbcRawBinarylizable {
             default:
                 throw new IllegalArgumentException("Partition node type " + nodeType + " not supported.");
         }
+    }
+
+    /**
+     * Get partitions.
+     *
+     * @param cliCtx Thin client context (optional).
+     * @param args Query arguments.
+     * @return Partitions.
+     * @throws IgniteCheckedException If failed.
+     */
+    Collection<Integer> apply(@Nullable PartitionClientContext cliCtx, Object... args) throws IgniteCheckedException;
+
+    /**
+     * @return Join group for the given node.
+     */
+    int joinGroup();
+
+
+    String cacheName();
+
+    /**
+     * Try optimizing partition nodes into a simpler form.
+     *
+     * @return Optimized node or {@code this} if optimization failed.
+     */
+    default PartitionNode optimize() {
+        return this;
     }
 }

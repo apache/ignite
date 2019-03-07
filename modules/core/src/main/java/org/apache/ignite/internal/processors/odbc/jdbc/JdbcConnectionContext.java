@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
@@ -85,6 +87,10 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /** Request handler. */
     private JdbcRequestHandler handler = null;
+
+
+    /** Last reported affinity topology version. */
+    private AtomicReference<AffinityTopologyVersion> lastAffinityTopologyVersion = new AtomicReference<>();
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
@@ -200,9 +206,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         };
 
-        handler = new JdbcRequestHandler(ctx, busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
+        handler = new JdbcRequestHandler(busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode,
-            dataPageScanEnabled, actx, ver);
+            dataPageScanEnabled, actx, ver, this);
 
         handler.start();
     }
@@ -222,5 +228,27 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         handler.onDisconnect();
 
         super.onDisconnected();
+    }
+
+    /**
+     * Atomically check whether affinity topology version has changed since the last call and sets new version as a last.
+     * @return New version, if it has changed since the last call.
+     */
+    public JdbcAffinityTopologyVersion checkAffinityTopologyVersion() {
+        while (true) {
+            AffinityTopologyVersion oldVer = lastAffinityTopologyVersion.get();
+            AffinityTopologyVersion newVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+            boolean changed = oldVer == null || oldVer.compareTo(newVer) > 0;
+
+            if (changed) {
+                boolean success = lastAffinityTopologyVersion.compareAndSet(oldVer, newVer);
+
+                if (!success)
+                    continue;
+            }
+
+            return new JdbcAffinityTopologyVersion(newVer, changed);
+        }
     }
 }

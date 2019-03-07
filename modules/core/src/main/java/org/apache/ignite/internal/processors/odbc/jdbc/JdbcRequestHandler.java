@@ -27,7 +27,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.SortedSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,13 +37,17 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -56,6 +62,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -79,6 +86,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionCont
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC_ORDERED;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BULK_LOAD_BATCH;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.CACHE_PARTITIONS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_COLUMNS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_INDEXES;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_PARAMS;
@@ -99,8 +107,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private static final JdbcResponse JDBC_QUERY_CANCELLED_RESPONSE =
         new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
 
-    /** Kernel context. */
-    private final GridKernalContext ctx;
+    private final JdbcConnectionContext connCtx;
 
     /** Client context. */
     private final SqlClientContext cliCtx;
@@ -152,7 +159,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
     /**
      * Constructor.
-     * @param ctx Context.
      * @param busyLock Shutdown latch.
      * @param sender Results sender.
      * @param maxCursors Maximum allowed cursors.
@@ -165,9 +171,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param actx Authentication context.
      * @param protocolVer Protocol version.
+     * @param connCtx Jdbc connection context.
      */
     public JdbcRequestHandler(
-        GridKernalContext ctx,
         GridSpinBusyLock busyLock,
         ClientListenerResponseSender sender,
         int maxCursors,
@@ -181,12 +187,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         NestedTxMode nestedTxMode,
         @Nullable Boolean dataPageScanEnabled,
         AuthorizationContext actx,
-        ClientListenerProtocolVersion protocolVer
+        ClientListenerProtocolVersion protocolVer,
+        JdbcConnectionContext connCtx
     ) {
-        this.ctx = ctx;
+        this.connCtx = connCtx;
         this.sender = sender;
 
-        this.meta = new JdbcMetadataInfo(ctx);
+        this.meta = new JdbcMetadataInfo(connCtx.kernalContext());
 
         Factory<GridWorker> orderedFactory = new Factory<GridWorker>() {
             @Override public GridWorker create() {
@@ -195,7 +202,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         };
 
         this.cliCtx = new SqlClientContext(
-            ctx,
+            connCtx.kernalContext(),
             orderedFactory,
             distributedJoins,
             enforceJoinOrder,
@@ -213,10 +220,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.protocolVer = protocolVer;
         this.actx = actx;
 
-        log = ctx.log(getClass());
+        log = connCtx.kernalContext().log(getClass());
 
         // TODO IGNITE-9484 Do not create worker if there is a possibility to unbind TX from threads.
-        worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
+        worker = new JdbcRequestHandlerWorker(connCtx.kernalContext().igniteInstanceName(), log, this,
+            connCtx.kernalContext());
     }
 
     /** {@inheritDoc} */
@@ -227,7 +235,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         JdbcRequest req = (JdbcRequest)req0;
 
-        if (!MvccUtils.mvccEnabled(ctx))
+        if (!MvccUtils.mvccEnabled(connCtx.kernalContext()))
             return doHandle(req);
         else {
             GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);
@@ -331,6 +339,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 case QRY_CANCEL:
                     return cancelQuery((JdbcQueryCancelRequest)req);
+
+                case CACHE_PARTITIONS:
+                    return getCachePartitions((JdbcCachePartitionsRequest) req);
             }
 
             return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
@@ -399,7 +410,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response to send to the client.
      */
     private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
-        if (ctx == null)
+        if (connCtx.kernalContext() == null)
             return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: "
                 + req.cursorId() + ". Bulk load session may have been reclaimed due to timeout.");
 
@@ -430,7 +441,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 default:
                     throw new IllegalArgumentException();
             }
-            return new JdbcResponse(new JdbcQueryExecuteResult(req.cursorId(), processor.updateCnt()));
+            return new JdbcResponse(new JdbcQueryExecuteResult(req.cursorId(), processor.updateCnt()),
+                connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
         }
         catch (Exception e) {
             U.error(null, "Error processing file batch", e);
@@ -465,7 +477,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         // Write node id.
         if (protocolVer.compareTo(VER_2_8_0) >= 0)
-            writer.writeUuid(ctx.localNodeId());
+            writer.writeUuid(connCtx.kernalContext().localNodeId());
     }
 
     /**
@@ -582,8 +594,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFields(null, qry, cliCtx, true,
-                protocolVer.compareTo(VER_2_3_0) < 0, cancel);
+            List<FieldsQueryCursor<List<?>>> results = connCtx.kernalContext().query().querySqlFields(null, qry,
+                cliCtx, true,protocolVer.compareTo(VER_2_3_0) < 0, cancel);
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -598,7 +610,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 jdbcCursors.put(processor.cursorId(), processor);
 
                 // responses for the same query on the client side
-                return new JdbcResponse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams));
+                return new JdbcResponse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams),
+                    connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
             }
 
             if (results.size() == 1) {
@@ -611,9 +624,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 JdbcQueryExecuteResult res;
 
+                PartitionResult partRes = req.partitionResponseRequest() ?
+                    ((QueryCursorImpl<List<?>>)fieldsCur).partitionResult() :
+                    null;
+
                 if (cur.isQuery())
-                    res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext(),
-                        ((QueryCursorImpl<List<?>>)fieldsCur).partitionResult());
+                    res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext(), partRes);
                 else {
                     List<List<Object>> items = cur.fetchRows();
 
@@ -633,7 +649,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     cur.close();
                 }
 
-                return new JdbcResponse(res);
+                return new JdbcResponse(res, connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
             }
             else {
                 List<JdbcResultInfo> jdbcResults = new ArrayList<>(results.size());
@@ -665,7 +681,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     jdbcResults.add(jdbcRes);
                 }
 
-                return new JdbcResponse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults, items, last));
+                return new JdbcResponse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults, items, last),
+                    connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
             }
         }
         catch (Exception e) {
@@ -784,7 +801,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 cur.close();
             }
 
-            return new JdbcResponse(res);
+            return new JdbcResponse(res, connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -819,7 +836,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             JdbcQueryMetadataResult res = new JdbcQueryMetadataResult(req.cursorId(),
                 cur.meta());
 
-            return new JdbcResponse(res);
+            return new JdbcResponse(res, connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -905,9 +922,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             if (firstErr.isEmpty())
                 return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, ClientListenerResponse.STATUS_SUCCESS,
-                    null));
+                    null), connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
             else
-                return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, firstErr.getKey(), firstErr.getValue()));
+                return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, firstErr.getKey(), firstErr.getValue()),
+                    connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
         }
         catch (QueryCancelledException e) {
             return exceptionToResult(e);
@@ -931,7 +949,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         IgniteBiTuple<Integer, String> firstErr, GridQueryCancel cancel) throws QueryCancelledException {
         try {
             if (cliCtx.isStream()) {
-                List<Long> cnt = ctx.query().streamBatchedUpdateQuery(
+                List<Long> cnt = connCtx.kernalContext().query().streamBatchedUpdateQuery(
                     qry.getSchema(),
                     cliCtx,
                     qry.getSql(),
@@ -944,7 +962,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 return;
             }
 
-            List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFields(null, qry, cliCtx, true, true, cancel);
+            List<FieldsQueryCursor<List<?>>> qryRes = connCtx.kernalContext().query().querySqlFields(
+                null, qry, cliCtx, true, true, cancel);
 
             for (FieldsQueryCursor<List<?>> cur : qryRes) {
                 if (cur instanceof BulkLoadContextCursor)
@@ -1016,7 +1035,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             JdbcMetaTablesResult res = new JdbcMetaTablesResult(tabMetas);
 
-            return new JdbcResponse(res);
+            return new JdbcResponse(res, connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to get tables metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1045,7 +1064,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             else
                 res = new JdbcMetaColumnsResult(colsMeta);
 
-            return new JdbcResponse(res);
+            return new JdbcResponse(res, connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to get columns metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1062,7 +1081,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             Collection<JdbcIndexMeta> idxInfos = meta.getIndexesMeta(req.schemaName(), req.tableName());
 
-            return new JdbcResponse(new JdbcMetaIndexesResult(idxInfos));
+            return new JdbcResponse(new JdbcMetaIndexesResult(idxInfos),
+                connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1077,8 +1097,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private ClientListenerResponse getParametersMeta(JdbcMetaParamsRequest req) {
         try {
-            ParameterMetaData paramMeta = ctx.query().prepareNativeStatement(req.schemaName(), req.sql())
-                .getParameterMetaData();
+            ParameterMetaData paramMeta = connCtx.kernalContext().query().prepareNativeStatement(
+                req.schemaName(), req.sql()).getParameterMetaData();
 
             int size = paramMeta.getParameterCount();
 
@@ -1089,7 +1109,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             JdbcMetaParamsResult res = new JdbcMetaParamsResult(meta);
 
-            return new JdbcResponse(res);
+            return new JdbcResponse(res, connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1106,7 +1126,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             Collection<JdbcPrimaryKeyMeta> pkMeta = meta.getPrimaryKeys(req.schemaName(), req.tableName());
 
-            return new JdbcResponse(new JdbcMetaPrimaryKeysResult(pkMeta));
+            return new JdbcResponse(new JdbcMetaPrimaryKeysResult(pkMeta),
+                connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1125,7 +1146,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             SortedSet<String> schemas = meta.getSchemasMeta(schemaPtrn);
 
-            return new JdbcResponse(new JdbcMetaSchemasResult(schemas));
+            return new JdbcResponse(new JdbcMetaSchemasResult(schemas),
+                connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to get schemas metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1168,7 +1190,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
          * Constructor.
          */
         OrderedBatchWorker() {
-            super(ctx.igniteInstanceName(), "ordered-batch", JdbcRequestHandler.this.log);
+            super(connCtx.kernalContext().igniteInstanceName(), "ordered-batch", JdbcRequestHandler.this.log);
         }
 
         /** {@inheritDoc} */
@@ -1241,6 +1263,41 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             clearCursors(req.requestIdToBeCancelled());
 
         return null;
+    }
+
+    private JdbcResponse getCachePartitions (JdbcCachePartitionsRequest req) {
+        JdbcAffinityTopologyVersion topVer = connCtx.checkAffinityTopologyVersion();
+
+        HashMap<UUID, Set<Integer>> partitionsMap = getPartitionsMap(
+            connCtx.kernalContext().cache().cacheDescriptor(req.cacheNames().iterator().next()),
+            topVer.getVersion());
+
+        return new JdbcResponse(new JdbcCachePartitionsResult(partitionsMap),
+            topVer.getVersionIfChanged());
+    }
+
+    /**
+     * Get partition map for a cache.
+     * @param cacheDesc Cache descriptor.
+     * @return Partitions mapping for cache.
+     */
+    private HashMap<UUID, Set<Integer>> getPartitionsMap(DynamicCacheDescriptor cacheDesc, AffinityTopologyVersion affVer) {
+        GridCacheContext cacheContext = connCtx.kernalContext().cache().context().cacheContext(cacheDesc.cacheId());
+
+        AffinityAssignment assignment = cacheContext.affinity().assignment(affVer);
+
+        Set<ClusterNode> nodes = assignment.primaryPartitionNodes();
+
+        HashMap<UUID, Set<Integer>> res = new HashMap<>(nodes.size());
+
+        for (ClusterNode node : nodes) {
+            UUID nodeId = node.id();
+            Set<Integer> parts = assignment.primaryPartitions(nodeId);
+
+            res.put(nodeId, parts);
+        }
+
+        return res;
     }
 
     /**

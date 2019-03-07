@@ -119,19 +119,47 @@ public class PartitionTable implements JdbcRawBinarylizable {
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
-        // TODO: 28.02.19
+        writer.writeString(alias);
+
+        writer.writeString(cacheName);
+
+        writer.writeString(affColName);
+
+        writer.writeString(secondAffColName);
+
+        writer.writeInt(joinGrp);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
-        // TODO: 28.02.19
+        // No-op.
     }
 
+    /**
+     * Returns debinarized partition table.
+     *
+     * @param reader Binary reader.
+     * @param ver Protocol verssion.
+     * @return Debinarized partition table.
+     * @throws BinaryObjectException On error.
+     */
     public static PartitionTable readTable(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
+        String alias = reader.readString();
 
-        // TODO: 28.02.19
-        return null;
+        String cacheName = reader.readString();
+
+        String affColName = reader.readString();
+
+        String secondAffColName = reader.readString();
+
+        int joinGrp = reader.readInt();
+
+        PartitionTable partTbl = new PartitionTable(alias, cacheName, affColName, secondAffColName);
+
+        partTbl.joinGroup(joinGrp);
+
+        return partTbl;
     }
 }
