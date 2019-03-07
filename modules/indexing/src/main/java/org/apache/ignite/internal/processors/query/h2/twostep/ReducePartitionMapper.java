@@ -319,7 +319,8 @@ public class ReducePartitionMapper {
     private Map<ClusterNode, IntArray> partitionedUnstableDataNodes(List<Integer> cacheIds, int[] parts, long qryId) {
         List<GridCacheContext<?, ?>> cctxs = new ArrayList<>(cacheIds.size());
 
-        GridCacheContext<?, ?> firstPartitioned = null; Set<ClusterNode> replicatedOwners = null;
+        GridCacheContext<?, ?> firstPartitioned = null;
+        Set<ClusterNode> replicatedOwners = null;
 
         // 1) Check whether all involved caches have the same partitions number and
         // find nodes owning all partitions of involved replicated caches if needed
