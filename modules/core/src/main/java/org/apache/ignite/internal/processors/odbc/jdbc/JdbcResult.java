@@ -96,7 +96,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        // No-op.
     }
 
     /**
@@ -105,12 +104,13 @@ public class JdbcResult implements JdbcRawBinarylizable {
      * @return Request object.
      * @throws BinaryObjectException On error.
      */
-    public static JdbcResult readResult(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    public static JdbcResult readResult(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
         int resId = reader.readByte();
 
         JdbcResult res;
 
-        switch(resId) {
+        switch (resId) {
             case QRY_EXEC:
                 res = new JdbcQueryExecuteResult();
 
