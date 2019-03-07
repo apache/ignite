@@ -102,7 +102,7 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
      * otherwise.
      */
     private @Nullable String computeAffinityColumn(GridH2Table tbl) {
-        IndexColumn affCol = tbl.getExplicictAffinityKeyColumn();
+        IndexColumn affCol = tbl.getExplicitAffinityKeyColumn();
 
         if (affCol == null)
             return null;

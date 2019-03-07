@@ -20,24 +20,19 @@ package org.apache.ignite.internal.processors.query.h2.sys.view;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.engine.Session;
-import org.h2.index.Index;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.value.DataType;
 import org.h2.value.Value;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * View that contains information about all the sql tables' columns in the cluster.
@@ -63,12 +58,14 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
             newColumn("SCHEMA_NAME"),
             newColumn(TABLE_NAME),
             newColumn(COLUMN_NAME),
+            newColumn("COLUMN_ID", Value.INT),
             newColumn("DATA_TYPE"),
+            newColumn("SQL_TYPE", Value.INT),
             newColumn("IS_NULLABLE", Value.BOOLEAN),
             newColumn("DISPLAY_SIZE", Value.INT),
             newColumn("PRECISION", Value.INT),
             newColumn("SCALE", Value.INT),
-            newColumn("COLUMN_KEY"),
+            newColumn("PRIMARY_KEY", Value.BOOLEAN),
             newColumn("AFFINITY_KEY", Value.BOOLEAN)
         );
 
@@ -105,14 +102,7 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
             if (!tblFilter.test(tbl))
                 continue;
 
-            IndexColumn affCol = tbl.getExplicictAffinityKeyColumn();
-
-            final Index pk = tbl.getPrimaryKey();
-
-            Set<Integer> indexedFirstColIds = tbl.getIndexes().stream()
-                .filter(idx-> !F.eq(idx, pk))
-                .map(idx -> idx.getColumns()[0].getColumnId())
-                .collect(Collectors.toSet());
+            IndexColumn affCol = tbl.getExplicitAffinityKeyColumn();
 
             for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT; i < tbl.getColumns().length; ++i) {
                 Column col = tbl.getColumns()[i];
@@ -124,12 +114,14 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
                     col.getTable().getSchema().getName(),
                     col.getTable().getName(),
                     col.getName(),
+                    col.getColumnId(),
                     DataType.getDataType(col.getType()).name,
+                    col.getType(),
                     col.isNullable(),
                     col.getDisplaySize(),
                     col.getPrecision(),
                     col.getScale(),
-                    computeColumnKey(col, tbl.rowDescriptor(), indexedFirstColIds),
+                    tbl.rowDescriptor().isColumnKeyProperty(col.getColumnId() - QueryUtils.DEFAULT_COLUMNS_COUNT),
                     affCol != null && F.eq(col.getColumnId(), affCol.column.getColumnId()),
                 };
 
@@ -138,29 +130,6 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
         }
 
         return res.iterator();
-    }
-
-    /**
-     * Returns COLUMN_KEY field value for specified column.
-     *
-     * @param col Column to check.
-     * @param desc Row descriptor.
-     * @param colIds First columns of the indexes.
-     * @return COLUMN_KEY field value:
-     *  - {@code null}, the column either is not indexed or is indexed only as a secondary column in a multiple-column,
-     *          non-unique index.
-     *  - {@code "PRI"}, the column is a PRIMARY KEY or is one of the columns in a multiple-column PRIMARY KEY.
-     *  - {@code "MUL"}, the column is the first column of a nonunique index in which multiple
-     *          occurrences of a given value are permitted within the column.
-     */
-    private @Nullable String computeColumnKey(Column col, GridH2RowDescriptor desc, Set<Integer> colIds) {
-        if (desc.isColumnKeyProperty(col.getColumnId() - QueryUtils.DEFAULT_COLUMNS_COUNT))
-            return "PRI";
-
-        if (colIds.contains(col.getColumnId()))
-            return "MUL";
-
-        return null;
     }
 
     /** {@inheritDoc} */
