@@ -129,7 +129,19 @@ public class GridPartitionDownloadManager {
 
     /** */
     public void stop0(boolean cancel) {
-        cctx.gridIO().removeChannelListener(rebalanceThreadTopic(), null);
+        lock.writeLock().lock();
+
+        try {
+            for (RebalanceDownloadFuture rebFut : futMap.values())
+                rebFut.cancel();
+
+            futMap.clear();
+
+            cctx.gridIO().removeChannelListener(rebalanceThreadTopic(), null);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
