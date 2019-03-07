@@ -43,6 +43,11 @@ public interface PartitionUpdateCounter {
 
     public long reserved();
 
+    /**
+     * @param val Value.
+     *
+     * @throws Exception if counter cannot be set to passed value due to incompatibility with current state.
+     */
     public void update(long val) throws IgniteCheckedException;
 
     public boolean update(long start, long delta);

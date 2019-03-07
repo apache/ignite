@@ -148,6 +148,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         IgniteSystemProperties.IGNITE_UNWIND_THROTTLING_TIMEOUT, 500L);
 
     /** */
+    private final boolean failNodeOnPartitionInconsistency = Boolean.getBoolean(
+        IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY);
+
+    /** */
     protected GridCacheSharedContext ctx;
 
     /** */
@@ -1609,7 +1613,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     "Most probably a node with most actual data is out of topology or data streamer is used in isolated " +
                     "mode (allowOverride=true) concurrently with normal cache operations.");
 
-                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                if (failNodeOnPartitionInconsistency)
+                    ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
         }
 

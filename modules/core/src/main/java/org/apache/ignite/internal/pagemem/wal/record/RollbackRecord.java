@@ -21,7 +21,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Rollback record.
+ * Rollback record. Used to close gap in partition update sequence on tx rollback.
  */
 public class RollbackRecord extends WALRecord {
     /** Cache ID. */
