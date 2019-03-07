@@ -1109,7 +1109,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
-        Long qryId = registerRunningQuery(qryDesc.schemaName(), null, qryDesc.sql(), qryDesc.local(), true);
+        Long qryId = registerRunningQuery(qryDesc, null);
 
         boolean fail = false;
 
@@ -1164,9 +1164,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable SqlClientContext cliCtx,
         boolean keepBinary,
         boolean failOnMultipleStmts,
-        MvccQueryTracker tracker, // TODO: Remove when decoupled.
-        GridQueryCancel cancel,
-        boolean registerAsNewQry // TODO: Remove when decoupled
+        GridQueryCancel cancel
     ) {
         boolean mvccEnabled = mvccEnabled(ctx);
 
@@ -1239,9 +1237,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         newQryParams,
                         select,
                         keepBinary,
-                        tracker,
-                        cancel,
-                        registerAsNewQry
+                        cancel
                     );
 
                     res.addAll(qryRes);
@@ -1281,13 +1277,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) {
         IndexingQueryFilter filter = (qryDesc.local() ? backupFilter(null, qryParams.partitions()) : null);
 
-        Long qryId = registerRunningQuery(
-            qryDesc.schemaName(),
-            cancel,
-            qryDesc.sql(),
-            qryDesc.local(),
-            true
-        );
+        Long qryId = registerRunningQuery(qryDesc, cancel);
 
         boolean fail = false;
 
@@ -1343,9 +1333,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qryParams Parameters.
      * @param select Select.
      * @param keepBinary Whether binary objects must not be deserialized automatically.
-     * @param mvccTracker MVCC tracker.
      * @param cancel Query cancel state holder.
-     * @param registerAsNewQry {@code true} In case it's new query which should be registered as running query,
      * @return Query result.
      */
     private List<? extends FieldsQueryCursor<List<?>>> executeSelect(
@@ -1353,9 +1341,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         QueryParameters qryParams,
         QueryParserResultSelect select,
         boolean keepBinary,
-        MvccQueryTracker mvccTracker,
-        GridQueryCancel cancel,
-        boolean registerAsNewQry
+        GridQueryCancel cancel
     ) {
         if (cancel == null)
             cancel = new GridQueryCancel();
@@ -1365,16 +1351,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             checkSecurity(select.cacheIds());
 
         // Register query.
-        Long qryId = registerRunningQuery(
-            qryDesc.schemaName(),
-            cancel,
-            qryDesc.sql(),
-            qryDesc.local(),
-            registerAsNewQry
-        );
+        Long qryId = registerRunningQuery(qryDesc, cancel);
 
         try {
-            Iterable<List<?>> iter = executeSelect0(qryDesc, qryParams, select, keepBinary, mvccTracker, cancel);
+            Iterable<List<?>> iter = executeSelect0(qryDesc, qryParams, select, keepBinary, null, cancel);
 
             QueryCursorImpl<List<?>> cursor = qryId != null
                 ? new RegisteredQueryCursor<>(iter, cancel, runningQueryManager(), qryId)
@@ -1495,19 +1475,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param schemaName Schema name.
+     * Register running query.
+     *
+     * @param qryDesc Query descriptor.
      * @param cancel Query cancel state holder.
-     * @param qry Query.
-     * @param loc {@code true} for local query.
-     * @param registerAsNewQry {@code true} In case it's new query which should be registered as running query,
      * @return Id of registered query or {@code null} if query wasn't registered.
      */
-    private Long registerRunningQuery(String schemaName, GridQueryCancel cancel, String qry, boolean loc,
-        boolean registerAsNewQry) {
-        if (registerAsNewQry)
-            return runningQryMgr.register(qry, GridCacheQueryType.SQL_FIELDS, schemaName, loc, cancel);
-
-        return null;
+    private Long registerRunningQuery(QueryDescriptor qryDesc, GridQueryCancel cancel) {
+        return runningQryMgr.register(
+            qryDesc.sql(),
+            GridCacheQueryType.SQL_FIELDS,
+            qryDesc.schemaName(),
+            qryDesc.local(),
+            cancel
+        );
     }
 
     /**

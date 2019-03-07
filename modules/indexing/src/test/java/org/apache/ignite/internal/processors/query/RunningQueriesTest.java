@@ -650,9 +650,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
             @Nullable SqlClientContext cliCtx,
             boolean keepBinary,
             boolean failOnMultipleStmts,
-            MvccQueryTracker tracker,
-            GridQueryCancel cancel,
-            boolean registerAsNewQry
+            GridQueryCancel cancel
         ) {
             List<FieldsQueryCursor<List<?>>> res = super.querySqlFields(
                 schemaName,
@@ -660,9 +658,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
                 cliCtx,
                 keepBinary,
                 failOnMultipleStmts,
-                tracker,
-                cancel,
-                registerAsNewQry
+                cancel
             );
 
             try {

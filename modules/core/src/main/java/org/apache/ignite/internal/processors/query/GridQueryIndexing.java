@@ -85,9 +85,6 @@ public interface GridQueryIndexing {
      * @param cliCtx Client context.
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts Whether an exception should be thrown for multiple statements query.
-     * @param tracker Query tracker.
-     * @param registerAsNewQry {@code true} In case it's new query which should be registered as running query,
-     *     {@code false} otherwise.
      * @return Cursor.
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFields(
@@ -96,9 +93,7 @@ public interface GridQueryIndexing {
         SqlClientContext cliCtx,
         boolean keepBinary,
         boolean failOnMultipleStmts,
-        MvccQueryTracker tracker,
-        GridQueryCancel cancel,
-        boolean registerAsNewQry
+        GridQueryCancel cancel
     );
 
     /**

@@ -523,9 +523,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
             @Nullable SqlClientContext cliCtx,
             boolean keepBinary,
             boolean failOnMultipleStmts,
-            MvccQueryTracker tracker,
-            GridQueryCancel cancel,
-            boolean registerAsNewQry
+            GridQueryCancel cancel
         ) {
             IndexingWithContext.cliCtx = cliCtx;
 
@@ -535,9 +533,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
                 cliCtx,
                 keepBinary,
                 failOnMultipleStmts,
-                tracker,
-                cancel,
-                registerAsNewQry
+                cancel
             );
         }
     }

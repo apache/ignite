@@ -204,9 +204,7 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
             @Nullable SqlClientContext cliCtx,
             boolean keepBinary,
             boolean failOnMultipleStmts,
-            MvccQueryTracker tracker,
-            GridQueryCancel cancel,
-            boolean registerAsNewQry
+            GridQueryCancel cancel
         ) {
             queries.add(qry);
 
@@ -216,9 +214,7 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
                 cliCtx,
                 keepBinary,
                 failOnMultipleStmts,
-                tracker,
-                cancel,
-                registerAsNewQry
+                cancel
             );
         }
     }
