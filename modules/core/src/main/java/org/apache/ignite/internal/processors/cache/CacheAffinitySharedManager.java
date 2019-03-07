@@ -1688,6 +1688,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         List<ClusterNode> idealOwners = idealAssignment.assignment().get(p);
 
                         if (idealOwners.isEmpty()) {
+                            newOwners = curOwners.stream().filter(aliveNodes::contains).collect(Collectors.toList());
+
+                            if (!newOwners.isEmpty()) {
+                                newAssignment.set(p, newOwners);
+
+                                List<Long> clusterNodesAsOrder = newOwners.stream()
+                                    .map(NODE_TO_ORDER::apply)
+                                    .collect(Collectors.toList());
+
+                                cacheAffinityDiff.put(p, clusterNodesAsOrder);
+                            }
+
                             processedPartitions.set(p);
 
                             continue;
@@ -1757,10 +1769,23 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     List<ClusterNode> idealOwners = idealAssignment.assignment().get(p);
 
-                    if (idealOwners.isEmpty())
-                        continue;
-
                     List<ClusterNode> newOwners = null;
+
+                    if (idealOwners.isEmpty()) {
+                        newOwners = curOwners.stream().filter(aliveNodes::contains).collect(Collectors.toList());
+
+                        if (!newOwners.isEmpty()) {
+                            newAssignment.set(p, newOwners);
+
+                            List<Long> clusterNodesAsOrder = newOwners.stream()
+                                .map(NODE_TO_ORDER::apply)
+                                .collect(Collectors.toList());
+
+                            cacheAffinityDiff.put(p, clusterNodesAsOrder);
+                        }
+
+                        continue;
+                    }
 
                     if (!aliveNodes.contains(curOwners.get(0))) {
                         // Try to use first node in new ideal assignment, in other case try to find any owner.
