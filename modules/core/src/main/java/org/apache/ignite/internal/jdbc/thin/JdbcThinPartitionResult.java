@@ -50,7 +50,10 @@ public class JdbcThinPartitionResult extends PartitionResult {
         if (reader.readBoolean())
             tree = PartitionNode.readNode(reader, ver);
 
-        return new JdbcThinPartitionResult(tree, null, tree != null ? tree.cacheName() : null);
+        return new JdbcThinPartitionResult(
+            tree,
+            PartitionTableAffinityDescriptor.readTableAffinityDescriptor(reader, ver),
+            tree != null ? tree.cacheName() : null);
     }
 
     /**

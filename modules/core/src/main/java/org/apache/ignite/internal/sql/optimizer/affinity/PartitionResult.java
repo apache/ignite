@@ -118,12 +118,31 @@ public class PartitionResult implements JdbcRawBinarylizable {
         if (tree != null)
             tree.writeBinary(writer, ver);
 
-        // TODO: 26.02.19 write PartitionTableAffinityDescriptor?
+        aff.writeBinary(writer, ver);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         // No-op
+    }
+
+    /**
+     * Returns debinarized partition result.
+     *
+     * @param reader Binary reader.
+     * @param ver Protocol verssion.
+     * @return Debinarized partition result.
+     * @throws BinaryObjectException On error.
+     */
+    public static PartitionResult readResult(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
+
+        PartitionNode tree = null;
+
+        if (reader.readBoolean())
+            tree = PartitionNode.readNode(reader, ver);
+
+        return new PartitionResult(tree, PartitionTableAffinityDescriptor.readTableAffinityDescriptor(reader, ver));
     }
 }

@@ -624,12 +624,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 JdbcQueryExecuteResult res;
 
-                PartitionResult partRes = req.partitionResponseRequest() ?
-                    ((QueryCursorImpl<List<?>>)fieldsCur).partitionResult() :
-                    null;
+                PartitionResult partRes = ((QueryCursorImpl<List<?>>)fieldsCur).partitionResult();
 
                 if (cur.isQuery())
-                    res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext(), partRes);
+                    res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext(),
+                        req.partitionResponseRequest() &&
+                            (partRes == null || partRes.affinity().isClientBestEffortAffinityApplicable()) ?
+                            partRes :
+                            null);
                 else {
                     List<List<Object>> items = cur.fetchRows();
 

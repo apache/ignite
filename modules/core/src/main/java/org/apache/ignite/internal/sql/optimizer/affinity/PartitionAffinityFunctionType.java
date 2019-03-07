@@ -17,15 +17,25 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRawBinarylizable;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Affinity function type.
  */
-public enum PartitionAffinityFunctionType {
+public enum PartitionAffinityFunctionType implements JdbcRawBinarylizable {
     /** Custom affintiy function. */
     CUSTOM(0),
 
     /** Rendezvous affinity function. */
     RENDEZVOUS(1);
+
+    /** Enumerated values. */
+    private static final PartitionAffinityFunctionType[] VALS = values();
 
     /** Value. */
     private final int val;
@@ -44,5 +54,34 @@ public enum PartitionAffinityFunctionType {
      */
     public int value() {
         return val;
+    }
+
+    @Nullable public static PartitionAffinityFunctionType fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
+        writer.writeInt(ordinal());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
+        // No-op.
+    }
+
+    /**
+     * Returns debinarized partition affinity function type.
+     *
+     * @param reader Binary reader.
+     * @param ver Protocol verssion.
+     * @return Debinarized partition affinity function type.
+     * @throws BinaryObjectException On error.
+     */
+    public static PartitionAffinityFunctionType readOperator(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
+        return fromOrdinal (reader.readInt());
     }
 }
