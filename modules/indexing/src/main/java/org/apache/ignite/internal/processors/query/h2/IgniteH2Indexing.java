@@ -1165,9 +1165,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable SqlClientContext cliCtx,
         boolean keepBinary,
         boolean failOnMultipleStmts,
-        MvccQueryTracker tracker,
+        MvccQueryTracker tracker, // TODO: Remove when decoupled.
         GridQueryCancel cancel,
-        boolean registerAsNewQry
+        boolean registerAsNewQry // TODO: Remove when decoupled
     ) {
         boolean mvccEnabled = mvccEnabled(ctx);
 
@@ -1205,7 +1205,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     assert cmd != null;
 
-                    // Execute command.
                     FieldsQueryCursor<List<?>> cmdRes = executeCommand(
                         newQryDesc,
                         newQryParams,
@@ -1215,13 +1214,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     res.add(cmdRes);
                 }
+                else if (parseRes.isDml()) {
+                    List<? extends FieldsQueryCursor<List<?>>> dmlRes = executeDml(
+                        newQryDesc,
+                        newQryParams,
+                        parseRes.dml(),
+                        cancel
+                    );
+
+                    res.addAll(dmlRes);
+                }
                 else {
-                    // Execute query or DML.
-                    List<? extends FieldsQueryCursor<List<?>>> qryRes = executeSelectOrDml(
+                    assert parseRes.isSelect();
+
+                    List<? extends FieldsQueryCursor<List<?>>> qryRes = executeSelect(
                         newQryDesc,
                         newQryParams,
                         parseRes.select(),
-                        parseRes.dml(),
                         keepBinary,
                         tracker,
                         cancel,
@@ -1253,84 +1262,95 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param qryDesc Plan key.
      * @param qryParams Parameters.
-     * @param select Select.
      * @param dml DML.
+     * @param cancel Query cancel state holder.
+     * @return Query result.
+     */
+    private List<? extends FieldsQueryCursor<List<?>>> executeDml(
+        QueryDescriptor qryDesc,
+        QueryParameters qryParams,
+        QueryParserResultDml dml,
+        GridQueryCancel cancel
+    ) {
+        IndexingQueryFilter filter = (qryDesc.local() ? backupFilter(null, qryParams.partitions()) : null);
+
+        Long qryId = registerRunningQuery(
+            qryDesc.schemaName(),
+            cancel,
+            qryDesc.sql(),
+            qryDesc.local(),
+            true
+        );
+
+        boolean fail = false;
+
+        try {
+            if (!dml.mvccEnabled() && !updateInTxAllowed && ctx.cache().context().tm().inUserTx()) {
+                throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
+                    "cache(s) with TRANSACTIONAL atomicity mode (change atomicity mode to " +
+                    "TRANSACTIONAL_SNAPSHOT or disable this error message with system property " +
+                    "\"-DIGNITE_ALLOW_DML_INSIDE_TRANSACTION=true\")");
+            }
+
+            if (!qryDesc.local()) {
+                return executeUpdateDistributed(
+                    qryDesc,
+                    qryParams,
+                    dml,
+                    cancel
+                );
+            }
+            else {
+                UpdateResult updRes = executeUpdate(
+                    qryDesc,
+                    qryParams,
+                    dml,
+                    true,
+                    filter,
+                    cancel
+                );
+
+                return Collections.singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
+                    @SuppressWarnings("NullableProblems")
+                    @Override public Iterator<List<?>> iterator() {
+                        return new IgniteSingletonIterator<>(Collections.singletonList(updRes.counter()));
+                    }
+                }, cancel));
+            }
+        }
+        catch (IgniteCheckedException e) {
+            fail = true;
+
+            throw new IgniteSQLException("Failed to execute DML statement [stmt=" + qryDesc.sql() +
+                ", params=" + Arrays.deepToString(qryParams.arguments()) + "]", e);
+        }
+        finally {
+            runningQryMgr.unregister(qryId, fail);
+        }
+    }
+
+    /**
+     * Execute an all-ready {@link SqlFieldsQuery}.
+     *
+     * @param qryDesc Plan key.
+     * @param qryParams Parameters.
+     * @param select Select.
      * @param keepBinary Whether binary objects must not be deserialized automatically.
      * @param mvccTracker MVCC tracker.
      * @param cancel Query cancel state holder.
      * @param registerAsNewQry {@code true} In case it's new query which should be registered as running query,
      * @return Query result.
      */
-    private List<? extends FieldsQueryCursor<List<?>>> executeSelectOrDml(
+    private List<? extends FieldsQueryCursor<List<?>>> executeSelect(
         QueryDescriptor qryDesc,
         QueryParameters qryParams,
-        @Nullable QueryParserResultSelect select,
-        @Nullable QueryParserResultDml dml,
+        QueryParserResultSelect select,
         boolean keepBinary,
         MvccQueryTracker mvccTracker,
         GridQueryCancel cancel,
         boolean registerAsNewQry
     ) {
         IndexingQueryFilter filter = (qryDesc.local() ? backupFilter(null, qryParams.partitions()) : null);
-
-        if (dml != null) {
-            Long qryId = registerRunningQuery(
-                qryDesc.schemaName(),
-                cancel,
-                qryDesc.sql(),
-                qryDesc.local(),
-                registerAsNewQry
-            );
-
-            boolean fail = false;
-
-            try {
-                if (!dml.mvccEnabled() && !updateInTxAllowed && ctx.cache().context().tm().inUserTx()) {
-                    throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
-                        "cache(s) with TRANSACTIONAL atomicity mode (change atomicity mode to " +
-                        "TRANSACTIONAL_SNAPSHOT or disable this error message with system property " +
-                        "\"-DIGNITE_ALLOW_DML_INSIDE_TRANSACTION=true\")");
-                }
-
-                if (!qryDesc.local()) {
-                    return executeUpdateDistributed(
-                        qryDesc,
-                        qryParams,
-                        dml,
-                        cancel
-                    );
-                }
-                else {
-                    UpdateResult updRes = executeUpdate(
-                        qryDesc,
-                        qryParams,
-                        dml,
-                        true,
-                        filter,
-                        cancel
-                    );
-
-                    return Collections.singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
-                        @SuppressWarnings("NullableProblems")
-                        @Override public Iterator<List<?>> iterator() {
-                            return new IgniteSingletonIterator<>(Collections.singletonList(updRes.counter()));
-                        }
-                    }, cancel));
-                }
-            }
-            catch (IgniteCheckedException e) {
-                fail = true;
-
-                throw new IgniteSQLException("Failed to execute DML statement [stmt=" + qryDesc.sql() +
-                    ", params=" + Arrays.deepToString(qryParams.arguments()) + "]", e);
-            }
-            finally {
-                runningQryMgr.unregister(qryId, fail);
-            }
-        }
-
-        // Execute SQL.
-        assert select != null;
 
         boolean autoStartTx = mvccEnabled(ctx) && !qryParams.autoCommit() && tx(ctx) == null;
 
