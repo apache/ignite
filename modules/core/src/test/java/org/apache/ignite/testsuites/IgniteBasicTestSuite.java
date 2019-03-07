@@ -117,7 +117,7 @@ public class IgniteBasicTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite(@Nullable final Set<Class> ignoredTests) throws Exception {
-//        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
 
         TestSuite suite = new TestSuite("Ignite Basic Test Suite");
 
