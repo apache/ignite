@@ -87,12 +87,19 @@ public interface GridQueryIndexing {
      * @param failOnMultipleStmts Whether an exception should be thrown for multiple statements query.
      * @param tracker Query tracker.
      * @param registerAsNewQry {@code true} In case it's new query which should be registered as running query,
-     * {@code false} otherwise.
+     *     {@code false} otherwise.
      * @return Cursor.
      */
-    public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-        SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
-        GridQueryCancel cancel, boolean registerAsNewQry);
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(
+        String schemaName,
+        SqlFieldsQuery qry,
+        SqlClientContext cliCtx,
+        boolean keepBinary,
+        boolean failOnMultipleStmts,
+        MvccQueryTracker tracker,
+        GridQueryCancel cancel,
+        boolean registerAsNewQry
+    );
 
     /**
      * Execute an INSERT statement using data streamer as receiver.
