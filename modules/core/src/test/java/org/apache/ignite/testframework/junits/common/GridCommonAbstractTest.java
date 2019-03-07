@@ -1148,14 +1148,17 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             int parts = aff.partitions();
 
             log.error("Some troubles with affinity: cache=" + cache.getName() + ", parts=" + parts +
+                ", locNode=" + locNode.id() +
                 ", topVer=" + ctx.topology().readyTopologyVersion() +
                 ", client=" + ctx.localNode().isClient() +
-                ", GridDhtPartitionFullMap=" + ctx.topology().partitionMap(false) +
+                ", aff.primaryPartitions(locNode)=" + Arrays.toString(aff.primaryPartitions(locNode)) +
+                ", local 20 partStates=" + IntStream.range(0, 20).boxed().map(i -> "[" + i + ", " + ctx.topology().partitionState(locNode.id(), i) + "]").collect(Collectors.joining(", ")) +
+                ", isPrimary 20 keys=" + IntStream.range(0, 20).boxed().map(i -> "[" + i + ", " + aff.isPrimary(locNode, i) + "]").collect(Collectors.joining(", ")) +
+
                 ", ctx=" + ctx);
 
-            throw new IgniteException("Unable to find " + cnt + " required keys. [affPartsToNodes=" +
-                aff.mapPartitionsToNodes(IntStream.range(0, parts)
-                .boxed().collect(Collectors.toList())) + ", cache=" + cache + "]");
+            throw new IgniteException("Unable to find " + cnt + " required keys. [startFrom=" + startFrom
+                + ", cache=" + cache + "]");
         }
 
         return found;
