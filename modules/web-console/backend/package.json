@@ -34,6 +34,7 @@
       "migrations/*",
       "routes/*",
       "services/*",
+      "templates/*",
       "node_modules/getos/logic/*",
       "node_modules/mongodb-download/node_modules/getos/logic/*"
     ],
@@ -63,7 +64,7 @@
     "mongoose": "4.11.4",
     "morgan": "1.8.2",
     "nconf": "0.8.4",
-    "nodemailer": "4.0.1",
+    "nodemailer": "^5.1.1",
     "passport": "0.3.2",
     "passport-local": "1.0.0",
     "passport-local-mongoose": "4.0.0",
