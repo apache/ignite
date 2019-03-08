@@ -59,25 +59,28 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
             probapilityPowers[i] = Math.log(priorProbabilities[i]);
         }
 
-        for (int i = 0; i < priorProbabilities.length; i++) {
-            for (int j = 0; j < vector.size(); j++) {
-                if (discreteSkipFeature.test(j))
-                    continue;
-                int bucketNumber = toBucketNumber(vector.get(j), discreteModel.getBucketThresholds()[j]);
-                double probability = discreteModel.getProbabilities()[i][j][bucketNumber];
-                probapilityPowers[i] += (probability > 0 ? Math.log(probability) : .0);
+        if (discreteModel != null) {
+            for (int i = 0; i < priorProbabilities.length; i++) {
+                for (int j = 0; j < vector.size(); j++) {
+                    if (discreteSkipFeature.test(j))
+                        continue;
+                    int bucketNumber = toBucketNumber(vector.get(j), discreteModel.getBucketThresholds()[j]);
+                    double probability = discreteModel.getProbabilities()[i][j][bucketNumber];
+                    probapilityPowers[i] += (probability > 0 ? Math.log(probability) : .0);
+                }
             }
         }
 
-        for (int i = 0; i < priorProbabilities.length; i++) {
-            for (int j = 0; j < vector.size(); j++) {
-                if (discreteSkipFeature.test(j))
-                    continue;
-                double parobability = gauss(vector.get(j), gaussianModel.getMeans()[i][j], gaussianModel.getVariances()[i][j]);
-                probapilityPowers[i] += (parobability > 0 ? Math.log(parobability) : .0);
+        if (gaussianModel != null) {
+            for (int i = 0; i < priorProbabilities.length; i++) {
+                for (int j = 0; j < vector.size(); j++) {
+                    if (gaussianSkipFeature.test(j))
+                        continue;
+                    double parobability = gauss(vector.get(j), gaussianModel.getMeans()[i][j], gaussianModel.getVariances()[i][j]);
+                    probapilityPowers[i] += (parobability > 0 ? Math.log(parobability) : .0);
+                }
             }
         }
-
         int maxLabelIndex = 0;
         for (int i = 0; i < probapilityPowers.length; i++) {
             if (probapilityPowers[i] > probapilityPowers[maxLabelIndex]) {

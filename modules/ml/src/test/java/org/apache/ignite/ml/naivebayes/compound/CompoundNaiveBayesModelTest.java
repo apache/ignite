@@ -53,7 +53,6 @@ public class CompoundNaiveBayesModelTest {
             .wirhPriorProbabilities(classProbabilities)
             .withLabels(labels)
             .withGaussianModel(gaussianModel)
-            .withGaussianModelRange(0, observation.size())
             .build();
 
         assertEquals(second, model.predict(observation), 0.0001);
@@ -80,7 +79,6 @@ public class CompoundNaiveBayesModelTest {
             .wirhPriorProbabilities(classProbabilities)
             .withLabels(labels)
             .withDiscreteModel(discreteModel)
-            .withDiscreteModelRange(0, observation.size())
             .build();
 
         assertEquals(second, model.predict(observation), 0.0001);
