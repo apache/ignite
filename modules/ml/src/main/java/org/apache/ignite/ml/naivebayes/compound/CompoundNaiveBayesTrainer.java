@@ -65,18 +65,18 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
 
     @Override protected <K, V> CompoundNaiveBayesModel updateModel(CompoundNaiveBayesModel mdl,
         DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
-            gaussianNaiveBayesTrainer.setSkipFeature(gaussianSkipFeature);
-            GaussianNaiveBayesModel gaussianNaiveBayesModel = gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor);
-            discreteNaiveBayesTrainer.setSkipFeature(discreteSkipFeature);
-            DiscreteNaiveBayesModel discreteNaiveBayesModel = discreteNaiveBayesTrainer.fit(datasetBuilder, extractor);
+        gaussianNaiveBayesTrainer.setSkipFeature(gaussianSkipFeature);
+        GaussianNaiveBayesModel gaussianNaiveBayesModel = gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor);
+        discreteNaiveBayesTrainer.setSkipFeature(discreteSkipFeature);
+        DiscreteNaiveBayesModel discreteNaiveBayesModel = discreteNaiveBayesTrainer.fit(datasetBuilder, extractor);
 
-            return CompoundNaiveBayesModel.builder()
-                .withLabels(labels)
-                .wirhPriorProbabilities(clsProbabilities)
-                .withGaussianModel(gaussianNaiveBayesModel)
-                .withDiscreteSkipFuture(gaussianSkipFeature)
-                .withDiscreteModel(discreteNaiveBayesModel)
-                .withDiscreteSkipFuture(discreteSkipFeature)
-                .build();
+        return CompoundNaiveBayesModel.builder()
+            .withLabels(labels)
+            .wirhPriorProbabilities(clsProbabilities)
+            .withGaussianModel(gaussianNaiveBayesModel)
+            .withDiscreteSkipFuture(gaussianSkipFeature)
+            .withDiscreteModel(discreteNaiveBayesModel)
+            .withDiscreteSkipFuture(discreteSkipFeature)
+            .build();
     }
 }
