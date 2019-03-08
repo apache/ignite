@@ -91,6 +91,14 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return labels[maxLabelIndex];
     }
 
+    public GaussianNaiveBayesModel getGaussianModel() {
+        return gaussianModel;
+    }
+
+    public DiscreteNaiveBayesModel getDiscreteModel() {
+        return discreteModel;
+    }
+
     /** Returs a bucket number to which the {@code value} corresponds. */
     private int toBucketNumber(double val, double[] thresholds) {
         for (int i = 0; i < thresholds.length; i++) {

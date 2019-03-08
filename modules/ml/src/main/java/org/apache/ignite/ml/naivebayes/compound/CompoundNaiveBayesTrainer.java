@@ -17,15 +17,23 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
+import java.util.function.Predicate;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
+import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /** Created by Ravil on 04/02/2019. */
 public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<CompoundNaiveBayesModel> {
+
+    GaussianNaiveBayesTrainer gaussianNaiveBayesTrainer;
+    private Predicate<Integer> gaussianSkipFeature;
+    DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer;
+    private Predicate<Integer> discreteSkipFeature;
 
     @Override public <K, V> CompoundNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
         FeatureLabelExtractor<K, V, Double> extractor) {
@@ -34,7 +42,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
 
     /** {@inheritDoc} */
     @Override public boolean isUpdateable(CompoundNaiveBayesModel mdl) {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -51,6 +59,12 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
 
     @Override protected <K, V> CompoundNaiveBayesModel updateModel(CompoundNaiveBayesModel mdl,
         DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
+        if (mdl != null) {
+            gaussianNaiveBayesTrainer.setSkipFeature(gaussianSkipFeature);
+            gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor);
+            discreteNaiveBayesTrainer.setSkipFeature(discreteSkipFeature);
+            discreteNaiveBayesTrainer.fit(datasetBuilder, extractor);
+        }
         return null;
     }
 }
