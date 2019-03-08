@@ -53,6 +53,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         exporter.save(this, path);
     }
 
+    /** {@inheritDoc} */
     @Override public Double predict(Vector vector) {
         double[] probapilityPowers = new double[priorProbabilities.length];
         for (int i = 0; i < priorProbabilities.length; i++) {
