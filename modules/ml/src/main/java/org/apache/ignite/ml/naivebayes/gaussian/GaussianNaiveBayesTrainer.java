@@ -189,12 +189,11 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         return this;
     }
 
-
-    /** Sets predicate to skip features.
-     public DiscreteNaiveBayesTrainer setSkipFeature(Predicate<Integer> skipFeature) {
-     this.skipFeature = skipFeature;
-     return this;
-     }
+    /** Sets predicate to skip features. */
+    public GaussianNaiveBayesTrainer setSkipFeature(Predicate<Integer> skipFeature) {
+        this.skipFeature = skipFeature;
+        return this;
+    }
 
     /** Sets default settings. */
     public GaussianNaiveBayesTrainer resetSettings() {

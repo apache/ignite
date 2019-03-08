@@ -221,12 +221,11 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
         return this;
     }
 
-
-    /** Sets predicate to skip features.
-     public DiscreteNaiveBayesTrainer setSkipFeature(Predicate<Integer> skipFeature) {
-     this.skipFeature = skipFeature;
-     return this;
-     }
+    /** Sets predicate to skip features. */
+    public DiscreteNaiveBayesTrainer setSkipFeature(Predicate<Integer> skipFeature) {
+        this.skipFeature = skipFeature;
+        return this;
+    }
 
     /** Sets default settings {@code equiprobableClasses} to {@code false} and removes priorProbabilities. */
     public DiscreteNaiveBayesTrainer resetProbabilitiesSettings() {
