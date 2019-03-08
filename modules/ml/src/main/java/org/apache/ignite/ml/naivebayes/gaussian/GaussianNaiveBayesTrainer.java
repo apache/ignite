@@ -20,6 +20,7 @@ package org.apache.ignite.ml.naivebayes.gaussian;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -42,6 +43,9 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
     /** Sets equivalent probability for all classes. */
     private boolean equiprobableClasses;
+
+    /** Check it the feature should be skipped. By defaut all feature are processed. */
+    Predicate<Integer> skipFeature = i -> false;
 
     /** {@inheritDoc} */
     @Override public <K, V> GaussianNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
@@ -185,10 +189,18 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         return this;
     }
 
+
+    /** Sets predicate to skip features.
+     public DiscreteNaiveBayesTrainer setSkipFeature(Predicate<Integer> skipFeature) {
+     this.skipFeature = skipFeature;
+     return this;
+     }
+
     /** Sets default settings. */
     public GaussianNaiveBayesTrainer resetSettings() {
         equiprobableClasses = false;
         priorProbabilities = null;
+        skipFeature = i -> false;
         return this;
     }
 

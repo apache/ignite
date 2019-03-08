@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -49,6 +50,9 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
 
     /** The threshold to convert a feature to a discrete value. */
     private double[][] bucketThresholds;
+
+    /** Check it the feature should be skipped. By defaut all feature are processed. */
+    Predicate<Integer> skipFeature = i -> false;
 
     /** {@inheritDoc} */
     @Override public <K, V> DiscreteNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
@@ -109,6 +113,9 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                     valuesInBucket = res.valuesInBucketPerLbl.get(lb);
 
                     for (int j = 0; j < size; j++) {
+                        if (skipFeature.test(j)) {
+                            continue;
+                        }
                         double x = features.get(j);
                         int bucketNum = toBucketNumber(x, bucketThresholds[j]);
                         valuesInBucket[j][bucketNum] += 1;
@@ -214,10 +221,18 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
         return this;
     }
 
+
+    /** Sets predicate to skip features.
+     public DiscreteNaiveBayesTrainer setSkipFeature(Predicate<Integer> skipFeature) {
+     this.skipFeature = skipFeature;
+     return this;
+     }
+
     /** Sets default settings {@code equiprobableClasses} to {@code false} and removes priorProbabilities. */
     public DiscreteNaiveBayesTrainer resetProbabilitiesSettings() {
         equiprobableClasses = false;
         priorProbabilities = null;
+        skipFeature = i -> false;
         return this;
     }
 
