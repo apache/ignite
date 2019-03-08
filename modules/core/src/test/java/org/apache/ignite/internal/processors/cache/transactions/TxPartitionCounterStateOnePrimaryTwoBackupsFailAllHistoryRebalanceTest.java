@@ -17,31 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
  * Tests partition consistency recovery in case then all owners are lost in the middle of transaction.
- *
- * TODO FIXME add test for consistency check when nodes are not failed by handler.
  */
 public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllHistoryRebalanceTest extends
     TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest {
@@ -61,9 +44,64 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllHistoryRebalanceT
         super.afterTest();
 
         System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+
+        // Expecting only one historical rebalance for test scenario.
+        assertEquals("WAL rebalance must happen exactly 1 time", 1, histRebCnt);
     }
 
-    @Override public void testStopAllOwnersWithPartialCommit_3_1() throws Exception {
-        super.testStopAllOwnersWithPartialCommit_3_1();
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance will not be trigger because counters are same")
+    @Override public void testRestartAllOwnersAfterPartialCommit_2tx_1() throws Exception {
+        super.testRestartAllOwnersAfterPartialCommit_2tx_1();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance will not be trigger because counters are same")
+    @Override public void testRestartAllOwnersAfterPartialCommit_2tx_2() throws Exception {
+        super.testRestartAllOwnersAfterPartialCommit_2tx_2();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance will not be trigger because counters are same")
+    @Override public void testRestartAllOwnersAfterPartialCommit_2tx_3() throws Exception {
+        super.testRestartAllOwnersAfterPartialCommit_2tx_3();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance will not be trigger because counters are same")
+    @Override public void testRestartAllOwnersAfterPartialCommit_2tx_4() throws Exception {
+        super.testRestartAllOwnersAfterPartialCommit_2tx_4();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance will not be trigger because counters are same")
+    @Override public void testStopAllOwnersWithPartialCommit_3tx_1_1() throws Exception {
+        super.testStopAllOwnersWithPartialCommit_3tx_1_1();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance will not be trigger because counters are same")
+    @Override public void testStopAllOwnersWithPartialCommit_3tx_1_2() throws Exception {
+        super.testStopAllOwnersWithPartialCommit_3tx_1_2();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance will not be trigger because counters are same")
+    @Override public void testStopAllOwnersWithPartialCommit_3tx_2_1() throws Exception {
+        super.testStopAllOwnersWithPartialCommit_3tx_2_1();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance will not be trigger because counters are same")
+    @Override public void testStopAllOwnersWithPartialCommit_3tx_2_2() throws Exception {
+        super.testStopAllOwnersWithPartialCommit_3tx_2_2();
     }
 }

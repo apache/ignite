@@ -38,8 +38,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNREC
 
 /**
  * Tests partition consistency recovery in case then all owners are lost in the middle of transaction.
- *
- * TODO FIXME add test for consistency check when nodes are not failed by handler.
+ * TODO FIXME proper fix - partition must be moved to lost state. link ticket.
  */
 public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPartitionCounterStateAbstractTest {
     /** */
@@ -53,13 +52,13 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
     /** */
     @Test
-    public void testRestartAllOwnersAfterPartialCommit_1_1() throws Exception {
+    public void testRestartAllOwnersAfterPartialCommit_2tx_1() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(false,
             new int[] {0, 1},
             new int[] {0, 1},
             new int[] {0, 1}, new int[] {1, 0},
             new int[] {5, 5},
-            0,
+            new int[] {0, 0},
             new int[] {0, 1},
             1,
             true);
@@ -67,13 +66,13 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
     /** */
     @Test
-    public void testRestartAllOwnersAfterPartialCommit_1_2() throws Exception {
+    public void testRestartAllOwnersAfterPartialCommit_2tx_2() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(true,
             new int[] {0, 1},
             new int[] {0, 1},
             new int[] {0, 1}, new int[] {1, 0},
             new int[] {5, 5},
-            0,
+            new int[] {0, 0},
             new int[] {0, 1},
             1,
             true);
@@ -81,13 +80,41 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
     /** */
     @Test
-    public void testStopAllOwnersWithPartialCommit_2_1() throws Exception {
+    public void testRestartAllOwnersAfterPartialCommit_2tx_3() throws Exception {
+        doTestRestartAllOwnersAfterPartialCommit(false,
+            new int[] {0, 1},
+            new int[] {0, 1},
+            new int[] {0, 1}, new int[] {1, 0},
+            new int[] {5, 5},
+            new int[] {0, 0},
+            new int[] {1, 0},
+            1,
+            true);
+    }
+
+    /** */
+    @Test
+    public void testRestartAllOwnersAfterPartialCommit_2tx_4() throws Exception {
+        doTestRestartAllOwnersAfterPartialCommit(true,
+            new int[] {0, 1},
+            new int[] {0, 1},
+            new int[] {0, 1}, new int[] {1, 0},
+            new int[] {5, 5},
+            new int[] {0, 0},
+            new int[] {1, 0},
+            1,
+            true);
+    }
+
+    /** */
+    @Test
+    public void testStopAllOwnersWithPartialCommit_3tx_1_1() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(false,
             new int[] {0, 1, 2},
             new int[] {0, 1, 2},
             new int[] {1, 2, 0}, new int[] {2, 1, 0},
             new int[] {5, 7, 3},
-            1,
+            new int[] {1, 1},
             new int[] {0, 1},
             0,
             true
@@ -96,13 +123,28 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
     /** */
     @Test
-    public void testStopAllOwnersWithPartialCommit_2_2() throws Exception {
+    public void testStopAllOwnersWithPartialCommit_3tx_1_2() throws Exception {
+        doTestRestartAllOwnersAfterPartialCommit(false,
+            new int[] {0, 1, 2},
+            new int[] {0, 1, 2},
+            new int[] {1, 2, 0}, new int[] {2, 1, 0},
+            new int[] {5, 7, 3},
+            new int[] {1, 1},
+            new int[] {1, 0},
+            0,
+            true
+        );
+    }
+
+    /** */
+    @Test
+    public void testStopAllOwnersWithPartialCommit_3tx_2_1() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(true,
             new int[] {0, 1, 2},
             new int[] {0, 1, 2},
             new int[] {1, 2, 0}, new int[] {2, 1, 0},
             new int[] {5, 7, 3},
-            1,
+            new int[] {1, 1},
             new int[] {0, 1},
             0,
             true
@@ -111,30 +153,75 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
     /** */
     @Test
-    public void testStopAllOwnersWithPartialCommit_3_1() throws Exception {
-        doTestRestartAllOwnersAfterPartialCommit(false,
+    public void testStopAllOwnersWithPartialCommit_3tx_2_2() throws Exception {
+        doTestRestartAllOwnersAfterPartialCommit(true,
             new int[] {0, 1, 2},
             new int[] {0, 1, 2},
             new int[] {1, 2, 0}, new int[] {2, 1, 0},
             new int[] {5, 7, 3},
-            1,
-            new int[] {0, 1},
+            new int[] {1, 1},
+            new int[] {1, 0},
             0,
+            true
+        );
+    }
+
+    /** */
+    @Test
+    public void testStopAllOwnersWithPartialCommit_3tx_3() throws Exception {
+        doTestRestartAllOwnersAfterPartialCommit(false,
+            new int[] {0, 1, 2},
+            new int[] {0, 1, 2},
+            new int[] {1, 2, 0}, new int[] {0, 2, 1},
+            new int[] {5, 7, 3},
+            new int[] {0, 1},
+            new int[] {0, 1},
+            2,
             false
         );
     }
 
     /** */
     @Test
-    public void testStopAllOwnersWithPartialCommit_3_2() throws Exception {
+    public void testStopAllOwnersWithPartialCommit_3tx_4() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(true,
             new int[] {0, 1, 2},
             new int[] {0, 1, 2},
-            new int[] {1, 2, 0}, new int[] {2, 1, 0},
+            new int[] {1, 2, 0}, new int[] {0, 2, 1},
             new int[] {5, 7, 3},
-            1,
             new int[] {0, 1},
-            0,
+            new int[] {0, 1},
+            2,
+            false
+        );
+    }
+
+    /** */
+    @Test
+    public void testStopAllOwnersWithPartialCommit_3tx_5() throws Exception {
+        doTestRestartAllOwnersAfterPartialCommit(false,
+            new int[] {0, 1, 2},
+            new int[] {0, 1, 2},
+            new int[] {1, 2, 0}, new int[] {0, 2, 1},
+            new int[] {5, 7, 3},
+            new int[] {0, 1},
+            new int[] {1, 0},
+            2,
+            false
+        );
+    }
+
+    /** */
+    @Test
+    public void testStopAllOwnersWithPartialCommit_3tx_6() throws Exception {
+        doTestRestartAllOwnersAfterPartialCommit(true,
+            new int[] {0, 1, 2},
+            new int[] {0, 1, 2},
+            new int[] {1, 2, 0}, new int[] {0, 2, 1},
+            new int[] {5, 7, 3},
+            new int[] {0, 1},
+            new int[] {1, 0},
+            2,
             false
         );
     }
@@ -166,7 +253,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
         int[] backup1CommitOrder,
         int[] backup2CommitOrder,
         int[] sizes,
-        int waitCommitIdx,
+        int[] waitCommitIdx,
         int[] backupsStartOrder,
         int expectAliveNodes,
         boolean failNodesOnBadCntr) throws Exception {
@@ -194,7 +281,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
                         @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
                             super.onBackupCommitted(backup, idx);
 
-                            if (idx == commits.get(backup)[waitCommitIdx]) {
+                            if (idx == commits.get(backup)[waitCommitIdx[backup == backup1 ? 0 : 1]]) {
                                 l.countDown();
 
                                 // Wait until both backups are committed required transactions.
@@ -242,6 +329,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
             }
 
             waitForTopology(expectAliveNodes);
+
+            awaitPartitionMapExchange();
         }
         finally {
             System.clearProperty(IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY);
