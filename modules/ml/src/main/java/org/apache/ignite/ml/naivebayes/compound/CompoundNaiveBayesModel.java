@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
+import java.util.function.Predicate;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
@@ -32,26 +33,19 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     private double[] labels;
     /** Gaussian Bayes model. */
     private final GaussianNaiveBayesModel gaussianModel;
-    /** Start feature index for Gaussian Bayes model. */
-    private final int gaussianFeatureFrom;
-    /** End (exclusive) feature index for Gaussian Bayes model. */
-    private final int gaussianFeatureTo;
     /** Discrete Bayes model. */
     private final DiscreteNaiveBayesModel discreteModel;
-    /** Start feature index for Discrete Bayes model. */
-    private final int discreteFeatureFrom;
-    /** End (exclusive) feature index for Discrete Bayes model. */
-    private final int discreteFeatureTo;
+
+    private Predicate<Integer> gaussianSkipFeature;
+    private Predicate<Integer> discreteSkipFeature;
 
     public CompoundNaiveBayesModel(Builder builder) {
         priorProbabilities = builder.priorProbabilities;
         labels = builder.labels;
         gaussianModel = builder.gaussianModel;
-        gaussianFeatureFrom = builder.gaussianFeatureFrom;
-        gaussianFeatureTo = builder.gaussianFeatureTo;
+        gaussianSkipFeature = builder.gaussianSkipFeature;
         discreteModel = builder.discreteModel;
-        discreteFeatureFrom = builder.discreteFeatureFrom;
-        discreteFeatureTo = builder.discreteFeatureTo;
+        discreteSkipFeature = builder.discreteSkipFeature;
     }
 
     /** {@inheritDoc} */
@@ -66,7 +60,9 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         }
 
         for (int i = 0; i < priorProbabilities.length; i++) {
-            for (int j = discreteFeatureFrom; j < discreteFeatureTo; j++) {
+            for (int j = 0; j < vector.size(); j++) {
+                if (discreteSkipFeature.test(j))
+                    continue;
                 int bucketNumber = toBucketNumber(vector.get(j), discreteModel.getBucketThresholds()[j]);
                 double probability = discreteModel.getProbabilities()[i][j][bucketNumber];
                 probapilityPowers[i] += (probability > 0 ? Math.log(probability) : .0);
@@ -74,7 +70,9 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         }
 
         for (int i = 0; i < priorProbabilities.length; i++) {
-            for (int j = gaussianFeatureFrom; j < gaussianFeatureTo; j++) {
+            for (int j = 0; j < vector.size(); j++) {
+                if (discreteSkipFeature.test(j))
+                    continue;
                 double parobability = gauss(vector.get(j), gaussianModel.getMeans()[i][j], gaussianModel.getVariances()[i][j]);
                 probapilityPowers[i] += (parobability > 0 ? Math.log(parobability) : .0);
             }
@@ -114,12 +112,10 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         private double[] labels;
 
         private GaussianNaiveBayesModel gaussianModel;
-        private int gaussianFeatureFrom = -1;
-        private int gaussianFeatureTo = -1;
+        private Predicate<Integer> gaussianSkipFeature = i -> false;
 
         private DiscreteNaiveBayesModel discreteModel;
-        private int discreteFeatureFrom = -1;
-        private int discreteFeatureTo = -1;
+        private Predicate<Integer> discreteSkipFeature = i -> false;
 
         public Builder wirhPriorProbabilities(double[] priorProbabilities) {
             this.priorProbabilities = priorProbabilities.clone();
@@ -136,10 +132,8 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
             return this;
         }
 
-        public Builder withGaussianModelRange(int from, int toExclusive) {
-            assert from < toExclusive;
-            gaussianFeatureFrom = from;
-            gaussianFeatureTo = toExclusive;
+        public Builder withGaussianSkipFuture(Predicate<Integer> gaussianSkipFeature) {
+            this.gaussianSkipFeature = gaussianSkipFeature;
             return this;
         }
 
@@ -148,20 +142,12 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
             return this;
         }
 
-        private Builder withDiscreteModelRange(int from, int toExclusive) {
-            assert from < toExclusive;
-            discreteFeatureFrom = from;
-            discreteFeatureTo = toExclusive;
+        public Builder withDiscreteSkipFuture(Predicate<Integer> discreteSkipFeature) {
+            this.discreteSkipFeature = discreteSkipFeature;
             return this;
         }
 
         public CompoundNaiveBayesModel build() {
-            if (discreteModel != null && (discreteFeatureFrom < 0 || discreteFeatureTo < 0)) {
-                throw new IllegalArgumentException();
-            }
-            if (gaussianModel != null && (gaussianFeatureFrom < 0 || gaussianFeatureTo < 0)) {
-                throw new IllegalArgumentException();
-            }
             return new CompoundNaiveBayesModel(this);
         }
     }
