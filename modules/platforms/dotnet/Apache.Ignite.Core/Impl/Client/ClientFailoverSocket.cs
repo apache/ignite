@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private AffinityTopologyVersion? _affinityTopologyVersion;
 
         /** Map from node ID to connected socket. */
-        private Dictionary<Guid, ClientSocket> _nodeSocketMap = new Dictionary<Guid, ClientSocket>(); // TODO: Populate
+        private Dictionary<Guid, ClientSocket> _nodeSocketMap = null;
 
         /** Map from cache ID to partition mapping. */
         private volatile ClientCacheTopologyPartitionMap _cachePartitionMap;
@@ -121,8 +121,10 @@ namespace Apache.Ignite.Core.Impl.Client
                 UpdatePartitionMapping(cacheId);
 
                 var partMap = _cachePartitionMap;
+                var socketMap = _nodeSocketMap;
                 ClientCachePartitionMap cachePartMap;
-                if (partMap != null &&
+                if (socketMap != null &&
+                    partMap != null &&
                     partMap.AffinityTopologyVersion == _affinityTopologyVersion &&
                     partMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
                 {
@@ -133,7 +135,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     var nodeId = cachePartMap.PartitionNodeIds[partition];
 
                     ClientSocket socket;
-                    if (_nodeSocketMap.TryGetValue(nodeId, out socket))
+                    if (socketMap.TryGetValue(nodeId, out socket))
                     {
                         return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
                     }
