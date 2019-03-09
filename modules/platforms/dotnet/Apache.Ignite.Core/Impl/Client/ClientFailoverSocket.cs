@@ -123,8 +123,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 partMap.AffinityTopologyVersion == _affinityTopologyVersion &&
                 partMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
             {
-                // TODO: Extract affinity key and hash code
-                // 1) Extract serialization logic from ClientSocket (WriteMessage) so we can serialize before selecting the Socket
+                // TODO: Extract affinity key and hash code. Make it work for Primitives first.
+                // 1) Just write provided key to a new writer. Keys are expected to be compact.
                 // 2) Add optional callback to BinaryWriter so we can extract both AffinityKey (by field id) and hash code (in case it's a BinaryObject)
                 var partition = GetPartition(key);
                 var nodeId = cachePartMap.PartitionNodeIds[partition];
@@ -325,10 +325,10 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Updates the partition mapping.
         /// </summary>
-        private void UpdatePartitionMapping(int cacheId)
+        private void UpdatePartitionMapping(int cacheId) // TODO: Sync and async versions to call from sync and async methods.
         {
-            // TODO: Check if we need to update?
-            // TODO: Sync and async versions to call from sync and async methods.
+            if (_cachePartitionMap != null && _cachePartitionMap.AffinityTopologyVersion == _affinityTopologyVersion)
+                return; // Up to date.
 
             var mapping = new Dictionary<int, ClientCachePartitionMap>();
 
