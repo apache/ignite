@@ -35,7 +35,7 @@
             "restartNodes",
             "isBaselineAutoAdjustEnabled",
             "baselineAutoAdjustEnabled",
-            "baselineAutoAdjustEnabledAsync,
+            "baselineAutoAdjustEnabledAsync",
             "baselineAutoAdjustTimeout",
             "baselineAutoAdjustTimeoutAsync"
         };
