@@ -57,7 +57,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> CompoundNaiveBayesModel updateModel(CompoundNaiveBayesModel mdl,
+    @Override protected <K, V> CompoundNaiveBayesModel updateModel(CompoundNaiveBayesModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
         return super.updateModel(mdl, datasetBuilder, featureExtractor, lbExtractor);
