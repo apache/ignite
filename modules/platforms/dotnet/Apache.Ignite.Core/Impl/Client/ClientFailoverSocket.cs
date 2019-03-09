@@ -63,10 +63,13 @@ namespace Apache.Ignite.Core.Impl.Client
         private AffinityTopologyVersion? _affinityTopologyVersion;
 
         /** Map from node ID to connected socket. */
-        private Dictionary<Guid, ClientSocket> _nodeSocketMap;
+        private volatile Dictionary<Guid, ClientSocket> _nodeSocketMap;
 
         /** Map from cache ID to partition mapping. */
         private volatile ClientCacheTopologyPartitionMap _cachePartitionMap;
+
+        /** Whether the process of connecting to all nodes has been started.  */
+        private int _nodeSocketMapInitStarted;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientFailoverSocket"/> class.
@@ -118,8 +121,8 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             if (!_config.DisableAffinityAwareness)
             {
-                UpdatePartitionMap(cacheId);
                 InitSocketMap();
+                UpdatePartitionMap(cacheId);
 
                 var partMap = _cachePartitionMap;
                 var socketMap = _nodeSocketMap;
@@ -396,6 +399,14 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         private void InitSocketMap()
+        {
+            if (Interlocked.CompareExchange(ref _nodeSocketMapInitStarted, 1, 0) == 0)
+            {
+                TaskRunner.Run(InitSocketMapImpl);
+            }
+        }
+
+        private void InitSocketMapImpl()
         {
             var map = new Dictionary<Guid, ClientSocket>();
 
