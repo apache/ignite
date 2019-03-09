@@ -116,30 +116,30 @@ namespace Apache.Ignite.Core.Impl.Client
             TKey key,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
-            UpdatePartitionMapping(cacheId);
-
-            var partMap = _cachePartitionMap;
-            ClientCachePartitionMap cachePartMap;
-            if (partMap != null &&
-                partMap.AffinityTopologyVersion == _affinityTopologyVersion &&
-                partMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
+            if (!_config.DisableAffinityAwareness)
             {
-                // TODO: Extract affinity key and hash code. Make it work for Primitives first.
-                // 1) Just write provided key to a new writer. Keys are expected to be compact.
-                // 2) Add optional callback to BinaryWriter so we can extract both AffinityKey (by field id) and hash code (in case it's a BinaryObject)
-                var partition = GetPartition(key, partMap.CachePartitionMap.Count);
-                var nodeId = cachePartMap.PartitionNodeIds[partition];
+                UpdatePartitionMapping(cacheId);
 
-                ClientSocket socket;
-                if (_nodeSocketMap.TryGetValue(nodeId, out socket))
+                var partMap = _cachePartitionMap;
+                ClientCachePartitionMap cachePartMap;
+                if (partMap != null &&
+                    partMap.AffinityTopologyVersion == _affinityTopologyVersion &&
+                    partMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
                 {
-                    return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
+                    // TODO: Extract affinity key and hash code. Make it work for Primitives first.
+                    // 1) Just write provided key to a new writer. Keys are expected to be compact.
+                    // 2) Add optional callback to BinaryWriter so we can extract both AffinityKey (by field id) and hash code (in case it's a BinaryObject)
+                    var partition = GetPartition(key, partMap.CachePartitionMap.Count);
+                    var nodeId = cachePartMap.PartitionNodeIds[partition];
+
+                    ClientSocket socket;
+                    if (_nodeSocketMap.TryGetValue(nodeId, out socket))
+                    {
+                        return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
+                    }
                 }
             }
 
-            // TODO: Request partition map if it is out of date or unknown
-            // TODO: Calculate target node for given cache and given key.
-            // TODO: Move the method to IClientAffinitySocket or something like that?
             return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
         }
 
