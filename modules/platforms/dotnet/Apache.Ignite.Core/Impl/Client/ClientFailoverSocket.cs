@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private bool _disposed;
 
         /** Current affinity topology version. */
-        private AffinityTopologyVersion? _affinityTopologyVersion; // TODO: Update from underlying socket on each operation? Add a callback?
+        private AffinityTopologyVersion? _affinityTopologyVersion;
 
         /** Map from node ID to connected socket. */
         private Dictionary<Guid, ClientSocket> _nodeSocketMap = new Dictionary<Guid, ClientSocket>(); // TODO: Populate
@@ -244,7 +244,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 try
                 {
-                    _socket = new ClientSocket(_config, endPoint.Key, endPoint.Value, OnSocketError);
+                    _socket = new ClientSocket(_config, endPoint.Key, endPoint.Value, OnSocketError, null,
+                        OnAffinityTopologyVersionChange);
+
                     return;
                 }
                 catch (SocketException e)
@@ -277,6 +279,14 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 _socket = null;
             }
+        }
+
+        /// <summary>
+        /// Updates current Affinity Topology Version.
+        /// </summary>
+        private void OnAffinityTopologyVersionChange(AffinityTopologyVersion affinityTopologyVersion)
+        {
+            _affinityTopologyVersion = affinityTopologyVersion;
         }
 
         /// <summary>

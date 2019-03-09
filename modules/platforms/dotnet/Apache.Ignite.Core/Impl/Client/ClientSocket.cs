@@ -102,6 +102,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Error callback. */
         private readonly Action _onError;
 
+        /** Topology version update callback. */
+        private readonly Action<AffinityTopologyVersion> _topVerCallback;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
         /// </summary>
@@ -110,12 +113,15 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <param name="host">The host name (required for SSL).</param>
         /// <param name="onError">Error callback.</param>
         /// <param name="version">Protocol version.</param>
+        /// <param name="topVerCallback">Topology version update callback.</param>
         public ClientSocket(IgniteClientConfiguration clientConfiguration, EndPoint endPoint, string host,
-            Action onError = null, ClientProtocolVersion? version = null)
+            Action onError = null, ClientProtocolVersion? version = null,
+            Action<AffinityTopologyVersion> topVerCallback = null)
         {
             Debug.Assert(clientConfiguration != null);
 
             _onError = onError;
+            _topVerCallback = topVerCallback;
             _timeout = clientConfiguration.SocketTimeout;
 
             _socket = Connect(clientConfiguration, endPoint);
@@ -211,11 +217,6 @@ namespace Apache.Ignite.Core.Impl.Client
         public Guid? ServerNodeId { get; private set; }
 
         /// <summary>
-        /// Gets the current Affinity Topology Version, if known.
-        /// </summary>
-        public AffinityTopologyVersion? AffinityTopologyVersion { get; private set; }
-
-        /// <summary>
         /// Starts waiting for the new message.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
@@ -286,7 +287,11 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if ((flags & ClientFlags.AffinityTopologyChanged) == ClientFlags.AffinityTopologyChanged)
                 {
-                    AffinityTopologyVersion = new AffinityTopologyVersion(stream.ReadLong(), stream.ReadInt());
+                    var topVer = new AffinityTopologyVersion(stream.ReadLong(), stream.ReadInt());
+                    if (_topVerCallback != null)
+                    {
+                        _topVerCallback(topVer);
+                    }
                 }
 
                 statusCode = (flags & ClientFlags.Error) == ClientFlags.Error
