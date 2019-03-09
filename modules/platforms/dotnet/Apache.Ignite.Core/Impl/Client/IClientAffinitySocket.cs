@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         T DoOutInOpAffinity<T, TKey>(
             ClientOp opId,
-            Action<BinaryWriter> writeAction,
+            Action<IBinaryStream> writeAction,
             Func<IBinaryStream, T> readFunc,
             int cacheId,
             TKey key,

@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /** <inheritdoc /> */
         public T DoOutInOpAffinity<T, TKey>( // TODO: This does not belong in Socket class. Move to IgniteClient?
             ClientOp opId,
-            Action<BinaryWriter> writeAction,
+            Action<IBinaryStream> writeAction,
             Func<IBinaryStream, T> readFunc,
             int cacheId,
             TKey key,
@@ -133,24 +133,14 @@ namespace Apache.Ignite.Core.Impl.Client
                 ClientSocket socket;
                 if (_nodeSocketMap.TryGetValue(nodeId, out socket))
                 {
-                    return socket.DoOutInOp(opId, s =>
-                    {
-                        var writer = _marsh.StartMarshal(s);
-                        writeAction(writer);
-                        _marsh.FinishMarshal(writer);
-                    }, readFunc, errorFunc);
+                    return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
                 }
             }
 
             // TODO: Request partition map if it is out of date or unknown
             // TODO: Calculate target node for given cache and given key.
             // TODO: Move the method to IClientAffinitySocket or something like that?
-            return GetSocket().DoOutInOp(opId, s =>
-            {
-                var writer = _marsh.StartMarshal(s);
-                writeAction(writer);
-                _marsh.FinishMarshal(writer);
-            }, readFunc, errorFunc);
+            return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
         }
 
         /** <inheritdoc /> */
