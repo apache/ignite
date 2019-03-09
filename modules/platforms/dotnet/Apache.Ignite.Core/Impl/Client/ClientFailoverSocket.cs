@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client.Cache;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Socket wrapper with reconnect/failover functionality: reconnects on failure.
@@ -126,7 +127,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 // TODO: Extract affinity key and hash code. Make it work for Primitives first.
                 // 1) Just write provided key to a new writer. Keys are expected to be compact.
                 // 2) Add optional callback to BinaryWriter so we can extract both AffinityKey (by field id) and hash code (in case it's a BinaryObject)
-                var partition = GetPartition(key);
+                var partition = GetPartition(key, partMap.CachePartitionMap.Count);
                 var nodeId = cachePartMap.PartitionNodeIds[partition];
 
                 ClientSocket socket;
@@ -381,14 +382,25 @@ namespace Apache.Ignite.Core.Impl.Client
 
         }
 
-        private int GetPartition<TKey>(TKey key)
+        private int GetPartition<TKey>(TKey key, int partitionCount)
+        {
+            var keyHash = GetHashCode(key);
+            return ClientRendezvousAffinityFunction.GetPartitionForKey(keyHash, partitionCount);
+        }
+
+        private int GetHashCode<TKey>(TKey key)
         {
             // TODO: See cpp\thin-client\include\ignite\impl\thin\writable_key.h
             // We'll have to do the same - implement hash for every primitive
-            // And for non-primitive we have to get it somehow from the writer BEFORE sending the request
-            var keyHash = key.GetHashCode();
-            var partitionCount = 0; // TODO: Use affinityMapping.size
-            return ClientRendezvousAffinityFunction.GetPartitionForKey(keyHash, partitionCount);
+            // And for non-primitive we have to write to BinaryWriter to get the hash
+            // TODO: Take the affinity key into account!
+
+            if (key is int)
+            {
+                return TypeCaster<int>.Cast(key);
+            }
+
+            throw new NotImplementedException("TODO");
         }
     }
 }
