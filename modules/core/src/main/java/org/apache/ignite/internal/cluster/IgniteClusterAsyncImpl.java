@@ -361,8 +361,33 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public DistributedBaselineConfiguration baselineConfiguration() {
-        return cluster.baselineConfiguration();
+    @Override public boolean isBaselineAutoAdjustEnabled() {
+        return cluster.isBaselineAutoAdjustEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteException {
+        cluster.baselineAutoAdjustEnabled(baselineAutoAdjustEnabled);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<?> baselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled) {
+        return cluster.baselineAutoAdjustEnabledAsync(baselineAutoAdjustEnabled);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long baselineAutoAdjustTimeout() {
+        return cluster.baselineAutoAdjustTimeout();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) throws IgniteException {
+        cluster.baselineAutoAdjustTimeout(baselineAutoAdjustTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<?> baselineAutoAdjustTimeoutAsync(long baselineAutoAdjustTimeout) {
+        return cluster.baselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout);
     }
 
     /** {@inheritDoc} */
