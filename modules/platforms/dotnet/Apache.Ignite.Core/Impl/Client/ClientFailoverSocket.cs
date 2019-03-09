@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Client
     /// <summary>
     /// Socket wrapper with reconnect/failover functionality: reconnects on failure.
     /// </summary>
-    internal class ClientFailoverSocket : IClientSocket, IClientAffinitySocket
+    internal class ClientFailoverSocket : IClientAffinitySocket
     {
         /** Underlying socket. */
         private ClientSocket _socket;
@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly Marshaller _marsh;
 
         /** Endpoints with corresponding hosts. */
-        private readonly List<KeyValuePair<IPEndPoint, string>> _endPoints;
+        private readonly List<SocketEndpoint> _endPoints;
 
         /** Locker. */
         private readonly object _syncRoot = new object();
@@ -118,7 +118,8 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             if (!_config.DisableAffinityAwareness)
             {
-                UpdatePartitionMapping(cacheId);
+                UpdatePartitionMap(cacheId);
+                InitSocketMap();
 
                 var partMap = _cachePartitionMap;
                 var socketMap = _nodeSocketMap;
@@ -237,7 +238,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 try
                 {
-                    _socket = new ClientSocket(_config, endPoint.Key, endPoint.Value, OnSocketError, null,
+                    _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, OnSocketError, null,
                         OnAffinityTopologyVersionChange);
 
                     return;
@@ -285,7 +286,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the endpoints: all combinations of IP addresses and ports according to configuration.
         /// </summary>
-        private static IEnumerable<KeyValuePair<IPEndPoint, string>> GetIpEndPoints(IgniteClientConfiguration cfg)
+        private static IEnumerable<SocketEndpoint> GetIpEndPoints(IgniteClientConfiguration cfg)
         {
             foreach (var e in Endpoint.GetEndpoints(cfg))
             {
@@ -299,7 +300,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     for (var i = 0; i <= e.PortRange; i++)
                     {
-                        yield return new KeyValuePair<IPEndPoint, string>(new IPEndPoint(ip, e.Port + i), host);
+                        yield return new SocketEndpoint(new IPEndPoint(ip, e.Port + i), host);
                     }
                 }
                 else
@@ -308,7 +309,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     {
                         foreach (var x in Dns.GetHostEntry(host).AddressList)
                         {
-                            yield return new KeyValuePair<IPEndPoint, string>(new IPEndPoint(x, e.Port + i), host);
+                            yield return new SocketEndpoint(new IPEndPoint(x, e.Port + i), host);
                         }
                     }
                 }
@@ -318,7 +319,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Updates the partition mapping.
         /// </summary>
-        private void UpdatePartitionMapping(int cacheId) // TODO: Sync and async versions to call from sync and async methods.
+        private void UpdatePartitionMap(int cacheId) // TODO: Sync and async versions to call from sync and async methods.
         {
             if (_cachePartitionMap != null && _cachePartitionMap.AffinityTopologyVersion == _affinityTopologyVersion)
                 return; // Up to date.
@@ -393,6 +394,11 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             throw new NotImplementedException("TODO");
+        }
+
+        private void InitSocketMap()
+        {
+            throw new NotImplementedException();
         }
     }
 }

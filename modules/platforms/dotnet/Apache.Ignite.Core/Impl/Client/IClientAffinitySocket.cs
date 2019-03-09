@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
-    internal interface IClientAffinitySocket : IClientSocket
+    internal interface IClientAffinitySocket : IClientSocket  // TODO: We don't need interfaces.
     {
         /// <summary>
         /// Performs a send-receive operation with affinity awareness.
