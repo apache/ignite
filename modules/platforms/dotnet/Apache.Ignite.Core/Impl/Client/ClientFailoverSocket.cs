@@ -364,6 +364,7 @@ namespace Apache.Ignite.Core.Impl.Client
                         }
                     }
 
+                    // TODO: The logic is broken if KeyConfigs is empty. We still have cacheId in the ClientCacheAffinityAwarenessGroup!
                     foreach (var keyConfig in g.KeyConfigs)
                     {
                         mapping[keyConfig.CacheId] = new ClientCachePartitionMap(keyConfig, partNodeIds);
