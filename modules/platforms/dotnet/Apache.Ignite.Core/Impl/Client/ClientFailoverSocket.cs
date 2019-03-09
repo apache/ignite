@@ -225,9 +225,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void Connect()
         {
-            // TODO: Connect to all endpoints.
-            // We need a CurrentSocket property that is round-robin.
-            // Other connections can be established in the background.
             List<Exception> errors = null;
             var startIdx = (int) Interlocked.Increment(ref _endPointIndex);
 
@@ -240,6 +237,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, OnSocketError, null,
                         OnAffinityTopologyVersionChange);
+
+                    endPoint.Socket = _socket;
 
                     return;
                 }

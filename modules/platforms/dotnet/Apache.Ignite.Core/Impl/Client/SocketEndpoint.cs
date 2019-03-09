@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the socket.
         /// </summary>
-        private ClientSocket Socket
+        public ClientSocket Socket
         {
             get { return _socket; }
             set
