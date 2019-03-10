@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheThread
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxLocalDhtMixedCacheModesTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxMultiCacheAsyncOpsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStartTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
@@ -101,6 +102,8 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, TxMultiCacheAsyncOpsTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, TxOnCachesStartTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, TxLocalDhtMixedCacheModesTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteCache150ClientsTest.class, ignoredTests);
 

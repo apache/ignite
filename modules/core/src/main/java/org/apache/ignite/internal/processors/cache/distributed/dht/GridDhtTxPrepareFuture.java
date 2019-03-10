@@ -76,7 +76,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1300,17 +1299,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             // We are holding transaction-level locks for entries here, so we can get next write version.
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
-            boolean locCache = false;
-
-            for (IgniteTxEntry entry : req.writes()) {
-                if (entry.cached().isLocal()) {
-                    locCache = true;
-
-                    break;
-                }
-            }
-
-            TxCounters counters = locCache ? null : tx.txCounters(true);
+            TxCounters counters = tx.txCounters(true);
 
             // Assign keys to primary nodes.
             if (!F.isEmpty(req.writes())) {
@@ -1318,8 +1307,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     IgniteTxEntry entry = tx.entry(write.txKey());
 
                     // TODO add test for transforms to WithFilter.
-                    if (!locCache && entry != null && entry.op() != NOOP &&
-                        // Update counter shouldn't be incremented for no-op or CQ test will fail.
+                    // Counter shouldn't be generated for mvcc, local cache entries, NOOP operations and NOOP transforms.
+                    if (!entry.cached().isLocal() &&
+                        entry != null && entry.op() != NOOP &&
                         !(entry.op() == TRANSFORM &&
                             (entry.entryProcessorCalculatedValue() == null || // TODO FIXME possible for txs over cachestore
                                 entry.entryProcessorCalculatedValue().get1() == NOOP)))
@@ -1338,7 +1328,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 return;
 
             if (last) {
-                if (!tx.txState().mvccEnabled() && !locCache) {
+                if (!tx.txState().mvccEnabled()) {
                     /** For MVCC counters are assigned on enlisting.
                      * See usage of {@link TxCounters#incrementUpdateCounter(int, int)} ) */
                     tx.calculatePartitionUpdateCounters(false);
