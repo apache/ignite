@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Console.WriteLine(consistentId);
             }
 
-            _cache = GetClient().CreateCache<int, int>("c");
+            _cache = Client.CreateCache<int, int>("c");
             _cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => x));
         }
 
@@ -96,6 +96,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var res = _cache.Get(key);
 
+            // TODO: Relying on cache events does not work
+            // Use debug logging instead, see ClientListenerNioListener
             Assert.AreEqual(key, res);
             Assert.AreEqual(gridIdx, GetCacheEventGridIndex());
         }
