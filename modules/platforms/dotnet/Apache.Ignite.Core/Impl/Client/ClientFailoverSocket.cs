@@ -125,14 +125,13 @@ namespace Apache.Ignite.Core.Impl.Client
             if (!_config.DisableAffinityAwareness)
             {
                 InitSocketMap();
-                UpdatePartitionMap(cacheId);
+                UpdateDistributionMap(cacheId);
 
                 var distributionMap = _distributionMap;
                 var socketMap = _nodeSocketMap;
                 ClientCachePartitionMap cachePartMap;
+
                 if (socketMap != null &&
-                    distributionMap != null &&
-                    IsDistributionMapUpToDate(distributionMap) &&
                     distributionMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
                 {
                     // TODO: Extract affinity key and hash code. Make it work for Primitives first.
@@ -340,7 +339,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Updates the partition mapping.
         /// </summary>
-        private void UpdatePartitionMap(int cacheId) // TODO: Sync and async versions to call from sync and async methods.
+        private void UpdateDistributionMap(int cacheId) // TODO: Sync and async versions to call from sync and async methods.
         {
             if (IsDistributionMapUpToDate())
                 return; // Up to date.

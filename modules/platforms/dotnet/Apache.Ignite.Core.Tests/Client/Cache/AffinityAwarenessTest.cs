@@ -20,6 +20,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Log;
     using NUnit.Framework;
@@ -83,6 +85,16 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var logger = new TestLogger();
             cfg.Logger = logger;
             _loggers.Add(logger);
+
+            return cfg;
+        }
+
+        protected override IgniteClientConfiguration GetClientConfiguration()
+        {
+            var cfg = base.GetClientConfiguration();
+
+            cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 1));
+            cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 2));
 
             return cfg;
         }

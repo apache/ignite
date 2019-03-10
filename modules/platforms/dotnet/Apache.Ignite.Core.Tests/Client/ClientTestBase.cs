@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Net;
     using Apache.Ignite.Core.Binary;
@@ -141,7 +142,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             return new IgniteClientConfiguration
             {
-                Endpoints = new[] {IPAddress.Loopback.ToString()}
+                Endpoints = new List<string> { IPAddress.Loopback.ToString() }
             };
         }
 
