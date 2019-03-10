@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOpAsync(ClientOp.CacheGet, w => w.WriteObject(key), UnmarshalNotNull<TV>);
+            return DoOutInOpAsync(ClientOp.CacheGet, w => w.WriteObjectDetached(key), UnmarshalNotNull<TV>);
         }
 
         /** <inheritDoc /> */
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOpAsync(ClientOp.CacheGet, w => w.WriteObject(key), UnmarshalCacheResult<TV>);
+            return DoOutInOpAsync(ClientOp.CacheGet, w => w.WriteObjectDetached(key), UnmarshalCacheResult<TV>);
         }
 
         /** <inheritDoc /> */
@@ -581,12 +581,29 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Does the out in op.
         /// </summary>
-        private T DoOutInOpAffinity<T>(ClientOp opId, TK key,
-            Func<IBinaryStream, T> readFunc)
+        private T DoOutInOpAffinity<T>(ClientOp opId, TK key, Func<IBinaryStream, T> readFunc)
         {
             return _ignite.Socket.DoOutInOpAffinity(
                 opId,
-                stream => WriteRequest(w => w.WriteObject(key), stream),
+                stream => WriteRequest(w => w.WriteObjectDetached(key), stream),
+                readFunc,
+                _id,
+                key,
+                HandleError<T>);
+        }
+
+        /// <summary>
+        /// Does the out in op.
+        /// </summary>
+        private T DoOutInOpAffinity<T>(ClientOp opId, TK key, TV val, Func<IBinaryStream, T> readFunc)
+        {
+            return _ignite.Socket.DoOutInOpAffinity(
+                opId,
+                stream => WriteRequest(w =>
+                {
+                    w.WriteObjectDetached(key);
+                    w.WriteObjectDetached(val);
+                }, stream),
                 readFunc,
                 _id,
                 key,

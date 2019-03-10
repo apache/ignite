@@ -17,10 +17,16 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System.Collections.Generic;
+    using System.Linq;
+    using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Events;
+    using NUnit.Framework;
+
     /// <summary>
     /// Tests affinity awareness functionality.
     /// </summary>
-    public class AffinityAwarenessTest
+    public class AffinityAwarenessTest : ClientTestBase
     {
         // TODO:
         // * Test disabled/enabled
@@ -28,5 +34,54 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         // * Test hash code for all primitives
         // * Test hash code for complex key
         // * Test hash code for complex key with AffinityKeyMapped
+        // * Test topology update
+
+        /** */
+        private readonly List<CacheTestEventListener> _listeners = new List<CacheTestEventListener>();
+
+        /** */
+        private ICacheClient<int, int> _cache;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AffinityAwarenessTest"/> class.
+        /// </summary>
+        public AffinityAwarenessTest() : base(3)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Fixture set up.
+        /// </summary>
+        public override void FixtureSetUp()
+        {
+            base.FixtureSetUp();
+
+            var grids = Ignition.GetAll();
+            foreach (var grid in grids)
+            {
+                var events = grid.GetEvents();
+                events.EnableLocal(EventType.CacheObjectRead);
+
+                var listener = new CacheTestEventListener(grid);
+                events.LocalListen(listener);
+
+                _listeners.Add(listener);
+            }
+
+            _cache = GetClient().CreateCache<int, int>("c");
+            _cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => x));
+        }
+
+        [Test]
+        public void TestGetIsRoutedToPrimaryNode()
+        {
+            var res = _cache.Get(1);
+
+            Assert.AreEqual(1, res);
+            Assert.AreEqual(1, _listeners[1].Events.Count);
+            Assert.AreEqual(0, _listeners[2].Events.Count);
+            Assert.AreEqual(0, _listeners[3].Events.Count);
+        }
     }
 }

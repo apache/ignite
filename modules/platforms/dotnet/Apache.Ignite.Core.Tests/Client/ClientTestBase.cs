@@ -55,10 +55,10 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
-        /// Fixture tear down.
+        /// Fixture set up.
         /// </summary>
         [TestFixtureSetUp]
-        public void FixtureSetUp()
+        public virtual void FixtureSetUp()
         {
             var cfg = GetIgniteConfiguration();
             Ignition.Start(cfg);
