@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Client.Cache;
-    using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
     /// <summary>
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         // * Test topology update
 
         /** */
-        private readonly List<CacheTestEventListener> _listeners = new List<CacheTestEventListener>();
+        private readonly List<TestLogger> _loggers = new List<TestLogger>();
 
         /** */
         private ICacheClient<int, int> _cache;
@@ -58,33 +58,33 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             base.FixtureSetUp();
 
-            var grids = Ignition.GetAll();
-            foreach (var grid in grids)
-            {
-                var events = grid.GetEvents();
-                events.EnableLocal(EventType.CacheObjectRead);
-
-                var listener = new CacheTestEventListener(grid);
-                events.LocalListen(listener, EventType.CacheObjectRead);
-
-                _listeners.Add(listener);
-
-                var consistentId = grid.GetCluster().GetLocalNode().ConsistentId;
-                Console.WriteLine(consistentId);
-            }
-
             _cache = Client.CreateCache<int, int>("c");
             _cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => x));
+
+            // Warm up client partition data.
+            _cache.Get(1);
+            _cache.Get(2);
         }
 
         public override void TestSetUp()
         {
             base.TestSetUp();
 
-            foreach (var listener in _listeners)
+            foreach (var logger in _loggers)
             {
-                listener.Events.Clear();
+                logger.Clear();
             }
+        }
+
+        protected override IgniteConfiguration GetIgniteConfiguration()
+        {
+            var cfg = base.GetIgniteConfiguration();
+
+            var logger = new TestLogger();
+            cfg.Logger = logger;
+            _loggers.Add(logger);
+
+            return cfg;
         }
 
         [Test]
@@ -99,22 +99,49 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO: Relying on cache events does not work
             // Use debug logging instead, see ClientListenerNioListener
             Assert.AreEqual(key, res);
-            Assert.AreEqual(gridIdx, GetCacheEventGridIndex());
+            Assert.AreEqual(gridIdx, res); // TODO
         }
 
-        private int GetCacheEventGridIndex()
+        private class TestLogger : ILogger
         {
-            for (var i = 0; i < _listeners.Count; i++)
-            {
-                var listener = _listeners[i];
+            /** */
+            private readonly List<string> _messages = new List<string>();
 
-                if (listener.Events.Count > 0)
+            /** */
+            private readonly object _lock = new object();
+
+            public List<string> Messages
+            {
+                get
                 {
-                    return i;
+                    lock (_lock)
+                    {
+                        return _messages.ToList();
+                    }
                 }
             }
 
-            return -1;
+            public void Clear()
+            {
+                lock (_lock)
+                {
+                    _messages.Clear();
+                }
+            }
+
+            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
+                string nativeErrorInfo, Exception ex)
+            {
+                lock (_lock)
+                {
+                    _messages.Add(message);
+                }
+            }
+
+            public bool IsEnabled(LogLevel level)
+            {
+                return level == LogLevel.Debug;
+            }
         }
     }
 }

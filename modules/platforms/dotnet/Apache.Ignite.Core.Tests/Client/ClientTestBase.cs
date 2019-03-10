@@ -63,10 +63,11 @@ namespace Apache.Ignite.Core.Tests.Client
             var cfg = GetIgniteConfiguration();
             Ignition.Start(cfg);
 
-            cfg.AutoGenerateIgniteInstanceName = true;
-
             for (var i = 1; i < _gridCount; i++)
             {
+                cfg = GetIgniteConfiguration();
+                cfg.AutoGenerateIgniteInstanceName = true;
+
                 Ignition.Start(cfg);
             }
 

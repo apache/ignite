@@ -135,7 +135,6 @@
     <Compile Include="Client\Cache\AffinityAwarenessTest.cs" />
     <Compile Include="Client\Cache\BinaryBuilderTest.cs" />
     <Compile Include="Client\Cache\CacheClientAsyncWrapper.cs" />
-    <Compile Include="Client\Cache\CacheTestEventListener.cs" />
     <Compile Include="Client\Cache\CacheTest.cs" />
     <Compile Include="Client\Cache\CacheTestSsl.cs" />
     <Compile Include="Client\Cache\CacheTestAsync.cs" />
