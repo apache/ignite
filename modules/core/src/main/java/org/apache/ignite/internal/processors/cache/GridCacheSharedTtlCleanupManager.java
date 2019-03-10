@@ -138,6 +138,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                     boolean expiredRemains = false;
 
                     for (GridCacheTtlManager mgr : mgrs) {
+                        updateHeartbeat();
 
                         if (mgr.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
                             expiredRemains = true;
@@ -146,8 +147,12 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                             return;
                     }
 
+                    updateHeartbeat();
+
                     if (!expiredRemains)
                         U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
+
+                    onIdle();
                 }
             }
             catch (Throwable t) {

@@ -97,6 +97,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -2236,6 +2237,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
+    /** */
+    private static WorkersRegistry getWorkerRegistry(TcpDiscoverySpi spi) {
+        return spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null;
+    }
+
     /**
      * Wait for all the listeners from previous discovery message to be completed.
      */
@@ -2774,13 +2780,16 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private RingMessageWorker(IgniteLogger log) {
-            super("tcp-disco-msg-worker", log, 10,
-                spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null);
+            super("tcp-disco-msg-worker", log, 10, getWorkerRegistry(spi));
 
             initConnectionCheckThreshold();
 
             setBeforeEachPollAction(() -> {
+                updateHeartbeat();
+
                 runTasks();
+
+                onIdle();
             });
         }
 
@@ -6057,8 +6066,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @throws IgniteSpiException In case of error.
          */
         TcpServer(IgniteLogger log) throws IgniteSpiException {
-            super(spi.ignite().name(), "tcp-disco-srvr", log,
-                spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null);
+            super(spi.ignite().name(), "tcp-disco-srvr", log, getWorkerRegistry(spi));
 
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
@@ -6100,13 +6108,22 @@ class ServerImpl extends TcpDiscoveryImpl {
                 ", addr=" + spi.locHost + ']');
         }
 
-        /** {@inheritDoc} */
+        /** */
         @Override protected void body() {
             Throwable err = null;
 
             try {
                 while (!isCancelled()) {
-                    Socket sock = srvrSock.accept();
+                    Socket sock;
+
+                    blockingSectionBegin();
+
+                    try {
+                        sock = srvrSock.accept();
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
 
                     long tstamp = U.currentTimeMillis();
 
@@ -6127,6 +6144,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     reader.start();
 
                     spi.stats.onServerSocketInitialized(U.currentTimeMillis() - tstamp);
+
+                    onIdle();
                 }
             }
             catch (IOException e) {
@@ -7382,15 +7401,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** */
-    private class MessageWorkerThreadWithCleanup<T> extends MessageWorkerThread {
-        /** */
-        private final MessageWorker worker;
+    private class MessageWorkerThreadWithCleanup<T> extends MessageWorkerThread<MessageWorker<T>> {
 
         /** {@inheritDoc} */
         private MessageWorkerThreadWithCleanup(MessageWorker<T> worker, IgniteLogger log) {
             super(worker, log);
-
-            this.worker = worker;
         }
 
         /** {@inheritDoc} */
@@ -7412,17 +7427,17 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * Slightly modified {@link IgniteSpiThread} intended to use with message workers.
      */
-    private class MessageWorkerThread extends IgniteSpiThread {
+    private class MessageWorkerThread<W extends GridWorker> extends IgniteSpiThread {
         /**
          * Backed interrupted flag, once set, it is not affected by further {@link Thread#interrupted()} calls.
          */
         private volatile boolean interrupted;
 
         /** */
-        private final GridWorker worker;
+        protected final W worker;
 
         /** {@inheritDoc} */
-        private MessageWorkerThread(GridWorker worker, IgniteLogger log) {
+        private MessageWorkerThread(W worker, IgniteLogger log) {
             super(worker.igniteInstanceName(), worker.name(), log);
 
             this.worker = worker;
