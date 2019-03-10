@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private volatile Dictionary<Guid, ClientSocket> _nodeSocketMap;
 
         /** Map from cache ID to partition mapping. */
-        private volatile ClientCacheTopologyPartitionMap _cachePartitionMap;
+        private volatile ClientCacheTopologyPartitionMap _distributionMap;
 
         /** Whether the process of connecting to all nodes has been started.  */
         private int _nodeSocketMapInitStarted;
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 InitSocketMap();
                 UpdatePartitionMap(cacheId);
 
-                var partMap = _cachePartitionMap;
+                var partMap = _distributionMap;
                 var socketMap = _nodeSocketMap;
                 ClientCachePartitionMap cachePartMap;
                 if (socketMap != null &&
@@ -323,10 +323,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void UpdatePartitionMap(int cacheId) // TODO: Sync and async versions to call from sync and async methods.
         {
-            if (_cachePartitionMap != null && _cachePartitionMap.AffinityTopologyVersion == _affinityTopologyVersion)
+            if (_distributionMap != null && _distributionMap.AffinityTopologyVersion == _affinityTopologyVersion)
                 return; // Up to date.
-
-            var mapping = new Dictionary<int, ClientCachePartitionMap>();
 
             DoOutInOp<object>(ClientOp.CachePartitions, s =>
             {
@@ -334,8 +332,12 @@ namespace Apache.Ignite.Core.Impl.Client
                 s.WriteInt(cacheId);
             }, s =>
             {
+                // distributionMap: [cacheId => partitionMap].
+                // partitionMap: [partition => nodeUuid].
+                
                 var affinityTopologyVersion = new AffinityTopologyVersion(s.ReadLong(), s.ReadInt());
                 var size = s.ReadInt();
+                var mapping = new Dictionary<int, ClientCachePartitionMap>();
 
                 for (int i = 0; i < size; i++)
                 {
@@ -364,14 +366,15 @@ namespace Apache.Ignite.Core.Impl.Client
                         }
                     }
 
-                    // TODO: The logic is broken if KeyConfigs is empty. We still have cacheId in the ClientCacheAffinityAwarenessGroup!
-                    foreach (var keyConfig in g.KeyConfigs)
+                    foreach (var cache in g.Caches)
                     {
-                        mapping[keyConfig.CacheId] = new ClientCachePartitionMap(keyConfig, partNodeIds);
+                        mapping[cache.Key] = new ClientCachePartitionMap(cache.Key, partNodeIds, cache.Value);
                     }
                 }
 
-                _cachePartitionMap = new ClientCacheTopologyPartitionMap(mapping, affinityTopologyVersion);
+                // TODO: This is broken, because we request mapping only for one cache.
+                // There can be parallel requests for other caches!
+                _distributionMap = new ClientCacheTopologyPartitionMap(mapping, affinityTopologyVersion);
 
                 return null;
             });

@@ -24,9 +24,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     /// </summary>
     internal struct ClientCacheKeyConfiguration : IEquatable<ClientCacheKeyConfiguration>
     {
-        /** Cache ID. */
-        private readonly int _cacheId;
-
         /** Key type ID. */
         private readonly int _keyTypeId;
 
@@ -36,19 +33,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientCacheKeyConfiguration"/> class.
         /// </summary>
-        public ClientCacheKeyConfiguration(int cacheId, int keyTypeId, int affinityKeyFieldId)
+        public ClientCacheKeyConfiguration(int keyTypeId, int affinityKeyFieldId)
         {
-            _cacheId = cacheId;
             _keyTypeId = keyTypeId;
             _affinityKeyFieldId = affinityKeyFieldId;
-        }
-
-        /// <summary>
-        /// Gets the cache ID.
-        /// </summary>
-        public int CacheId
-        {
-            get { return _cacheId; }
         }
 
         /// <summary>
@@ -69,8 +57,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
         public bool Equals(ClientCacheKeyConfiguration other)
         {
-            return _cacheId == other._cacheId &&
-                   _keyTypeId == other._keyTypeId &&
+            return _keyTypeId == other._keyTypeId &&
                    _affinityKeyFieldId == other._affinityKeyFieldId;
         }
 
@@ -84,8 +71,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             unchecked
             {
-                var hashCode = _cacheId;
-                hashCode = (hashCode * 397) ^ _keyTypeId;
+                var hashCode = _keyTypeId;
                 hashCode = (hashCode * 397) ^ _affinityKeyFieldId;
                 return hashCode;
             }

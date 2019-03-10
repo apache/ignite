@@ -30,10 +30,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     internal class ClientCacheAffinityAwarenessGroup
     {
         /** */
-        private readonly List<ClientCacheKeyConfiguration> _keyConfigs;
+        private readonly List<KeyValuePair<Guid, List<int>>> _partitionMap;
 
         /** */
-        private readonly List<KeyValuePair<Guid, List<int>>> _partitionMap;
+        private readonly List<KeyValuePair<int, ClientCacheKeyConfiguration[]>> _caches;
 
         public ClientCacheAffinityAwarenessGroup(IBinaryStream stream)
         {
@@ -41,20 +41,26 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             var applicable = stream.ReadBool();
 
             var cachesCount = stream.ReadInt();
-            _keyConfigs = new List<ClientCacheKeyConfiguration>(cachesCount);
+            _caches = new List<KeyValuePair<int, ClientCacheKeyConfiguration[]>>(cachesCount);
 
             for (var i = 0; i < cachesCount; i++)
             {
                 var cacheId = stream.ReadInt();
                 if (!applicable)
+                {
+                    _caches.Add(new KeyValuePair<int, ClientCacheKeyConfiguration[]>(cacheId, null));
                     continue;
+                }
 
                 var keyCfgCount = stream.ReadInt();
+                var keyCfgs = new ClientCacheKeyConfiguration[keyCfgCount];
 
-                for (int j = 0; j < keyCfgCount; j++)
+                for (var j = 0; j < keyCfgCount; j++)
                 {
-                    _keyConfigs.Add(new ClientCacheKeyConfiguration(cacheId, stream.ReadInt(), stream.ReadInt()));
+                    keyCfgs[j] = new ClientCacheKeyConfiguration(stream.ReadInt(), stream.ReadInt());
                 }
+
+                _caches.Add(new KeyValuePair<int, ClientCacheKeyConfiguration[]>(cacheId, keyCfgs));
             }
 
             if (!applicable)
@@ -83,11 +89,11 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /// <summary>
-        /// Gets the key configurations.
+        /// Gets the caches.
         /// </summary>
-        public ICollection<ClientCacheKeyConfiguration> KeyConfigs
+        public List<KeyValuePair<int, ClientCacheKeyConfiguration[]>> Caches
         {
-            get { return _keyConfigs; }
+            get { return _caches; }
         }
 
         /// <summary>
