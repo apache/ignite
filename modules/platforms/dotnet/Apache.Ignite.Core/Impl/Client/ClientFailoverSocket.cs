@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     // TODO: Extract affinity key and hash code. Make it work for Primitives first.
                     // 1) Just write provided key to a new writer. Keys are expected to be compact.
                     // 2) Add optional callback to BinaryWriter so we can extract both AffinityKey (by field id) and hash code (in case it's a BinaryObject)
-                    var partition = GetPartition(key, distributionMap.CachePartitionMap.Count);
+                    var partition = GetPartition(key, cachePartMap.PartitionNodeIds.Length);
                     var nodeId = cachePartMap.PartitionNodeIds[partition];
 
                     ClientSocket socket;
