@@ -127,18 +127,18 @@ namespace Apache.Ignite.Core.Impl.Client
                 InitSocketMap();
                 UpdatePartitionMap(cacheId);
 
-                var partMap = _distributionMap;
+                var distributionMap = _distributionMap;
                 var socketMap = _nodeSocketMap;
                 ClientCachePartitionMap cachePartMap;
                 if (socketMap != null &&
-                    partMap != null &&
-                    partMap.AffinityTopologyVersion == _affinityTopologyVersion &&
-                    partMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
+                    distributionMap != null &&
+                    IsDistributionMapUpToDate(distributionMap) &&
+                    distributionMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
                 {
                     // TODO: Extract affinity key and hash code. Make it work for Primitives first.
                     // 1) Just write provided key to a new writer. Keys are expected to be compact.
                     // 2) Add optional callback to BinaryWriter so we can extract both AffinityKey (by field id) and hash code (in case it's a BinaryObject)
-                    var partition = GetPartition(key, partMap.CachePartitionMap.Count);
+                    var partition = GetPartition(key, distributionMap.CachePartitionMap.Count);
                     var nodeId = cachePartMap.PartitionNodeIds[partition];
 
                     ClientSocket socket;
@@ -325,14 +325,16 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Returns a value indicating whether distribution map is up to date.
         /// </summary>
         /// <returns></returns>
-        private bool IsDistributionMapUpToDate()
+        private bool IsDistributionMapUpToDate(ClientCacheTopologyPartitionMap map = null)
         {
-            if (_distributionMap == null || _affinityTopologyVersion == null)
+            map = map ?? _distributionMap;
+
+            if (map == null || _affinityTopologyVersion == null)
             {
                 return false;
             }
 
-            return _distributionMap.AffinityTopologyVersion.CompareTo(_affinityTopologyVersion.Value) >= 0;
+            return map.AffinityTopologyVersion.CompareTo(_affinityTopologyVersion.Value) >= 0;
         }
 
         /// <summary>
