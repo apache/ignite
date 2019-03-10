@@ -116,9 +116,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         [Test]
         [TestCase(1, 1)]
-        [TestCase(2, 2)]
+        [TestCase(2, 0)]
         [TestCase(3, 0)]
         [TestCase(4, 1)]
+        [TestCase(5, 1)]
+        [TestCase(6, 2)]
         public void TestGetIsRoutedToPrimaryNode(int key, int gridIdx)
         {
             var res = _cache.Get(key);
