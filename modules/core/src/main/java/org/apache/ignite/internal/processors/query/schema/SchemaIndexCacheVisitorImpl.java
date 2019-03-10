@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.schema;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -104,6 +105,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         assert clo != null;
 
         List<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
+        ((CacheGroupMetricsMXBeanImpl)(cctx.group().mxBean())).setIndexRebuildCountPartitionsLeft(parts.size());
 
         if (parts.isEmpty())
             return;
@@ -220,6 +222,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         }
         finally {
             part.release();
+            ((CacheGroupMetricsMXBeanImpl)(cctx.group().mxBean())).decIndexRebuildCountPartitionsLeft();
         }
     }
 

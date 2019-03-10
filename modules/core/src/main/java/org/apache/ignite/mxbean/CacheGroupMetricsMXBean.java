@@ -191,4 +191,10 @@ public interface CacheGroupMetricsMXBean {
      */
     @MXBeanDescription("Storage space allocated for group adjusted for possible sparsity, in bytes.")
     public long getSparseStorageSize();
+
+    /**
+     * @return Number of partitions need to finished indexes rebuilding.
+     */
+    @MXBeanDescription("Number of partitions need to finished indexes rebuilding.")
+    public long getIndexRebuildCountPartitionsLeft();
 }

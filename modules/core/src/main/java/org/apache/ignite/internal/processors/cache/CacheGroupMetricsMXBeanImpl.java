@@ -51,6 +51,9 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /** */
     private final GroupAllocationTracker groupPageAllocationTracker;
 
+    /** Number of partitions need to finished indexes rebuilding. */
+    private volatile long indexRebuildCountPartitionsLeft;
+
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
         /**
@@ -377,6 +380,21 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /** {@inheritDoc} */
     @Override public long getSparseStorageSize() {
         return database().forGroupPageStores(ctx, PageStore::getSparseSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexRebuildCountPartitionsLeft() {
+        return indexRebuildCountPartitionsLeft;
+    }
+
+    /** Set number of partitions need to finished indexes rebuilding. */
+    public void setIndexRebuildCountPartitionsLeft(long indexRebuildCountPartitionsLeft) {
+        this.indexRebuildCountPartitionsLeft=indexRebuildCountPartitionsLeft;
+    }
+
+    /** Decrement number of partitions need to finished indexes rebuilding.*/
+    public long decIndexRebuildCountPartitionsLeft() {
+        return --indexRebuildCountPartitionsLeft;
     }
 
     /**
