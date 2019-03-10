@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Client.Cache;
@@ -64,24 +65,54 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 events.EnableLocal(EventType.CacheObjectRead);
 
                 var listener = new CacheTestEventListener(grid);
-                events.LocalListen(listener);
+                events.LocalListen(listener, EventType.CacheObjectRead);
 
                 _listeners.Add(listener);
+
+                var consistentId = grid.GetCluster().GetLocalNode().ConsistentId;
+                Console.WriteLine(consistentId);
             }
 
             _cache = GetClient().CreateCache<int, int>("c");
             _cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => x));
         }
 
-        [Test]
-        public void TestGetIsRoutedToPrimaryNode()
+        public override void TestSetUp()
         {
-            var res = _cache.Get(1);
+            base.TestSetUp();
 
-            Assert.AreEqual(1, res);
-            Assert.AreEqual(1, _listeners[1].Events.Count);
-            Assert.AreEqual(0, _listeners[2].Events.Count);
-            Assert.AreEqual(0, _listeners[3].Events.Count);
+            foreach (var listener in _listeners)
+            {
+                listener.Events.Clear();
+            }
+        }
+
+        [Test]
+        [TestCase(1, 1)]
+        [TestCase(2, 2)]
+        [TestCase(3, 0)]
+        [TestCase(4, 1)]
+        public void TestGetIsRoutedToPrimaryNode(int key, int gridIdx)
+        {
+            var res = _cache.Get(key);
+
+            Assert.AreEqual(key, res);
+            Assert.AreEqual(gridIdx, GetCacheEventGridIndex());
+        }
+
+        private int GetCacheEventGridIndex()
+        {
+            for (var i = 0; i < _listeners.Count; i++)
+            {
+                var listener = _listeners[i];
+
+                if (listener.Events.Count > 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
     }
 }
