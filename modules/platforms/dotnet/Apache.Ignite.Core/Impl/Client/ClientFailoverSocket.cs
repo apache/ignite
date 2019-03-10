@@ -65,11 +65,14 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Map from node ID to connected socket. */
         private volatile Dictionary<Guid, ClientSocket> _nodeSocketMap;
 
+        /** Whether the process of connecting to all nodes has been started.  */
+        private int _nodeSocketMapInitStarted;
+
         /** Map from cache ID to partition mapping. */
         private volatile ClientCacheTopologyPartitionMap _distributionMap;
 
-        /** Whether the process of connecting to all nodes has been started.  */
-        private int _nodeSocketMapInitStarted;
+        /** Distribution map locker. */
+        private readonly object _distributionMapSyncRoot = new object();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientFailoverSocket"/> class.
@@ -321,64 +324,91 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Updates the partition mapping.
         /// </summary>
-        private void UpdatePartitionMap(int cacheId) // TODO: Sync and async versions to call from sync and async methods.
+        private void
+            UpdatePartitionMap(int cacheId) // TODO: Sync and async versions to call from sync and async methods.
         {
             if (_distributionMap != null && _distributionMap.AffinityTopologyVersion == _affinityTopologyVersion)
                 return; // Up to date.
 
-            DoOutInOp<object>(ClientOp.CachePartitions, s =>
+            lock (_distributionMapSyncRoot)
             {
-                s.WriteInt(1);  // One cache.
-                s.WriteInt(cacheId);
-            }, s =>
-            {
-                // distributionMap: [cacheId => partitionMap].
-                // partitionMap: [partition => nodeUuid].
-                
-                var affinityTopologyVersion = new AffinityTopologyVersion(s.ReadLong(), s.ReadInt());
-                var size = s.ReadInt();
-                var mapping = new Dictionary<int, ClientCachePartitionMap>();
+                if (_distributionMap != null && _distributionMap.AffinityTopologyVersion == _affinityTopologyVersion)
+                    return; // Up to date.
 
-                for (int i = 0; i < size; i++)
+                DoOutInOp<object>(ClientOp.CachePartitions, s =>
                 {
-                    var g = new ClientCacheAffinityAwarenessGroup(s);
-
-                    // Count partitions to avoid reallocating array.
-                    int maxPartNum = 0;
-                    foreach (var partMap in g.PartitionMap)
+                    if (_distributionMap != null)
                     {
-                        foreach (var part in partMap.Value)
+                        // Map exists: request update for all caches.
+                        var mapContainsCacheId = _distributionMap.CachePartitionMap.ContainsKey(cacheId);
+                        var count = _distributionMap.CachePartitionMap.Count;
+                        if (!mapContainsCacheId)
                         {
-                            if (part > maxPartNum)
+                            count++;
+                        }
+
+                        s.WriteInt(count);
+
+                        foreach (var cachePartitionMap in _distributionMap.CachePartitionMap)
+                        {
+                            s.WriteInt(cachePartitionMap.Key);
+                        }
+
+                        if (!mapContainsCacheId)
+                        {
+                            s.WriteInt(cacheId);
+                        }
+                    }
+                    else
+                    {
+                        // Map does not exist yet: request update for specified cache only.
+                        s.WriteInt(1);
+                        s.WriteInt(cacheId);
+                    }
+                }, s =>
+                {
+                    var affinityTopologyVersion = new AffinityTopologyVersion(s.ReadLong(), s.ReadInt());
+                    var size = s.ReadInt();
+                    var mapping = new Dictionary<int, ClientCachePartitionMap>();
+
+                    for (int i = 0; i < size; i++)
+                    {
+                        var g = new ClientCacheAffinityAwarenessGroup(s);
+
+                        // Count partitions to avoid reallocating array.
+                        int maxPartNum = 0;
+                        foreach (var partMap in g.PartitionMap)
+                        {
+                            foreach (var part in partMap.Value)
                             {
-                                maxPartNum = part;
+                                if (part > maxPartNum)
+                                {
+                                    maxPartNum = part;
+                                }
                             }
                         }
-                    }
 
-                    // Populate partition array.
-                    var partNodeIds = new Guid[maxPartNum + 1];
-                    foreach (var partMap in g.PartitionMap)
-                    {
-                        foreach (var part in partMap.Value)
+                        // Populate partition array.
+                        var partNodeIds = new Guid[maxPartNum + 1];
+                        foreach (var partMap in g.PartitionMap)
                         {
-                            partNodeIds[part] = partMap.Key;
+                            foreach (var part in partMap.Value)
+                            {
+                                partNodeIds[part] = partMap.Key;
+                            }
+                        }
+
+                        foreach (var cache in g.Caches)
+                        {
+                            mapping[cache.Key] = new ClientCachePartitionMap(cache.Key, partNodeIds, cache.Value);
                         }
                     }
 
-                    foreach (var cache in g.Caches)
-                    {
-                        mapping[cache.Key] = new ClientCachePartitionMap(cache.Key, partNodeIds, cache.Value);
-                    }
-                }
+                    _distributionMap = new ClientCacheTopologyPartitionMap(mapping, affinityTopologyVersion);
 
-                // TODO: This is broken, because we request mapping only for one cache.
-                // There can be parallel requests for other caches!
-                _distributionMap = new ClientCacheTopologyPartitionMap(mapping, affinityTopologyVersion);
-
-                return null;
-            });
-
+                    return null;
+                });
+            }
         }
 
         private int GetPartition<TKey>(TKey key, int partitionCount)
