@@ -322,17 +322,30 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
+        /// Returns a value indicating whether distribution map is up to date.
+        /// </summary>
+        /// <returns></returns>
+        private bool IsDistributionMapUpToDate()
+        {
+            if (_distributionMap == null || _affinityTopologyVersion == null)
+            {
+                return false;
+            }
+
+            return _distributionMap.AffinityTopologyVersion.CompareTo(_affinityTopologyVersion.Value) >= 0;
+        }
+
+        /// <summary>
         /// Updates the partition mapping.
         /// </summary>
-        private void
-            UpdatePartitionMap(int cacheId) // TODO: Sync and async versions to call from sync and async methods.
+        private void UpdatePartitionMap(int cacheId) // TODO: Sync and async versions to call from sync and async methods.
         {
-            if (_distributionMap != null && _distributionMap.AffinityTopologyVersion == _affinityTopologyVersion)
+            if (IsDistributionMapUpToDate())
                 return; // Up to date.
 
             lock (_distributionMapSyncRoot)
             {
-                if (_distributionMap != null && _distributionMap.AffinityTopologyVersion == _affinityTopologyVersion)
+                if (IsDistributionMapUpToDate())
                     return; // Up to date.
 
                 DoOutInOp<object>(ClientOp.CachePartitions, s =>

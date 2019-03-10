@@ -87,6 +87,21 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             return cfg;
         }
 
+        private int GetClientRequestGridIndex()
+        {
+            for (var i = 0; i < _loggers.Count; i++)
+            {
+                var logger = _loggers[i];
+
+                if (logger.Messages.Any(m => m.Contains("ClientCacheGetRequest")))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
         [Test]
         [TestCase(1, 1)]
         [TestCase(2, 2)]
@@ -96,10 +111,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var res = _cache.Get(key);
 
-            // TODO: Relying on cache events does not work
-            // Use debug logging instead, see ClientListenerNioListener
             Assert.AreEqual(key, res);
-            Assert.AreEqual(gridIdx, res); // TODO
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex());
         }
 
         private class TestLogger : ILogger
