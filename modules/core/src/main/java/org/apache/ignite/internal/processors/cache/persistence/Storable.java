@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 /**
  * Simple interface for data, store in some RowStore.
@@ -49,4 +51,9 @@ public interface Storable {
      * which is entirely available on the very first page followed by the row link.
      */
     public int headerSize();
+
+    /**
+     * @return IO version for storable.
+     */
+    public IOVersions ioVersions();
 }

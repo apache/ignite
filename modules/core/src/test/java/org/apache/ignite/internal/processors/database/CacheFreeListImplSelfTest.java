@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
@@ -156,6 +157,17 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     @Test
     public void testInsertDeleteMultiThreaded_16384() throws Exception {
         checkInsertDeleteMultiThreaded(16384);
+    }
+
+    @Test
+    public void testInsertDeleteByteArrayStorable() throws Exception {
+        final FreeList list = createFreeList(4096);
+
+        SimpleDataRow row = new SimpleDataRow(0, new byte[256]);
+
+        list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
+
+        assertTrue(row.link() != 0);
     }
 
     /**
