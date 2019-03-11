@@ -432,13 +432,13 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
                 private UUID nodeId = currNodeId;
 
                 @Override public boolean apply(Event evt) {
-                    if(evt.type() == EVT_CLIENT_NODE_RECONNECTED){
+                    if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
                         evts.remove(nodeId);
 
                         nodeId = evt.node().id();
                     }
 
-                    return false;
+                    return true;
                 }
             }, new int[] {EVT_CLIENT_NODE_RECONNECTED});
         }
