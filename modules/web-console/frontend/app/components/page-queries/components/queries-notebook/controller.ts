@@ -1278,7 +1278,10 @@ export class NotebookCtrl {
                     onQueryStarted(res);
                     $scope.$applyAsync();
                 }),
-                expand((res) => {
+                exhaustMap((res) => {
+                    if (!_.isNil(res.rows))
+                        return of(res);
+
                     const fetchFirstPageTask = timer(100, 500).pipe(
                         exhaustMap(() => agentMgr.queryFetchFistsPage(qryArg.nid, res.queryId, qryArg.pageSize)),
                         filter((res) => !_.isNil(res.rows))
@@ -1292,7 +1295,6 @@ export class NotebookCtrl {
 
                     return merge(fetchFirstPageTask, pingQueryTask);
                 }),
-                filter((res) => !_.isNil(res.rows)),
                 first()
             );
         };
