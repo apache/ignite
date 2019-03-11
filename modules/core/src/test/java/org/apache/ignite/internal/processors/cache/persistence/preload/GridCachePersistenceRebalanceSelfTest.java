@@ -150,6 +150,8 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
         printPartitionState("manual", 0);
 
+        cache.put(TEST_SIZE, new byte[1000]);
+
         awaitPartitionMapExchange(true, true, Collections.singleton(ignite1.localNode()), true);
     }
 }
