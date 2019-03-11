@@ -125,7 +125,6 @@ import org.junit.runners.Suite;
     org.apache.ignite.internal.jdbc2.JdbcEmptyCacheSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcLocalCachesSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcNoDefaultCacheTest.class,
-    org.apache.ignite.internal.jdbc2.JdbcDefaultNoOpCacheTest.class,
     org.apache.ignite.internal.jdbc2.JdbcMergeStatementSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcBinaryMarshallerMergeStatementSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcUpdateStatementSelfTest.class,
