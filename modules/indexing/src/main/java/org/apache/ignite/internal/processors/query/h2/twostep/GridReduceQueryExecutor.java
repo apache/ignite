@@ -55,7 +55,6 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -392,6 +391,7 @@ public class GridReduceQueryExecutor {
      * @param mvccTracker Query tracker.
      * @param dataPageScanEnabled If data page scan is enabled.
      * @param pageSize Page size.
+     * @param forUpdate For update query flag.
      * @return Rows iterator.
      */
     @SuppressWarnings({"BusyWait", "IfMayBeConditional"})
@@ -407,7 +407,8 @@ public class GridReduceQueryExecutor {
         boolean lazy,
         MvccQueryTracker mvccTracker,
         Boolean dataPageScanEnabled,
-        int pageSize
+        int pageSize,
+        boolean forUpdate
     ) {
         // If explicit partitions are set, but there are no real tables, ignore.
         if (!qry.hasCacheIds() && parts != null)
@@ -415,15 +416,9 @@ public class GridReduceQueryExecutor {
 
         assert !qry.mvccEnabled() || mvccTracker != null;
 
-        boolean forUpdate;
-
         try {
-            GridNearTxLocal tx = null;
-
             if (qry.mvccEnabled())
-                tx = checkActive(tx(ctx));
-
-            forUpdate = qry.forUpdate() && tx != null;
+                checkActive(tx(ctx));
         }
         catch (IgniteTxAlreadyCompletedCheckedException e) {
             throw new TransactionAlreadyCompletedException(e.getMessage(), e);
