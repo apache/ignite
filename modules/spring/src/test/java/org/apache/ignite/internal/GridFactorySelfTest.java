@@ -332,9 +332,10 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         List<String> igniteInstanceNames = bean.getIgniteInstanceNames();
 
         assert evts.get(0) == LifecycleEventType.BEFORE_NODE_START : "Invalid lifecycle event: " + evts.get(0);
-        assert evts.get(1) == LifecycleEventType.AFTER_NODE_START : "Invalid lifecycle event: " + evts.get(1);
-        assert evts.get(2) == LifecycleEventType.BEFORE_NODE_STOP : "Invalid lifecycle event: " + evts.get(2);
-        assert evts.get(3) == LifecycleEventType.AFTER_NODE_STOP : "Invalid lifecycle event: " + evts.get(3);
+        assert evts.get(1) == LifecycleEventType.BEFORE_CLUSTER_CONNECTION : "Invalid lifecycle event: " + evts.get(1);
+        assert evts.get(2) == LifecycleEventType.AFTER_NODE_START : "Invalid lifecycle event: " + evts.get(2);
+        assert evts.get(3) == LifecycleEventType.BEFORE_NODE_STOP : "Invalid lifecycle event: " + evts.get(3);
+        assert evts.get(4) == LifecycleEventType.AFTER_NODE_STOP : "Invalid lifecycle event: " + evts.get(4);
 
         checkIgniteInstanceNameEquals(igniteInstanceNames.get(0), igniteInstanceName);
         checkIgniteInstanceNameEquals(igniteInstanceNames.get(1), igniteInstanceName);

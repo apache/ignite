@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_STOP;
+import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_CLUSTER_CONNECTION;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_STOP;
 
@@ -53,8 +54,9 @@ public class IgniteLocalNodeMapBeforeStartTest extends GridCommonAbstractTest {
             // No-op.
         }
 
-        assertTrue(lifecycleBean.evtQueue.size() == 4);
+        assertTrue(lifecycleBean.evtQueue.size() == 5);
         assertTrue(lifecycleBean.evtQueue.poll() == BEFORE_NODE_START);
+        assertTrue(lifecycleBean.evtQueue.poll() == BEFORE_CLUSTER_CONNECTION);
         assertTrue(lifecycleBean.evtQueue.poll() == AFTER_NODE_START);
         assertTrue(lifecycleBean.evtQueue.poll() == BEFORE_NODE_STOP);
         assertTrue(lifecycleBean.evtQueue.poll() == AFTER_NODE_STOP);
