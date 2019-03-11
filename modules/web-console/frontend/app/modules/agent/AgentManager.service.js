@@ -44,10 +44,16 @@ const IGNITE_2_0 = '2.0.0';
 const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
 const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], ['2.5.1-p13', '2.6.0'], '2.7.0'];
 const COLLECT_BY_CACHE_GROUPS_SINCE = '2.7.0';
+const QUERY_PING_SINCE = [['2.5.5-p5', '2.6.0'], '2.7.4'];
 
 /**
  * Query execution result.
  * @typedef {{responseNodeId: String, queryId: String, columns: String[], rows: {Object[][]}, hasMore: Boolean, duration: Number}} VisorQueryResult
+ */
+
+/**
+ * Query ping result.
+ * @typedef {{}} VisorQueryPingResult
  */
 
 /** Reserved cache names */
@@ -751,6 +757,24 @@ export default class AgentManager {
 
             return Promise.reject(error);
         });
+    }
+
+    /**
+     * @param {String} nid Node id.
+     * @param {String} queryId Query ID.
+     * @returns {Promise.<VisorQueryPingResult>} Query execution result.
+     */
+    queryPing(nid, queryId) {
+        if (this.available(...QUERY_PING_SINCE)) {
+            return this.visorTask('queryPing', nid, queryId, 1).then(({error, result}) => {
+                if (_.isEmpty(error))
+                    return {queryPingSupported: true};
+
+                return Promise.reject(error);
+            });
+        }
+
+        return Promise.resolve({queryPingSupported: false});
     }
 
     /**
