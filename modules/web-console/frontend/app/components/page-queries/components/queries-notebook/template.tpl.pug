@@ -182,7 +182,7 @@ mixin query-actions
     button.btn-ignite.btn-ignite--secondary(ng-disabled='!queryAvailable(paragraph)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{queryTooltip(paragraph, "explain query")}}')
         | Explain
 
-    button.btn-ignite.btn-ignite--secondary(ng-if='cancelQueryAvailable(paragraph)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
+    button.btn-ignite.btn-ignite--secondary(ng-if='paragraph.executionInProgress(false) || paragraph.executionInProgress(true)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
         | Cancel
 
 mixin table-result-heading-query
@@ -338,7 +338,7 @@ mixin paragraph-scan
                     span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(true)')
                     | Scan on selected node
 
-                button.btn-ignite.btn-ignite--secondary(ng-if='cancelQueryAvailable(paragraph)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
+                button.btn-ignite.btn-ignite--secondary(ng-if='paragraph.checkScanInProgress(false) || paragraph.checkScanInProgress(true)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
                     | Cancel
             div
 
