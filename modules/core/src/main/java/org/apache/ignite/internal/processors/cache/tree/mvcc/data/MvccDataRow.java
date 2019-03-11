@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
@@ -37,6 +38,8 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HI
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KEY_ABSENT_BEFORE_MASK;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_MASK;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.FULL_WITH_HINTS;
+import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.NO_KEY_WITH_HINTS;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
 
 /**
@@ -157,7 +160,9 @@ public class MvccDataRow extends DataRow {
     }
 
     /** {@inheritDoc} */
-    @Override protected int readHeader(long addr, int off) {
+    @Override protected int readHeader(GridCacheSharedContext<?, ?> sharedCtx, long addr, int off, RowData rowData) {
+        boolean addHints = rowData == FULL_WITH_HINTS || rowData == NO_KEY_WITH_HINTS;
+
         // xid_min.
         mvccCrd = PageUtils.getLong(addr, off);
         mvccCntr = PageUtils.getLong(addr, off + 8);
@@ -166,6 +171,9 @@ public class MvccDataRow extends DataRow {
 
         mvccOpCntr = withHint & MVCC_OP_COUNTER_MASK;
         mvccTxState = (byte)(withHint >>> MVCC_HINTS_BIT_OFF);
+
+        if (addHints && mvccTxState == TxState.NA)
+            mvccTxState = MvccUtils.state(sharedCtx.coordinators(), mvccCrd, mvccCntr, mvccOpCntr);
 
         assert MvccUtils.mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr);
 
@@ -182,8 +190,12 @@ public class MvccDataRow extends DataRow {
 
         assert newMvccCrd == MVCC_CRD_COUNTER_NA || MvccUtils.mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
 
-        if (newMvccCrd != MVCC_CRD_COUNTER_NA)
+        if (newMvccCrd != MVCC_CRD_COUNTER_NA) {
             keyAbsentFlag = (withHint & MVCC_KEY_ABSENT_BEFORE_MASK) != 0;
+
+            if (addHints && newMvccTxState == TxState.NA)
+                newMvccTxState = MvccUtils.state(sharedCtx.coordinators(), newMvccCrd, newMvccCntr, newMvccOpCntr);
+        }
 
         return MVCC_INFO_SIZE;
     }
@@ -222,6 +234,8 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public int newMvccOperationCounter() {
+        assert (newMvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+
         return newMvccOpCntr;
     }
 

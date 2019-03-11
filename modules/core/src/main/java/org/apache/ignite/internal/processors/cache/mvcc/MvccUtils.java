@@ -172,7 +172,7 @@ public class MvccUtils {
      * @return TxState
      * @see TxState
      */
-    private static byte state(MvccProcessor proc, long mvccCrd, long mvccCntr, int mvccOpCntr) {
+    public static byte state(MvccProcessor proc, long mvccCrd, long mvccCntr, int mvccOpCntr) {
         if (compare(INITIAL_VERSION, mvccCrd, mvccCntr, mvccOpCntr) == 0)
             return TxState.COMMITTED; // Initial version is always committed;
 
@@ -549,7 +549,7 @@ public class MvccUtils {
      * @return {@code True} if version is valid.
      */
     public static boolean mvccVersionIsValid(long crdVer, long cntr) {
-        return crdVer > MVCC_CRD_COUNTER_NA && cntr != MVCC_COUNTER_NA;
+        return crdVer > MVCC_CRD_COUNTER_NA && cntr > MVCC_COUNTER_NA;
     }
 
     /**
