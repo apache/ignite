@@ -758,7 +758,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (!isClient)
+        if (isClient)
             return;
 
         if (dataBag.commonDataCollectedFor(COMPONENT_ID))
