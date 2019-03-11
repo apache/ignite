@@ -416,8 +416,9 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void checkStatementStreamable(PreparedStatement nativeStmt) {
+        @Override public boolean isStreamableInsertStatement(String schemaName, String sql) {
             // No-op.
+            return true;
         }
 
         /** {@inheritDoc} */

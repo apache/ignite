@@ -1773,11 +1773,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return schemaMgr.schemaName(cacheName);
     }
 
-    /** {@inheritDoc} */
-    @Override public void checkStatementStreamable(PreparedStatement nativeStmt) {
-        if (!GridSqlQueryParser.isStreamableInsertStatement(nativeStmt))
-            throw new IgniteSQLException("Streaming mode supports only INSERT commands without subqueries.",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    /** {@inheritDoc}
+     * @param schemaName
+     * @param sql*/
+    @Override public boolean isStreamableInsertStatement(String schemaName, String sql) {
+        PreparedStatement stmt = prepareNativeStatement(schemaName, sql);
+
+        return GridSqlQueryParser.isStreamableInsertStatement(stmt);
     }
 
     /** {@inheritDoc} */

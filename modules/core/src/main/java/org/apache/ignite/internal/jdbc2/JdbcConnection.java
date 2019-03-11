@@ -607,14 +607,9 @@ public class JdbcConnection implements Connection {
         else {
             GridQueryIndexing idx = ignite().context().query().getIndexing();
 
-            PreparedStatement nativeStmt = prepareNativeStatement(sql);
-
-            try {
-                idx.checkStatementStreamable(nativeStmt);
-            }
-            catch (IgniteSQLException e) {
-                throw e.toJdbcException();
-            }
+            if (!idx.isStreamableInsertStatement(schemaName(), sql))
+                throw new IgniteSQLException("Streaming mode supports only INSERT commands without subqueries.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION).toJdbcException();
 
             IgniteDataStreamer streamer = ignite().dataStreamer(cacheName);
 
@@ -627,7 +622,7 @@ public class JdbcConnection implements Connection {
             if (streamNodeParOps > 0)
                 streamer.perNodeParallelOperations(streamNodeParOps);
 
-            stmt = new JdbcStreamedPreparedStatement(this, sql, streamer, nativeStmt);
+            stmt = new JdbcStreamedPreparedStatement(this, sql, streamer, null);
         }
 
         statements.add(stmt);
