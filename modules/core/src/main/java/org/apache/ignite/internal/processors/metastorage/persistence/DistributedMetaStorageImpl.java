@@ -721,9 +721,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
-        if (isClient)
-            return;
-
         if (!discoData.hasJoiningNodeData())
             return;
 
