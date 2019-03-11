@@ -1548,6 +1548,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public long nextUpdateCounter() {
             long next = pCntr.next();
 
+            // TODO implement debug on counters.
             //log.info("TX: next=" + next + ", partId=" + partId + ", cntr=" + pCntr);
 
             return next;
@@ -1577,10 +1578,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return pCntr.get();
         }
 
+        /** {@inheritDoc} */
         @Override public PartitionUpdateCounter partUpdateCounter() {
             return pCntr;
         }
 
+        /** {@inheritDoc} */
         @Override public long reserve(long delta) {
             return pCntr.reserve(delta);
         }
@@ -2941,7 +2944,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         @Override public void resetUpdateCounters() {
-            pCntr.resetCounters();
+            pCntr.reset();
         }
 
         /**
