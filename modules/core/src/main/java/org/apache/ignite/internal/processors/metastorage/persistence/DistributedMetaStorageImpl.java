@@ -562,7 +562,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         synchronized (innerStateLock) {
             if (isClient) {
                 DistributedMetaStorageVersion verToSnd = startupExtras == null
-                    ? INITIAL_VERSION
+                    ? ver
                     : INITIAL_VERSION.nextVersion(startupExtras.deferredUpdates);
 
                 Serializable data = new DistributedMetaStorageJoiningNodeData(
