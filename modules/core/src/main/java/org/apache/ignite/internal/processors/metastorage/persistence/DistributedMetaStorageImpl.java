@@ -603,7 +603,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ClusterNode node,
         DiscoveryDataBag.JoiningNodeDiscoveryData discoData
     ) {
-        if (!isClient)
+        if (isClient)
             return null;
 
         synchronized (innerStateLock) {
