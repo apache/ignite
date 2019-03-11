@@ -377,22 +377,12 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> baselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled) {
-        throw new UnsupportedOperationException("Operation is not supported yet.");
-    }
-
-    /** {@inheritDoc} */
     @Override public long baselineAutoAdjustTimeout() {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) throws IgniteException {
-        throw new UnsupportedOperationException("Operation is not supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> baselineAutoAdjustTimeoutAsync(long baselineAutoAdjustTimeout) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 

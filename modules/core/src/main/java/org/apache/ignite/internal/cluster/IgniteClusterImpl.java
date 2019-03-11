@@ -613,8 +613,12 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         baselineAutoAdjustEnabledAsync(baselineAutoAdjustEnabled).get();
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> baselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled) {
+    /**
+     * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline. {@code True} If
+     * cluster in auto-adjust. {@code False} If cluster in manuale.
+     * @return Future for await operation completion.
+     */
+    public IgniteFuture<?> baselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled) {
         guard();
 
         try {
@@ -639,8 +643,12 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         baselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout).get();
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> baselineAutoAdjustTimeoutAsync(long baselineAutoAdjustTimeout) {
+    /**
+     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
+     * server topology change (node join/left/fail).
+     * @return Future for await operation completion.
+     */
+    public IgniteFuture<?> baselineAutoAdjustTimeoutAsync(long baselineAutoAdjustTimeout) {
         A.ensure(baselineAutoAdjustTimeout >= 0, "timeout should be positive or zero");
 
         guard();

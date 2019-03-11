@@ -545,13 +545,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteException;
 
     /**
-     * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline. {@code True} If
-     * cluster in auto-adjust. {@code False} If cluster in manuale.
-     * @return Future for await operation completion.
-     */
-    public IgniteFuture<?> baselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled);
-
-    /**
      * @return Value of time which we would wait before the actual topology change since last server topology change
      * (node join/left/fail).
      * @throws IgniteException If operation failed.
@@ -564,11 +557,4 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @throws IgniteException If failed.
      */
     public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) throws IgniteException;
-
-    /**
-     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
-     * server topology change (node join/left/fail).
-     * @return Future for await operation completion.
-     */
-    public IgniteFuture<?> baselineAutoAdjustTimeoutAsync(long baselineAutoAdjustTimeout);
 }
