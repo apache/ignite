@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -88,7 +89,7 @@ public class WalSizeProbe implements BenchmarkTotalsOnlyProbe {
 
             double segmentsCnt = estimatedSize / walSegmentSize;
 
-            points.add(new BenchmarkProbePoint(time, new double[] {segmentsCnt, estimatedSize}));
+            points.add(new BenchmarkProbePoint(TimeUnit.MILLISECONDS.toSeconds(time), new double[] {segmentsCnt, estimatedSize}));
 
             prevPtr = ptr;
         }
