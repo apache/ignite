@@ -64,7 +64,7 @@ public class DistributedBaselineConfiguration {
 
         long timeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
 
-        //It set default value locally only.
+        // It set default value locally only.
         baselineAutoAdjustEnabled.localUpdate(getBoolean(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, true));
         baselineAutoAdjustTimeout.localUpdate(timeout);
 

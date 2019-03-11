@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -29,7 +28,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
-import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 
@@ -95,7 +93,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
 
             if (isLocalNodeCoordinator(discoveryMgr)) {
                 exchangeManager.affinityReadyFuture(new AffinityTopologyVersion(discoEvt.topologyVersion()))
-                    .listen((IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>)future -> {
+                    .listen(future -> {
                         if (future.error() != null)
                             return;
 

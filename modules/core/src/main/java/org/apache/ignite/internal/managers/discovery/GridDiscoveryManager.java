@@ -782,12 +782,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                                 .collect(Collectors.toList());
 
                             if (!bltNodes.isEmpty()) {
-                                int newBltId = oldBlt == null ? 0 : oldBlt.id() + 1; // Bullshit
-
-                                log.info("--> newBltId=" + newBltId
-                                    + "\n    locJoinEvt=" + locJoinEvt
-                                    + "\n    oldState=" + oldState
-                                );
+                                int newBltId = oldBlt == null ? 0 : oldBlt.id() + 1; // Bullshit.
 
                                 BaselineTopology newBlt = BaselineTopology.build(bltNodes, newBltId);
 
