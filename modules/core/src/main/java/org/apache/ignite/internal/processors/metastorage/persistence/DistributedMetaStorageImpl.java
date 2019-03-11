@@ -112,6 +112,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private volatile CountDownLatch writeAvailable = new CountDownLatch(1);
 
     /**
+     * There's a data race for client nodes - {@link #onKernalStart(boolean)} might be invoked before
+     * {@link #collectJoiningNodeData(DiscoveryDataBag)}.
+     */
+    private volatile CountDownLatch joiningNodeDataCollected = new CountDownLatch(1);
+
+    /**
      * Version of distributed metastorage.
      */
     private volatile DistributedMetaStorageVersion ver;
@@ -231,6 +237,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        U.awaitQuiet(joiningNodeDataCollected);
+
         if (!isPersistenceEnabled) {
             if (!(bridge instanceof InMemoryCachedDistributedMetaStorageBridge)) {
                 synchronized (innerStateLock) {
@@ -558,36 +566,41 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        assert startupExtras != null;
+        try {
+            assert startupExtras != null;
 
-        DistributedMetaStorageVersion verToSnd = isClient
-            ? DistributedMetaStorageVersion.INITIAL_VERSION.nextVersion(startupExtras.deferredUpdates)
-            : bridge instanceof ReadOnlyDistributedMetaStorageBridge
+            DistributedMetaStorageVersion verToSnd = isClient
+                ? DistributedMetaStorageVersion.INITIAL_VERSION.nextVersion(startupExtras.deferredUpdates)
+                : bridge instanceof ReadOnlyDistributedMetaStorageBridge
                 ? ((ReadOnlyDistributedMetaStorageBridge)bridge).version()
                 : ver;
 
-        long clusterVer = startupExtras.verFromDiscoveryClusterData;
+            long clusterVer = startupExtras.verFromDiscoveryClusterData;
 
-        DistributedMetaStorageHistoryItem[] hist;
+            DistributedMetaStorageHistoryItem[] hist;
 
-        if (verToSnd.id <= clusterVer) // This is always true for client nodes.
-            hist = EMPTY_ARRAY;
-        else if (clusterVer + histCache.size() < verToSnd.id)
-            hist = histCache.toArray();
-        else
-            hist = Arrays.copyOfRange(histCache.toArray(), (int)(clusterVer + histCache.size() - verToSnd.id), histCache.size());
+            if (verToSnd.id <= clusterVer) // This is always true for client nodes.
+                hist = EMPTY_ARRAY;
+            else if (clusterVer + histCache.size() < verToSnd.id)
+                hist = histCache.toArray();
+            else
+                hist = Arrays.copyOfRange(histCache.toArray(), (int)(clusterVer + histCache.size() - verToSnd.id), histCache.size());
 
-        Serializable data = new DistributedMetaStorageJoiningNodeData(
-            getBaselineTopologyId(),
-            verToSnd,
-            hist
-        );
+            Serializable data = new DistributedMetaStorageJoiningNodeData(
+                getBaselineTopologyId(),
+                verToSnd,
+                hist
+            );
 
-        try {
-            dataBag.addJoiningNodeData(COMPONENT_ID, marshaller.marshal(data));
+            try {
+                dataBag.addJoiningNodeData(COMPONENT_ID, marshaller.marshal(data));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+        finally {
+            joiningNodeDataCollected.countDown();
         }
     }
 
@@ -878,6 +891,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 writeAvailable.countDown();
 
             writeAvailable = new CountDownLatch(1);
+
+            if (joiningNodeDataCollected.getCount() > 0)
+                joiningNodeDataCollected.countDown();
+
+            joiningNodeDataCollected = new CountDownLatch(1);
 
             ver = DistributedMetaStorageVersion.INITIAL_VERSION;
 
