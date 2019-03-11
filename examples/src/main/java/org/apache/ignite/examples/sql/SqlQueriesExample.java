@@ -150,9 +150,6 @@ public class SqlQueriesExample {
         print("People with salaries between 0 and 1000 (queried with SQL query): ",
             cache.query(new SqlFieldsQuery(sql).setArgs(0, 1000)).getAll());
 
-        // Use hidden column name to extract the value object.
-        sql = "select _val from Person where salary > ? and salary <= ?";
-
         print("People with salaries between 1000 and 2000 (queried with SQL query): ",
             cache.query(new SqlFieldsQuery(sql).setArgs(1000, 2000)).getAll());
     }
@@ -172,12 +169,6 @@ public class SqlQueriesExample {
         // Execute queries for find employees for different organizations.
         print("Following people are 'ApacheIgnite' employees: ",
             cache.query(new SqlFieldsQuery(joinSql).setArgs("ApacheIgnite")).getAll());
-
-        // Use hidden column name to extract the value object.
-        joinSql =
-            "select pers._val from Person as pers, \"" + ORG_CACHE + "\".Organization as org " +
-                "where pers.orgId = org.id " +
-                "and lower(org.name) = lower(?)";
 
         print("Following people are 'Other' employees: ",
             cache.query(new SqlFieldsQuery(joinSql).setArgs("Other")).getAll());
