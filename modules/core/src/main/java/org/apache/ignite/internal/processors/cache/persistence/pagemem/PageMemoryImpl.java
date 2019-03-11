@@ -330,7 +330,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         storeMgr = ctx.pageStore();
         walMgr = ctx.wal();
         encMgr = ctx.kernalContext().encryption();
-        encryptionDisabled = ctx.gridConfig().getEncryptionSpi() instanceof  NoopEncryptionSpi;
+        encryptionDisabled = ctx.gridConfig().getEncryptionSpi() instanceof NoopEncryptionSpi;
 
         assert storeMgr != null;
         assert walMgr != null;

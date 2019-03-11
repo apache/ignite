@@ -57,7 +57,7 @@ class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessa
 
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
-        return new DistributedMetaStorageCasAckMessage(requestId(), isActive(), matches);
+        return new DistributedMetaStorageCasAckMessage(requestId(), errorMessage(), matches);
     }
 
     /** {@inheritDoc} */

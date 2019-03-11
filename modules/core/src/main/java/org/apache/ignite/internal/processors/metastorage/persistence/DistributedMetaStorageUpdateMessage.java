@@ -47,7 +47,7 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
     private final byte[] valBytes;
 
     /** */
-    private boolean active = true;
+    private String errorMsg;
 
     /** */
     public DistributedMetaStorageUpdateMessage(UUID reqId, String key, byte[] valBytes) {
@@ -82,18 +82,18 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
     }
 
     /** */
-    public void setActive(boolean active) {
-        this.active = active;
+    public void errorMessage(String errorMsg) {
+        this.errorMsg = errorMsg;
     }
 
     /** */
-    protected boolean isActive() {
-        return active;
+    protected String errorMessage() {
+        return errorMsg;
     }
 
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
-        return new DistributedMetaStorageUpdateAckMessage(reqId, active);
+        return new DistributedMetaStorageUpdateAckMessage(reqId, errorMsg);
     }
 
     /** {@inheritDoc} */

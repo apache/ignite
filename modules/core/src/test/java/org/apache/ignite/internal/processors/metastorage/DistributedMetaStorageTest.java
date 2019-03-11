@@ -173,21 +173,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testListenersOnRemove() throws Exception {
         int cnt = 4;
 
-        for (int i = 0; i < cnt; i++) {
-            System.out.println("--> Starting node " + i);
-
-            startGrid(i);
-
-            System.out.println("--> Started node " + i);
-
-            for (int j = 0; j <= i; j++)
-                System.out.println(j + " --> " + grid(j).context().state().clusterState());
-
-            doSleep(200);
-        }
-
-
-//        System.exit(1);
+        startGrids(cnt);
 
         grid(0).cluster().active(true);
 

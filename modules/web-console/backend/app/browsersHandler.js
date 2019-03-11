@@ -111,7 +111,7 @@ module.exports = {
                     .then((agentSocks) => {
                         const stat = _.reduce(agentSocks, (acc, agentSock) => {
                             acc.count += 1;
-                            acc.hasDemo |= _.get(agentSock, 'demo.enabled');
+                            acc.hasDemo = acc.hasDemo || _.get(agentSock, 'demo.enabled');
 
                             if (agentSock.cluster)
                                 acc.clusters.push(agentSock.cluster);
