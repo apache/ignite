@@ -439,7 +439,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         int minorVer = 1;
 
-        if (initiallyActive && persistenceEnabled()) {
+        if (initiallyActive) {
             ignite(0).cluster().active(true);
 
             minorVer++;
