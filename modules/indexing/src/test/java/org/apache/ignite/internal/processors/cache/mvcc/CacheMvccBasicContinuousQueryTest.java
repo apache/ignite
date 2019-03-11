@@ -54,7 +54,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -255,7 +254,6 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /**
      * @throws Exception  If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10768")
     @Test
     public void testUpdateCountersGapClosedSimplePartitioned() throws Exception {
         checkUpdateCountersGapIsProcessedSimple(CacheMode.PARTITIONED);
