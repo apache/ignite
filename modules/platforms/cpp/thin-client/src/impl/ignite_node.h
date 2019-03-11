@@ -122,7 +122,7 @@ namespace ignite
                  */
                 bool IsLegacy() const
                 {
-                    return guid.GetMostSignificantBits() != 0 || guid.GetLeastSignificantBits() != 0;
+                    return guid.GetMostSignificantBits() == 0 && guid.GetLeastSignificantBits() == 0;
                 }
 
                 /**

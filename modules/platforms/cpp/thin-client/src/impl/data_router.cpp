@@ -89,8 +89,6 @@ namespace ignite
                         {
                             const IgniteNode& newNode = channel.Get()->GetNode();
 
-                            std::cout << (newNode.IsLegacy() ? "Legacy" : "New") << std::endl;
-
                             if (newNode.IsLegacy())
                             {
                                 newLegacyChannels.push_back(channel);
