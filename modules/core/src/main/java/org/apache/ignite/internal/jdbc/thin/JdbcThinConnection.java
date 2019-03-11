@@ -50,6 +50,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -63,7 +64,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -148,7 +148,7 @@ public class JdbcThinConnection implements Connection {
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
-        schema = normalizeSchema(connProps.getSchema());
+        schema = JdbcUtils.normalizeSchema(connProps.getSchema());
 
         cliIo = new JdbcThinTcpIo(connProps);
 
@@ -689,7 +689,7 @@ public class JdbcThinConnection implements Connection {
     @Override public void setSchema(String schema) throws SQLException {
         ensureNotClosed();
 
-        this.schema = normalizeSchema(schema);
+        this.schema = JdbcUtils.normalizeSchema(schema);
     }
 
     /** {@inheritDoc} */
@@ -887,26 +887,6 @@ public class JdbcThinConnection implements Connection {
         }
 
         timer.cancel();
-    }
-
-    /**
-     * Normalize schema name. If it is quoted - unquote and leave as is, otherwise - convert to upper case.
-     *
-     * @param schemaName Schema name.
-     * @return Normalized schema name.
-     */
-    private static String normalizeSchema(String schemaName) {
-        if (F.isEmpty(schemaName))
-            return QueryUtils.DFLT_SCHEMA;
-
-        String res;
-
-        if (schemaName.startsWith("\"") && schemaName.endsWith("\""))
-            res = schemaName.substring(1, schemaName.length() - 1);
-        else
-            res = schemaName.toUpperCase();
-
-        return res;
     }
 
     /**
