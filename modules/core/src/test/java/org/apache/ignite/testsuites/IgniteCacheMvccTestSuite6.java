@@ -84,6 +84,9 @@ public class IgniteCacheMvccTestSuite6 {
         ignoredTests.add(CacheParallelStartTest.class);
         ignoredTests.add(IgniteCache150ClientsTest.class);
 
+        // Mixed local/dht tx test.
+        ignoredTests.add(TxLocalDhtMixedCacheModesTest.class);
+
         // Skip tests that has Mvcc clones.
         ignoredTests.add(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class); // See PartitionedMvccTxPessimisticCacheGetsDistributionTest.
         ignoredTests.add(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class); //See ReplicatedMvccTxPessimisticCacheGetsDistributionTest
@@ -93,8 +96,6 @@ public class IgniteCacheMvccTestSuite6 {
         // Add mvcc versions for skipped tests.
         suite.add(PartitionedMvccTxPessimisticCacheGetsDistributionTest.class);
         suite.add(ReplicatedMvccTxPessimisticCacheGetsDistributionTest.class);
-
-        suite.add(TxLocalDhtMixedCacheModesTest.class);
 
         return suite;
     }
