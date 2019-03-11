@@ -18,8 +18,8 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
-import {timer, merge, defer, of, EMPTY} from 'rxjs';
-import {tap, switchMap, exhaustMap, take, pluck, distinctUntilChanged, filter, map, catchError} from 'rxjs/operators';
+import {Subject, defer, from, of, merge, timer, EMPTY} from 'rxjs';
+import {catchError, distinctUntilChanged, expand, exhaustMap, filter, finalize, first, map, mergeMap, pluck, switchMap, takeUntil, take, tap} from 'rxjs/operators';
 
 import {CSV} from 'app/services/CSV';
 
@@ -33,6 +33,7 @@ import {default as MessagesServiceFactory} from 'app/services/Messages.service';
 import {default as LegacyConfirmServiceFactory} from 'app/services/Confirm.service';
 import {default as InputDialog} from 'app/components/input-dialog/input-dialog.service';
 import {QueryActions} from './components/query-actions-button/controller';
+import {CancellationError} from 'app/errors/CancellationError';
 
 // Time line X axis descriptor.
 const TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
@@ -81,6 +82,9 @@ class Paragraph {
         self.localQueryMode = false;
         self.csvIsPreparing = false;
         self.scanningInProgress = false;
+
+        self.cancelQuerySubject = new Subject();
+        self.cancelExportSubject = new Subject();
 
         _.assign(this, paragraph);
 
@@ -148,6 +152,13 @@ class Paragraph {
             message: ''
         }});
 
+        this.showLoading = (enable) => {
+            if (this.qryType === 'scan')
+                this.scanningInProgress = enable;
+
+            this.loading = enable;
+        };
+
         this.setError = (err) => {
             this.error.root = err;
             this.error.message = errorParser.extractMessage(err);
@@ -208,7 +219,7 @@ class Paragraph {
     }
 
     scanExplain() {
-        return this.queryExecuted() && this.queryArgs.type !== 'QUERY';
+        return this.queryExecuted() && (this.qryType === 'scan' || this.queryArgs.query.startsWith('EXPLAIN '));
     }
 
     timeLineSupported() {
@@ -251,20 +262,40 @@ class Paragraph {
 
         this.cancelRefresh($interval);
     }
+
+    toJSON() {
+        return {
+            name: this.name,
+            query: this.query,
+            result: this.result,
+            pageSize: this.pageSize,
+            timeLineSpan: this.timeLineSpan,
+            maxPages: this.maxPages,
+            cacheName: this.cacheName,
+            useAsDefaultSchema: this.useAsDefaultSchema,
+            chartsOptions: this.chartsOptions,
+            rate: this.rate,
+            qryType: this.qryType,
+            nonCollocatedJoins: this.nonCollocatedJoins,
+            enforceJoinOrder: this.enforceJoinOrder,
+            lazy: this.lazy,
+            collocated: this.collocated
+        };
+    }
 }
 
 // Controller for SQL notebook screen.
 export class NotebookCtrl {
-    static $inject = ['IgniteInput', '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', '$window', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo'];
+    static $inject = ['IgniteInput', '$rootScope', '$scope', '$http', '$q', '$timeout', '$transitions', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', '$window', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo'];
 
     /**
      * @param {CSV} CSV
      */
-    constructor(private IgniteInput: InputDialog, $root, private $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo) {
+    constructor(private IgniteInput: InputDialog, $root, private $scope, $http, $q, $timeout, $transitions, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo) {
         const $ctrl = this;
 
         this.CSV = CSV;
-        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser, DemoInfo });
+        Object.assign(this, { $root, $scope, $http, $q, $timeout, $transitions, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser, DemoInfo });
 
         // Define template urls.
         $ctrl.paragraphRateTemplateUrl = paragraphRateTemplateUrl;
@@ -278,12 +309,10 @@ export class NotebookCtrl {
             paragraph.cancelRefresh($interval);
         };
 
-        const _stopTopologyRefresh = () => {
+        this._stopTopologyRefresh = () => {
             if ($scope.notebook && $scope.notebook.paragraphs)
                 $scope.notebook.paragraphs.forEach((paragraph) => _tryStopRefresh(paragraph));
         };
-
-        $scope.$on('$stateChangeStart', _stopTopologyRefresh);
 
         $scope.caches = [];
 
@@ -1235,46 +1264,99 @@ export class NotebookCtrl {
             _rebuildColumns(paragraph);
         };
 
-        const _showLoading = (paragraph, enable) => {
-            if (paragraph.qryType === 'scan')
-                paragraph.scanningInProgress = enable;
-
-            paragraph.loading = enable;
+        /**
+         * Execute query and get first result page.
+         *
+         * @param qryType Query type. 'query' or `scan`.
+         * @param qryArg Argument with query properties.
+         * @param {(res) => any} onQueryStarted Action to execute when query ID is received.
+         * @return {Observable<VisorQueryResult>} Observable with first query result page.
+         */
+        const _executeQuery0 = (qryType, qryArg, onQueryStarted: (res) => any = () => {}) => {
+            return from(qryType === 'scan' ? agentMgr.queryScan(qryArg) : agentMgr.querySql(qryArg)).pipe(
+                tap((res) => {
+                    onQueryStarted(res);
+                    $scope.$applyAsync();
+                }),
+                expand((res) => timer(100, 500).pipe(
+                    exhaustMap(() => agentMgr.queryFetchFistsPage(qryArg.nid, res.queryId, qryArg.pageSize)),
+                    filter((res) => !_.isNil(res.rows))
+                )),
+                filter((res) => !_.isNil(res.rows)),
+                first()
+            );
         };
 
-        const _fetchQueryResult = (paragraph, clearChart, res, qryArg) => {
-            if (!_.isNil(res.rows)) {
-                _processQueryResult(paragraph, clearChart, res);
-                _tryStartRefresh(paragraph);
-
-                $scope.$applyAsync();
-
-                return;
-            }
-
-            const subscription = timer(100, 500).pipe(
-                exhaustMap(() => agentMgr.queryFetchFistsPage(qryArg.nid, res.queryId, qryArg.pageSize)),
-                filter((res) => !_.isNil(res.rows)),
-                take(1),
-                map((res) => _fetchQueryResult(paragraph, false, res, qryArg)),
+        /**
+         * Execute query with old query clearing and showing of query result.
+         *
+         * @param paragraph Query paragraph.
+         * @param qryArg Argument with query properties.
+         * @param {(res) => any} onQueryStarted Action to execute when query ID is received.
+         * @param {(res) => any} onQueryFinished Action to execute when first query result page is received.
+         * @param {(err) => any} onError Action to execute when error occured.
+         * @return {Observable<VisorQueryResult>} Observable with first query result page.
+         */
+        const _executeQuery = (
+            paragraph,
+            qryArg,
+            onQueryStarted: (res) => any = () => {},
+            onQueryFinished: (res) => any = () => {},
+            onError: (err) => any = () => {}
+        ) => {
+            return from(_closeOldQuery(paragraph)).pipe(
+                switchMap(() => _executeQuery0(paragraph.qryType, qryArg, onQueryStarted)),
+                tap((res) => {
+                    onQueryFinished(res);
+                    $scope.$applyAsync();
+                }),
+                takeUntil(paragraph.cancelQuerySubject),
                 catchError((err) => {
-                    if (paragraph.subscription) {
-                        paragraph.subscription.unsubscribe();
-                        paragraph.setError(err);
-
-                        _showLoading(paragraph, false);
-                        delete paragraph.subscription;
-
-                        $scope.$applyAsync();
-                    }
+                    onError(err);
+                    $scope.$applyAsync();
 
                     return of(err);
                 })
-            ).subscribe();
+            );
+        };
 
-            Object.defineProperty(paragraph, 'subscription', {value: subscription, configurable: true});
+        /**
+         * Execute query and get all query results.
+         *
+         * @param paragraph Query paragraph.
+         * @param qryArg Argument with query properties.
+         * @param {(res) => any} onQueryStarted Action to execute when query ID is received.
+         * @param {(res) => any} onQueryFinished Action to execute when first query result page is received.
+         * @param {(err) => any} onError Action to execute when error occured.
+         * @return {Observable<any>} Observable with full query result.
+         */
+        const _exportQueryAll = (
+            paragraph,
+            qryArg,
+            onQueryStarted: (res) => any = () => {},
+            onQueryFinished: (res) => any = () => {},
+            onError: (err) => any = () => {}
+        ) => {
+            return from(_closeOldExport(paragraph)).pipe(
+                switchMap(() => _executeQuery0(paragraph.qryType, qryArg, onQueryStarted)),
+                expand((acc) => {
+                    return from(agentMgr.queryNextPage(acc.responseNodeId, acc.queryId, qryArg.pageSize)
+                        .then((res) => {
+                            acc.rows = acc.rows.concat(res.rows);
+                            acc.hasMore = res.hasMore;
 
-            return subscription;
+                            return acc;
+                        }));
+                }),
+                first((acc) => !acc.hasMore),
+                tap(onQueryFinished),
+                takeUntil(paragraph.cancelExportSubject),
+                catchError((err) => {
+                    onError(err);
+
+                    return of(err);
+                })
+            );
         };
 
         /**
@@ -1286,11 +1368,6 @@ export class NotebookCtrl {
         const _processQueryResult = (paragraph, clearChart, res) => {
             const prevKeyCols = paragraph.chartKeyCols;
             const prevValCols = paragraph.chartValCols;
-
-            if (paragraph.subscription) {
-                paragraph.subscription.unsubscribe();
-                delete paragraph.subscription;
-            }
 
             if (!_.eq(paragraph.meta, res.columns)) {
                 paragraph.meta = [];
@@ -1362,7 +1439,7 @@ export class NotebookCtrl {
             while (chartHistory.length > HISTORY_LENGTH)
                 chartHistory.shift();
 
-            _showLoading(paragraph, false);
+            paragraph.showLoading(false);
 
             if (_.isNil(paragraph.result) || paragraph.result === 'none' || paragraph.scanExplain())
                 paragraph.result = 'table';
@@ -1382,6 +1459,11 @@ export class NotebookCtrl {
             }
         };
 
+        const _fetchQueryResult = (paragraph, clearChart, res) => {
+            _processQueryResult(paragraph, clearChart, res);
+            _tryStartRefresh(paragraph);
+        };
+
         const _closeOldQuery = (paragraph) => {
             const nid = paragraph.resNodeId;
 
@@ -1395,25 +1477,27 @@ export class NotebookCtrl {
             return $q.when();
         };
 
-        $scope.cancelQuery = (paragraph) => {
-            if (paragraph.subscription) {
-                paragraph.subscription.unsubscribe();
-                delete paragraph.subscription;
+        const _closeOldExport = (paragraph) => {
+            const nid = paragraph.exportNodeId;
+
+            if (paragraph.exportId) {
+                const exportId = paragraph.exportId;
+                delete paragraph.exportId;
+
+                return agentMgr.queryClose(nid, exportId);
             }
 
-            _showLoading(paragraph, false);
+            return $q.when();
+        };
+
+        $scope.cancelQuery = (paragraph) => {
+            paragraph.cancelQuerySubject.next(true);
+
             this.$scope.stopRefresh(paragraph);
 
             _closeOldQuery(paragraph)
-                .then(() => _showLoading(paragraph, false))
-                .catch((err) => {
-                    _showLoading(paragraph, false);
-                    paragraph.setError(err);
-                });
-        };
-
-        $scope.cancelQueryAvailable = (paragraph) => {
-            return !!paragraph.subscription;
+                .catch((err) => paragraph.setError(err))
+                .finally(() => paragraph.showLoading(false));
         };
 
         /**
@@ -1466,10 +1550,11 @@ export class NotebookCtrl {
         const _executeRefresh = (paragraph) => {
             const args = paragraph.queryArgs;
 
-            agentMgr.awaitCluster()
-                .then(() => _closeOldQuery(paragraph))
-                .then(() => args.localNid || _chooseNode(args.cacheName, false))
-                .then((nid) => {
+            from(agentMgr.awaitCluster()).pipe(
+                switchMap(() => args.localNid ? of(args.localNid) : from(_chooseNode(args.cacheName, false))),
+                switchMap((nid) => {
+                    paragraph.showLoading(true);
+
                     const qryArg = {
                         nid,
                         cacheName: args.cacheName,
@@ -1483,16 +1568,24 @@ export class NotebookCtrl {
                         collocated: args.collocated
                     };
 
-                    return agentMgr.querySql(qryArg)
-                        .then((res) => _fetchQueryResult(paragraph, false, res, qryArg));
-                })
-                .catch((err) => paragraph.setError(err));
+                    return _executeQuery(
+                        paragraph,
+                        qryArg,
+                        (res) => _initQueryResult(paragraph, res),
+                        (res) => _fetchQueryResult(paragraph, false, res),
+                        (err) => {
+                            paragraph.setError(err);
+                            paragraph.ace && paragraph.ace.focus();
+                            $scope.stopRefresh(paragraph);
+                        }
+                    );
+                }),
+                finalize(() => paragraph.showLoading(false))
+            ).toPromise();
         };
 
         const _tryStartRefresh = function(paragraph) {
-            _tryStopRefresh(paragraph);
-
-            if (_.get(paragraph, 'rate.installed') && paragraph.queryExecuted()) {
+            if (_.get(paragraph, 'rate.installed') && paragraph.queryExecuted() && paragraph.nonRefresh()) {
                 $scope.chartAcceptKeyColumn(paragraph, TIME_LINE);
 
                 const delay = paragraph.rate.value * paragraph.rate.unit;
@@ -1534,23 +1627,34 @@ export class NotebookCtrl {
             paragraph.resNodeId = res.responseNodeId;
             paragraph.queryId = res.queryId;
 
-            paragraph.rows = [];
-            paragraph.gridOptions.adjustHeight(paragraph.rows.length);
+            if (paragraph.nonRefresh()) {
+                paragraph.rows = [];
 
-            paragraph.meta = [];
-            paragraph.setError({message: ''});
+                paragraph.meta = [];
+                paragraph.setError({message: ''});
+            }
 
             paragraph.hasNext = false;
         };
 
+        const _initExportResult = (paragraph, res) => {
+            paragraph.exportNodeId = res.responseNodeId;
+            paragraph.exportId = res.queryId;
+        };
+
         $scope.execute = (paragraph, local = false) => {
+            if (!$scope.queryAvailable(paragraph))
+                return;
+
             const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
             const lazy = !!paragraph.lazy;
             const collocated = !!paragraph.collocated;
 
-            $scope.queryAvailable(paragraph) && _chooseNode(paragraph.cacheName, local)
-                .then((nid) => {
+            _cancelRefresh(paragraph);
+
+            from(_chooseNode(paragraph.cacheName, local)).pipe(
+                switchMap((nid) => {
                     // If we are executing only selected part of query then Notebook shouldn't be saved.
                     if (!paragraph.partialQuery)
                         Notebook.save($scope.notebook).catch(Messages.showError);
@@ -1558,66 +1662,61 @@ export class NotebookCtrl {
                     paragraph.localQueryMode = local;
                     paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
 
-                    _showLoading(paragraph, true);
+                    paragraph.showLoading(true);
 
-                    return _closeOldQuery(paragraph)
-                        .then(() => {
-                            const query = paragraph.partialQuery || paragraph.query;
+                    const query = paragraph.partialQuery || paragraph.query;
 
-                            const args = paragraph.queryArgs = {
-                                type: 'QUERY',
-                                cacheName: $scope.cacheNameForSql(paragraph),
-                                query,
-                                pageSize: paragraph.pageSize,
-                                maxPages: paragraph.maxPages,
-                                nonCollocatedJoins,
-                                enforceJoinOrder,
-                                localNid: local ? nid : null,
-                                lazy,
-                                collocated
-                            };
+                    const args = paragraph.queryArgs = {
+                        cacheName: $scope.cacheNameForSql(paragraph),
+                        query,
+                        pageSize: paragraph.pageSize,
+                        maxPages: paragraph.maxPages,
+                        nonCollocatedJoins,
+                        enforceJoinOrder,
+                        localNid: local ? nid : null,
+                        lazy,
+                        collocated
+                    };
 
-                            ActivitiesData.post({ group: 'sql', action: '/queries/execute' });
+                    ActivitiesData.post({ group: 'sql', action: '/queries/execute' });
 
-                            const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : query;
-                            const qryArg = {
-                                nid,
-                                cacheName: args.cacheName,
-                                query: qry,
-                                nonCollocatedJoins,
-                                enforceJoinOrder,
-                                replicatedOnly: false,
-                                local,
-                                pageSize: args.pageSize,
-                                lazy,
-                                collocated
-                            };
+                    const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : query;
+                    const qryArg = {
+                        nid,
+                        cacheName: args.cacheName,
+                        query: qry,
+                        nonCollocatedJoins,
+                        enforceJoinOrder,
+                        replicatedOnly: false,
+                        local,
+                        pageSize: args.pageSize,
+                        lazy,
+                        collocated
+                    };
 
-                            return agentMgr.querySql(qryArg)
-                                .then((res) => {
-                                    _initQueryResult(paragraph, res);
-
-                                    return _fetchQueryResult(paragraph, true, res, qryArg);
-                                });
-                        })
-                        .catch((err) => {
+                    return _executeQuery(
+                        paragraph,
+                        qryArg,
+                        (res) => _initQueryResult(paragraph, res),
+                        (res) => _fetchQueryResult(paragraph, true, res),
+                        (err) => {
                             paragraph.setError(err);
-
-                            _showLoading(paragraph, false);
-
+                            paragraph.ace && paragraph.ace.focus();
                             $scope.stopRefresh(paragraph);
 
                             Messages.showError(err);
-                        })
-                        .then(() => paragraph.ace.focus());
-                });
+                        }
+                    );
+                }),
+                finalize(() => paragraph.showLoading(false))
+            ).toPromise();
         };
 
         const _cancelRefresh = (paragraph) => {
             if (paragraph.rate && paragraph.rate.stopTime) {
                 delete paragraph.queryArgs;
 
-                paragraph.rate.installed = false;
+                _.set(paragraph, 'rate.installed', false);
 
                 $interval.cancel(paragraph.rate.stopTime);
 
@@ -1626,25 +1725,23 @@ export class NotebookCtrl {
         };
 
         $scope.explain = (paragraph) => {
+            if (!$scope.queryAvailable(paragraph))
+                return;
+
             const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
             const collocated = !!paragraph.collocated;
-
-            if (!$scope.queryAvailable(paragraph))
-                return;
 
             if (!paragraph.partialQuery)
                 Notebook.save($scope.notebook).catch(Messages.showError);
 
             _cancelRefresh(paragraph);
 
-            _showLoading(paragraph, true);
+            paragraph.showLoading(true);
 
-            _closeOldQuery(paragraph)
-                .then(() => _chooseNode(paragraph.cacheName, false))
-                .then((nid) => {
+            from(_chooseNode(paragraph.cacheName, false)).pipe(
+                switchMap((nid) => {
                     const args = paragraph.queryArgs = {
-                        type: 'EXPLAIN',
                         cacheName: $scope.cacheNameForSql(paragraph),
                         query: 'EXPLAIN ' + (paragraph.partialQuery || paragraph.query),
                         pageSize: paragraph.pageSize
@@ -1664,76 +1761,64 @@ export class NotebookCtrl {
                         lazy: false, collocated
                     };
 
-                    return agentMgr.querySql(qryArg)
-                        .then((res) => {
-                            _initQueryResult(paragraph, res);
-
-                            return _fetchQueryResult(paragraph, true, res, qryArg);
-                        });
-                })
-                .catch((err) => {
-                    paragraph.setError(err);
-
-                    _showLoading(paragraph, false);
-                })
-                .then(() => paragraph.ace.focus());
+                    return _executeQuery(
+                        paragraph,
+                        qryArg,
+                        (res) => _initQueryResult(paragraph, res),
+                        (res) => _fetchQueryResult(paragraph, true, res),
+                        (err) => {
+                            paragraph.setError(err);
+                            paragraph.ace && paragraph.ace.focus();
+                        }
+                    );
+                }),
+                finalize(() => paragraph.showLoading(false))
+            ).toPromise();
         };
 
         $scope.scan = (paragraph, local = false) => {
+            if (!$scope.scanAvailable(paragraph))
+                return;
+
             const cacheName = paragraph.cacheName;
             const caseSensitive = !!paragraph.caseSensitive;
             const filter = paragraph.filter;
             const pageSize = paragraph.pageSize;
 
-            $scope.scanAvailable(paragraph) && _chooseNode(cacheName, local)
-                .then((nid) => {
+            from(_chooseNode(cacheName, local)).pipe(
+                switchMap((nid) => {
                     paragraph.localQueryMode = local;
 
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
 
-                    _cancelRefresh(paragraph);
+                    paragraph.showLoading(true);
 
-                    _showLoading(paragraph, true);
+                    const qryArg = paragraph.queryArgs = {
+                        cacheName,
+                        filter,
+                        regEx: false,
+                        caseSensitive,
+                        near: false,
+                        pageSize,
+                        localNid: local ? nid : null
+                    };
 
-                    _closeOldQuery(paragraph)
-                        .then(() => {
-                            paragraph.queryArgs = {
-                                type: 'SCAN',
-                                cacheName,
-                                filter,
-                                regEx: false,
-                                caseSensitive,
-                                near: false,
-                                pageSize,
-                                localNid: local ? nid : null
-                            };
+                    qryArg.nid = nid;
+                    qryArg.local = local;
 
-                            ActivitiesData.post({ group: 'sql', action: '/queries/scan' });
+                    ActivitiesData.post({ group: 'sql', action: '/queries/scan' });
 
-                            const qryArg = {
-                                nid,
-                                cacheName,
-                                filter,
-                                regEx: false,
-                                caseSensitive,
-                                near: false,
-                                local,
-                                pageSize
-                            };
-
-                            return agentMgr.queryScan(qryArg).then((res) => {
-                                _initQueryResult(paragraph, res);
-
-                                return _fetchQueryResult(paragraph, true, res, qryArg);
-                            });
-                        })
-                        .catch((err) => {
-                            paragraph.setError(err);
-
-                            _showLoading(paragraph, false);
-                        });
-                });
+                    return _executeQuery(
+                        paragraph,
+                        qryArg,
+                        (res) => _initQueryResult(paragraph, res),
+                        (res) => _fetchQueryResult(paragraph, true, res),
+                        (err) => paragraph.setError(err)
+                    );
+                }),
+                finalize(() => paragraph.showLoading(false))
+            ).toPromise();
         };
 
         function _updatePieChartsWithData(paragraph, newDatum) {
@@ -1753,41 +1838,41 @@ export class NotebookCtrl {
             });
         }
 
+        const _processQueryNextPage = (paragraph, res) => {
+            paragraph.page++;
+
+            paragraph.total += paragraph.rows.length;
+
+            paragraph.duration = res.duration;
+
+            paragraph.rows = res.rows;
+
+            if (paragraph.chart()) {
+                if (paragraph.result === 'pie')
+                    _updatePieChartsWithData(paragraph, _pieChartDatum(paragraph));
+                else
+                    _updateChartsWithData(paragraph, _chartDatum(paragraph));
+            }
+
+            paragraph.gridOptions.adjustHeight(paragraph.rows.length);
+
+            paragraph.showLoading(false);
+
+            if (!res.hasMore)
+                delete paragraph.queryId;
+        };
+
         $scope.nextPage = (paragraph) => {
-            _showLoading(paragraph, true);
+            paragraph.showLoading(true);
 
             paragraph.queryArgs.pageSize = paragraph.pageSize;
 
             agentMgr.queryNextPage(paragraph.resNodeId, paragraph.queryId, paragraph.pageSize)
-                .then((res) => {
-                    paragraph.page++;
-
-                    paragraph.total += paragraph.rows.length;
-
-                    paragraph.duration = res.duration;
-
-                    paragraph.rows = res.rows;
-
-                    if (paragraph.chart()) {
-                        if (paragraph.result === 'pie')
-                            _updatePieChartsWithData(paragraph, _pieChartDatum(paragraph));
-                        else
-                            _updateChartsWithData(paragraph, _chartDatum(paragraph));
-                    }
-
-                    paragraph.gridOptions.adjustHeight(paragraph.rows.length);
-
-                    _showLoading(paragraph, false);
-
-                    if (!res.hasMore)
-                        delete paragraph.queryId;
-                })
+                .then((res) => _processQueryNextPage(paragraph, res))
                 .catch((err) => {
                     paragraph.setError(err);
-
-                    _showLoading(paragraph, false);
-                })
-                .then(() => paragraph.ace && paragraph.ace.focus());
+                    paragraph.ace && paragraph.ace.focus();
+                });
         };
 
         const _export = (fileName, columnDefs, meta, rows, toClipBoard = false) => {
@@ -1846,7 +1931,7 @@ export class NotebookCtrl {
         const exportFileName = (paragraph, all) => {
             const args = paragraph.queryArgs;
 
-            if (args.type === 'SCAN')
+            if (paragraph.qryType === 'scan')
                 return `export-scan-${args.cacheName}-${paragraph.name}${all ? '-all' : ''}.csv`;
 
             return `export-query-${paragraph.name}${all ? '-all' : ''}.csv`;
@@ -1867,39 +1952,26 @@ export class NotebookCtrl {
         };
 
         $scope.exportCsvAll = (paragraph) => {
-            paragraph.csvIsPreparing = true;
-
             const args = paragraph.queryArgs;
 
-            return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
-                .then((nid) => args.type === 'SCAN'
-                    ? agentMgr.queryScanGetAll({
-                        nid,
-                        cacheName: args.cacheName,
-                        filter: args.query,
-                        regEx: !!args.regEx,
-                        caseSensitive: !!args.caseSensitive,
-                        near: !!args.near,
-                        local: !!args.localNid
-                    })
-                    : agentMgr.querySqlGetAll({
-                        nid,
-                        cacheName: args.cacheName,
-                        query: args.query,
-                        nonCollocatedJoins: !!args.nonCollocatedJoins,
-                        enforceJoinOrder: !!args.enforceJoinOrder,
-                        replicatedOnly: false,
-                        local: !!args.localNid,
-                        lazy: !!args.lazy,
-                        collocated: !!args.collocated
-                    }))
-                .then((res) => _export(exportFileName(paragraph, true), paragraph.gridOptions.columnDefs, res.columns, res.rows))
-                .catch(Messages.showError)
-                .then(() => {
-                    paragraph.csvIsPreparing = false;
+            paragraph.cancelExportSubject.next(true);
 
-                    return paragraph.ace && paragraph.ace.focus();
-                });
+            paragraph.csvIsPreparing = true;
+
+            return (args.localNid ? of(args.localNid) : from(_chooseNode(args.cacheName, false))).pipe(
+                map((nid) => _.assign({}, args, {nid, pageSize: 1024, local: !!args.localNid, replicatedOnly: false})),
+                switchMap((arg) => _exportQueryAll(
+                    paragraph,
+                    arg,
+                    (res) => _initExportResult(paragraph, res),
+                    (res) => _export(exportFileName(paragraph, true), paragraph.gridOptions.columnDefs, res.columns, res.rows),
+                    (err) => {
+                        Messages.showError(err);
+                        return of(err);
+                    }
+                )),
+                finalize(() => paragraph.csvIsPreparing = false)
+            ).toPromise();
         };
 
         // $scope.exportPdfAll = function(paragraph) {
@@ -1926,6 +1998,8 @@ export class NotebookCtrl {
         };
 
         $scope.startRefresh = function(paragraph, value, unit) {
+            $scope.stopRefresh(paragraph);
+
             paragraph.rate.value = value;
             paragraph.rate.unit = unit;
             paragraph.rate.installed = true;
@@ -1935,7 +2009,7 @@ export class NotebookCtrl {
         };
 
         $scope.stopRefresh = function(paragraph) {
-            paragraph.rate.installed = false;
+            _.set(paragraph, 'rate.installed', false);
 
             _tryStopRefresh(paragraph);
         };
@@ -2024,7 +2098,7 @@ export class NotebookCtrl {
             if (!_.isNil(paragraph)) {
                 const scope = $scope.$new();
 
-                if (paragraph.queryArgs.type === 'SCAN') {
+                if (paragraph.qryType === 'scan') {
                     scope.title = 'SCAN query';
 
                     const filter = paragraph.queryArgs.filter;
@@ -2034,7 +2108,7 @@ export class NotebookCtrl {
                     else
                         scope.content = [`SCAN query for cache: <b>${maskCacheName(paragraph.queryArgs.cacheName, true)}</b> with filter: <b>${filter}</b>`];
                 }
-                else if (paragraph.queryArgs.query .startsWith('EXPLAIN ')) {
+                else if (paragraph.queryArgs.query.startsWith('EXPLAIN ')) {
                     scope.title = 'Explain query';
                     scope.content = paragraph.queryArgs.query.split(/\r?\n/);
                 }
@@ -2078,21 +2152,77 @@ export class NotebookCtrl {
             }
         };
 
-        $window.addEventListener('beforeunload', () => {
-            this._closeOpenedQueries(this.$scope.notebook.paragraphs);
+        this.offTransitions = $transitions.onBefore({from: 'base.sql.notebook'}, ($transition$) => {
+            const options = $transition$.options();
+
+            // Skip query closing in case of auto redirection on state change.
+            if (options.redirectedFrom)
+                return true;
+
+            return this.closeOpenedQueries();
         });
+
+        $window.addEventListener('beforeunload', this.closeOpenedQueries);
+
+        this.onClusterSwitchLnr = () => {
+            const paragraphs = _.get(this, '$scope.notebook.paragraphs');
+
+            if (this._hasRunningQueries(paragraphs)) {
+                try {
+                    return Confirm.confirm('You have running queries. Are you sure you want to cancel them?')
+                        .then(() => this._closeOpenedQueries(paragraphs));
+                }
+                catch (err) {
+                    return Promise.reject(new CancellationError());
+                }
+            }
+
+            return Promise.resolve(true);
+        };
+
+        agentMgr.addClusterSwitchListener(this.onClusterSwitchLnr);
     }
 
     _closeOpenedQueries(paragraphs) {
-        _.forEach(paragraphs, ({queryId, subscription, resNodeId}) => {
-            if (subscription)
-                subscription.unsubscribe();
+        return Promise.all(_.map(paragraphs, (paragraph) => {
+            paragraph.cancelQuerySubject.next(true);
+            paragraph.cancelExportSubject.next(true);
 
-            if (queryId) {
-                this.agentMgr.queryClose(resNodeId, queryId)
-                    .catch(() => { /* No-op. */ });
+            return Promise.all([paragraph.queryId
+                ? this.agentMgr.queryClose(paragraph.resNodeId, paragraph.queryId)
+                    .catch(() => Promise.resolve(true))
+                    .finally(() => delete paragraph.queryId)
+                : Promise.resolve(true),
+            paragraph.csvIsPreparing && paragraph.exportId
+                ? this.agentMgr.queryClose(paragraph.exportNodeId, paragraph.exportId)
+                    .catch(() => Promise.resolve(true))
+                    .finally(() => delete paragraph.exportId)
+                : Promise.resolve(true)]
+            );
+        }));
+    }
+
+    _hasRunningQueries(paragraphs) {
+        return !!_.find(paragraphs,
+            (paragraph) => paragraph.loading || paragraph.scanningInProgress || paragraph.csvIsPreparing);
+    }
+
+    async closeOpenedQueries() {
+        const paragraphs = _.get(this, '$scope.notebook.paragraphs');
+
+        if (this._hasRunningQueries(paragraphs)) {
+            try {
+                await this.Confirm.confirm('You have running queries. Are you sure you want to cancel them?');
+                this._closeOpenedQueries(paragraphs);
+
+                return true;
             }
-        });
+            catch (ignored) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     scanActions: QueryActions<Paragraph & {type: 'scan'}> = [
@@ -2150,9 +2280,13 @@ export class NotebookCtrl {
 
     async removeParagraph(paragraph: Paragraph) {
         try {
-            await this.Confirm.confirm('Are you sure you want to remove query: "' + paragraph.name + '"?');
-            this.$scope.stopRefresh(paragraph);
+            const msg = (this._hasRunningQueries([paragraph])
+                ? 'Query is being executed. Are you sure you want to cancel and remove query: "'
+                : 'Are you sure you want to remove query: "') + paragraph.name + '"?';
 
+            await this.Confirm.confirm(msg);
+
+            this.$scope.stopRefresh(paragraph);
             this._closeOpenedQueries([paragraph]);
 
             const paragraph_idx = _.findIndex(this.$scope.notebook.paragraphs, (item) => paragraph === item);
@@ -2163,6 +2297,9 @@ export class NotebookCtrl {
 
             this.$scope.notebook.paragraphs.splice(paragraph_idx, 1);
             this.$scope.rebuildScrollParagraphs();
+
+            paragraph.cancelQuerySubject.complete();
+            paragraph.cancelExportSubject.complete();
 
             await this.Notebook.save(this.$scope.notebook)
                 .catch(this.Messages.showError);
@@ -2186,9 +2323,13 @@ export class NotebookCtrl {
     }
 
     $onDestroy() {
-        this._closeOpenedQueries(this.$scope.notebook.paragraphs);
-
         if (this.subscribers$)
             this.subscribers$.unsubscribe();
+
+        if (this.offTransitions)
+            this.offTransitions();
+
+        this.agentMgr.removeClusterSwitchListener(this.onClusterSwitchLnr);
+        this.$window.removeEventListener('beforeunload', this.closeOpenedQueries);
     }
 }
