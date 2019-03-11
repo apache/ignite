@@ -564,12 +564,12 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param feature Feature to check.
-     * @return {@code true} if all nodes support the given feature, false otherwise.
+     * @return {@code true} if all nodes support the given feature, {@code false} otherwise.
      */
     public boolean allNodesSupport(IgniteFeatures feature) {
         checkState();
 
-        return rtState.top.isAllNodes(n -> IgniteFeatures.nodeSupports(n, feature));
+        return rtState != null && rtState.top.isAllNodes(n -> IgniteFeatures.nodeSupports(n, feature));
     }
 
     /**
@@ -2022,7 +2022,7 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
-     * @param node Joining node data.
+     * @param joiningNodeData Joining node data.
      * @return Validation result.
      */
     private ZkNodeValidateResult validateJoiningNode(ZkJoiningNodeData joiningNodeData) {
@@ -4468,7 +4468,7 @@ public class ZookeeperDiscoveryImpl {
             id = IgniteUuid.fromUuid(node.id());
 
             endTime = System.currentTimeMillis() + node.sessionTimeout() + 1000;
-        };
+        }
 
         /** {@inheritDoc} */
         @Override public IgniteUuid id() {

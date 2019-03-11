@@ -892,10 +892,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         catch (IgniteInterruptedCheckedException e) {
             assert cctx.kernalContext().isStopping() || cctx.kernalContext().clientDisconnected();
 
-            if (cctx.kernalContext().isStopping())
-                onDone(new IgniteCheckedException("Node stopped."));
-            else if (cctx.kernalContext().clientDisconnected())
-                onDone(new IgniteCheckedException("Client node disconnected."));
+            if (cctx.kernalContext().clientDisconnected())
+                onDone(new IgniteCheckedException("Client disconnected"));
+            else
+                onDone(new IgniteCheckedException("Node stopped"));
 
             throw e;
         }

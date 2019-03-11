@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -46,7 +47,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -101,6 +101,8 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10871", MvccFeatureChecker.forcedMvcc());
+
         super.beforeTestsStarted();
 
         lastKey = 0;
@@ -339,8 +341,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkPutTx(boolean putBefore, TransactionConcurrency concurrency,
         TransactionIsolation isolation, final Integer... keys) throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10871", MvccFeatureChecker.forcedMvcc());
-
         if (MvccFeatureChecker.forcedMvcc() &&
             !MvccFeatureChecker.isSupported(concurrency, isolation))
             return;
@@ -394,11 +394,9 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
             fail("Transaction should fail.");
         }
-        catch (CacheException e){
-            if (!MvccFeatureChecker.forcedMvcc() || !(e.getCause() instanceof TransactionRollbackException))
-                throw e;
-        }
-        catch (TransactionHeuristicException e) {
+        catch (Exception e) {
+            assertTrue("Unexptected exception " + X.getFullStackTrace(e), e instanceof TransactionHeuristicException);
+
             log.info("Expected exception: " + e);
         }
 
@@ -503,12 +501,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, CacheException.class, null);
-
-        if (MvccFeatureChecker.forcedMvcc())
-            assertTrue(err.toString(), err.getCause() instanceof TransactionRollbackException); // Put operation fails.
-        else
-            assertTrue(err.toString(), err.getCause() instanceof TransactionHeuristicException); // Implicit tx commit fails.
+        }, TransactionHeuristicException.class, null);
 
         checkUnlocked(key);
     }
@@ -519,8 +512,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void checkTransform(boolean putBefore, final Integer key) throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
-
         if (putBefore) {
             TestIndexingSpi.forceFail(false);
 
@@ -598,12 +589,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, CacheException.class, null);
-
-        if (MvccFeatureChecker.forcedMvcc())
-            assertTrue(err.toString(), err.getCause() instanceof TransactionRollbackException); // Put operation fails.
-        else
-            assertTrue(err.toString(), err.getCause() instanceof TransactionHeuristicException); // Implicit tx commit fails.
+        }, TransactionHeuristicException.class, null);
 
         for (Integer key : m.keySet())
             checkUnlocked(key);
@@ -615,8 +601,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void checkRemove(boolean putBefore, final Integer key) throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
-
         if (putBefore) {
             TestIndexingSpi.forceFail(false);
 
