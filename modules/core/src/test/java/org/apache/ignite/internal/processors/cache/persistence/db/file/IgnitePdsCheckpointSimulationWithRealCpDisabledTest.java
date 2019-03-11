@@ -113,7 +113,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         CacheConfiguration mvccCfg =  new CacheConfiguration(MVCC_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-                .setRebalanceMode(CacheRebalanceMode.NONE);
+                .setRebalanceDelay(Long.MAX_VALUE);
 
         cfg.setCacheConfiguration(ccfg, mvccCfg);
 

@@ -227,17 +227,17 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * Initialize future.
      */
     public void init() {
-        AffinityTopologyVersion mappingtopVermappingtopVer;
+        AffinityTopologyVersion mappingTopVer;
 
         if (topVer.topologyVersion() > 0)
-            mappingtopVermappingtopVer = topVer;
+            mappingTopVer = topVer;
         else {
-            mappingtopVermappingtopVer = canRemap ?
+            mappingTopVer = canRemap ?
                 cctx.affinity().affinityTopologyVersion() :
                 cctx.shared().exchange().readyAffinityVersion();
         }
 
-        map(mappingtopVermappingtopVer);
+        map(mappingTopVer);
     }
 
     /**
@@ -365,14 +365,14 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
 
-        // Failed if none affinity node found by assigment.
+        // Failed if none affinity node found by assignment.
         if (affNodes.isEmpty()) {
             onDone(serverNotFoundError(part, topVer));
 
             return null;
         }
 
-        // Try to read key localy if we can.
+        // Try to read key locally if we can.
         if (tryLocalGet(key, part, topVer, affNodes))
             return null;
 

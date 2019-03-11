@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -286,6 +287,11 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
         assertCannotStart(
             mvccCacheConfig().setCacheMode(LOCAL),
             "LOCAL cache mode cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setRebalanceMode(CacheRebalanceMode.NONE),
+            "Rebalance mode NONE cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
         );
 
         assertCannotStart(

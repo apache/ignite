@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
@@ -568,7 +570,14 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         cache = newIgnite.cache(DEFAULT_CACHE_NAME);
 
         for (int k = 0; k < keysCnt; k++)
-            assertFalse("k=" + k +", v=" + cache.get(k), cache.containsKey(k));
+            assertFalse("k=" + k +", v="  + cache.get(k), cache.containsKey(k));
+
+        Set<Integer> keys = new TreeSet<>();
+
+        for (int k = 0; k < keysCnt; k++)
+            keys.add(k);
+
+        assertFalse(cache.containsKeys(keys));
     }
 
     /**
