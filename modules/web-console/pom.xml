@@ -68,7 +68,7 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-hibernate_4.2</artifactId>
+            <artifactId>ignite-hibernate_5.1</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
