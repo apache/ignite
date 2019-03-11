@@ -17,10 +17,12 @@
 
 package org.apache.ignite.examples.ml.sql;
 
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -57,6 +59,7 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
             // Dummy cache is required to perform SQL queries.
             CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DUMMY_CACHE_NAME)
                 .setSqlSchema("PUBLIC")
+                .setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, Integer.class)))
                 .setSqlFunctionClasses(SQLFunctions.class);
 
             IgniteCache<?, ?> cache = ignite.createCache(cacheCfg);
