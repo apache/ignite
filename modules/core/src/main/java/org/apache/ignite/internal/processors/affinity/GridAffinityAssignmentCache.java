@@ -116,9 +116,6 @@ public class GridAffinityAssignmentCache {
     /** */
     private final boolean locCache;
 
-    /** */
-    private final boolean persistentCache;
-
     /** Node stop flag. */
     private volatile IgniteCheckedException stopErr;
 
@@ -160,7 +157,6 @@ public class GridAffinityAssignmentCache {
         this.grpId = grpId;
         this.backups = backups;
         this.locCache = locCache;
-        this.persistentCache = true;
 
         log = ctx.log(GridAffinityAssignmentCache.class);
 
@@ -314,7 +310,7 @@ public class GridAffinityAssignmentCache {
         boolean changedBaseline = false;
 
         if (discoCache != null) {
-            hasBaseline = discoCache.state().baselineTopology() != null && persistentCache;
+            hasBaseline = discoCache.state().baselineTopology() != null;
 
             changedBaseline = !hasBaseline ? baselineTopology != null :
                 !discoCache.state().baselineTopology().equals(baselineTopology);
@@ -387,9 +383,6 @@ public class GridAffinityAssignmentCache {
 
         if (hasBaseline) {
             baselineTopology = discoCache.state().baselineTopology();
-
-            if (baselineAssignment == null)
-                System.out.println("Shit");
 
             assert baselineAssignment != null;
         }

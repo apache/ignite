@@ -475,23 +475,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public void onLocalJoin(DiscoveryEvent evt, DiscoCache cache) {
         discoLsnr.onEvent(evt, cache);
-
-//        GridClusterStateProcessor stateProcessor = cctx.kernalContext().state();
-//
-//        DiscoveryDataClusterState state = stateProcessor.clusterState();
-//
-//        if (state.localTransition()) {
-//            ChangeGlobalStateFinishMessage msg = new ChangeGlobalStateFinishMessage(
-//                state.transitionRequestId(),
-//                true,
-//                true,
-//                true
-//            );
-//
-//            stateProcessor.onStateFinishMessage(msg); // Very questionable.
-//
-//            cctx.kernalContext().discovery().updateTopologySnapshot();
-//        }
     }
 
     /**
@@ -570,8 +553,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             exchActs = new ExchangeActions();
 
                         exchActs.stateChangeRequest(stateChangeReq);
-
-//                        msg.exchangeActions(exchActs);
                     }
                 }
             }
@@ -2443,11 +2424,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             ", evtNode=" + fut.firstEvent().eventNode().id() +
                             ", evtNodeClient=" + fut.firstEvent().eventNode().isClient() + ']');
                     }
-
-//                    ExchangeActions exchActions = curFut.exchangeActions();
-//
-//                    if (exchActions != null && fut.exchangeActions() != null)
-//                        exchActions.stateChangeRequest(fut.exchangeActions().stateChangeRequest());
 
                     addDiscoEvtForTest(fut.firstEvent());
 
