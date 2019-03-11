@@ -441,7 +441,9 @@ public class GridReduceQueryExecutor {
         else {
             mapQueries = new ArrayList<>(qry.mapQueries().size());
 
-            List<GridCacheSqlQuery> mQrs = forUpdate ? qry.mapQueriesForUpdate() : qry.mapQueries();
+            List<GridCacheSqlQuery> mQrs = forUpdate ?
+                Collections.singletonList(qry.mapQueriesForUpdate()) :
+                qry.mapQueries();
 
             // Copy queries here because node ID will be changed below.
             for (GridCacheSqlQuery mapQry : mQrs)

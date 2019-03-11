@@ -439,7 +439,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) throws IgniteCheckedException {
         boolean forUpd = select.mvccEnabled() && select.forUpdate() && tx(ctx) != null;
 
-        String qry = forUpd ?  select.sqlQueryForUpdate() : select.sqlQuery();
+        String qry = forUpd ? select.sqlQueryForUpdate() : select.sqlQuery();
 
         GridNearTxLocal tx = null;
 

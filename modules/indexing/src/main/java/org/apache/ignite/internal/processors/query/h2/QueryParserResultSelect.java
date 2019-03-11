@@ -47,10 +47,17 @@ public class QueryParserResultSelect {
     /** ID of the first MVCC cache. */
     private final Integer mvccCacheId;
 
-    /** Sql query. */
+    /**
+     * Sql query with cleared "FOR UPDATE" statement. This string is used when executing query out of transaction.
+     * See {@link GridCacheTwoStepQuery#mapForUpdate} for details.
+     */
     private final String sqlQry;
 
-    /** Sql query for update string. */
+    /**
+     * Sql query for update. Contains additional "_key" column.
+     * This string is used when executing query within explicit transaction.
+     * See {@link GridCacheTwoStepQuery#mapForUpdate} for details.
+     */
     private final String sqlQryForUpdate;
 
     /**

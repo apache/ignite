@@ -22,7 +22,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -136,7 +135,7 @@ public class GridSqlQuerySplitter {
     private GridCacheSqlQuery rdcSqlQryForUpdate;
 
     /** For update version of map query. */
-    private List<GridCacheSqlQuery> mapSqlQrysForUpdate;
+    private GridCacheSqlQuery mapSqlQrysForUpdate;
 
     /** Original query rewritten without SELECT FOR UPDATE clause. */
     private String originalNoForUpdateSql;
@@ -1306,7 +1305,7 @@ public class GridSqlQuerySplitter {
          * and reduce queries with appended _key column. This column is used for locking rows.
          */
         if (forUpdate) {
-            assert  F.isEmpty(mapSqlQrysForUpdate); // It should be the only one map SELECT FOR UPDATE query.
+            assert mapSqlQrysForUpdate == null; // It should be the only one map SELECT FOR UPDATE query.
 
             GridSqlAlias keyCol = keyColumn(mapQry);
 
@@ -1324,7 +1323,7 @@ public class GridSqlQuerySplitter {
             GridCacheSqlQuery rdcFu = copySqlQuery(rdcQryFu, new GridCacheSqlQuery(rdcQry.getSQL()),  false);
             setupParameters(rdcFu, rdcQry, paramsCnt);
 
-            mapSqlQrysForUpdate = Collections.singletonList(mapFu);
+            mapSqlQrysForUpdate = mapFu;
             rdcSqlQryForUpdate = rdcFu;
         }
     }

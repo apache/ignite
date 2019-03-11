@@ -67,13 +67,23 @@ public class GridCacheTwoStepQuery {
     /** Number of positional arguments in the sql. */
     private final int paramsCnt;
 
-    /** Map query for SELECT FOR UPDATE. */
-    private final List<GridCacheSqlQuery> mapForUpdate;
+    /**
+     * Map query for SELECT FOR UPDATE. If a given query is for update, we need to save two
+     * variants of the this query. First variant {@link GridCacheTwoStepQuery#mapQrys} is used
+     * when the query is executed outside of any transaction - it is executed as a plain query.
+     * The second variant of the query - is a "for update" query which is used when running within
+     * transaction. In this query an extra _key column is implicitly appended to query columns.
+     * This extra column is used to lock the selected rows. This column is hidden from client.
+     */
+    private final GridCacheSqlQuery mapForUpdate;
 
-    /** Reduce query for SELECT FOR UPDATE. */
+    /** Reduce query for SELECT FOR UPDATE. See {@link GridCacheTwoStepQuery#mapForUpdate} for details*/
     private final GridCacheSqlQuery rdcForUpdate;
 
-    /** Original query without FOR UPDATE clause. */
+    /**
+     * Original query without FOR UPDATE clause. Original query with remove "FOR UPDATE" clause. This
+     * String is useful when we need to executed an original query instead of two-step one.
+     */
     private final String originalNoForUpdateSql;
 
     /**
@@ -106,7 +116,7 @@ public class GridCacheTwoStepQuery {
         List<Integer> cacheIds,
         boolean mvccEnabled,
         boolean locSplit,
-        List<GridCacheSqlQuery> mapForUpdate,
+        GridCacheSqlQuery mapForUpdate,
         GridCacheSqlQuery rdcForUpdate,
         String originalNoForUpdateSql
     ) {
@@ -253,7 +263,7 @@ public class GridCacheTwoStepQuery {
      *
      * @return For update version of map query.
      */
-    public List<GridCacheSqlQuery> mapQueriesForUpdate() {
+    public GridCacheSqlQuery mapQueriesForUpdate() {
         return mapForUpdate;
     }
 
