@@ -1286,7 +1286,7 @@ export class NotebookCtrl {
 
                     const pingQueryTask = timer(60000, 60000).pipe(
                         exhaustMap(() => agentMgr.queryPing(qryArg.nid, res.queryId)),
-                        takeWhile(({inProgress}) => inProgress),
+                        takeWhile(({queryPingSupported}) => queryPingSupported),
                         ignoreElements()
                     );
 
@@ -1886,7 +1886,7 @@ export class NotebookCtrl {
 
             const pingQueryTask = timer(60000, 60000).pipe(
                 exhaustMap(() => agentMgr.queryPing(paragraph.resNodeId, paragraph.queryId)),
-                takeWhile(({inProgress}) => inProgress),
+                takeWhile(({queryPingSupported}) => queryPingSupported),
                 ignoreElements()
             );
 

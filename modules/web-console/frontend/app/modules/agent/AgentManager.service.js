@@ -51,6 +51,11 @@ const QUERY_PING_SINCE = [['2.5.6', '2.6.0'], '2.7.4'];
  * @typedef {{responseNodeId: String, queryId: String, columns: String[], rows: {Object[][]}, hasMore: Boolean, duration: Number}} VisorQueryResult
  */
 
+/**
+ * Query ping result.
+ * @typedef {{}} VisorQueryPingResult
+ */
+
 /** Reserved cache names */
 const RESERVED_CACHE_NAMES = [
     'ignite-hadoop-mr-sys-cache',
@@ -763,13 +768,13 @@ export default class AgentManager {
         if (this.available(...QUERY_PING_SINCE)) {
             return this.visorTask('queryPing', nid, queryId, 1).then(({error, result}) => {
                 if (_.isEmpty(error))
-                    return result;
+                    return {queryPingSupported: true};
 
                 return Promise.reject(error);
             });
         }
 
-        return Promise.resolve({inProgress: false});
+        return Promise.resolve({queryPingSupported: false});
     }
 
     /**

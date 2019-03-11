@@ -77,7 +77,7 @@ public class VisorQueryPingTask extends VisorOneNodeTask<VisorQueryNextPageTaskA
             if (debug)
                 log(ignite.log(), "Ping of query finished: " + qryId, getClass(), start);
 
-            return new VisorEither<>(new VisorQueryPingTaskResult(true));
+            return new VisorEither<>(new VisorQueryPingTaskResult());
         }
 
         /** {@inheritDoc} */

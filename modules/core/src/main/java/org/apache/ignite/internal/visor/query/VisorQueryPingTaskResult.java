@@ -30,9 +30,6 @@ public class VisorQueryPingTaskResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Query is still executed flag. */
-    private boolean inProgress;
-
     /**
      * Default constructor.
      */
@@ -40,29 +37,11 @@ public class VisorQueryPingTaskResult extends VisorDataTransferObject {
         // No-op.
     }
 
-    /**
-     * @param inProgress Query is still executed flag.
-     */
-    public VisorQueryPingTaskResult(boolean inProgress) {
-        this.inProgress = inProgress;
-    }
-
-    /**
-     * @return Query is still executed flag.
-     */
-    public boolean isInProgress() {
-        return inProgress;
-    }
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {}
 
     /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(inProgress);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        inProgress = in.readBoolean();
-    }
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {}
 
     /** {@inheritDoc} */
     @Override public String toString() {
