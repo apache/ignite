@@ -29,7 +29,7 @@ CREATE TABLE City (
   PRIMARY KEY (ID, CountryCode)
 ) WITH "template=partitioned, backups=1, affinityKey=CountryCode, CACHE_NAME=City, KEY_TYPE=demo.model.CityKey, VALUE_TYPE=demo.model.City";
 
-CREATE INDEX idx_country_code ON city (CountryCode);
+CREATE INDEX idx_country_code ON City (CountryCode);
 
 DROP TABLE IF EXISTS CountryLanguage;
 
