@@ -245,7 +245,7 @@ namespace ignite
                  * Check whether the provided end point is provided by user using configuration.
                  *
                  * @param endPoint End point to check.
-                 * @return @c true if provided by user using configuration. 
+                 * @return @c true if provided by user using configuration.
                  */
                 bool IsProvidedByUser(const network::EndPoint& endPoint);
 

@@ -89,6 +89,8 @@ namespace ignite
                         {
                             const IgniteNode& newNode = channel.Get()->GetNode();
 
+                            std::cout << (newNode.IsLegacy() ? "Legacy" : "New") << std::endl;
+
                             if (newNode.IsLegacy())
                             {
                                 newLegacyChannels.push_back(channel);
@@ -117,7 +119,7 @@ namespace ignite
 
                 legacyChannels.swap(newLegacyChannels);
 
-                if (channels.empty())
+                if (channels.empty() && legacyChannels.empty())
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to establish connection with any host.");
             }
 
@@ -197,7 +199,7 @@ namespace ignite
 
                 size_t idx = r % (channels.size() + legacyChannels.size());
 
-                if (idx > channels.size())
+                if (idx >= channels.size())
                 {
                     size_t legacyIdx = idx - channels.size();
 

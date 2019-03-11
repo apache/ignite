@@ -254,7 +254,7 @@ namespace ignite
 
             private:
                 /** Name. */
-                const std::string& name;
+                std::string name;
             };
 
             /**
@@ -287,7 +287,7 @@ namespace ignite
 
             private:
                 /** Name. */
-                const std::string& name;
+                std::string name;
             };
 
             /**
