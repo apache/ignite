@@ -19,7 +19,7 @@ import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
 import {Subject, defer, from, of, merge, timer, EMPTY} from 'rxjs';
-import {catchError, distinctUntilChanged, expand, exhaustMap, filter, finalize, first, map, mergeMap, pluck, switchMap, takeUntil, take, tap} from 'rxjs/operators';
+import {catchError, distinctUntilChanged, expand, exhaustMap, filter, finalize, first, ignoreElements, map, mergeMap, pluck, switchMap, takeUntil, takeWhile, take, tap} from 'rxjs/operators';
 
 import {CSV} from 'app/services/CSV';
 
@@ -1278,11 +1278,23 @@ export class NotebookCtrl {
                     onQueryStarted(res);
                     $scope.$applyAsync();
                 }),
-                expand((res) => timer(100, 500).pipe(
-                    exhaustMap(() => agentMgr.queryFetchFistsPage(qryArg.nid, res.queryId, qryArg.pageSize)),
-                    filter((res) => !_.isNil(res.rows))
-                )),
-                filter((res) => !_.isNil(res.rows)),
+                exhaustMap((res) => {
+                    if (!_.isNil(res.rows))
+                        return of(res);
+
+                    const fetchFirstPageTask = timer(100, 500).pipe(
+                        exhaustMap(() => agentMgr.queryFetchFistsPage(qryArg.nid, res.queryId, qryArg.pageSize)),
+                        filter((res) => !_.isNil(res.rows))
+                    );
+
+                    const pingQueryTask = timer(60000, 60000).pipe(
+                        exhaustMap(() => agentMgr.queryPing(qryArg.nid, res.queryId)),
+                        takeWhile(({queryPingSupported}) => queryPingSupported),
+                        ignoreElements()
+                    );
+
+                    return merge(fetchFirstPageTask, pingQueryTask);
+                }),
                 first()
             );
         };
@@ -1867,12 +1879,23 @@ export class NotebookCtrl {
 
             paragraph.queryArgs.pageSize = paragraph.pageSize;
 
-            agentMgr.queryNextPage(paragraph.resNodeId, paragraph.queryId, paragraph.pageSize)
+            const nextPageTask = from(agentMgr.queryNextPage(paragraph.resNodeId, paragraph.queryId, paragraph.pageSize)
                 .then((res) => _processQueryNextPage(paragraph, res))
                 .catch((err) => {
                     paragraph.setError(err);
                     paragraph.ace && paragraph.ace.focus();
-                });
+                }));
+
+            const pingQueryTask = timer(60000, 60000).pipe(
+                exhaustMap(() => agentMgr.queryPing(paragraph.resNodeId, paragraph.queryId)),
+                takeWhile(({queryPingSupported}) => queryPingSupported),
+                ignoreElements()
+            );
+
+            merge(nextPageTask, pingQueryTask).pipe(
+                take(1),
+                takeUntil(paragraph.cancelQuerySubject)
+            ).subscribe();
         };
 
         const _export = (fileName, columnDefs, meta, rows, toClipBoard = false) => {
