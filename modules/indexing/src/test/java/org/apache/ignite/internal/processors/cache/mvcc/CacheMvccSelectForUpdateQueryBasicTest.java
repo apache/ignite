@@ -730,7 +730,8 @@ public class CacheMvccSelectForUpdateQueryBasicTest  extends CacheMvccAbstractTe
                     assert e0 != null;
 
                     assert e0.getMessage() != null &&
-                        e0.getMessage().contains("Failed to acquire lock within provided timeout") : e0.getMessage();
+                        e0.getMessage().contains("Failed to acquire lock within provided timeout") :
+                        X.getFullStackTrace(e);
                 }
             }
         }

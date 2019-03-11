@@ -495,7 +495,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     @Test
     public void testParametersMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
-            conn.setSchema("pers");
+            conn.setSchema("\"pers\"");
 
             PreparedStatement stmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
 

@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -358,6 +359,11 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
     }
 
     /** {@inheritDoc} */
+    @Override public boolean onCancelled() {
+        return onDone(null, asyncRollbackException(), false);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable T res, @Nullable Throwable err, boolean cancelled) {
         if (!DONE_UPD.compareAndSet(this, 0, 1))
             return false;
@@ -445,6 +451,13 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
     @NotNull protected IgniteTxTimeoutCheckedException timeoutException() {
         return new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
             "transaction [timeout=" + timeout + ", tx=" + tx + ']');
+    }
+
+    /**
+     * @return Async rollback exception.
+     */
+    @NotNull private IgniteTxRollbackCheckedException asyncRollbackException() {
+        return new IgniteTxRollbackCheckedException("Transaction was asynchronously rolled back [tx=" + tx + ']');
     }
 
     /**
