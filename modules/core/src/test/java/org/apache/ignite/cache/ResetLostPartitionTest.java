@@ -55,8 +55,6 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10560", MvccFeatureChecker.forcedMvcc());
-
         super.beforeTest();
 
         stopAllGrids();

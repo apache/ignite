@@ -120,13 +120,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10561", MvccFeatureChecker.forcedMvcc());
-
-        super.beforeTest();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
@@ -234,8 +227,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_10_10_1_1() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10583", MvccFeatureChecker.forcedMvcc());
-
         checkRebalancingDuringLoad(10, 10, 1, 1);
     }
 

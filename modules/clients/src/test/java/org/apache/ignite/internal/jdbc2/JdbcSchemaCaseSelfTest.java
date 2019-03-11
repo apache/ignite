@@ -15,32 +15,27 @@
  * limitations under the License.
  */
 
-breadcrumbs {
-    $side-margin: 5px;
+package org.apache.ignite.internal.jdbc2;
 
-    padding: 3px $side-margin;
-    display: inline-flex;
-    align-items: center;
-    flex-direction: row;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
-    min-height: 20px;
-    border-radius: 4px;
-    background-color: rgba(197, 197, 197, 0.1);
-    font-size: 12px;
-    line-height: 1.08;
-    text-align: left;
-    color: #393939;
+import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 
-    .#{&}__home {
-        margin-left: $side-margin;
-        margin-right: $side-margin;
-        vertical-align: -1px;
-        width: 12px;
-        height: 12px;
-    }
+/**
+ * Jdbc v2 test for schema name case (in)sensitivity.
+ */
+public class JdbcSchemaCaseSelfTest extends JdbcAbstractSchemaCaseTest {
+    /** JDBC URL. */
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=test0@modules/clients/src/test/config/jdbc-config.xml";
 
-    [ui-sref] + [ui-sref]:before {
-        content: '/';
-        margin: 0 $side-margin;
+    /** {@inheritDoc} */
+    @Override protected Connection connect(String schema) throws SQLException {
+        Connection conn = DriverManager.getConnection(BASE_URL);
+
+        conn.setSchema(schema);
+
+        return conn;
     }
 }
