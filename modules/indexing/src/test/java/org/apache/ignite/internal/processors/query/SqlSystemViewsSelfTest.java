@@ -336,8 +336,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals(2, res.size());
 
         List<?> firstRow = res.get(0);
-        assertEquals(DEFAULT_CACHE_NAME, firstRow.get(0));
         List<?> secondRow = res.get(1);
+
+        assertEquals(DEFAULT_CACHE_NAME, firstRow.get(0));
         assertEquals(DEFAULT_CACHE_NAME, secondRow.get(0));
 
         assertEquals(sql, firstRow.get(1));
