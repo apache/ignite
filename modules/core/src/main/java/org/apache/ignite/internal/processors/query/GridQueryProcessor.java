@@ -1501,7 +1501,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Create cache and table from given query entity.
      *
-     * @param schemaName Schema name to create table in.
+     * @param schemaName Schema name to create table in. Case sensitive, must not be \"quoted\".
      * @param entity Entity to create table from.
      * @param templateName Template name.
      * @param cacheName Cache name.
@@ -1579,7 +1579,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             ccfg.setQueryParallelism(qryParallelism);
 
         ccfg.setEncryptionEnabled(encrypted);
-        ccfg.setSqlSchema(schemaName);
+        ccfg.setSqlSchema("\"" + schemaName + "\"");
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
 
@@ -2231,6 +2231,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
         return executeQuerySafe(cctx, () -> {
+            assert idx != null;
+
             final String schemaName = qry.getSchema() != null ? qry.getSchema()
                 : (cctx != null ? idx.schema(cctx.name()) : QueryUtils.DFLT_SCHEMA);
 
@@ -2239,16 +2241,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     @Override public List<FieldsQueryCursor<List<?>>> applyx() {
                         GridQueryCancel cancel0 = cancel != null ? cancel : new GridQueryCancel();
 
-                        List<FieldsQueryCursor<List<?>>> res =
-                            idx.querySqlFields(
+                        List<FieldsQueryCursor<List<?>>> res = idx.querySqlFields(
                                 schemaName,
                                 qry,
                                 cliCtx,
                                 keepBinary,
                                 failOnMultipleStmts,
-                                null,
-                                cancel0,
-                                true
+                                cancel0
                             );
 
                         if (cctx != null)
