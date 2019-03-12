@@ -73,12 +73,7 @@ namespace ignite
                      *
                      * @param cacheId Cache ID.
                      */
-                    void StartTrackingCache(int32_t cacheId)
-                    {
-                        common::concurrent::CsLockGuard lock(mutex);
-
-                        ++trackedCaches[cacheId];
-                    }
+                    void StartTrackingCache(int32_t cacheId);
 
                     /**
                      * Stop tracking affinity mapping for the cache.
@@ -112,7 +107,13 @@ namespace ignite
                     std::map<int32_t, SP_AffinityAssignment> cacheAffinityMapping;
 
                     /** Cache affinity mapping mutex. */
-                    mutable common::concurrent::CriticalSection mutex;
+                    mutable common::concurrent::CriticalSection mappingMutex;
+
+                    /** Tracked caches mutex. */
+                    mutable common::concurrent::CriticalSection cachesMutex;
+
+                    /** Flag that shows that update is required. */
+                    bool updateNeeded;
                 };
             }
         }

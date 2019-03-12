@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(CacheClientGetCacheNonxisting)
 
     IgniteClient client = IgniteClient::Start(cfg);
 
-    BOOST_REQUIRE_NO_THROW((client.GetCache<int32_t, std::string>("unknown")), ignite::IgniteError);
+    client.GetCache<int32_t, std::string>("unknown");
 }
 
 BOOST_AUTO_TEST_CASE(CacheClientGetOrCreateCacheExisting)
@@ -823,6 +823,7 @@ BOOST_AUTO_TEST_CASE(CacheClientDefaultDynamicCacheThreeNodes)
     cache::CacheClient<std::string, int64_t> cache =
         client.CreateCache<std::string, int64_t>("defaultdynamic3");
 
+    // No-op, but should compile.
     cache.RefreshAffinityMapping();
 
     for (int64_t i = 1; i < 1000; ++i)

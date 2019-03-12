@@ -98,6 +98,9 @@ namespace ignite
                     {
                         int32_t nodeNum = reader.ReadInt32();
 
+                        nodeParts.clear();
+                        nodeParts.resize(static_cast<size_t>(nodeNum));
+
                         // Node Partitions
                         for (int32_t j = 0; j < nodeNum; ++j)
                             nodeParts[j].Read(reader);

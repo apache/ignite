@@ -25,7 +25,8 @@ namespace ignite
         {
             namespace affinity
             {
-                AffinityManager::AffinityManager()
+                AffinityManager::AffinityManager() :
+                    updateNeeded(false)
                 {
                     // No-op.
                 }
@@ -35,7 +36,7 @@ namespace ignite
                     if (topologyVersion > ver)
                         return;
 
-                    common::concurrent::CsLockGuard lock(mutex);
+                    common::concurrent::CsLockGuard lock(mappingMutex);
 
                     if (topologyVersion > ver)
                         return;
@@ -46,6 +47,10 @@ namespace ignite
 
                         cacheAffinityMapping.clear();
                     }
+
+                    common::concurrent::CsLockGuard lock0(cachesMutex);
+
+                    updateNeeded = !trackedCaches.empty();
                 }
 
                 void AffinityManager::UpdateAffinity(const std::vector<AffinityAwarenessGroup>& groups, 
@@ -54,7 +59,7 @@ namespace ignite
                     if (topologyVersion > ver)
                         return;
 
-                    common::concurrent::CsLockGuard lock(mutex);
+                    common::concurrent::CsLockGuard lock(mappingMutex);
 
                     if (topologyVersion > ver)
                         return;
@@ -77,11 +82,13 @@ namespace ignite
                         for (cache = caches.begin(); cache != caches.end(); ++cache)
                             cacheAffinityMapping[cache->GetCacheId()].Swap(newMapping);
                     }
+
+                    updateNeeded = false;
                 }
 
                 SP_AffinityAssignment AffinityManager::GetAffinityAssignment(int32_t cacheId) const
                 {
-                    common::concurrent::CsLockGuard lock(mutex);
+                    common::concurrent::CsLockGuard lock(mappingMutex);
                     
                     std::map<int32_t, SP_AffinityAssignment>::const_iterator it = cacheAffinityMapping.find(cacheId);
 
@@ -91,9 +98,21 @@ namespace ignite
                     return it->second;
                 }
 
+                void AffinityManager::StartTrackingCache(int32_t cacheId)
+                {
+                    common::concurrent::CsLockGuard lock(cachesMutex);
+
+                    int32_t& num = trackedCaches[cacheId];
+
+                    ++num;
+
+                    if (num == 1)
+                        updateNeeded = true;
+                }
+
                 void AffinityManager::StopTrackingCache(int32_t cacheId)
                 {
-                    common::concurrent::CsLockGuard lock(mutex);
+                    common::concurrent::CsLockGuard lock(cachesMutex);
 
                     std::map<int32_t, int32_t>::iterator it = trackedCaches.find(cacheId);
 
@@ -108,7 +127,7 @@ namespace ignite
 
                 void AffinityManager::GetTrackedCaches(std::vector<int32_t>& caches) const
                 {
-                    common::concurrent::CsLockGuard lock(mutex);
+                    common::concurrent::CsLockGuard lock(cachesMutex);
 
                     caches.reserve(trackedCaches.size());
 
@@ -120,7 +139,7 @@ namespace ignite
 
                 bool AffinityManager::IsUpdateNeeded() const
                 {
-                    return false;
+                    return updateNeeded;
                 }
             }
         }
