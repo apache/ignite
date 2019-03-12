@@ -169,13 +169,10 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
 
         int size = backupQueueSize();
 
-        // Backup queues total size should not be less than zero.
-        // Zero is possible when backup queue is cleaned by timeout.
-        assertTrue(size >= 0);
-
         // Backup queues total size should not exceed one entry per query per partition. This is because
         // {@link CacheContinuousQueryEventBuffer} is optimized to store filtered events and
         // used in this test {@link AlwaysFalseFilterFactory} always declines updates.
+        // Zero total size is possible when backup queue is cleaned by timeout.
         assertTrue(size <= QUERY_COUNT * /* partition count */1024);
 
         for (QueryCursor qry : qryCursors)
@@ -238,10 +235,10 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     }
 
     /**
-     * @return Total backup queues size in cluster.
+     * @return Backup queue size or {@code -1} if backup queue doesn't exist.
      */
     private int backupQueueSize() {
-        int backupQueueSize = 0;
+        int backupQueueSize = -1;
 
         for (int i = 0; i < GRID_COUNT; i++) {
             for (Collection<Object> backQueue : backupQueues(grid(i)))
