@@ -18,17 +18,20 @@
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * FreeList implementation for cache.
  */
-public class CacheFreeListImpl extends AbstractFreeList<Storable> {
+public class CacheFreeListImpl extends AbstractFreeList {
     /**
      * @param cacheId Cache id.
      * @param name Name.
@@ -46,11 +49,11 @@ public class CacheFreeListImpl extends AbstractFreeList<Storable> {
     }
 
     /** {@inheritDoc} */
-    @Override public void insertDataRow(Storable row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    public void insertDataRow(CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         super.insertDataRow(row, statHolder);
 
-//        assert row.key().partition() == PageIdUtils.partId(row.link()) :
-//            "Constructed a link with invalid partition ID [partId=" + row.key().partition() +
-//            ", link=" + U.hexLong(row.link()) + ']';
+        assert row.key().partition() == PageIdUtils.partId(row.link()) :
+            "Constructed a link with invalid partition ID [partId=" + row.key().partition() +
+            ", link=" + U.hexLong(row.link()) + ']';
     }
 }

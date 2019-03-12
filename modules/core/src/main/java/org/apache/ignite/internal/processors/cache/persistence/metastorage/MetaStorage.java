@@ -660,7 +660,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     }
 
     /** */
-    public class FreeListImpl extends AbstractFreeList<Storable> {
+    public class FreeListImpl extends AbstractFreeList {
         /** {@inheritDoc} */
         FreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
             ReuseList reuseList,
@@ -678,81 +678,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
          */
         final MetastorageDataRow readRow(String key, long link)
             throws IgniteCheckedException {
-            assert link != 0 : "link";
-
-            long nextLink = link;
-            IncompleteObject incomplete = null;
-            int size = 0;
-
-            boolean first = true;
-
-            do {
-                final long pageId = pageId(nextLink);
-
-                final long page = pageMem.acquirePage(grpId, pageId);
-
-                try {
-                    long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
-
-                    assert pageAddr != 0L : nextLink;
-
-                    try {
-                        SimpleDataPageIO io = SimpleDataPageIO.VERSIONS.forPage(pageAddr);
-
-                        //MetaStorage never encrypted so realPageSize == pageSize.
-                        DataPagePayload data = io.readPayload(pageAddr, itemId(nextLink), pageMem.pageSize());
-
-                        nextLink = data.nextLink();
-
-                        if (first) {
-                            if (nextLink == 0) {
-                                // Fast path for a single page row.
-                                return new MetastorageDataRow(link, key, SimpleDataPageIO.readPayload(pageAddr + data.offset()));
-                            }
-
-                            first = false;
-                        }
-
-                        ByteBuffer buf = pageMem.pageBuffer(pageAddr);
-
-                        buf.position(data.offset());
-                        buf.limit(data.offset() + data.payloadSize());
-
-                        if (size == 0) {
-                            if (buf.remaining() >= 4 && incomplete == null) {
-                                // Just read size.
-                                size = buf.getInt();
-                                incomplete = new IncompleteObject(new byte[size]);
-                            }
-                            else {
-                                if (incomplete == null)
-                                    incomplete = new IncompleteObject(new byte[4]);
-
-                                incomplete.readData(buf);
-
-                                if (incomplete.isReady()) {
-                                    size = ByteBuffer.wrap(incomplete.data()).order(buf.order()).getInt();
-                                    incomplete = new IncompleteObject(new byte[size]);
-                                }
-                            }
-                        }
-
-                        if (size != 0 && buf.remaining() > 0)
-                            incomplete.readData(buf);
-                    }
-                    finally {
-                        pageMem.readUnlock(grpId, pageId, page);
-                    }
-                }
-                finally {
-                    pageMem.releasePage(grpId, pageId, page);
-                }
-            }
-            while (nextLink != 0);
-
-            assert incomplete.isReady();
-
-            return new MetastorageDataRow(link, key, incomplete.data());
+            return new MetastorageDataRow(link, key, readRow(link));
         }
     }
 

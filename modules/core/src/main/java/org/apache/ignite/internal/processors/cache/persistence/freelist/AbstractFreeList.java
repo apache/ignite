@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -28,13 +29,16 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmen
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
+import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -43,9 +47,12 @@ import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+
 /**
  */
-public class AbstractFreeList<T extends Storable> extends PagesList implements FreeList<T>, ReuseList {
+public class AbstractFreeList extends PagesList implements FreeList, ReuseList {
     /** */
     private static final int BUCKETS = 256; // Must be power of 2.
 
@@ -77,7 +84,7 @@ public class AbstractFreeList<T extends Storable> extends PagesList implements F
     private final int MIN_SIZE_FOR_DATA_PAGE;
 
     /** */
-    private final PageHandler<T, Boolean> updateRow = new UpdateRowHandler();
+    private final PageHandler<Storable, Boolean> updateRow = new UpdateRowHandler();
 
     /** */
     private final DataRegionMetricsImpl memMetrics;
@@ -88,7 +95,7 @@ public class AbstractFreeList<T extends Storable> extends PagesList implements F
     /**
      *
      */
-    private final class UpdateRowHandler extends PageHandler<T, Boolean> {
+    private final class UpdateRowHandler extends PageHandler<Storable, Boolean> {
         @Override public Boolean run(
             int cacheId,
             long pageId,
@@ -96,11 +103,11 @@ public class AbstractFreeList<T extends Storable> extends PagesList implements F
             long pageAddr,
             PageIO iox,
             Boolean walPlc,
-            T row,
+            Storable row,
             int itemId,
             IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
-            AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
+            AbstractDataPageIO<Storable> io = (AbstractDataPageIO<Storable>)iox;
 
             int rowSize = row.size();
 
@@ -130,12 +137,12 @@ public class AbstractFreeList<T extends Storable> extends PagesList implements F
     }
 
     /** */
-    private final PageHandler<T, Integer> writeRow = new WriteRowHandler();
+    private final PageHandler<Storable, Integer> writeRow = new WriteRowHandler();
 
     /**
      *
      */
-    private final class WriteRowHandler extends PageHandler<T, Integer> {
+    private final class WriteRowHandler extends PageHandler<Storable, Integer> {
         @Override public Integer run(
             int cacheId,
             long pageId,
@@ -143,11 +150,11 @@ public class AbstractFreeList<T extends Storable> extends PagesList implements F
             long pageAddr,
             PageIO iox,
             Boolean walPlc,
-            T row,
+            Storable row,
             int written,
             IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
-            AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
+            AbstractDataPageIO<Storable> io = (AbstractDataPageIO<Storable>)iox;
 
             int rowSize = row.size();
             int oldFreeSpace = io.getFreeSpace(pageAddr);
@@ -188,8 +195,8 @@ public class AbstractFreeList<T extends Storable> extends PagesList implements F
             long pageId,
             long page,
             long pageAddr,
-            AbstractDataPageIO<T> io,
-            T row,
+            AbstractDataPageIO<Storable> io,
+            Storable row,
             int rowSize
         ) throws IgniteCheckedException {
             io.addRow(pageId, pageAddr, row, rowSize, pageSize());
@@ -228,8 +235,8 @@ public class AbstractFreeList<T extends Storable> extends PagesList implements F
             long pageId,
             long page,
             long pageAddr,
-            AbstractDataPageIO<T> io,
-            T row,
+            AbstractDataPageIO<Storable> io,
+            Storable row,
             int written,
             int rowSize
         ) throws IgniteCheckedException {
@@ -281,7 +288,7 @@ public class AbstractFreeList<T extends Storable> extends PagesList implements F
             int itemId,
             IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
-            AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
+            AbstractDataPageIO<Storable> io = (AbstractDataPageIO<Storable>)iox;
 
             int oldFreeSpace = io.getFreeSpace(pageAddr);
 
@@ -468,8 +475,91 @@ public class AbstractFreeList<T extends Storable> extends PagesList implements F
         return pageMem.allocatePage(grpId, part, PageIdAllocator.FLAG_DATA);
     }
 
+    /**
+     * Read row from data pages.
+     */
+    final public byte[] readRow(long link) throws IgniteCheckedException {
+        assert link != 0 : "link";
+
+        long nextLink = link;
+        IncompleteObject incomplete = null;
+        int size = 0;
+
+        boolean first = true;
+
+        do {
+            final long pageId = pageId(nextLink);
+
+            final long page = pageMem.acquirePage(grpId, pageId);
+
+            try {
+                long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
+
+                assert pageAddr != 0L : nextLink;
+
+                try {
+                    AbstractDataPageIO io = PageIO.getPageIO(pageAddr);
+
+                    //MetaStorage never encrypted so realPageSize == pageSize.
+                    DataPagePayload data = io.readPayload(pageAddr, itemId(nextLink), pageMem.pageSize());
+
+                    nextLink = data.nextLink();
+
+                    if (first) {
+                        if (nextLink == 0) {
+                            long payloadAddr = pageAddr + data.offset();
+
+                            // Fast path for a single page row.
+                            return PageUtils.getBytes(payloadAddr, 4, PageUtils.getInt(payloadAddr, 0));
+                        }
+
+                        first = false;
+                    }
+
+                    ByteBuffer buf = pageMem.pageBuffer(pageAddr);
+
+                    buf.position(data.offset());
+                    buf.limit(data.offset() + data.payloadSize());
+
+                    if (size == 0) {
+                        if (buf.remaining() >= 4 && incomplete == null) {
+                            // Just read size.
+                            size = buf.getInt();
+                            incomplete = new IncompleteObject(new byte[size]);
+                        }
+                        else {
+                            if (incomplete == null)
+                                incomplete = new IncompleteObject(new byte[4]);
+
+                            incomplete.readData(buf);
+
+                            if (incomplete.isReady()) {
+                                size = ByteBuffer.wrap(incomplete.data()).order(buf.order()).getInt();
+                                incomplete = new IncompleteObject(new byte[size]);
+                            }
+                        }
+                    }
+
+                    if (size != 0 && buf.remaining() > 0)
+                        incomplete.readData(buf);
+                }
+                finally {
+                    pageMem.readUnlock(grpId, pageId, page);
+                }
+            }
+            finally {
+                pageMem.releasePage(grpId, pageId, page);
+            }
+        }
+        while (nextLink != 0);
+
+        assert incomplete.isReady();
+
+        return incomplete.data();
+    }
+
     /** {@inheritDoc} */
-    @Override public void insertDataRow(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    @Override public void insertDataRow(Storable row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         int rowSize = row.size();
 
         int written = 0;
@@ -516,7 +606,7 @@ public class AbstractFreeList<T extends Storable> extends PagesList implements F
      *
      * @see PagesList#initReusedPage(long, long, long, int, byte, PageIO)
      */
-    private long initReusedPage(T row, long reusedPageId, int partId,
+    private long initReusedPage(Storable row, long reusedPageId, int partId,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         long reusedPage = acquirePage(reusedPageId, statHolder);
         try {
@@ -538,7 +628,7 @@ public class AbstractFreeList<T extends Storable> extends PagesList implements F
     }
 
     /** {@inheritDoc} */
-    @Override public boolean updateDataRow(long link, T row,
+    @Override public boolean updateDataRow(long link, Storable row,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert link != 0;
 

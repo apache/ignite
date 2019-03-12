@@ -163,11 +163,15 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     public void testInsertDeleteByteArrayStorable() throws Exception {
         final FreeList list = createFreeList(4096);
 
-        SimpleDataRow row = new SimpleDataRow(0, new byte[256]);
+        String testStr = "test";
+
+        SimpleDataRow row = new SimpleDataRow(0, testStr.getBytes());
 
         list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
         assertTrue(row.link() != 0);
+
+        assertEquals(testStr, new String(list.readRow(row.link())));
     }
 
     /**
