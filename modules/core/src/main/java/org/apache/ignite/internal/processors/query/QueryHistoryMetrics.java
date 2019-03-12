@@ -44,8 +44,8 @@ public class QueryHistoryMetrics {
      * @param qry Textual query representation.
      * @param schema Schema name.
      * @param loc {@code true} for local query.
-     * @param startTime Duration of queue execution.
-     * @param duration Duration of queue execution.
+     * @param startTime Start time of query execution.
+     * @param duration Duration of query execution.
      * @param failed {@code True} query executed unsuccessfully {@code false} otherwise.
      */
     public QueryHistoryMetrics(String qry, String schema, boolean loc, long startTime, long duration, boolean failed) {

@@ -308,6 +308,51 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
 
     /**
+     * Test Query history system view.
+     */
+    @Test
+    public void testQueryHistoryMetricsModes() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache cache = ignite.createCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, String.class)
+        );
+
+        cache.put(100,"200");
+
+        String sql = "SELECT \"default\".\"STRING\"._KEY, \"default\".\"STRING\"._VAL FROM " +
+            "\"default\".\"STRING\" WHERE _key=100";
+
+        cache.query(new SqlFieldsQuery(sql)).getAll();
+
+        String sqlHist = "SELECT SCHEMA_NAME, QUERY, LOCAL, CALLS, FAILURES, DURATION_MIN, DURATION_MAX, LAST_QUERY_START " +
+            "FROM IGNITE.LOCAL_SQL_QUERY_HISTORY ORDER BY LAST_QUERY_START";
+
+        cache.query(new SqlFieldsQuery(sqlHist).setLocal(true)).getAll();
+        cache.query(new SqlFieldsQuery(sqlHist).setLocal(true)).getAll();
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery(sqlHist).setLocal(true)).getAll();
+
+        assertEquals(2, res.size());
+
+        List<?> firstRow = res.get(0);
+        assertEquals(DEFAULT_CACHE_NAME, firstRow.get(0));
+        List<?> secondRow = res.get(1);
+        assertEquals(DEFAULT_CACHE_NAME, secondRow.get(0));
+
+        assertEquals(sql, firstRow.get(1));
+        assertEquals(sqlHist, secondRow.get(1));
+
+        assertEquals(false, firstRow.get(2));
+        assertEquals(true, secondRow.get(2));
+
+        assertEquals(1, firstRow.get(3));
+        assertEquals(2, secondRow.get(3));
+
+        assertFalse(((Timestamp)firstRow.get(7)).after(((Timestamp)secondRow.get(7))));
+    }
+
+    /**
      * Test running queries system view.
      */
     @Test
