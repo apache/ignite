@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -58,6 +57,7 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -70,6 +70,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.Assume.assumeFalse;
 
 /**
  *
@@ -79,11 +80,16 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /** */
     @Parameterized.Parameters(name = "{0}")
     public static List<Object[]> parameters() {
-        return Arrays.asList(new Object[][]{
-            {ATOMIC},
-            {TRANSACTIONAL}
-        });
+        ArrayList<Object[]> params = new ArrayList<>();
+
+        params.add(new Object[]{TRANSACTIONAL});
+
+        if (!MvccFeatureChecker.forcedMvcc())
+            params.add(new Object[]{ATOMIC});
+
+        return params;
     }
+
     /** */
     private static boolean client;
 
@@ -179,6 +185,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadOnlySafe() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11107", MvccFeatureChecker.forcedMvcc());
+
         partLossPlc = PartitionLossPolicy.READ_ONLY_SAFE;
 
         checkLostPartition(false, true, killSingleNode);
@@ -201,6 +209,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadOnlyAll() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11107", MvccFeatureChecker.forcedMvcc());
+
         partLossPlc = PartitionLossPolicy.READ_ONLY_ALL;
 
         checkLostPartition(false, false, killSingleNode);
@@ -224,6 +234,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadWriteSafe() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11107", MvccFeatureChecker.forcedMvcc());
+
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
         checkLostPartition(true, true, killSingleNode);
@@ -246,6 +258,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadWriteAll() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11107", MvccFeatureChecker.forcedMvcc());
+
         partLossPlc = PartitionLossPolicy.READ_WRITE_ALL;
 
         checkLostPartition(true, false, killSingleNode);
@@ -269,6 +283,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadWriteSafeAfterKillTwoNodes() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11107", MvccFeatureChecker.forcedMvcc());
+
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
         checkLostPartition(true, true, new TopologyChanger(false, asList(3, 2), asList(0, 1, 4), 0));
@@ -291,6 +307,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadWriteSafeAfterKillTwoNodesWithDelay() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11107", MvccFeatureChecker.forcedMvcc());
+
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
         checkLostPartition(true, true, new TopologyChanger(false, asList(3, 2), asList(0, 1, 4), 20));
@@ -313,6 +331,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadWriteSafeWithBackupsAfterKillThreeNodes() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11107", MvccFeatureChecker.forcedMvcc());
+
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
         backups = 1;
@@ -339,6 +359,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadWriteSafeAfterKillCrd() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11107", MvccFeatureChecker.forcedMvcc());
+
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
         checkLostPartition(true, true, new TopologyChanger(true, asList(3, 0), asList(1, 2, 4), 0));
@@ -361,6 +383,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadWriteSafeWithBackups() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11107", MvccFeatureChecker.forcedMvcc());
+
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
         backups = 1;
@@ -387,6 +411,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadWriteSafeWithBackupsAfterKillCrd() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11107", MvccFeatureChecker.forcedMvcc());
+
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
         backups = 1;
