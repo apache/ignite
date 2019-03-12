@@ -58,8 +58,8 @@ public class VisorBaselineViewTask extends VisorOneNodeTask<Void, VisorBaselineT
             IgniteClusterEx cluster = ignite.cluster();
 
             VisorBaselineAutoAdjustSettings autoAdjustSettings = new VisorBaselineAutoAdjustSettings(
-                cluster.baselineConfiguration().isBaselineAutoAdjustEnabled(),
-                cluster.baselineConfiguration().getBaselineAutoAdjustTimeout()
+                cluster.isBaselineAutoAdjustEnabled(),
+                cluster.baselineAutoAdjustTimeout()
             );
 
             return new VisorBaselineTaskResult(
