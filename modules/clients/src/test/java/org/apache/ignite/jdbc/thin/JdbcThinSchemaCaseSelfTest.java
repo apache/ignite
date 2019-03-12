@@ -15,32 +15,19 @@
  * limitations under the License.
  */
 
-breadcrumbs {
-    $side-margin: 5px;
+package org.apache.ignite.jdbc.thin;
 
-    padding: 3px $side-margin;
-    display: inline-flex;
-    align-items: center;
-    flex-direction: row;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import org.apache.ignite.internal.jdbc2.JdbcAbstractSchemaCaseTest;
 
-    min-height: 20px;
-    border-radius: 4px;
-    background-color: rgba(197, 197, 197, 0.1);
-    font-size: 12px;
-    line-height: 1.08;
-    text-align: left;
-    color: #393939;
-
-    .#{&}__home {
-        margin-left: $side-margin;
-        margin-right: $side-margin;
-        vertical-align: -1px;
-        width: 12px;
-        height: 12px;
-    }
-
-    [ui-sref] + [ui-sref]:before {
-        content: '/';
-        margin: 0 $side-margin;
+/**
+ * Jdbc thin test for schema name case (in)sensitivity.
+ */
+public class JdbcThinSchemaCaseSelfTest extends JdbcAbstractSchemaCaseTest {
+    /** {@inheritDoc} */
+    @Override protected Connection connect(String schema) throws SQLException {
+        return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/" + schema);
     }
 }
