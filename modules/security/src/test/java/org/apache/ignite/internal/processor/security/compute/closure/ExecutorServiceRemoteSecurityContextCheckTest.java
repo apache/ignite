@@ -66,19 +66,19 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
 
         startGrid(SRV_INITIATOR, allowAllPermissionSet());
 
-        startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
+        startClient(CLNT_INITIATOR, allowAllPermissionSet());
 
         startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
 
-        startGrid(CLNT_FEATURE_CALL, allowAllPermissionSet(), true);
+        startClient(CLNT_FEATURE_CALL, allowAllPermissionSet());
 
         startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
 
-        startGrid(CLNT_FEATURE_TRANSITION, allowAllPermissionSet(), true);
+        startClient(CLNT_FEATURE_TRANSITION, allowAllPermissionSet());
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
 
-        startGrid(CLNT_ENDPOINT, allowAllPermissionSet(), true);
+        startClient(CLNT_ENDPOINT, allowAllPermissionSet());
 
         G.allGrids().get(0).cluster().active(true);
     }

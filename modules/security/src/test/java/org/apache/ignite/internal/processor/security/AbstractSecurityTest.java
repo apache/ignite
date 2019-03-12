@@ -119,6 +119,14 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
 
     /**
      * @param login Login.
+     * @param prmSet Security permission set.
+     */
+    protected IgniteEx startClient(String login, SecurityPermissionSet prmSet) throws Exception {
+        return startGrid(login, prmSet, true);
+    }
+
+    /**
+     * @param login Login.
      * @param pwd Password.
      * @param prmSet Security permission set.
      * @param isClient Is client.

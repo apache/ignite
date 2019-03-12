@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processor.security.cache.closure;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
@@ -100,7 +100,7 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
     private void runAndCheck(IgniteEx initiator) {
         UUID secSubjectId = secSubjectId(initiator);
 
-        for (InvokeMethodEnum ime : InvokeMethodEnum.values()) {
+        for (IgniteRunnable r : featureRuns()) {
             runAndCheck(
                 secSubjectId,
                 () -> compute(initiator, nodeId(SRV_FEATURE_CALL)).broadcast(
@@ -108,13 +108,35 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
                         @Override public void run() {
                             register();
 
-                            invoke(ime, Ignition.localIgnite(),
-                                new TestEntryProcessor(endpoints()), prmKey(grid(SRV_FEATURE_TRANSITION)));
+                            r.run();
                         }
                     }
                 )
             );
         }
+    }
+
+    /**
+     * @return Collection of runnables to call invoke methods.
+     */
+    private List<IgniteRunnable> featureRuns() {
+        final Integer key = prmKey(grid(SRV_FEATURE_TRANSITION));
+
+        return Arrays.asList(
+            () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
+                .invoke(key, new TestEntryProcessor(endpoints())),
+
+            () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
+                .invokeAll(Collections.singleton(key), new TestEntryProcessor(endpoints())),
+
+            () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
+                .invokeAsync(key, new TestEntryProcessor(endpoints()))
+                .get(),
+
+            () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
+                .invokeAllAsync(Collections.singleton(key), new TestEntryProcessor(endpoints()))
+                .get()
+        );
     }
 
     /**
@@ -125,52 +147,6 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
             nodeId(SRV_ENDPOINT),
             nodeId(CLNT_ENDPOINT)
         );
-    }
-
-    /**
-     * @param ime Invoke Method.
-     * @param node Node.
-     * @param ep Entry Processor.
-     * @param key Key.
-     */
-    private void invoke(InvokeMethodEnum ime, Ignite node,
-        EntryProcessor<Integer, Integer, Object> ep, Integer key) {
-        switch (ime) {
-            case INVOKE:
-                node.<Integer, Integer>cache(CACHE_NAME)
-                    .invoke(key, ep);
-
-                break;
-            case INVOKE_ALL:
-                node.<Integer, Integer>cache(CACHE_NAME)
-                    .invokeAll(Collections.singleton(key), ep);
-
-                break;
-            case INVOKE_ASYNC:
-                node.<Integer, Integer>cache(CACHE_NAME)
-                    .invokeAsync(key, ep).get();
-
-                break;
-            case INVOKE_ALL_ASYNC:
-                node.<Integer, Integer>cache(CACHE_NAME)
-                    .invokeAllAsync(Collections.singleton(key), ep).get();
-
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown invoke method " + ime);
-        }
-    }
-
-    /** Enum for ways to invoke EntryProcessor. */
-    private enum InvokeMethodEnum {
-        /** Invoke. */
-        INVOKE,
-        /** Invoke all. */
-        INVOKE_ALL,
-        /** Invoke async. */
-        INVOKE_ASYNC,
-        /** Invoke all async. */
-        INVOKE_ALL_ASYNC
     }
 
     /**

@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processor.security.compute.closure;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
@@ -67,19 +67,19 @@ public class DistributedClosureRemoteSecurityContextCheckTest
 
         startGrid(SRV_INITIATOR, allowAllPermissionSet());
 
-        startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
+        startClient(CLNT_INITIATOR, allowAllPermissionSet());
 
         startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
 
-        startGrid(CLNT_FEATURE_CALL, allowAllPermissionSet(), true);
+        startClient(CLNT_FEATURE_CALL, allowAllPermissionSet());
 
         startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
 
-        startGrid(CLNT_FEATURE_TRANSITION, allowAllPermissionSet(), true);
+        startClient(CLNT_FEATURE_TRANSITION, allowAllPermissionSet());
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
 
-        startGrid(CLNT_ENDPOINT, allowAllPermissionSet(), true);
+        startClient(CLNT_ENDPOINT, allowAllPermissionSet());
 
         G.allGrids().get(0).cluster().active(true);
     }
@@ -108,10 +108,10 @@ public class DistributedClosureRemoteSecurityContextCheckTest
      * @param initiator Initiator node.
      */
     private void runAndCheck(IgniteEx initiator) {
-        for (ComputeInvoke ci : ComputeInvoke.values()) {
+        for (IgniteRunnable r : featureRuns()) {
             runAndCheck(secSubjectId(initiator),
                 () -> compute(initiator, featureCalls()).broadcast((IgniteRunnable)
-                    new CommonClosure(ci, featureTransitions(), endpoints())
+                    new CommonClosure(r)
                 )
             );
         }
@@ -147,31 +147,73 @@ public class DistributedClosureRemoteSecurityContextCheckTest
         );
     }
 
-    /** Enum for ways to invoke compute. */
-    enum ComputeInvoke {
-        /** Broadcast. */
-        BROADCAST,
-        /** Broadcast async. */
-        BROADCAST_ASYNC,
-        /** Call. */
-        CALL,
-        /** Call async. */
-        CALL_ASYNC,
-        /** Run. */
-        RUN,
-        /** Run async. */
-        RUN_ASYNC,
-        /** Apply. */
-        APPLY,
-        /** Apply async. */
-        APPLY_ASYNC;
-
-        /**
-         * @return True if an invoke is broadcast.
-         */
-        public boolean isBroadcast() {
-            return this == BROADCAST || this == BROADCAST_ASYNC;
-        }
+    /**
+     * @return Collection of consumers to call compute methods.
+     */
+    private List<IgniteRunnable> featureRuns() {
+        return Arrays.asList(
+            new IgniteRunnable() {
+                @Override public void run() {
+                    compute(Ignition.localIgnite(), featureTransitions())
+                        .broadcast((IgniteRunnable)new CommonClosure(endpoints()));
+                }
+            },
+            new IgniteRunnable() {
+                @Override public void run() {
+                    compute(Ignition.localIgnite(), featureTransitions())
+                        .broadcastAsync((IgniteRunnable)new CommonClosure(endpoints()))
+                        .get();
+                }
+            },
+            new IgniteRunnable() {
+                @Override public void run() {
+                    for (UUID id : featureTransitions()) {
+                        compute(Ignition.localIgnite(), id)
+                            .call(new CommonClosure(endpoints()));
+                    }
+                }
+            },
+            new IgniteRunnable() {
+                @Override public void run() {
+                    for (UUID id : featureTransitions()) {
+                        compute(Ignition.localIgnite(), id)
+                            .callAsync(new CommonClosure(endpoints())).get();
+                    }
+                }
+            },
+            new IgniteRunnable() {
+                @Override public void run() {
+                    for (UUID id : featureTransitions()) {
+                        compute(Ignition.localIgnite(), id)
+                            .run(new CommonClosure(endpoints()));
+                    }
+                }
+            },
+            new IgniteRunnable() {
+                @Override public void run() {
+                    for (UUID id : featureTransitions()) {
+                        compute(Ignition.localIgnite(), id)
+                            .runAsync(new CommonClosure(endpoints())).get();
+                    }
+                }
+            },
+            new IgniteRunnable() {
+                @Override public void run() {
+                    for (UUID id : featureTransitions()) {
+                        compute(Ignition.localIgnite(), id)
+                            .apply(new CommonClosure(endpoints()), new Object());
+                    }
+                }
+            },
+            new IgniteRunnable() {
+                @Override public void run() {
+                    for (UUID id : featureTransitions()) {
+                        compute(Ignition.localIgnite(), id)
+                            .applyAsync(new CommonClosure(endpoints()), new Object()).get();
+                    }
+                }
+            }
+        );
     }
 
     /**
@@ -180,33 +222,30 @@ public class DistributedClosureRemoteSecurityContextCheckTest
     static class CommonClosure implements IgniteRunnable, IgniteCallable<Object>,
         IgniteClosure<Object, Object> {
 
-        /** Type of compute invoke. */
-        private final ComputeInvoke cmpInvoke;
-
-        /** Collection of endpoint node ids. */
-        private final Collection<UUID> transitions;
+        /** Runnable. */
+        private final IgniteRunnable runnable;
 
         /** Collection of endpoint node ids. */
         private final Collection<UUID> endpoints;
 
         /**
-         * @param endpoints Collection of endpoint node ids.
+         * @param runnable Runnable.
          */
-        public CommonClosure(ComputeInvoke cmpInvoke, Collection<UUID> transitions,
-            Collection<UUID> endpoints) {
-            assert cmpInvoke != null;
-            assert !endpoints.isEmpty();
+        public CommonClosure(IgniteRunnable runnable) {
+            assert runnable != null;
 
-            this.cmpInvoke = cmpInvoke;
-            this.transitions = transitions;
-            this.endpoints = endpoints;
+            this.runnable = runnable;
+            endpoints = Collections.emptyList();
         }
 
         /**
          * @param endpoints Collection of endpoint node ids.
          */
         private CommonClosure(Collection<UUID> endpoints) {
-            this(ComputeInvoke.BROADCAST, Collections.emptyList(), endpoints);
+            assert !endpoints.isEmpty();
+
+            runnable = null;
+            this.endpoints = endpoints;
         }
 
         /**
@@ -217,14 +256,8 @@ public class DistributedClosureRemoteSecurityContextCheckTest
 
             Ignite ignite = Ignition.localIgnite();
 
-            if (!transitions.isEmpty()) {
-                if (cmpInvoke.isBroadcast())
-                    transit(compute(ignite, transitions));
-                else {
-                    for (UUID id : transitions)
-                        transit(compute(ignite, id));
-                }
-            }
+            if (runnable != null)
+                runnable.run();
             else {
                 compute(ignite, endpoints)
                     .broadcast(new IgniteRunnable() {
@@ -232,60 +265,6 @@ public class DistributedClosureRemoteSecurityContextCheckTest
                             register();
                         }
                     });
-            }
-        }
-
-        /**
-         * Executes transition invoke.
-         *
-         * @param cmp IgniteCompute.
-         */
-        private void transit(IgniteCompute cmp) {
-            CommonClosure c = new CommonClosure(endpoints);
-
-            switch (cmpInvoke) {
-                case BROADCAST: {
-                    cmp.broadcast((IgniteRunnable)c);
-
-                    break;
-                }
-                case BROADCAST_ASYNC: {
-                    cmp.broadcastAsync((IgniteRunnable)c).get();
-
-                    break;
-                }
-                case CALL: {
-                    cmp.call(c);
-
-                    break;
-                }
-                case CALL_ASYNC: {
-                    cmp.callAsync(c).get();
-
-                    break;
-                }
-                case RUN: {
-                    cmp.run(c);
-
-                    break;
-                }
-                case RUN_ASYNC: {
-                    cmp.runAsync(c).get();
-
-                    break;
-                }
-                case APPLY: {
-                    cmp.apply(c, new Object());
-
-                    break;
-                }
-                case APPLY_ASYNC: {
-                    cmp.applyAsync(c, new Object()).get();
-
-                    break;
-                }
-                default:
-                    throw new IllegalArgumentException("Unknown ComputeInvoke: " + cmpInvoke);
             }
         }
 

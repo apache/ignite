@@ -32,6 +32,9 @@ public class SecurityContextHolderImpl implements SecurityContextHolder {
      * @param secCtx Security context.
      */
     public SecurityContextHolderImpl(IgniteSecurityProcessor proc, SecurityContext secCtx) {
+        assert proc != null;
+        assert secCtx != null;
+
         this.proc = proc;
         this.secCtx = secCtx;
     }

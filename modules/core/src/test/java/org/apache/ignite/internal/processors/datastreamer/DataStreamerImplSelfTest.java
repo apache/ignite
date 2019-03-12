@@ -604,7 +604,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             -1);
 
                         msg = new GridIoMessage(
-                            GridTestUtils.<UUID>getFieldValue(ioMsg, "secSubjId"),
+                            GridTestUtils.getFieldValue(ioMsg, "secSubjId"),
                             GridTestUtils.<Byte>getFieldValue(ioMsg, "plc"),
                             GridTestUtils.getFieldValue(ioMsg, "topic"),
                             GridTestUtils.<Integer>getFieldValue(ioMsg, "topicOrd"),

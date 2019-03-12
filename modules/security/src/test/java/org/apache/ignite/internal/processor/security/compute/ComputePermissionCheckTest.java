@@ -124,11 +124,11 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
 
         Ignite srvForbiddenCancel = startGrid("srv_forbidden_cnl", permissions(TASK_EXECUTE));
 
-        Ignite clntAllowed = startGrid("clnt_allowed", permissions(TASK_EXECUTE, TASK_CANCEL), true);
+        Ignite clntAllowed = startClient("clnt_allowed", permissions(TASK_EXECUTE, TASK_CANCEL));
 
-        Ignite clntForbidden = startGrid("clnt_forbidden", permissions(EMPTY_PERMS), true);
+        Ignite clntForbidden = startClient("clnt_forbidden", permissions(EMPTY_PERMS));
 
-        Ignite clntForbiddenCancel = startGrid("clnt_forbidden_cnl", permissions(TASK_EXECUTE), true);
+        Ignite clntForbiddenCancel = startClient("clnt_forbidden_cnl", permissions(TASK_EXECUTE));
 
         srvAllowed.cluster().active(true);
 

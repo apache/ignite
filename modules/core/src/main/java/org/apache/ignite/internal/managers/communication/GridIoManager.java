@@ -1559,9 +1559,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (change)
             CUR_PLC.set(plc);
 
-        UUID curSecSubjId = secSubjId != null ? secSubjId : nodeId;
+        UUID newSecSubjId = secSubjId != null ? secSubjId : nodeId;
 
-        try(SecurityContextHolder s = ctx.security().replaceContext(curSecSubjId)) {
+        try(SecurityContextHolder s = ctx.security().replaceContext(newSecSubjId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
