@@ -313,22 +313,39 @@ namespace ignite
              */
             std::string ReadString()
             {
+                std::string res;
+
+                ReadString(res);
+
+                return res;
+            }
+
+            /**
+             * Read string from the stream.
+             *
+             * @param dst String.
+             */
+            void ReadString(std::string& dst)
+            {
                 int32_t len = ReadString(NULL, 0);
 
                 if (len != -1)
                 {
-                    ignite::common::FixedSizeArray<char> arr(len + 1);
+                    dst.resize(static_cast<size_t>(len));
 
-                    ReadString(arr.GetData(), static_cast<int32_t>(arr.GetSize()));
-
-                    return std::string(arr.GetData());
+                    ReadString(&dst[0], len);
                 }
                 else
-                    return std::string();
+                    dst.clear();
             }
 
             /**
              * Start string array read.
+             *
+             * Every time you get a BinaryStringArrayReader from BinaryRawReader
+             * you start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @return String array reader.
              */
@@ -336,6 +353,11 @@ namespace ignite
 
             /**
              * Start array read.
+             *
+             * Every time you get a BinaryArrayReader from BinaryRawReader you
+             * start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @return Array reader.
              */
@@ -351,6 +373,11 @@ namespace ignite
 
             /**
              * Start collection read.
+             *
+             * Every time you get a BinaryCollectionReader from BinaryRawReader
+             * you start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @return Collection reader.
              */
@@ -379,6 +406,11 @@ namespace ignite
 
             /**
              * Start map read.
+             *
+             * Every time you get a BinaryMapReader from BinaryRawReader you
+             * start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @return Map reader.
              */

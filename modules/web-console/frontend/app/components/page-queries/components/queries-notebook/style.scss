@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+@import "../../../../../public/stylesheets/variables.scss";
+
 queries-notebook {
     // TODO: Delete this breadcrumbs styles after template refactoring to new design.
     .notebooks-top {
@@ -104,6 +106,14 @@ queries-notebook {
         }
     }
 
+    .empty-caches {
+        display: flex;
+        padding: 10px;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
     .notebook-top-buttons {
         display: flex;
         align-items: center;
@@ -124,7 +134,7 @@ queries-notebook {
 
     .form-field__sensitive {
         input[type='checkbox'] {
-            height: 0;
+            display: none;
         }
 
         input:checked + span {
@@ -140,5 +150,48 @@ queries-notebook {
         margin-right: -5px;
 
         overflow-y: auto;
+    }
+
+    .notebook-failed--block {
+        text-align: center;
+        display: flex;
+        min-height: 200px;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 30px;
+        background: white;
+        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+    }
+}
+
+.popover.settings.refresh-rate {
+    width: 244px;
+
+    [ignite-icon] {
+        height: 12px;
+    }
+
+    .popover-title {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .actions {
+        width: 100%;
+        text-align: right;
+
+        button {
+            margin-top: 20px;
+            margin-right: 0;
+        }
+    }
+
+    .ignite-form-field {
+        display: flex;
+        padding: 5px;
+
+        input {
+            margin-right: 10px;
+        }
     }
 }

@@ -24,10 +24,6 @@
 #include <vector>
 #include <string>
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignition.h"
@@ -87,7 +83,7 @@ struct SqlGetInfoTestSuiteFixture : odbc::OdbcTestSuite
      */
     SqlGetInfoTestSuiteFixture()
     {
-        grid = StartTestNode("queries-test.xml", "NodeMain");
+        grid = StartPlatformNode("queries-test.xml", "NodeMain");
     }
 
     /**
@@ -136,7 +132,7 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckStrInfo(SQL_LIKE_ESCAPE_CLAUSE, "N");
     CheckStrInfo(SQL_MAX_ROW_SIZE_INCLUDES_LONG, "Y");
     CheckStrInfo(SQL_MULT_RESULT_SETS, "N");
-    CheckStrInfo(SQL_MULTIPLE_ACTIVE_TXN, "N");
+    CheckStrInfo(SQL_MULTIPLE_ACTIVE_TXN, "Y");
     CheckStrInfo(SQL_ORDER_BY_COLUMNS_IN_SELECT, "N");
     CheckStrInfo(SQL_PROCEDURE_TERM, "stored procedure");
     CheckStrInfo(SQL_PROCEDURES, "N");
@@ -165,7 +161,7 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckIntInfo(SQL_POS_OPERATIONS, 0);
     CheckIntInfo(SQL_SQL92_DATETIME_FUNCTIONS, SQL_SDF_CURRENT_DATE | SQL_SDF_CURRENT_TIMESTAMP);
     CheckIntInfo(SQL_SQL92_VALUE_EXPRESSIONS, SQL_SVE_CASE | SQL_SVE_CAST | SQL_SVE_COALESCE | SQL_SVE_NULLIF);
-    CheckIntInfo(SQL_STATIC_CURSOR_ATTRIBUTES1, SQL_CA1_NEXT);
+    CheckIntInfo(SQL_STATIC_CURSOR_ATTRIBUTES1, SQL_CA1_NEXT | SQL_CA1_ABSOLUTE);
     CheckIntInfo(SQL_STATIC_CURSOR_ATTRIBUTES2, 0);
     CheckIntInfo(SQL_PARAM_ARRAY_ROW_COUNTS, SQL_PARC_BATCH);
     CheckIntInfo(SQL_PARAM_ARRAY_SELECTS, SQL_PAS_NO_SELECT);
@@ -182,7 +178,7 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckIntInfo(SQL_CREATE_VIEW, 0);
     CheckIntInfo(SQL_CURSOR_SENSITIVITY, SQL_INSENSITIVE);
     CheckIntInfo(SQL_DDL_INDEX, SQL_DI_CREATE_INDEX | SQL_DI_DROP_INDEX);
-    CheckIntInfo(SQL_DEFAULT_TXN_ISOLATION, 0);
+    CheckIntInfo(SQL_DEFAULT_TXN_ISOLATION, SQL_TXN_REPEATABLE_READ);
     CheckIntInfo(SQL_DROP_ASSERTION, 0);
     CheckIntInfo(SQL_DROP_CHARACTER_SET, 0);
     CheckIntInfo(SQL_DROP_COLLATION, 0);
@@ -212,7 +208,7 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckIntInfo(SQL_SQL92_GRANT, 0);
     CheckIntInfo(SQL_SQL92_REVOKE, 0);
     CheckIntInfo(SQL_STANDARD_CLI_CONFORMANCE, 0);
-    CheckIntInfo(SQL_TXN_ISOLATION_OPTION, 0);
+    CheckIntInfo(SQL_TXN_ISOLATION_OPTION, SQL_TXN_REPEATABLE_READ);
     CheckIntInfo(SQL_UNION, SQL_U_UNION | SQL_U_UNION_ALL);
 
     CheckIntInfo(SQL_SCHEMA_USAGE, SQL_SU_DML_STATEMENTS | SQL_SU_TABLE_DEFINITION | SQL_SU_PRIVILEGE_DEFINITION |
@@ -384,7 +380,7 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckShortInfo(SQL_MAX_CONCURRENT_ACTIVITIES, 0);
     CheckShortInfo(SQL_CURSOR_COMMIT_BEHAVIOR, SQL_CB_PRESERVE);
     CheckShortInfo(SQL_CURSOR_ROLLBACK_BEHAVIOR, SQL_CB_PRESERVE);
-    CheckShortInfo(SQL_TXN_CAPABLE, SQL_TC_NONE);
+    CheckShortInfo(SQL_TXN_CAPABLE, SQL_TC_DDL_COMMIT);
     CheckShortInfo(SQL_QUOTED_IDENTIFIER_CASE, SQL_IC_SENSITIVE);
     CheckShortInfo(SQL_ACTIVE_ENVIRONMENTS, 0);
     CheckShortInfo(SQL_CONCAT_NULL_BEHAVIOR, SQL_CB_NULL);

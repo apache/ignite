@@ -16,65 +16,45 @@
 
 include /app/helpers/jade/mixins
 
-web-console-header
-    web-console-header-left
-        ignite-header-title
+//- This doesn't seem to do anything 😵
+.main-content(ng-if='error')
+    .text-center
+        p {{::$ctrl.ui.error}}
+h3.public-page__title(ng-if-start='$ctrl.ui.token && !$ctrl.ui.error') Reset Password
+form.page-password-reset__grid(name='$ctrl.form' ng-init='reset_info.token = token' ng-if-end)
+    +form-field__email({
+        label: 'E-mail:',
+        model: '$ctrl.ui.email',
+        disabled: true
+    })
 
-.container.body-container
-    .row
-        .main-content(ng-if='error')
-            .text-center
-                p {{::$ctrl.ui.error}}
-        div(ng-if='$ctrl.ui.token && !$ctrl.ui.error')
-            header.header-with-selector
-                div
-                    h1 Reset Password
+    +form-field__password({
+        label: 'New password:',
+        model: '$ctrl.ui.password',
+        name: '"password"',
+        required: true,
+        placeholder: 'New password'
+    })(
+        ignite-auto-focus
+        ignite-on-enter-focus-move='passwordConfirmInput'
+    )
+    +form-field__password({
+        label: 'Confirm password:',
+        model: 'confirm',
+        name: '"passwordConfirm"',
+        required: true,
+        placeholder: 'Confirm new password'
+    })(
+        ignite-on-enter-focus-move='resetForm.$valid && resetPassword(user_info)'
+        ignite-match='$ctrl.ui.password'
+    )
 
-            -var form = '$ctrl.form'
-            form.theme--ignite(name='$ctrl.form' ng-init='reset_info.token = token')
-                .row
-                    .col-50
-                        +form-field__email({
-                            label: 'E-mail:',
-                            model: '$ctrl.ui.email',
-                            disabled: true
-                        })
+    footer.form-footer
+        a(ui-sref='default-state') Cancel
+        button.btn-ignite.btn-ignite--primary(
+            ng-disabled='$ctrl.form.$invalid'
+            ng-click='$ctrl.resetPassword()'
+        )
+            svg.icon-left(ignite-icon='checkmark')
+            | Save Changes
 
-                .row
-                    .col-50
-                        +form-field__password({
-                            label: 'New password:',
-                            model: '$ctrl.ui.password',
-                            name: '"password"',
-                            required: true,
-                            placeholder: 'New password'
-                        })(
-                            ignite-auto-focus
-                            ignite-on-enter-focus-move='passwordConfirmInput'
-                        )
-
-                .row
-                    .col-50
-                        +form-field__password({
-                            label: 'Confirm password:',
-                            model: 'confirm',
-                            name: '"passwordConfirm"',
-                            required: true,
-                            placeholder: 'Confirm new password'
-                        })(
-                            ignite-on-enter-focus-move='resetForm.$valid && resetPassword(user_info)'
-                            ignite-match='$ctrl.ui.password'
-                        )
-
-                hr
-
-                footer
-                    a.btn-ignite.btn-ignite--link-success(type='button' ui-sref='default-state') Cancel
-                    button.btn-ignite.btn-ignite--success(
-                        ng-disabled='$ctrl.form.$invalid'
-                        ng-click='$ctrl.resetPassword()'
-                    )
-                        svg.icon-left(ignite-icon='checkmark')
-                        | Save Changes
-
-web-console-footer

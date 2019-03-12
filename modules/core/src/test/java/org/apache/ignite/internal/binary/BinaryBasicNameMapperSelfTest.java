@@ -20,6 +20,7 @@ package org.apache.ignite.internal.binary;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass1;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -28,6 +29,7 @@ public class BinaryBasicNameMapperSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleName() throws Exception {
         BinaryBasicNameMapper mapper = new BinaryBasicNameMapper(true);
 
@@ -39,6 +41,7 @@ public class BinaryBasicNameMapperSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFullName() throws Exception {
         BinaryBasicNameMapper mapper = new BinaryBasicNameMapper(false);
 

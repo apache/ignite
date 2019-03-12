@@ -83,13 +83,13 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_LAZY;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_MULTIPLE_STMTS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_SKIP_REDUCER_ON_UPDATE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_BUF_SIZE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_PAR_OPS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_SKIP_REDUCER_ON_UPDATE;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
@@ -183,7 +183,6 @@ public class JdbcConnection implements Connection {
      * @param props Additional properties.
      * @throws SQLException In case Ignite node failed to start.
      */
-    @SuppressWarnings("unchecked")
     public JdbcConnection(String url, Properties props) throws SQLException {
         assert url != null;
         assert props != null;
@@ -435,9 +434,6 @@ public class JdbcConnection implements Connection {
     /** {@inheritDoc} */
     @Override public void setReadOnly(boolean readOnly) throws SQLException {
         ensureNotClosed();
-
-        if (!readOnly)
-            throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -772,7 +768,6 @@ public class JdbcConnection implements Connection {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Connection is not a wrapper for " + iface.getName());
@@ -787,11 +782,10 @@ public class JdbcConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void setSchema(String schemaName) throws SQLException {
-        this.schemaName = schemaName;
+        this.schemaName = JdbcUtils.normalizeSchema(schemaName);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public String getSchema() throws SQLException {
         return schemaName;
     }
@@ -907,7 +901,7 @@ public class JdbcConnection implements Connection {
      *
      * @throws SQLException If connection is closed.
      */
-    private void ensureNotClosed() throws SQLException {
+    void ensureNotClosed() throws SQLException {
         if (closed)
             throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
     }

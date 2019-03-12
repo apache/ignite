@@ -25,6 +25,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestReconnectPluginProvider;
 import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -62,6 +63,7 @@ public class AuthenticationRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         stopGrid("server");
 

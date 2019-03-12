@@ -203,7 +203,6 @@ public class GridCacheMvccCandidate implements Externalizable,
     /**
      * @return Parent entry.
      */
-    @SuppressWarnings({"unchecked"})
     public <V> GridCacheEntryEx parent() {
         return parent;
     }

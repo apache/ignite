@@ -22,30 +22,34 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.QueryDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
@@ -60,16 +64,17 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.command.Prepared;
+import org.apache.ignite.lang.IgniteClosure;
 import org.h2.table.Column;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * Logic for building update plans performed by {@link DmlStatementsProcessor}.
  */
 public final class UpdatePlanBuilder {
+    /** Converter from GridSqlColumn to Column. */
+    private static final IgniteClosure<GridSqlColumn, Column> TO_H2_COL =
+        (IgniteClosure<GridSqlColumn, Column>)GridSqlColumn::column;
+
     /**
      * Constructor.
      */
@@ -81,42 +86,46 @@ public final class UpdatePlanBuilder {
      * Generate SELECT statements to retrieve data for modifications from and find fast UPDATE or DELETE args,
      * if available.
      *
-     * @param prepared H2's {@link Prepared}.
-     * @param loc Local query flag.
+     * @param planKey Plan key.
+     * @param stmt Statement.
+     * @param mvccEnabled MVCC enabled flag.
      * @param idx Indexing.
-     * @param conn Connection.
-     * @param fieldsQry Original query.
      * @return Update plan.
      */
-    public static UpdatePlan planForStatement(Prepared prepared, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos)
-        throws IgniteCheckedException {
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
-
+    @SuppressWarnings("ConstantConditions")
+    public static UpdatePlan planForStatement(
+        QueryDescriptor planKey,
+        GridSqlStatement stmt,
+        boolean mvccEnabled,
+        IgniteH2Indexing idx
+    ) throws IgniteCheckedException {
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
-            return planForInsert(stmt, loc, idx, conn, fieldsQry);
+            return planForInsert(planKey, stmt, idx, mvccEnabled);
         else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
-            return planForUpdate(stmt, loc, idx, conn, fieldsQry, errKeysPos);
+            return planForUpdate(planKey, stmt, idx, mvccEnabled);
         else
-            throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
+            throw new IgniteSQLException("Unsupported operation: " + stmt.getSQL(),
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
      * Prepare update plan for INSERT or MERGE.
      *
+     * @param planKey Plan key.
      * @param stmt INSERT or MERGE statement.
-     * @param loc Local query flag.
      * @param idx Indexing.
-     * @param conn Connection.
-     * @param fieldsQuery Original query.
+     * @param mvccEnabled Mvcc flag.
      * @return Update plan.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private static UpdatePlan planForInsert(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery) throws IgniteCheckedException {
-        GridSqlQuery sel;
+    private static UpdatePlan planForInsert(
+        QueryDescriptor planKey,
+        GridSqlStatement stmt,
+        IgniteH2Indexing idx,
+        boolean mvccEnabled
+    ) throws IgniteCheckedException {
+        GridSqlQuery sel = null;
 
         GridSqlElement target;
 
@@ -140,17 +149,16 @@ public final class UpdatePlanBuilder {
 
             GridH2Table h2Tbl = tbl.dataTable();
 
-            if (h2Tbl == null)
-                throw new IgniteSQLException("Operation not supported for table '" + tbl.tableName() + "'",
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            assert h2Tbl != null;
 
             desc = h2Tbl.rowDescriptor();
 
             cols = ins.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
 
-            if (sel == null)
+            if (noQuery(ins.rows()))
                 elRows = ins.rows();
+            else
+                sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
 
             isTwoStepSubqry = (ins.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : ins.rows().size();
@@ -164,10 +172,11 @@ public final class UpdatePlanBuilder {
             desc = tbl.dataTable().rowDescriptor();
 
             cols = merge.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
 
-            if (sel == null)
+            if (noQuery(merge.rows()))
                 elRows = merge.rows();
+            else
+                sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
 
             isTwoStepSubqry = (merge.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
@@ -207,13 +216,16 @@ public final class UpdatePlanBuilder {
             colTypes[i] = col.resultType().type();
 
             int colId = col.column().getColumnId();
+
             if (desc.isKeyColumn(colId)) {
                 keyColIdx = i;
+
                 continue;
             }
 
             if (desc.isValueColumn(colId)) {
                 valColIdx = i;
+
                 continue;
             }
 
@@ -227,13 +239,24 @@ public final class UpdatePlanBuilder {
                 hasValProps = true;
         }
 
+        verifyDmlColumns(tbl.dataTable(), F.viewReadOnly(Arrays.asList(cols), TO_H2_COL));
+
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
 
         String selectSql = sel != null ? sel.getSQL() : null;
 
-        DmlDistributedPlanInfo distributed = (rowsNum == 0 && !F.isEmpty(selectSql)) ?
-            checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName()) : null;
+        DmlDistributedPlanInfo distributed = null;
+
+        if (rowsNum == 0 && !F.isEmpty(selectSql)) {
+            distributed = checkPlanCanBeDistributed(
+                idx,
+                mvccEnabled,
+                planKey,
+                selectSql,
+                tbl.dataTable().cacheName()
+            );
+        }
 
         UpdateMode mode = stmt instanceof GridSqlMerge ? UpdateMode.MERGE : UpdateMode.INSERT;
 
@@ -276,20 +299,46 @@ public final class UpdatePlanBuilder {
     }
 
     /**
+     * @param rows Insert rows.
+     * @return {@code True} if no query optimisation may be used.
+     */
+    private static boolean noQuery(List<GridSqlElement[]> rows) {
+        if (F.isEmpty(rows))
+            return false;
+
+        boolean noQry = true;
+
+        for (int i = 0; i < rows.size(); i++) {
+            GridSqlElement[] row = rows.get(i);
+
+            for (int i1 = 0; i1 < row.length; i1++) {
+                GridSqlElement el = row[i1];
+
+                if(!(noQry &=  (el instanceof GridSqlConst || el instanceof GridSqlParameter)))
+                    return noQry;
+
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Prepare update plan for UPDATE or DELETE.
      *
+     * @param planKey Plan key.
      * @param stmt UPDATE or DELETE statement.
-     * @param loc Local query flag.
      * @param idx Indexing.
-     * @param conn Connection.
-     * @param fieldsQuery Original query.
-     * @param errKeysPos index to inject param for re-run keys at. Null if it's not a re-run plan.
+     * @param mvccEnabled MVCC flag.
      * @return Update plan.
      * @throws IgniteCheckedException if failed.
      */
-    private static UpdatePlan planForUpdate(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery, @Nullable Integer errKeysPos)
-        throws IgniteCheckedException {
+    private static UpdatePlan planForUpdate(
+        QueryDescriptor planKey,
+        GridSqlStatement stmt,
+        IgniteH2Indexing idx,
+        boolean mvccEnabled
+    ) throws IgniteCheckedException {
         GridSqlElement target;
 
         FastUpdate fastUpdate;
@@ -319,9 +368,7 @@ public final class UpdatePlanBuilder {
 
         GridH2Table h2Tbl = tbl.dataTable();
 
-        if (h2Tbl == null)
-            throw new IgniteSQLException("Operation not supported for table '" + tbl.tableName() + "'",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        assert h2Tbl != null;
 
         GridH2RowDescriptor desc = h2Tbl.rowDescriptor();
 
@@ -376,12 +423,21 @@ public final class UpdatePlanBuilder {
                 KeyValueSupplier valSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps,
                     false, true);
 
-                sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
+                sel = DmlAstUtils.selectForUpdate((GridSqlUpdate)stmt);
 
                 String selectSql = sel.getSQL();
 
-                DmlDistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
-                    checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName());
+                DmlDistributedPlanInfo distributed = null;
+
+                if (!F.isEmpty(selectSql)) {
+                    distributed = checkPlanCanBeDistributed(
+                        idx,
+                        mvccEnabled,
+                        planKey,
+                        selectSql,
+                        tbl.dataTable().cacheName()
+                    );
+                }
 
                 return new UpdatePlan(
                     UpdateMode.UPDATE,
@@ -401,12 +457,21 @@ public final class UpdatePlanBuilder {
                 );
             }
             else {
-                sel = DmlAstUtils.selectForDelete((GridSqlDelete) stmt, errKeysPos);
+                sel = DmlAstUtils.selectForDelete((GridSqlDelete)stmt);
 
                 String selectSql = sel.getSQL();
 
-                DmlDistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
-                    checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName());
+                DmlDistributedPlanInfo distributed = null;
+
+                if (!F.isEmpty(selectSql)) {
+                    distributed = checkPlanCanBeDistributed(
+                        idx,
+                        mvccEnabled,
+                        planKey,
+                        selectSql,
+                        tbl.dataTable().cacheName()
+                    );
+                }
 
                 return new UpdatePlan(
                     UpdateMode.DELETE,
@@ -426,7 +491,6 @@ public final class UpdatePlanBuilder {
      * @return The update plan for this command.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("ConstantConditions")
     public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, GridH2Table tbl) throws IgniteCheckedException {
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
@@ -443,6 +507,8 @@ public final class UpdatePlanBuilder {
 
         String[] colNames = new String[cols.size()];
 
+        Column[] h2Cols = new Column[cols.size()];
+
         int[] colTypes = new int[cols.size()];
 
         int keyColIdx = -1;
@@ -457,6 +523,8 @@ public final class UpdatePlanBuilder {
             colNames[i] = colName;
 
             Column h2Col = tbl.getColumn(colName);
+
+            h2Cols[i] = h2Col;
 
             colTypes[i] = h2Col.getType();
             int colId = h2Col.getColumnId();
@@ -480,6 +548,8 @@ public final class UpdatePlanBuilder {
             else
                 hasValProps = true;
         }
+
+        verifyDmlColumns(tbl, Arrays.asList(h2Cols));
 
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps,
             true, false);
@@ -513,10 +583,11 @@ public final class UpdatePlanBuilder {
      * @param colIdx Column index if key or value is present in columns list, {@code -1} if it's not.
      * @param hasProps Whether column list affects individual properties of key or value.
      * @param key Whether supplier should be created for key or for value.
+     * @param forUpdate {@code FOR UPDATE} flag.
      * @return Closure returning key or value.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"ConstantConditions", "unchecked"})
+    @SuppressWarnings({"ConstantConditions", "unchecked", "IfMayBeConditional"})
     private static KeyValueSupplier createSupplier(final GridCacheContext<?, ?> cctx, GridQueryTypeDescriptor desc,
         final int colIdx, boolean hasProps, final boolean key, boolean forUpdate) throws IgniteCheckedException {
         final String typeName = key ? desc.keyTypeName() : desc.valueTypeName();
@@ -541,7 +612,7 @@ public final class UpdatePlanBuilder {
                 // If we have key or value explicitly present in query, create new builder upon them...
                 return new KeyValueSupplier() {
                     /** {@inheritDoc} */
-                    @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+                    @Override public Object apply(List<?> arg) {
                         Object obj = arg.get(colIdx);
 
                         if (obj == null)
@@ -561,7 +632,7 @@ public final class UpdatePlanBuilder {
                 // ...and if we don't, just create a new builder.
                 return new KeyValueSupplier() {
                     /** {@inheritDoc} */
-                    @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+                    @Override public Object apply(List<?> arg) {
                         BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
 
                         cctx.prepareAffinityField(builder);
@@ -651,7 +722,7 @@ public final class UpdatePlanBuilder {
      * @param statement Statement.
      */
     private static void verifyUpdateColumns(GridSqlStatement statement) {
-        if (statement == null || !(statement instanceof GridSqlUpdate))
+        if (!(statement instanceof GridSqlUpdate))
             return;
 
         GridSqlUpdate update = (GridSqlUpdate) statement;
@@ -673,6 +744,9 @@ public final class UpdatePlanBuilder {
         if (gridTbl != null && updateAffectsKeyColumns(gridTbl, update.set().keySet()))
             throw new IgniteSQLException("SQL UPDATE can't modify key or its fields directly",
                 IgniteQueryErrorCode.KEY_UPDATE);
+
+        if (gridTbl != null)
+            verifyDmlColumns(gridTbl, F.viewReadOnly(update.cols(), TO_H2_COL));
     }
 
     /**
@@ -692,53 +766,136 @@ public final class UpdatePlanBuilder {
             if (desc.isKeyColumn(colId))
                 return true;
 
-            // column ids 0..2 are _key, _val, _ver
-            if (colId >= DEFAULT_COLUMNS_COUNT) {
-                if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
+            // column ids 0..1 are _key, _val
+            if (colId >= QueryUtils.DEFAULT_COLUMNS_COUNT) {
+                if (desc.isColumnKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT))
                     return true;
             }
         }
         return false;
     }
 
+
+    /**
+     * Checks that DML query (insert, merge, update, bulk load aka copy) columns: <br/>
+     * 1) doesn't contain both entire key (_key or alias) and columns referring to part of the key; <br/>
+     * 2) doesn't contain both entire value (_val or alias) and columns referring to part of the value. <br/>
+     *
+     * @param tab - updated table.
+     * @param affectedCols - table's column names affected by dml query. Their order should be the same as in the
+     * dml statement only to have the same columns order in the error message.
+     * @throws IgniteSQLException if check failed.
+     */
+    private static void verifyDmlColumns(GridH2Table tab, Collection<Column> affectedCols) {
+        GridH2RowDescriptor desc = tab.rowDescriptor();
+
+        // _key (_val) or it alias exist in the update columns.
+        String keyColName = null;
+        String valColName = null;
+
+        // Whether fields that are part of the key (value) exist in the updated columns.
+        boolean hasKeyProps = false;
+        boolean hasValProps = false;
+
+        for (Column col : affectedCols) {
+            int colId = col.getColumnId();
+
+            // At first, let's define whether column refers to entire key, entire value or one of key/val fields.
+            // Checking that it's not specified both _key(_val) and its alias by the way.
+            if (desc.isKeyColumn(colId)) {
+                if (keyColName == null)
+                    keyColName = col.getName();
+                else
+                    throw new IgniteSQLException(
+                        "Columns " + keyColName + " and " + col + " both refer to entire cache key object.",
+                        IgniteQueryErrorCode.PARSING);
+            }
+            else if (desc.isValueColumn(colId)) {
+                if (valColName == null)
+                    valColName = col.getName();
+                else
+                    throw new IgniteSQLException(
+                        "Columns " + valColName + " and " + col + " both refer to entire cache value object.",
+                        IgniteQueryErrorCode.PARSING);
+
+            }
+            else {
+                // Column ids 0..2 are _key, _val, _ver
+                assert colId >= QueryUtils.DEFAULT_COLUMNS_COUNT :
+                    "Unexpected column [name=" + col + ", id=" + colId + "].";
+
+                if (desc.isColumnKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT))
+                    hasKeyProps = true;
+                else
+                    hasValProps = true;
+            }
+
+            // And check invariants for the fast fail.
+            boolean hasEntireKeyCol = keyColName != null;
+            boolean hasEntireValcol = valColName != null;
+
+            if (hasEntireKeyCol && hasKeyProps)
+                throw new IgniteSQLException("Column " + keyColName + " refers to entire key cache object. " +
+                    "It must not be mixed with other columns that refer to parts of key.",
+                    IgniteQueryErrorCode.PARSING);
+
+            if (hasEntireValcol && hasValProps)
+                throw new IgniteSQLException("Column " + valColName + " refers to entire value cache object. " +
+                    "It must not be mixed with other columns that refer to parts of value.",
+                    IgniteQueryErrorCode.PARSING);
+        }
+    }
+
     /**
      * Checks whether the given update plan can be distributed and returns additional info.
      *
      * @param idx Indexing.
-     * @param conn Connection.
-     * @param fieldsQry Initial update query.
-     * @param loc Local query flag.
+     * @param mvccEnabled Mvcc flag.
+     * @param planKey Plan key.
      * @param selectQry Derived select query.
      * @param cacheName Cache name.
      * @return distributed update plan info, or {@code null} if cannot be distributed.
      * @throws IgniteCheckedException if failed.
      */
-    private static DmlDistributedPlanInfo checkPlanCanBeDistributed(IgniteH2Indexing idx,
-        Connection conn, SqlFieldsQuery fieldsQry, boolean loc, String selectQry, String cacheName)
+    private static DmlDistributedPlanInfo checkPlanCanBeDistributed(
+        IgniteH2Indexing idx,
+        boolean mvccEnabled,
+        QueryDescriptor planKey,
+        String selectQry,
+        String cacheName
+    )
         throws IgniteCheckedException {
-
-        if (loc || !isSkipReducerOnUpdateQuery(fieldsQry) || DmlUtils.isBatched(fieldsQry))
+        if ((!mvccEnabled && !planKey.skipReducerOnUpdate()) || planKey.batched())
             return null;
 
-        assert conn != null;
-
-        try {
+        try (Connection conn = idx.connections().connectionNoCache(planKey.schemaName())) {
             // Get a new prepared statement for derived select query.
             try (PreparedStatement stmt = conn.prepareStatement(selectQry)) {
-                idx.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
-
-                GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(conn,
+                GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(
+                    conn,
                     GridSqlQueryParser.prepared(stmt),
-                    fieldsQry.getArgs(),
-                    fieldsQry.isCollocated(),
-                    fieldsQry.isDistributedJoins(),
-                    fieldsQry.isEnforceJoinOrder(), idx);
+                    planKey.collocated(),
+                    planKey.distributedJoins(),
+                    planKey.enforceJoinOrder(),
+                    false,
+                    idx
+                );
 
-                boolean distributed = qry.skipMergeTable() &&  qry.mapQueries().size() == 1 &&
-                    !qry.mapQueries().get(0).hasSubQueries();
+                boolean distributed =
+                    !qry.isLocalSplit() &&                                                    // No split for local
+                    qry.hasCacheIds() &&                                                      // Over real caches
+                    qry.skipMergeTable() &&                                                   // No merge table
+                    qry.mapQueries().size() == 1 && !qry.mapQueries().get(0).hasSubQueries(); // One w/o subqueries
 
-                return distributed ? new DmlDistributedPlanInfo(qry.isReplicatedOnly(),
-                    idx.collectCacheIds(CU.cacheId(cacheName), qry)): null;
+                if (distributed) {
+                    List<Integer> cacheIds = H2Utils.collectCacheIds(idx, CU.cacheId(cacheName), qry.tables());
+
+                    H2Utils.checkQuery(idx, cacheIds, qry.mvccEnabled(), qry.forUpdate(), qry.tables());
+
+                    return new DmlDistributedPlanInfo(qry.isReplicatedOnly(), cacheIds, qry.derivedPartitions());
+                }
+                else
+                    return null;
             }
         }
         catch (SQLException e) {
@@ -747,20 +904,9 @@ public final class UpdatePlanBuilder {
     }
 
     /**
-     * Checks whether query flags are compatible with server side update.
-     *
-     * @param qry Query.
-     * @return {@code true} if update can be distributed.
-     */
-    public static boolean isSkipReducerOnUpdateQuery(SqlFieldsQuery qry) {
-        return qry != null && !qry.isLocal() &&
-            qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isSkipReducerOnUpdate();
-    }
-
-    /**
      * Simple supplier that just takes specified element of a given row.
      */
-    private final static class PlainValueSupplier implements KeyValueSupplier {
+    private static final class PlainValueSupplier implements KeyValueSupplier {
         /** Index of column to use. */
         private final int colIdx;
 
@@ -774,7 +920,7 @@ public final class UpdatePlanBuilder {
         }
 
         /** {@inheritDoc} */
-        @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+        @Override public Object apply(List<?> arg) {
             return arg.get(colIdx);
         }
     }

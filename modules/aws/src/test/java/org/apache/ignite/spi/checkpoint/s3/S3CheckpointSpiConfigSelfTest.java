@@ -19,6 +19,7 @@ package org.apache.ignite.spi.checkpoint.s3;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
 
 /**
  * Grid S3 checkpoint SPI config self test.
@@ -28,6 +29,7 @@ public class S3CheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<S3C
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new S3CheckpointSpi(), "awsCredentials", null);
     }

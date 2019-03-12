@@ -30,20 +30,14 @@
         <relativePath>parent</relativePath>
     </parent>
 
-    <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>2.7.0-SNAPSHOT</version>
+    <version>2.8.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <properties>
-        <!--fix <attachartifact>...< /> at apache-release profile if changed-->
-        <ignite.zip.pattern>${project.artifactId}-${ignite.edition}-${project.version}-bin</ignite.zip.pattern>
-    </properties>
-
     <scm>
-        <url>https://git-wip-us.apache.org/repos/asf/ignite</url>
-        <connection>scm:git:https://git-wip-us.apache.org/repos/asf/ignite</connection>
-        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/ignite</developerConnection>
+        <url>https://gitbox.apache.org/repos/asf/ignite.git</url>
+        <connection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</connection>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
@@ -51,6 +45,7 @@
         <module>modules/apache-license-gen</module>
         <module>modules/tools</module>
         <module>modules/core</module>
+        <module>modules/compress</module>
         <module>modules/dev-utils</module>
         <module>modules/direct-io</module>
         <module>modules/hadoop</module>
@@ -99,6 +94,9 @@
         <module>modules/rocketmq</module>
         <module>modules/sqlline</module>
         <module>modules/ml</module>
+        <module>modules/ml/spark-model-parser</module>
+        <module>modules/ml/xgboost-model-parser</module>
+        <module>modules/tensorflow</module>
     </modules>
 
     <profiles>
@@ -111,6 +109,7 @@
                 <module>modules/geospatial</module>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
+                <module>modules/hibernate-5.3</module>
                 <module>modules/schedule</module>
                 <module>modules/web-console/web-agent</module>
                 <module>modules/yardstick</module>
@@ -120,6 +119,7 @@
         <profile>
             <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
             <modules><!-- sorted alphabetically -->
+                <module>modules/ml/mleap-model-parser</module>
                 <module>modules/scalar-2.10</module>
                 <module>modules/scalar</module>
                 <module>modules/spark</module>
@@ -248,6 +248,7 @@
             <modules>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
+                <module>modules/hibernate-5.3</module>
                 <module>modules/geospatial</module>
                 <module>modules/schedule</module>
             </modules>
@@ -396,15 +397,15 @@
                                             <include name="**/*.sh" />
                                         </fixcrlf>
 
-                                        <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
-                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.zip.pattern}" filemode="755">
+                                        <zip destfile="${basedir}/target/bin/${ignite.edition}-${project.version}-bin.zip" encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin" filemode="755">
                                                 <include name="**/*.sh" />
                                                 <include name="**/configure" />
                                                 <include name="**/install-sh" />
                                                 <include name="**/compile" />
                                                 <include name="**/missing" />
                                             </zipfileset>
-                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.zip.pattern}">
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin">
                                                 <exclude name="**/*.sh" />
                                                 <exclude name="**/configure" />
                                                 <exclude name="**/install-sh" />
@@ -538,6 +539,7 @@
             </activation>
 
             <modules>
+                <module>modules/ml/mleap-model-parser</module>
                 <module>modules/scalar</module>
                 <module>modules/spark</module>
                 <module>modules/visor-console</module>
@@ -574,46 +576,10 @@
         </profile>
 
         <profile>
-            <id>release-sources</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>source-release-assembly-ignite</id>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                                    <descriptors>
-                                        <descriptor>assembly/release-sources.xml</descriptor>
-                                    </descriptors>
-                                    <tarLongFileMode>gnu</tarLongFileMode>
-                                    <finalName>${project.artifactId}-${project.version}-src</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>web-console</id>
             <modules>
                 <module>modules/web-console</module>
                 <module>modules/web-console/web-agent</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>tensorflow</id>
-            <modules>
-                <module>modules/tensorflow</module>
             </modules>
         </profile>
 

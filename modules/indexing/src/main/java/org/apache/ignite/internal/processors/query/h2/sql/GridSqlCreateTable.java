@@ -22,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -83,6 +84,12 @@ public class GridSqlCreateTable extends GridSqlStatement {
 
     /** Extra WITH-params. */
     private List<String> params;
+
+    /** Encrypted flag. */
+    private boolean encrypted;
+
+    /** See {@link CacheConfiguration#getQueryParallelism()}. */
+    private Integer parallelism;
 
     /**
      * @return Cache name upon which new cache configuration for this table must be based.
@@ -334,6 +341,34 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void params(List<String> params) {
         this.params = params;
+    }
+
+    /**
+     * @return Encrypted flag.
+     */
+    public boolean encrypted() {
+        return encrypted;
+    }
+
+    /**
+     * @param encrypted Encrypted flag.
+     */
+    public void encrypted(boolean encrypted) {
+        this.encrypted = encrypted;
+    }
+
+    /**
+     * Query parallelism value.
+     */
+    @Nullable public Integer parallelism() {
+        return parallelism;
+    }
+
+    /**
+     * @param parallelism new query parallelism value.
+     */
+    public void parallelism(Integer parallelism) {
+        this.parallelism = parallelism;
     }
 
     /** {@inheritDoc} */

@@ -379,7 +379,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Byte array.
      */
-    public void write(byte[] val) {
+    @Override public void write(byte[] val) {
         out.writeByteArray(val);
     }
 
@@ -388,7 +388,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param off Offset.
      * @param len Length.
      */
-    public void write(byte[] val, int off, int len) {
+    @Override public void write(byte[] val, int off, int len) {
         out.write(val, off, len);
     }
 
@@ -1736,7 +1736,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
     @Override public void writeBytes(String s) throws IOException {
         int len = s.length();
 
@@ -1747,7 +1746,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
     @Override public void writeChars(String s) throws IOException {
         int len = s.length();
 
@@ -1758,7 +1756,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
     @Override public void writeUTF(String s) throws IOException {
         writeString(s);
     }

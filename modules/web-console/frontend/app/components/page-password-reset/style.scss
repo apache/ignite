@@ -20,12 +20,19 @@ page-password-reset {
     flex: 1 0 auto;
     flex-direction: column;
 
-    footer {
+    .form-footer {
+        padding: 15px 0;
+        text-align: right;
         display: flex;
-        justify-content: flex-end;
+        align-items: center;
+
+        .btn-ignite {
+            margin-left: auto;
+        }
     }
 
-    .btn-ignite + .btn-ignite {
-        margin-left: 10px;
+    form {
+        display: grid;
+        grid-gap: 10px;
     }
 }

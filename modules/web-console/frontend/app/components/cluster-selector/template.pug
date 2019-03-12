@@ -34,8 +34,6 @@ button.btn-ignite.btn-ignite--primary(
 
 span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1')
     div.btn-ignite.btn-ignite--primary(
-        ng-model='$ctrl.cluster'
-
         bs-dropdown=''
         data-trigger='click'
         data-container='body'
@@ -45,7 +43,7 @@ span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1')
         aria-expanded='false'
     )
         span(ng-if='!$ctrl.cluster') No clusters available
-        
+
         span(ng-if='$ctrl.cluster')
             cluster-security-icon(secured='$ctrl.cluster.secured')
             | {{ $ctrl.cluster.name }}
@@ -53,7 +51,7 @@ span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1')
 
     ul.bs-select-menu.dropdown-menu(role='menu')
         li(ng-repeat='item in $ctrl.clusters')
-            button.btn-ignite.bssm-item-button(ng-click='$ctrl.cluster = item; $ctrl.change()')
+            button.btn-ignite.bssm-item-button(ng-click='$ctrl.change(item)')
                 span.icon-left
                     svg(ignite-icon='{{ item.secured ? "lockClosed" : "lockOpened" }}')
                 | {{ item.name }}

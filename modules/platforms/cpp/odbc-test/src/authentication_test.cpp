@@ -20,10 +20,6 @@
 #include <vector>
 #include <string>
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/regex.hpp>
 #include <boost/test/unit_test.hpp>
 
@@ -56,7 +52,7 @@ struct AuthenticationTestSuiteFixture : odbc::OdbcTestSuite
 {
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartTestNode("queries-auth.xml", name);
+        return StartPlatformNode("queries-auth.xml", name);
     }
 
     /**

@@ -43,7 +43,7 @@ module.exports.factory = function(mongo, usersService) {
             if (req.body.password && _.isEmpty(req.body.password))
                 return res.status(500).send('Wrong value for new password!');
 
-            usersService.save(req.body)
+            usersService.save(req.user._id, req.body)
                 .then((user) => {
                     const becomeUsed = req.session.viewedUser && req.user.admin;
 

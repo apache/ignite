@@ -39,7 +39,7 @@ public class DecisionTreeLeafNode implements DecisionTreeNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector doubles) {
+    @Override public Double predict(Vector doubles) {
         return val;
     }
 

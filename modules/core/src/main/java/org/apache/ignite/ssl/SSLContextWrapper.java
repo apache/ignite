@@ -20,10 +20,15 @@ package org.apache.ignite.ssl;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 
-/** */
-class SSLContextWrapper extends SSLContext {
-    /** */
-    SSLContextWrapper(SSLContext delegate, SSLParameters sslParameters) {
+/**
+ * Wrapper for {@link SSLContext} that extend source context with custom SSL parameters.
+ */
+public class SSLContextWrapper extends SSLContext {
+    /**
+     * @param delegate Wrapped SSL context.
+     * @param sslParameters Extended SSL parameters.
+     */
+    public SSLContextWrapper(SSLContext delegate, SSLParameters sslParameters) {
         super(new DelegatingSSLContextSpi(delegate, sslParameters),
             delegate.getProvider(),
             delegate.getProtocol());

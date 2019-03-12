@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.knn.classification.KNNModelFormat;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
@@ -41,7 +41,7 @@ import org.jetbrains.annotations.NotNull;
  * Common methods and fields for all kNN and aNN models
  * to predict label based on neighbours' labels.
  */
-public abstract class NNClassificationModel implements Model<Vector, Double>, Exportable<KNNModelFormat> {
+public abstract class NNClassificationModel implements IgniteModel<Vector, Double>, Exportable<KNNModelFormat> {
     /** Amount of nearest neighbors. */
     protected int k = 5;
 
@@ -174,6 +174,11 @@ public abstract class NNClassificationModel implements Model<Vector, Double>, Ex
             return 1.0; // strategy.SIMPLE
     }
 
+    /** */
+    public DistanceMeasure getDistanceMeasure() {
+        return distanceMeasure;
+    }
+
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = 1;
@@ -210,6 +215,17 @@ public abstract class NNClassificationModel implements Model<Vector, Double>, Ex
             .addField("measure", distanceMeasure.getClass().getSimpleName())
             .addField("strategy", stgy.name())
             .toString();
+    }
+
+    /**
+     * Sets parameters from other model to this model.
+     *
+     * @param mdl Model.
+     */
+    protected void copyParametersFrom(NNClassificationModel mdl) {
+        this.k = mdl.k;
+        this.distanceMeasure = mdl.distanceMeasure;
+        this.stgy = mdl.stgy;
     }
 
     /** */

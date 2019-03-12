@@ -32,6 +32,7 @@ import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
+import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.ann.ANNModelFormat;
 import org.apache.ignite.ml.knn.ann.ProbableLabel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
@@ -42,12 +43,10 @@ import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
-import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassModel;
+import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
-import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
+import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -98,36 +97,11 @@ public class LocalModelsTest {
     @Test
     public void importExportSVMBinaryClassificationModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{1, 2}), 3);
-            Exporter<SVMLinearBinaryClassificationModel, String> exporter = new FileExporter<>();
+            SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(new DenseVector(new double[] {1, 2}), 3);
+            Exporter<SVMLinearClassificationModel, String> exporter = new FileExporter<>();
             mdl.saveModel(exporter, mdlFilePath);
 
-            SVMLinearBinaryClassificationModel load = exporter.load(mdlFilePath);
-
-            Assert.assertNotNull(load);
-            Assert.assertEquals("", mdl, load);
-
-            return null;
-        });
-    }
-
-    /** */
-    @Test
-    public void importExportSVMMultiClassClassificationModelTest() throws IOException {
-        executeModelTest(mdlFilePath -> {
-            SVMLinearBinaryClassificationModel binaryMdl1 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{1, 2}), 3);
-            SVMLinearBinaryClassificationModel binaryMdl2 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{2, 3}), 4);
-            SVMLinearBinaryClassificationModel binaryMdl3 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{3, 4}), 5);
-
-            SVMLinearMultiClassClassificationModel mdl = new SVMLinearMultiClassClassificationModel();
-            mdl.add(1, binaryMdl1);
-            mdl.add(2, binaryMdl2);
-            mdl.add(3, binaryMdl3);
-
-            Exporter<SVMLinearMultiClassClassificationModel, String> exporter = new FileExporter<>();
-            mdl.saveModel(exporter, mdlFilePath);
-
-            SVMLinearMultiClassClassificationModel load = exporter.load(mdlFilePath);
+            SVMLinearClassificationModel load = exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
             Assert.assertEquals("", mdl, load);
@@ -145,23 +119,6 @@ public class LocalModelsTest {
             mdl.saveModel(exporter, mdlFilePath);
 
             LogisticRegressionModel load = exporter.load(mdlFilePath);
-
-            Assert.assertNotNull(load);
-            Assert.assertEquals("", mdl, load);
-
-            return null;
-        });
-    }
-
-    /** */
-    @Test
-    public void importExportLogRegressionMultiClassModelTest() throws IOException {
-        executeModelTest(mdlFilePath -> {
-            LogRegressionMultiClassModel mdl = new LogRegressionMultiClassModel();
-            Exporter<LogRegressionMultiClassModel, String> exporter = new FileExporter<>();
-            mdl.saveModel(exporter, mdlFilePath);
-
-            LogRegressionMultiClassModel load = exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
             Assert.assertEquals("", mdl, load);
@@ -195,7 +152,7 @@ public class LocalModelsTest {
         data.put(1, new double[] {1.0, 1960, 373200});
 
         KMeansTrainer trainer = new KMeansTrainer()
-            .withK(1);
+            .withAmountOfClusters(1);
 
         return trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
@@ -237,7 +194,7 @@ public class LocalModelsTest {
         executeModelTest(mdlFilePath -> {
             final LabeledVectorSet<ProbableLabel, LabeledVector> centers = new LabeledVectorSet<>();
 
-            NNClassificationModel mdl = new ANNClassificationModel(centers)
+            NNClassificationModel mdl = new ANNClassificationModel(centers, new ANNClassificationTrainer.CentroidStat())
                 .withK(4)
                 .withDistanceMeasure(new ManhattanDistance())
                 .withStrategy(NNStrategy.WEIGHTED);
@@ -250,7 +207,7 @@ public class LocalModelsTest {
             Assert.assertNotNull(load);
 
 
-            NNClassificationModel importedMdl = new ANNClassificationModel(load.getCandidates())
+            NNClassificationModel importedMdl = new ANNClassificationModel(load.getCandidates(), new ANNClassificationTrainer.CentroidStat())
                 .withK(load.getK())
                 .withDistanceMeasure(load.getDistanceMeasure())
                 .withStrategy(load.getStgy());

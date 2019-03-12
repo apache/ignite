@@ -60,8 +60,8 @@ $link-hover-decoration: underline !default;
 //
 //## Font, line-height, and color for body text, headings, and more.
 
-$font-family-sans-serif:  Roboto, sans-serif !default;
-$font-family-serif:       Roboto_slab, serif !default;
+$font-family-sans-serif:  var(--sans-serif-font), sans-serif !default;
+$font-family-serif:       var(--serif-font), serif !default;
 //** Default monospace fonts for `<code>`, `<kbd>`, and `<pre>`.
 $font-family-monospace:   Menlo, Monaco, Consolas, "Courier New", monospace !default;
 $font-family-base:        $font-family-sans-serif !default;
@@ -726,7 +726,7 @@ $list-group-link-heading-color: #333 !default;
 
 $panel-bg:                    #fff !default;
 $panel-body-padding:          15px !default;
-$panel-heading-padding:       10px 15px !default;
+$panel-heading-padding:       5px 10px !default;
 $panel-footer-padding:        $panel-heading-padding !default;
 $panel-border-radius:         $border-radius-base !default;
 

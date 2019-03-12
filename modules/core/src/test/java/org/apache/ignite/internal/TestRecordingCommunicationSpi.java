@@ -33,6 +33,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -65,6 +66,9 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     /** */
     private IgniteBiPredicate<ClusterNode, Message> blockP;
 
+    /** */
+    private volatile IgniteBiInClosure<ClusterNode, Message> c;
+
     /**
      * @param node Node.
      * @return Test SPI.
@@ -86,6 +90,9 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
             GridIoMessage ioMsg = (GridIoMessage)msg;
 
             Message msg0 = ioMsg.message();
+
+            if (c != null)
+                c.apply(node, msg0);
 
             synchronized (this) {
                 boolean record = (recordClasses != null && recordClasses.contains(msg0.getClass())) ||
@@ -196,22 +203,38 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      * @throws InterruptedException If interrupted.
      */
     public void waitForBlocked() throws InterruptedException {
+        waitForBlocked(1);
+    }
+
+    /**
+     * @param size Number of messages to wait for.
+     * @throws InterruptedException If interrupted.
+     */
+    public void waitForBlocked(int size) throws InterruptedException {
         synchronized (this) {
-            while (blockedMsgs.isEmpty())
+            while (blockedMsgs.size() < size)
                 wait();
         }
     }
 
     /**
-     * @param cnt Number of messages to wait.
-     *
-     * @throws InterruptedException If interrupted.
+     * @param size Size
+     * @param timeout Timeout.
+     * @throws InterruptedException
      */
-    public void waitForBlocked(int cnt) throws InterruptedException {
+    public boolean waitForBlocked(int size, long timeout) throws InterruptedException {
+        long t0 = U.currentTimeMillis() + timeout;
+
         synchronized (this) {
-            while (blockedMsgs.size() < cnt)
-                wait();
+            while (blockedMsgs.size() < size) {
+                wait(1000);
+
+                if (U.currentTimeMillis() >= t0)
+                    return false;
+            }
         }
+
+        return true;
     }
 
     /**
@@ -237,6 +260,13 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         }
 
         return false;
+    }
+
+    /**
+     * @param c Message closure.
+     */
+    public void closure(IgniteBiInClosure<ClusterNode, Message> c) {
+        this.c = c;
     }
 
     /**

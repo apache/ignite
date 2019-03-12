@@ -23,9 +23,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -33,23 +32,10 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  *
  */
 public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractTest{
-    /** Ip finder. */
-    private final static TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /**
-     * @param gridName Grid name.
-     */
-   @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        return cfg;
-    }
-
     /**
      *
      */
+    @Test
     public void test() throws Exception {
         IgniteConfiguration node1cfg = getConfiguration("node1");
         IgniteConfiguration node2cfg = getConfiguration("node2");

@@ -26,19 +26,21 @@ import org.h2.table.Column;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
+import org.h2.value.ValueTimestamp;
 
 /**
  * Local system view base class (which uses only local node data).
  */
+@SuppressWarnings("IfMayBeConditional")
 public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
     /**
      * @param tblName Table name.
      * @param desc Description.
      * @param ctx Context.
-     * @param indexes Indexed columns.
+     * @param indexes Indexes.
      * @param cols Columns.
      */
-    public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String[] indexes,
+    protected SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String[] indexes,
         Column... cols) {
         super(tblName, desc, ctx, cols, indexes);
 
@@ -51,18 +53,30 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
      * @param tblName Table name.
      * @param desc Description.
      * @param ctx Context.
+     * @param indexedCols Indexed columns.
      * @param cols Columns.
      */
-    public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, Column ... cols) {
-        this(tblName, desc, ctx, new String[] {}, cols);
+    protected SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String indexedCols,
+        Column... cols) {
+        this(tblName, desc, ctx, new String[] {indexedCols}, cols);
+    }
+
+    /**
+     * @param tblName Table name.
+     * @param desc Description.
+     * @param ctx Context.
+     * @param cols Columns.
+     */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
+    protected SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, Column ... cols) {
+        this(tblName, desc, ctx, new String[] {} , cols);
     }
 
     /**
      * @param ses Session.
-     * @param key Key.
      * @param data Data for each column.
      */
-    protected Row createRow(Session ses, long key, Object... data) {
+    protected Row createRow(Session ses, Object... data) {
         Value[] values = new Value[data.length];
 
         for (int i = 0; i < data.length; i++) {
@@ -74,11 +88,7 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
             values[i] = cols[i].convert(v);
         }
 
-        Row row = ses.getDatabase().createRow(values, 1);
-
-        row.setKey(key);
-
-        return row;
+        return ses.getDatabase().createRow(values, 0);
     }
 
     /**
@@ -124,5 +134,17 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
         catch (RuntimeException e) {
             return null;
         }
+    }
+
+    /**
+     * Converts millis to ValueTimestamp
+     *
+     * @param millis Millis.
+     */
+    protected static Value valueTimestampFromMillis(long millis) {
+        if (millis <= 0L || millis == Long.MAX_VALUE)
+            return ValueNull.INSTANCE;
+        else
+            return ValueTimestamp.fromMillis(millis);
     }
 }

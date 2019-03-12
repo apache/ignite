@@ -30,6 +30,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Contains test of Enum marshalling with various {@link Marshaller}s. See IGNITE-8547 for details.
@@ -44,6 +45,7 @@ public class MarshallerEnumDeadlockMultiJvmTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testJdkMarshaller() throws Exception {
         marshFactory = new JdkMarshallerFactory();
 
@@ -51,6 +53,7 @@ public class MarshallerEnumDeadlockMultiJvmTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testOptimizedMarshaller() throws Exception {
         marshFactory = new OptimizedMarshallerFactory();
 
@@ -58,6 +61,7 @@ public class MarshallerEnumDeadlockMultiJvmTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBinaryMarshaller() throws Exception {
         marshFactory = new BinaryMarshallerFactory();
 

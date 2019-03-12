@@ -39,6 +39,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.DIRECT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.ONHEAP;
@@ -50,6 +51,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAligned() throws Exception {
         doTestAligned(ONHEAP);
     }
@@ -57,6 +59,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAlignedDirect() throws Exception {
         doTestAligned(DIRECT);
     }
@@ -64,6 +67,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotAligned() throws Exception {
         doTestNotAligned(ONHEAP);
     }
@@ -71,6 +75,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotAlignedDirect() throws Exception {
         doTestNotAligned(DIRECT);
     }
@@ -78,6 +83,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoOverflowMultiThreaded() throws Exception {
         doTestNoOverflowMultiThreaded(ONHEAP);
     }
@@ -85,6 +91,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoOverflowMultiThreadedDirect() throws Exception {
         doTestNoOverflowMultiThreaded(DIRECT);
     }
@@ -92,6 +99,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         doTestMultiThreaded(ONHEAP);
     }
@@ -99,6 +107,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiThreadedDirect() throws Exception {
         doTestMultiThreaded(DIRECT);
     }
@@ -106,6 +115,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiThreaded2() throws Exception {
         doTestMultiThreaded2(ONHEAP);
     }
@@ -113,6 +123,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiThreadedDirect2() throws Exception {
         doTestMultiThreaded2(DIRECT);
     }

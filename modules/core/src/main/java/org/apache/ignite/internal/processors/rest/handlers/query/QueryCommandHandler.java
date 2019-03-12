@@ -275,7 +275,6 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         @Override public GridRestResponse call() throws Exception {
             final long qryId = qryIdGen.getAndIncrement();
 

@@ -68,15 +68,14 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -89,9 +88,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    public static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int ENTRY_CNT = 100;
 
     /** */
@@ -101,12 +97,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         CacheConfiguration cacheCfg = createCacheConfig();
 
@@ -222,6 +212,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testCircularReference() throws Exception {
         IgniteCache c = keepBinaryCache();
 
@@ -266,6 +257,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         IgniteCache<Integer, TestObject> c = jcache(0);
 
@@ -290,6 +282,67 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testReplace() throws Exception {
+        IgniteCache<Integer, TestObject> c = jcache(0);
+
+        for (int i = 0; i < ENTRY_CNT; i++)
+            c.put(i, new TestObject(i));
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            TestObject obj = c.get(i);
+
+            assertEquals(i, obj.val);
+        }
+
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
+
+        BinaryObjectBuilder bldr = grid(0).binary().builder(TestObject.class.getName());
+
+        bldr.setField("val", -42);
+
+        BinaryObject testObj = bldr.build();
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            BinaryObject po = kpc.get(i);
+
+            assertEquals(i, (int)po.field("val"));
+
+            assertTrue(kpc.replace(i, po, testObj));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRemove() throws Exception {
+        IgniteCache<Integer, TestObject> c = jcache(0);
+
+        for (int i = 0; i < ENTRY_CNT; i++)
+            c.put(i, new TestObject(i));
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            TestObject obj = c.get(i);
+
+            assertEquals(i, obj.val);
+        }
+
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            BinaryObject po = kpc.get(i);
+
+            assertEquals(i, (int)po.field("val"));
+
+            assertTrue(kpc.remove(i, po));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testIterator() throws Exception {
         IgniteCache<Integer, TestObject> c = jcache(0);
 
@@ -329,6 +382,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollection() throws Exception {
         IgniteCache<Integer, Collection<TestObject>> c = jcache(0);
 
@@ -375,6 +429,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMap() throws Exception {
         IgniteCache<Integer, Map<Integer, TestObject>> c = jcache(0);
 
@@ -420,6 +475,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingletonList() throws Exception {
         IgniteCache<Integer, Collection<TestObject>> c = jcache(0);
 
@@ -447,6 +503,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAsync() throws Exception {
         IgniteCache<Integer, TestObject> c = jcache(0);
 
@@ -473,6 +530,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicArrays() throws Exception {
         IgniteCache<Integer, Object> cache = jcache(0);
 
@@ -506,9 +564,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-3244")
+    @Test
     public void testCustomArrays() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-3244");
-
         IgniteCache<Integer, TestObject[]> cache = jcache(0);
 
         for (int i = 0; i < ENTRY_CNT; i++) {
@@ -542,6 +600,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetTx1() throws Exception {
         checkGetTx(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -549,6 +608,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetTx2() throws Exception {
         checkGetTx(PESSIMISTIC, READ_COMMITTED);
     }
@@ -595,6 +655,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetTxAsync1() throws Exception {
         checkGetAsyncTx(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -602,6 +663,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetTxAsync2() throws Exception {
         checkGetAsyncTx(PESSIMISTIC, READ_COMMITTED);
     }
@@ -649,6 +711,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAsyncTx() throws Exception {
         if (atomicityMode() != TRANSACTIONAL)
             return;
@@ -684,6 +747,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAll() throws Exception {
         IgniteCache<Integer, TestObject> c = jcache(0);
 
@@ -724,6 +788,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllAsync() throws Exception {
         IgniteCache<Integer, TestObject> c = jcache(0);
 
@@ -764,6 +829,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllTx1() throws Exception {
         checkGetAllTx(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -771,6 +837,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllTx2() throws Exception {
         checkGetAllTx(PESSIMISTIC, READ_COMMITTED);
     }
@@ -836,6 +903,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllAsyncTx1() throws Exception {
         checkGetAllAsyncTx(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -843,6 +911,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllAsyncTx2() throws Exception {
         checkGetAllAsyncTx(PESSIMISTIC, READ_COMMITTED);
     }
@@ -908,6 +977,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      *
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testCrossFormatObjectsIdentity() {
         IgniteCache c = binKeysCache();
 
@@ -929,6 +999,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      *
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testPutWithArrayHashing() {
         IgniteCache c = binKeysCache();
 
@@ -963,6 +1034,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      *
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testPutWithFieldsHashing() {
         IgniteCache c = binKeysCache();
 
@@ -996,6 +1068,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      *
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testPutWithCustomHashing() {
         IgniteCache c = binKeysCache();
 
@@ -1026,6 +1099,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testKeepBinaryTxOverwrite() throws Exception {
         if (atomicityMode() != TRANSACTIONAL)
             return;
@@ -1050,6 +1124,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             jcache(i).localLoadCache(null);
@@ -1066,6 +1141,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheAsync() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             jcache(i).loadCacheAsync(null).get();
@@ -1082,6 +1158,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheFilteredAsync() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
             IgniteCache<Integer, TestObject> c = jcache(i);
@@ -1106,6 +1183,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransform() throws Exception {
         IgniteCache<Integer, BinaryObject> c = keepBinaryCache();
 
@@ -1325,7 +1403,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * Key to test puts and gets with
      */
     @SuppressWarnings({"ConstantConditions", "unused"})
-    private final static class ComplexBinaryFieldsListHashedKey {
+    private static final class ComplexBinaryFieldsListHashedKey {
         /** */
         private final Integer firstField = 1;
 

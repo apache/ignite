@@ -112,7 +112,7 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
      * @param params Connection parameters.
      * @return Thin JDBC connection to specified node.
      */
-    static Connection connect(IgniteEx node, String params) throws SQLException {
+    protected Connection connect(IgniteEx node, String params) throws SQLException {
         Collection<GridPortRecord> recs = node.context().ports().records();
 
         GridPortRecord cliLsnrRec = null;
@@ -141,7 +141,7 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
      * @return Result set.
      * @throws RuntimeException if failed.
      */
-    static List<List<?>> execute(Connection conn, String sql, Object... args) throws SQLException {
+    protected List<List<?>> execute(Connection conn, String sql, Object... args) throws SQLException {
         try (PreparedStatement s = conn.prepareStatement(sql)) {
             for (int i = 0; i < args.length; i++)
                 s.setObject(i + 1, args[i]);

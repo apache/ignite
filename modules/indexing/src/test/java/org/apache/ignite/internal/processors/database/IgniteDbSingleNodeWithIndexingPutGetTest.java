@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.junit.Test;
 
 /**
  *
@@ -46,6 +47,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
 
     /**
      */
+    @Test
     public void testGroupIndexes() {
         IgniteEx ig = grid(0);
 
@@ -74,6 +76,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
 
     /**
      */
+    @Test
     public void testGroupIndexes2() {
         IgniteEx ig = grid(0);
 

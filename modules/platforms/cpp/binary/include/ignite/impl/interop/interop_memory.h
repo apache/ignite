@@ -192,6 +192,13 @@ namespace ignite
                 int8_t* Data();
 
                 /**
+                 * Get raw data pointer.
+                 *
+                 * @return Data pointer.
+                 */
+                const int8_t* Data() const;
+
+                /**
                  * Get capacity.
                  *
                  * @return Capacity.

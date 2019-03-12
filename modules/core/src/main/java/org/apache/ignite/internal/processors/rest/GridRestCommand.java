@@ -159,14 +159,34 @@ public enum GridRestCommand {
     /** Close query. */
     CLOSE_SQL_QUERY("qrycls"),
 
-    /** */
+    /** @deprecated Use {@link #CLUSTER_ACTIVATE} instead. */
+    @Deprecated
     CLUSTER_ACTIVE("active"),
 
-    /** */
+    /** @deprecated Use {@link #CLUSTER_DEACTIVATE} instead. */
+    @Deprecated
     CLUSTER_INACTIVE("inactive"),
 
     /** */
+    CLUSTER_ACTIVATE("activate"),
+
+    /** */
+    CLUSTER_DEACTIVATE("deactivate"),
+
+    /** */
     CLUSTER_CURRENT_STATE("currentstate"),
+
+    /** */
+    BASELINE_CURRENT_STATE("baseline"),
+
+    /** */
+    BASELINE_SET("setbaseline"),
+
+    /** */
+    BASELINE_ADD("addbaseline"),
+
+    /** */
+    BASELINE_REMOVE("removebaseline"),
 
     /** */
     AUTHENTICATE("authenticate"),
@@ -178,7 +198,13 @@ public enum GridRestCommand {
     REMOVE_USER("removeuser"),
 
     /** */
-    UPDATE_USER("updateuser");
+    UPDATE_USER("updateuser"),
+
+    /** Data region metrics. */
+    DATA_REGION_METRICS("dataregion"),
+
+    /** Data storage metrics. */
+    DATA_STORAGE_METRICS("datastorage");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();

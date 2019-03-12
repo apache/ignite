@@ -26,8 +26,10 @@ import java.util.StringTokenizer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Holds JDBC connection properties.
@@ -99,6 +101,26 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private BooleanProperty skipReducerOnUpdate = new BooleanProperty(
         "skipReducerOnUpdate", "Enable execution update queries on ignite server nodes", false, false);
 
+    /** Nested transactions handling strategy. */
+    private StringProperty nestedTxMode = new StringProperty(
+        "nestedTransactionsMode", "Way to handle nested transactions", NestedTxMode.ERROR.name(),
+        new String[] { NestedTxMode.COMMIT.name(), NestedTxMode.ERROR.name(), NestedTxMode.IGNORE.name() },
+        false, new PropertyValidator() {
+        private static final long serialVersionUID = 0L;
+
+        @Override public void validate(String mode) throws SQLException {
+            if (!F.isEmpty(mode)) {
+                try {
+                    NestedTxMode.valueOf(mode.toUpperCase());
+                }
+                catch (IllegalArgumentException e) {
+                    throw new SQLException("Invalid nested transactions handling mode, allowed values: " +
+                        Arrays.toString(nestedTxMode.choices), SqlStateCode.CLIENT_CONNECTION_FAILED);
+                }
+            }
+        }
+    });
+
     /** SSL: Use SSL connection to Ignite node. */
     private StringProperty sslMode = new StringProperty("sslMode",
         "The SSL mode of the connection", SSL_MODE_DISABLE,
@@ -162,15 +184,21 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private StringProperty passwd = new StringProperty(
         "password", "User's password", null, null, false, null);
 
+    /** Data page scan flag. */
+    private BooleanProperty dataPageScanEnabled = new BooleanProperty("dataPageScanEnabled",
+        "Whether data page scan for queries is allowed. If not specified, server defines the default behaviour.",
+        null, false);
+
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
-        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
+        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate, nestedTxMode,
         sslMode, sslProtocol, sslKeyAlgorithm,
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory,
-        user, passwd
+        user, passwd,
+        dataPageScanEnabled
     };
 
     /** {@inheritDoc} */
@@ -437,6 +465,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
+    @Override public String nestedTxMode() {
+        return nestedTxMode.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void nestedTxMode(String val) {
+        nestedTxMode.setValue(val);
+    }
+
+    /** {@inheritDoc} */
     @Override public void setUsername(String name) {
         user.setValue(name);
     }
@@ -454,6 +492,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public String getPassword() {
         return passwd.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled) {
+        this.dataPageScanEnabled.setValue(dataPageScanEnabled);
     }
 
     /**
@@ -815,10 +863,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
                     SqlStateCode.CLIENT_CONNECTION_FAILED);
             }
 
-            checkChoices(strVal);
-
             if (validator != null)
                 validator.validate(strVal);
+
+            checkChoices(strVal);
 
             props.remove(name);
 
@@ -880,7 +928,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         private static final String [] boolChoices = new String[] {Boolean.TRUE.toString(), Boolean.FALSE.toString()};
 
         /** Value. */
-        private boolean val;
+        private Boolean val;
 
         /**
          * @param name Name.
@@ -888,7 +936,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @param dfltVal Default value.
          * @param required {@code true} if the property is required.
          */
-        BooleanProperty(String name, String desc, boolean dfltVal, boolean required) {
+        BooleanProperty(String name, String desc, @Nullable Boolean dfltVal, boolean required) {
             super(name, desc, dfltVal, boolChoices, required);
 
             val = dfltVal;
@@ -897,7 +945,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         /**
          * @return Property value.
          */
-        boolean value() {
+        @Nullable Boolean value() {
             return val;
         }
 
@@ -918,13 +966,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override String valueObject() {
+            if (val == null)
+                return null;
+
             return Boolean.toString(val);
         }
 
         /**
          * @param val Property value to set.
          */
-        void setValue(boolean val) {
+        void setValue(Boolean val) {
             this.val = val;
         }
     }

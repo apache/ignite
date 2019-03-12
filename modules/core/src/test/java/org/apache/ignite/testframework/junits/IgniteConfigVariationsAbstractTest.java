@@ -36,13 +36,32 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.testframework.configvariations.ConfigVariations;
+import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
+import org.junit.runners.model.Statement;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
  */
 public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstractTest {
+    /** Manages test execution and reporting. */
+    private final TestRule rulePrivate = (base, description) -> new Statement() {
+        @Override public void evaluate() {
+            assert getName() != null : "getName returned null";
+
+            testsCfg = testsCfgInjected;
+        }
+    };
+
+    /** Manages first and last test execution. */
+    @Rule public RuleChain runRule
+        = RuleChain.outerRule(rulePrivate).around(super.runRule);
+
     /** */
     protected static final int SERVER_NODE_IDX = 0;
 
@@ -50,30 +69,42 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     protected static final int CLIENT_NODE_IDX = 1;
 
     /** */
-    protected int testedNodeIdx;
+    protected static int testedNodeIdx;
 
     /** */
     private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigVariationsTests");
 
-    /** */
-    protected VariationsTestsConfig testsCfg;
+    /** Dummy initial stub to just let people launch test classes not from suite. */
+    protected VariationsTestsConfig testsCfg = dummyCfg();
 
     /** */
     protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
 
-    /**
-     * @param testsCfg Tests configuration.
-     */
-    public void setTestsConfiguration(VariationsTestsConfig testsCfg) {
-        assert this.testsCfg == null : "Test config must be set only once [oldTestCfg=" + this.testsCfg
-            + ", newTestCfg=" + testsCfg + "]";
+    /** See {@link IgniteConfigVariationsAbstractTest#injectTestsConfiguration} */
+    private static VariationsTestsConfig testsCfgInjected = dummyCfg();
 
-        this.testsCfg = testsCfg;
+    /** {@inheritDoc} */
+    @Override public String getTestIgniteInstanceName(int idx) {
+        return getTestIgniteInstanceName() + idx;
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected boolean isSafeTopology() {
+    @Override public String getTestIgniteInstanceName() {
+        return "testGrid";
+    }
+
+    /**
+     * Invoked by reflection from {@code ConfigVariationsTestSuiteBuilder}.
+     *
+     * @param testsCfgInjected Tests configuration.
+     */
+    @SuppressWarnings("unused")
+    protected static void injectTestsConfiguration(VariationsTestsConfig testsCfgInjected) {
+        IgniteConfigVariationsAbstractTest.testsCfgInjected = testsCfgInjected;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isSafeTopology() {
         return false;
     }
 
@@ -117,21 +148,35 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        if (testsCfg.isStopNodes()) {
-            info("Stopping all grids...");
+        try {
+            if (testsCfg.isStopNodes()) {
+                info("Stopping all grids...");
 
-            stopAllGrids();
+                stopAllGrids();
 
-            FileUtils.deleteDirectory(workDir);
+                FileUtils.deleteDirectory(workDir);
 
-            info("Ignite's 'work' directory has been cleaned.");
+                info("Ignite's 'work' directory has been cleaned.");
 
-            memoryUsage();
+                memoryUsage();
 
-            System.gc();
+                System.gc();
 
-            memoryUsage();
+                memoryUsage();
+            }
         }
+        finally {
+            unconditionalCleanupAfterTests();
+        }
+    }
+
+    /** */
+    protected void unconditionalCleanupAfterTests() {
+        testedNodeIdx = 0;
+
+        testsCfgInjected = testsCfg = dummyCfg();
+
+        stopAllGrids();
     }
 
     /**
@@ -158,6 +203,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected String testDescription() {
+        assert testsCfg != null: "Tests should be run using test suite.";
+
         return super.testDescription() + '-' + testsCfg.description() + '-' + testsCfg.gridCount() + "-node(s)";
     }
 
@@ -344,6 +391,13 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             default:
                 throw new IllegalArgumentException("mode: " + mode);
         }
+    }
+
+    /** */
+    private static VariationsTestsConfig dummyCfg() {
+        return new VariationsTestsConfig(
+            new ConfigVariationsFactory(null, new int[] {0}, ConfigVariations.cacheBasicSet(), new int[] {0}),
+            "Dummy config", false, null, 1, false);
     }
 
     /**

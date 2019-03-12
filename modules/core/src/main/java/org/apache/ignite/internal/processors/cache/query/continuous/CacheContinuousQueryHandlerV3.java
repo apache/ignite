@@ -94,7 +94,6 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
             ignoreClsNotFound,
             null);
 
-        assert locTransLsnr != null;
         assert rmtTransFactory != null;
 
         this.locTransLsnr = locTransLsnr;
@@ -156,7 +155,6 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
@@ -171,7 +169,6 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 

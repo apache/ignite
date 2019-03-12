@@ -39,7 +39,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
@@ -79,6 +78,13 @@ public class IgniteTestResources {
     private GridResourceProcessor rsrcProc;
 
     /**
+     * @return Default MBean server or {@code null} if {@code IGNITE_MBEANS_DISABLED} is configured.
+     */
+    @Nullable private static MBeanServer prepareMBeanServer() {
+        return U.IGNITE_MBEANS_DISABLED ? null : ManagementFactory.getPlatformMBeanServer();
+    }
+
+    /**
      * @throws IgniteCheckedException If failed.
      */
     public IgniteTestResources() throws IgniteCheckedException {
@@ -87,7 +93,8 @@ public class IgniteTestResources {
         else
             log = rootLog.getLogger(getClass());
 
-        this.jmx = ManagementFactory.getPlatformMBeanServer();
+        this.jmx = prepareMBeanServer();
+
         this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
     }
 
@@ -97,7 +104,7 @@ public class IgniteTestResources {
     public IgniteTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
         this.cfg = cfg;
         this.log = rootLog.getLogger(getClass());
-        this.jmx = ManagementFactory.getPlatformMBeanServer();
+        this.jmx = prepareMBeanServer();
         this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log, this.cfg));
     }
 
@@ -119,7 +126,7 @@ public class IgniteTestResources {
         assert log != null;
 
         this.log = log.getLogger(getClass());
-        this.jmx = ManagementFactory.getPlatformMBeanServer();
+        this.jmx = prepareMBeanServer();
         this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
     }
 
@@ -234,10 +241,8 @@ public class IgniteTestResources {
      * @return Marshaller.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public static synchronized Marshaller getMarshaller() throws IgniteCheckedException {
-        String marshallerName =
-            System.getProperty(MARSH_CLASS_NAME, GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME));
+        String marshallerName = System.getProperty(MARSH_CLASS_NAME);
 
         Marshaller marsh;
 

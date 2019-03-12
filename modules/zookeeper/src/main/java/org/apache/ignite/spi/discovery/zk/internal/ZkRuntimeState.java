@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.List;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.Watcher;
 
@@ -37,7 +36,7 @@ class ZkRuntimeState {
     volatile Exception errForClose;
 
     /** */
-    final boolean prevJoined;
+    final boolean reconnect;
 
     /** */
     ZookeeperClient zkClient;
@@ -90,10 +89,10 @@ class ZkRuntimeState {
     boolean updateAlives;
 
     /**
-     * @param prevJoined {@code True} if joined topology before reconnect attempt.
+     * @param reconnect {@code True} if joined topology before reconnect attempt.
      */
-    ZkRuntimeState(boolean prevJoined) {
-        this.prevJoined = prevJoined;
+    ZkRuntimeState(boolean reconnect) {
+        this.reconnect = reconnect;
     }
 
     /**

@@ -23,7 +23,6 @@ namespace Apache.Ignite.AspNet.Tests
     using System.Linq;
     using System.Reflection;
     using System.Threading;
-    using System.Threading.Tasks;
     using System.Web;
     using System.Web.SessionState;
     using Apache.Ignite.Core;
@@ -56,7 +55,7 @@ namespace Apache.Ignite.AspNet.Tests
         private const string Id = "1";
 
         /** Test context. */
-        private static readonly HttpContext HttpContext = 
+        private static readonly HttpContext HttpContext =
             new HttpContext(new HttpRequest(null, "http://tempuri.org", null), new HttpResponse(null));
 
         /// <summary>
@@ -87,7 +86,7 @@ namespace Apache.Ignite.AspNet.Tests
             var ignite = Ignition.GetIgnite(GridName);
             ignite.GetCacheNames().ToList().ForEach(x => ignite.GetCache<object, object>(x).RemoveAll());
         }
-        
+
         /// <summary>
         /// Test setup.
         /// </summary>
@@ -230,7 +229,7 @@ namespace Apache.Ignite.AspNet.Tests
 
             // Add item.
             provider.CreateUninitializedItem(HttpContext, Id, 7);
-            
+
             // Check added item.
             res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNotNull(res);

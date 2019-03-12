@@ -18,8 +18,8 @@
 package org.apache.ignite.examples.ml.genetic.knapsack;
 
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
@@ -32,19 +32,20 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  */
 public class KnapsackTerminateCriteria implements ITerminateCriteria {
     /** Ignite instance. */
-    private Ignite ignite;
+    private final Ignite ignite;
 
-    /** Ignite logger. */
-    private IgniteLogger igniteLog;
+    /** */
+    private final Consumer<String> logConsumer;
 
     /**
      * Create class instance.
      *
      * @param ignite Ignite instance.
+     * @param logConsumer Logging consumer.
      */
-    public KnapsackTerminateCriteria(Ignite ignite) {
+    KnapsackTerminateCriteria(Ignite ignite, Consumer<String> logConsumer) {
         this.ignite = ignite;
-        this.igniteLog = this.ignite.log();
+        this.logConsumer = logConsumer;
     }
 
     /**
@@ -59,15 +60,16 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
         int currGeneration) {
         boolean isTerminate = true;
 
-        igniteLog.info("##########################################################################################");
-        igniteLog.info("Generation: " + currGeneration);
-        igniteLog.info("Fittest is Chromosome Key: " + fittestChromosome);
-        igniteLog.info("Total value is: " + fittestChromosome.getFitnessScore());
-        igniteLog.info("Total weight is: " + calculateTotalWeight(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome)));
-        igniteLog.info("Avg Chromosome Fitness: " + averageFitnessScore);
-        igniteLog.info("Chromosome: " + fittestChromosome);
-        printItems(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome));
-        igniteLog.info("##########################################################################################");
+        logConsumer.accept(
+            "\n##########################################################################################"
+                + "\n Generation: " + currGeneration
+                + "\n Fittest is Chromosome Key: " + fittestChromosome
+                + "\nTotal value is: " + fittestChromosome.getFitnessScore()
+                + "\nTotal weight is: " + calculateTotalWeight(
+                    GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome))
+                + "\nChromosome: " + fittestChromosome
+                + "\n" + reportItems(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome))
+                + "\n##########################################################################################");
 
         if (!(currGeneration > 29))
             isTerminate = false;
@@ -93,13 +95,18 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
      * Helper to print items in knapsack.
      *
      * @param genes List of Genes.
+     * @return Items to print.
      */
-    private void printItems(List<Gene> genes) {
+    private String reportItems(List<Gene> genes) {
+        StringBuilder sb = new StringBuilder();
+
         for (Gene gene : genes) {
-            igniteLog.info("------------------------------------------------------------------------------------------");
-            igniteLog.info("Name: " + ((Item)gene.getVal()).getName());
-            igniteLog.info("Weight: " + ((Item)gene.getVal()).getWeight());
-            igniteLog.info("Value: " + ((Item)gene.getVal()).getVal());
+            sb.append("\n------------------------------------------------------------------------------------------")
+                .append("\nName: ").append(((Item)gene.getVal()).getName())
+                .append("\nWeight: ").append(((Item)gene.getVal()).getWeight())
+                .append("\nValue: ").append(((Item)gene.getVal()).getVal());
         }
+
+        return sb.toString();
     }
 }

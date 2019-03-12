@@ -38,6 +38,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
 import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.THIEF_NODE_ATTR;
@@ -49,10 +50,10 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
 public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
     GridSpiAbstractTest<JobStealingCollisionSpi> {
     /** */
-    private GridTestNode rmtNode1;
+    private static GridTestNode rmtNode1;
 
     /** */
-    private GridTestNode rmtNode2;
+    private static GridTestNode rmtNode2;
 
     /** */
     public GridJobStealingCollisionSpiCustomTopologySelfTest() {
@@ -125,6 +126,7 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testThiefNodeNotInTopology() throws Exception {
         List<CollisionJobContext> waitCtxs = new ArrayList<>(2);
 

@@ -23,6 +23,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  *
@@ -31,11 +33,28 @@ public abstract class PageEvictionWithRebalanceAbstractTest extends PageEviction
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionWithRebalance() throws Exception {
+        checkEvictionWithRebalance(CacheAtomicityMode.ATOMIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738")
+    @Test
+    public void testEvictionWithRebalanceMvcc() throws Exception {
+        checkEvictionWithRebalance(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void checkEvictionWithRebalance(CacheAtomicityMode atomicityMode) throws Exception {
         startGridsMultiThreaded(4);
 
         CacheConfiguration<Object, Object> cfg = cacheConfig("evict-rebalance", null, CacheMode.PARTITIONED,
-            CacheAtomicityMode.ATOMIC, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+            atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
 
         IgniteCache<Object, Object> cache = ignite(0).getOrCreateCache(cfg);
 

@@ -66,7 +66,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -101,7 +101,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_SIBLINGS;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
@@ -1441,7 +1441,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param nodeId Node ID.
      * @param req Request.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "RedundantCast"})
+    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     private void processTaskSessionRequest(UUID nodeId, GridTaskSessionRequest req) {
         if (!rwLock.tryReadLock()) {
             if (log.isDebugEnabled())
@@ -1935,7 +1935,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
         private int metricsUpdateCntr;
 
         /** {@inheritDoc} */
-        @SuppressWarnings("fallthrough")
         @Override public void onEvent(Event evt) {
             assert evt instanceof DiscoveryEvent;
 

@@ -39,8 +39,14 @@ public class StripedExecutorMXBeanAdapter implements StripedExecutorMXBean {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public void checkStarvation() {
-        exec.checkStarvation();
+        exec.detectStarvation();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean detectStarvation() {
+        return exec.detectStarvation();
     }
 
     /** {@inheritDoc} */

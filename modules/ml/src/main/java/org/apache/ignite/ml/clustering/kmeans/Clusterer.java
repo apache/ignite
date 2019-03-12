@@ -17,12 +17,12 @@
 
 package org.apache.ignite.ml.clustering.kmeans;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 
 /**
  * Base interface for clusterers.
  */
-public interface Clusterer<P, M extends Model> {
+public interface Clusterer<P, M extends IgniteModel> {
     /**
      * Cluster given points set into k clusters.
      *

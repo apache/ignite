@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -98,14 +99,15 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /** */
-    private boolean ignoreInterrupts;
+    private volatile boolean ignoreInterrupts;
 
     /** */
     @GridToStringExclude
     private volatile Object state = INIT;
 
     /**
-     * Determines whether the future will ignore interrupts.
+     * Determines whether the future will ignore interrupts while waiting for result in {@code get()} methods.
+     * This call should <i>happen before</i> subsequent {@code get()} in order to have guaranteed effect.
      */
     public void ignoreInterrupts() {
         ignoreInterrupts = true;
@@ -122,7 +124,6 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public R result() {
         Object state0 = state;
 
@@ -156,7 +157,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         A.ensure(timeout >= 0, "timeout cannot be negative: " + timeout);
         A.notNull(unit, "unit");
 
-        return get0(unit.toNanos(timeout));
+        return get0(ignoreInterrupts, unit.toNanos(timeout));
     }
 
     /**
@@ -197,12 +198,13 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /**
+     * @param ignoreInterrupts Whether to ignore interrupts.
      * @param nanosTimeout Timeout (nanoseconds).
      * @return Result.
      * @throws IgniteFutureTimeoutCheckedException If timeout reached before computation completed.
      * @throws IgniteCheckedException If error occurred.
      */
-    @Nullable private R get0(long nanosTimeout) throws IgniteCheckedException {
+    @Nullable private R get0(boolean ignoreInterrupts, long nanosTimeout) throws IgniteCheckedException {
         if (isDone() || !registerWaiter(Thread.currentThread()))
             return resolve();
 
@@ -248,12 +250,11 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      * @return Result.
      * @throws IgniteCheckedException If resolved to exception.
      */
-    @SuppressWarnings("unchecked")
     private R resolve() throws IgniteCheckedException {
-        if(state == CANCELLED)
+        if (state == CANCELLED)
             throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
-        if(state == null || state.getClass() != ErrorWrapper.class)
+        if (state == null || state.getClass() != ErrorWrapper.class)
             return (R)state;
 
         throw U.cast(((ErrorWrapper)state).error);
@@ -329,7 +330,6 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     /**
      * @param head Head of waiters stack.
      */
-    @SuppressWarnings("unchecked")
     private void unblockAll(Node head) {
         while (head != null) {
             unblock(head.val);
@@ -341,27 +341,42 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      * @param waiter Waiter to unblock
      */
     private void unblock(Object waiter) {
-        if(waiter instanceof Thread)
+        if (waiter instanceof Thread)
             LockSupport.unpark((Thread)waiter);
         else
             notifyListener((IgniteInClosure<? super IgniteInternalFuture<R>>)waiter);
     }
 
     /** {@inheritDoc} */
+    @Async.Schedule
     @Override public void listen(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
         if (!registerWaiter(lsnr))
             notifyListener(lsnr);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteInternalFuture<T> chain(final IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb) {
-        return new ChainFuture<>(this, doneCb, null);
+    @Override public <T> IgniteInternalFuture<T> chain(
+        IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb
+    ) {
+        ChainFuture<R, T> fut = new ChainFuture<>(this, doneCb, null);
+
+        if (ignoreInterrupts)
+            fut.ignoreInterrupts();
+
+        return fut;
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteInternalFuture<T> chain(final IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb,
-        Executor exec) {
-        return new ChainFuture<>(this, doneCb, exec);
+    @Override public <T> IgniteInternalFuture<T> chain(
+        IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb,
+        Executor exec
+    ) {
+        ChainFuture<R, T> fut = new ChainFuture<>(this, doneCb, exec);
+
+        if (ignoreInterrupts)
+            fut.ignoreInterrupts();
+
+        return fut;
     }
 
     /**
@@ -376,6 +391,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      *
      * @param lsnr Listener.
      */
+    @Async.Execute
     private void notifyListener(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
         assert lsnr != null;
 

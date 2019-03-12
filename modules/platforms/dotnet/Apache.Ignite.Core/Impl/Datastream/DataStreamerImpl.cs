@@ -737,6 +737,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 new DataStreamerBatch<TK, TV>(curBatch) : null, curBatch) == curBatch;
 
             // 2. Perform actual send.
+            Debug.Assert(curBatch != null, "curBatch != null");
             curBatch.Send(this, plc);
 
             if (wait)

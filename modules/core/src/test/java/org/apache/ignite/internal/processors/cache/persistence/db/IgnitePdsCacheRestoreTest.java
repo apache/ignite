@@ -25,11 +25,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -37,9 +34,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Non-persistent data region name. */
     private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
 
@@ -50,22 +44,21 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
         if (ccfgs != null) {
             cfg.setCacheConfiguration(ccfgs);
 
             ccfgs = null;
         }
 
+        long regionMaxSize = 20L * 1024 * 1024;
+
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(10L * 1024 * 1024).setPersistenceEnabled(true))
-            .setPageSize(4 * 1024)
+                new DataRegionConfiguration().setMaxSize(regionMaxSize).setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY);
 
         memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
-            .setMaxSize(10L * 1024 * 1024)
+            .setMaxSize(regionMaxSize)
             .setName(NO_PERSISTENCE_REGION)
             .setPersistenceEnabled(false));
 
@@ -93,6 +86,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestoreAndNewCache1() throws Exception {
         restoreAndNewCache(false);
     }
@@ -100,6 +94,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestoreAndNewCache2() throws Exception {
         restoreAndNewCache(true);
     }
@@ -211,6 +206,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
         ccfgs[2] = cacheConfiguration("c3");
 
         ccfgs[2].setDataRegionName(NO_PERSISTENCE_REGION);
+        ccfgs[2].setDiskPageCompression(null);
 
         return ccfgs;
     }

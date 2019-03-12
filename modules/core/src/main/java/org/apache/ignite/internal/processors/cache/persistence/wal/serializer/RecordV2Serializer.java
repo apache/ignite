@@ -28,7 +28,7 @@ import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
@@ -122,10 +122,11 @@ public class RecordV2Serializer implements RecordSerializer {
                     ", expected pointer [idx=" + exp.index() + ", offset=" + exp.fileOffset() + "]");
             }
 
-            if (recordFilter != null && !recordFilter.apply(recType, ptr)) {
+            if (recType.purpose() != WALRecord.RecordPurpose.INTERNAL
+                && recordFilter != null && !recordFilter.apply(recType, ptr)) {
                 int toSkip = ptr.length() - REC_TYPE_SIZE - FILE_WAL_POINTER_SIZE - CRC_SIZE;
 
-                assert toSkip >= 0 : "Too small saved record length: " + ptr;
+                assert toSkip >= 0 : "Too small saved record length: ptr=" + ptr + ", type=" + recType;
 
                 if (in.skipBytes(toSkip) < toSkip)
                     throw new EOFException("Reached end of file while reading record: " + ptr);
@@ -174,7 +175,7 @@ public class RecordV2Serializer implements RecordSerializer {
             ByteBuffer buf
         ) throws IgniteCheckedException {
             // Write record type.
-            RecordV1Serializer.putRecordType(buf, record);
+            RecordV1Serializer.putRecordType(buf, dataSerializer.recordType(record));
 
             // SWITCH_SEGMENT_RECORD should have only type, no need to write pointer.
             if (record.type() == SWITCH_SEGMENT_RECORD)

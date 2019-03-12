@@ -24,7 +24,7 @@ import org.apache.ignite.Ignite;
 /**
  * Test failure handler implementation
  */
-public class TestFailureHandler implements FailureHandler {
+public class TestFailureHandler extends AbstractFailureHandler {
     /** Invalidate. */
     private final boolean invalidate;
 
@@ -51,13 +51,15 @@ public class TestFailureHandler implements FailureHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
-        this.failureCtx = failureCtx;
+    @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+        if (this.failureCtx == null) {
+            this.failureCtx = failureCtx;
 
-        if (latch != null)
-            latch.countDown();
+            if (latch != null)
+                latch.countDown();
 
-        ignite.log().warning("Handled ignite failure: " + failureCtx);
+            ignite.log().warning("Handled ignite failure: " + failureCtx);
+        }
 
         return invalidate;
     }

@@ -24,10 +24,6 @@
 
 #include <string>
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
@@ -84,12 +80,15 @@ struct ConnectionTestSuiteFixture: odbc::OdbcTestSuite
 
     /**
      * Extract code from ODBC error message.
+     *
+     * @param err Error message.
+     * @return Error code.
      */
-    std::string ExtractErrorCode(std::string err)
+    static std::string ExtractErrorCode(const std::string& err)
     {
         std::string code;
 
-        int idx = err.find(':');
+        size_t idx = err.find(':');
 
         if ((idx != std::string::npos) && (idx > 0))
             code = err.substr(0, idx);

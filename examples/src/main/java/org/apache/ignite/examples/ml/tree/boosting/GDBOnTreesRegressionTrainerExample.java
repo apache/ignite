@@ -22,12 +22,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
+import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -43,49 +44,42 @@ public class GDBOnTreesRegressionTrainerExample {
      *
      * @param args Command line arguments, none required.
      */
-    public static void main(String... args) throws InterruptedException {
+    public static void main(String... args) {
         System.out.println();
         System.out.println(">>> GDB regression trainer example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                GDBOnTreesRegressionTrainerExample.class.getSimpleName(), () -> {
+            // Create cache with training data.
+            CacheConfiguration<Integer, double[]> trainingSetCfg = createCacheConfiguration();
+            IgniteCache<Integer, double[]> trainingSet = fillTrainingData(ignite, trainingSetCfg);
 
-                // Create cache with training data.
-                CacheConfiguration<Integer, double[]> trainingSetCfg = createCacheConfiguration();
-                IgniteCache<Integer, double[]> trainingSet = fillTrainingData(ignite, trainingSetCfg);
+            // Create regression trainer.
+            DatasetTrainer<ModelsComposition, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 1, 0.)
+                .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.001));
 
-                // Create regression trainer.
-                DatasetTrainer<Model<Vector, Double>, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 1, 0.);
+            // Train decision tree model.
+            Model<Vector, Double> mdl = trainer.fit(
+                ignite,
+                trainingSet,
+                (k, v) -> VectorUtils.of(v[0]),
+                (k, v) -> v[1]
+            );
 
-                // Train decision tree model.
-                Model<Vector, Double> mdl = trainer.fit(
-                    ignite,
-                    trainingSet,
-                    (k, v) -> VectorUtils.of(v[0]),
-                    (k, v) -> v[1]
-                );
+            System.out.println(">>> ---------------------------------");
+            System.out.println(">>> | Prediction\t| Valid answer \t|");
+            System.out.println(">>> ---------------------------------");
 
-                System.out.println(">>> ---------------------------------");
-                System.out.println(">>> | Prediction\t| Valid answer \t|");
-                System.out.println(">>> ---------------------------------");
+            // Calculate score.
+            for (int x = -5; x < 5; x++) {
+                double predicted = mdl.predict(VectorUtils.of(x));
 
-                // Calculate score.
-                for (int x = -5; x < 5; x++) {
-                    double predicted = mdl.apply(VectorUtils.of(x));
+                System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.pow(x, 2));
+            }
 
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.pow(x, 2));
-                }
-
-                System.out.println(">>> ---------------------------------");
-
-                System.out.println(">>> GDB regression trainer example completed.");
-            });
-
-            igniteThread.start();
-            igniteThread.join();
+            System.out.println(">>> ---------------------------------");
+            System.out.println(">>> GDB regression trainer example completed.");
         }
     }
 

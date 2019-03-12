@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import junit.framework.TestCase;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test for CacheComparators from ClusterCachesInfo
  */
-public class CacheComparatorTest extends TestCase {
+public class CacheComparatorTest {
     /**
      * Test if comparator not violates its general contract
      */
+    @Test
     public void testDirect() {
         DynamicCacheDescriptor desc1 = new DynamicCacheDescriptor(null,
             new CacheConfiguration().setName("1111"), CacheType.DATA_STRUCTURES,

@@ -181,7 +181,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onKernalStart(boolean active) {
         if (ctx.config().isDaemon() || !active)
             return;
@@ -193,7 +192,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      *
      */
     public void onBeforeActivate() {
-        initLatch = new CountDownLatch(1);
+        CountDownLatch latch0 = initLatch;
+
+        if (latch0 == null || latch0.getCount() == 0)
+            initLatch = new CountDownLatch(1);
     }
 
     /**
@@ -702,6 +704,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         });
     }
 
+    /**
+     * Would suspend calls for this cache if it is atomics cache.
+     * @param cacheName To suspend.
+     */
     public void suspend(String cacheName) {
         for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
             String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
@@ -711,12 +717,24 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }
     }
 
-    public void restart(IgniteInternalCache cache) {
+
+    /**
+     * Would return this cache to normal work if it was suspened (and if it is atomics cache).
+     * @param cacheName To restart.
+     */
+    public void restart(String cacheName, IgniteInternalCache cache) {
         for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
             String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
 
-            if (cacheName0.equals(cache.name()))
-                e.getValue().restart(cache);
+            if (cacheName0.equals(cacheName)) {
+                if (cache != null)
+                    e.getValue().restart(cache);
+                else {
+                    e.getValue().onRemoved();
+
+                    dsMap.remove(e.getKey(), e.getValue());
+                }
+            }
         }
     }
 
@@ -834,7 +852,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Instance of queue.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public final <T> IgniteQueue<T> queue(final String name, @Nullable final String grpName, int cap,
         @Nullable final CollectionConfiguration cfg)
         throws IgniteCheckedException {
@@ -1547,7 +1564,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Set instance.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <T> IgniteSet<T> set(final String name, @Nullable final String grpName, @Nullable final CollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
@@ -1578,7 +1594,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 hdr = (GridCacheSetHeader) cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
 
                 if (hdr != null)
-                    cctx.dataStructures().removeSetData(hdr.id());
+                    cctx.dataStructures().removeSetData(hdr.id(), hdr.separated());
             }
         };
 
@@ -1612,7 +1628,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Object has casted to expected type.
      * @throws IgniteCheckedException If {@code obj} has different to {@code cls} type.
      */
-    @SuppressWarnings("unchecked")
     @Nullable private <R> R cast(@Nullable Object obj, Class<R> cls) throws IgniteCheckedException {
         if (obj == null)
             return null;

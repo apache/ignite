@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.IgniteTxExceptionAbstractSelfTest;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -26,6 +27,13 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Tests local cache.
  */
 public class GridCacheLocalTxExceptionSelfTest extends IgniteTxExceptionAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        super.beforeTestsStarted();
+    }
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;

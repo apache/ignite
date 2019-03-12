@@ -17,17 +17,16 @@
 
 package org.apache.ignite.ml.preprocessing.binarization;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -35,26 +34,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Tests for {@link BinarizationTrainer}.
  */
-@RunWith(Parameterized.class)
-public class BinarizationTrainerTest {
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Data divided on {0} partitions")
-    public static Iterable<Integer[]> data() {
-        return Arrays.asList(
-            new Integer[] {1},
-            new Integer[] {2},
-            new Integer[] {3},
-            new Integer[] {5},
-            new Integer[] {7},
-            new Integer[] {100},
-            new Integer[] {1000}
-        );
-    }
-
-    /** Number of partitions. */
-    @Parameterized.Parameter
-    public int parts;
-
+public class BinarizationTrainerTest extends TrainerTest {
     /** Tests {@code fit()} method. */
     @Test
     public void testFit() {
@@ -69,14 +49,15 @@ public class BinarizationTrainerTest {
         BinarizationTrainer<Integer, double[]> binarizationTrainer = new BinarizationTrainer<Integer, double[]>()
             .withThreshold(10);
 
-        assertEquals(10., binarizationTrainer.threshold(), 0);
+        assertEquals(10., binarizationTrainer.getThreshold(), 0);
 
         BinarizationPreprocessor<Integer, double[]> preprocessor = binarizationTrainer.fit(
+            TestUtils.testEnvBuilder(),
             datasetBuilder,
             (k, v) -> VectorUtils.of(v)
         );
 
-        assertEquals(binarizationTrainer.threshold(), preprocessor.threshold(), 0);
+        assertEquals(binarizationTrainer.getThreshold(), preprocessor.getThreshold(), 0);
 
         assertArrayEquals(new double[] {0, 0, 1}, preprocessor.apply(5, new double[] {1, 10, 100}).asArray(), 1e-8);
     }
@@ -93,9 +74,10 @@ public class BinarizationTrainerTest {
         BinarizationTrainer<Integer, double[]> binarizationTrainer = new BinarizationTrainer<Integer, double[]>()
             .withThreshold(10);
 
-        assertEquals(10., binarizationTrainer.threshold(), 0);
+        assertEquals(10., binarizationTrainer.getThreshold(), 0);
 
         IgniteBiFunction<Integer, double[], Vector> preprocessor = binarizationTrainer.fit(
+            TestUtils.testEnvBuilder(),
             data,
             parts,
             (k, v) -> VectorUtils.of(v)

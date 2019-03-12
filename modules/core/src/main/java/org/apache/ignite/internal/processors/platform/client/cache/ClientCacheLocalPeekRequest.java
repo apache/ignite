@@ -22,7 +22,6 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Cache local peek request.
@@ -41,8 +40,6 @@ public class ClientCacheLocalPeekRequest extends ClientCacheKeyRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_READ);
-
         Object val = cache(ctx).localPeek(key(), CachePeekMode.ALL);
 
         return new ClientObjectResponse(requestId(), val);

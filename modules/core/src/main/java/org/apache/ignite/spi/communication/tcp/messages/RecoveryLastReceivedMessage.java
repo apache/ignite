@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -27,6 +28,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 /**
  * Recovery acknowledgment message.
  */
+@IgniteCodeGeneratingFail
 public class RecoveryLastReceivedMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
@@ -39,6 +41,9 @@ public class RecoveryLastReceivedMessage implements Message {
 
     /** Need wait. */
     public static final long NEED_WAIT = -3;
+
+    /** Initiator node is not in current topogy. */
+    public static final long UNKNOWN_NODE = -4;
 
     /** Message body size in bytes. */
     private static final int MESSAGE_SIZE = 8;

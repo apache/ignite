@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -106,6 +107,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testStarvation() throws Exception {
         // 1. Create two IGFS file to make all system threads busy.
         CountDownLatch fileWriteLatch = new CountDownLatch(1);

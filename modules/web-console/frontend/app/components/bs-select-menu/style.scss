@@ -26,7 +26,6 @@
     margin: 0;
     list-style: none;
     position: absolute;
-    font-family: Roboto;
     outline: none !important;
     overflow-y: auto;
     overflow-x: hidden;
@@ -48,9 +47,8 @@
     }
 
     .bssm-item-text {
-        overflow: hidden;
+        overflow: visible;
         white-space: nowrap;
-        text-overflow: ellipsis;
     }
 
     &>li {
@@ -63,6 +61,7 @@
             padding-bottom: 9px;
             background-color: transparent;
             border-radius: 0;
+            padding-right: 30px;
 
             &:hover {
                 background-color: #eeeeee;

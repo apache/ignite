@@ -25,20 +25,19 @@
 #include <vector>
 #include <string>
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
+
+#include <ignite/network/socket_client.h>
 
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 #include "ignite/impl/binary/binary_utils.h"
 
+#include "ignite/odbc/connection.h"
+
 #include "test_type.h"
 #include "test_utils.h"
 #include "odbc_test_suite.h"
-#include "ignite/odbc/socket_client.h"
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -58,18 +57,9 @@ struct AttributesTestSuiteFixture : odbc::OdbcTestSuite
     /**
      * Constructor.
      */
-    AttributesTestSuiteFixture() :
-        grid()
+    AttributesTestSuiteFixture()
     {
-        const char* config = NULL;
-
-#ifdef IGNITE_TESTS_32
-          config = "queries-test-32.xml";
-#else
-          config = "queries-test.xml";
-#endif
-
-        grid = StartNode(config, "NodeMain");
+        grid = StartPlatformNode("queries-test.xml", "NodeMain");
     }
 
     /**
@@ -239,7 +229,7 @@ BOOST_AUTO_TEST_CASE(ConnectionAttributeLoginTimeout)
     SQLRETURN ret = SQLGetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, &timeout, 0, 0);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
-    BOOST_REQUIRE_EQUAL(timeout, odbc::SocketClient::DEFALT_CONNECT_TIMEOUT);
+    BOOST_REQUIRE_EQUAL(timeout, odbc::Connection::DEFAULT_CONNECT_TIMEOUT);
 
     ret = SQLSetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, reinterpret_cast<SQLPOINTER>(42), 0);
 

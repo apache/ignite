@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -37,6 +38,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -260,6 +262,11 @@ public interface IgniteInternalTx {
      * in this transaction.
      */
     public boolean activeCachesDeploymentEnabled();
+
+    /**
+     * @param depEnabled Flag indicating whether deployment is enabled for caches from this transaction or not.
+     */
+    public void activeCachesDeploymentEnabled(boolean depEnabled);
 
     /**
      * Attempts to set topology version and returns the current value.
@@ -634,4 +641,27 @@ public interface IgniteInternalTx {
      * @param e Commit error.
      */
     public void commitError(Throwable e);
+
+    /**
+     * Returns label of transactions.
+     *
+     * @return Label of transaction or {@code null} if there was not set.
+     */
+    @Nullable public String label();
+
+    /**
+     * @param mvccSnapshot Mvcc snapshot.
+     */
+    public void mvccSnapshot(MvccSnapshot mvccSnapshot);
+
+    /**
+     * @return Mvcc snapshot.
+     */
+    public MvccSnapshot mvccSnapshot();
+
+    /**
+     * @return Transaction counters.
+     * @param createIfAbsent {@code True} if non-null instance is needed.
+     */
+    @Nullable @Contract("true -> !null;") public TxCounters txCounters(boolean createIfAbsent);
 }

@@ -49,6 +49,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridAbstractLifecycleAwareSelfTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -365,6 +366,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /** {@inheritDoc} */
     @SuppressWarnings("ErrorNotRethrown")
+    @Test
     @Override public void testLifecycleAware() throws Exception {
         for (boolean nearEnabled : new boolean[] {true, false}) {
             near = nearEnabled;

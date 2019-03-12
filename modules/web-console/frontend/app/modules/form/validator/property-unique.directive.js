@@ -15,7 +15,18 @@
  * limitations under the License.
  */
 
-export default ['ignitePropertyUnique', ['$parse', ($parse) => {
+import _ from 'lodash';
+
+/**
+ * @param {ng.IParseService} $parse
+ */
+export default function factory($parse) {
+    /**
+     * @param {ng.IScope} scope
+     * @param {JQLite} el
+     * @param {ng.IAttributes} attrs
+     * @param {[ng.INgModelController]} [ngModel]
+     */
     const link = (scope, el, attrs, [ngModel]) => {
         if (_.isUndefined(attrs.ignitePropertyUnique) || !attrs.ignitePropertyUnique)
             return;
@@ -44,4 +55,6 @@ export default ['ignitePropertyUnique', ['$parse', ($parse) => {
         link,
         require: ['ngModel']
     };
-}]];
+}
+
+factory.$inject = ['$parse'];

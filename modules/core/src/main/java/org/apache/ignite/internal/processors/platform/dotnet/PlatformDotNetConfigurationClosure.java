@@ -50,7 +50,6 @@ import static org.apache.ignite.internal.processors.platform.client.ClientConnec
 /**
  * Closure to apply dot net configuration.
  */
-@SuppressWarnings({"UnusedDeclaration"})
 public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigurationClosure {
     /** */
     private static final long serialVersionUID = 0L;
@@ -76,7 +75,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override protected void apply0(IgniteConfiguration igniteCfg) {
         // Validate and copy Interop configuration setting environment pointer along the way.
         PlatformConfiguration interopCfg = igniteCfg.getPlatformConfiguration();
@@ -147,7 +145,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      * @param igniteCfg Ignite configuration.
      * @param interopCfg Interop configuration.
      */
-    @SuppressWarnings("ConstantConditions")
     private void prepare(IgniteConfiguration igniteCfg, PlatformDotNetConfigurationEx interopCfg) {
         cfg = igniteCfg;
 

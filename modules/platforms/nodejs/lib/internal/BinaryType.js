@@ -18,6 +18,7 @@
 'use strict';
 
 const Util = require('util');
+const Long = require('long');
 const ComplexObjectType = require('../ObjectType').ComplexObjectType;
 const BinaryTypeStorage = require('./BinaryTypeStorage');
 const BinaryUtils = require('./BinaryUtils');
@@ -102,6 +103,15 @@ class BinaryType {
         result._schemas = new Map(this._schemas.entries());
         result._isEnum = this._isEnum;
         return result;
+    }
+
+    isValid() {
+        for (let field of this._fields.values()) {
+            if (!field.isValid()) {
+                return false;
+            }
+        }
+        return this._name !== null;
     }
 
     static _calculateId(name) {
@@ -245,19 +255,16 @@ class BinarySchema {
     }
 
     static _updateSchemaId(schemaId, fieldId) {
-        schemaId = schemaId ^ (fieldId & 0xFF);
-        schemaId = schemaId * FNV1_PRIME;
-        schemaId |= 0;
-        schemaId = schemaId ^ ((fieldId >> 8) & 0xFF);
-        schemaId = schemaId * FNV1_PRIME;
-        schemaId |= 0;
-        schemaId = schemaId ^ ((fieldId >> 16) & 0xFF);
-        schemaId = schemaId * FNV1_PRIME;
-        schemaId |= 0;
-        schemaId = schemaId ^ ((fieldId >> 24) & 0xFF);
-        schemaId = schemaId * FNV1_PRIME;
-        schemaId |= 0;
+        schemaId = BinarySchema._updateSchemaIdPart(schemaId, fieldId & 0xFF);
+        schemaId = BinarySchema._updateSchemaIdPart(schemaId, (fieldId >> 8) & 0xFF);
+        schemaId = BinarySchema._updateSchemaIdPart(schemaId, (fieldId >> 16) & 0xFF);
+        schemaId = BinarySchema._updateSchemaIdPart(schemaId, (fieldId >> 24) & 0xFF);
+        return schemaId;
+    }
 
+    static _updateSchemaIdPart(schemaId, fieldIdPart) {
+        schemaId = schemaId ^ fieldIdPart;
+        schemaId = Long.fromValue(schemaId).multiply(FNV1_PRIME).getLowBits();
         return schemaId;
     }
 
@@ -304,6 +311,10 @@ class BinaryField {
         return this._typeCode;
     }
 
+    isValid() {
+        return this._name !== null;
+    }
+
     static _calculateId(name) {
         return BinaryUtils.hashCodeLowerCase(name);
     }
@@ -335,12 +346,12 @@ class BinaryTypeBuilder {
         return result;
     }
 
-    static async fromTypeId(communicator, typeId, schemaId, hasSchema) {
+    static async fromTypeId(communicator, typeId, schemaId) {
         let result = new BinaryTypeBuilder();
-        if (hasSchema) {
-            let type = await communicator.typeStorage.getType(typeId, schemaId);
-            if (type) {
-                result._type = type;
+        let type = await communicator.typeStorage.getType(typeId, schemaId);
+        if (type) {
+            result._type = type;
+            if (schemaId !== null) {
                 result._schema = type.getSchema(schemaId);
                 if (!result._schema) {
                     throw Errors.IgniteClientError.serializationError(
@@ -348,8 +359,11 @@ class BinaryTypeBuilder {
                             schemaId, type.name));
                 }
                 result._fromStorage = true;
-                return result;
             }
+            else {
+                result._schema = new BinarySchema();
+            }
+            return result;
         }
         result._init(null);
         result._type._id = typeId;

@@ -24,11 +24,14 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -57,12 +60,19 @@ public class CacheQueryEvictDataLostTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setMaxSize(256L * 1024 * 1024));
+        cfg.setDataStorageConfiguration(memCfg);
+
         return cfg;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryDataLost() throws Exception {
         final long stopTime = U.currentTimeMillis() + 30_000;
 

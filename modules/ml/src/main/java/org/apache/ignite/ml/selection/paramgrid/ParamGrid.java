@@ -25,17 +25,17 @@ import java.util.Map;
  */
 public class ParamGrid {
     /** Parameter values by parameter index. */
-    private Map<Integer, Double[]> paramValuesByParamIndex = new HashMap<>();
+    private Map<Integer, Double[]> paramValuesByParamIdx = new HashMap<>();
 
     /** Parameter names by parameter index. */
-    private Map<Integer, String> paramNamesByParamIndex = new HashMap<>();
+    private Map<Integer, String> paramNamesByParamIdx = new HashMap<>();
 
     /** Parameter counter. */
     private int paramCntr;
 
     /** */
-    public Map<Integer, Double[]> getParamValuesByParamIndex() {
-        return paramValuesByParamIndex;
+    public Map<Integer, Double[]> getParamValuesByParamIdx() {
+        return paramValuesByParamIdx;
     }
 
     /**
@@ -45,14 +45,14 @@ public class ParamGrid {
      * @return The updated ParamGrid.
      */
     public ParamGrid addHyperParam(String paramName, Double[] params) {
-        paramValuesByParamIndex.put(paramCntr, params);
-        paramNamesByParamIndex.put(paramCntr, paramName);
+        paramValuesByParamIdx.put(paramCntr, params);
+        paramNamesByParamIdx.put(paramCntr, paramName);
         paramCntr++;
         return this;
     }
 
     /** */
     public String getParamNameByIndex(int idx) {
-        return paramNamesByParamIndex.get(idx);
+        return paramNamesByParamIdx.get(idx);
     }
 }

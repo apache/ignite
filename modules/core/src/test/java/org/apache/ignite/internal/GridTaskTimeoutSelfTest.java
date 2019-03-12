@@ -41,6 +41,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
 
@@ -84,6 +85,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousTimeout() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -109,6 +111,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsynchronousTimeout() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -126,6 +129,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousTimeoutMultithreaded() throws Exception {
         final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -151,7 +155,6 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
         }).start();
 
         multithreaded(new Runnable() {
-            @SuppressWarnings("InfiniteLoopStatement")
             @Override public void run() {
                 while (!finish.get()) {
                     try {

@@ -27,6 +27,7 @@
                 type='button'
                 title='{{ colFilter.$$multiselectFilterTooltip() }}'
                 ng-model='colFilter.term'
+                ng-disabled='col.colDef.multiselectFilterDisabled'
                 bs-select
                 bs-options='option.value as option.label for option in colFilter.selectOptions'
                 data-multiple='true'
@@ -41,7 +42,7 @@
                 }`
                 ng-click='colFilter.selectDialog(grid, colFilter)'
                 type='button'
-                title='{{ colFilter.$$multiselectFilterTooltip() }}'               
+                title='{{ colFilter.$$multiselectFilterTooltip() }}'
             ) {{ col.displayName }}
 
     .ui-grid-cell-contents(role='button')

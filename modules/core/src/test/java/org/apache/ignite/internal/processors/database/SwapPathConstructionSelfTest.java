@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test verifies correct construction of swap file path {@link DataRegionConfiguration#setSwapPath(String)}
@@ -78,6 +79,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     /**
      * Verifies relative swap file path construction. Directory with swap files is cleaned up during after-test phase.
      */
+    @Test
     public void testRelativeSwapFilePath() throws Exception {
         memCfg = createMemoryConfiguration(true);
 
@@ -94,6 +96,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
      * Verifies absolute swap file path construction. System tmp directory is used to allocate swap files,
      * so no clean up is needed.
      */
+    @Test
     public void testAbsoluteSwapFilePath() throws Exception {
         memCfg = createMemoryConfiguration(false);
 

@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.Properties;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcDriver;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,11 +33,12 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.jdbc.thin.JdbcThinAbstractSelfTest;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -47,7 +47,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Data streaming test.
  */
-public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
+public class JdbcStreamingSelfTest extends JdbcThinAbstractSelfTest {
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX +
         "cache=default@modules/clients/src/test/config/jdbc-config.xml";
@@ -164,6 +164,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStreamedInsert() throws Exception {
         for (int i = 10; i <= 100; i += 10)
             put(i, nameForId(i * 100));
@@ -194,6 +195,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStreamedInsertWithoutColumnsList() throws Exception {
         for (int i = 10; i <= 100; i += 10)
             put(i, nameForId(i * 100));
@@ -224,6 +226,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStreamedInsertWithOverwritesAllowed() throws Exception {
         for (int i = 10; i <= 100; i += 10)
             put(i, nameForId(i * 100));
@@ -249,6 +252,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testOnlyInsertsAllowed() {
         assertStatementForbidden("CREATE TABLE PUBLIC.X (x int primary key, y int)");
 

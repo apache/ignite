@@ -25,7 +25,7 @@ import java.sql.Connection;
 public class JdbcThinStreamingNotOrderedSelfTest extends JdbcThinStreamingAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
-        Connection c = JdbcThinAbstractSelfTest.connect(grid(0), null);
+        Connection c = connect(grid(0), null);
 
         execute(c, "SET STREAMING 1 BATCH_SIZE " + batchSize
             + " ALLOW_OVERWRITE " + (allowOverwrite ? 1 : 0)

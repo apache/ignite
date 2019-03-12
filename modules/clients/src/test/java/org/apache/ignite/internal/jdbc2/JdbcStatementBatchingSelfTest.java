@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Statement batch test.
@@ -39,6 +40,7 @@ public class JdbcStatementBatchingSelfTest extends JdbcAbstractDmlStatementSelfT
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testDatabaseMetadataBatchSupportFlag() throws SQLException {
         DatabaseMetaData meta = conn.getMetaData();
 
@@ -50,6 +52,7 @@ public class JdbcStatementBatchingSelfTest extends JdbcAbstractDmlStatementSelfT
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatch() throws SQLException {
         try (Statement stmt = conn.createStatement()) {
             stmt.addBatch("INSERT INTO Person(_key, id, firstName, lastName, age, data) " +
@@ -78,6 +81,7 @@ public class JdbcStatementBatchingSelfTest extends JdbcAbstractDmlStatementSelfT
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testErrorAmidstBatch() throws SQLException {
         BatchUpdateException reason = (BatchUpdateException)
             GridTestUtils.assertThrows(log,
@@ -110,6 +114,7 @@ public class JdbcStatementBatchingSelfTest extends JdbcAbstractDmlStatementSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearBatch() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             GridTestUtils.assertThrows(log, new Callable<Object>() {

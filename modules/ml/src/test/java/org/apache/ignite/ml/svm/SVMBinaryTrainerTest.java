@@ -22,11 +22,12 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
 /**
- * Tests for {@link SVMLinearBinaryClassificationTrainer}.
+ * Tests for {@link SVMLinearClassificationTrainer}.
  */
 public class SVMBinaryTrainerTest extends TrainerTest {
     /**
@@ -39,17 +40,57 @@ public class SVMBinaryTrainerTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
-        SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer()
+        SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer()
             .withSeed(1234L);
 
-        SVMLinearBinaryClassificationModel mdl = trainer.fit(
+        SVMLinearClassificationModel mdl = trainer.fit(
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         );
 
-        TestUtils.assertEquals(-1, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+        TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
+    }
+
+    /** */
+    @Test
+    public void testUpdate() {
+        Map<Integer, double[]> cacheMock = new HashMap<>();
+
+        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
+            cacheMock.put(i, twoLinearlySeparableClasses[i]);
+
+        SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer()
+            .withAmountOfIterations(1000)
+            .withSeed(1234L);
+
+        SVMLinearClassificationModel originalMdl = trainer.fit(
+            cacheMock,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        SVMLinearClassificationModel updatedOnSameDS = trainer.update(
+            originalMdl,
+            cacheMock,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        SVMLinearClassificationModel updatedOnEmptyDS = trainer.update(
+            originalMdl,
+            new HashMap<Integer, double[]>(),
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        Vector v = VectorUtils.of(100, 10);
+        TestUtils.assertEquals(originalMdl.predict(v), updatedOnSameDS.predict(v), PRECISION);
+        TestUtils.assertEquals(originalMdl.predict(v), updatedOnEmptyDS.predict(v), PRECISION);
     }
 }

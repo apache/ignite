@@ -23,11 +23,9 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -36,18 +34,17 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.Files.walkFileTree;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.CP_FILE_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.FILE_TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.META_STORAGE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
@@ -59,14 +56,9 @@ import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
  *
  */
 public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTest {
-    /** */
-    public static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -78,7 +70,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
         cfg.setAutoActivationEnabled(false);
 
-        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME));
+        cfg.setCacheConfiguration(defaultCacheConfiguration());
 
         return cfg;
     }
@@ -91,8 +83,11 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
     }
 
     /**
+     * Test checks that after WAL is globally disabled and node is stopped, persistent store is cleaned properly after node restart.
+     *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         for (NodeStopPoint nodeStopPoint : NodeStopPoint.values()) {
             testStopNodeWithDisableWAL(nodeStopPoint);
@@ -176,7 +171,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
         boolean fail = false;
 
         try (WALIterator it = sharedContext.wal().replay(null)) {
-            dbMgr.applyUpdatesOnRecovery(it, (tup) -> true, (entry) -> true, new HashMap<>());
+            dbMgr.applyUpdatesOnRecovery(it, (ptr, rec) -> true, (entry) -> true);
         }
         catch (IgniteCheckedException e) {
             if (nodeStopPoint.needCleanUp)
@@ -189,6 +184,8 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
         String msg = nodeStopPoint.toString();
 
+        int pageSize = ig1.configuration().getDataStorageConfiguration().getPageSize();
+
         if (nodeStopPoint.needCleanUp) {
             PdsFoldersResolver foldersResolver = ((IgniteEx)ig1).context().pdsFolderResolver();
 
@@ -200,7 +197,9 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
                     String filePath = path.toString();
 
-                    if (path.toFile().getParentFile().getName().equals(META_STORAGE_NAME))
+                    String parentDirName = path.toFile().getParentFile().getName();
+
+                    if (parentDirName.equals(META_STORAGE_NAME) || parentDirName.equals(TxLog.TX_LOG_CACHE_NAME))
                         return CONTINUE;
 
                     if (WAL_NAME_PATTERN.matcher(name).matches() || WAL_TEMP_NAME_PATTERN.matcher(name).matches())
@@ -208,20 +207,20 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
                     boolean failed = false;
 
-                    if (name.endsWith(FILE_TMP_SUFFIX))
+                    if (name.endsWith(FilePageStoreManager.TMP_SUFFIX))
                         failed = true;
 
                     if (CP_FILE_NAME_PATTERN.matcher(name).matches())
                         failed = true;
 
-                    if (name.startsWith(PART_FILE_PREFIX))
+                    if (name.startsWith(PART_FILE_PREFIX) && path.toFile().length() > pageSize)
                         failed = true;
 
-                    if (name.startsWith(INDEX_FILE_NAME))
+                    if (name.startsWith(INDEX_FILE_NAME) && path.toFile().length() > pageSize)
                         failed = true;
 
                     if (failed)
-                        fail(msg + " " + filePath);
+                        fail(msg + " " + filePath + " " + path.toFile().length());
 
                     return CONTINUE;
                 }

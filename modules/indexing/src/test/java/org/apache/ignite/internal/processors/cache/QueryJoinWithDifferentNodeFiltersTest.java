@@ -25,16 +25,18 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
-public class QueryJoinWithDifferentNodeFiltersTest extends GridCommonAbstractTest {
+public class QueryJoinWithDifferentNodeFiltersTest extends AbstractIndexingCommonTest {
     /** */
     private static final String CACHE_NAME = "cache";
 
@@ -89,6 +91,7 @@ public class QueryJoinWithDifferentNodeFiltersTest extends GridCommonAbstractTes
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSize() throws Exception {
         startGrids(NODE_COUNT);
 

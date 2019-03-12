@@ -15,7 +15,10 @@
  * limitations under the License.
  */
 
-export default ['igniteTerms', ['IgniteBranding', (branding) => {
+/**
+ * @param {import('./branding.service').default} branding
+ */
+export default function factory(branding) {
     function controller() {
         const ctrl = this;
 
@@ -27,4 +30,6 @@ export default ['igniteTerms', ['IgniteBranding', (branding) => {
         controller,
         controllerAs: 'terms'
     };
-}]];
+}
+
+factory.$inject = ['IgniteBranding'];

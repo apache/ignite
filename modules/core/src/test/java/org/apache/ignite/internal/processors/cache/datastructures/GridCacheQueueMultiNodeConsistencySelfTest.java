@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -93,6 +94,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorIfBackupDisabled() throws Exception {
         backups = 0;
 
@@ -102,6 +104,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorIfNoPreloadingAndBackupDisabledAndRepartitionForced() throws Exception {
         backups = 0;
 
@@ -113,6 +116,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorIfBackupEnabled() throws Exception {
         backups = 1;
 
@@ -122,6 +126,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorIfBackupEnabledAndOneNodeIsKilled() throws Exception {
         backups = 1;
 

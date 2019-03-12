@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.Test;
 
 /**
  * Tests service proxy timeouts.
@@ -102,7 +103,8 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
      *
      * @throws Exception If fail.
      */
-    @SuppressWarnings({"Convert2Lambda", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"Convert2Lambda"})
+    @Test
     public void testUnavailableService() throws Exception {
         srvc = new TestWaitServiceImpl();
 
@@ -142,7 +144,8 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
      *
      * @throws Exception If fail.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "Convert2Lambda"})
+    @SuppressWarnings({"Convert2Lambda"})
+    @Test
     public void testServiceException() throws Exception {
         srvc = new HangServiceImpl();
 

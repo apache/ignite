@@ -1,0 +1,48 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+.modal.modal--ignite.theme--ignite.center.modal-preview-project-structure(tabindex='-1' role='dialog')
+    .modal-dialog
+        .modal-content
+            .modal-header
+                h4.modal-title
+                    svg(ignite-icon="structure")
+                    span See Project Structure
+                button.close(type='button' aria-label='Close' ng-click='$ctrl.onHide()')
+                     svg(ignite-icon="cross")
+
+            .modal-body(
+                ignite-loading='projectStructurePreview'
+                ignite-loading-text='Generating project structure preview…'
+            )
+                .pane-left
+                    treecontrol(
+                        tree-model='$ctrl.data'
+                        on-selection='$ctrl.showPreview(node)'
+                        selected-node='$ctrl.selectedNode'
+                        expanded-nodes='$ctrl.expandedNodes'
+                        options='$ctrl.treeOptions'
+                        order-by='["file.dir", "-path"]'
+                    )
+                        i.fa.fa-file-text-o(ng-if='::!node.file.dir')
+                        | {{ ::node.path }}
+                .pane-right
+                    div.file-preview(ignite-ace='{mode: $ctrl.fileExt, readonly: true}' ng-model='$ctrl.fileText')
+            .modal-footer
+                div
+                    button.btn-ignite.btn-ignite--success(ng-click='$ctrl.onHide()') Close
