@@ -16,10 +16,10 @@
  */
 package org.apache.ignite.internal.processors.cache.verify;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -42,7 +42,6 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -60,7 +59,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss_SSS");
 
     /** Visible for testing. */
-    public static final String IDLE_DUMP_FILE_PREMIX = "idle-dump-";
+    public static final String IDLE_DUMP_FILE_PREFIX = "idle-dump-";
 
     /** Delegate for map execution */
     private final VerifyBackupPartitionsTaskV2 delegate = new VerifyBackupPartitionsTaskV2();
@@ -68,6 +67,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     /** */
     private VisorIdleVerifyDumpTaskArg taskArg;
 
+    /** */
     @IgniteInstanceResource
     private Ignite ignite;
 
@@ -76,8 +76,10 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
-        List<ClusterNode> subgrid, VisorIdleVerifyTaskArg arg) throws IgniteException {
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(
+        List<ClusterNode> subgrid,
+        VisorIdleVerifyTaskArg arg
+    ) throws IgniteException {
         if (arg instanceof VisorIdleVerifyDumpTaskArg)
             taskArg = (VisorIdleVerifyDumpTaskArg)arg;
 
@@ -85,8 +87,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String reduce(List<ComputeJobResult> results)
-        throws IgniteException {
+    @Override public @Nullable String reduce(List<ComputeJobResult> results) throws IgniteException {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new TreeMap<>(buildPartitionKeyComparator());
 
         for (ComputeJobResult res : results) {
@@ -122,19 +123,11 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws
-        IgniteException {
-        ComputeJobResultPolicy superRes = super.result(res, rcvd);
-
-        // Deny failover.
-        if (superRes == ComputeJobResultPolicy.FAILOVER) {
-            superRes = ComputeJobResultPolicy.WAIT;
-
-            log.warning("VerifyBackupPartitionsJobV2 failed on node " +
-                "[consistentId=" + res.getNode().consistentId() + "]", res.getException());
-        }
-
-        return superRes;
+    @Override public ComputeJobResultPolicy result(
+        ComputeJobResult res,
+        List<ComputeJobResult> rcvd
+    ) throws IgniteException {
+        return delegate.result(res, rcvd);
     }
 
     /**
@@ -149,7 +142,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
         PartitionHashRecordV2 record = records.get(0);
 
-        if (record.updateCounter() != 0 || record.size() != 0)
+        if (record.size() != 0)
             return true;
 
         int firstHash = record.partitionHash();
@@ -157,7 +150,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         for (int i = 1; i < records.size(); i++) {
             record = records.get(i);
 
-            if (record.partitionHash() != firstHash || record.updateCounter() != 0 || record.size() != 0)
+            if (record.partitionHash() != firstHash || record.size() != 0)
                 return true;
         }
 
@@ -176,46 +169,18 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         IdleVerifyResultV2 conflictRes,
         int skippedRecords
     ) throws IgniteException {
-        File workDir = ignite.configuration().getWorkDirectory() == null
-            ? new File("/tmp")
-            : new File(ignite.configuration().getWorkDirectory());
+        String wd = ignite.configuration().getWorkDirectory();
 
-        File out = new File(workDir, IDLE_DUMP_FILE_PREMIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
+        File workDir = wd == null ? new File("/tmp") : new File(wd);
+
+        File out = new File(workDir, IDLE_DUMP_FILE_PREFIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
 
         ignite.log().info("IdleVerifyDumpTask will write output to " + out.getAbsolutePath());
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(out))) {
-            try {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(out))) {
+            writeResult(partitions, conflictRes, skippedRecords, writer);
 
-                writer.write("idle_verify check has finished, found " + partitions.size() + " partitions\n");
-
-                if (skippedRecords > 0)
-                    writer.write(skippedRecords + " partitions was skipped\n");
-
-                if (!F.isEmpty(partitions)) {
-                    writer.write("Cluster partitions:\n");
-
-                    for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : partitions.entrySet()) {
-                        writer.write("Partition: " + entry.getKey() + "\n");
-
-                        writer.write("Partition instances: " + entry.getValue() + "\n");
-                    }
-
-                    writer.write("\n\n-----------------------------------\n\n");
-
-                    conflictRes.print(str -> {
-                        try {
-                            writer.write(str);
-                        }
-                        catch (IOException e) {
-                            throw new IgniteException("Failed to write partitions conflict.", e);
-                        }
-                    });
-                }
-            }
-            finally {
-                writer.flush();
-            }
+            writer.flush();
 
             ignite.log().info("IdleVerifyDumpTask successfully written dump to '" + out.getAbsolutePath() + "'");
         }
@@ -228,10 +193,43 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         return out.getAbsolutePath();
     }
 
+    /** */
+    private void writeResult(
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partitions,
+        IdleVerifyResultV2 conflictRes,
+        int skippedRecords,
+        PrintWriter writer
+    ) {
+        if (!F.isEmpty(conflictRes.exceptions())) {
+            int size = conflictRes.exceptions().size();
+
+            writer.write("idle_verify failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
+        }
+
+        writer.write("idle_verify check has finished, found " + partitions.size() + " partitions\n");
+
+        if (skippedRecords > 0)
+            writer.write(skippedRecords + " partitions was skipped\n");
+
+        if (!F.isEmpty(partitions)) {
+            writer.write("Cluster partitions:\n");
+
+            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : partitions.entrySet()) {
+                writer.write("Partition: " + entry.getKey() + "\n");
+
+                writer.write("Partition instances: " + entry.getValue() + "\n");
+            }
+
+            writer.write("\n\n-----------------------------------\n\n");
+
+            conflictRes.print(writer::write);
+        }
+    }
+
     /**
      * @return Comparator for {@link PartitionHashRecordV2}.
      */
-    @NotNull private Comparator<PartitionHashRecordV2> buildRecordComparator() {
+    private Comparator<PartitionHashRecordV2> buildRecordComparator() {
         return (o1, o2) -> {
             int compare = Boolean.compare(o1.isPrimary(), o2.isPrimary());
 
@@ -245,7 +243,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     /**
      * @return Comparator for {@link PartitionKeyV2}.
      */
-    @NotNull private Comparator<PartitionKeyV2> buildPartitionKeyComparator() {
+    private Comparator<PartitionKeyV2> buildPartitionKeyComparator() {
         return (o1, o2) -> {
             int compare = Integer.compare(o1.groupId(), o2.groupId());
 

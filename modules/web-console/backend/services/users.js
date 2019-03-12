@@ -53,6 +53,13 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                     user.admin = cnt === 0;
                     user.registered = new Date();
                     user.token = utilsService.randomString(settings.tokenLength);
+                    user.resetPasswordToken = utilsService.randomString(settings.tokenLength);
+                    user.activated = false;
+
+                    if (settings.activation.enabled) {
+                        user.activationToken = utilsService.randomString(settings.tokenLength);
+                        user.activationSentAt = new Date();
+                    }
 
                     if (settings.server.disableSignup && !user.admin && !createdByAdmin)
                         throw new errors.ServerErrorException('Sign-up is not allowed. Ask your Web Console administrator to create account for you.');
@@ -73,28 +80,39 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                     });
                 })
                 .then((registered) => {
-                    registered.resetPasswordToken = utilsService.randomString(settings.tokenLength);
+                    return mongo.Space.create({name: 'Personal space', owner: registered._id})
+                        .then(() => registered);
+                })
+                .then((registered) => {
+                    if (settings.activation.enabled) {
+                        mailsService.sendActivationLink(host, registered);
 
-                    return registered.save()
-                        .then(() => mongo.Space.create({name: 'Personal space', owner: registered._id}))
-                        .then(() => {
-                            mailsService.emailUserSignUp(host, registered, createdByAdmin);
-
+                        if (createdByAdmin)
                             return registered;
-                        });
+
+                        throw new errors.MissingConfirmRegistrationException(registered.email);
+                    }
+
+                    mailsService.sendWelcomeLetter(host, registered, createdByAdmin);
+
+                    return registered;
                 });
         }
 
         /**
          * Save user.
          *
-         * @param {Object} changed - The user
+         * @param userId User ID.
+         * @param {Object} changed Changed user.
          * @returns {Promise.<mongo.ObjectId>} that resolves account id of merge operation.
          */
-        static save(changed) {
+        static save(userId, changed) {
             delete changed.admin;
+            delete changed.activated;
+            delete changed.activationSentAt;
+            delete changed.activationToken;
 
-            return mongo.Account.findById(changed._id).exec()
+            return mongo.Account.findById(userId).exec()
                 .then((user) => {
                     if (!changed.password)
                         return Promise.resolve(user);
@@ -157,6 +175,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                             country: 1,
                             lastLogin: 1,
                             lastActivity: 1,
+                            activated: 1,
                             spaces: {
                                 $filter: {
                                     input: '$spaces',
@@ -225,7 +244,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                         .catch((err) => console.error(`Failed to cleanup spaces [user=${user.username}, err=${err}`))
                         .then(() => user);
                 })
-                .then((user) => mailsService.emailUserDeletion(host, user));
+                .then((user) => mailsService.sendAccountDeleted(host, user));
         }
 
         /**

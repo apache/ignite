@@ -19,12 +19,10 @@ package org.apache.ignite.internal.processors.sql;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /** */
-@RunWith(JUnit4.class)
 public class IgniteCacheReplicatedTransactionalSnapshotColumnConstraintTest
     extends IgniteCacheReplicatedAtomicColumnConstraintsTest {
     /** {@inheritDoc} */
@@ -33,110 +31,128 @@ public class IgniteCacheReplicatedTransactionalSnapshotColumnConstraintTest
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongStringValueFail() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongStringKeyFail() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongStringValueFieldFail() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongStringKeyFieldFail() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongStringKeyFail2() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongStringKeyFail3() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongDecimalValueFail() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongDecimalKeyFail() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongDecimalKeyFail2() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongDecimalValueFieldFail() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongDecimalValueFieldFail2() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongDecimalKeyFieldFail() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongDecimalValueScaleFail() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongDecimalKeyScaleFail() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongDecimalKeyScaleFail2() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongDecimalValueFieldScaleFail() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongDecimalValueFieldScaleFail2() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10066")
     @Test
     @Override public void testPutTooLongDecimalKeyFieldScaleFail() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10066");
+        // No-op.
     }
 }

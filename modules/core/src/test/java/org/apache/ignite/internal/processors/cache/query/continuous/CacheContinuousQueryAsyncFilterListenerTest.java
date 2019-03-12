@@ -42,20 +42,17 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -70,11 +67,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int NODES = 5;
 
@@ -87,8 +80,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setClientMode(client);
 
@@ -535,8 +526,8 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                                             committed =true;
                                         }
                                         catch (Exception ex) {
-                                            assertTrue(ex.toString(),
-                                                ex.getMessage() != null && ex.getMessage().contains("Cannot serialize transaction due to write conflict"));
+                                            assertTrue(ex.getCause() instanceof TransactionSerializationException);
+                                            assertEquals(atomicityMode(cache0), TRANSACTIONAL_SNAPSHOT);
                                         }
                                     }
                                 }
@@ -692,8 +683,8 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                                             committed =true;
                                         }
                                         catch (Exception ex) {
-                                            assertTrue(ex.toString(),
-                                                ex.getMessage() != null && ex.getMessage().contains("Cannot serialize transaction due to write conflict"));
+                                            assertTrue(ex.toString(), X.hasCause(ex, TransactionSerializationException.class));
+                                            assertEquals(atomicityMode(cache0), TRANSACTIONAL_SNAPSHOT);
                                         }
                                     }
                                 }

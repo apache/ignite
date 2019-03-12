@@ -17,6 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -37,30 +50,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 
-import javax.cache.Cache;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
 /**
  * Geo-indexing test.
  */
-@RunWith(JUnit4.class)
 public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int CNT = 100;
@@ -231,7 +227,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
         if (!dynamic)
             cache.destroy();
         else
-            grid.context().cache().dynamicDestroyCache(cache.getName(), true, true, false);
+            grid.context().cache().dynamicDestroyCache(cache.getName(), true, true, false, null);
     }
 
     /**
@@ -566,8 +562,6 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
             }
 
             checkDistributedQuery();
-
-            checkLocalQuery();
         }
         finally {
             destroy(c1, grid(0), dynamic);
@@ -603,43 +597,6 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
             "\"camp\".EnemyCamp c where e.campId = c._key and c.coords && ?").setArgs(lethalArea);
 
         List<List<?>> result = c1.query(query.setDistributedJoins(true)).getAll();
-
-        assertEquals(expectedEnemies, result.size());
-    }
-
-    /**
-     * Check local query.
-     *
-     * @throws ParseException If failed.
-     */
-    private void checkLocalQuery() throws ParseException {
-        IgniteCache<Integer, Enemy> c1 = grid(0).cache("enemy");
-        IgniteCache<Integer, EnemyCamp> c2 = grid(0).cache("camp");
-
-        final Geometry lethalArea = new WKTReader().read("POLYGON((30 30, 30 70, 70 70, 70 30, 30 30))");
-
-        Set<Integer> localCampsIDs = new HashSet<>();
-
-        for(Cache.Entry<Integer, EnemyCamp> e : c2.localEntries())
-            localCampsIDs.add(e.getKey());
-
-        int expectedEnemies = 0;
-
-        for (Cache.Entry<Integer, Enemy> e : c1.localEntries()) {
-            final Integer campID = e.getValue().campId;
-
-            if (localCampsIDs.contains(campID)) {
-                final EnemyCamp camp = c2.get(campID);
-
-                if (lethalArea.covers(camp.coords))
-                    expectedEnemies++;
-            }
-        }
-
-        final SqlFieldsQuery query = new SqlFieldsQuery("select e._val, c._val from \"enemy\".Enemy e, " +
-            "\"camp\".EnemyCamp c where e.campId = c._key and c.coords && ?").setArgs(lethalArea);
-
-        List<List<?>> result = c1.query(query.setLocal(true)).getAll();
 
         assertEquals(expectedEnemies, result.size());
     }

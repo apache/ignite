@@ -28,11 +28,8 @@ import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
  * This class encapsulates the logic needed to do bagging (bootstrap aggregating) by features.
  * The action of this class on a given upstream is to replicate each entry in accordance to
  * Poisson distribution.
- *
- * @param <K> Type of upstream keys.
- * @param <V> Type of upstream values.
  */
-public class BaggingUpstreamTransformer<K, V> implements UpstreamTransformer<K, V> {
+public class BaggingUpstreamTransformer implements UpstreamTransformer {
     /** Serial version uid. */
     private static final long serialVersionUID = -913152523469994149L;
 
@@ -51,8 +48,8 @@ public class BaggingUpstreamTransformer<K, V> implements UpstreamTransformer<K, 
      * @param <V> Type of upstream values.
      * @return Builder of {@link BaggingUpstreamTransformer}.
      */
-    public static <K, V> UpstreamTransformerBuilder<K, V> builder(double subsampleRatio, int mdlIdx) {
-        return env -> new BaggingUpstreamTransformer<>(env.randomNumbersGenerator().nextLong() + mdlIdx, subsampleRatio);
+    public static <K, V> UpstreamTransformerBuilder builder(double subsampleRatio, int mdlIdx) {
+        return env -> new BaggingUpstreamTransformer(env.randomNumbersGenerator().nextLong() + mdlIdx, subsampleRatio);
     }
 
     /**
@@ -67,7 +64,7 @@ public class BaggingUpstreamTransformer<K, V> implements UpstreamTransformer<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public Stream<UpstreamEntry<K, V>> transform(Stream<UpstreamEntry<K, V>> upstream) {
+    @Override public Stream<UpstreamEntry> transform(Stream<UpstreamEntry> upstream) {
         PoissonDistribution poisson = new PoissonDistribution(
             new Well19937c(seed),
             subsampleRatio,

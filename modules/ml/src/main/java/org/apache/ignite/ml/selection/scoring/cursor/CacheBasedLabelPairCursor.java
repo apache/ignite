@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
@@ -47,7 +47,7 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
     private final IgniteBiFunction<K, V, L> lbExtractor;
 
     /** Model for inference. */
-    private final Model<Vector, L> mdl;
+    private final IgniteModel<Vector, L> mdl;
 
     /**
      * Constructs a new instance of cache based truth with prediction cursor.
@@ -60,7 +60,7 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
      */
     public CacheBasedLabelPairCursor(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
                                      IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
-                                     Model<Vector, L> mdl) {
+                                     IgniteModel<Vector, L> mdl) {
         this.cursor = query(upstreamCache, filter);
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
@@ -77,7 +77,7 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
      */
     public CacheBasedLabelPairCursor(IgniteCache<K, V> upstreamCache,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
-        Model<Vector, L> mdl) {
+        IgniteModel<Vector, L> mdl) {
         this.cursor = query(upstreamCache);
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
@@ -150,7 +150,7 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
             Vector features = featureExtractor.apply(entry.getKey(), entry.getValue());
             L lb = lbExtractor.apply(entry.getKey(), entry.getValue());
 
-            return new LabelPair<>(lb, mdl.apply(features));
+            return new LabelPair<>(lb, mdl.predict(features));
         }
     }
 }

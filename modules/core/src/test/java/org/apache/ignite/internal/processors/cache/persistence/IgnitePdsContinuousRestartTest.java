@@ -44,14 +44,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Cause by https://issues.apache.org/jira/browse/IGNITE-7278
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 4;
@@ -115,14 +113,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10561");
-
-        super.beforeTest();
     }
 
     /** {@inheritDoc} */
@@ -233,9 +223,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalancingDuringLoad_10_10_1_1() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10583");
-
         checkRebalancingDuringLoad(10, 10, 1, 1);
     }
 

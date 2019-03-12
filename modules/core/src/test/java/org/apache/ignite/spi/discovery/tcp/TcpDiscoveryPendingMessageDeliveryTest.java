@@ -32,24 +32,16 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private volatile boolean blockMsgs;
 
@@ -82,7 +74,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         else
             disco = new TcpDiscoverySpi();
 
-        disco.setIpFinder(IP_FINDER);
+        disco.setIpFinder(sharedStaticIpFinder);
         cfg.setDiscoverySpi(disco);
 
         return cfg;
@@ -138,7 +130,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs,
             GridTestUtils.waitForCondition(() -> {
-                log.info("Waiting for messages delivery");
+                log.info("Waiting for messages delivery [sentSize=" + sentEnsuredMsgs.size() + ", rcvdSize=" + receivedEnsuredMsgs.size() + ']');
 
                 return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
             }, 10000));
@@ -196,6 +188,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeliveryAllFailedMessagesInCorrectOrder() throws Exception {
         IgniteEx coord = startGrid("coordinator");
         TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();

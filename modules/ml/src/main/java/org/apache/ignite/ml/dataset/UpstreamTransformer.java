@@ -22,29 +22,15 @@ import java.util.stream.Stream;
 
 /**
  * Interface of transformer of upstream.
- *
- * @param <K> Type of keys in the upstream.
- * @param <V> Type of values in the upstream.
  */
 // TODO: IGNITE-10297: Investigate possibility of API change.
 @FunctionalInterface
-public interface UpstreamTransformer<K, V> extends Serializable {
+public interface UpstreamTransformer extends Serializable {
     /**
      * Transform upstream.
      *
      * @param upstream Upstream to transform.
      * @return Transformed upstream.
      */
-    public Stream<UpstreamEntry<K, V>> transform(Stream<UpstreamEntry<K, V>> upstream);
-
-    /**
-     * Get composition of this transformer and other transformer which is
-     * itself is {@link UpstreamTransformer} applying this transformer and then other transformer.
-     *
-     * @param other Other transformer.
-     * @return Composition of this and other transformer.
-     */
-    public default UpstreamTransformer<K, V> andThen(UpstreamTransformer<K, V> other) {
-        return upstream -> other.transform(transform(upstream));
-    }
+    public Stream<UpstreamEntry> transform(Stream<UpstreamEntry> upstream);
 }

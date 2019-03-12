@@ -31,45 +31,31 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_2_LRU;
+import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -215,6 +201,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
         DataRegionConfiguration regionCfg = new DataRegionConfiguration();
         regionCfg.setPersistenceEnabled(true);
+        regionCfg.setPageEvictionMode(RANDOM_LRU);
         storageCfg.setDefaultDataRegionConfiguration(regionCfg);
         IgniteConfiguration cfg = getConfiguration("testGrid");
         cfg.setDataStorageConfiguration(storageCfg);
@@ -252,6 +239,41 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccInMemoryEvictionDisabled() throws Exception {
+        final String memRegName = "in-memory-evictions";
+
+        // Enable in-memory eviction.
+        DataRegionConfiguration regionCfg = new DataRegionConfiguration();
+        regionCfg.setPersistenceEnabled(false);
+        regionCfg.setPageEvictionMode(RANDOM_2_LRU);
+        regionCfg.setName(memRegName);
+
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+        storageCfg.setDefaultDataRegionConfiguration(regionCfg);
+
+        IgniteConfiguration cfg = getConfiguration("testGrid");
+        cfg.setDataStorageConfiguration(storageCfg);
+
+        Ignite node = startGrid(cfg);
+
+        CacheConfiguration ccfg1 = new CacheConfiguration("test1")
+            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
+            .setDataRegionName(memRegName);
+
+        try {
+            node.createCache(ccfg1);
+
+            fail("In memory evictions should be disabled for MVCC caches.");
+        }
+        catch (Exception e) {
+            assertTrue(X.getFullStackTrace(e).contains("Data pages evictions cannot be used with TRANSACTIONAL_SNAPSHOT"));
+        }
+    }
+
+    /**
      * Test TRANSACTIONAL_SNAPSHOT and near cache.
      *
      * @throws Exception If failed.
@@ -262,6 +284,11 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
         assertCannotStart(
             mvccCacheConfig().setCacheMode(LOCAL),
             "LOCAL cache mode cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setRebalanceMode(CacheRebalanceMode.NONE),
+            "Rebalance mode NONE cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
         );
 
         assertCannotStart(

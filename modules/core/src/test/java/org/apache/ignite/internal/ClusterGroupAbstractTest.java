@@ -53,13 +53,9 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
 
@@ -67,11 +63,7 @@ import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
  * Abstract test for {@link org.apache.ignite.cluster.ClusterGroup}
  */
 @SuppressWarnings("deprecation")
-@RunWith(JUnit4.class)
 public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest implements Externalizable {
-    /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Waiting timeout. */
     private static final int WAIT_TIMEOUT = 30000;
 
@@ -125,7 +117,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true).setIpFinder(ipFinder));
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         return cfg;
     }

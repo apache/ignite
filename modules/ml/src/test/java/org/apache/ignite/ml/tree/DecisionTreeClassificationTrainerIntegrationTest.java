@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link DecisionTreeClassificationTrainer} that require to start the whole Ignite infrastructure.
@@ -43,11 +44,6 @@ public class DecisionTreeClassificationTrainerIntegrationTest extends GridCommon
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -59,6 +55,7 @@ public class DecisionTreeClassificationTrainerIntegrationTest extends GridCommon
     }
 
     /** */
+    @Test
     public void testFit() {
         int size = 100;
 

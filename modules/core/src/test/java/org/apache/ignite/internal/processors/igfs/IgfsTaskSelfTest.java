@@ -40,9 +40,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.TaskSessionResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -51,8 +48,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -63,7 +58,6 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Tests for {@link IgfsTask}.
  */
-@RunWith(JUnit4.class)
 public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     /** Predefined words dictionary. */
     private static final String[] DICTIONARY = new String[] {"word0", "word1", "word2", "word3", "word4", "word5",
@@ -71,9 +65,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
     /** File path. */
     private static final IgfsPath FILE = new IgfsPath("/file");
-
-    /** Shared IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Block size: 64 Kb. */
     private static final int BLOCK_SIZE = 64 * 1024;
@@ -135,11 +126,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setIgniteInstanceName("node-" + idx);

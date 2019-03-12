@@ -21,7 +21,7 @@ import {spy} from 'sinon';
 import {ListEditableAddItemButton as Ctrl} from './component';
 
 suite('list-editable-add-item-button component', () => {
-    test.skip('has addItem method with correct locals', () => {
+    test('has addItem method with correct locals', () => {
         const i = new Ctrl();
         i._listEditable = {
             ngModel: {
@@ -32,10 +32,9 @@ suite('list-editable-add-item-button component', () => {
         i._addItem = spy();
         i.addItem();
         assert.isOk(i._addItem.calledOnce);
-        assert.deepEqual(i._addItem.lastCall.args[0], {
-            $edit: i._listEditable.ngModel.editListItem
-        });
+        assert.deepEqual(i._addItem.lastCall.args[0].$edit, i._listEditable.ngModel.editListItem );
     });
+
     test('inserts button after list-editable', () => {
         Ctrl.hasItemsTemplate = 'tpl';
         const $scope = {};
@@ -57,6 +56,7 @@ suite('list-editable-add-item-button component', () => {
         assert.equal($transclude.lastCall.args[0], $scope);
         assert.equal(clone.insertAfter.lastCall.args[0], i._listEditable.$element);
     });
+
     test('exposes hasItems getter', () => {
         const i = new Ctrl();
         i._listEditable = {

@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
@@ -151,7 +151,7 @@ public class Pipeline<K, V, R> {
             );
         });
 
-        Model<Vector, Double> internalMdl = finalStage
+        IgniteModel<Vector, Double> internalMdl = finalStage
             .fit(
                 datasetBuilder,
                 finalFeatureExtractor,

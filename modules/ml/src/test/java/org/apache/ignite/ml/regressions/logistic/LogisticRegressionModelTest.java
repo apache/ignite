@@ -43,9 +43,9 @@ public class LogisticRegressionModelTest {
 
         assertEquals(0.1, new LogisticRegressionModel(weights, 1.0).withThreshold(0.1).threshold(), 0);
 
-        assertTrue(new LogisticRegressionModel(weights, 1.0).toString().length() > 0);
-        assertTrue(new LogisticRegressionModel(weights, 1.0).toString(true).length() > 0);
-        assertTrue(new LogisticRegressionModel(weights, 1.0).toString(false).length() > 0);
+        assertTrue(!new LogisticRegressionModel(weights, 1.0).toString().isEmpty());
+        assertTrue(!new LogisticRegressionModel(weights, 1.0).toString(true).isEmpty());
+        assertTrue(!new LogisticRegressionModel(weights, 1.0).toString(false).isEmpty());
 
         verifyPredict(new LogisticRegressionModel(weights, 1.0).withRawLabels(true));
         verifyPredict(new LogisticRegressionModel(null, 1.0).withRawLabels(true).withWeights(weights));
@@ -62,25 +62,25 @@ public class LogisticRegressionModelTest {
 
         Vector observation = new DenseVector(new double[] {1.0});
 
-        mdl.apply(observation);
+        mdl.predict(observation);
     }
 
     /** */
     private void verifyPredict(LogisticRegressionModel mdl) {
         Vector observation = new DenseVector(new double[] {1.0, 1.0});
-        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 1.0), mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[] {2.0, 1.0});
-        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 2.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 2.0 + 3.0 * 1.0), mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[] {1.0, 2.0});
-        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 2.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 2.0), mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[] {-2.0, 1.0});
-        TestUtils.assertEquals(sigmoid(1.0 - 2.0 * 2.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 - 2.0 * 2.0 + 3.0 * 1.0), mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[] {1.0, -2.0});
-        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 - 3.0 * 2.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 - 3.0 * 2.0), mdl.predict(observation), PRECISION);
     }
 
     /**

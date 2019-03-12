@@ -20,24 +20,19 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
-/**
- *
- */
+/** */
 public class CacheMvccTxFastFinishTest extends CacheTxFastFinishTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10444");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void fastFinishTx(Ignite ignite) {
+        assert MvccFeatureChecker.forcedMvcc();
+
         IgniteTransactions txs = ignite.transactions();
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -51,7 +46,7 @@ public class CacheMvccTxFastFinishTest extends CacheTxFastFinishTest {
                 try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     cache.get(i);
 
-                    checkNormalTxFinish(tx, commit);
+                    checkNormalTxFinish(tx, commit, true);
                 }
             }
 
@@ -59,9 +54,19 @@ public class CacheMvccTxFastFinishTest extends CacheTxFastFinishTest {
                 try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     cache.put(i, i);
 
-                    checkNormalTxFinish(tx, commit);
+                    checkNormalTxFinish(tx, commit, false);
                 }
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void checkNormalCommittedTx(IgniteInternalTx tx, boolean readOnly) {
+        if (readOnly)
+            assertNull(prepareFuture(tx));
+        else
+            assertNotNull(prepareFuture(tx));
+
+        assertNotNull(finishFuture(tx));
     }
 }

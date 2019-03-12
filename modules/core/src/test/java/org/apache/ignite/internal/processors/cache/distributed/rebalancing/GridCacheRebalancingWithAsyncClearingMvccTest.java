@@ -23,13 +23,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
  */
 public class GridCacheRebalancingWithAsyncClearingMvccTest extends GridCacheRebalancingWithAsyncClearingTest {
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
-        super.setUp();
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }

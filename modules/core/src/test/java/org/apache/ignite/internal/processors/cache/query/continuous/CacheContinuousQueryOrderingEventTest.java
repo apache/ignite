@@ -29,8 +29,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -46,22 +48,20 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -76,16 +76,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTest {
     /** */
     public static final int LISTENER_CNT = 3;
 
     /** */
     public static final int KEYS = 10;
-
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int NODES = 5;
@@ -103,7 +99,6 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setClientMode(client);
@@ -200,6 +195,16 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     @Test
     public void testMvccTxOnheapWithoutBackupFullSync() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, FULL_SYNC);
+
+        doOrderingTest(ccfg, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAtomicOnheapWithoutBackup() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, ATOMIC, PRIMARY_SYNC);
 
         doOrderingTest(ccfg, false);
     }
@@ -421,10 +426,9 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
 
                                 committed = true;
                             }
-                            catch (Exception e) {
-                                assertTrue(e.getMessage(), e.getMessage() != null &&
-                                    (e.getMessage().contains("Transaction has been rolled back") ||
-                                        e.getMessage().contains("Cannot serialize transaction due to write conflict")));
+                            catch (CacheException e) {
+                                assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                assertEquals(atomicityMode(cache), TRANSACTIONAL_SNAPSHOT);
                             }
                             finally {
                                 if (tx != null)
@@ -553,7 +557,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
          */
         public TestCacheAsyncEventListener(BlockingQueue<CacheEntryEvent<QueryTestKey, QueryTestValue>> queue,
             AtomicInteger cntr) {
-            super(queue, cntr);
+            super(queue, cntr, false);
         }
     }
 
@@ -567,19 +571,42 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         /** */
         private final AtomicInteger cntr;
 
+        /** */
+        private final boolean delayOp;
+
         /**
          * @param queue Queue.
          * @param cntr Received events counter.
          */
         public TestCacheEventListener(BlockingQueue<CacheEntryEvent<QueryTestKey, QueryTestValue>> queue,
             AtomicInteger cntr) {
+            this(queue, cntr, true);
+        }
+
+        /**
+         * @param queue Queue.
+         * @param cntr Received events counter.
+         * @param delayOp Delay operation to ensure verification of the serialization of notifications.
+         */
+        public TestCacheEventListener(BlockingQueue<CacheEntryEvent<QueryTestKey, QueryTestValue>> queue,
+            AtomicInteger cntr, boolean delayOp) {
             this.queue = queue;
             this.cntr = cntr;
+            this.delayOp = delayOp;
         }
 
         /** {@inheritDoc} */
         @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
             ? extends QueryTestValue>> evts) {
+            if (delayOp && ThreadLocalRandom.current().nextInt(5) == 1) {
+                try {
+                    U.sleep(10);
+                }
+                catch (IgniteInterruptedCheckedException ex) {
+                    throw new CacheEntryListenerException(ex);
+                }
+            }
+
             for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : evts) {
                 queue.add((CacheEntryEvent<QueryTestKey, QueryTestValue>)e);
 
@@ -705,3 +732,4 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         }
     }
 }
+

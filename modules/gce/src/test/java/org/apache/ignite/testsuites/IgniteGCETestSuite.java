@@ -17,25 +17,16 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.gce.TcpDiscoveryGoogleStorageIpFinderSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Google Compute Engine integration tests.
  */
-public class IgniteGCETestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Google Compute Engine Integration Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryGoogleStorageIpFinderSelfTest.class));
-
-        return suite;
-    }
-
+@RunWith(Suite.class)
+@Suite.SuiteClasses({TcpDiscoveryGoogleStorageIpFinderSelfTest.class})
+public class IgniteGCETestSuite {
     /**
      * @return Service Account Id.
      */

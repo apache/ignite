@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.ml.clustering.ClusteringTestSuite;
 import org.apache.ignite.ml.common.CommonTestSuite;
 import org.apache.ignite.ml.composition.CompositionTestSuite;
@@ -37,41 +35,41 @@ import org.apache.ignite.ml.selection.SelectionTestSuite;
 import org.apache.ignite.ml.structures.StructuresTestSuite;
 import org.apache.ignite.ml.svm.SVMTestSuite;
 import org.apache.ignite.ml.tree.DecisionTreeTestSuite;
+import org.apache.ignite.ml.tree.randomforest.RandomForestTreeTestSuite;
+import org.apache.ignite.ml.util.UtilTestSuite;
+import org.apache.ignite.ml.util.generators.DataStreamGeneratorTestSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Test suite for all module tests. IMPL NOTE tests in {@code org.apache.ignite.ml.tree.performance} are not
  * included here because these are intended only for manual execution.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    MathImplMainTestSuite.class,
+    RegressionsTestSuite.class,
+    SVMTestSuite.class,
+    ClusteringTestSuite.class,
+    KNNTestSuite.class,
+    PipelineTestSuite.class,
+    PreprocessingTestSuite.class,
+    GAGridTestSuite.class,
+    CompositionTestSuite.class,
+    EnvironmentTestSuite.class,
+    StructuresTestSuite.class,
+    CommonTestSuite.class,
+    MultiClassTestSuite.class,
+    DataStreamGeneratorTestSuite.class,
+    UtilTestSuite.class,
+    RandomForestTreeTestSuite.class,
+
+    /** JUnit 3 tests. */
+    DecisionTreeTestSuite.class,
+    MLPTestSuite.class,
+    InferenceTestSuite.class,
+    DatasetTestSuite.class,
+    SelectionTestSuite.class
+})
 public class IgniteMLTestSuite {
-    /** */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite();
-
-        /** JUnit 4 tests. */
-        suite.addTest(new JUnit4TestAdapter(MathImplMainTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(RegressionsTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(SVMTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(ClusteringTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(KNNTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(PipelineTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(PreprocessingTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(GAGridTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(CompositionTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(EnvironmentTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(StructuresTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(CommonTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(MultiClassTestSuite.class));
-
-        /** JUnit 3 tests. */
-        suite.addTest(DecisionTreeTestSuite.suite());
-        suite.addTest(MLPTestSuite.suite());
-        suite.addTest(InferenceTestSuite.suite());
-        suite.addTest(DatasetTestSuite.suite());
-        suite.addTest(SelectionTestSuite.suite());
-
-        return suite;
-    }
 }

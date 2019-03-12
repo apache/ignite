@@ -31,10 +31,9 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2SystemIndexFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -45,12 +44,10 @@ import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
-
 /**
  * Information about table in database.
  */
-public class H2TableDescriptor implements GridH2SystemIndexFactory {
+public class H2TableDescriptor {
     /** PK index name. */
     public static final String PK_IDX_NAME = "_key_PK";
 
@@ -107,6 +104,12 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         fullTblName = H2Utils.withQuotes(schemaName) + "." + H2Utils.withQuotes(type.tableName());
     }
 
+    /**
+     * @return {@code true} In case table was created from SQL.
+     */
+    public boolean sql(){
+        return isSql;
+    }
     /**
      * @return Indexing.
      */
@@ -197,23 +200,16 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     }
 
     /**
-     * Create H2 row factory.
+     * Create list of indexes. First must be primary key, after that all unique indexes and only then non-unique
+     * indexes. All indexes must be subtypes of {@link H2TreeIndexBase}.
      *
-     * @param rowDesc Row descriptor.
-     * @return H2 row factory.
+     * @param tbl Table to create indexes for.
+     * @return List of indexes.
      */
-    H2RowFactory rowFactory(GridH2RowDescriptor rowDesc) {
-        if (cacheInfo.affinityNode())
-            return new H2RowFactory(rowDesc, cacheInfo.cacheContext());
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ArrayList<Index> createSystemIndexes(GridH2Table tbl) {
+    public ArrayList<Index> createSystemIndexes(GridH2Table tbl) {
         ArrayList<Index> idxs = new ArrayList<>();
 
-        IndexColumn keyCol = tbl.indexColumn(KEY_COL, SortOrder.ASCENDING);
+        IndexColumn keyCol = tbl.indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
         IndexColumn affCol = tbl.getAffinityKeyColumn();
 
         if (affCol != null && H2Utils.equals(affCol, keyCol))
@@ -386,8 +382,9 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @param idxDesc Index descriptor.
      * @return Index.
      */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
     public GridH2IndexBase createUserIndex(GridQueryIndexDescriptor idxDesc) {
-        IndexColumn keyCol = tbl.indexColumn(KEY_COL, SortOrder.ASCENDING);
+        IndexColumn keyCol = tbl.indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
         IndexColumn affCol = tbl.getAffinityKeyColumn();
 
         List<IndexColumn> cols = new ArrayList<>(idxDesc.fields().size() + 2);
@@ -437,7 +434,8 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         if (cacheInfo.affinityNode()) {
             assert pkHashIdx == null : pkHashIdx;
 
-            pkHashIdx = new H2PkHashIndex(cacheInfo.cacheContext(), tbl, PK_HASH_IDX_NAME, cols);
+            pkHashIdx = new H2PkHashIndex(cacheInfo.cacheContext(), tbl, PK_HASH_IDX_NAME, cols,
+                tbl.rowDescriptor().context().config().getQueryParallelism());
 
             return pkHashIdx;
         }

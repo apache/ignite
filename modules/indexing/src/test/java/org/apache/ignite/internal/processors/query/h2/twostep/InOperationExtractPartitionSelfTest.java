@@ -24,28 +24,24 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTestHelper.ORG;
 import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTestHelper.ORG_COUNT;
 
 /** */
-@RunWith(JUnit4.class)
-public class InOperationExtractPartitionSelfTest extends GridCommonAbstractTest {
+public class InOperationExtractPartitionSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 8;
 
@@ -115,8 +111,6 @@ public class InOperationExtractPartitionSelfTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         orgCache = null;
-
-        stopAllGrids();
     }
 
     /** */

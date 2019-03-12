@@ -31,7 +31,6 @@ import javax.net.ssl.TrustManager;
 
 /** */
 class DelegatingSSLContextSpi extends SSLContextSpi {
-
     /** */
     private final SSLContext delegate;
 
@@ -57,8 +56,7 @@ class DelegatingSSLContextSpi extends SSLContextSpi {
 
     /** {@inheritDoc} */
     @Override protected SSLServerSocketFactory engineGetServerSocketFactory() {
-        return new SSLServerSocketFactoryWrapper(delegate.getServerSocketFactory(),
-            parameters);
+        return new SSLServerSocketFactoryWrapper(delegate.getServerSocketFactory(), parameters);
     }
 
     /** {@inheritDoc} */

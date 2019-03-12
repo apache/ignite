@@ -20,37 +20,49 @@ package org.apache.ignite.ml.xgboost.parser.visitor;
 import java.util.HashMap;
 import java.util.Map;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import org.apache.ignite.ml.xgboost.XGLeafNode;
-import org.apache.ignite.ml.xgboost.XGNode;
-import org.apache.ignite.ml.xgboost.XGSplitNode;
+import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
+import org.apache.ignite.ml.tree.DecisionTreeLeafNode;
+import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.xgboost.parser.XGBoostModelBaseVisitor;
 import org.apache.ignite.ml.xgboost.parser.XGBoostModelParser;
 
 /**
  * XGBoost tree visitor that parses tree.
  */
-public class XGTreeVisitor extends XGBoostModelBaseVisitor<XGNode> {
+public class XGTreeVisitor extends XGBoostModelBaseVisitor<DecisionTreeNode> {
     /** Index of the root node. */
     private static final int ROOT_NODE_IDX = 0;
 
+    /** Dictionary for matching column name and index. */
+    private final Map<String, Integer> dict;
+
+    /**
+     * Constructs a new instance of tree visitor.
+     *
+     * @param dict Dictionary for matching column name and index.
+     */
+    public XGTreeVisitor(Map<String, Integer> dict) {
+        this.dict = dict;
+    }
+
     /** {@inheritDoc} */
-    @Override public XGNode visitXgTree(XGBoostModelParser.XgTreeContext ctx) {
-        Map<Integer, XGSplitNode> splitNodes = new HashMap<>();
-        Map<Integer, XGLeafNode> leafNodes = new HashMap<>();
+    @Override public DecisionTreeNode visitXgTree(XGBoostModelParser.XgTreeContext ctx) {
+        Map<Integer, DecisionTreeConditionalNode> splitNodes = new HashMap<>();
+        Map<Integer, DecisionTreeLeafNode> leafNodes = new HashMap<>();
 
         for (XGBoostModelParser.XgNodeContext nodeCtx : ctx.xgNode()) {
             int idx = Integer.valueOf(nodeCtx.INT(0).getText());
             String featureName = nodeCtx.STRING().getText();
             double threshold = parseXgValue(nodeCtx.xgValue());
 
-            splitNodes.put(idx, new XGSplitNode(featureName, threshold));
+            splitNodes.put(idx, new DecisionTreeConditionalNode(dict.get(featureName), threshold, null, null, null));
         }
 
         for (XGBoostModelParser.XgLeafContext leafCtx : ctx.xgLeaf()) {
             int idx = Integer.valueOf(leafCtx.INT().getText());
             double val = parseXgValue(leafCtx.xgValue());
 
-            leafNodes.put(idx, new XGLeafNode(val));
+            leafNodes.put(idx, new DecisionTreeLeafNode(val));
         }
 
         for (XGBoostModelParser.XgNodeContext nodeCtx : ctx.xgNode()) {
@@ -59,9 +71,10 @@ public class XGTreeVisitor extends XGBoostModelBaseVisitor<XGNode> {
             int noIdx = Integer.valueOf(nodeCtx.INT(2).getText());
             int missIdx = Integer.valueOf(nodeCtx.INT(3).getText());
 
-            XGSplitNode node = splitNodes.get(idx);
-            node.setYesNode(splitNodes.containsKey(yesIdx) ? splitNodes.get(yesIdx) : leafNodes.get(yesIdx));
-            node.setNoNode(splitNodes.containsKey(noIdx) ? splitNodes.get(noIdx) : leafNodes.get(noIdx));
+            DecisionTreeConditionalNode node = splitNodes.get(idx);
+
+            node.setElseNode(splitNodes.containsKey(yesIdx) ? splitNodes.get(yesIdx) : leafNodes.get(yesIdx));
+            node.setThenNode(splitNodes.containsKey(noIdx) ? splitNodes.get(noIdx) : leafNodes.get(noIdx));
             node.setMissingNode(splitNodes.containsKey(missIdx) ? splitNodes.get(missIdx) : leafNodes.get(missIdx));
         }
 

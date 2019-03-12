@@ -39,7 +39,7 @@ public class DiscreteNaiveBayesModelTest {
         DiscreteNaiveBayesModel mdl = new DiscreteNaiveBayesModel(probabilities, classProbabilities, new double[] {first, second}, thresholds, new DiscreteNaiveBayesSumsHolder());
         Vector observation = VectorUtils.of(2, 0, 1, 2, 0);
 
-        Assert.assertEquals(second, mdl.apply(observation), 0.0001);
+        Assert.assertEquals(second, mdl.predict(observation), 0.0001);
     }
 
 }

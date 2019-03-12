@@ -26,6 +26,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -251,5 +252,22 @@ public abstract class SqlListenerUtils {
             || cls == Time[].class
             || cls == Timestamp[].class
             || cls == java.util.Date[].class || cls == java.sql.Date[].class;
+    }
+
+    /**
+     * Converts sql pattern wildcards into java regex wildcards.
+     * Translates "_" to "." and "%" to ".*" if those are not escaped with "\" ("\_" or "\%").
+     */
+    public static String translateSqlWildcardsToRegex(String sqlPtrn) {
+        if (F.isEmpty(sqlPtrn))
+            return sqlPtrn;
+
+        String toRegex = ' ' + sqlPtrn;
+
+        toRegex = toRegex.replaceAll("([^\\\\])%", "$1.*");
+        toRegex = toRegex.replaceAll("([^\\\\])_", "$1.");
+        toRegex = toRegex.replaceAll("\\\\(.)", "$1");
+
+        return toRegex.substring(1);
     }
 }

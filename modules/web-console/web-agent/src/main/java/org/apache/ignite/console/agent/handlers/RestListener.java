@@ -24,6 +24,7 @@ import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestExecutor;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -38,7 +39,7 @@ public class RestListener extends AbstractListener {
 
     /**
      * @param cfg Config.
-     * @param restExecutor Executor.
+     * @param restExecutor REST executor.
      */
     public RestListener(AgentConfiguration cfg, RestExecutor restExecutor) {
         this.cfg = cfg;
@@ -65,6 +66,9 @@ public class RestListener extends AbstractListener {
 
         boolean demo = (boolean)args.get("demo");
 
+        if (F.isEmpty((String)args.get("token")))
+            return RestResult.fail(401, "Request does not contain user token.");
+
         Map<String, Object> headers = null;
 
         if (args.containsKey("headers"))
@@ -73,6 +77,9 @@ public class RestListener extends AbstractListener {
         try {
             if (demo) {
                 if (AgentClusterDemo.getDemoUrl() == null) {
+                    if (cfg.disableDemo())
+                        return RestResult.fail(404, "Demo mode disabled by administrator.");
+
                     AgentClusterDemo.tryStart().await();
 
                     if (AgentClusterDemo.getDemoUrl() == null)

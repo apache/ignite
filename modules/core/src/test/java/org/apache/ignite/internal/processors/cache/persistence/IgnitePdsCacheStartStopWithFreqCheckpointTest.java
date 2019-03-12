@@ -37,16 +37,14 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbstractTest {
     /** Caches. */
     private static final int CACHES = 10;
@@ -83,11 +81,17 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     private CacheConfiguration cacheConfiguration(int cacheIdx) {
-        return new CacheConfiguration(CACHE_NAME + cacheIdx)
+        CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME + cacheIdx)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.REPLICATED)
-            .setBackups(0)
-            .setRebalanceMode(CacheRebalanceMode.NONE);
+            .setBackups(0);
+
+        if (MvccFeatureChecker.forcedMvcc())
+            ccfg.setRebalanceDelay(Long.MAX_VALUE);
+        else
+            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+
+        return ccfg;
     }
 
     /** {@inheritDoc} */
@@ -134,7 +138,7 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
 
                 try {
                     // Stop cache without destroy.
-                    crd.context().cache().dynamicDestroyCaches(cacheNames, false, false, false).get();
+                    crd.context().cache().dynamicDestroyCaches(cacheNames, false,false).get();
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException("Failed to destroy cache", e);

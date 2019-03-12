@@ -249,7 +249,9 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
             else if (total == 0 && rebalanceInProgress)
                 res.setRebalance(MINIMAL_REBALANCE);
             else
-                res.setRebalance(total > 0 ? Math.max(ready / total, MINIMAL_REBALANCE) : REBALANCE_COMPLETE);
+                res.setRebalance(total > 0 && rebalanceInProgress
+                    ? Math.max(ready / total, MINIMAL_REBALANCE)
+                    : REBALANCE_COMPLETE);
         }
         catch (Exception e) {
             res.setRebalance(REBALANCE_NOT_AVAILABLE);

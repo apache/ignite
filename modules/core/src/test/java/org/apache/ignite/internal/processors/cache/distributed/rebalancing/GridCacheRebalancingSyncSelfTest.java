@@ -30,9 +30,12 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
@@ -55,16 +58,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -72,11 +70,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int TEST_SIZE = SF.applyLB(100_000, 10_000);
 
@@ -114,18 +108,17 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration iCfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setIpFinder(ipFinder);
-        ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setForceServerMode(true);
+        if (MvccFeatureChecker.forcedMvcc()) {
+            iCfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setMaxSize(400L * 1024 * 1024)
+                ));
+        }
 
         TcpCommunicationSpi commSpi = new CollectingCommunicationSpi();
-
-        commSpi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         commSpi.setTcpNoDelay(true);
 
         iCfg.setCommunicationSpi(commSpi);
-
-        if (getTestIgniteInstanceName(10).equals(igniteInstanceName))
-            iCfg.setClientMode(true);
 
         CacheConfiguration<Integer, Integer> cachePCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -137,6 +130,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cachePCfg.setRebalanceBatchesPrefetchCount(1);
         cachePCfg.setRebalanceOrder(2);
         cachePCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cachePCfg.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
         CacheConfiguration<Integer, Integer> cachePCfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -147,7 +141,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cachePCfg2.setRebalanceOrder(2);
         cachePCfg2.setRebalanceDelay(SF.applyLB(5000, 500));
         cachePCfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
+        cachePCfg2.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
         CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -157,8 +151,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cacheRCfg.setRebalanceBatchSize(1);
         cacheRCfg.setRebalanceBatchesPrefetchCount(Integer.MAX_VALUE);
         cacheRCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-        ((TcpCommunicationSpi)iCfg.getCommunicationSpi()).setSharedMemoryPort(-1);//Shmem fail fix for Integer.MAX_VALUE.
+        cacheRCfg.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
         CacheConfiguration<Integer, Integer> cacheRCfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -167,6 +160,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cacheRCfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
         cacheRCfg2.setRebalanceOrder(4);
         cacheRCfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cacheRCfg2.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
         iCfg.setCacheConfiguration(cachePCfg, cachePCfg2, cacheRCfg, cacheRCfg2);
 
@@ -239,7 +233,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                         TEST_SIZE + ", iteration=" + iter + ", cache=" + name + "]");
 
                 assertEquals("Value does not match [key=" + entry.getKey() + ", cache=" + name + ']',
-                    entry.getValue().intValue(), entry.getKey() + name.hashCode() + iter);
+                    entry.getKey() + name.hashCode() + iter, entry.getValue().intValue());
             });
 
             assertEquals(TEST_SIZE, cnt.get());
@@ -268,9 +262,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSimpleRebalancing() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10560");
-
         IgniteKernal ignite = (IgniteKernal)startGrid(0);
 
         generateData(ignite, 0, 0);
@@ -511,9 +502,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testComplexRebalancing() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10561");
-
         final Ignite ignite = startGrid(0);
 
         generateData(ignite, 0, 0);

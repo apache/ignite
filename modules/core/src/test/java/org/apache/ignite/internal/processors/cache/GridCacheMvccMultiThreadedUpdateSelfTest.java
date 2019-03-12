@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -45,17 +48,10 @@ public class GridCacheMvccMultiThreadedUpdateSelfTest extends GridCacheOffHeapMu
         return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
-        super.beforeTestsStarted();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformTx() throws Exception {
         testTransformTx(keyForNode(0));
 
@@ -82,11 +78,13 @@ public class GridCacheMvccMultiThreadedUpdateSelfTest extends GridCacheOffHeapMu
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        cache.invoke(key, new IncProcessor());
+                    doOperation(() -> {
+                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            cache.invoke(key, new IncProcessor());
 
-                        tx.commit();
-                    }
+                            tx.commit();
+                        }
+                    });
                 }
 
                 return null;
@@ -110,6 +108,7 @@ public class GridCacheMvccMultiThreadedUpdateSelfTest extends GridCacheOffHeapMu
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTxPessimistic() throws Exception {
         testPutTx(keyForNode(0));
 
@@ -134,13 +133,16 @@ public class GridCacheMvccMultiThreadedUpdateSelfTest extends GridCacheOffHeapMu
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        Integer val = cache.getAndPut(key, i);
+                    int val0 = i;
+                    doOperation(() -> {
+                        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            Integer val = cache.getAndPut(key, val0);
 
-                        assertNotNull(val);
+                            assertNotNull(val);
 
-                        tx.commit();
-                    }
+                            tx.commit();
+                        }
+                    });
                 }
 
                 return null;
@@ -157,6 +159,7 @@ public class GridCacheMvccMultiThreadedUpdateSelfTest extends GridCacheOffHeapMu
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutxIfAbsentTxPessimistic() throws Exception {
         testPutxIfAbsentTx(keyForNode(0));
 
@@ -199,5 +202,17 @@ public class GridCacheMvccMultiThreadedUpdateSelfTest extends GridCacheOffHeapMu
         }
 
         assertFalse(failed);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <T> T doOperation(Supplier<T> op) {
+        while (true) {
+            try {
+                return super.doOperation(op);
+            }
+            catch (CacheException e) {
+                MvccFeatureChecker.assertMvccWriteConflict(e);
+            }
+        }
     }
 }

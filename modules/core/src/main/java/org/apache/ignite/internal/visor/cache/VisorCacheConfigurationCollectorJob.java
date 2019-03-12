@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.util.VisorTaskUtils;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -63,7 +64,7 @@ public class VisorCacheConfigurationCollectorJob
 
             boolean matched = hasPtrn ? ptrn.matcher(cacheName).find() : all || arg.getCacheNames().contains(cacheName);
 
-            if (matched) {
+            if (!VisorTaskUtils.isRestartingCache(ignite, cacheName) && matched) {
                 VisorCacheConfiguration cfg =
                     config(cache.getConfiguration(CacheConfiguration.class), cache.context().dynamicDeploymentId());
 

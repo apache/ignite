@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.GridCacheAffinityBackupsSelfTest;
 import org.apache.ignite.IgniteCacheAffinitySelfTest;
 import org.apache.ignite.IgniteSystemProperties;
@@ -43,15 +43,18 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.runner.RunWith;
 
 /**
  * Test suite.
  */
-public class IgniteCacheMvccTestSuite5 extends TestSuite {
+@RunWith(DynamicSuite.class)
+public class IgniteCacheMvccTestSuite5 {
     /**
      * @return IgniteCache test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
         HashSet<Class> ignoredTests = new HashSet<>(128);
@@ -85,10 +88,6 @@ public class IgniteCacheMvccTestSuite5 extends TestSuite {
         ignoredTests.add(GridCachePartitionExchangeManagerHistSizeTest.class);
         ignoredTests.add(ConcurrentCacheStartTest.class);
 
-        TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 5");
-
-        suite.addTest(IgniteCacheTestSuite5.suite(ignoredTests));
-
-        return suite;
+        return IgniteCacheTestSuite5.suite(ignoredTests);
     }
 }

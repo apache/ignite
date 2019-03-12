@@ -17,19 +17,19 @@
 
 package org.apache.ignite.util;
 
-import junit.framework.TestCase;
 import org.apache.ignite.internal.util.GridLongList;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.util.GridLongList.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
-public class GridLongListSelfTest extends TestCase {
+public class GridLongListSelfTest {
     /**
      * @throws Exception If failed.
      */

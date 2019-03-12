@@ -29,14 +29,11 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Redundancy for URI deployment test
  */
 @GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
-@RunWith(JUnit4.class)
 public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * Used to count number of unit undeployments.
@@ -100,7 +97,7 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
     }
 
     /** {@inheritDoc} */
-    protected void afterTest() throws Exception {
+    @Override protected void afterTest() throws Exception {
         U.delete(getGarDir());
         U.delete(new File(getDeployDir(), "uri1.gar"));
         U.delete(new File(getDeployDir(), "uri2.gar"));

@@ -39,8 +39,6 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationExcepti
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -51,7 +49,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Tests for dynamic index creation.
  */
 @SuppressWarnings({"unchecked"})
-@RunWith(JUnit4.class)
 public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbstractSelfTest {
     /** Node index for regular server (coordinator). */
     protected static final int IDX_SRV_CRD = 0;
@@ -81,7 +78,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        node().context().cache().dynamicDestroyCache(CACHE_NAME, true, true, false).get();
+        node().context().cache().dynamicDestroyCache(CACHE_NAME, true, true, false, null).get();
 
         super.afterTest();
     }

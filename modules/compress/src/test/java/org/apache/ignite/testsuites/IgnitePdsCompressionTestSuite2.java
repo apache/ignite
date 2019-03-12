@@ -17,18 +17,21 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.runner.RunWith;
 
 import static org.apache.ignite.testsuites.IgnitePdsCompressionTestSuite.enableCompressionByDefault;
 
-/**
- */
+/** */
+@RunWith(DynamicSuite.class)
 public class IgnitePdsCompressionTestSuite2 {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (with page compression).");
+    public static List<Class<?>> suite() {
+        List<Class<?>> suite = new ArrayList<>();
 
         enableCompressionByDefault();
         IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);

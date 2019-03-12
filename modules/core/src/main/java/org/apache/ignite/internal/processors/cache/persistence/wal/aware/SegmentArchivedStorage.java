@@ -125,6 +125,13 @@ class SegmentArchivedStorage extends SegmentObservable {
     }
 
     /**
+     * Resets interrupted flag.
+     */
+    void reset() {
+        interrupted = false;
+    }
+
+    /**
      * Check for interrupt flag was set.
      */
     private void checkInterrupted() throws IgniteInterruptedCheckedException {

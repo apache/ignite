@@ -40,14 +40,12 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionState;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests to check behavior regarding transactions started via SQL.
  */
-@RunWith(JUnit4.class)
 public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSchemaSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -57,13 +55,6 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
 
         super.execute(node(), "CREATE TABLE INTS(k int primary key, v int) WITH \"wrap_value=false,cache_name=ints," +
             "atomicity=transactional_snapshot\"");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -137,10 +128,9 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that attempting to perform various SQL operations within non SQL transaction yields an exception.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11357")
     @Test
     public void testSqlOperationsWithinNonSqlTransaction() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         assertSqlOperationWithinNonSqlTransactionThrows("COMMIT");
 
         assertSqlOperationWithinNonSqlTransactionThrows("ROLLBACK");

@@ -22,6 +22,7 @@ import java.net.URL;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
@@ -37,8 +38,9 @@ public class GridLog4jLoggingUrlTest {
     /** Logger config */
     private URL url;
 
-    /** TODO IGNITE-10177 add annotation @Before here. */
-    private void setUp() throws Exception {
+    /** */
+    @Before
+    public void setUp() throws Exception {
         File xml = GridTestUtils.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml");
 
         assert xml != null;
@@ -52,9 +54,7 @@ public class GridLog4jLoggingUrlTest {
      * Tests log4j logging SPI.
      */
     @Test
-    public void testLog() throws Exception {
-        setUp();
-
+    public void testLog() {
         System.out.println(log.toString());
 
         assertTrue(log.toString().contains("Log4JLogger"));

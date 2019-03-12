@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -109,6 +110,7 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCING;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -275,6 +277,10 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Recovery mode flag. */
     private volatile boolean recoveryMode;
+
+    /** */
+    private final boolean disableTriggeringCacheInterceptorOnConflict =
+        Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -858,6 +864,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean transactionalSnapshot() {
         return cacheCfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+    }
+
+    /**
+     * @return {@code True} if cache interceptor should be skipped in case of conflicts.
+     */
+    public boolean disableTriggeringCacheInterceptorOnConflict() {
+        return disableTriggeringCacheInterceptorOnConflict;
     }
 
     /**
@@ -2128,7 +2141,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if it is possible to directly read offheap instead of using {@link GridCacheEntryEx#innerGet}.
      */
     public boolean readNoEntry(@Nullable IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
-        return !config().isOnheapCacheEnabled() && !readers && expiryPlc == null;
+        return mvccEnabled() || (!config().isOnheapCacheEnabled() && !readers && expiryPlc == null);
     }
 
     /**
@@ -2214,13 +2227,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
-     * @param partitionId Partition ID.
+     * @param partId Partition ID.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
     @Nullable public ClusterNode selectAffinityNodeBalanced(
         List<ClusterNode> affNodes,
         Set<ClusterNode> invalidNodes,
-        int partitionId,
+        int partId,
         boolean canRemap
     ) {
         if (!readLoadBalancingEnabled) {
@@ -2270,13 +2283,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * Prepare affinity field for builder (if possible).
      *
-     * @param buider Builder.
+     * @param builder Builder.
      */
-    public void prepareAffinityField(BinaryObjectBuilder buider) {
+    public void prepareAffinityField(BinaryObjectBuilder builder) {
         assert binaryMarshaller();
-        assert buider instanceof BinaryObjectBuilderImpl;
+        assert builder instanceof BinaryObjectBuilderImpl;
 
-        BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)buider;
+        BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)builder;
 
         if (!cacheObjCtx.customAffinityMapper()) {
             CacheDefaultBinaryAffinityKeyMapper mapper =
@@ -2307,6 +2320,15 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         if (isNear())
             near().dht().context().statisticsEnabled = statisticsEnabled;
+    }
+
+    /**
+     * @param tx Transaction.
+     * @return {@code True} if it is need to notify continuous query listeners.
+     */
+    public boolean hasContinuousQueryListeners(@Nullable IgniteInternalTx tx) {
+        return grp.sharedGroup() ? grp.hasContinuousQueryCaches() :
+            contQryMgr.notifyContinuousQueries(tx) && !F.isEmpty(contQryMgr.updateListeners(false, false));
     }
 
     /** {@inheritDoc} */
