@@ -168,7 +168,7 @@ module.exports.factory = (mongo, settings, errors, utilsService, mailsService) =
 
                     return user.save();
                 })
-                .then((user) =>  mailsService.sendActivationLink(host, user));
+                .then((user) => mailsService.sendActivationLink(host, user));
         }
     }
 

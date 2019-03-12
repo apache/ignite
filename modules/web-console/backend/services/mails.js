@@ -57,7 +57,7 @@ module.exports.factory = (settings) => {
          * @throws IOException If failed to prepare template.
          */
         getMessage(template, ctx) {
-            _.forIn(ctx, (value, key) => template = template.replace(new RegExp(`\\$\\{${key}\\}`, 'g'), value || 'n/a'));
+            _.forIn(ctx, (value, key) => template = template.replace(new RegExp(`\\$\\{${key}\\}`, 'g'), value || 'n/a'));
 
             return template;
         }
@@ -114,7 +114,7 @@ module.exports.factory = (settings) => {
                 })
                 .then((transporter) => {
                     const context = this.buildContext(host, user, message, customCtx);
-                    
+
                     context.subject = this.getMessage(subject, context);
 
                     return transporter.sendMail({

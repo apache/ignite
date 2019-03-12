@@ -31,9 +31,7 @@ injector.log.info = () => {};
 injector.log.debug = () => {};
 
 injector('mongo')
-    .then(() => checkMongo())
-    .then(() => injector('settings'))
-    .then(({mongoUrl}) => migrate(mongoUrl, 'Ignite', path.join(__dirname, 'migrations')))
+    .then((mongo) => migrate(mongo.connection, 'Ignite', path.join(__dirname, 'migrations')))
     .then(() => Promise.all([injector('settings'), injector('api-server'), injector('agents-handler'), injector('browsers-handler')]))
     .then(init)
     .catch((err) => {

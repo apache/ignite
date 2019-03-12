@@ -20,7 +20,7 @@
 const _ = require('lodash');
 const http = require('http');
 const https = require('https');
-const MigrateMongoose = require('migrate-mongoose');
+const MigrateMongoose = require('migrate-mongoose-typescript');
 const mongoose = require('mongoose');
 
 /**
@@ -81,15 +81,15 @@ const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
 /**
  * Run mongo model migration.
  *
- * @param dbConnectionUri Mongo connection url.
+ * @param connection Mongo connection.
  * @param group Migrations group.
  * @param migrationsPath Migrations path.
  * @param collectionName Name of collection where migrations write info about applied scripts.
  */
-const migrate = (dbConnectionUri, group, migrationsPath, collectionName) => {
+const migrate = (connection, group, migrationsPath, collectionName) => {
     const migrator = new MigrateMongoose({
         migrationsPath,
-        dbConnectionUri,
+        connection,
         collectionName,
         autosync: true
     });
