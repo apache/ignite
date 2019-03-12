@@ -25,7 +25,9 @@ import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.NClob;
+import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -622,7 +624,7 @@ public class JdbcConnection implements Connection {
             if (streamNodeParOps > 0)
                 streamer.perNodeParallelOperations(streamNodeParOps);
 
-            stmt = new JdbcStreamedPreparedStatement(this, sql, streamer, null);
+            stmt = new JdbcStreamedPreparedStatement(this, sql, streamer);
         }
 
         statements.add(stmt);
@@ -910,12 +912,17 @@ public class JdbcConnection implements Connection {
     }
 
     /**
-     * @param sql Query.
-     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
-     * @throws SQLException On error.
+     * Fetches parameters metadata of the specified query.
      */
-    PreparedStatement prepareNativeStatement(String sql) throws SQLException {
-        return ignite().context().query().prepareNativeStatement(schemaName(), sql);
+    ParameterMetaData parameterMetaData(String qry) throws SQLException {
+        return ignite().context().query().getIndexing().parameterMetaData(schemaName(), qry);
+    }
+
+    /**
+     * Fetches metadata of the result set is returned when specified query gets executed.
+     */
+    ResultSetMetaData resultMetaData(String qry) throws SQLException {
+        return ignite().context().query().getIndexing().resultMetaData(schemaName(), qry);
     }
 
     /**

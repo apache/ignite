@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -2604,18 +2602,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         for (String field : cols)
             d.removeProperty(field);
-    }
-
-    /**
-     * @param schemaName Schema name.
-     * @param sql Query.
-     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
-     * @throws SQLException On error.
-     */
-    public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException {
-        checkxEnabled();
-
-        return idx.prepareNativeStatement(schemaName, sql);
     }
 
     /**

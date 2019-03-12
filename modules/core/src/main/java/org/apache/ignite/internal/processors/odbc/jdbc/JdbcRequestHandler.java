@@ -1072,8 +1072,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private ClientListenerResponse getParametersMeta(JdbcMetaParamsRequest req) {
         try {
-            ParameterMetaData paramMeta = ctx.query().prepareNativeStatement(req.schemaName(), req.sql())
-                .getParameterMetaData();
+            ParameterMetaData paramMeta = ctx.query().getIndexing().parameterMetaData(req.schemaName(), req.sql());
 
             int size = paramMeta.getParameterCount();
 

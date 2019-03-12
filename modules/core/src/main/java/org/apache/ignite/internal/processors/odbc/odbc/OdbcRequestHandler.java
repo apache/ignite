@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 
 import java.sql.BatchUpdateException;
 import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -744,9 +743,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private ClientListenerResponse getParamsMeta(OdbcQueryGetParamsMetaRequest req) {
         try {
-            PreparedStatement stmt = ctx.query().getIndexing().prepareNativeStatement(req.schema(), req.query());
-
-            ParameterMetaData pmd = stmt.getParameterMetaData();
+            ParameterMetaData pmd = ctx.query().getIndexing().parameterMetaData(req.schema(), req.query());
 
             byte[] typeIds = new byte[pmd.getParameterCount()];
 

@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
+import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -266,10 +268,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public PreparedStatement prepareNativeStatement(String schemaName, String sql) {
+    public PreparedStatement prepareNativeStatement(String schemaName, String sql) {
         Connection conn = connMgr.connectionForThread().connection(schemaName);
 
-        return prepareStatementAndCaches(conn, sql);
+        try {
+            return connMgr.prepareStatement(conn, sql);
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
+                IgniteQueryErrorCode.PARSING, e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public ParameterMetaData parameterMetaData(String schemaName, String sql) throws SQLException{
+        PreparedStatement statement = prepareNativeStatement(schemaName, sql);
+
+        return statement.getParameterMetaData();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ResultSetMetaData resultMetaData(String schemaName, String sql) throws SQLException {
+        PreparedStatement statement = prepareNativeStatement(schemaName, sql);
+
+        return statement.getMetaData();
     }
 
     /** {@inheritDoc} */
@@ -1686,22 +1708,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return iter;
-    }
-
-    /**
-     * Do initial parsing of the statement and create query caches, if needed.
-     * @param c Connection.
-     * @param sqlQry Query.
-     * @return H2 prepared statement.
-     */
-    private PreparedStatement prepareStatementAndCaches(Connection c, String sqlQry) {
-        try {
-            return connMgr.prepareStatement(c, sqlQry);
-        }
-        catch (SQLException e) {
-            throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
-                IgniteQueryErrorCode.PARSING, e);
-        }
     }
 
     /**

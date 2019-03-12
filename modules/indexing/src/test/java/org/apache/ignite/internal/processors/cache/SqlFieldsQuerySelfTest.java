@@ -26,6 +26,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -80,7 +81,9 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 2; i++) {
             createAndFillCache();
 
-            PreparedStatement stmt0 = grid(0).context().query().prepareNativeStatement("person", INSERT);
+            IgniteH2Indexing idxImpl = ((IgniteH2Indexing)grid(0).context().query().getIndexing());
+
+            PreparedStatement stmt0 = idxImpl.prepareNativeStatement("person", INSERT);
 
             // Statement should either be parsed initially or in response to schema change...
             assertTrue(stmt != stmt0);
@@ -99,7 +102,9 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
 
         // Now let's do the same without restarting the cache.
         for (int i = 0; i < 2; i++) {
-            PreparedStatement stmt0 = grid(0).context().query().prepareNativeStatement("person", INSERT);
+            IgniteH2Indexing idxImpl = ((IgniteH2Indexing)grid(0).context().query().getIndexing());
+
+            PreparedStatement stmt0 = idxImpl.prepareNativeStatement("person", INSERT);
 
             // Statement should either be parsed or taken from cache as no schema changes occurred...
             assertTrue(stmt == null || stmt == stmt0);

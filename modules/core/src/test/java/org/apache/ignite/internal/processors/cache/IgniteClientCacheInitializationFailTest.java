@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.sql.PreparedStatement;
+import java.sql.ParameterMetaData;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
@@ -364,6 +365,14 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             return false;
         }
 
+        @Override public ParameterMetaData parameterMetaData(String schemaName, String sql) throws SQLException {
+            return null;
+        }
+
+        @Override public ResultSetMetaData resultMetaData(String schemaName, String sql) throws SQLException {
+            return null;
+        }
+
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
             CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
@@ -388,11 +397,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
             // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
-            return null;
         }
 
         /** {@inheritDoc} */

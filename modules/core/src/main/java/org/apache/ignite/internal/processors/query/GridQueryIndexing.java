@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.PreparedStatement;
+import java.sql.ParameterMetaData;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
@@ -250,6 +251,26 @@ public interface GridQueryIndexing {
         boolean isSql) throws IgniteCheckedException;
 
     /**
+     * Jdbc parameters metadata of the specified query.
+     *
+     * @param schemaName the default schema name for query.
+     * @param sql Sql query.
+     * @return metadata.
+     * @throws SQLException if failed to get meta.
+     */
+    public ParameterMetaData parameterMetaData(String schemaName, String sql) throws SQLException;
+
+    /**
+     * Metadata of the result set that is returned if specified query gets executed.
+     *
+     * @param schemaName the default schema name for query.
+     * @param sql Sql query.
+     * @return metadata.
+     * @throws SQLException if failed to get meta.
+     */
+    public ResultSetMetaData resultMetaData(String schemaName, String sql) throws SQLException;
+
+    /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
      * the key should be removed from indexes other than one being updated.
      *
@@ -300,15 +321,6 @@ public interface GridQueryIndexing {
      * @param reconnectFut Reconnect future.
      */
     public void onDisconnected(IgniteFuture<?> reconnectFut);
-
-    /**
-     * Prepare native statement to retrieve JDBC metadata from.
-     *
-     * @param schemaName Schema name.
-     * @param sql Query.
-     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
-     */
-    public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException;
 
     /**
      * Collect queries that already running more than specified duration.
