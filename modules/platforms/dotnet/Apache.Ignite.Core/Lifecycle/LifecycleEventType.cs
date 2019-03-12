@@ -32,6 +32,12 @@ namespace Apache.Ignite.Core.Lifecycle
         BeforeNodeStart,
 
         /// <summary>
+        /// Invoked after node has been initialized but before connecting
+        /// to the cluster. At this point it can register local listeners.
+        /// </summary>
+        BeforeClusterConnection,
+
+        /// <summary>
         /// Invoked after node startup is complete. Node is fully initialized and fully functional.
         /// </summary>
         AfterNodeStart,

@@ -46,6 +46,9 @@ namespace Apache.Ignite.Core.Tests
         /** Events: before start. */
         internal static IList<Event> BeforeStartEvts;
 
+        /** Events: before connection. */
+        internal static IList<Event> BeforeConnectionEvts;
+
         /** Events: after start. */
         internal static IList<Event> AfterStartEvts;
 
@@ -64,6 +67,7 @@ namespace Apache.Ignite.Core.Tests
             ThrowErr = false;
 
             BeforeStartEvts = new List<Event>();
+            BeforeConnectionEvts = new List<Event>();
             AfterStartEvts = new List<Event>();
             BeforeStopEvts = new List<Event>();
             AfterStopEvts = new List<Event>();
@@ -77,7 +81,7 @@ namespace Apache.Ignite.Core.Tests
         {
             Ignition.StopAll(true);
         }
-        
+
         /// <summary>
         /// Test without Java beans.
         /// </summary>
@@ -91,6 +95,10 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(2, BeforeStartEvts.Count);
             CheckEvent(BeforeStartEvts[0], null, null, 0, null);
             CheckEvent(BeforeStartEvts[1], null, null, 0, null);
+
+            Assert.AreEqual(2, BeforeConnectionEvts.Count);
+            CheckEvent(BeforeConnectionEvts[0], null, null, 0, null);
+            CheckEvent(BeforeConnectionEvts[1], null, null, 0, null);
 
             Assert.AreEqual(2, AfterStartEvts.Count);
             CheckEvent(AfterStartEvts[0], grid, grid, 0, null);
@@ -107,6 +115,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(1, stoppedCnt);
 
             Assert.AreEqual(2, BeforeStartEvts.Count);
+            Assert.AreEqual(2, BeforeConnectionEvts.Count);
             Assert.AreEqual(2, AfterStartEvts.Count);
 
             Assert.AreEqual(2, BeforeStopEvts.Count);
@@ -134,6 +143,12 @@ namespace Apache.Ignite.Core.Tests
             CheckEvent(BeforeStartEvts[2], null, null, 0, null);
             CheckEvent(BeforeStartEvts[3], null, null, 0, null);
 
+            Assert.AreEqual(4, BeforeConnectionEvts.Count);
+            CheckEvent(BeforeConnectionEvts[0], null, null, 0, null);
+            CheckEvent(BeforeConnectionEvts[1], null, null, 1, "1");
+            CheckEvent(BeforeConnectionEvts[2], null, null, 0, null);
+            CheckEvent(BeforeConnectionEvts[3], null, null, 0, null);
+
             Assert.AreEqual(4, AfterStartEvts.Count);
             CheckEvent(AfterStartEvts[0], grid, grid, 0, null);
             CheckEvent(AfterStartEvts[1], grid, grid, 1, "1");
@@ -152,6 +167,7 @@ namespace Apache.Ignite.Core.Tests
             Ignition.Stop(grid.Name, false);
 
             Assert.AreEqual(4, BeforeStartEvts.Count);
+            Assert.AreEqual(4, BeforeConnectionEvts.Count);
             Assert.AreEqual(4, AfterStartEvts.Count);
 
             Assert.AreEqual(4, BeforeStopEvts.Count);
@@ -251,6 +267,11 @@ namespace Apache.Ignite.Core.Tests
             {
                 case LifecycleEventType.BeforeNodeStart:
                     LifecycleTest.BeforeStartEvts.Add(evt);
+
+                    break;
+
+                case LifecycleEventType.BeforeClusterConnection:
+                    LifecycleTest.BeforeConnectionEvts.Add(evt);
 
                     break;
 
