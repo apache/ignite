@@ -159,6 +159,12 @@ class ClientCacheAffinityAwarenessGroup
             CacheConfiguration ccfg = desc.cacheConfiguration();
             CacheKeyConfiguration[] keyCfgs = ccfg.getKeyConfiguration();
 
+            if (keyCfgs == null) {
+                writer.writeInt(0);
+
+                continue;
+            }
+
             writer.writeInt(keyCfgs.length);
 
             for (CacheKeyConfiguration keyCfg : keyCfgs) {
