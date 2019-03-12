@@ -77,6 +77,9 @@ public interface GridComponent {
 
         /** Distributed MetaStorage processor. */
         META_STORAGE;
+
+        /** Cached values array. */
+        public static final DiscoveryDataExchangeType[] VALUES = values();
     }
 
     /**

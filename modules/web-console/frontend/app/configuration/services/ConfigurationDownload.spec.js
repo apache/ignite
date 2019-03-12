@@ -46,6 +46,12 @@ const mocks = () => new Map([
     ['$q', Promise],
     ['$rootScope', {
         IgniteDemoMode: true
+    }],
+    ['PageConfigure', {
+        getClusterConfiguration: () => Promise.resolve({clusters: [{_id: 1, name: 'An Cluster'}]})
+    }],
+    ['IgniteConfigurationResource', {
+        populate: () => Promise.resolve({clusters: []})
     }]
 ]);
 
@@ -53,20 +59,7 @@ const saverMock = () => ({
     saveAs: spy()
 });
 
-suite.skip('page-configure, ConfigurationDownload service', () => {
-    test('fails and shows error message when cluster not found', () => {
-        const service = new Provider(...mocks().values());
-
-        return service.downloadClusterConfiguration({_id: 1, name: 'An Cluster'})
-        .then(() => Promise.reject('Should not happen'))
-        .catch(() => {
-            assert.equal(
-                service.messages.showError.getCall(0).args[0],
-                'Failed to generate project files. Cluster An Cluster not found',
-                'shows correct error message when cluster was not found'
-            );
-        });
-    });
+suite('page-configure, ConfigurationDownload service', () => {
     test('fails and shows error message when summary zipper fails', () => {
         const service = new Provider(...mocks().values());
         const cluster = {_id: 1, name: 'An Cluster'};
@@ -83,6 +76,7 @@ suite.skip('page-configure, ConfigurationDownload service', () => {
             );
         });
     });
+
     test('calls correct dependcies', () => {
         const service = new Provider(...mocks().values());
         service.saver = saverMock();

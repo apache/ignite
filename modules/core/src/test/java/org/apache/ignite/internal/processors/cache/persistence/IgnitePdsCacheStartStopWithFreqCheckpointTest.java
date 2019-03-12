@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -80,11 +81,17 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     private CacheConfiguration cacheConfiguration(int cacheIdx) {
-        return new CacheConfiguration(CACHE_NAME + cacheIdx)
+        CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME + cacheIdx)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.REPLICATED)
-            .setBackups(0)
-            .setRebalanceMode(CacheRebalanceMode.NONE);
+            .setBackups(0);
+
+        if (MvccFeatureChecker.forcedMvcc())
+            ccfg.setRebalanceDelay(Long.MAX_VALUE);
+        else
+            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+
+        return ccfg;
     }
 
     /** {@inheritDoc} */

@@ -24,7 +24,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /** */
 public class CacheMvccReplicatedSqlQueriesTest extends CacheMvccSqlQueriesAbstractTest {
     /** {@inheritDoc} */
-    protected CacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
 }

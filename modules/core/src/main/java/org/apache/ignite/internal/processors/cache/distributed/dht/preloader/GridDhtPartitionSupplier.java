@@ -316,8 +316,17 @@ class GridDhtPartitionSupplier {
 
             long batchesCnt = 0;
 
+            CacheDataRow prevRow = null;
+
             while (iter.hasNext()) {
-                if (supplyMsg.messageSize() >= msgMaxSize) {
+                CacheDataRow row = iter.peek();
+
+                // Prevent mvcc entry history splitting into separate batches.
+                boolean canFlushHistory = !grp.mvccEnabled() ||
+                    prevRow != null && ((grp.sharedGroup() && row.cacheId() != prevRow.cacheId()) ||
+                        !row.key().equals(prevRow.key()));
+
+                if (canFlushHistory && supplyMsg.messageSize() >= msgMaxSize) {
                     if (++batchesCnt >= maxBatchesCnt) {
                         saveSupplyContext(contextId,
                             iter,
@@ -340,7 +349,9 @@ class GridDhtPartitionSupplier {
                     }
                 }
 
-                CacheDataRow row = iter.next();
+                row = iter.next();
+
+                prevRow = row;
 
                 int part = row.partition();
 
@@ -364,38 +375,10 @@ class GridDhtPartitionSupplier {
                 if (!remainingParts.contains(part))
                     continue;
 
-                GridCacheEntryInfo info = grp.mvccEnabled() ?
-                    new GridCacheMvccEntryInfo() : new GridCacheEntryInfo();
+                GridCacheEntryInfo info = extractEntryInfo(row);
 
-                info.key(row.key());
-                info.cacheId(row.cacheId());
-
-                if (grp.mvccEnabled()) {
-                    byte txState = row.mvccTxState() != TxState.NA ? row.mvccTxState() :
-                        MvccUtils.state(grp, row.mvccCoordinatorVersion(), row.mvccCounter(),
-                        row.mvccOperationCounter());
-
-                    if (txState != TxState.COMMITTED)
-                        continue;
-
-                    ((MvccVersionAware)info).mvccVersion(row);
-                    ((GridCacheMvccEntryInfo)info).mvccTxState(TxState.COMMITTED);
-
-                    byte newTxState = row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
-                        MvccUtils.state(grp, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
-                        row.newMvccOperationCounter());
-
-                    if (newTxState != TxState.ABORTED) {
-                        ((MvccUpdateVersionAware)info).newMvccVersion(row);
-
-                        if (newTxState == TxState.COMMITTED)
-                            ((GridCacheMvccEntryInfo)info).newMvccTxState(TxState.COMMITTED);
-                    }
-                }
-
-                info.value(row.value());
-                info.version(row.version());
-                info.expireTime(row.expireTime());
+                if (info == null)
+                    continue;
 
                 if (preloadPred == null || preloadPred.apply(info))
                     supplyMsg.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
@@ -500,6 +483,42 @@ class GridDhtPartitionSupplier {
                     + supplyRoutineInfo(topicId, nodeId, demandMsg) + "]", t)
             ));
         }
+    }
+
+    /**
+     * Extracts entry info from row.
+     * @param row Cache data row.
+     * @return Entry info.
+     */
+    private GridCacheEntryInfo extractEntryInfo(CacheDataRow row) {
+        GridCacheEntryInfo info = grp.mvccEnabled() ?
+            new GridCacheMvccEntryInfo() : new GridCacheEntryInfo();
+
+        info.key(row.key());
+        info.cacheId(row.cacheId());
+
+        if (grp.mvccEnabled()) {
+            assert row.mvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA;
+
+            // Rows from rebalance iterator have actual states already.
+            if (row.mvccTxState() != TxState.COMMITTED)
+                return null;
+
+            ((MvccVersionAware)info).mvccVersion(row);
+            ((GridCacheMvccEntryInfo)info).mvccTxState(TxState.COMMITTED);
+
+            if (row.newMvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA &&
+                row.newMvccTxState() == TxState.COMMITTED) {
+                ((MvccUpdateVersionAware)info).newMvccVersion(row);
+                ((GridCacheMvccEntryInfo)info).newMvccTxState(TxState.COMMITTED);
+            }
+        }
+
+        info.value(row.value());
+        info.version(row.version());
+        info.expireTime(row.expireTime());
+
+        return info;
     }
 
     /**
