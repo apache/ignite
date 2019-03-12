@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +33,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -59,16 +61,29 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTest {
+    /** */
+    @Parameterized.Parameters(name = "{0}")
+    public static List<Object[]> parameters() {
+        return Arrays.asList(new Object[][]{
+            {ATOMIC},
+            {TRANSACTIONAL}
+        });
+    }
     /** */
     private static boolean client;
 
@@ -87,6 +102,10 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
     /** */
     private static boolean isPersistenceEnabled;
+
+    /** */
+    @Parameterized.Parameter
+    public CacheAtomicityMode atomicity;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -128,6 +147,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setPartitionLossPolicy(partLossPlc);
         cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+        cacheCfg.setAtomicityMode(atomicity);
 
         return cacheCfg;
     }
