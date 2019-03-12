@@ -356,7 +356,7 @@ public interface GridQueryIndexing {
      * @param schemaName name of the schema.
      * @param sql text of the sql statement.
      */
-    public boolean isStreamableInsertStatement(String schemaName, String sql);
+    public boolean isStreamableInsertStatement(String schemaName, String sql) throws SQLException;
 
     /**
      * Return row cache cleaner.

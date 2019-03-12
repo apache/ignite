@@ -165,6 +165,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.request
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.codeToSqlState;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.session;
@@ -268,15 +269,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    public PreparedStatement prepareNativeStatement(String schemaName, String sql) {
+    public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException {
         Connection conn = connMgr.connectionForThread().connection(schemaName);
 
         try {
             return connMgr.prepareStatement(conn, sql);
         }
         catch (SQLException e) {
-            throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
-                IgniteQueryErrorCode.PARSING, e);
+            throw new SQLException("Failed to parse query. " + e.getMessage(),
+                codeToSqlState(IgniteQueryErrorCode.PARSING), e);
         }
     }
 
@@ -1782,7 +1783,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc}
      * @param schemaName
      * @param sql*/
-    @Override public boolean isStreamableInsertStatement(String schemaName, String sql) {
+    @Override public boolean isStreamableInsertStatement(String schemaName, String sql) throws SQLException{
         PreparedStatement stmt = prepareNativeStatement(schemaName, sql);
 
         return GridSqlQueryParser.isStreamableInsertStatement(stmt);
