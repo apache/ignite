@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSslSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConfigSelfTest;
@@ -41,62 +39,63 @@ import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationHandshakeWa
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationHandshakeWaitTest;
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationRecoveryAckClosureSelfTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiDropNodesTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientSslTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFreezingClientTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiHalfOpenedConnectionTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiSkipMessageSendTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationStatisticsTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Test suite for all communication SPIs.
  */
-public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
-    /**
-     * @return Communication SPI tests suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Communication SPI Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridTcpCommunicationSpiRecoveryAckSelfTest.class,
+    IgniteTcpCommunicationRecoveryAckClosureSelfTest.class,
+    GridTcpCommunicationSpiRecoverySelfTest.class,
+    GridTcpCommunicationSpiRecoveryNoPairedConnectionsTest.class,
+    GridTcpCommunicationSpiRecoverySslSelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiRecoveryAckSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTcpCommunicationRecoveryAckClosureSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiRecoverySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiRecoveryNoPairedConnectionsTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiRecoverySslSelfTest.class));
+    GridTcpCommunicationSpiConcurrentConnectSelfTest.class,
+    GridTcpCommunicationSpiConcurrentConnectSslSelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiConcurrentConnectSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiConcurrentConnectSslSelfTest.class));
+    GridTcpCommunicationSpiSslSelfTest.class,
+    GridTcpCommunicationSpiSslSmallBuffersSelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiSslSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiSslSmallBuffersSelfTest.class));
+    GridTcpCommunicationSpiTcpSelfTest.class,
+    GridTcpCommunicationSpiTcpNoDelayOffSelfTest.class,
+    GridTcpCommunicationSpiShmemSelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiTcpSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiTcpNoDelayOffSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiShmemSelfTest.class));
+    GridTcpCommunicationSpiStartStopSelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiStartStopSelfTest.class));
+    GridTcpCommunicationSpiMultithreadedSelfTest.class,
+    GridTcpCommunicationSpiMultithreadedShmemTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiMultithreadedSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiMultithreadedShmemTest.class));
+    GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest.class,
+    GridTcpCommunicationSpiTcpFailureDetectionSelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiTcpFailureDetectionSelfTest.class));
+    GridTcpCommunicationSpiConfigSelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiConfigSelfTest.class));
+    TcpCommunicationSpiSkipMessageSendTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(TcpCommunicationSpiSkipMessageSendTest.class));
+    TcpCommunicationSpiFaultyClientTest.class,
+    TcpCommunicationSpiFaultyClientSslTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(TcpCommunicationSpiFaultyClientTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpCommunicationSpiDropNodesTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpCommunicationSpiHalfOpenedConnectionTest.class));
+    TcpCommunicationSpiFreezingClientTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(TcpCommunicationStatisticsTest.class));
+    TcpCommunicationSpiDropNodesTest.class,
+    TcpCommunicationSpiHalfOpenedConnectionTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(IgniteTcpCommunicationHandshakeWaitTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTcpCommunicationHandshakeWaitSslTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTcpCommunicationConnectOnInitTest.class));
+    TcpCommunicationStatisticsTest.class,
 
-        //suite.addTest(new TestSuite(GridCacheDhtLockBackupSelfTest.class));
+    IgniteTcpCommunicationHandshakeWaitTest.class,
+    IgniteTcpCommunicationHandshakeWaitSslTest.class,
+    IgniteTcpCommunicationConnectOnInitTest.class,
 
-        return suite;
-    }
+    //GridCacheDhtLockBackupSelfTest.class,
+})
+public class IgniteSpiCommunicationSelfTestSuite {
 }

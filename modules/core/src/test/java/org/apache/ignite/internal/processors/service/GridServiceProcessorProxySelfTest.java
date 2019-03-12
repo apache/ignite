@@ -29,13 +29,10 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Service proxy test.
  */
-@RunWith(JUnit4.class)
 public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
@@ -230,7 +227,8 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         ignite.services(ignite.cluster().forLocal()).deployClusterSingleton(name, new MapServiceImpl<String, Integer>());
 
         for (int i = 1; i < nodeCount(); i++) {
-            MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
+            MapService<Integer, String> svc =  grid(i).services()
+                .serviceProxy(name, MapService.class, false, 1_000L);
 
             // Make sure service is a proxy.
             assertFalse(svc instanceof Service);
@@ -445,7 +443,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      *
      */
-    protected class ErrorServiceImpl implements ErrorService {
+    protected static class ErrorServiceImpl implements ErrorService {
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
             // No-op.

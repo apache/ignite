@@ -18,10 +18,12 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Ignore;
 
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-711")
 public class ClusterGroupExampleSelfTest extends GridAbstractExamplesTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

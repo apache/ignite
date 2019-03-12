@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Collections;
 import java.util.Map;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -38,25 +37,17 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.reconnectClientNode;
 
 /**
  * Tests for schema exchange between nodes.
  */
-@RunWith(JUnit4.class)
 public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
     /** Node on which filter should be applied (if any). */
     private static String filterNodeName;
-
-    /** */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -494,7 +485,6 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testClientReconnect() throws Exception {
         final IgniteEx node1 = start(1, KeyClass.class, ValueClass.class);
@@ -546,9 +536,9 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @param nodes Node to check cache.
      * @param cacheName Cache name.
-     * @throws AssertionFailedError If failed.
+     * @throws AssertionError If failed.
      */
-    private void assertCacheStarted(String cacheName, IgniteEx... nodes) throws AssertionFailedError {
+    private void assertCacheStarted(String cacheName, IgniteEx... nodes) throws AssertionError {
         for (IgniteEx node : nodes) {
             assertTrue(isCacheStarted(cacheName, node));
         }
@@ -559,9 +549,9 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @param nodes Node to check cache.
      * @param cacheName Cache name.
-     * @throws AssertionFailedError If failed.
+     * @throws AssertionError If failed.
      */
-    private void assertCacheNotStarted(String cacheName, IgniteEx... nodes) throws AssertionFailedError {
+    private void assertCacheNotStarted(String cacheName, IgniteEx... nodes) throws AssertionError {
         for (IgniteEx node : nodes) {
             assertFalse(isCacheStarted(cacheName, node));
         }
@@ -624,7 +614,6 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
-        cfg.setDiscoverySpi(new TestTcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         if (filterNodeName != null && F.eq(name, filterNodeName))
             cfg.setUserAttributes(Collections.singletonMap("AFF_NODE", true));
@@ -673,8 +662,6 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
-
-        cfg.setDiscoverySpi(new TestTcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         return (IgniteEx)Ignition.start(cfg);
     }

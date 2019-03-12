@@ -17,9 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheConfigurationFileConsistencyCheckTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest;
@@ -40,18 +41,17 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSmokeTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBufferTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAwareTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.runner.RunWith;
 
-/**
- *
- */
-public class IgnitePdsMvccTestSuite extends TestSuite {
+/** */
+@RunWith(DynamicSuite.class)
+public class IgnitePdsMvccTestSuite {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
-
-        TestSuite suite = new TestSuite("Ignite Persistent Store Mvcc Test Suite");
 
         Set<Class> ignoredTests = new HashSet<>();
 
@@ -83,8 +83,6 @@ public class IgnitePdsMvccTestSuite extends TestSuite {
         ignoredTests.add(IgnitePdsDestroyCacheTest.class);
         ignoredTests.add(IgnitePdsDestroyCacheWithoutCheckpointsTest.class);
 
-        suite.addTest(IgnitePdsTestSuite.suite(ignoredTests));
-
-        return suite;
+        return new ArrayList<>(IgnitePdsTestSuite.suite(ignoredTests));
     }
 }

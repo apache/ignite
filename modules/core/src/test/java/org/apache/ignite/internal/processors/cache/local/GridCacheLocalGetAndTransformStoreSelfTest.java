@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheGetAndTransformStoreAbstractTest;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Before;
@@ -28,12 +29,17 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Test get and transform for store with local cache.
  */
 public class GridCacheLocalGetAndTransformStoreSelfTest extends GridCacheGetAndTransformStoreAbstractTest {
-    /** {@inheritDoc} */
+    /** */
     @Before
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+    public void beforeGridCacheLocalGetAndTransformStoreSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+    }
 
-        super.setUp();
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        return super.getConfiguration(igniteInstanceName);
     }
 
     /** {@inheritDoc} */

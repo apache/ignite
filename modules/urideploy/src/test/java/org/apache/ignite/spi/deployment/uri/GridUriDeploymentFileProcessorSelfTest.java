@@ -27,14 +27,11 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask;
 import org.apache.tools.ant.Project;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
-@RunWith(JUnit4.class)
 public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @throws Exception If failed.

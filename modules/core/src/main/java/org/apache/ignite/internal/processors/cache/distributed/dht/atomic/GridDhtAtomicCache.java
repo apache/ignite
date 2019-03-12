@@ -31,6 +31,7 @@ import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -1534,7 +1535,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             taskName,
                                             expiry,
                                             true,
-                                            null,
                                             null);
 
                                         if (getRes != null) {
@@ -1553,8 +1553,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             null,
                                             taskName,
                                             expiry,
-                                            !deserializeBinary,
-                                            null);
+                                            !deserializeBinary);
                                     }
 
                                     // Entry was not in memory or in swap, so we remove it from cache.
@@ -1594,7 +1593,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             }
                             finally {
                                 if (entry != null)
-                                    entry.touch(topVer);
+                                    entry.touch();
                             }
                         }
                     }
@@ -1761,7 +1760,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         try {
                             if (top.stopping()) {
-                                res.addFailedKeys(req.keys(), new CacheStoppedException(name()));
+                                if (ctx.shared().cache().isCacheRestarting(name()))
+                                    res.addFailedKeys(req.keys(), new IgniteCacheRestartingException(name()));
+                                else
+                                    res.addFailedKeys(req.keys(), new CacheStoppedException(name()));
 
                                 completionCb.apply(req, res);
 
@@ -1875,6 +1877,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             .binaryContext().descriptorForClass(ex.cls(), false, false);
                     }
                     catch (UnregisteredBinaryTypeException ex) {
+                        if (ex.future() != null) {
+                            // Wait for the future that couldn't be processed because of
+                            // IgniteThread#isForbiddenToRequestBinaryMetadata flag being true. Usually this means
+                            // that awaiting for the future right there would lead to potential deadlock if
+                            // continuous queries are used in parallel with entry processor.
+                            ex.future().get();
+
+                            // Retry and don't update current binary metadata, because it most likely already exists.
+                            continue;
+                        }
+
                         IgniteCacheObjectProcessor cacheObjProc = ctx.cacheObjects();
 
                         assert cacheObjProc instanceof CacheObjectBinaryProcessorImpl;
@@ -2170,8 +2183,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         entryProcessor,
                         taskName,
                         null,
-                        req.keepBinary(),
-                        null);
+                        req.keepBinary());
 
                     Object oldVal = null;
                     Object updatedVal = null;
@@ -2215,10 +2227,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 ctx.validateKeyAndValue(entry.key(), updated);
                         }
                     }
+                    catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
+                        throw e;
+                    }
                     catch (Exception e) {
-                        if (e instanceof UnregisteredClassException || e instanceof UnregisteredBinaryTypeException)
-                            throw (IgniteException) e;
-
                         curInvokeRes = CacheInvokeResult.fromError(e);
 
                         updated = old;
@@ -2351,8 +2363,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             taskName,
                             null,
-                            req.keepBinary(),
-                            null);
+                            req.keepBinary());
 
                         Object val = ctx.config().getInterceptor().onBeforePut(
                             new CacheLazyEntry(
@@ -2397,8 +2408,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             taskName,
                             null,
-                            req.keepBinary(),
-                            null);
+                            req.keepBinary());
 
                         IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
                             .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old, req.keepBinary()));
@@ -3095,7 +3105,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         for (int i = 0; i < size; i++) {
             GridCacheMapEntry entry = locked.get(i);
             if (entry != null && (skip == null || !skip.contains(entry.key())))
-                entry.touch(topVer);
+                entry.touch();
         }
     }
 
@@ -3375,7 +3385,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         }
                         finally {
                             if (entry != null)
-                                entry.touch(req.topologyVersion());
+                                entry.touch();
                         }
                     }
                 }

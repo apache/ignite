@@ -53,7 +53,7 @@ public class CachePartitionPartialCountersMap implements Serializable {
 
     /** */
     private CachePartitionPartialCountersMap() {
-        // Empty map.
+        this(0);
     }
 
     /**

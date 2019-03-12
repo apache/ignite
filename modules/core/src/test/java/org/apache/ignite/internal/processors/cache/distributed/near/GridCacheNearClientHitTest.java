@@ -26,34 +26,17 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CachePeekMode.NEAR;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String CACHE_NAME = "test-near-cache";
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        return cfg;
-    }
 
     /**
      * @param igniteInstanceName Node name.

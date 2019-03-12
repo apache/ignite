@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
@@ -30,7 +28,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Mvcc cache API coordinator failover test.
  */
-@RunWith(JUnit4.class)
 public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvccAbstractBasicCoordinatorFailoverTest {
     /**
      * @throws Exception If failed.
@@ -109,7 +106,6 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
      */
     @Test
     public void testUpdate_N_Objects_SingleNode__PutGet_CoordinatorFails() throws Exception {
-
         updateNObjectsTest(7, 1, 0, 0, 1, DFLT_TEST_TIME,
             null, GET, PUT, RestartMode.RESTART_CRD);
     }

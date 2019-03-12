@@ -148,7 +148,7 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     public long getOffHeapAllocatedSize();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Number of non-null values in the cache.")
+    @Override @MXBeanDescription("Cache size.")
     public int getSize();
 
     /** {@inheritDoc} */

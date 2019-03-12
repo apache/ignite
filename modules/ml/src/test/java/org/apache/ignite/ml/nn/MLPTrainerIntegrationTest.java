@@ -39,6 +39,7 @@ import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link MLPTrainer} that require to start the whole Ignite infrastructure.
@@ -56,11 +57,6 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -74,6 +70,7 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
     /**
      * Test 'XOR' operation training with {@link SimpleGDUpdateCalculator}.
      */
+    @Test
     public void testXORSimpleGD() {
         xorTest(new UpdatesStrategy<>(
             new SimpleGDUpdateCalculator(0.3),
@@ -85,6 +82,7 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
     /**
      * Test 'XOR' operation training with {@link RPropUpdateCalculator}.
      */
+    @Test
     public void testXORRProp() {
         xorTest(new UpdatesStrategy<>(
             new RPropUpdateCalculator(),
@@ -96,6 +94,7 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
     /**
      * Test 'XOR' operation training with {@link NesterovUpdateCalculator}.
      */
+    @Test
     public void testXORNesterov() {
         xorTest(new UpdatesStrategy<>(
             new NesterovUpdateCalculator<MultilayerPerceptron>(0.1, 0.7),
@@ -142,7 +141,7 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
                 (k, v) -> new double[]{ v.lb}
             );
 
-            Matrix predict = mlp.apply(new DenseMatrix(new double[][]{
+            Matrix predict = mlp.predict(new DenseMatrix(new double[][]{
                 {0.0, 0.0},
                 {0.0, 1.0},
                 {1.0, 0.0},

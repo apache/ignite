@@ -28,7 +28,7 @@ import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
@@ -59,7 +59,7 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class CrossValidation<M extends Model<Vector, L>, L, K, V> {
+public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> {
     /**
      * Computes cross-validated metrics.
      *

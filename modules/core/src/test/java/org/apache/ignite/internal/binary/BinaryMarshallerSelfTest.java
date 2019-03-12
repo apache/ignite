@@ -53,7 +53,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -96,9 +95,8 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
@@ -109,7 +107,6 @@ import static org.junit.Assert.assertNotEquals;
  * Binary marshaller tests.
  */
 @SuppressWarnings({"OverlyStrongTypeCast", "ConstantConditions"})
-@RunWith(JUnit4.class)
 public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
@@ -698,8 +695,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     @Test
     public void testDeclaredBodyEnum() throws Exception {
         final MarshallerContextTestImpl ctx = new MarshallerContextTestImpl();
-        ctx.registerClassName((byte)0, 1, EnumObject.class.getName());
-        ctx.registerClassName((byte)0, 2, DeclaredBodyEnum.class.getName());
+        ctx.registerClassName((byte)0, 1, EnumObject.class.getName(), false);
+        ctx.registerClassName((byte)0, 2, DeclaredBodyEnum.class.getName(), false);
 
         BinaryMarshaller marsh = binaryMarshaller();
         marsh.setContext(ctx);

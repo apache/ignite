@@ -39,8 +39,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -49,7 +47,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache sequence basic tests.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomicsAbstractTest {
     /**  */
     protected static final int BATCH_SIZE = 3;

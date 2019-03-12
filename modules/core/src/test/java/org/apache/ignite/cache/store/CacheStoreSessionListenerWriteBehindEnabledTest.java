@@ -46,8 +46,6 @@ import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
@@ -55,7 +53,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
  * and {@link CacheStoreSessionListener#onSessionEnd(CacheStoreSession, boolean)} are executed from
  * {@link GridCacheWriteBehindStore} only.
  */
-@RunWith(JUnit4.class)
 public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAbstractSelfTest {
     /** */
     protected static final int CNT = 100;
@@ -73,20 +70,14 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
     private static final AtomicInteger uninitializedListenerCnt = new AtomicInteger();
 
     /** {@inheritDoc} */
-    @Before
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.setUp();
-    }
-
-    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         CacheConfiguration cacheCfg = super.cacheConfiguration(igniteInstanceName);
 
         cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(EmptyCacheStore.class));
@@ -103,6 +94,12 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
         cacheCfg.setBackups(0);
 
         return cacheCfg;
+    }
+
+    /** */
+    @Before
+    public void beforeCacheStoreSessionListenerWriteBehindEnabledTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

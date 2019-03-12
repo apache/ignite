@@ -19,38 +19,30 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsDataRegionMetricsTxTest extends IgnitePdsDataRegionMetricsTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setMvccVacuumFrequency(Long.MAX_VALUE);
+    }
+
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<Object, Object> cacheConfiguration() {
         return super.cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /** {@inheritDoc} */
-    @Override public void testMemoryUsageSingleNode() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10591");
-
-        super.testMemoryUsageSingleNode();
-    }
-
-    /** {@inheritDoc} */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10662")
     @Test
     @Override public void testMemoryUsageMultipleNodes() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10583");
-
         super.testMemoryUsageMultipleNodes();
     }
 }

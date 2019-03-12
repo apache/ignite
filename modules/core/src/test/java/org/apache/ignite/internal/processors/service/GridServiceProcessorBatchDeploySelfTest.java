@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.lang.IgniteFuture;
@@ -37,20 +37,15 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Test for deployment of multiple configurations at a time.
  */
-@RunWith(JUnit4.class)
 public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractTest {
     /** Number of services to be deployed. */
     private static final int NUM_SERVICES = 100;
@@ -60,22 +55,6 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
     /** Client node name. */
     private static final String CLIENT_NODE_NAME = "client";
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(discoSpi);
-
-        return c;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -151,16 +130,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
             CountDownLatch latch = new CountDownLatch(numServices);
 
-            IgnitePredicate<ClusterNode> depPred = client.cluster().forServers()
-                .forPredicate(new IgnitePredicate<ClusterNode>() {
-                    @Override public boolean apply(ClusterNode node) {
-                        String gridName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
-
-                        assert gridName != null;
-
-                        return gridName.startsWith(getTestIgniteInstanceName());
-                    }
-                }).predicate();
+            IgnitePredicate<ClusterNode> depPred = new TestPredicate(getTestIgniteInstanceName());
 
             List<ServiceConfiguration> cfgs = getConfigs(depPred, numServices);
 
@@ -204,16 +174,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
             CountDownLatch latch = new CountDownLatch(numServices);
 
-            IgnitePredicate<ClusterNode> depPred = client.cluster().forServers()
-                .forPredicate(new IgnitePredicate<ClusterNode>() {
-                    @Override public boolean apply(ClusterNode node) {
-                        String gridName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
-
-                        assert gridName != null;
-
-                        return gridName.startsWith(getTestIgniteInstanceName());
-                    }
-                }).predicate();
+            IgnitePredicate<ClusterNode> depPred = new TestPredicate(getTestIgniteInstanceName());
 
             List<ServiceConfiguration> cfgs = getConfigs(depPred, numServices);
 
@@ -451,9 +412,10 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
      */
     @Test
     public void testCancelAllTopologyChange() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10021");
+        IgniteEx client = grid(CLIENT_NODE_NAME);
 
-        Ignite client = grid(CLIENT_NODE_NAME);
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10021",
+            client.context().service() instanceof GridServiceProcessor);
 
         int numServices = 500;
 
@@ -680,5 +642,29 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
                 return null;
             }
         });
+    }
+
+    /**
+     * Test predicate.
+     */
+    private static class TestPredicate implements IgnitePredicate<ClusterNode> {
+        /** */
+        private final String namePrefix;
+
+        /**
+         * @param namePrefix Prefix to match instances name.
+         */
+        public TestPredicate(String namePrefix) {
+            this.namePrefix = namePrefix;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            String gridName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
+
+            assert gridName != null;
+
+            return !node.isClient() && gridName.startsWith(namePrefix);
+        }
     }
 }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.composition.stacking;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -35,7 +35,7 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * @param <L> Type of labels.
  * @param <AM> Type of aggregator model.
  */
-public class StackedVectorDatasetTrainer<O, AM extends Model<Vector, O>, L>
+public class StackedVectorDatasetTrainer<O, AM extends IgniteModel<Vector, O>, L>
     extends SimpleStackedDatasetTrainer<Vector, O, AM, L> {
     /**
      * Constructs instance of this class.
@@ -58,7 +58,7 @@ public class StackedVectorDatasetTrainer<O, AM extends Model<Vector, O>, L>
     }
 
     /** {@inheritDoc} */
-    @Override public <M1 extends Model<Vector, Vector>> StackedVectorDatasetTrainer<O, AM, L> addTrainer(
+    @Override public <M1 extends IgniteModel<Vector, Vector>> StackedVectorDatasetTrainer<O, AM, L> addTrainer(
         DatasetTrainer<M1, L> trainer) {
         return (StackedVectorDatasetTrainer<O, AM, L>)super.addTrainer(trainer);
     }
@@ -81,6 +81,7 @@ public class StackedVectorDatasetTrainer<O, AM extends Model<Vector, O>, L>
     }
 
     /** {@inheritDoc} */
+    // TODO: IGNITE-10843 Add possibility to keep features with specific indices.
     @Override public StackedVectorDatasetTrainer<O, AM, L> withOriginalFeaturesKept(
         IgniteFunction<Vector, Vector> submodelInput2AggregatingInputConverter) {
         return (StackedVectorDatasetTrainer<O, AM, L>)super.withOriginalFeaturesKept(
@@ -127,7 +128,7 @@ public class StackedVectorDatasetTrainer<O, AM extends Model<Vector, O>, L>
      * @param <M1> Type of submodel trainer model.
      * @return This object.
      */
-    public <M1 extends Model<Vector, Double>> StackedVectorDatasetTrainer<O, AM, L> addTrainerWithDoubleOutput(
+    public <M1 extends IgniteModel<Vector, Double>> StackedVectorDatasetTrainer<O, AM, L> addTrainerWithDoubleOutput(
         DatasetTrainer<M1, L> trainer) {
         return addTrainer(AdaptableDatasetTrainer.of(trainer).afterTrainedModel(VectorUtils::num2Vec));
     }
@@ -140,7 +141,7 @@ public class StackedVectorDatasetTrainer<O, AM extends Model<Vector, O>, L>
      * @param <M1> Type of submodel trainer model.
      * @return This object.
      */
-    public <M1 extends Model<Matrix, Matrix>> StackedVectorDatasetTrainer<O, AM, L> addMatrix2MatrixTrainer(
+    public <M1 extends IgniteModel<Matrix, Matrix>> StackedVectorDatasetTrainer<O, AM, L> addMatrix2MatrixTrainer(
         DatasetTrainer<M1, L> trainer) {
         AdaptableDatasetTrainer<Vector, Vector, Matrix, Matrix, M1, L> adapted = AdaptableDatasetTrainer.of(trainer)
             .beforeTrainedModel((Vector v) -> new DenseMatrix(v.asArray(), 1))

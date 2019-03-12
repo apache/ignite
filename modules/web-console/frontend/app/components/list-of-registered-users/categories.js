@@ -19,6 +19,7 @@ export default [
     {name: 'Actions', visible: false, enableHiding: false},
     {name: 'User', visible: true, enableHiding: false},
     {name: 'Email', visible: true, enableHiding: true},
+    {name: 'Activated', visible: false, enableHiding: true},
     {name: 'Company', visible: true, enableHiding: true},
     {name: 'Country', visible: true, enableHiding: true},
     {name: 'Last login', visible: false, enableHiding: true},

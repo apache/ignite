@@ -70,7 +70,16 @@ public interface GridComponent {
         CACHE_CRD_PROC,
 
         /** Encryption manager. */
-        ENCRYPTION_MGR
+        ENCRYPTION_MGR,
+
+        /** Service processor. */
+        SERVICE_PROC,
+
+        /** Distributed MetaStorage processor. */
+        META_STORAGE;
+
+        /** Cached values array. */
+        public static final DiscoveryDataExchangeType[] VALUES = values();
     }
 
     /**

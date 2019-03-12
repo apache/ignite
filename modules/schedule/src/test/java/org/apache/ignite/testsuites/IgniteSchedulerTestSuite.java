@@ -17,22 +17,16 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.schedule.GridScheduleSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Scheduler tests.
  */
-public class IgniteSchedulerTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Grid Scheduler Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(GridScheduleSelfTest.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridScheduleSelfTest.class
+})
+public class IgniteSchedulerTestSuite {
 }

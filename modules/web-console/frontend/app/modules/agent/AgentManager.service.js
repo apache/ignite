@@ -18,8 +18,10 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
-import {BehaviorSubject} from 'rxjs';
-import {first, pluck, tap, distinctUntilChanged, map, filter} from 'rxjs/operators';
+import {timer, BehaviorSubject, of, from} from 'rxjs';
+import {exhaustMap, first, pluck, tap, distinctUntilChanged, map, filter, expand, takeWhile, last} from 'rxjs/operators';
+
+import io from 'socket.io-client';
 
 import AgentModal from './AgentModal.service';
 // @ts-ignore
@@ -42,6 +44,17 @@ const IGNITE_2_0 = '2.0.0';
 const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
 const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], ['2.5.1-p13', '2.6.0'], '2.7.0'];
 const COLLECT_BY_CACHE_GROUPS_SINCE = '2.7.0';
+const QUERY_PING_SINCE = [['2.5.6', '2.6.0'], '2.7.4'];
+
+/**
+ * Query execution result.
+ * @typedef {{responseNodeId: String, queryId: String, columns: String[], rows: {Object[][]}, hasMore: Boolean, duration: Number}} VisorQueryResult
+ */
+
+/**
+ * Query ping result.
+ * @typedef {{}} VisorQueryPingResult
+ */
 
 /** Reserved cache names */
 const RESERVED_CACHE_NAMES = [
@@ -77,7 +90,7 @@ class ConnectionState {
         return cluster;
     }
 
-    update(demo, count, clusters) {
+    update(demo, count, clusters, hasDemo) {
         this.clusters = clusters;
 
         if (_.isEmpty(this.clusters))
@@ -88,6 +101,8 @@ class ConnectionState {
 
         if (this.cluster)
             this.cluster.connected = !!_.find(clusters, {id: this.cluster.id});
+
+        this.hasDemo = hasDemo;
 
         if (count === 0)
             this.state = State.AGENT_DISCONNECTED;
@@ -117,7 +132,7 @@ class ConnectionState {
 }
 
 export default class AgentManager {
-    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterLoginService'];
+    static $inject = ['$rootScope', '$q', '$transitions', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterLoginService'];
 
     /** @type {ng.IScope} */
     $root;
@@ -146,6 +161,17 @@ export default class AgentManager {
 
     socket = null;
 
+    /** @type {Set<() => Promise>} */
+    switchClusterListeners = new Set();
+
+    addClusterSwitchListener(func) {
+        this.switchClusterListeners.add(func);
+    }
+
+    removeClusterSwitchListener(func) {
+        this.switchClusterListeners.delete(func);
+    }
+
     static restoreActiveCluster() {
         try {
             return JSON.parse(localStorage.cluster);
@@ -162,17 +188,15 @@ export default class AgentManager {
      * @param {ng.IRootScopeService} $root
      * @param {ng.IQService} $q
      * @param {import('@uirouter/angularjs').TransitionService} $transitions
-     * @param {unknown} socketFactory
      * @param {import('./AgentModal.service').default} agentModal
      * @param {import('app/components/user-notifications/service').default} UserNotifications
      * @param {import('app/services/Version.service').default} Version
      * @param {import('./components/cluster-login/service').default} ClusterLoginSrv
      */
-    constructor($root, $q, $transitions, socketFactory, agentModal, UserNotifications, Version, ClusterLoginSrv) {
+    constructor($root, $q, $transitions, agentModal, UserNotifications, Version, ClusterLoginSrv) {
         this.$root = $root;
         this.$q = $q;
         this.$transitions = $transitions;
-        this.socketFactory = socketFactory;
         this.agentModal = agentModal;
         this.UserNotifications = UserNotifications;
         this.Version = Version;
@@ -191,6 +215,11 @@ export default class AgentManager {
             map(({ cluster }) => cluster),
             filter((cluster) => Boolean(cluster)),
             pluck('active')
+        );
+
+        this.clusterIsAvailable$ = this.connectionSbj.pipe(
+            pluck('cluster'),
+            map((cluster) => !!cluster)
         );
 
         if (!this.isDemoMode()) {
@@ -219,7 +248,9 @@ export default class AgentManager {
         if (nonNil(this.socket))
             return;
 
-        this.socket = this.socketFactory();
+        const options = this.isDemoMode() ? {query: 'IgniteDemoMode=true'} : {};
+
+        this.socket = io.connect(options);
 
         const onDisconnect = () => {
             const conn = this.connectionSbj.getValue();
@@ -233,10 +264,10 @@ export default class AgentManager {
 
         this.socket.on('disconnect', onDisconnect);
 
-        this.socket.on('agents:stat', ({clusters, count}) => {
+        this.socket.on('agents:stat', ({clusters, count, hasDemo}) => {
             const conn = this.connectionSbj.getValue();
 
-            conn.update(this.isDemoMode(), count, clusters);
+            conn.update(this.isDemoMode(), count, clusters, hasDemo);
 
             this.connectionSbj.next(conn);
         });
@@ -271,13 +302,18 @@ export default class AgentManager {
     }
 
     switchCluster(cluster) {
-        const state = this.connectionSbj.getValue();
+        return Promise.all(_.map([...this.switchClusterListeners], (lnr) => lnr()))
+            .then(() => {
+                const state = this.connectionSbj.getValue();
 
-        state.updateCluster(cluster);
+                state.updateCluster(cluster);
 
-        this.connectionSbj.next(state);
+                this.connectionSbj.next(state);
 
-        this.saveToStorage(cluster);
+                this.saveToStorage(cluster);
+
+                return Promise.resolve();
+            });
     }
 
     /**
@@ -350,58 +386,6 @@ export default class AgentManager {
         });
 
         return this.awaitAgent();
-    }
-
-    /**
-     * @param {String} backText
-     * @param {String} [backState]
-     * @returns {ng.IPromise}
-     */
-    startClusterWatch(backText, backState) {
-        this.backText = backText;
-        this.backState = backState;
-
-        const conn = this.connectionSbj.getValue();
-
-        conn.useConnectedCluster();
-
-        this.connectionSbj.next(conn);
-
-        this.modalSubscription && this.modalSubscription.unsubscribe();
-
-        this.modalSubscription = this.connectionSbj.subscribe({
-            next: ({state}) => {
-                switch (state) {
-                    case State.CONNECTED:
-                        this.agentModal.hide();
-
-                        break;
-
-                    case State.AGENT_DISCONNECTED:
-                        this.agentModal.agentDisconnected(this.backText, this.backState);
-                        this.ClusterLoginSrv.cancel();
-
-                        break;
-
-                    case State.CLUSTER_DISCONNECTED:
-                        this.agentModal.clusterDisconnected(this.backText, this.backState);
-                        this.ClusterLoginSrv.cancel();
-
-                        break;
-
-                    default:
-                    // Connection to backend is not established yet.
-                }
-            }
-        });
-
-        const stopWatchUnsubscribe = this.$transitions.onExit({}, () => {
-            this.stopWatch();
-
-            stopWatchUnsubscribe();
-        });
-
-        return this.awaitCluster();
     }
 
     stopWatch() {
@@ -485,8 +469,13 @@ export default class AgentManager {
                         if (cluster.secured)
                             this.clustersSecrets.get(cluster.id).sessionToken = res.sessionToken;
 
-                        if (res.zipped)
-                            return this.pool.postMessage(res.data);
+                        if (res.zipped) {
+                            const taskId = _.get(params, 'taskId', '');
+
+                            const useBigIntJson = taskId.startsWith('query');
+
+                            return this.pool.postMessage({payload: res.data, useBigIntJson});
+                        }
 
                         return res;
 
@@ -713,14 +702,14 @@ export default class AgentManager {
      * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
      * @param {Boolean} replicatedOnly Flag whether query contains only replicated tables.
      * @param {Boolean} local Flag whether to execute query locally.
-     * @param {Number} pageSz
+     * @param {Number} pageSize
      * @param {Boolean} [lazy] query flag.
      * @param {Boolean} [collocated] Collocated query.
-     * @returns {Promise}
+     * @returns {Promise.<VisorQueryResult>} Query execution result.
      */
-    querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy = false, collocated = false) {
+    querySql({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy = false, collocated = false}) {
         if (this.available(IGNITE_2_0)) {
-            let args = [cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz];
+            let args = [cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize];
 
             if (this.available(...COLLOCATED_QUERY_SINCE))
                 args = [...args, lazy, collocated];
@@ -740,11 +729,11 @@ export default class AgentManager {
         let queryPromise;
 
         if (enforceJoinOrder)
-            queryPromise = this.visorTask('querySqlV3', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, local, pageSz);
+            queryPromise = this.visorTask('querySqlV3', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, local, pageSize);
         else if (nonCollocatedJoins)
-            queryPromise = this.visorTask('querySqlV2', nid, cacheName, query, nonCollocatedJoins, local, pageSz);
+            queryPromise = this.visorTask('querySqlV2', nid, cacheName, query, nonCollocatedJoins, local, pageSize);
         else
-            queryPromise = this.visorTask('querySql', nid, cacheName, query, local, pageSz);
+            queryPromise = this.visorTask('querySql', nid, cacheName, query, local, pageSize);
 
         return queryPromise
             .then(({key, value}) => {
@@ -757,9 +746,42 @@ export default class AgentManager {
 
     /**
      * @param {String} nid Node id.
+     * @param {String} queryId Query ID.
+     * @param {Number} pageSize
+     * @returns {Promise.<VisorQueryResult>} Query execution result.
+     */
+    queryFetchFistsPage(nid, queryId, pageSize) {
+        return this.visorTask('queryFetchFirstPage', nid, queryId, pageSize).then(({error, result}) => {
+            if (_.isEmpty(error))
+                return result;
+
+            return Promise.reject(error);
+        });
+    }
+
+    /**
+     * @param {String} nid Node id.
+     * @param {String} queryId Query ID.
+     * @returns {Promise.<VisorQueryPingResult>} Query execution result.
+     */
+    queryPing(nid, queryId) {
+        if (this.available(...QUERY_PING_SINCE)) {
+            return this.visorTask('queryPing', nid, queryId, 1).then(({error, result}) => {
+                if (_.isEmpty(error))
+                    return {queryPingSupported: true};
+
+                return Promise.reject(error);
+            });
+        }
+
+        return Promise.resolve({queryPingSupported: false});
+    }
+
+    /**
+     * @param {String} nid Node id.
      * @param {Number} queryId
      * @param {Number} pageSize
-     * @returns {Promise}
+     * @returns {Promise.<VisorQueryResult>} Query execution result.
      */
     queryNextPage(nid, queryId, pageSize) {
         if (this.available(IGNITE_2_0))
@@ -770,42 +792,8 @@ export default class AgentManager {
 
     /**
      * @param {String} nid Node id.
-     * @param {String} cacheName Cache name.
-     * @param {String} [query] Query if null then scan query.
-     * @param {Boolean} nonCollocatedJoins Flag whether to execute non collocated joins.
-     * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
-     * @param {Boolean} replicatedOnly Flag whether query contains only replicated tables.
-     * @param {Boolean} local Flag whether to execute query locally.
-     * @param {Boolean} lazy query flag.
-     * @param {Boolean} collocated Collocated query.
-     * @returns {Promise}
-     */
-    querySqlGetAll(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, lazy, collocated) {
-        // Page size for query.
-        const pageSz = 1024;
-
-        const fetchResult = (acc) => {
-            if (!acc.hasMore)
-                return acc;
-
-            return this.queryNextPage(acc.responseNodeId, acc.queryId, pageSz)
-                .then((res) => {
-                    acc.rows = acc.rows.concat(res.rows);
-
-                    acc.hasMore = res.hasMore;
-
-                    return fetchResult(acc);
-                });
-        };
-
-        return this.querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy, collocated)
-            .then(fetchResult);
-    }
-
-    /**
-     * @param {String} nid Node id.
      * @param {Number} [queryId]
-     * @returns {Promise}
+     * @returns {Promise<Void>}
      */
     queryClose(nid, queryId) {
         if (this.available(IGNITE_2_0)) {
@@ -825,9 +813,9 @@ export default class AgentManager {
      * @param {Boolean} near Scan near cache.
      * @param {Boolean} local Flag whether to execute query locally.
      * @param {Number} pageSize Page size.
-     * @returns {Promise}
+     * @returns {Promise.<VisorQueryResult>} Query execution result.
      */
-    queryScan(nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize) {
+    queryScan({nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize}) {
         if (this.available(IGNITE_2_0)) {
             return this.visorTask('queryScanX2', nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize)
                 .then(({error, result}) => {
@@ -847,39 +835,7 @@ export default class AgentManager {
         const prefix = caseSensitive ? SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE : SCAN_CACHE_WITH_FILTER;
         const query = `${prefix}${filter}`;
 
-        return this.querySql(nid, cacheName, query, false, false, false, local, pageSize);
-    }
-
-    /**
-     * @param {String} nid Node id.
-     * @param {String} cacheName Cache name.
-     * @param {String} filter Filter text.
-     * @param {Boolean} regEx Flag whether filter by regexp.
-     * @param {Boolean} caseSensitive Case sensitive filtration.
-     * @param {Boolean} near Scan near cache.
-     * @param {Boolean} local Flag whether to execute query locally.
-     * @returns {Promise}
-     */
-    queryScanGetAll(nid, cacheName, filter, regEx, caseSensitive, near, local) {
-        // Page size for query.
-        const pageSz = 1024;
-
-        const fetchResult = (acc) => {
-            if (!acc.hasMore)
-                return acc;
-
-            return this.queryNextPage(acc.responseNodeId, acc.queryId, pageSz)
-                .then((res) => {
-                    acc.rows = acc.rows.concat(res.rows);
-
-                    acc.hasMore = res.hasMore;
-
-                    return fetchResult(acc);
-                });
-        };
-
-        return this.queryScan(nid, cacheName, filter, regEx, caseSensitive, near, local, pageSz)
-            .then(fetchResult);
+        return this.querySql({nid, cacheName, query, nonCollocatedJoins: false, enforceJoinOrder: false, replicatedOnly: false, local, pageSize});
     }
 
     /**

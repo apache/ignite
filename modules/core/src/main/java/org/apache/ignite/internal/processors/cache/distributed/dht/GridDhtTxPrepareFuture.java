@@ -410,8 +410,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         entryProc,
                         tx.resolveTaskName(),
                         null,
-                        keepBinary,
-                        null);  // TODO IGNITE-7371
+                        keepBinary);
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
@@ -524,8 +523,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*transformClo*/null,
                             /*taskName*/null,
                             /*expiryPlc*/null,
-                            /*keepBinary*/true,
-                            null); // TODO IGNITE-7371
+                            /*keepBinary*/true);
                     }
 
                     if (oldVal != null)
@@ -536,9 +534,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to get result value for cache entry: " + cached, e);
+
+                onError(e);
             }
             catch (GridCacheEntryRemovedException e) {
-                assert false : "Got entry removed exception while holding transactional lock on entry [e=" + e + ", cached=" + cached + ']';
+                // Entry was unlocked by concurrent rollback.
+                onError(tx.rollbackException());
             }
             finally {
                 cctx.database().checkpointReadUnlock();
@@ -1979,8 +1980,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 lockKeys.clear();
             }
 
-            onError(new IgniteTxTimeoutCheckedException("Failed to acquire lock within " +
-                "provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
+            onError(tx.timeoutException());
         }
 
         /** {@inheritDoc} */

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.regressions.logistic;
 
-import java.util.Arrays;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
@@ -34,8 +34,11 @@ import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Arrays;
 
 /**
  * Trainer of the logistic regression model based on stochastic gradient descent algorithm.
@@ -62,15 +65,18 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
 
     /** {@inheritDoc} */
     @Override public <K, V> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        FeatureLabelExtractor<K, V, Double> extractor) {
 
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+        DatasetBuilder<K, V> datasetBuilder,
+        FeatureLabelExtractor<K, V, Double> extractor) {
+
+        IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
+        IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
 
         IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
             Integer cols = dataset.compute(data -> {
@@ -83,6 +89,9 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
                     return b;
                 return a;
             });
+
+            if (cols == null)
+                throw new IllegalStateException("Cannot train on empty dataset");
 
             MLPArchitecture architecture = new MLPArchitecture(cols);
             architecture = architecture.withAddedLayer(1, true, Activators.SIGMOID);
@@ -98,7 +107,7 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
             batchSize,
             locIterations,
             seed
-        );
+        ).withEnvironmentBuilder(envBuilder);
 
         IgniteBiFunction<K, V, double[]> lbExtractorWrapper = (k, v) -> new double[] {lbExtractor.apply(k, v)};
         MultilayerPerceptron mlp;
@@ -139,7 +148,7 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(LogisticRegressionModel mdl) {
+    @Override public boolean isUpdateable(LogisticRegressionModel mdl) {
         return true;
     }
 

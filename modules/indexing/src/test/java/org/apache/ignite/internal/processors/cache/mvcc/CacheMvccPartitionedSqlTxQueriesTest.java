@@ -24,7 +24,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /** */
 public class CacheMvccPartitionedSqlTxQueriesTest extends CacheMvccSqlTxQueriesAbstractTest {
     /** {@inheritDoc} */
-    protected CacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 }

@@ -24,21 +24,16 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -53,7 +48,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Test getting the same value twice within the same transaction.
  */
-@RunWith(JUnit4.class)
 public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     /** Number of gets. */
     private static final int GET_CNT = 5;
@@ -62,23 +56,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     private static final int GRID_CNT = 3;
 
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private CacheAtomicityMode atomicityMode;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
-
-        return c;
-    }
 
     /**
      * @return Cache configuration.
@@ -243,20 +221,18 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
     public void testMvccPessimisticRepeatableReadNoPut() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
 
         checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, false);
     }
 
     /** @throws Exception If failed. */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
     public void testMvccPessimisticRepeatableReadWithPut() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
 
         checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, true);

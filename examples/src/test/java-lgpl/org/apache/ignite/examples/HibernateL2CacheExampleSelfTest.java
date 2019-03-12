@@ -19,15 +19,15 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.datagrid.hibernate.HibernateL2CacheExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * Tests the {@link HibernateL2CacheExample}.
  */
 public class HibernateL2CacheExampleSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testHibernateL2CacheExample() throws Exception {
+    /** */
+    @Test
+    public void testHibernateL2CacheExample() {
         HibernateL2CacheExample.main(EMPTY_ARGS);
     }
 }

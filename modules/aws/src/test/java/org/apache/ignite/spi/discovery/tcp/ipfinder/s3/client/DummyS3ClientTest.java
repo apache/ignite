@@ -27,13 +27,10 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Class to test {@link DummyS3Client}.
  */
-@RunWith(JUnit4.class)
 public class DummyS3ClientTest extends GridCommonAbstractTest {
     /** Instance of {@link DummyS3Client} to be used for tests. */
     private DummyS3Client s3;

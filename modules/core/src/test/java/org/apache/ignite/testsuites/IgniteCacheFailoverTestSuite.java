@@ -17,9 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheIncrementTransformTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSizeFailoverTest;
@@ -40,59 +37,44 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNea
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionDistributionTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineDownCacheRemoveFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCacheRemoveFailoverTest;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Test suite.
  */
-public class IgniteCacheFailoverTestSuite extends TestSuite {
-    /**
-     * @return Ignite Cache Failover test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        return suite(null);
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCacheAtomicInvalidPartitionHandlingSelfTest.class,
+    GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class,
+    GridCacheRebalancingPartitionDistributionTest.class,
 
-    /**
-     * @param ignoredTests Tests don't include in the execution.
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
-        TestSuite suite = new TestSuite("Cache Failover Test Suite");
+    GridCacheIncrementTransformTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicInvalidPartitionHandlingSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingPartitionDistributionTest.class));
+    // Failure consistency tests.
+    GridCacheAtomicRemoveFailureTest.class,
+    GridCacheAtomicClientRemoveFailureTest.class,
 
-        GridTestUtils.addTestIfNeeded(suite, GridCacheIncrementTransformTest.class, ignoredTests);
+    GridCacheDhtAtomicRemoveFailureTest.class,
+    GridCacheDhtRemoveFailureTest.class,
+    GridCacheDhtClientRemoveFailureTest.class,
+    GridCacheNearRemoveFailureTest.class,
+    GridCacheAtomicNearRemoveFailureTest.class,
+    IgniteChangingBaselineUpCacheRemoveFailoverTest.class,
+    IgniteChangingBaselineDownCacheRemoveFailoverTest.class,
 
-        // Failure consistency tests.
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicRemoveFailureTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicClientRemoveFailureTest.class));
+    IgniteCacheAtomicNodeJoinTest.class,
+    IgniteCacheTxNodeJoinTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(GridCacheDhtAtomicRemoveFailureTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheDhtRemoveFailureTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheDhtClientRemoveFailureTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheNearRemoveFailureTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicNearRemoveFailureTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteChangingBaselineUpCacheRemoveFailoverTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteChangingBaselineDownCacheRemoveFailoverTest.class));
+    IgniteCacheTxNearDisabledPutGetRestartTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheAtomicNodeJoinTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheTxNodeJoinTest.class));
+    IgniteCacheSizeFailoverTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheTxNearDisabledPutGetRestartTest.class));
+    IgniteAtomicLongChangingTopologySelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheSizeFailoverTest.class));
+    GridCacheTxNodeFailureSelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(IgniteAtomicLongChangingTopologySelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCacheTxNodeFailureSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(AtomicPutAllChangingTopologyTest.class));
-
-        return suite;
-    }
+    AtomicPutAllChangingTopologyTest.class,
+})
+public class IgniteCacheFailoverTestSuite {
 }

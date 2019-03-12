@@ -29,14 +29,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.jdbcx.JdbcDataSource;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for Cache JDBC POJO store factory.
  */
-@RunWith(JUnit4.class)
 public class CacheJdbcPojoStoreFactorySelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "test";
@@ -74,10 +72,9 @@ public class CacheJdbcPojoStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10723")
     @Test
     public void testIncorrectBeanConfiguration() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10723");
-
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try (Ignite ignored = Ignition.start("modules/spring/src/test/config/pojo-incorrect-store-cache.xml")) {

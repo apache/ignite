@@ -28,13 +28,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /**
  * Test absenting eviction for joined node if it is out of baseline.
  */
-@RunWith(JUnit4.class)
 public class IgniteAbsentEvictionNodeOutOfBaselineTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_CACHE_NAME = "test";
@@ -74,6 +73,15 @@ public class IgniteAbsentEvictionNodeOutOfBaselineTest extends GridCommonAbstrac
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
     }
 
     /**

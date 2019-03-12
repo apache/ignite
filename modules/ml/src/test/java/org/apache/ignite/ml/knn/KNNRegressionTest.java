@@ -32,7 +32,7 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for {@link KNNRegressionTrainer}.
@@ -60,8 +60,8 @@ public class KNNRegressionTest extends TrainerTest {
             .withStrategy(NNStrategy.SIMPLE);
 
         Vector vector = new DenseVector(new double[] {0, 0, 0, 5.0, 0.0});
-        System.out.println(knnMdl.apply(vector));
-        Assert.assertEquals(15, knnMdl.apply(vector), 1E-12);
+        System.out.println(knnMdl.predict(vector));
+        Assert.assertEquals(15, knnMdl.predict(vector), 1E-12);
     }
 
     /** */
@@ -107,9 +107,9 @@ public class KNNRegressionTest extends TrainerTest {
 
         Vector vector = new DenseVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
 
-        Assert.assertNotNull(knnMdl.apply(vector));
+        Assert.assertNotNull(knnMdl.predict(vector));
 
-        Assert.assertEquals(67857, knnMdl.apply(vector), 2000);
+        Assert.assertEquals(67857, knnMdl.predict(vector), 2000);
 
         Assert.assertTrue(knnMdl.toString().contains(stgy.name()));
         Assert.assertTrue(knnMdl.toString(true).contains(stgy.name()));
@@ -150,7 +150,7 @@ public class KNNRegressionTest extends TrainerTest {
         );
 
         Vector vector = new DenseVector(new double[] {0, 0, 0, 5.0, 0.0});
-        assertEquals(originalMdl.apply(vector), updatedOnSameDataset.apply(vector));
-        assertEquals(originalMdl.apply(vector), updatedOnEmptyDataset.apply(vector));
+        assertEquals(originalMdl.predict(vector), updatedOnSameDataset.predict(vector));
+        assertEquals(originalMdl.predict(vector), updatedOnEmptyDataset.predict(vector));
     }
 }

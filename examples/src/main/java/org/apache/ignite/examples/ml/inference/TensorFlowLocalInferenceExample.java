@@ -24,12 +24,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.inference.InfModel;
-import org.apache.ignite.ml.inference.builder.SingleInfModelBuilder;
-import org.apache.ignite.ml.inference.parser.InfModelParser;
-import org.apache.ignite.ml.inference.parser.TensorFlowSavedModelInfModelParser;
-import org.apache.ignite.ml.inference.reader.FileSystemInfModelReader;
-import org.apache.ignite.ml.inference.reader.InfModelReader;
+import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.inference.builder.SingleModelBuilder;
+import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.inference.parser.TensorFlowSavedModelModelParser;
+import org.apache.ignite.ml.inference.reader.FileSystemModelReader;
+import org.apache.ignite.ml.inference.reader.ModelReader;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.tensorflow.Tensor;
 
@@ -52,9 +52,9 @@ public class TensorFlowLocalInferenceExample {
         if (mdlRsrc == null)
             throw new IllegalArgumentException("Resource not found [resource_path=" + MODEL_PATH + "]");
 
-        InfModelReader reader = new FileSystemInfModelReader(mdlRsrc.getPath());
+        ModelReader reader = new FileSystemModelReader(mdlRsrc.getPath());
 
-        InfModelParser<double[], Long> parser = new TensorFlowSavedModelInfModelParser<double[], Long>("serve")
+        ModelParser<double[], Long, ?> parser = new TensorFlowSavedModelModelParser<double[], Long>("serve")
             .withInput("Placeholder", doubles -> {
                 float[][][] reshaped = new float[1][28][28];
                 for (int i = 0; i < doubles.length; i++)
@@ -73,7 +73,7 @@ public class TensorFlowLocalInferenceExample {
 
         long t0 = System.currentTimeMillis();
 
-        try (InfModel<double[], Long> locMdl = new SingleInfModelBuilder().build(reader, parser)) {
+        try (Model<double[], Long> locMdl = new SingleModelBuilder().build(reader, parser)) {
             for (MnistUtils.MnistLabeledImage image : images)
                 locMdl.predict(image.getPixels());
         }

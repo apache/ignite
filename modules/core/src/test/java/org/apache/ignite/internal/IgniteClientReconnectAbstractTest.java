@@ -51,8 +51,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -67,9 +65,6 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  */
 public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final long RECONNECT_TIMEOUT = 10_000;
 
     /** */
@@ -81,7 +76,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
         TestTcpDiscoverySpi disco = new TestTcpDiscoverySpi();
 
-        disco.setIpFinder(ipFinder);
+        disco.setIpFinder(sharedStaticIpFinder);
         disco.setJoinTimeout(2 * 60_000);
         disco.setSocketTimeout(1000);
         disco.setNetworkTimeout(2000);
@@ -163,8 +158,6 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-
         int srvs = serverCount();
 
         if (srvs > 0)
@@ -183,7 +176,9 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+        super.afterTestsStopped();
+
+        stopAllGrids();
     }
 
     /**

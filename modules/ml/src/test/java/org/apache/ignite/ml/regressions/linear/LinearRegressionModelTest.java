@@ -43,19 +43,19 @@ public class LinearRegressionModelTest {
         assertTrue(!mdl.toString(false).isEmpty());
 
         Vector observation = new DenseVector(new double[]{1.0, 1.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 1.0, mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[]{2.0, 1.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 2.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 2.0 + 3.0 * 1.0, mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[]{1.0, 2.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 2.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 2.0, mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[]{-2.0, 1.0});
-        TestUtils.assertEquals(1.0 - 2.0 * 2.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 - 2.0 * 2.0 + 3.0 * 1.0, mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[]{1.0, -2.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, mdl.predict(observation), PRECISION);
     }
 
     /** */
@@ -67,6 +67,6 @@ public class LinearRegressionModelTest {
 
         Vector observation = new DenseVector(new double[]{1.0});
 
-        mdl.apply(observation);
+        mdl.predict(observation);
     }
 }

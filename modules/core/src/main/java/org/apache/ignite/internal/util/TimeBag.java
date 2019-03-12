@@ -302,9 +302,9 @@ public class TimeBag {
 
         /** {@inheritDoc} */
         @Override public int compareTo(@NotNull TimeBag.Stage o) {
-            if (o.time > time)
-                return -1;
             if (o.time < time)
+                return -1;
+            if (o.time > time)
                 return 1;
             return o.description.compareTo(description);
         }

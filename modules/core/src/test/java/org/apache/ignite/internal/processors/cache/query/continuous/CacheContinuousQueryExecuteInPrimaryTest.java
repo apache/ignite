@@ -17,9 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
-
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -33,22 +44,8 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
-
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
-import javax.cache.event.CacheEntryUpdatedListener;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -62,7 +59,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Continuous queries execute in primary node tests.
  */
-@RunWith(JUnit4.class)
 public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstractTest
     implements Serializable {
 
@@ -169,10 +165,9 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     public void testMvccTransactionLocalCache() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT, LOCAL);
 
         doTestWithoutEventsEntries(ccfg);
@@ -231,7 +226,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
                         }
                     }));
 
-                executeQuery(cache, qry, ccfg.getAtomicityMode() == TRANSACTIONAL);
+                executeQuery(cache, qry, ccfg.getAtomicityMode() != ATOMIC);
             }
 
             assertTrue(noOneListen.get());
@@ -329,7 +324,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
             ));
 
             // Execute query.
-            executeQuery(cache, qry, ccfg.getAtomicityMode() == TRANSACTIONAL);
+            executeQuery(cache, qry, ccfg.getAtomicityMode() != ATOMIC);
 
             assertTrue(latch.await(LATCH_TIMEOUT, MILLISECONDS));
             assertEquals(16, cnt.get());

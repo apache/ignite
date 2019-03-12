@@ -30,12 +30,10 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  *
  */
 public class IgniteCacheTxLocalStoreValueTest extends IgniteCacheStoreValueAbstractTest {
-    /** {@inheritDoc} */
+    /** */
     @Before
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.setUp();
+    public void beforeIgniteCacheTxLocalStoreValueTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

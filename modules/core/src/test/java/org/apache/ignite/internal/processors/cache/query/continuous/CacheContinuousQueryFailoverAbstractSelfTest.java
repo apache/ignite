@@ -99,16 +99,13 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -122,11 +119,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int BACKUP_ACK_THRESHOLD = 100;
 
@@ -144,7 +137,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
@@ -2080,6 +2072,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                                 updated = true;
                             }
                             catch (CacheException e) {
+                                assertTrue(e.getCause() instanceof TransactionSerializationException);
                                 assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
                             }
                         }
@@ -2186,7 +2179,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                             updated = true;
                         }
                         catch (CacheException e) {
-                            assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                            assertTrue(e.getCause() instanceof TransactionSerializationException);
                             assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
                         }
                     }

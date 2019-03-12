@@ -66,11 +66,6 @@ mixin chart-settings
         .col-xs-2
             +result-toolbar
 
-mixin notebook-error
-    h2 Failed to load notebook
-    label.col-sm-12 Notebook not accessible any more. Go back to notebooks list.
-    button.h3.btn.btn-primary(ui-sref='default-state') Leave Notebook
-
 mixin query-settings
     div
         .form-field--inline(
@@ -186,6 +181,9 @@ mixin query-actions
 
     button.btn-ignite.btn-ignite--secondary(ng-disabled='!queryAvailable(paragraph)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{queryTooltip(paragraph, "explain query")}}')
         | Explain
+
+    button.btn-ignite.btn-ignite--secondary(ng-if='paragraph.executionInProgress(false) || paragraph.executionInProgress(true)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
+        | Cancel
 
 mixin table-result-heading-query
     .total.row
@@ -339,6 +337,9 @@ mixin paragraph-scan
                     span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(true)')
                     span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(true)')
                     | Scan on selected node
+
+                button.btn-ignite.btn-ignite--secondary(ng-if='paragraph.checkScanInProgress(false) || paragraph.checkScanInProgress(true)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
+                    | Cancel
             div
 
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted() && !paragraph.scanningInProgress' ng-switch='paragraph.resultType()')
@@ -353,7 +354,7 @@ mixin paragraph-scan
                     span(ng-if='paragraph.queryArgs.filter') &nbsp; with filter: #[b {{ paragraph.queryArgs.filter }}]
                     span(ng-if='paragraph.queryArgs.localNid') &nbsp; on node: #[b {{ paragraph.queryArgs.localNid | limitTo:8 }}]
 
-                -var nextVisibleCondition = 'paragraph.resultType() != "error" && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
+                -var nextVisibleCondition = 'paragraph.resultType() != "error" && !paragraph.loading && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
 
                 .pull-right(ng-show=`${nextVisibleCondition}` ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)')
                     i.fa.fa-chevron-circle-right
@@ -397,9 +398,11 @@ mixin paragraph-query
                                 tipOpts: { placement: 'top' }
                             })
                 .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
-                    label Wrong caches filter
+                    no-data
+                        label Wrong caches filter
                 .empty-caches(ng-show='caches.length == 0')
-                    label No caches
+                    no-data
+                        label No caches
         .col-sm-12.sql-controls
             div
                 +query-actions
@@ -419,7 +422,7 @@ mixin paragraph-query
             .footer.clearfix(ng-show='paragraph.resultType() !== "error"')
                 a.pull-left(ng-click='showResultQuery(paragraph)') Show query
 
-                -var nextVisibleCondition = 'paragraph.resultType() !== "error" && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
+                -var nextVisibleCondition = 'paragraph.resultType() !== "error" && !paragraph.loading && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
 
                 .pull-right(ng-show=`${nextVisibleCondition}` ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)')
                     i.fa.fa-chevron-circle-right
@@ -488,8 +491,10 @@ div
                         readonly='true'
                     )
 
-    div(ng-if='notebookLoadFailed' style='text-align: center')
-        +notebook-error
+    .notebook-failed--block(ng-if='notebookLoadFailed')
+        no-data
+            h2 Failed to load notebook
+            label.col-sm-12 Notebook not accessible any more. Go back to notebooks list.
 
     div(ng-if='notebook' ignite-loading='sqlLoading' ignite-loading-text='{{ loadingText }}' ignite-loading-position='top')
         .docs-body.paragraphs

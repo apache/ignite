@@ -36,15 +36,9 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
 import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -52,11 +46,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Checkpoint tests.
  */
-@RunWith(JUnit4.class)
 public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Checkpoints cache name. */
     private static final String CACHE_NAME = "checkpoints.cache";
 
@@ -69,7 +59,6 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration());
         cfg.setCheckpointSpi(checkpointSpi());
-        cfg.setDiscoverySpi(discoverySpi());
 
         return cfg;
     }
@@ -94,17 +83,6 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         CacheCheckpointSpi spi = new CacheCheckpointSpi();
 
         spi.setCacheName(CACHE_NAME);
-
-        return spi;
-    }
-
-    /**
-     * @return Discovery SPI.
-     */
-    private DiscoverySpi discoverySpi() {
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
 
         return spi;
     }
