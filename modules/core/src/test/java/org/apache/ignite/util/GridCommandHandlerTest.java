@@ -52,6 +52,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
@@ -67,7 +68,6 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
@@ -598,27 +598,27 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        DistributedBaselineConfiguration bc = ignite.cluster().baselineConfiguration();
+        IgniteCluster cl = ignite.cluster();
 
-        assertFalse(bc.isBaselineAutoAdjustEnabled());
+        assertFalse(cl.isBaselineAutoAdjustEnabled());
 
-        long softTimeout = bc.getBaselineAutoAdjustTimeout();
+        long timeout = cl.baselineAutoAdjustTimeout();
 
         assertEquals(EXIT_CODE_OK, execute(
             "--baseline",
             "auto_adjust",
             "enable",
             "timeout",
-            Long.toString(softTimeout + 1)
+            Long.toString(timeout + 1)
         ));
 
-        assertTrue(bc.isBaselineAutoAdjustEnabled());
+        assertTrue(cl.isBaselineAutoAdjustEnabled());
 
-        assertEquals(softTimeout + 1, bc.getBaselineAutoAdjustTimeout());
+        assertEquals(timeout + 1, cl.baselineAutoAdjustTimeout());
 
         assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "disable"));
 
-        assertFalse(bc.isBaselineAutoAdjustEnabled());
+        assertFalse(cl.isBaselineAutoAdjustEnabled());
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "auto_adjust"));
 

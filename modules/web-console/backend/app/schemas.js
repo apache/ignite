@@ -55,7 +55,10 @@ module.exports.factory = function(mongoose) {
     // Install passport plugin.
     Account.plugin(passportMongo, {
         usernameField: 'email', limitAttempts: true, lastLoginField: 'lastLogin',
-        usernameLowerCase: true
+        usernameLowerCase: true,
+        errorMessages: {
+            UserExistsError: 'A user with the given email is already registered'
+        }
     });
 
     const transform = (doc, ret) => {

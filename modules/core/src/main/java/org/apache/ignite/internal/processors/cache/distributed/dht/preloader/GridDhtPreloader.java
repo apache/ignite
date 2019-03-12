@@ -477,6 +477,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean needForceKeys() {
+        // Do not use force key request with enabled MVCC.
+        if (grp.mvccEnabled())
+            return false;
+
         if (grp.rebalanceEnabled()) {
             IgniteInternalFuture<Boolean> rebalanceFut = rebalanceFuture();
 
