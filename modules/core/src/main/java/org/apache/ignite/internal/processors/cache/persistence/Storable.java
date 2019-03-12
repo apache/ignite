@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 /**
  * Simple interface for data, store in some RowStore.
@@ -53,7 +52,7 @@ public interface Storable {
     public int headerSize();
 
     /**
-     * @return IO version for storable.
+     * @return IO versions for handling this value.
      */
     public IOVersions ioVersions();
 }

@@ -49,7 +49,7 @@ public class CacheFreeListImpl extends DefaultFreeList {
 
     /** {@inheritDoc} */
     public void insertDataRow(CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        super.insertDataRow(row, statHolder);
+        super.insertDataRow(row, statHolder, false);
 
         assert row.key().partition() == PageIdUtils.partId(row.link()) :
             "Constructed a link with invalid partition ID [partId=" + row.key().partition() +

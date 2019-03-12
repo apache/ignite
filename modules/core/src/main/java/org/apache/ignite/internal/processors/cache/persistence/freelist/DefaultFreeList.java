@@ -34,11 +34,9 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -559,7 +557,8 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
     }
 
     /** {@inheritDoc} */
-    @Override public void insertDataRow(Storable row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    @Override public void insertDataRow(Storable row, IoStatisticsHolder statHolder, boolean useEmptyPage)
+        throws IgniteCheckedException {
         int rowSize = row.size();
 
         int written = 0;
@@ -572,7 +571,8 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
 
             long pageId = 0L;
 
-            for (int b = remaining < MIN_SIZE_FOR_DATA_PAGE ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS; b++) {
+            for (int b = remaining >= MIN_SIZE_FOR_DATA_PAGE || useEmptyPage ?
+                REUSE_BUCKET : bucket(remaining, false) + 1; b < BUCKETS; b++) {
                 pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
 
                 if (pageId != 0L)

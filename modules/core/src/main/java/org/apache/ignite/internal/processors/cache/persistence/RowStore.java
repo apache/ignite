@@ -96,12 +96,12 @@ public class RowStore {
      */
     public void addRow(CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         if (!persistenceEnabled)
-            freeList.insertDataRow(row, statHolder);
+            freeList.insertDataRow(row, statHolder, false);
         else {
             ctx.database().checkpointReadLock();
 
             try {
-                freeList.insertDataRow(row, statHolder);
+                freeList.insertDataRow(row, statHolder, false);
 
                 assert row.link() != 0L;
             }

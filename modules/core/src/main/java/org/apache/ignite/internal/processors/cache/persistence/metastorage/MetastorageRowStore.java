@@ -70,7 +70,7 @@ public class MetastorageRowStore {
         db.checkpointReadLock();
 
         try {
-            freeList.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
+            freeList.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE, false);
         }
         finally {
             db.checkpointReadUnlock();

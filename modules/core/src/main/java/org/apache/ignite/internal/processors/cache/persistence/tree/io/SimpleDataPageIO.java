@@ -104,12 +104,6 @@ public class SimpleDataPageIO extends AbstractDataPageIO<SimpleDataRow> {
         PageUtils.putBytes(addr, 6, row.value());
     }
 
-    public static byte[] readPayload(long link) {
-        int size = PageUtils.getInt(link, 0);
-
-        return PageUtils.getBytes(link, 4, size);
-    }
-
     /** {@inheritDoc} */
     @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         sb.a("SimpleDataPageIO [\n");
