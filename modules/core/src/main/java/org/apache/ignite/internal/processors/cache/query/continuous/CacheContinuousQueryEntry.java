@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -526,6 +527,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "[" + updateCntr + (filteredCnt > 0 ? ", f=" + filteredCnt : "") + "]"; //S.toString(CacheContinuousQueryEntry.class, this);
+        return S.toString(CacheContinuousQueryEntry.class, this);
     }
 }

@@ -123,7 +123,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testBackupQueue() throws Exception {
         final CacheEventListener lsnr = new CacheEventListener();
 
@@ -160,8 +160,6 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
             qryCursors.add(grid(0).cache(CACHE_NAME).query(qry));
         }
 
-        log.warning("======= START PUT ============");
-
         for (int i = 0; i < KEYS_COUNT; i++) {
             log.info("Put key: " + i);
 
@@ -169,12 +167,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
                 grid(ThreadLocalRandom.current().nextInt(GRID_COUNT)).cache(CACHE_NAME).put(i, new byte[1024 * 50]);
         }
 
-        log.warning("======= END PUT ============");
-
-
         int size = backupQueueSize();
-
-        log.warning("======= backupQueueSize=" + size + "  ============");
 
         assertTrue(size > 0);
         assertTrue(size <= BACKUP_ACK_THRESHOLD * QUERY_COUNT * /* partition count */1024);
@@ -187,7 +180,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testBackupQueueAutoUnsubscribeFalse() throws Exception {
         try {
             client = true;

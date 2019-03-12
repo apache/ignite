@@ -16,24 +16,15 @@
  */
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.Arrays;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryBackupQueueTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
 public class CacheMvccContinuousQueryBackupQueueTest extends IgniteCacheContinuousQueryBackupQueueTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-    }
-
-    @Parameterized.Parameters
-    public static Iterable<Object[]> data() {
-        return Arrays.asList(new Object[60][0]);
     }
 }

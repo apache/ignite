@@ -74,8 +74,6 @@ public class CacheContinuousQueryEventBuffer {
             if (backupEntry.updateCounter() <= updateCntr)
                 it.remove();
         }
-
-        //System.out.println("cleanupBackupQueue backupQ=" + hashCode() + ", backupQ.sizex()=" + backupQ.sizex() + ", updateCntr=" + updateCntr);
     }
 
     /**
@@ -99,21 +97,14 @@ public class CacheContinuousQueryEventBuffer {
             }
         }
 
-        System.out.println("flushOnExchange backupQ=" + hashCode() + ", backupQ.sizex()=" + backupQ.sizex() + ", flushed=" + (ret == null ? 0 : ret.size()));
-
         Batch batch = curBatch.get();
 
-        if (batch != null) {
-            System.out.println("flushOnExchange curBatch=" + hashCode() + ", curBatch=" + curBatch);
-
+        if (batch != null)
             ret = batch.flushCurrentEntries(ret);
-        }
 
         if (!pending.isEmpty()) {
             if (ret == null)
                 ret = new TreeMap<>();
-
-            System.out.println("flushOnExchange pending=" + hashCode() + ", pending=" + pending.keySet());
 
             for (CacheContinuousQueryEntry e : pending.values())
                 ret.put(e.updateCounter(), e);
@@ -180,13 +171,8 @@ public class CacheContinuousQueryEventBuffer {
                 if (res == RETRY)
                     continue;
             }
-            else {
-                if (backup)
-                    System.out.println("backup put to pending buffer=" + hashCode() + ", cntr=" + cntr  +
-                        ", batch.startCntr=" + batch.startCntr + ", batch.startCntr=" + batch.startCntr + ", pending.size=" + pending.size());
-
+            else
                 pending.put(cntr, entry);
-            }
 
             break;
         }
@@ -442,10 +428,6 @@ public class CacheContinuousQueryEventBuffer {
             boolean backup) {
             int pos = (int)(cntr - startCntr);
 
-//            if (backup)
-//                System.out.println("backup batch.processEntry0 cntr=" + cntr  +
-//                    ", batch.startCntr=" + startCntr + ", batch.startCntr=" + startCntr + ", pos=" + pos);
-
             synchronized (this) {
                 if (entries == null)
                     return RETRY;
@@ -499,16 +481,6 @@ public class CacheContinuousQueryEventBuffer {
             }
 
             return res;
-        }
-
-        @Override public String toString() {
-            return "Batch{" +
-                "filtered=" + filtered +
-                ", startCntr=" + startCntr +
-                ", endCntr=" + endCntr +
-                ", lastProc=" + lastProc +
-                ", entries=" + Arrays.toString(entries) +
-                '}';
         }
     }
 }
