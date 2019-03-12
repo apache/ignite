@@ -125,7 +125,10 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         if (cacheCtx == null)
             return null;
 
-        Throwable err = topFut.validateCache(cacheCtx, recovery, read, null, entry);
+        Throwable err = null;
+
+        if (entry != null)
+            err = topFut.validateCache(cacheCtx, recovery, read, entry.get(0).key(), null);
 
         if (err != null) {
             return new IgniteCheckedException(
