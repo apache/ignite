@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
  */
-public class AbstractFreeList extends PagesList implements FreeList, ReuseList {
+public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
     /** */
     private static final int BUCKETS = 256; // Must be power of 2.
 
@@ -343,7 +343,7 @@ public class AbstractFreeList extends PagesList implements FreeList, ReuseList {
      * @param initNew {@code True} if new metadata should be initialized.
      * @throws IgniteCheckedException If failed.
      */
-    public AbstractFreeList(
+    public DefaultFreeList(
         int cacheId,
         String name,
         DataRegionMetricsImpl memMetrics,
