@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.File;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,17 +31,11 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.FileFilterUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
@@ -62,8 +53,6 @@ import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Cache group JMX metrics test.
@@ -119,21 +108,20 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
     /**
      * Partition assignment for cache1 with given affinity function:
      *
-     *  P/N 0 1 2
-     *  ---------
-     *  0 | P
-     *  1 |   P B
-     *  2 | B B P
-     *  3 |   P
-     *  4 | B   P
-     *  5 | P B B
-     *  6 |     P
-     *  7 | P B
-     *  8 | B P B
-     *  9 | P
-     *
+     * P/N 0 1 2
+     * ---------
+     * 0 | P
+     * 1 |   P B
+     * 2 | B B P
+     * 3 |   P
+     * 4 | B   P
+     * 5 | P B B
+     * 6 |     P
+     * 7 | P B
+     * 8 | B P B
+     * 9 | P
      */
-    private static final int [][] assignmentMapArr =
+    private static final int[][] assignmentMapArr =
         new int[][] {{0}, {1, 2}, {2, 0, 1}, {1}, {2, 0}, {0, 1, 2}, {2}, {0, 1}, {1, 2, 0}, {0}};
 
     /** {@inheritDoc} */
@@ -199,7 +187,7 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
      * @param cacheOrGrpName Cache group name.
      * @return MBean instance.
      */
-    private CacheGroupMetricsMXBean mxBean(int nodeIdx, String cacheOrGrpName) throws MalformedObjectNameException {
+    protected CacheGroupMetricsMXBean mxBean(int nodeIdx, String cacheOrGrpName) throws MalformedObjectNameException {
         ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(nodeIdx), "Cache groups", cacheOrGrpName);
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
@@ -391,87 +379,5 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
 
         assertEquals(totalPages, mxBean0Grp1.getTotalAllocatedPages() + mxBean0Grp2.getTotalAllocatedPages() +
             mxBean0Grp3.getTotalAllocatedPages());
-    }
-
-    /**
-     * Test number of partitions need to finished indexes rebuilding.
-     */
-    @Test
-    public void testIndexRebuildCountPartitionsLeft() throws Exception{
-        pds = true;
-
-        cleanPersistenceDir();
-
-        Ignite ignite = startGrid(0);
-
-        System.out.println("!!! ACTIVATION BEGIN");
-        ignite.cluster().active(true);
-        System.out.println("!!! ACTIVATION END");
-
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>("cache5");
-        cacheCfg.setGroupName("cache5");
-        QueryEntity queryEntity = new QueryEntity(Long.class.getCanonicalName(), "MyObject");
-        queryEntity.setKeyFieldName("id");
-        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
-        fields.put("id", Long.class.getCanonicalName());
-        fields.put("col1", Integer.class.getCanonicalName());
-        fields.put("col2", String.class.getCanonicalName());
-        queryEntity.setFields(fields);
-        ArrayList<QueryIndex> indexes = new ArrayList<>();
-        indexes.add(new QueryIndex("col1"));
-        indexes.add(new QueryIndex("col2"));
-        queryEntity.setIndexes(indexes);
-        cacheCfg.setQueryEntities(Collections.singletonList(queryEntity));
-
-        IgniteCache<Object, Object> cache5 = ignite.getOrCreateCache(cacheCfg);
-
-        CacheGroupMetricsMXBean mxBean0Grp1 = mxBean(0, "group1");
-        CacheGroupMetricsMXBean mxBean0Grp2 = mxBean(0, "group2");
-        CacheGroupMetricsMXBean mxBean0Grp3 = mxBean(0, "cache4");
-        CacheGroupMetricsMXBean mxBean0Grp5 = mxBean(0, "cache5");
-
-        System.out.println("!!! DATA INSERT BEGIN");
-        for (int cacheIdx = 1; cacheIdx <= 4; cacheIdx++) {
-            IgniteCache cache = ignite.cache("cache" + cacheIdx);
-
-            for (int i = 0; i < 10 * cacheIdx; i++)
-                cache.put(i, new byte[100]);
-        }
-        for (int i=0; i<1_000_000;i++){
-            BinaryObjectBuilder o = ignite.binary().builder("MyObject");
-            o.setField("id", Long.valueOf(i));
-            o.setField("col1", i/2);
-            o.setField("col2", "str"+Integer.toHexString(i));
-            cache5.put(Long.valueOf(i), o.build());
-        }
-        System.out.println("!!! DATA INSERT END");
-
-        System.out.println("!!! DEACTIVATION BEGIN");
-        ignite.cluster().active(false);
-        System.out.println("!!! DEACTIVATION END");
-
-        System.out.println("!!! DEL INDEX.BIN");
-        File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
-        Collection<File> indexBinFiles = FileUtils.listFiles(dir, FileFilterUtils.nameFileFilter("index.bin"), TrueFileFilter.TRUE);
-
-        for (File indexBin:indexBinFiles) {
-            U.delete(indexBin);
-            System.out.println("!!! DELETE "+indexBin.getAbsolutePath());
-        }
-
-        System.out.println("!!! ACTIVATION BEGIN");
-        ignite.cluster().active(true);
-        System.out.println("!!! ACTIVATION END");
-
-        for (int i=0; i<20; i++) {
-            System.out.println("mxBean0Grp1 "+mxBean0Grp1.getIndexRebuildCountPartitionsLeft());
-            System.out.println("mxBean0Grp2 "+mxBean0Grp2.getIndexRebuildCountPartitionsLeft());
-            System.out.println("mxBean0Grp3 "+mxBean0Grp3.getIndexRebuildCountPartitionsLeft());
-            System.out.println("mxBean0Grp5 "+mxBean0Grp5.getIndexRebuildCountPartitionsLeft());
-            Thread.sleep(1000);
-        }
-
-        System.out.println("TODO");
     }
 }
