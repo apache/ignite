@@ -27,6 +27,9 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.h2.result.LazyResult;
+import org.h2.result.ResultInterface;
 import org.junit.Test;
 
 /**
@@ -75,11 +78,16 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
     public void test() {
         Iterator[] iters = new Iterator[QRY_CNT];
 
-        for (int i = 0; i < QRY_CNT; ++i)
+        for (int i = 0; i < QRY_CNT; ++i) {
             iters[i] = sql("SELECT * FROM test").iterator();
 
+            ResultInterface res = GridTestUtils.getFieldValueHierarchy(iters[i], "iter", "iter", "res");
+
+            assertTrue("Unexpected result type " + res.getClass(), res instanceof LazyResult);
+        }
+
         // Scan and close iterator in reverse order.
-        for (int i =QRY_CNT; i >= 0; --i) {
+        for (int i = QRY_CNT - 1; i >= 0; --i) {
             while (iters[i].hasNext())
                 iters[i].next();
         }
