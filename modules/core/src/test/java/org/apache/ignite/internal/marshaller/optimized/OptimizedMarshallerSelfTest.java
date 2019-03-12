@@ -171,7 +171,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     }
 
     /** */
-    private static class TestObject2 {
+    static class TestObject2 {
         /** */
         private final int i;
 
@@ -180,7 +180,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
          *
          * @param i Integer value to hold.
          */
-        private TestObject2(int i) {
+        TestObject2(int i) {
             this.i = i;
         }
 

@@ -866,7 +866,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /**
      * Cancel message ID.
      */
-    private static class CancelMessageId implements Comparable<CancelMessageId> {
+    static class CancelMessageId implements Comparable<CancelMessageId> {
         /** Message ID. */
         private long reqId;
 
@@ -877,7 +877,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
          * @param reqId Message ID.
          * @param nodeId Node ID.
          */
-        private CancelMessageId(long reqId, UUID nodeId) {
+        CancelMessageId(long reqId, UUID nodeId) {
             this.reqId = reqId;
             this.nodeId = nodeId;
         }

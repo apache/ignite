@@ -201,7 +201,7 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class V1 {
+    static class V1 {
         /** */
         private final int val;
 
@@ -211,7 +211,7 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
         /**
          * @param val Value.
          */
-        private V1(int val) {
+        V1(int val) {
             this.val = val;
 
             other = 0;
@@ -267,11 +267,11 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class V2 extends V1 {
+    static class V2 extends V1 {
         /**
          * @param val Value.
          */
-        private V2(int val) {
+        V2(int val) {
             super(val);
         }
 
