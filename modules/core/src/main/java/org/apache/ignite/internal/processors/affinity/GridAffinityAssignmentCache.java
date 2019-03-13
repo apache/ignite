@@ -142,9 +142,8 @@ public class GridAffinityAssignmentCache {
         AffinityFunction aff,
         IgnitePredicate<ClusterNode> nodeFilter,
         int backups,
-        boolean locCache,
-        boolean persistentCache)
-    {
+        boolean locCache
+    ) {
         assert ctx != null;
         assert aff != null;
         assert nodeFilter != null;

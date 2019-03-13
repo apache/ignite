@@ -763,62 +763,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     // Current version.
                     discoCache = discoCache();
 
-                if (!node.isClient() && !node.isDaemon() || locJoinEvt) {
+                if (locJoinEvt || !node.isClient() && !node.isDaemon()) {
                     if (type == EVT_NODE_LEFT || type == EVT_NODE_FAILED || type == EVT_NODE_JOINED) {
-                        DistributedBaselineConfiguration bc = ctx.cluster().get().baselineConfiguration();
+                        boolean discoCacheUpdated = ctx.state().autoAdjustInMemoryClusterState(
+                            node.id(),
+                            topSnapshot,
+                            discoCache,
+                            topVer,
+                            minorTopVer
+                        );
 
-                        DiscoveryDataClusterState oldState = ctx.state().clusterState();
-
-                        boolean autoAdjustBaseline = oldState.active()
-                            && bc.isBaselineAutoAdjustEnabled()
-                            && bc.getBaselineAutoAdjustTimeout() == 0L
-                            && !CU.isPersistenceEnabled(ctx.config());
-
-                        if (autoAdjustBaseline && !oldState.transition()) {
-                            BaselineTopology oldBlt = oldState.baselineTopology();
-
-                            Collection<ClusterNode> bltNodes = topSnapshot.stream()
-                                .filter(n -> !n.isClient() && !n.isDaemon())
-                                .collect(Collectors.toList());
-
-                            if (!bltNodes.isEmpty()) {
-                                int newBltId = oldBlt == null ? 0 : oldBlt.id() + 1; // Bullshit.
-
-                                BaselineTopology newBlt = BaselineTopology.build(bltNodes, newBltId);
-
-                                UUID transitionId = node.id();
-
-                                ChangeGlobalStateMessage changeGlobalStateMsg = new ChangeGlobalStateMessage(
-                                    transitionId,
-                                    node.id(),
-                                    null,
-                                    true,
-                                    newBlt,
-                                    true,
-                                    System.currentTimeMillis()
-                                );
-
-                                ctx.state().onStateChangeMessage(
-                                    new AffinityTopologyVersion(topVer, minorTopVer),
-                                    changeGlobalStateMsg,
-                                    discoCache
-                                );
-
-                                ChangeGlobalStateFinishMessage finishMsg = new ChangeGlobalStateFinishMessage(
-                                    transitionId,
-                                    true,
-                                    true
-                                );
-
-                                ctx.state().onStateFinishMessage(finishMsg);
-
-                                ctx.state().clusterState().localTransition(true);
-
-                                updateTopologySnapshot();
-
-                                discoCache = discoCache();
-                            }
-                        }
+                        if (discoCacheUpdated)
+                            discoCache = discoCache();
                     }
                 }
 
@@ -1028,6 +984,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             log.debug(startInfo());
     }
 
+    /**
+     * Update {@link #topSnap} with the latest cluster state.
+     */
     public void updateTopologySnapshot() {
         Snapshot snapshot = topSnap.get();
 

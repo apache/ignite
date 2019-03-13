@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -313,9 +315,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         // Start first node as inactive if persistence is enabled.
         boolean activeOnStart = inMemoryMode && ctx.config().isActiveOnStart();
 
-        BaselineTopology blt = null;
-
-        globalState = DiscoveryDataClusterState.createState(activeOnStart, blt);
+        globalState = DiscoveryDataClusterState.createState(activeOnStart, null);
 
         ctx.event().addLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
@@ -346,8 +346,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 && !ctx.isDaemon()
                 && ctx.config().isAutoActivationEnabled()
                 && !state.active()
-                && isBaselineSatisfied(state.baselineTopology(), discoCache.serverNodes()))
-                changeGlobalState0(true, state.baselineTopology(), false);
+                && isBaselineSatisfied(state.baselineTopology(), discoCache.serverNodes())
+        )
+            changeGlobalState0(true, state.baselineTopology(), false);
 
         return null;
     }
@@ -359,12 +360,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (blt == null || blt.consistentIds() == null || ctx.clientNode() || ctx.isDaemon())
             return;
 
-        if (!CU.isPersistenceEnabled(ctx.config()))
-            return;
-
         if (!blt.consistentIds().contains(ctx.discovery().localNode().consistentId())) {
             U.quietAndInfo(log, "Local node is not included in Baseline Topology and will not be used " +
-                "for persistent data storage. Use control.(sh|bat) script or IgniteCluster interface to include " +
+                "for data storage. Use control.(sh|bat) script or IgniteCluster interface to include " +
                 "the node to Baseline Topology.");
         }
     }
@@ -896,7 +894,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         List<StoredCacheData> storedCfgs = null;
 
-        if (activate && CU.isPersistenceEnabled(ctx.config())) {
+        if (activate && !inMemoryMode) {
             try {
                 Map<String, StoredCacheData> cfgs = ctx.cache().context().pageStore().readCacheConfigurations();
 
@@ -1323,6 +1321,119 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             globalState = newState;
         }
+    }
+
+    /**
+     * Update baseline locally if cluster is not persistent and baseline autoadjustment is enabled with zero timeout.
+     *
+     * @param nodeId Id of the node that initiated the operation (joined/left/failed).
+     * @param topSnapshot Topology snapshot from the discovery message.
+     * @param discoCache Discovery cache from the discovery manager.
+     * @param topVer Topology version.
+     * @param minorTopVer Minor topology version.
+     * @return {@code true} if baseline was changed.
+     */
+    public boolean autoAdjustInMemoryClusterState(
+        UUID nodeId,
+        Collection<ClusterNode> topSnapshot,
+        DiscoCache discoCache,
+        long topVer,
+        int minorTopVer
+    ) {
+        DistributedBaselineConfiguration bc = ctx.cluster().get().baselineConfiguration();
+
+        DiscoveryDataClusterState oldState = ctx.state().clusterState();
+
+        boolean autoAdjustBaseline = inMemoryMode
+            && oldState.active()
+            && !oldState.transition()
+            && bc.isBaselineAutoAdjustEnabled()
+            && bc.getBaselineAutoAdjustTimeout() == 0L;
+
+        if (autoAdjustBaseline) {
+            BaselineTopology oldBlt = oldState.baselineTopology();
+
+            Collection<ClusterNode> bltNodes = topSnapshot.stream()
+                .filter(n -> !n.isClient() && !n.isDaemon())
+                .collect(Collectors.toList());
+
+            if (!bltNodes.isEmpty()) {
+                int newBltId = oldBlt == null ? 0 : oldBlt.id() + 1; // Bullshit.
+
+                BaselineTopology newBlt = BaselineTopology.build(bltNodes, newBltId);
+
+                ChangeGlobalStateMessage changeGlobalStateMsg = new ChangeGlobalStateMessage(
+                    nodeId,
+                    nodeId,
+                    null,
+                    true,
+                    newBlt,
+                    true,
+                    System.currentTimeMillis()
+                );
+
+                ctx.state().onStateChangeMessage(
+                    new AffinityTopologyVersion(topVer, minorTopVer),
+                    changeGlobalStateMsg,
+                    discoCache
+                );
+
+                ChangeGlobalStateFinishMessage finishMsg = new ChangeGlobalStateFinishMessage(
+                    nodeId,
+                    true,
+                    true
+                );
+
+                ctx.state().onStateFinishMessage(finishMsg);
+
+                ctx.state().clusterState().localTransition(true);
+
+                ctx.discovery().updateTopologySnapshot();
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Add fake state change request into exchange actions if cluster is not persistent and baseline autoadjustment
+     * is enabled with zero timeout.
+     *
+     * @param exchActs
+     * @return
+     */
+    public ExchangeActions autoAdjustExchangeActions(ExchangeActions exchActs) {
+        DiscoveryDataClusterState clusterState = globalState;
+
+        if (clusterState.localTransition()) {
+            BaselineTopology blt = clusterState.baselineTopology();
+
+            ChangeGlobalStateMessage msg = new ChangeGlobalStateMessage(
+                UUID.randomUUID(),
+                ctx.localNodeId(),
+                null,
+                true,
+                blt,
+                true,
+                System.currentTimeMillis()
+            );
+
+            StateChangeRequest stateChangeReq = new StateChangeRequest(
+                msg,
+                BaselineTopologyHistoryItem.fromBaseline(blt),
+                false,
+                null
+            );
+
+            if (exchActs == null)
+                exchActs = new ExchangeActions();
+
+            exchActs.stateChangeRequest(stateChangeReq);
+        }
+
+        return exchActs;
     }
 
     /** {@inheritDoc} */

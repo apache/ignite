@@ -61,8 +61,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
-import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -97,11 +95,8 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cluster.BaselineTopology;
-import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
-import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
@@ -513,47 +508,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             }
 
-            if (!n.isClient() && !n.isDaemon() || locJoin) {
-                DiscoveryDataClusterState clusterState = cctx.kernalContext().state().clusterState();
-
-                if (clusterState.localTransition()) {
-                    IgniteClusterImpl cluster = cctx.kernalContext().cluster().get();
-
-                    DistributedBaselineConfiguration bc = cluster.baselineConfiguration();
-
-                    boolean autoAdjustBaseline = clusterState.active()
-                        && bc.isBaselineAutoAdjustEnabled()
-                        && bc.getBaselineAutoAdjustTimeout() == 0L
-                        && !CU.isPersistenceEnabled(cctx.gridConfig())
-                        && !clusterState.transition();
-
-                    if (autoAdjustBaseline) {
-                        BaselineTopology blt = clusterState.baselineTopology();
-
-                        ChangeGlobalStateMessage msg = new ChangeGlobalStateMessage(
-                            UUID.randomUUID(),
-                            loc.id(),
-                            null,
-                            true,
-                            blt,
-                            true,
-                            System.currentTimeMillis()
-                        );
-
-                        StateChangeRequest stateChangeReq = new StateChangeRequest(
-                            msg,
-                            BaselineTopologyHistoryItem.fromBaseline(blt),
-                            false,
-                            null
-                        );
-
-                        if (exchActs == null)
-                            exchActs = new ExchangeActions();
-
-                        exchActs.stateChangeRequest(stateChangeReq);
-                    }
-                }
-            }
+            if (!n.isClient() && !n.isDaemon() || locJoin)
+                exchActs = cctx.kernalContext().state().autoAdjustExchangeActions(exchActs);
 
             exchFut = exchangeFuture(exchId, evt, cache, exchActs, null);
         }

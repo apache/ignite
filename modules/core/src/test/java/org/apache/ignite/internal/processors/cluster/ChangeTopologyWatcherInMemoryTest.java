@@ -17,12 +17,46 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-/**
- *
- */
+import java.util.UUID;
+import org.apache.ignite.internal.IgniteEx;
+import org.junit.Test;
+
+/** */
 public class ChangeTopologyWatcherInMemoryTest extends ChangeTopologyWatcherTest {
     /** {@inheritDoc} */
     @Override protected boolean isPersistent() {
         return false;
+    }
+
+    /** */
+    @Test
+    public void testWithZeroTimeout() throws Exception {
+        startGrids(3);
+
+        startGrid(getConfiguration(UUID.randomUUID().toString()).setClientMode(true));
+
+        stopGrid(2);
+
+        assertEquals(2, grid(0).cluster().currentBaselineTopology().size());
+
+        startGrid(3);
+
+        assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
+
+        startGrid(4);
+
+        assertEquals(4, grid(0).cluster().currentBaselineTopology().size());
+
+        stopGrid(1);
+
+        assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
+
+        IgniteEx client = startGrid(getConfiguration(UUID.randomUUID().toString()).setClientMode(true));
+
+        assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
+
+        stopGrid(client.name());
+
+        assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
     }
 }
