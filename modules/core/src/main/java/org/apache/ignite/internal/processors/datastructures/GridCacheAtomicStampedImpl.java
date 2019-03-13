@@ -104,7 +104,7 @@ public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureP
             if (ctx.dataStructures().knownType(val) && ctx.dataStructures().knownType(stamp)) {
                 EntryProcessorResult res = cacheView.invoke(key, new StampedSetEntryProcessor<>(val, stamp));
 
-                assert res != null && res.get() != null : res;
+                assert res != null;
 
                 res.get();
             }

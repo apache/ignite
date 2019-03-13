@@ -109,7 +109,7 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
             if (ctx.dataStructures().knownType(val)) {
                 EntryProcessorResult res = cacheView.invoke(key, new ReferenceSetEntryProcessor<>(val));
 
-                assert res != null && res.get() != null : res;
+                assert res != null;
 
                 res.get();
             }

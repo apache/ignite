@@ -152,7 +152,7 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
         try {
             checkRemoved();
         }
-        catch (IllegalStateException e) {
+        catch (Exception e) {
             // The original exception should be returned.
         }
 
