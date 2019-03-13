@@ -44,6 +44,7 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -2124,7 +2125,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         throws IgniteCheckedException {
         rowCache.onCacheRegistered(cacheInfo);
 
-        if(!cacheInfo.config().getQueryEntities().isEmpty())
+        if(cacheSupportSqlSchema(cacheInfo.config()))
             schemaMgr.onCacheCreated(cacheName, schemaName, cacheInfo.config().getSqlFunctionClasses());
     }
 
@@ -2137,7 +2138,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         partReservationMgr.onCacheStop(cacheName);
 
         // Drop schema (needs to be called after callback to DML processor because the latter depends on schema).
-        if (!cacheInfo.config().getQueryEntities().isEmpty())
+        if (cacheSupportSqlSchema(cacheInfo.config()))
             schemaMgr.onCacheDestroyed(cacheName, rmvIdx);
 
         // Unregister connection.
@@ -2145,6 +2146,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Clear query cache.
         clearPlanCache();
+    }
+
+    /**
+     * Check is cache configured to create SQL schema.
+     *
+     * @param cfg Cache configuration.
+     * @return {@code true} If cache configuration support SQL schema, {@code false} otherwise.
+     */
+    private boolean cacheSupportSqlSchema(CacheConfiguration cfg) {
+        return !F.isEmpty(cfg.getQueryEntities())
+            || !F.isEmpty(cfg.getSqlSchema())
+            || !F.isEmpty(cfg.getSqlFunctionClasses());
     }
 
     /**
