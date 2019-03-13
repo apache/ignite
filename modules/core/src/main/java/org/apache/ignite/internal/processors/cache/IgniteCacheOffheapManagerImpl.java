@@ -2248,50 +2248,59 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void mvccRemoveAll(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
-            key.valueBytes(cctx.cacheObjectContext());
+            if (!busyLock.enterBusy())
+                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+            try {
+                key.valueBytes(cctx.cacheObjectContext());
 
-            boolean cleanup = cctx.queries().enabled() || hasPendingEntries;
+                int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            assert cctx.shared().database().checkpointLockIsHeldByThread();
+                boolean cleanup = cctx.queries().enabled() || hasPendingEntries;
 
-            GridCursor<CacheDataRow> cur = dataTree.find(
-                new MvccMaxSearchRow(cacheId, key),
-                new MvccMinSearchRow(cacheId, key),
-                cleanup ? CacheDataRowAdapter.RowData.NO_KEY : CacheDataRowAdapter.RowData.LINK_ONLY
-            );
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
 
-            boolean first = true;
+                GridCursor<CacheDataRow> cur = dataTree.find(
+                    new MvccMaxSearchRow(cacheId, key),
+                    new MvccMinSearchRow(cacheId, key),
+                    cleanup ? CacheDataRowAdapter.RowData.NO_KEY : CacheDataRowAdapter.RowData.LINK_ONLY
+                );
 
-            while (cur.next()) {
-                CacheDataRow row = cur.get();
+                boolean first = true;
 
-                row.key(key);
+                while (cur.next()) {
+                    CacheDataRow row = cur.get();
 
-                assert row.link() != 0 : row;
+                    row.key(key);
 
-                boolean rmvd = dataTree.removex(row);
+                    assert row.link() != 0 : row;
 
-                assert rmvd : row;
+                    boolean rmvd = dataTree.removex(row);
 
-                if (cleanup) {
-                    if (cctx.queries().enabled())
-                        cctx.queries().remove(key, row);
+                    assert rmvd : row;
+
+                    if (cleanup) {
+                        if (cctx.queries().enabled())
+                            cctx.queries().remove(key, row);
+
+                        if (first)
+                            clearPendingEntries(cctx, row);
+                    }
+
+                    rowStore.removeRow(row.link(), grp.statisticsHolderData());
 
                     if (first)
-                        clearPendingEntries(cctx, row);
+                        first = false;
                 }
 
-                rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                // first == true means there were no row versions
+                if (!first)
+                    decrementSize(cctx.cacheId());
 
-                if (first)
-                    first = false;
             }
-
-            // first == true means there were no row versions
-            if (!first)
-                decrementSize(cctx.cacheId());
+            finally {
+                busyLock.leaveBusy();
+            }
         }
 
         /** {@inheritDoc} */
