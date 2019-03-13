@@ -137,7 +137,7 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
                 isPrimary =  false;
             }
 
-            List<ClusterNode> idealOwners = idealAssignment.get(p);
+            List<ClusterNode> idealOwners = p < idealAssignment.size() ? idealAssignment.get(p) : Collections.emptyList();
 
             ClusterNode curPrimary = !currentOwners.isEmpty() ? currentOwners.get(0) : null;
             ClusterNode idealPrimary = !idealOwners.isEmpty() ? idealOwners.get(0) : null;
