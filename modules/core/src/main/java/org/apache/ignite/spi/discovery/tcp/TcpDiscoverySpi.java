@@ -2024,16 +2024,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** */
     Map<Integer, byte[]> collectHandshakeResponseData() {
-        assert tcpExchange != null;
-
-        return tcpExchange.collectHandshakeResponseData();
+        return tcpExchange == null ? null : tcpExchange.collectHandshakeResponseData();
     }
 
     /** */
     void handshakeResponseDataReceived(Map<Integer, byte[]> componentsData) {
-        assert tcpExchange != null;
-
-        tcpExchange.handshakeResponseDataReceived(componentsData);
+        if (tcpExchange != null)
+            tcpExchange.handshakeResponseDataReceived(componentsData);
     }
 
     /** */

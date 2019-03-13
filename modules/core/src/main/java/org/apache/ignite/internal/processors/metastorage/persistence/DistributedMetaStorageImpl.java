@@ -561,13 +561,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
         synchronized (innerStateLock) {
             if (isClient) {
-                DistributedMetaStorageVersion verToSnd = startupExtras == null
-                    ? ver
-                    : INITIAL_VERSION.nextVersion(startupExtras.deferredUpdates);
-
                 Serializable data = new DistributedMetaStorageJoiningNodeData(
                     getBaselineTopologyId(),
-                    verToSnd,
+                    getActualVersion(),
                     EMPTY_ARRAY
                 );
 
