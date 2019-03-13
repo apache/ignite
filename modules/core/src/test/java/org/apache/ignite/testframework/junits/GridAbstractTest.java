@@ -217,6 +217,9 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /** Lazily initialized current test method. */
     private volatile Method currTestMtd;
 
+    /** List of system properties to set when test is finished. */
+    private final List<T2<String, String>> sysProps = new LinkedList<>();
+
     /** */
     static {
         System.setProperty(IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_IN_TX, "false");
@@ -642,9 +645,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             throw t;
         }
     }
-
-    /** */
-    private final List<T2<String, String>> sysProps = new LinkedList<>();
 
     /** */
     @Before
