@@ -27,12 +27,13 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Test index behavior when key is of plain Object type per indexing settings.
  */
-public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheObjectKeyIndexingSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();

@@ -22,6 +22,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -38,7 +39,7 @@ import java.util.concurrent.Callable;
  * That happens when QueryEntity.keyFields has wrong register compared to QueryEntity.fields.
  * Issue only manifests for BinaryMarshaller case. Otherwise the keyFields aren't taken into account.
  */
-public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
+public class QueryEntityCaseMismatchTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();

@@ -43,6 +43,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
@@ -62,7 +63,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
  * Tests for distributed DML.
  */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractTest {
+public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCommonTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

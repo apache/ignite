@@ -71,6 +71,7 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
@@ -103,7 +104,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Various tests for cache queries.
  */
-public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstractTest {
+public abstract class IgniteCacheAbstractQuerySelfTest extends AbstractIndexingCommonTest {
     /** Key count. */
     private static final int KEY_CNT = 5000;
 

@@ -50,7 +50,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * See IGNITE-6915 for details.
  */
 
-public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
+public class OptimizedMarshallerIndexNameTest extends AbstractIndexingCommonTest {
     /** Test name 1 */
     private static final String TEST_NAME1 = "Name1";
     /** Test name 2 */

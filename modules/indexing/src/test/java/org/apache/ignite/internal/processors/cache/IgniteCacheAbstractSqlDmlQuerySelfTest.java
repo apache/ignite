@@ -31,6 +31,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -43,7 +44,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  *
  */
 @SuppressWarnings("unchecked")
-public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonAbstractTest {
+public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 

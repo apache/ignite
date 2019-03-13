@@ -30,6 +30,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -39,7 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests for {@link SqlFieldsQueryEx#skipReducerOnUpdate} flag.
  */
-public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstractTest {
+public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends AbstractIndexingCommonTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

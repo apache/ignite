@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -39,7 +40,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  *
  */
-public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
+public class CacheConfigurationP2PTest extends AbstractIndexingCommonTest {
     /** */
     public static final String NODE_START_MSG = "Test external node started";
 

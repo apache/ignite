@@ -26,6 +26,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -36,7 +37,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 /**
  * Based scanCount with offheap index issue.
  */
-public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
+public class IgniteCacheOffheapIndexScanTest extends AbstractIndexingCommonTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 

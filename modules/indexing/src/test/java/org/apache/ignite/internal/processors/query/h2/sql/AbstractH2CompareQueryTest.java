@@ -40,6 +40,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -51,7 +52,7 @@ import org.jetbrains.annotations.Nullable;
  * Abstract test framework to compare query results from h2 database instance and mixed ignite caches (replicated and
  * partitioned) which have the same data models and data content.
  */
-public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest {
+public abstract class AbstractH2CompareQueryTest extends AbstractIndexingCommonTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

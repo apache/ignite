@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -38,7 +39,7 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  * Test for cache swap.
  */
-public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
+public class GridCacheOffHeapSelfTest extends AbstractIndexingCommonTest {
     /** Saved versions. */
     private final Map<Integer, Object> versions = new HashMap<>();
 

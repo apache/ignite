@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -60,7 +61,7 @@ import java.util.List;
 /**
  * Test for query with BinaryMarshaller and different serialization modes.
  */
-public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
+public class BinarySerializationQuerySelfTest extends AbstractIndexingCommonTest {
     /** Ignite instance. */
     private Ignite ignite;
 

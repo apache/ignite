@@ -27,6 +27,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -34,7 +35,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests for schemas.
  */
-public class SqlSchemaSelfTest extends GridCommonAbstractTest {
+public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
     /** Person cache name. */
     private static final String CACHE_PERSON = "PersonCache";
 

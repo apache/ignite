@@ -26,6 +26,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -43,7 +44,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests leaks at the IgniteH2Indexing
  */
-public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
+public class IgniteCacheQueryH2IndexingLeakTest extends AbstractIndexingCommonTest {
     /** */
     private static final long TEST_TIMEOUT = 2 * 60 * 1000;
 

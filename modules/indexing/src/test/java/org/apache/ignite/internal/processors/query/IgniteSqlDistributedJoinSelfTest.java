@@ -25,6 +25,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -33,7 +34,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests for correct distributed sql joins.
  */
-public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
+public class IgniteSqlDistributedJoinSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
