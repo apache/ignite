@@ -20,66 +20,103 @@ package org.apache.ignite.internal.processors.cache.consistency;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Test;
 
 /**
  *
  */
-public class CacheConsistencyCheckExplicitTransactionalLockFreeTest
-    extends CacheConsistencyCheckExplicitTransactionalAbstractTest {
-    /** {@inheritDoc} */
-    @Override public void test() throws Exception {
+public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheConsistencyTest {
+    /**
+     *
+     */
+    @Test
+    public void test() throws Exception {
         test(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
         test(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ);
         test(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
 
         test(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
+        test(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+        test(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
     }
 
+    /**
+     *
+     */
+    protected void test(TransactionConcurrency concurrency,
+        TransactionIsolation isolation) throws Exception {
+        test(concurrency, isolation, true);
+        test(concurrency, isolation, false);
+    }
+
+    /**
+     *
+     */
+    private void test(TransactionConcurrency concurrency,
+        TransactionIsolation isolation, boolean raw /*getEntry() or just get()*/) throws Exception {
+        for (Ignite node : G.allGrids()) {
+            testGet(node, concurrency, isolation, raw);
+            testGetAllVariations(node, concurrency, isolation, raw);
+        }
+    }
 
     /** {@inheritDoc} */
-    @Override protected void testGet(Ignite initiator, TransactionConcurrency concurrency,
+    protected void testGet(Ignite initiator, TransactionConcurrency concurrency,
         TransactionIsolation isolation, boolean raw) throws Exception {
         prepareAndCheck(initiator, 1,
             (T3<IgniteCache<Integer, Integer>, Map<Integer, T3<Map<Ignite, Integer>, Integer, Integer>>, Boolean> t) -> {
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
-                    GET_CHECK_AND_FAIL.accept(t);
+                    GET_CHECK_AND_FIX.accept(t); // Recovery (inside tx).
+                    ENSURE_FIXED.accept(t); // Checks (inside tx).
 
                     try {
                         tx.commit();
-
-                        fail("Should not happen. " + iterableKey);
                     }
                     catch (TransactionRollbackException e) {
-                        assertTrue(e.getCause() instanceof IgniteTxRollbackCheckedException);
+                        fail("Should not happen. " + iterableKey);
                     }
                 }
+
+                ENSURE_FIXED.accept(t); // Checks (outside tx).
             }, raw);
     }
 
+    /**
+     *
+     */
+    private void testGetAllVariations(Ignite initiator, TransactionConcurrency concurrency,
+        TransactionIsolation isolation, boolean raw) throws Exception {
+        testGetAll(initiator, concurrency, isolation, 1, raw); // 1 (all keys available at primary)
+        testGetAll(initiator, concurrency, isolation, 2, raw); // less than backups
+        testGetAll(initiator, concurrency, isolation, 3, raw); // equals to backups
+        testGetAll(initiator, concurrency, isolation, 4, raw); // equals to backups + primary
+        testGetAll(initiator, concurrency, isolation, 10, raw); // more than backups
+    }
 
     /** {@inheritDoc} */
-    @Override protected void testGetAll(Ignite initiator, TransactionConcurrency concurrency,
+    protected void testGetAll(Ignite initiator, TransactionConcurrency concurrency,
         TransactionIsolation isolation, Integer cnt, boolean raw) throws Exception {
         prepareAndCheck(initiator, cnt,
             (T3<IgniteCache<Integer, Integer>, Map<Integer, T3<Map<Ignite, Integer>, Integer, Integer>>, Boolean> t) -> {
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
-                    GETALL_CHECK_AND_FAIL.accept(t);
+                    GETALL_CHECK_AND_FIX.accept(t); // Recovery (inside tx).
+                    ENSURE_FIXED.accept(t); // Checks (inside tx).
 
                     try {
                         tx.commit();
-
-                        fail("Should not happen. " + iterableKey);
                     }
                     catch (TransactionRollbackException e) {
-                        assertTrue(e.getCause() instanceof IgniteTxRollbackCheckedException);
+                        fail("Should not happen. " + iterableKey);
                     }
                 }
+
+                ENSURE_FIXED.accept(t); // Checks (outside tx).
             }, raw);
     }
 }

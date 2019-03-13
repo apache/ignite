@@ -83,10 +83,8 @@ public class GridDhtConsistencyCheckFuture
             else {
                 // todo event
 
-                onDone(null, new IgniteConsistencyViolationException(
-                    "Distributed cache consistency violation detected. " +
-                        "Perform same read under Pessimistic RepeatableRead/Serialisable transaction " +
-                        "with Consistency Check enabled to fix the violation."));
+                onDone(null,
+                    new IgniteConsistencyViolationException("Distributed cache consistency violation detected."));
             }
         }
     }

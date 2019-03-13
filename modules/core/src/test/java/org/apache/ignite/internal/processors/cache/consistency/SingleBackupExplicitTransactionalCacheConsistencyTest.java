@@ -17,16 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.consistency;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-
 /**
  *
  */
-public class CacheConsistencyCheckImplicitAtomicTest extends CacheConsistencyCheckImplicitAbstractTest {
+public class SingleBackupExplicitTransactionalCacheConsistencyTest
+    extends ExplicitTransactionalCacheConsistencyTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+    @Override protected Integer backupsCount() {
+        return 1; // Single backup possible optimisations check.
     }
 }

@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridDhtConsistencyRecoveryFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
@@ -3106,6 +3107,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                             return null;
                         }
+                        catch (IgniteConsistencyViolationException e) {
+                            throw new GridClosureException(e);
+                        }
                         catch (Exception e) {
                             setRollbackOnly();
 
@@ -3139,6 +3143,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             processLoaded(map, keys, needVer, c);
 
                             return null;
+                        }
+                        catch (IgniteConsistencyViolationException e) {
+                            throw new GridClosureException(e);
                         }
                         catch (Exception e) {
                             setRollbackOnly();
@@ -4647,7 +4654,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             new C2<Void, Exception, Map<K, V>>() {
                 @Override public Map<K, V> apply(Void v, Exception e) {
                     if (e != null) {
-                        setRollbackOnly();
+                        if (!(e instanceof IgniteConsistencyViolationException))
+                            setRollbackOnly();
 
                         throw new GridClosureException(e);
                     }

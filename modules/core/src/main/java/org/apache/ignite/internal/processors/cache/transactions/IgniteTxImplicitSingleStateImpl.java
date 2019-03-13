@@ -295,6 +295,11 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void removeEntry(IgniteTxKey key) {
+        throw new UnsupportedOperationException("Entry removal operation is not supported.");
+    }
+
+    /** {@inheritDoc} */
     @Override public void seal() {
         // No-op.
     }

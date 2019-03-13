@@ -18,11 +18,9 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.AtomicCacheAffinityConfigurationTest;
-import org.apache.ignite.internal.processors.cache.consistency.CacheConsistencyCheckExplicitTransactionalLockFreeTest;
-import org.apache.ignite.internal.processors.cache.consistency.CacheConsistencyCheckExplicitTransactionalUnderLocksSingleBackupTest;
-import org.apache.ignite.internal.processors.cache.consistency.CacheConsistencyCheckExplicitTransactionalUnderLocksTest;
-import org.apache.ignite.internal.processors.cache.consistency.CacheConsistencyCheckImplicitAtomicTest;
-import org.apache.ignite.internal.processors.cache.consistency.CacheConsistencyCheckImplicitTransactionalTest;
+import org.apache.ignite.internal.processors.cache.consistency.ExplicitTransactionalCacheConsistencyTest;
+import org.apache.ignite.internal.processors.cache.consistency.ImplicitTransactionalCacheConsistencyTest;
+import org.apache.ignite.internal.processors.cache.consistency.SingleBackupExplicitTransactionalCacheConsistencyTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueCleanupSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueClientDisconnectTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeConsistencySelfTest;
@@ -191,11 +189,9 @@ import org.junit.runners.Suite;
 
     IgniteCacheDataStructuresBinarySelfTestSuite.class,
 
-    CacheConsistencyCheckImplicitAtomicTest.class,
-    CacheConsistencyCheckImplicitTransactionalTest.class,
-    CacheConsistencyCheckExplicitTransactionalLockFreeTest.class,
-    CacheConsistencyCheckExplicitTransactionalUnderLocksTest.class,
-    CacheConsistencyCheckExplicitTransactionalUnderLocksSingleBackupTest.class
+    ImplicitTransactionalCacheConsistencyTest.class,
+    ExplicitTransactionalCacheConsistencyTest.class,
+    SingleBackupExplicitTransactionalCacheConsistencyTest.class
 })
 public class IgniteCacheDataStructuresSelfTestSuite {
 }

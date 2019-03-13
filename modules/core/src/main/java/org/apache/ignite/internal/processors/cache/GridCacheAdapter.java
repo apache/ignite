@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteExternaliza
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -165,6 +166,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Adapter for different cache implementations.
@@ -538,6 +540,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             false,
+            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
+
+        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
+    }
+
+    /** {@inheritDoc} */
+    public final <K1, V1> IgniteInternalCache<K1, V1> consistency(){
+        CacheOperationContext opCtx = new CacheOperationContext(
+            false,
+            null,
+            false,
+            null,
+            false,
+            null,
+            false,
+            true,
             DFLT_ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
@@ -4289,7 +4307,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                     return t;
                 }
-                catch (IgniteInterruptedCheckedException | IgniteTxHeuristicCheckedException | NodeStoppingException e) {
+                catch (IgniteInterruptedCheckedException |
+                    IgniteTxHeuristicCheckedException |
+                    NodeStoppingException |
+                    IgniteConsistencyViolationException e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {
@@ -4431,7 +4452,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     try {
                         return tFut.get();
                     }
-                    catch (IgniteTxTimeoutCheckedException | IgniteTxRollbackCheckedException | NodeStoppingException e) {
+                    catch (IgniteTxTimeoutCheckedException |
+                        IgniteTxRollbackCheckedException |
+                        NodeStoppingException |
+                        IgniteConsistencyViolationException e) {
                         throw e;
                     }
                     catch (IgniteCheckedException e1) {
@@ -4774,6 +4798,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 /*skip vals*/false,
                 needVer).get();
         }
+        catch (IgniteConsistencyViolationException e) {
+            fixConsistency(key);
+
+            return get0(key, taskName, deserializeBinary, needVer);
+        }
         catch (IgniteException e) {
             if (e.getCause(IgniteCheckedException.class) != null)
                 throw e.getCause(IgniteCheckedException.class);
@@ -4823,16 +4852,49 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        return getAllAsync(keys,
-            !ctx.config().isReadFromBackup(),
-            /*skip tx*/false,
-            /*subject id*/null,
-            taskName,
-            deserializeBinary,
-            opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.consistency(),
-            /*skip vals*/false,
-            needVer).get();
+        try {
+            return getAllAsync(keys,
+                !ctx.config().isReadFromBackup(),
+                /*skip tx*/false,
+                /*subject id*/null,
+                taskName,
+                deserializeBinary,
+                opCtx != null && opCtx.recovery(),
+                opCtx != null && opCtx.consistency(),
+                /*skip vals*/false,
+                needVer).get();
+        }
+        catch (IgniteConsistencyViolationException e) {
+            for (K key : keys)
+                fixConsistency(key);
+
+            return getAll0(keys, deserializeBinary, needVer);
+        }
+    }
+
+    /**
+     * @param key Key.
+     */
+    private void fixConsistency(final K key) throws IgniteCheckedException {
+        final GridNearTxLocal orig = checkCurrentTx();
+
+        assert orig == null || orig.optimistic() || orig.readCommitted();
+
+        if (orig != null)
+            orig.txState().removeEntry(ctx.txKey(ctx.toCacheKeyObject(key)));
+
+        ctx.kernalContext().closure().callLocalSafe(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                // Todo timeout?
+                try (Transaction tx = ctx.grid().transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
+                    consistency().get(key);
+
+                    tx.commit();
+                }
+
+                return null;
+            }
+        }).get();
     }
 
     /**

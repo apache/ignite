@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.consistency;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,7 @@ import java.util.function.Consumer;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -36,28 +37,25 @@ import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
-public abstract class CacheConsistencyCheckAbstractTest extends GridCommonAbstractTest {
-    /** Get and check and fail. */
+public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTest {
+    /** Get and check and fix. */
     protected static final Consumer<T3<
         IgniteCache<Integer, Integer> /*initiator's cache*/,
         Map<Integer /*key*/, T3<Map<Ignite, Integer> /*mapping*/, Integer /*primary*/, Integer /*latest*/>>,
-        Boolean /*raw*/>> GET_CHECK_AND_FAIL =
+        Boolean /*raw*/>> GET_CHECK_AND_FIX =
         (t) -> {
             IgniteCache<Integer, Integer> cache = t.get1();
             Set<Integer> keys = t.get2().keySet();
@@ -65,43 +63,86 @@ public abstract class CacheConsistencyCheckAbstractTest extends GridCommonAbstra
 
             assert keys.size() == 1;
 
-            for (Integer key : keys) { // once
+            for (Map.Entry<Integer, T3<Map<Ignite, Integer>, Integer, Integer>> entry : t.get2().entrySet()) { // Once.
                 try {
-                    if (raw)
-                        cache.withConsistencyCheck().getEntry(key);
-                    else
+                    Integer key = entry.getKey();
+                    Integer latest = entry.getValue().get3();
+                    Integer res;
+
+                    res = raw ?
+                        cache.withConsistencyCheck().getEntry(key).getValue() :
                         cache.withConsistencyCheck().get(key);
 
-                    fail("Should not happen.");
+                    assertEquals(latest, res);
                 }
                 catch (CacheException e) {
-                    assertTrue(e.getCause() instanceof IgniteConsistencyViolationException);
+                    fail("Should not happen.");
                 }
             }
         };
 
-    /** GetAll and check and fail. */
+    /** GetAll and check and fix. */
     protected static final Consumer<T3<
         IgniteCache<Integer, Integer> /*initiator's cache*/,
         Map<Integer /*key*/, T3<Map<Ignite, Integer> /*mapping*/, Integer /*primary*/, Integer /*latest*/>>,
-        Boolean /*raw*/>> GETALL_CHECK_AND_FAIL =
+        Boolean /*raw*/>> GETALL_CHECK_AND_FIX =
         (t) -> {
             IgniteCache<Integer, Integer> cache = t.get1();
             Set<Integer> keys = t.get2().keySet();
             Boolean raw = t.get3();
 
             try {
-                if (raw)
-                    cache.withConsistencyCheck().getEntries(keys);
-                else
-                    cache.withConsistencyCheck().getAll(keys);
+                if (raw) {
+                    Collection<CacheEntry<Integer, Integer>> res = cache.withConsistencyCheck().getEntries(keys);
 
-                fail("Should not happen.");
+                    for (CacheEntry<Integer, Integer> entry : res)
+                        assertEquals(t.get2().get(entry.getKey()).get3(), entry.getValue());
+                }
+                else {
+                    Map<Integer, Integer> res = cache.withConsistencyCheck().getAll(keys);
+
+                    for (Map.Entry<Integer, Integer> entry : res.entrySet())
+                        assertEquals(t.get2().get(entry.getKey()).get3(), entry.getValue());
+                }
             }
             catch (CacheException e) {
-                assertTrue(e.getCause() instanceof IgniteConsistencyViolationException);
+                fail("Should not happen.");
             }
+        };
 
+    /** Get and check and make sure it fixed. */
+    protected static final Consumer<T3<
+        IgniteCache<Integer, Integer> /*initiator's cache*/,
+        Map<Integer /*key*/, T3<Map<Ignite, Integer> /*mapping*/, Integer /*primary*/, Integer /*latest*/>>,
+        Boolean /*raw*/>> ENSURE_FIXED =
+        (t) -> {
+            IgniteCache<Integer, Integer> cache = t.get1();
+            Boolean raw = t.get3();
+
+            for (Map.Entry<Integer, T3<Map<Ignite, Integer>, Integer, Integer>> entry : t.get2().entrySet()) {
+                try {
+                    Integer key = entry.getKey();
+                    Integer latest = entry.getValue().get3();
+                    Integer res;
+
+                    // Regular check.
+                    res = raw ?
+                        cache.getEntry(key).getValue() :
+                        cache.get(key);
+
+                    assertEquals(latest, res);
+
+                    // Consistency check.
+                    res = raw ?
+                        cache.withConsistencyCheck().getEntry(key).getValue() :
+                        cache.withConsistencyCheck().get(key);
+
+                    assertEquals(latest, res);
+                }
+                catch (CacheException e) {
+                    fail("Should not happen.");
+                }
+            }
         };
 
     /** Key. */
@@ -113,7 +154,7 @@ public abstract class CacheConsistencyCheckAbstractTest extends GridCommonAbstra
     /**
      *
      */
-    protected Integer backupsCount(){
+    protected Integer backupsCount() {
         return 3;
     }
 
@@ -145,17 +186,12 @@ public abstract class CacheConsistencyCheckAbstractTest extends GridCommonAbstra
     /**
      *
      */
-    protected abstract CacheAtomicityMode atomicityMode();
-
-    /**
-     *
-     */
     protected CacheConfiguration<Integer, Integer> cacheConfiguration() {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setCacheMode(PARTITIONED);
-        cfg.setAtomicityMode(atomicityMode());
+        cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setBackups(backupsCount());
 
         return cfg;
@@ -176,12 +212,14 @@ public abstract class CacheConsistencyCheckAbstractTest extends GridCommonAbstra
     protected void prepareAndCheck(
         Ignite initiator,
         Integer cnt,
+        // TODO replace with DTO!
         Consumer<T3<IgniteCache<Integer, Integer>, Map<Integer, T3<Map<Ignite, Integer>, Integer, Integer>>, Boolean>> c,
         boolean raw)
         throws Exception {
         IgniteCache<Integer, Integer> cache = initiator.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 20; i++) {
+            // TODO replace with DTO?
             Map<Integer /*key*/, T3<Map<Ignite, Integer>, Integer, Integer> /*result*/> results = new HashMap<>();
 
             for (int j = 0; j < cnt; j++) {

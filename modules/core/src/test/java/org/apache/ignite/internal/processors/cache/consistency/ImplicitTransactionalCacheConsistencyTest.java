@@ -24,7 +24,7 @@ import org.junit.Test;
 /**
  *
  */
-public abstract class CacheConsistencyCheckImplicitAbstractTest extends CacheConsistencyCheckAbstractTest {
+public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheConsistencyTest {
     /**
      *
      */
@@ -48,7 +48,7 @@ public abstract class CacheConsistencyCheckImplicitAbstractTest extends CacheCon
      *
      */
     private void testGet(Ignite initiator, boolean raw) throws Exception {
-        prepareAndCheck(initiator, 1, GET_CHECK_AND_FAIL, raw);
+        prepareAndCheck(initiator, 1, GET_CHECK_AND_FIX, raw);
     }
 
     /**
@@ -66,6 +66,6 @@ public abstract class CacheConsistencyCheckImplicitAbstractTest extends CacheCon
      *
      */
     private void testGetAll(Ignite initiator, Integer amount, boolean raw) throws Exception {
-        prepareAndCheck(initiator, amount, GETALL_CHECK_AND_FAIL, raw);
+        prepareAndCheck(initiator, amount, GETALL_CHECK_AND_FIX, raw);
     }
 }
