@@ -70,10 +70,10 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     protected void testGet(Ignite initiator, TransactionConcurrency concurrency,
         TransactionIsolation isolation, boolean raw) throws Exception {
         prepareAndCheck(initiator, 1,
-            (T3<IgniteCache<Integer, Integer>, Map<Integer, T3<Map<Ignite, Integer>, Integer, Integer>>, Boolean> t) -> {
+            (ValidatorData data) -> {
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
-                    GET_CHECK_AND_FIX.accept(t); // Recovery (inside tx).
-                    ENSURE_FIXED.accept(t); // Checks (inside tx).
+                    GET_CHECK_AND_FIX.accept(data); // Recovery (inside tx).
+                    ENSURE_FIXED.accept(data); // Checks (inside tx).
 
                     try {
                         tx.commit();
@@ -83,7 +83,7 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
                     }
                 }
 
-                ENSURE_FIXED.accept(t); // Checks (outside tx).
+                ENSURE_FIXED.accept(data); // Checks (outside tx).
             }, raw);
     }
 
@@ -103,10 +103,10 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     protected void testGetAll(Ignite initiator, TransactionConcurrency concurrency,
         TransactionIsolation isolation, Integer cnt, boolean raw) throws Exception {
         prepareAndCheck(initiator, cnt,
-            (T3<IgniteCache<Integer, Integer>, Map<Integer, T3<Map<Ignite, Integer>, Integer, Integer>>, Boolean> t) -> {
+            (ValidatorData data) -> {
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
-                    GETALL_CHECK_AND_FIX.accept(t); // Recovery (inside tx).
-                    ENSURE_FIXED.accept(t); // Checks (inside tx).
+                    GETALL_CHECK_AND_FIX.accept(data); // Recovery (inside tx).
+                    ENSURE_FIXED.accept(data); // Checks (inside tx).
 
                     try {
                         tx.commit();
@@ -116,7 +116,7 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
                     }
                 }
 
-                ENSURE_FIXED.accept(t); // Checks (outside tx).
+                ENSURE_FIXED.accept(data); // Checks (outside tx).
             }, raw);
     }
 }

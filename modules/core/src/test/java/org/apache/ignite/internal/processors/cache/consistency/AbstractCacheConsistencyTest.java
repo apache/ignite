@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -52,21 +51,18 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTest {
     /** Get and check and fix. */
-    protected static final Consumer<T3<
-        IgniteCache<Integer, Integer> /*initiator's cache*/,
-        Map<Integer /*key*/, T3<Map<Ignite, Integer> /*mapping*/, Integer /*primary*/, Integer /*latest*/>>,
-        Boolean /*raw*/>> GET_CHECK_AND_FIX =
-        (t) -> {
-            IgniteCache<Integer, Integer> cache = t.get1();
-            Set<Integer> keys = t.get2().keySet();
-            Boolean raw = t.get3();
+    protected static final Consumer<ValidatorData> GET_CHECK_AND_FIX =
+        (data) -> {
+            IgniteCache<Integer, Integer> cache = data.cache;
+            Set<Integer> keys = data.data.keySet();
+            Boolean raw = data.raw;
 
             assert keys.size() == 1;
 
-            for (Map.Entry<Integer, T3<Map<Ignite, Integer>, Integer, Integer>> entry : t.get2().entrySet()) { // Once.
+            for (Map.Entry<Integer, GeneratedData> entry : data.data.entrySet()) { // Once.
                 try {
                     Integer key = entry.getKey();
-                    Integer latest = entry.getValue().get3();
+                    Integer latest = entry.getValue().latest;
                     Integer res;
 
                     res = raw ?
@@ -82,27 +78,24 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         };
 
     /** GetAll and check and fix. */
-    protected static final Consumer<T3<
-        IgniteCache<Integer, Integer> /*initiator's cache*/,
-        Map<Integer /*key*/, T3<Map<Ignite, Integer> /*mapping*/, Integer /*primary*/, Integer /*latest*/>>,
-        Boolean /*raw*/>> GETALL_CHECK_AND_FIX =
-        (t) -> {
-            IgniteCache<Integer, Integer> cache = t.get1();
-            Set<Integer> keys = t.get2().keySet();
-            Boolean raw = t.get3();
+    protected static final Consumer<ValidatorData> GETALL_CHECK_AND_FIX =
+        (data) -> {
+            IgniteCache<Integer, Integer> cache = data.cache;
+            Set<Integer> keys = data.data.keySet();
+            Boolean raw = data.raw;
 
             try {
                 if (raw) {
                     Collection<CacheEntry<Integer, Integer>> res = cache.withConsistencyCheck().getEntries(keys);
 
                     for (CacheEntry<Integer, Integer> entry : res)
-                        assertEquals(t.get2().get(entry.getKey()).get3(), entry.getValue());
+                        assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
                 }
                 else {
                     Map<Integer, Integer> res = cache.withConsistencyCheck().getAll(keys);
 
                     for (Map.Entry<Integer, Integer> entry : res.entrySet())
-                        assertEquals(t.get2().get(entry.getKey()).get3(), entry.getValue());
+                        assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
                 }
             }
             catch (CacheException e) {
@@ -111,18 +104,15 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         };
 
     /** Get and check and make sure it fixed. */
-    protected static final Consumer<T3<
-        IgniteCache<Integer, Integer> /*initiator's cache*/,
-        Map<Integer /*key*/, T3<Map<Ignite, Integer> /*mapping*/, Integer /*primary*/, Integer /*latest*/>>,
-        Boolean /*raw*/>> ENSURE_FIXED =
-        (t) -> {
-            IgniteCache<Integer, Integer> cache = t.get1();
-            Boolean raw = t.get3();
+    protected static final Consumer<ValidatorData> ENSURE_FIXED =
+        (data) -> {
+            IgniteCache<Integer, Integer> cache = data.cache;
+            Boolean raw = data.raw;
 
-            for (Map.Entry<Integer, T3<Map<Ignite, Integer>, Integer, Integer>> entry : t.get2().entrySet()) {
+            for (Map.Entry<Integer, GeneratedData> entry : data.data.entrySet()) {
                 try {
                     Integer key = entry.getKey();
-                    Integer latest = entry.getValue().get3();
+                    Integer latest = entry.getValue().latest;
                     Integer res;
 
                     // Regular check.
@@ -212,18 +202,16 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
     protected void prepareAndCheck(
         Ignite initiator,
         Integer cnt,
-        // TODO replace with DTO!
-        Consumer<T3<IgniteCache<Integer, Integer>, Map<Integer, T3<Map<Ignite, Integer>, Integer, Integer>>, Boolean>> c,
+        Consumer<ValidatorData> c,
         boolean raw)
         throws Exception {
         IgniteCache<Integer, Integer> cache = initiator.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 20; i++) {
-            // TODO replace with DTO?
-            Map<Integer /*key*/, T3<Map<Ignite, Integer>, Integer, Integer> /*result*/> results = new HashMap<>();
+            Map<Integer, GeneratedData> results = new HashMap<>();
 
             for (int j = 0; j < cnt; j++) {
-                T3<Map<Ignite, Integer>, Integer, Integer> res = setDifferentValuesForSameKey(++iterableKey);
+                GeneratedData res = setDifferentValuesForSameKey(++iterableKey);
 
                 results.put(iterableKey, res);
             }
@@ -233,23 +221,23 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                     node.<Integer, Integer>getOrCreateCache(DEFAULT_CACHE_NAME).getAll(results.keySet());
 
                 for (Map.Entry<Integer, Integer> entry : all.entrySet()) {
-                    Integer exp = results.get(entry.getKey()).get1().get(node); // Reads from itself (backup or primary).
+                    Integer exp = results.get(entry.getKey()).mapping.get(node); // Reads from itself (backup or primary).
 
                     if (exp == null)
-                        exp = results.get(entry.getKey()).get2(); // Reads from primary (not a partition owner).
+                        exp = results.get(entry.getKey()).primary; // Reads from primary (not a partition owner).
 
                     assertEquals(exp, entry.getValue());
                 }
             }
 
-            c.accept(new T3<>(cache, results, raw)); // Code checks here.
+            c.accept(new ValidatorData(cache, results, raw)); // Code checks here.
         }
     }
 
     /**
      *
      */
-    private T3<Map<Ignite, Integer> /*mapping*/, Integer /*primary*/, Integer /*latest*/> setDifferentValuesForSameKey(
+    private GeneratedData setDifferentValuesForSameKey(
         int key) throws Exception {
         List<Ignite> nodes = new ArrayList<>();
         Map<Ignite, Integer> mapping = new HashMap<>();
@@ -322,6 +310,57 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
 
         assert primVal != -1;
 
-        return new T3<>(mapping, primVal, val);
+        return new GeneratedData(mapping, primVal, val);
+    }
+
+    /**
+     *
+     */
+    protected static final class ValidatorData {
+        /** Initiator's cache. */
+        IgniteCache<Integer, Integer> cache;
+
+        /** Generated data nmapping. */
+        Map<Integer, GeneratedData> data;
+
+        /** Raw. GetEntry() instead of get(). */
+        Boolean raw;
+
+        /**
+         * @param cache Cache.
+         * @param data Data.
+         * @param raw Raw.
+         */
+        public ValidatorData(IgniteCache<Integer, Integer> cache,
+            Map<Integer, GeneratedData> data, Boolean raw) {
+            this.cache = cache;
+            this.data = data;
+            this.raw = raw;
+        }
+    }
+
+    /**
+     *
+     */
+    protected static final class GeneratedData {
+        /** Mapping. */
+        Map<Ignite, Integer> mapping;
+
+        /** Primary node's value. */
+        Integer primary;
+
+        /** Latest value. */
+        Integer latest;
+
+        /**
+         * @param mapping Mapping.
+         * @param primary Primary.
+         * @param latest Latest.
+         */
+        public GeneratedData(Map<Ignite, Integer> mapping, Integer primary, Integer latest) {
+            this.mapping = mapping;
+            this.primary = primary;
+            this.latest = latest;
+        }
     }
 }
