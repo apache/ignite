@@ -19,8 +19,10 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.io.Externalizable;
+import javax.cache.processor.EntryProcessorException;
 import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -42,7 +44,7 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
     private volatile GridFutureAdapter<Void> suspendFut;
 
     /** Check removed flag. */
-    private boolean rmvCheck;
+    private volatile boolean rmvCheck;
 
     /** Structure name. */
     protected String name;
@@ -135,6 +137,33 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
 
                 throw removedError();
             }
+        }
+    }
+
+    /**
+     * Checks removed status after fail.
+     * @returns Ignite runtime exception that corresponds the original {@code cause}.
+     */
+    protected IgniteException checkRemovedAfterFail(Exception cause) {
+        assert cause != null: "The original cause must not be null.";
+
+        needCheckNotRemoved();
+
+        try {
+            checkRemoved();
+        }
+        catch (IllegalStateException e) {
+            // The original exception should be returned.
+        }
+
+        if (cause instanceof IgniteCheckedException)
+            return U.convertException((IgniteCheckedException) cause);
+        else if (cause instanceof EntryProcessorException)
+            return new IgniteException(cause.getMessage(), cause);
+        else {
+            assert cause instanceof IgniteException;
+
+            return (IgniteException)cause;
         }
     }
 
