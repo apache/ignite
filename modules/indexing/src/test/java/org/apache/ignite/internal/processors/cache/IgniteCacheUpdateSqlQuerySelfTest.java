@@ -31,6 +31,8 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -98,30 +100,40 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
      */
     @Test
     public void testUpdateSingle() {
-        IgniteCache p = cache();
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_UPDATES");
 
-        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set _val = ? where _key = ?")
-            .setArgs(createPerson(2, "Jo", "White"), "FirstKey"));
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
-        c.iterator();
+        try {
+            IgniteCache p = cache();
 
-        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by id, _key"));
+            QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set _val = ? where _key = ?")
+                .setArgs(createPerson(2, "Jo", "White"), "FirstKey"));
 
-        List<List<?>> leftovers = c.getAll();
+            c.iterator();
 
-        assertEquals(4, leftovers.size());
+            c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by id, _key"));
 
-        assertEqualsCollections(Arrays.asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
-            leftovers.get(0));
+            List<List<?>> leftovers = c.getAll();
 
-        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
-            leftovers.get(1));
+            assertEquals(4, leftovers.size());
 
-        assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
-            leftovers.get(2));
+            assertEqualsCollections(Arrays.asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
+                leftovers.get(0));
 
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
-            leftovers.get(3));
+            assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+                leftovers.get(1));
+
+            assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
+                leftovers.get(2));
+
+            assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+                leftovers.get(3));
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
+        }
     }
 
     /**
@@ -129,33 +141,43 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
      */
     @Test
     public void testNestedFieldsUpdate() {
-        IgniteCache<Long, AllTypes> p = ignite(0).cache("L2AT");
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_UPDATES");
 
-        final long ROOT_KEY = 1;
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
-        // Create 1st level value
-        AllTypes rootVal = new AllTypes(1L);
+        try {
+            IgniteCache<Long, AllTypes> p = ignite(0).cache("L2AT");
 
-        // With random inner field
-        rootVal.innerTypeCol = new AllTypes.InnerType(42L);
+            final long ROOT_KEY = 1;
 
-        p.query(new SqlFieldsQuery(
-            "INSERT INTO \"AllTypes\"(_key,_val) VALUES (?, ?)").setArgs(ROOT_KEY, rootVal)
-        ).getAll();
+            // Create 1st level value
+            AllTypes rootVal = new AllTypes(1L);
 
-        // Update inner fields just by their names
-        p.query(new SqlFieldsQuery("UPDATE \"AllTypes\" " +
-            "SET \"innerLongCol\" = ?, \"innerStrCol\" = ?, \"arrListCol\" = ?;"
-        ).setArgs(50L, "sss", new ArrayList<>(Arrays.asList(3L, 2L, 1L)))).getAll();
+            // With random inner field
+            rootVal.innerTypeCol = new AllTypes.InnerType(42L);
 
-        AllTypes res = p.get(ROOT_KEY);
+            p.query(new SqlFieldsQuery(
+                "INSERT INTO \"AllTypes\"(_key,_val) VALUES (?, ?)").setArgs(ROOT_KEY, rootVal)
+            ).getAll();
 
-        AllTypes.InnerType resInner = new AllTypes.InnerType(50L);
+            // Update inner fields just by their names
+            p.query(new SqlFieldsQuery("UPDATE \"AllTypes\" " +
+                "SET \"innerLongCol\" = ?, \"innerStrCol\" = ?, \"arrListCol\" = ?;"
+            ).setArgs(50L, "sss", new ArrayList<>(Arrays.asList(3L, 2L, 1L)))).getAll();
 
-        resInner.innerStrCol = "sss";
-        resInner.arrListCol = new ArrayList<>(Arrays.asList(3L, 2L, 1L));
+            AllTypes res = p.get(ROOT_KEY);
 
-        assertEquals(resInner, res.innerTypeCol);
+            AllTypes.InnerType resInner = new AllTypes.InnerType(50L);
+
+            resInner.innerStrCol = "sss";
+            resInner.arrListCol = new ArrayList<>(Arrays.asList(3L, 2L, 1L));
+
+            assertEquals(resInner, res.innerTypeCol);
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
+        }
     }
 
 
@@ -194,112 +216,132 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     /** */
     @Test
     public void testTypeConversions() throws ParseException {
-        IgniteCache cache = ignite(0).cache("L2AT");
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_UPDATES");
 
-        cache.query(new SqlFieldsQuery("INSERT INTO \"AllTypes\" (_key, _val) VALUES(2, ?)")
-            .setArgs(new AllTypes(2L))).getAll();
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
-        cache.query (new SqlFieldsQuery(
-            "UPDATE \"AllTypes\" " +
-                "SET " +
-                "\"dateCol\" = '2016-11-30 12:00:00', " +
-                "\"booleanCol\" = false, " +
-                "\"tsCol\" = DATE '2016-12-01' " +
-                "WHERE _key = 2")
-        );
+        try {
+            IgniteCache cache = ignite(0).cache("L2AT");
 
-        // Look ma, no hands: first we set value of inner object column (innerTypeCol), then update only one of its
-        // fields (innerLongCol), while leaving another inner property (innerStrCol) as specified by innerTypeCol.
-        cache.query(new SqlFieldsQuery(
+            cache.query(new SqlFieldsQuery("INSERT INTO \"AllTypes\" (_key, _val) VALUES(2, ?)")
+                .setArgs(new AllTypes(2L))).getAll();
+
+            cache.query (new SqlFieldsQuery(
                 "UPDATE \"AllTypes\" " +
                     "SET " +
-                    "\"innerLongCol\" = ?, " +  // (1)
-                    "\"doubleCol\" = CAST('50' as INT), " +
-                    "\"booleanCol\" = 80, " +
-                    "\"innerTypeCol\" = ?, " + // (2)
-                    "\"strCol\" = PI(), " +
-                    "\"shortCol\" = CAST(WEEK(PARSEDATETIME('2016-11-30', 'yyyy-MM-dd')) as VARCHAR), " +
-                    "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00', " +
-                    "\"tsCol\"=TIMESTAMPADD('MI', 2, DATEADD('DAY', 2, \"tsCol\")), " +
-                    "\"primitiveIntsCol\" = ?, " +  //(3)
-                    "\"bytesCol\" = ?" // (4)
-            ).setArgs(5, new AllTypes.InnerType(80L), new int[] {2, 3}, new Byte[] {4, 5, 6})
-        ).getAll();
+                    "\"dateCol\" = '2016-11-30 12:00:00', " +
+                    "\"booleanCol\" = false, " +
+                    "\"tsCol\" = DATE '2016-12-01' " +
+                    "WHERE _key = 2")
+            );
 
-        AllTypes res = (AllTypes) cache.get(2L);
+            // Look ma, no hands: first we set value of inner object column (innerTypeCol), then update only one of its
+            // fields (innerLongCol), while leaving another inner property (innerStrCol) as specified by innerTypeCol.
+            cache.query(new SqlFieldsQuery(
+                    "UPDATE \"AllTypes\" " +
+                        "SET " +
+                        "\"innerLongCol\" = ?, " +  // (1)
+                        "\"doubleCol\" = CAST('50' as INT), " +
+                        "\"booleanCol\" = 80, " +
+                        "\"innerTypeCol\" = ?, " + // (2)
+                        "\"strCol\" = PI(), " +
+                        "\"shortCol\" = CAST(WEEK(PARSEDATETIME('2016-11-30', 'yyyy-MM-dd')) as VARCHAR), " +
+                        "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00', " +
+                        "\"tsCol\"=TIMESTAMPADD('MI', 2, DATEADD('DAY', 2, \"tsCol\")), " +
+                        "\"primitiveIntsCol\" = ?, " +  //(3)
+                        "\"bytesCol\" = ?" // (4)
+                ).setArgs(5, new AllTypes.InnerType(80L), new int[] {2, 3}, new Byte[] {4, 5, 6})
+            ).getAll();
 
-        assertNotNull(res);
+            AllTypes res = (AllTypes) cache.get(2L);
 
-        assertEquals(new BigDecimal(301.0).doubleValue(), res.bigDecimalCol.doubleValue());
-        assertEquals(50.0, res.doubleCol);
-        assertEquals(2L, (long) res.longCol);
-        assertTrue(res.booleanCol);
-        assertEquals("3.141592653589793", res.strCol);
-        assertTrue(Arrays.equals(new byte[] {0, 1}, res.primitiveBytesCol));
-        assertTrue(Arrays.equals(new Byte[] {4, 5, 6}, res.bytesCol));
-        assertTrue(Arrays.deepEquals(new Integer[] {0, 1}, res.intsCol));
-        assertTrue(Arrays.equals(new int[] {2, 3}, res.primitiveIntsCol));
+            assertNotNull(res);
 
-        AllTypes.InnerType expInnerType = new AllTypes.InnerType(80L);
-        expInnerType.innerLongCol = 5L;
+            assertEquals(new BigDecimal(301.0).doubleValue(), res.bigDecimalCol.doubleValue());
+            assertEquals(50.0, res.doubleCol);
+            assertEquals(2L, (long) res.longCol);
+            assertTrue(res.booleanCol);
+            assertEquals("3.141592653589793", res.strCol);
+            assertTrue(Arrays.equals(new byte[] {0, 1}, res.primitiveBytesCol));
+            assertTrue(Arrays.equals(new Byte[] {4, 5, 6}, res.bytesCol));
+            assertTrue(Arrays.deepEquals(new Integer[] {0, 1}, res.intsCol));
+            assertTrue(Arrays.equals(new int[] {2, 3}, res.primitiveIntsCol));
 
-        assertEquals(expInnerType, res.innerTypeCol);
-        assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-11-30 12:00:00"), res.dateCol);
-        assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-12-03 00:02:00"), res.tsCol);
-        assertEquals(2, res.intCol);
-        assertEquals(AllTypes.EnumType.ENUMTRUE, res.enumCol);
-        assertEquals(new java.sql.Date(new SimpleDateFormat("yyyy-MM-dd").parse("2016-12-02").getTime()), res.sqlDateCol);
+            AllTypes.InnerType expInnerType = new AllTypes.InnerType(80L);
+            expInnerType.innerLongCol = 5L;
 
-        // 49th week, right?
-        assertEquals(49, res.shortCol);
+            assertEquals(expInnerType, res.innerTypeCol);
+            assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-11-30 12:00:00"), res.dateCol);
+            assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-12-03 00:02:00"), res.tsCol);
+            assertEquals(2, res.intCol);
+            assertEquals(AllTypes.EnumType.ENUMTRUE, res.enumCol);
+            assertEquals(new java.sql.Date(new SimpleDateFormat("yyyy-MM-dd").parse("2016-12-02").getTime()), res.sqlDateCol);
+
+            // 49th week, right?
+            assertEquals(49, res.shortCol);
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
+        }
     }
 
     /** */
     @Test
     public void testSingleInnerFieldUpdate() throws ParseException {
-        IgniteCache cache = ignite(0).cache("L2AT");
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_UPDATES");
 
-        cache.query(new SqlFieldsQuery("insert into \"AllTypes\" (_key, _val) values(2, ?)")
-            .setArgs(new AllTypes(2L))).getAll();
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
-        cache.query(new SqlFieldsQuery(
-            "UPDATE \"AllTypes\" " +
-                "SET " +
-                "\"dateCol\" = '2016-11-30 12:00:00', " +
-                "\"booleanCol\" = false " +
-                "WHERE _key = 2")
-        ).getAll();
+        try {
+            IgniteCache cache = ignite(0).cache("L2AT");
 
-        assertFalse(cache.query(new SqlFieldsQuery("select * from \"AllTypes\"")).getAll().isEmpty());
+            cache.query(new SqlFieldsQuery("insert into \"AllTypes\" (_key, _val) values(2, ?)")
+                .setArgs(new AllTypes(2L))).getAll();
 
-        cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"innerLongCol\" = 5"));
+            cache.query(new SqlFieldsQuery(
+                "UPDATE \"AllTypes\" " +
+                    "SET " +
+                    "\"dateCol\" = '2016-11-30 12:00:00', " +
+                    "\"booleanCol\" = false " +
+                    "WHERE _key = 2")
+            ).getAll();
 
-        AllTypes res = (AllTypes) cache.get(2L);
+            assertFalse(cache.query(new SqlFieldsQuery("select * from \"AllTypes\"")).getAll().isEmpty());
 
-        assertNotNull(res);
+            cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"innerLongCol\" = 5"));
 
-        assertEquals(new BigDecimal(301.0).doubleValue(), res.bigDecimalCol.doubleValue());
-        assertEquals(3.01, res.doubleCol);
-        assertEquals(2L, (long) res.longCol);
-        assertFalse(res.booleanCol);
+            AllTypes res = (AllTypes) cache.get(2L);
 
-        assertEquals("2", res.strCol);
-        assertTrue(Arrays.equals(new byte[] {0, 1}, res.primitiveBytesCol));
-        assertTrue(Arrays.deepEquals(new Byte[] {0, 1}, res.bytesCol));
-        assertTrue(Arrays.deepEquals(new Integer[] {0, 1}, res.intsCol));
-        assertTrue(Arrays.equals(new int[] {0, 1}, res.primitiveIntsCol));
+            assertNotNull(res);
 
-        AllTypes.InnerType expInnerType = new AllTypes.InnerType(2L);
-        expInnerType.innerLongCol = 5L;
+            assertEquals(new BigDecimal(301.0).doubleValue(), res.bigDecimalCol.doubleValue());
+            assertEquals(3.01, res.doubleCol);
+            assertEquals(2L, (long) res.longCol);
+            assertFalse(res.booleanCol);
 
-        assertEquals(expInnerType, res.innerTypeCol);
-        assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-11-30 12:00:00"), res.dateCol);
-        assertNull(res.tsCol);
-        assertEquals(2, res.intCol);
-        assertEquals(AllTypes.EnumType.ENUMTRUE, res.enumCol);
-        assertNull(res.sqlDateCol);
+            assertEquals("2", res.strCol);
+            assertTrue(Arrays.equals(new byte[] {0, 1}, res.primitiveBytesCol));
+            assertTrue(Arrays.deepEquals(new Byte[] {0, 1}, res.bytesCol));
+            assertTrue(Arrays.deepEquals(new Integer[] {0, 1}, res.intsCol));
+            assertTrue(Arrays.equals(new int[] {0, 1}, res.primitiveIntsCol));
 
-        assertEquals(-23000, res.shortCol);
+            AllTypes.InnerType expInnerType = new AllTypes.InnerType(2L);
+            expInnerType.innerLongCol = 5L;
+
+            assertEquals(expInnerType, res.innerTypeCol);
+            assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-11-30 12:00:00"), res.dateCol);
+            assertNull(res.tsCol);
+            assertEquals(2, res.intCol);
+            assertEquals(AllTypes.EnumType.ENUMTRUE, res.enumCol);
+            assertNull(res.sqlDateCol);
+
+            assertEquals(-23000, res.shortCol);
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
+        }
     }
 
     /**
