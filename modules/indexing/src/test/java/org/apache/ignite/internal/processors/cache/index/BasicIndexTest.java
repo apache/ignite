@@ -48,7 +48,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * A set of basic tests for caches with indexes.
  */
-public class BasicIndexTest extends GridCommonAbstractTest {
+public class BasicIndexTest extends AbstractIndexingCommonTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

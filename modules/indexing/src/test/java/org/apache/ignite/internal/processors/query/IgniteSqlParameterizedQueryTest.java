@@ -30,6 +30,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -41,7 +42,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * @author Sergey Chernolyas &amp;sergey_chernolyas@gmail.com&amp;
  * @see <a href="https://issues.apache.org/jira/browse/IGNITE-6286">IGNITE-6286</a>
  */
-public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
+public class IgniteSqlParameterizedQueryTest extends AbstractIndexingCommonTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

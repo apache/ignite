@@ -53,6 +53,7 @@ import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -82,7 +83,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *     nodes or tx will fail on commit.</li>
  * </ul>
  */
-public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbstractTest {
+public class BinaryMetadataConcurrentUpdateWithIndexesTest extends AbstractIndexingCommonTest {
     /** */
     private static final int FIELDS = 2;
 

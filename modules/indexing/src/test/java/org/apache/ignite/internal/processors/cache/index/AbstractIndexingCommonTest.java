@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Set;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.engine.Session;
@@ -40,13 +42,21 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
      * Checks all H2 connection are closed.
      */
     void checkAllConnectionAreClosed() {
+        checkAllConnectionAreClosed(log);
+    }
+
+    /**
+     * Checks all H2 connection are closed.
+     * @param log Logger.
+     */
+    public static void checkAllConnectionAreClosed(IgniteLogger log) {
         Set<Object> refs = GridTestUtils.getFieldValue(CloseWatcher.class, "refs");
 
         if (!refs.isEmpty()) {
             for (Object o : refs) {
                 if (o instanceof CloseWatcher
                     && ((CloseWatcher)o).getCloseable() instanceof Session) {
-                    log.error("Session: " + ((CloseWatcher)o).getCloseable()
+                    U.log(log, "Session: " + ((CloseWatcher)o).getCloseable()
                         + ", open=" + !((Session)((CloseWatcher)o).getCloseable()).isClosed());
                 }
             }
@@ -57,5 +67,4 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
             fail("There are not closed connections. See the log above.");
         }
     }
-
 }

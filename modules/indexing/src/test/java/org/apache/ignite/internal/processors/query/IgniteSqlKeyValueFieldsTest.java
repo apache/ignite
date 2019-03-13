@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -43,7 +44,7 @@ import java.util.concurrent.Callable;
 /**
  * Test hidden _key, _val, _ver columns
  */
-public class IgniteSqlKeyValueFieldsTest  extends GridCommonAbstractTest {
+public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
 
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

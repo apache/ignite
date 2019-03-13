@@ -50,7 +50,7 @@ import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSe
 /**
  * Common stuff for dynamic columns tests.
  */
-public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest {
+public abstract class DynamicColumnsAbstractTest extends AbstractIndexingCommonTest {
     /** SQL to create test table. */
     final static String CREATE_SQL = "CREATE TABLE IF NOT EXISTS Person (id int primary key, name varchar)";
 

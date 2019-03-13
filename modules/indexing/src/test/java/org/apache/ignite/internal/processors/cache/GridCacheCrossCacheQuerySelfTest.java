@@ -36,6 +36,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.X;
@@ -52,7 +53,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Tests cross cache queries.
  */
-public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
+public class GridCacheCrossCacheQuerySelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final String PART_CACHE_NAME = "partitioned";
 

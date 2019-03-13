@@ -27,13 +27,14 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
  */
-public class IgniteCacheMultipleIndexedTypesTest extends GridCommonAbstractTest {
+public class IgniteCacheMultipleIndexedTypesTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrid(0);
