@@ -30,6 +30,7 @@ import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -42,7 +43,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for cache query details metrics.
  */
-public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommonAbstractTest {
+public abstract class CacheAbstractQueryDetailMetricsSelfTest extends AbstractIndexingCommonTest {
     /**  */
     private static final int QRY_DETAIL_METRICS_SIZE = 3;
 

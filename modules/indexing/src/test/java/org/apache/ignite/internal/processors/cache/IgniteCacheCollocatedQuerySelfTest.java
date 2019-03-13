@@ -28,6 +28,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -40,7 +41,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  */
-public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
+public class IgniteCacheCollocatedQuerySelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final String QRY =
         "select productId, sum(price) s, count(1) c " +

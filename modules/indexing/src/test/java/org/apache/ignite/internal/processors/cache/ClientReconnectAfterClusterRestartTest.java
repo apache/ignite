@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -43,7 +44,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  */
-public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTest {
+public class ClientReconnectAfterClusterRestartTest extends AbstractIndexingCommonTest {
     /** Server id. */
     private static final int SERVER_ID = 0;
 

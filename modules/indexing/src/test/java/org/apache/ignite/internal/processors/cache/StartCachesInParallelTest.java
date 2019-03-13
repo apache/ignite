@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL;
@@ -31,7 +32,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_START_CACHES
 /**
  * Tests, that cluster could start and activate with all possible values of IGNITE_ALLOW_START_CACHES_IN_PARALLEL.
  */
-public class StartCachesInParallelTest extends GridCommonAbstractTest {
+public class StartCachesInParallelTest extends AbstractIndexingCommonTest {
     /** IGNITE_ALLOW_START_CACHES_IN_PARALLEL option value before tests. */
     private String allowParallel;
 
@@ -66,12 +67,12 @@ public class StartCachesInParallelTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         if (allowParallel != null)
             System.setProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL, allowParallel);
         else
             System.clearProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL);
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */

@@ -26,6 +26,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -42,7 +43,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test for distributed queries with node restarts.
  */
-public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractIndexingCommonTest {
     /** */
     protected static final String QRY_0 = "select co._key, count(*) cnt\n" +
         "from \"pe\".Person pe, \"pr\".Product pr, \"co\".Company co, \"pu\".Purchase pu\n" +

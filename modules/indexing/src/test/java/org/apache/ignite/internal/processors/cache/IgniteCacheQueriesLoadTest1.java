@@ -46,6 +46,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -66,7 +67,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 @SuppressWarnings("unchecked")
-public class IgniteCacheQueriesLoadTest1 extends GridCommonAbstractTest {
+public class IgniteCacheQueriesLoadTest1 extends AbstractIndexingCommonTest {
     /** Operation. */
     private static final String OPERATION = "Operation";
 

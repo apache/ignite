@@ -38,12 +38,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * This is a specific test for IGNITE-8900.
  */
-public class BigEntryQueryTest extends GridCommonAbstractTest {
+public class BigEntryQueryTest extends AbstractIndexingCommonTest {
     /** */
     public static final String CACHE = "cache";
 

@@ -29,6 +29,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -45,7 +46,7 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  * Tests off heap storage when both offheaped and swapped entries exists.
  */
-public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
+public class GridCacheOffheapIndexGetSelfTest extends AbstractIndexingCommonTest {
     /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 

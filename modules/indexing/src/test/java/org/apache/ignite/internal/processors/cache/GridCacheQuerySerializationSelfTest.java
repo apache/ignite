@@ -26,6 +26,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -39,7 +40,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for cache query results serialization.
  */
-public class GridCacheQuerySerializationSelfTest extends GridCommonAbstractTest {
+public class GridCacheQuerySerializationSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int GRID_CNT = 2;
 
