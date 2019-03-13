@@ -2410,7 +2410,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 null,
                 null,
                 params,
-                null,
+                ctx.localNodeId(),
                 null));
         }
     }
@@ -2428,8 +2428,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         for (QueryField col : cols) {
             try {
-                props.add(new QueryBinaryProperty(ctx, col.name(), null, Class.forName(col.typeName()),
-                    false, null, !col.isNullable(), null));
+                props.add(new QueryBinaryProperty(
+                    ctx,
+                    col.name(),
+                    null,
+                    Class.forName(col.typeName()),
+                    false,
+                    null,
+                    !col.isNullable(),
+                    null));
             }
             catch (ClassNotFoundException e) {
                 throw new SchemaOperationException("Class not found for new property: " + col.typeName());
