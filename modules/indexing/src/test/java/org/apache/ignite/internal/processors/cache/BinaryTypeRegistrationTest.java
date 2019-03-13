@@ -75,7 +75,7 @@ public class BinaryTypeRegistrationTest extends GridCommonAbstractTest {
     public void shouldSendOnlyOneMetadataMessage() throws Exception {
         Ignite ignite = startGrid(0);
 
-        int threadsNum = 50;
+        int threadsNum = 20;
 
         ExecutorService exec = Executors.newFixedThreadPool(threadsNum);
 

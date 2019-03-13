@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -224,30 +223,28 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     assert newMeta != null;
                     assert newMeta instanceof BinaryTypeImpl;
 
-                    isolate(typeId, () -> {
-                        if (!discoveryStarted) {
-                            BinaryMetadataHolder holder = metadataLocCache.get(typeId);
+                    if (!discoveryStarted) {
+                        BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
-                            BinaryMetadata oldMeta = holder != null ? holder.metadata() : null;
+                        BinaryMetadata oldMeta = holder != null ? holder.metadata() : null;
 
-                            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(
-                                oldMeta, ((BinaryTypeImpl)newMeta).metadata()
-                            );
-
-                            if (oldMeta != mergedMeta)
-                                metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
-
-                            return;
-                        }
-
-                        BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
-
-                        CacheObjectBinaryProcessorImpl.this.addMeta(
-                            typeId,
-                            newMeta0.wrap(binaryCtx),
-                            failIfUnregistered
+                        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(
+                            oldMeta, ((BinaryTypeImpl)newMeta).metadata()
                         );
-                    });
+
+                        if (oldMeta != mergedMeta)
+                            metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
+
+                        return;
+                    }
+
+                    BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
+
+                    CacheObjectBinaryProcessorImpl.this.addMeta(
+                        typeId,
+                        newMeta0.wrap(binaryCtx),
+                        failIfUnregistered
+                    );
                 }
 
                 @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
@@ -315,24 +312,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             if (!ctx.clientNode())
                 metadataFileStore.restoreMetadata();
-        }
-    }
-
-    /**
-     * Execute code consistently for same id.
-     *
-     * @param id Id for isolation.
-     * @param isolatedCode Code which should be executed isolate for each id.
-     */
-    private void isolate(int id, Runnable isolatedCode) {
-        Lock lock = stripedLock.getLock(Math.abs(id) % stripedLock.concurrencyLevel());
-
-        lock.lock();
-        try {
-            isolatedCode.run();
-        }
-        finally {
-            lock.unlock();
         }
     }
 
@@ -563,7 +542,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
 
         try {
-            BinaryMetadataHolder metaHolder = metadataLocCache.get(typeId);
+            BinaryMetadataHolder metaHolder = failIfUnregistered
+                ? metadataLocCache.get(typeId)
+                : metadataLocCache.computeIfAbsent(typeId, (key) -> new BinaryMetadataHolder(newMeta0, 0, 0));
 
             BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
 
@@ -573,7 +554,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             if (mergedMeta == oldMeta) {
                 // Metadata locally is up-to-date. Waiting for updating metadata in an entire cluster, if necessary.
-                if (metaHolder.pendingVersion() != metaHolder.acceptedVersion()) {
+                if (metaHolder.pendingVersion() != metaHolder.acceptedVersion() || metaHolder.pendingVersion() == 0) {
                     GridFutureAdapter<MetadataUpdateResult> fut =
                         transport.awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
 
