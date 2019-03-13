@@ -1358,7 +1358,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 .collect(Collectors.toList());
 
             if (!bltNodes.isEmpty()) {
-                int newBltId = oldBlt == null ? 0 : oldBlt.id() + 1; // Bullshit.
+                int newBltId = oldBlt == null ? 0 : oldBlt.id();
 
                 BaselineTopology newBlt = BaselineTopology.build(bltNodes, newBltId);
 
@@ -1376,11 +1376,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 onStateChangeMessage(ver, changeGlobalStateMsg, discoCache);
 
-                ChangeGlobalStateFinishMessage finishMsg = new ChangeGlobalStateFinishMessage(
-                    nodeId,
-                    true,
-                    true
-                );
+                ChangeGlobalStateFinishMessage finishMsg = new ChangeGlobalStateFinishMessage(nodeId, true, true);
 
                 onStateFinishMessage(finishMsg);
 

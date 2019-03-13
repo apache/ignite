@@ -28,7 +28,9 @@ public class ChangeTopologyWatcherInMemoryTest extends ChangeTopologyWatcherTest
         return false;
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testWithZeroTimeout() throws Exception {
         startGrids(3);
