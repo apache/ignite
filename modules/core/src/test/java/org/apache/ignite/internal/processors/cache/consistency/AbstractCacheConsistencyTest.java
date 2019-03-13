@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.consistency;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -84,6 +85,8 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         IgniteCache<Integer, Integer> cache = data.cache;
         Set<Integer> keys = data.data.keySet();
         Boolean raw = data.raw;
+
+        assert !keys.isEmpty();
 
         try {
             if (raw) {
@@ -220,12 +223,15 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                     node.<Integer, Integer>getOrCreateCache(DEFAULT_CACHE_NAME).getAll(results.keySet());
 
                 for (Map.Entry<Integer, Integer> entry : all.entrySet()) {
-                    Integer exp = results.get(entry.getKey()).mapping.get(node); // Reads from itself (backup or primary).
+                    Integer key = entry.getKey();
+                    Integer val = entry.getValue();
+
+                    Integer exp = results.get(key).mapping.get(node); // Should read from itself (backup or primary).
 
                     if (exp == null)
-                        exp = results.get(entry.getKey()).primary; // Reads from primary (not a partition owner).
+                        exp = results.get(key).primary; // Should read from primary (not a partition owner).
 
-                    assertEquals(exp, entry.getValue());
+                    assertEquals(exp, val);
                 }
             }
 
@@ -307,6 +313,8 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
             if (node.equals(primary))
                 primVal = val;
         }
+
+        assertEquals(nodes.size(), new HashSet<>(mapping.values()).size()); // Each node have unique value.
 
         assert primVal != -1;
 
