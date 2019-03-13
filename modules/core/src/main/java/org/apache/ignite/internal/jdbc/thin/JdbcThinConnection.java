@@ -38,9 +38,11 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
@@ -130,7 +132,7 @@ public class JdbcThinConnection implements Connection {
     private boolean connected;
 
     /** Tracked statements to close on disconnect. */
-    private final ArrayList<JdbcThinStatement> stmts = new ArrayList<>();
+    private final Set<JdbcThinStatement> stmts = new HashSet<>();
 
     /** Query timeout timer */
     private final Timer timer;
@@ -887,6 +889,15 @@ public class JdbcThinConnection implements Connection {
         }
 
         timer.cancel();
+    }
+
+    /**
+     * @param stmt Statement to close.
+     */
+    void closeStatement(JdbcThinStatement stmt) {
+        synchronized (stmtsMux) {
+            stmts.remove(stmt);
+        }
     }
 
     /**

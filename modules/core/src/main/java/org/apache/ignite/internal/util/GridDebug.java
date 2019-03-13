@@ -347,6 +347,21 @@ public class GridDebug {
     }
 
     /**
+     * @return Heap dump size.
+     */
+    public static long heapDumpSize() {
+        File f = new File("tmp-heapdump.hprof");
+
+        dumpHeap(f.getName(), true);
+
+        final long size = f.length();
+
+        f.delete();
+
+        return size;
+    }
+
+    /**
      * @return Committed VM size in bits.
      */
     public static long getCommittedVirtualMemorySize() {
