@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
-import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -25,10 +24,12 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
+
+import java.io.FileNotFoundException;
 
 /**
  * Usage of {@link ImputerTrainer} to fill missed data ({@code Double.NaN}) values in the chosen columns.
@@ -40,7 +41,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * Then, it trains the model based on the processed data using decision tree classification.</p>
  * <p>
- * Finally, this example uses {@link BinaryClassificationEvaluator} functionality to compute metrics from predictions.</p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_2_Imputing {
     /** Run example. */
@@ -75,7 +76,7 @@ public class Step_2_Imputing {
 
                 System.out.println("\n>>> Trained model: " + mdl);
 
-                double accuracy = BinaryClassificationEvaluator.evaluate(
+                double accuracy = Evaluator.evaluate(
                     dataCache,
                     mdl,
                     imputingPreprocessor,

@@ -49,7 +49,10 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
      * @param reqId State change request ID.
      * @param clusterActive New cluster state.
      */
-    public ChangeGlobalStateFinishMessage(UUID reqId, boolean clusterActive, Boolean transitionRes) {
+    public ChangeGlobalStateFinishMessage(
+        UUID reqId,
+        boolean clusterActive,
+        Boolean transitionRes) {
         assert reqId != null;
 
         this.reqId = reqId;

@@ -1501,7 +1501,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Create cache and table from given query entity.
      *
-     * @param schemaName Schema name to create table in.
+     * @param schemaName Schema name to create table in. Case sensitive, must not be \"quoted\".
      * @param entity Entity to create table from.
      * @param templateName Template name.
      * @param cacheName Cache name.
@@ -1513,14 +1513,27 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param backups Backups.
      * @param ifNotExists Quietly ignore this command if table already exists.
      * @param encrypted Encrypted flag.
+     * @param qryParallelism query parallelism value for configuration of underlying cache.
      * @throws IgniteCheckedException If failed.
      */
-    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheName,
-        String cacheGroup, @Nullable String dataRegion, String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
-        @Nullable CacheWriteSynchronizationMode writeSyncMode, @Nullable Integer backups, boolean ifNotExists,
-        boolean encrypted) throws IgniteCheckedException {
+    public void dynamicTableCreate(
+        String schemaName,
+        QueryEntity entity,
+        String templateName,
+        String cacheName,
+        String cacheGroup,
+        @Nullable String dataRegion,
+        String affinityKey,
+        @Nullable CacheAtomicityMode atomicityMode,
+        @Nullable CacheWriteSynchronizationMode writeSyncMode,
+        @Nullable Integer backups,
+        boolean ifNotExists,
+        boolean encrypted,
+        @Nullable Integer qryParallelism
+    ) throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
         assert backups == null || backups >= 0;
+        assert qryParallelism == null || qryParallelism > 0;
 
         CacheConfiguration<?, ?> ccfg = ctx.cache().getConfigFromTemplate(templateName);
 
@@ -1562,8 +1575,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (backups != null)
             ccfg.setBackups(backups);
 
+        if (qryParallelism != null)
+            ccfg.setQueryParallelism(qryParallelism);
+
         ccfg.setEncryptionEnabled(encrypted);
-        ccfg.setSqlSchema(schemaName);
+        ccfg.setSqlSchema("\"" + schemaName + "\"");
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
 
@@ -1845,6 +1861,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert cctx != null;
         assert newRow != null;
         assert prevRowAvailable || prevRow == null;
+        // No need to acquire busy lock here - operation is protected by GridCacheQueryManager.busyLock
 
         KeyCacheObject key = newRow.key();
         CacheObject val = newRow.value();
@@ -1855,56 +1872,48 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (idx == null)
             return;
 
-        if (!busyLock.enterBusy())
-            throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+        String cacheName = cctx.name();
 
-        try {
-            String cacheName = cctx.name();
+        CacheObjectContext coctx = cctx.cacheObjectContext();
 
-            CacheObjectContext coctx = cctx.cacheObjectContext();
+        QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, true);
 
-            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, true);
+        if (prevRowAvailable && prevRow != null) {
+            QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName,
+                coctx,
+                key,
+                prevRow.value(),
+                false);
 
-            if (prevRowAvailable && prevRow != null) {
-                QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName,
-                    coctx,
-                    key,
-                    prevRow.value(),
-                    false);
+            if (prevValDesc != desc) {
+                if (prevValDesc != null)
+                    idx.remove(cctx, prevValDesc, prevRow);
 
-                if (prevValDesc != desc) {
-                    if (prevValDesc != null)
-                        idx.remove(cctx, prevValDesc, prevRow);
+                // Row has already been removed from another table indexes
+                prevRow = null;
+            }
+        }
 
-                    // Row has already been removed from another table indexes
-                    prevRow = null;
+        if (desc == null) {
+            int typeId = ctx.cacheObjects().typeId(val);
+
+            long missedCacheTypeKey = missedCacheTypeKey(cacheName, typeId);
+
+            if (!missedCacheTypes.contains(missedCacheTypeKey)) {
+                if (missedCacheTypes.add(missedCacheTypeKey)) {
+                    LT.warn(log, "Key-value pair is not inserted into any SQL table [cacheName=" + cacheName +
+                        ", " + describeTypeMismatch(cacheName, val) + "]");
+
+                    LT.warn(log, "  ^-- Value type(s) are specified via CacheConfiguration.indexedTypes or CacheConfiguration.queryEntities");
+                    LT.warn(log, "  ^-- Make sure that same type(s) used when adding Object or BinaryObject to cache");
+                    LT.warn(log, "  ^-- Otherwise, entries will be stored in cache, but not appear as SQL Table rows");
                 }
             }
 
-            if (desc == null) {
-                int typeId = ctx.cacheObjects().typeId(val);
-
-                long missedCacheTypeKey = missedCacheTypeKey(cacheName, typeId);
-
-                if (!missedCacheTypes.contains(missedCacheTypeKey)) {
-                    if (missedCacheTypes.add(missedCacheTypeKey)) {
-                        LT.warn(log, "Key-value pair is not inserted into any SQL table [cacheName=" + cacheName +
-                            ", " + describeTypeMismatch(cacheName, val) + "]");
-
-                        LT.warn(log, "  ^-- Value type(s) are specified via CacheConfiguration.indexedTypes or CacheConfiguration.queryEntities");
-                        LT.warn(log, "  ^-- Make sure that same type(s) used when adding Object or BinaryObject to cache");
-                        LT.warn(log, "  ^-- Otherwise, entries will be stored in cache, but not appear as SQL Table rows");
-                    }
-                }
-
-                return;
-            }
-
-            idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
+            return;
         }
-        finally {
-            busyLock.leaveBusy();
-        }
+
+        idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
     }
 
     /**
@@ -2222,6 +2231,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
         return executeQuerySafe(cctx, () -> {
+            assert idx != null;
+
             final String schemaName = qry.getSchema() != null ? qry.getSchema()
                 : (cctx != null ? idx.schema(cctx.name()) : QueryUtils.DFLT_SCHEMA);
 
@@ -2230,16 +2241,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     @Override public List<FieldsQueryCursor<List<?>>> applyx() {
                         GridQueryCancel cancel0 = cancel != null ? cancel : new GridQueryCancel();
 
-                        List<FieldsQueryCursor<List<?>>> res =
-                            idx.querySqlFields(
+                        List<FieldsQueryCursor<List<?>>> res = idx.querySqlFields(
                                 schemaName,
                                 qry,
                                 cliCtx,
                                 keepBinary,
                                 failOnMultipleStmts,
-                                null,
-                                cancel0,
-                                true
+                                cancel0
                             );
 
                         if (cctx != null)
@@ -2321,6 +2329,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public List<Long> streamBatchedUpdateQuery(final String schemaName, final SqlClientContext cliCtx,
         final String qry, final List<Object[]> args) {
+        checkxEnabled();
+
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -2616,31 +2626,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void remove(GridCacheContext cctx, CacheDataRow row)
         throws IgniteCheckedException {
         assert row != null;
+        // No need to acquire busy lock here - operation is protected by GridCacheQueryManager.busyLock
 
         if (log.isDebugEnabled())
-            log.debug("Remove [cacheName=" + cctx.name() + ", key=" + row.key()+ ", val=" + row.value() + "]");
+            log.debug("Remove [cacheName=" + cctx.name() + ", key=" + row.key() + ", val=" + row.value() + "]");
 
         if (idx == null)
             return;
 
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to remove from index (grid is stopping).");
+        QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
+            cctx.cacheObjectContext(),
+            row.key(),
+            row.value(),
+            false);
 
-        try {
-            QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
-                cctx.cacheObjectContext(),
-                row.key(),
-                row.value(),
-                false);
+        if (desc == null)
+            return;
 
-            if (desc == null)
-                return;
-
-                idx.remove(cctx, desc, row);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+        idx.remove(cctx, desc, row);
     }
 
     /**

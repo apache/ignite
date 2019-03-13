@@ -17,18 +17,19 @@
 
 package org.apache.ignite.examples.ml.selection.scoring;
 
-import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
+
+import java.io.FileNotFoundException;
 
 /**
  * Run SVM classification trainer ({@link SVMLinearClassificationTrainer}) over distributed dataset.
@@ -68,7 +69,7 @@ public class EvaluatorExample {
                 lbExtractor
             );
 
-            double accuracy = BinaryClassificationEvaluator.evaluate(
+            double accuracy = Evaluator.evaluate(
                 dataCache,
                 mdl,
                 featureExtractor,
@@ -78,7 +79,7 @@ public class EvaluatorExample {
 
             System.out.println("\n>>> Accuracy " + accuracy);
 
-            double f1Score = BinaryClassificationEvaluator.evaluate(
+            double f1Score = Evaluator.evaluate(
                 dataCache,
                 mdl,
                 featureExtractor,

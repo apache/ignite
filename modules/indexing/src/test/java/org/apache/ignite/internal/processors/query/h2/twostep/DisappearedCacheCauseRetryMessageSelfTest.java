@@ -46,18 +46,22 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTest
 public class DisappearedCacheCauseRetryMessageSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 2;
+
     /** */
     private static final String ORG = "org";
+
     /** */
     private IgniteCache<String, JoinSqlTestHelper.Person> personCache;
+
     /** */
     private IgniteCache<String, JoinSqlTestHelper.Organization> orgCache;
 
     /** */
     @Test
     public void testDisappearedCacheCauseRetryMessage() {
-
-        SqlQuery<String, JoinSqlTestHelper.Person> qry = new SqlQuery<String, JoinSqlTestHelper.Person>(JoinSqlTestHelper.Person.class, JoinSqlTestHelper.JOIN_SQL).setArgs("Organization #0");
+        SqlQuery<String, JoinSqlTestHelper.Person> qry =
+            new SqlQuery<String, JoinSqlTestHelper.Person>(JoinSqlTestHelper.Person.class, JoinSqlTestHelper.JOIN_SQL)
+                .setArgs("Organization #0");
 
         qry.setDistributedJoins(true);
 
@@ -67,6 +71,9 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends AbstractIndexingC
             fail("No CacheException emitted.");
         }
         catch (CacheException e) {
+            if (!e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) ["))
+                e.printStackTrace();
+
             assertTrue(e.getMessage(), e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) ["));
         }
     }
@@ -94,11 +101,11 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends AbstractIndexingC
                         GridQueryCancelRequest req = (GridQueryCancelRequest) (gridMsg.message());
 
                         if (reqId == req.queryRequestId())
-                            orgCache = DisappearedCacheCauseRetryMessageSelfTest.this.ignite(0).getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
+                            orgCache = DisappearedCacheCauseRetryMessageSelfTest.this.ignite(0)
+                                .getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
                                 .setCacheMode(CacheMode.REPLICATED)
                                 .setQueryEntities(JoinSqlTestHelper.organizationQueryEntity())
                             );
-
                     }
                 }
 

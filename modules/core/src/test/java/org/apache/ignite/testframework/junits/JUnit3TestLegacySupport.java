@@ -24,9 +24,11 @@ import org.junit.runners.model.Statement;
 /**
  * Supports compatibility with old tests that expect specific threading behavior of JUnit 3 TestCase class,
  * inherited assertions and specific old interface for GridTestUtils.
+ * @deprecated and should be removed once all tests will be refactored to use proper API.
  */
 @SuppressWarnings({"TransientFieldInNonSerializableClass", "ExtendsUtilityClass"})
-public abstract class JUnit3TestLegacySupport extends JUnit3TestLegacyAssert {
+@Deprecated
+public abstract class JUnit3TestLegacySupport extends JUnitAssertAware {
     /**
      * Supports obtaining test name for JUnit4 framework in a way that makes it available for legacy methods invoked
      * from {@code runTest(Statement)}.
@@ -79,10 +81,7 @@ public abstract class JUnit3TestLegacySupport extends JUnit3TestLegacyAssert {
      * Do not annotate with Before in overriding methods.</p>
      *
      * @throws Exception If failed. {@link #afterTest()} will be called in this case.
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @Before} annotation.
      */
-    @Deprecated
     protected void beforeTest() throws Exception {
         // No-op.
     }
@@ -94,10 +93,7 @@ public abstract class JUnit3TestLegacySupport extends JUnit3TestLegacyAssert {
      * Do not annotate with After in overriding methods.</p>
      *
      * @throws Exception If failed.
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @After} annotation.
      */
-    @Deprecated
     protected void afterTest() throws Exception {
         // No-op.
     }
@@ -108,10 +104,7 @@ public abstract class JUnit3TestLegacySupport extends JUnit3TestLegacyAssert {
      * Do not annotate with BeforeClass in overriding methods.</p>
      *
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @BeforeClass} annotation.
      */
-    @Deprecated
     protected void beforeTestsStarted() throws Exception {
         // No-op.
     }
@@ -123,10 +116,7 @@ public abstract class JUnit3TestLegacySupport extends JUnit3TestLegacyAssert {
      * Do not annotate with AfterClass in overriding methods.</p>
      *
      * @throws Exception If failed.
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @AfterClass} annotation.
      */
-    @Deprecated
     protected void afterTestsStopped() throws Exception {
         // No-op.
     }
