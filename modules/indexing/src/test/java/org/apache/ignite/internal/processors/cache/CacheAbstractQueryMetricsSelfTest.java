@@ -209,19 +209,6 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
     }
 
     /**
-     * Test metrics for failed Scan queries.
-     *
-     * @throws Exception In case of error.
-     */
-    public void testSqlQueryFailedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
-
-        SqlQuery qry = new SqlQuery<>("Long", "from Long");
-
-        checkQueryFailedMetrics(cache, qry);
-    }
-
-    /**
      * Test metrics for Sql queries.
      *
      * @throws Exception In case of error.
