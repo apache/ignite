@@ -361,38 +361,4 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         assertEqualsCollections(Arrays.asList(fullData1), Arrays.asList(fullData2));
     }
-
-    /** */
-    @Test
-    public void testA() throws Exception {
-        Assume.assumeFalse(isPersistent());
-
-        startGrids(3);
-
-        startGrid(getConfiguration(UUID.randomUUID().toString()).setClientMode(true));
-
-        stopGrid(2);
-
-        assertEquals(2, grid(0).cluster().currentBaselineTopology().size());
-
-        startGrid(3);
-
-        assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
-
-        startGrid(4);
-
-        assertEquals(4, grid(0).cluster().currentBaselineTopology().size());
-
-        stopGrid(1);
-
-        assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
-
-        IgniteEx client = startGrid(getConfiguration(UUID.randomUUID().toString()).setClientMode(true));
-
-        assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
-
-        stopGrid(client.name());
-
-        assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
-    }
 }

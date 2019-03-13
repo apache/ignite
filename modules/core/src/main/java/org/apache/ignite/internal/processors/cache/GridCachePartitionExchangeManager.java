@@ -540,13 +540,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             System.currentTimeMillis()
                         );
 
-                        AffinityTopologyVersion topVer = null;
-
                         StateChangeRequest stateChangeReq = new StateChangeRequest(
                             msg,
                             BaselineTopologyHistoryItem.fromBaseline(blt),
                             false,
-                            topVer
+                            null
                         );
 
                         if (exchActs == null)

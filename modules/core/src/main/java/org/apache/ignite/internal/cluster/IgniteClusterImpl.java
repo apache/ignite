@@ -51,7 +51,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.nodestart.IgniteRemoteStartSpecification;
 import org.apache.ignite.internal.util.nodestart.IgniteSshHelper;
@@ -349,9 +348,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            if (isInMemoryMode())
-                return;
-
             validateBeforeBaselineChange(baselineTop);
 
             ctx.state().changeGlobalState(true, baselineTop, true).get();
@@ -373,11 +369,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      */
     public void triggerBaselineAutoAdjust(long topVer) {
         setBaselineTopology(topVer, true);
-    }
-
-    /** */
-    private boolean isInMemoryMode() {
-        return !CU.isPersistenceEnabled(cfg);
     }
 
     /**
@@ -470,13 +461,16 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         setBaselineTopology(topVer, false);
     }
 
+    /**
+     * Set baseline topology.
+     *
+     * @param topVer Topology version.
+     * @param isBaselineAutoAdjust Whether this is an automatic update or not.
+     */
     private void setBaselineTopology(long topVer, boolean isBaselineAutoAdjust) {
         guard();
 
         try {
-            if (isInMemoryMode())
-                return;
-
             Collection<ClusterNode> top = topology(topVer);
 
             if (top == null)
