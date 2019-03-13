@@ -349,7 +349,7 @@ public class FilePageStore implements PageStore {
 
                 long delta = newSize - allocated.getAndSet(newSize);
 
-                assert delta % pageSize == 0;
+                assert delta % pageSize == 0 : delta;
 
                 allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
             }
