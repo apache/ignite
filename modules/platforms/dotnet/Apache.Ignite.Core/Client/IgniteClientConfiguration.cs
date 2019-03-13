@@ -203,14 +203,14 @@ namespace Apache.Ignite.Core.Client
         public string Password { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether affinity awareness should be disabled.
+        /// Gets or sets a value indicating whether affinity awareness should be enabled.
         /// <para />
-        /// Default is false: for cache operations, Ignite client attempts to send the request directly to
+        /// Default is false: only one connection is established at a given moment to a random server node.
+        /// When true: for cache operations, Ignite client attempts to send the request directly to
         /// the primary node for the given cache key.
         /// To do so, connection is established to every known server node at all times.
-        /// When disabled, only one connection is established at a given moment to a random server node.
         /// </summary>
-        public bool DisableAffinityAwareness { get; set; }
+        public bool EnableAffinityAwareness { get; set; }
 
         /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.

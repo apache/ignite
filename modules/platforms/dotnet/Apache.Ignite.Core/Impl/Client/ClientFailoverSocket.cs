@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Impl.Client
             TKey key,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
-            if (!_config.DisableAffinityAwareness)
+            if (_config.EnableAffinityAwareness)
             {
                 InitSocketMap();
                 UpdateDistributionMap(cacheId);
