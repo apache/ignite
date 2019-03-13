@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.consistency;
 
-import java.util.Map;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -70,7 +67,7 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     protected void testGet(Ignite initiator, TransactionConcurrency concurrency,
         TransactionIsolation isolation, boolean raw) throws Exception {
         prepareAndCheck(initiator, 1,
-            (ValidatorData data) -> {
+            (ConsistencyRecoveryData data) -> {
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
                     GET_CHECK_AND_FIX.accept(data); // Recovery (inside tx).
                     ENSURE_FIXED.accept(data); // Checks (inside tx).
@@ -103,7 +100,7 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     protected void testGetAll(Ignite initiator, TransactionConcurrency concurrency,
         TransactionIsolation isolation, Integer cnt, boolean raw) throws Exception {
         prepareAndCheck(initiator, cnt,
-            (ValidatorData data) -> {
+            (ConsistencyRecoveryData data) -> {
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
                     GETALL_CHECK_AND_FIX.accept(data); // Recovery (inside tx).
                     ENSURE_FIXED.accept(data); // Checks (inside tx).

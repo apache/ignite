@@ -50,90 +50,91 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTest {
-    /** Get and check and fix. */
-    protected static final Consumer<ValidatorData> GET_CHECK_AND_FIX =
-        (data) -> {
-            IgniteCache<Integer, Integer> cache = data.cache;
-            Set<Integer> keys = data.data.keySet();
-            Boolean raw = data.raw;
+    /**
+     *
+     */
+    protected static final Consumer<ConsistencyRecoveryData> GET_CHECK_AND_FIX = (data) -> {
+        IgniteCache<Integer, Integer> cache = data.cache;
+        Set<Integer> keys = data.data.keySet();
+        Boolean raw = data.raw;
 
-            assert keys.size() == 1;
+        assert keys.size() == 1;
 
-            for (Map.Entry<Integer, GeneratedData> entry : data.data.entrySet()) { // Once.
-                try {
-                    Integer key = entry.getKey();
-                    Integer latest = entry.getValue().latest;
-                    Integer res;
-
-                    res = raw ?
-                        cache.withConsistencyCheck().getEntry(key).getValue() :
-                        cache.withConsistencyCheck().get(key);
-
-                    assertEquals(latest, res);
-                }
-                catch (CacheException e) {
-                    fail("Should not happen.");
-                }
-            }
-        };
-
-    /** GetAll and check and fix. */
-    protected static final Consumer<ValidatorData> GETALL_CHECK_AND_FIX =
-        (data) -> {
-            IgniteCache<Integer, Integer> cache = data.cache;
-            Set<Integer> keys = data.data.keySet();
-            Boolean raw = data.raw;
-
+        for (Map.Entry<Integer, InconsistencyValuesMapping> entry : data.data.entrySet()) { // Once.
             try {
-                if (raw) {
-                    Collection<CacheEntry<Integer, Integer>> res = cache.withConsistencyCheck().getEntries(keys);
+                Integer key = entry.getKey();
+                Integer latest = entry.getValue().latest;
 
-                    for (CacheEntry<Integer, Integer> entry : res)
-                        assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
-                }
-                else {
-                    Map<Integer, Integer> res = cache.withConsistencyCheck().getAll(keys);
+                Integer res = raw ?
+                    cache.withConsistencyCheck().getEntry(key).getValue() :
+                    cache.withConsistencyCheck().get(key);
 
-                    for (Map.Entry<Integer, Integer> entry : res.entrySet())
-                        assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
-                }
+                assertEquals(latest, res);
             }
             catch (CacheException e) {
-                fail("Should not happen.");
+                fail("Should not happen." + e);
             }
-        };
+        }
+    };
 
-    /** Get and check and make sure it fixed. */
-    protected static final Consumer<ValidatorData> ENSURE_FIXED =
-        (data) -> {
-            IgniteCache<Integer, Integer> cache = data.cache;
-            Boolean raw = data.raw;
+    /**
+     *
+     */
+    protected static final Consumer<ConsistencyRecoveryData> GETALL_CHECK_AND_FIX = (data) -> {
+        IgniteCache<Integer, Integer> cache = data.cache;
+        Set<Integer> keys = data.data.keySet();
+        Boolean raw = data.raw;
 
-            for (Map.Entry<Integer, GeneratedData> entry : data.data.entrySet()) {
-                try {
-                    Integer key = entry.getKey();
-                    Integer latest = entry.getValue().latest;
-                    Integer res;
+        try {
+            if (raw) {
+                Collection<CacheEntry<Integer, Integer>> res = cache.withConsistencyCheck().getEntries(keys);
 
-                    // Regular check.
-                    res = raw ?
-                        cache.getEntry(key).getValue() :
-                        cache.get(key);
-
-                    assertEquals(latest, res);
-
-                    // Consistency check.
-                    res = raw ?
-                        cache.withConsistencyCheck().getEntry(key).getValue() :
-                        cache.withConsistencyCheck().get(key);
-
-                    assertEquals(latest, res);
-                }
-                catch (CacheException e) {
-                    fail("Should not happen.");
-                }
+                for (CacheEntry<Integer, Integer> entry : res)
+                    assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
             }
-        };
+            else {
+                Map<Integer, Integer> res = cache.withConsistencyCheck().getAll(keys);
+
+                for (Map.Entry<Integer, Integer> entry : res.entrySet())
+                    assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
+            }
+        }
+        catch (CacheException e) {
+            fail("Should not happen." + e);
+        }
+    };
+
+    /**
+     *
+     */
+    protected static final Consumer<ConsistencyRecoveryData> ENSURE_FIXED = (data) -> {
+        IgniteCache<Integer, Integer> cache = data.cache;
+        Boolean raw = data.raw;
+
+        for (Map.Entry<Integer, InconsistencyValuesMapping> entry : data.data.entrySet()) {
+            try {
+                Integer key = entry.getKey();
+                Integer latest = entry.getValue().latest;
+
+                // Regular check.
+                Integer res = raw ?
+                    cache.getEntry(key).getValue() :
+                    cache.get(key);
+
+                assertEquals(latest, res);
+
+                // Consistency check.
+                res = raw ?
+                    cache.withConsistencyCheck().getEntry(key).getValue() :
+                    cache.withConsistencyCheck().get(key);
+
+                assertEquals(latest, res);
+            }
+            catch (CacheException e) {
+                fail("Should not happen." + e);
+            }
+        }
+    };
 
     /** Key. */
     protected static int iterableKey;
@@ -141,9 +142,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
     /** Is client flag. */
     protected boolean client;
 
-    /**
-     *
-     */
+    /** Backups count. */
     protected Integer backupsCount() {
         return 3;
     }
@@ -202,16 +201,16 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
     protected void prepareAndCheck(
         Ignite initiator,
         Integer cnt,
-        Consumer<ValidatorData> c,
+        Consumer<ConsistencyRecoveryData> c,
         boolean raw)
         throws Exception {
         IgniteCache<Integer, Integer> cache = initiator.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 20; i++) {
-            Map<Integer, GeneratedData> results = new HashMap<>();
+            Map<Integer, InconsistencyValuesMapping> results = new HashMap<>();
 
             for (int j = 0; j < cnt; j++) {
-                GeneratedData res = setDifferentValuesForSameKey(++iterableKey);
+                InconsistencyValuesMapping res = setDifferentValuesForSameKey(++iterableKey);
 
                 results.put(iterableKey, res);
             }
@@ -230,20 +229,19 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                 }
             }
 
-            c.accept(new ValidatorData(cache, results, raw)); // Code checks here.
+            c.accept(new ConsistencyRecoveryData(cache, results, raw));
         }
     }
 
     /**
      *
      */
-    private GeneratedData setDifferentValuesForSameKey(
+    private InconsistencyValuesMapping setDifferentValuesForSameKey(
         int key) throws Exception {
         List<Ignite> nodes = new ArrayList<>();
         Map<Ignite, Integer> mapping = new HashMap<>();
 
         boolean reverse = ThreadLocalRandom.current().nextBoolean();
-        boolean random = ThreadLocalRandom.current().nextBoolean();
 
         Ignite primary = primaryNode(key, DEFAULT_CACHE_NAME);
 
@@ -255,6 +253,8 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
             nodes.add(primary);
             nodes.addAll(backupNodes(key, DEFAULT_CACHE_NAME));
         }
+
+        boolean random = ThreadLocalRandom.current().nextBoolean();
 
         if (random) {
             Map<Integer, Ignite> nodes0 = new HashMap<>();
@@ -277,21 +277,21 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                 nodes.add(nodes0.get(i));
         }
 
-        GridCacheVersionManager mgr = ((GridCacheAdapter)(grid(1)).cachex(DEFAULT_CACHE_NAME)
-            .cache()).context().shared().versions();
+        GridCacheVersionManager mgr =
+            ((GridCacheAdapter)(grid(1)).cachex(DEFAULT_CACHE_NAME).cache()).context().shared().versions();
 
         int val = 0;
         int primVal = -1;
 
         for (Ignite node : nodes) {
-            IgniteInternalCache intCache =
-                ((IgniteEx)node).cachex(DEFAULT_CACHE_NAME);
+            IgniteInternalCache cache = ((IgniteEx)node).cachex(DEFAULT_CACHE_NAME);
 
-            GridCacheAdapter adapter = ((GridCacheAdapter)intCache.cache());
+            GridCacheAdapter adapter = ((GridCacheAdapter)cache.cache());
 
             GridCacheEntryEx entry = adapter.entryEx(key);
 
-            boolean init = entry.initialValue(new CacheObjectImpl(++val, null), // Incremental value.
+            boolean init = entry.initialValue(
+                new CacheObjectImpl(++val, null), // Incremental value.
                 mgr.next(), // Incremental version.
                 0,
                 0,
@@ -300,9 +300,9 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                 GridDrType.DR_NONE,
                 false);
 
-            mapping.put(node, val);
-
             assertTrue("iterableKey " + key + " already inited", init);
+
+            mapping.put(node, val);
 
             if (node.equals(primary))
                 primVal = val;
@@ -310,29 +310,29 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
 
         assert primVal != -1;
 
-        return new GeneratedData(mapping, primVal, val);
+        return new InconsistencyValuesMapping(mapping, primVal, val);
     }
 
     /**
      *
      */
-    protected static final class ValidatorData {
+    protected static final class ConsistencyRecoveryData {
         /** Initiator's cache. */
         IgniteCache<Integer, Integer> cache;
 
-        /** Generated data nmapping. */
-        Map<Integer, GeneratedData> data;
+        /** Generated data across topology per key mapping. */
+        Map<Integer, InconsistencyValuesMapping> data;
 
-        /** Raw. GetEntry() instead of get(). */
+        /** Raw read flag. True means required GetEntry() instead of get(). */
         Boolean raw;
 
         /**
-         * @param cache Cache.
-         * @param data Data.
-         * @param raw Raw.
+         *
          */
-        public ValidatorData(IgniteCache<Integer, Integer> cache,
-            Map<Integer, GeneratedData> data, Boolean raw) {
+        public ConsistencyRecoveryData(
+            IgniteCache<Integer, Integer> cache,
+            Map<Integer, InconsistencyValuesMapping> data,
+            Boolean raw) {
             this.cache = cache;
             this.data = data;
             this.raw = raw;
@@ -342,22 +342,20 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
     /**
      *
      */
-    protected static final class GeneratedData {
-        /** Mapping. */
+    protected static final class InconsistencyValuesMapping {
+        /** Value per node. */
         Map<Ignite, Integer> mapping;
 
         /** Primary node's value. */
         Integer primary;
 
-        /** Latest value. */
+        /** Latest value across the topology. */
         Integer latest;
 
         /**
-         * @param mapping Mapping.
-         * @param primary Primary.
-         * @param latest Latest.
+         *
          */
-        public GeneratedData(Map<Ignite, Integer> mapping, Integer primary, Integer latest) {
+        public InconsistencyValuesMapping(Map<Ignite, Integer> mapping, Integer primary, Integer latest) {
             this.mapping = mapping;
             this.primary = primary;
             this.latest = latest;
