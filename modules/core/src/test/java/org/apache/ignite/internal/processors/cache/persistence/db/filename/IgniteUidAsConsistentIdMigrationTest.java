@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.filename;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
@@ -50,7 +51,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     public static final String CACHE_NAME = "dummy";
 
     /** Clear DB folder after each test. May be set to false for local debug */
-    private static final boolean deleteAfter = true;
+    private static final boolean deleteAfter = false;
 
     /** Clear DB folder before each test. */
     private static final boolean deleteBefore = true;
@@ -59,7 +60,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     private static final boolean failIfDeleteNotCompleted = true;
 
     /** Configured consistent id. */
-    private String configuredConsistentId;
+    private Serializable configuredConsistentId;
 
     /** Logger to accumulate messages, null will cause logger won't be customized */
     private GridStringLogger strLog;
@@ -204,9 +205,32 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         this.configuredConsistentId = "someConfiguredConsistentId";
         Ignite ignite = startActivateFillDataGrid(0);
 
-        assertPdsDirsDefaultExist(configuredConsistentId);
+        assertPdsDirsDefaultExist((String)configuredConsistentId);
         stopGrid(0);
     }
+
+    /**
+     * Sets UUID as consistent ID for node, check if automatic generated forlder name is reused
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPreconfiguredUuidConsitentIdIsApplied() throws Exception {
+        Ignite ignite = startActivateFillDataGrid(0);
+        String sub = genNewStyleSubfolderName(0, ignite);
+
+        assertPdsDirsDefaultExist(sub);
+
+        UUID generatedCid = (UUID)(ignite.cluster().localNode().consistentId());
+
+        stopGrid(0);
+
+        this.configuredConsistentId = generatedCid;
+        Ignite igniteRestarted = startActivateFillDataGrid(0);
+
+        assertPdsDirsDefaultExist(U.maskForFileName(configuredConsistentId.toString()));
+        stopGrid(0);
+    }
+
 
     /**
      * Checks start on configured ConsistentId with same value as default, this emulate old style folder is already
@@ -226,7 +250,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         igniteEx.getOrCreateCache(CACHE_NAME).put("hi", expVal);
 
-        assertPdsDirsDefaultExist(U.maskForFileName(configuredConsistentId));
+        assertPdsDirsDefaultExist(U.maskForFileName((CharSequence)configuredConsistentId));
         stopGrid(0);
 
         this.configuredConsistentId = null; //now set up grid on existing folder
@@ -705,9 +729,8 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     private void assertDirectoryExist(final File workFolder, String... subFolderNames) throws IgniteCheckedException {
         File curFolder = workFolder;
 
-        for (String name : subFolderNames) {
+        for (String name : subFolderNames)
             curFolder = new File(curFolder, name);
-        }
 
         final String path;
 
