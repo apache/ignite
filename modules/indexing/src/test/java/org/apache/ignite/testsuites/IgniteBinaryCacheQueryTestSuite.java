@@ -202,6 +202,7 @@ import org.apache.ignite.internal.processors.query.KillQueryTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
+import org.apache.ignite.internal.processors.query.SqlIncompatibleDataTypeExceptionTest;
 import org.apache.ignite.internal.processors.query.SqlNestedQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelfTest;
@@ -555,6 +556,8 @@ import org.junit.runners.Suite;
     //Query history.
     SqlQueryHistorySelfTest.class,
     SqlQueryHistoryFromClientSelfTest.class,
+
+    SqlIncompatibleDataTypeExceptionTest.class
 
     //Cancellation of queries.
     KillQueryTest.class,
