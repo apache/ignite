@@ -22,7 +22,7 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.BaselineConfigurationMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -36,30 +36,33 @@ public class BaselineConfigurationMXBeanTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid();
 
         try {
-            DistributedBaselineConfiguration bltConf = ignite.cluster().baselineConfiguration();
+            IgniteCluster cluster = ignite.cluster();
 
             BaselineConfigurationMXBean bltMxBean = bltMxBean();
 
-            assertTrue(bltConf.isBaselineAutoAdjustEnabled());
+            assertTrue(cluster.isBaselineAutoAdjustEnabled());
             assertTrue(bltMxBean.isAutoAdjustmentEnabled());
 
-            assertEquals(0L, bltConf.getBaselineAutoAdjustTimeout());
+            assertEquals(0L, cluster.baselineAutoAdjustTimeout());
             assertEquals(0L, bltMxBean.getAutoAdjustmentTimeout());
 
-            bltConf.updateBaselineAutoAdjustEnabledAsync(false).get();
+            cluster.baselineAutoAdjustEnabled(false);
             assertFalse(bltMxBean.isAutoAdjustmentEnabled());
 
-            bltConf.updateBaselineAutoAdjustTimeoutAsync(30_000L).get();
+            cluster.baselineAutoAdjustTimeout(30_000L);
             assertEquals(30_000L, bltMxBean.getAutoAdjustmentTimeout());
 
+            bltMxBean.setAutoAdjustmentEnabled(true);
+            assertTrue(cluster.isBaselineAutoAdjustEnabled());
+
             bltMxBean.setAutoAdjustmentEnabled(false);
-            assertFalse(bltConf.isBaselineAutoAdjustEnabled());
+            assertFalse(cluster.isBaselineAutoAdjustEnabled());
 
             bltMxBean.setAutoAdjustmentTimeout(60_000L);
-            assertEquals(60_000L, bltConf.getBaselineAutoAdjustTimeout());
+            assertEquals(60_000L, cluster.baselineAutoAdjustTimeout());
         }
         finally {
-            stopGrid(0);
+            stopGrid();
         }
     }
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.mxbean.BaselineConfigurationMXBean;
@@ -52,7 +53,7 @@ public class BaselineConfigurationMXBeanImpl implements BaselineConfigurationMXB
             baselineConfiguration.updateBaselineAutoAdjustEnabledAsync(enabled).get();
         }
         catch (IgniteCheckedException e) {
-            throw new IllegalStateException(e.getMessage());
+            throw new IgniteException(e);
         }
     }
 
@@ -62,7 +63,7 @@ public class BaselineConfigurationMXBeanImpl implements BaselineConfigurationMXB
             baselineConfiguration.updateBaselineAutoAdjustTimeoutAsync(timeout).get();
         }
         catch (IgniteCheckedException e) {
-            throw new IllegalStateException(e.getMessage());
+            throw new IgniteException(e);
         }
     }
 }
