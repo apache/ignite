@@ -117,7 +117,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
@@ -3569,7 +3568,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.kernalContext().state().onExchangeFinishedOnCoordinator(this, hasMoving);
                 }
 
-                if (!cctx.kernalContext().state().clusterState().localTransition()) {
+                if (!cctx.kernalContext().state().clusterState().localBaselineAutoAdjustment()) {
                     boolean active = !stateChangeErr && req.activate();
 
                     ChangeGlobalStateFinishMessage stateFinishMsg = new ChangeGlobalStateFinishMessage(
@@ -3580,8 +3579,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     cctx.discovery().sendCustomEvent(stateFinishMsg);
                 }
-                else
-                    cctx.kernalContext().state().clusterState().localTransition(false);
 
                 timeBag.finishGlobalStage("State finish message sending");
 

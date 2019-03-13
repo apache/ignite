@@ -79,10 +79,8 @@ public class DiscoveryDataClusterState implements Serializable {
     /** Transition result error. */
     private transient volatile Exception transitionError;
 
-    /**
-     * TODO Document.
-     */
-    private transient volatile boolean locTransition;
+    /** Local baseline autoadjustment flag. */
+    private transient volatile boolean locBaselineAutoAdjustment;
 
     /**
      * @param active Current status.
@@ -251,6 +249,24 @@ public class DiscoveryDataClusterState implements Serializable {
     }
 
     /**
+     * @return {@code true} if current state was created as a result of local baseline autoadjustment with zero timeout
+     *      on in-memory cluster.
+     */
+    public boolean localBaselineAutoAdjustment() {
+        return locBaselineAutoAdjustment;
+    }
+
+    /**
+     * Set local baseline autoadjustment flag.
+     *
+     * @param adjusted Flag value.
+     * @see #localBaselineAutoAdjustment()
+     */
+    public void localBaselineAutoAdjustment(boolean adjusted) {
+        locBaselineAutoAdjustment = adjusted;
+    }
+
+    /**
      * Creates a non-transitional cluster state. This method effectively cleans all fields identifying the
      * state as transitional and creates a new state with the state transition result.
      *
@@ -274,19 +290,5 @@ public class DiscoveryDataClusterState implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DiscoveryDataClusterState.class, this);
-    }
-
-    /**
-     * TODO Document.
-     */
-    public boolean localTransition() {
-        return locTransition;
-    }
-
-    /**
-     * TODO Document.
-     */
-    public void localTransition(boolean locTransition) {
-        this.locTransition = locTransition;
     }
 }

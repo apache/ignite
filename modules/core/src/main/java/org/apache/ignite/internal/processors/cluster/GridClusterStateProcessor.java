@@ -1342,7 +1342,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     ) {
         DistributedBaselineConfiguration bc = ctx.cluster().get().baselineConfiguration();
 
-        DiscoveryDataClusterState oldState = ctx.state().clusterState();
+        DiscoveryDataClusterState oldState = globalState;
 
         boolean autoAdjustBaseline = inMemoryMode
             && oldState.active()
@@ -1372,11 +1372,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     System.currentTimeMillis()
                 );
 
-                ctx.state().onStateChangeMessage(
-                    new AffinityTopologyVersion(topVer, minorTopVer),
-                    changeGlobalStateMsg,
-                    discoCache
-                );
+                AffinityTopologyVersion ver = new AffinityTopologyVersion(topVer, minorTopVer);
+
+                onStateChangeMessage(ver, changeGlobalStateMsg, discoCache);
 
                 ChangeGlobalStateFinishMessage finishMsg = new ChangeGlobalStateFinishMessage(
                     nodeId,
@@ -1384,9 +1382,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     true
                 );
 
-                ctx.state().onStateFinishMessage(finishMsg);
+                onStateFinishMessage(finishMsg);
 
-                ctx.state().clusterState().localTransition(true);
+                globalState.localBaselineAutoAdjustment(true);
 
                 ctx.discovery().updateTopologySnapshot();
 
@@ -1401,13 +1399,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * Add fake state change request into exchange actions if cluster is not persistent and baseline autoadjustment
      * is enabled with zero timeout.
      *
-     * @param exchActs
-     * @return
+     * @param exchActs Current exchange actions.
+     * @return New exchange actions.
      */
     public ExchangeActions autoAdjustExchangeActions(ExchangeActions exchActs) {
         DiscoveryDataClusterState clusterState = globalState;
 
-        if (clusterState.localTransition()) {
+        if (clusterState.localBaselineAutoAdjustment()) {
             BaselineTopology blt = clusterState.baselineTopology();
 
             ChangeGlobalStateMessage msg = new ChangeGlobalStateMessage(
