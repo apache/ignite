@@ -25,15 +25,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 
 /**
  *
  */
-@WithSystemProperty(key = IGNITE_JETTY_PORT, value = "8092")
 public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstractSelfTest {
     /** */
     protected static final String REST_SECRET_KEY = "secret-key";
@@ -47,6 +43,11 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
         cfg.getConnectorConfiguration().setSecretKey(REST_SECRET_KEY);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int restPort() {
+        return 8092;
     }
 
     /**
