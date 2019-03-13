@@ -35,6 +35,8 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
+
 /**
  * JDBC Connection Context.
  */
@@ -160,6 +162,12 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         }
 
+
+        Boolean dataPageScanEnabled = null;
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
+
         if (ver.compareTo(VER_2_5_0) >= 0) {
             String user = null;
             String passwd = null;
@@ -193,7 +201,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         };
 
         handler = new JdbcRequestHandler(ctx, busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode, actx, ver);
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode,
+            dataPageScanEnabled, actx, ver);
 
         handler.start();
     }

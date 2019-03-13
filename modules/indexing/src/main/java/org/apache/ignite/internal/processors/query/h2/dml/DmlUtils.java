@@ -71,7 +71,8 @@ public class DmlUtils {
      * @return Converted object.
      */
     @SuppressWarnings({"ConstantConditions", "SuspiciousSystemArraycopy"})
-    public static Object convert(Object val, GridH2RowDescriptor desc, Class<?> expCls, int type) {
+    public static Object convert(Object val, GridH2RowDescriptor desc, Class<?> expCls,
+        int type, String columnName) {
         if (val == null)
             return null;
 
@@ -131,7 +132,7 @@ public class DmlUtils {
             return res;
         }
         catch (Exception e) {
-            throw new IgniteSQLException("Value conversion failed [from=" + currCls.getName() + ", to=" +
+            throw new IgniteSQLException("Value conversion failed [column=" + columnName + ", from=" + currCls.getName() + ", to=" +
                 expCls.getName() +']', IgniteQueryErrorCode.CONVERSION_FAILED, e);
         }
     }
