@@ -272,6 +272,8 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
+        // In this case we don't tell cases "meta is not fetched" and "this statement is not a select, so meta is null".
+        // This is ok, because getting metadata of non-select statements is not a happy path.
         if (resMeta == null)
             resMeta = conn.resultMetaData(sql);
 

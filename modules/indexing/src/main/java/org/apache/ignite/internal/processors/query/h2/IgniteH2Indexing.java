@@ -76,9 +76,11 @@ import org.apache.ignite.internal.processors.cache.query.RegisteredQueryCursor;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
@@ -282,17 +284,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public ParameterMetaData parameterMetaData(String schemaName, String sql) throws SQLException{
+    @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, String sql) throws SQLException {
         PreparedStatement statement = prepareNativeStatement(schemaName, sql);
 
-        return statement.getParameterMetaData();
+        ParameterMetaData h2Params = statement.getParameterMetaData();
+
+        List<JdbcParameterMeta> params = new ArrayList<>(h2Params.getParameterCount());
+
+        for (int i = 1; i <= h2Params.getParameterCount(); i++)
+            params.add(new JdbcParameterMeta(h2Params, i));
+
+        return params;
     }
 
     /** {@inheritDoc} */
-    @Override public ResultSetMetaData resultMetaData(String schemaName, String sql) throws SQLException {
+    @Override public @Nullable List<GridQueryFieldMetadata> resultMetaData(String schemaName,
+        String sql) throws SQLException {
         PreparedStatement statement = prepareNativeStatement(schemaName, sql);
 
-        return statement.getMetaData();
+        ResultSetMetaData h2Meta = statement.getMetaData();
+
+        if (h2Meta == null)
+            return null;
+
+        return H2Utils.meta(h2Meta);
     }
 
     /** {@inheritDoc} */

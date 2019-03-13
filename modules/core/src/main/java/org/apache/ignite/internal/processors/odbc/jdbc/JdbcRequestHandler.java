@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.sql.BatchUpdateException;
-import java.sql.ParameterMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1072,14 +1071,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private ClientListenerResponse getParametersMeta(JdbcMetaParamsRequest req) {
         try {
-            ParameterMetaData paramMeta = ctx.query().getIndexing().parameterMetaData(req.schemaName(), req.sql());
-
-            int size = paramMeta.getParameterCount();
-
-            List<JdbcParameterMeta> meta = new ArrayList<>(size);
-
-            for (int i = 0; i < size; i++)
-                meta.add(new JdbcParameterMeta(paramMeta, i + 1));
+            List<JdbcParameterMeta> meta = ctx.query().getIndexing().parameterMetaData(req.schemaName(), req.sql());
 
             JdbcMetaParamsResult res = new JdbcMetaParamsResult(meta);
 

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.sql.ParameterMetaData;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,7 +43,9 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
@@ -365,11 +365,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             return false;
         }
 
-        @Override public ParameterMetaData parameterMetaData(String schemaName, String sql) throws SQLException {
+        @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, String sql) throws SQLException {
             return null;
         }
 
-        @Override public ResultSetMetaData resultMetaData(String schemaName, String sql) throws SQLException {
+        @Override public List<GridQueryFieldMetadata> resultMetaData(String schemaName, String sql) throws SQLException {
             return null;
         }
 

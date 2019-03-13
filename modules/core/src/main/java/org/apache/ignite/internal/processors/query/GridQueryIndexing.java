@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.ParameterMetaData;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
@@ -34,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -258,17 +257,17 @@ public interface GridQueryIndexing {
      * @return metadata.
      * @throws SQLException if failed to get meta.
      */
-    public ParameterMetaData parameterMetaData(String schemaName, String sql) throws SQLException;
+    public List<JdbcParameterMeta> parameterMetaData(String schemaName, String sql) throws SQLException;
 
     /**
      * Metadata of the result set that is returned if specified query gets executed.
      *
      * @param schemaName the default schema name for query.
      * @param sql Sql query.
-     * @return metadata.
+     * @return metadata or {@code null} if provided query is not a SELECT statement.
      * @throws SQLException if failed to get meta.
      */
-    public ResultSetMetaData resultMetaData(String schemaName, String sql) throws SQLException;
+    public @Nullable List<GridQueryFieldMetadata> resultMetaData(String schemaName, String sql) throws SQLException;
 
     /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
