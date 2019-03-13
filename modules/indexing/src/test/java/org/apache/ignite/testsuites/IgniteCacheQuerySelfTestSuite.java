@@ -171,6 +171,7 @@ import org.apache.ignite.internal.processors.query.h2.GridH2IndexingOffheapSelfT
 import org.apache.ignite.internal.processors.query.h2.H2ResultSetIteratorNullifyOnEndSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryMinMaxTest;
+import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPoolSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryDistributedJoinsTest;
@@ -422,6 +423,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         // Partition loss.
         suite.addTestSuite(IndexingCachePartitionLossPolicySelfTest.class);
+
+        suite.addTestSuite(ThreadLocalObjectPoolSelfTest.class);
 
         return suite;
     }

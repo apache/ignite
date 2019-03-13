@@ -17,26 +17,37 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import java.sql.Connection;
-
 /**
- * Wrapper to store connection and flag is schema set or not.
+ * Wrapper to store connection with currently used schema and statement cache.
  */
-public class H2ConnectionWrapper {
+public class H2ConnectionWrapper implements AutoCloseable {
     /** */
-    private Connection conn;
+    private static final int STATEMENT_CACHE_SIZE = 256;
+
+    /** */
+    private final Connection conn;
 
     /** */
     private volatile String schema;
+
+    /** */
+    private volatile H2StatementCache statementCache;
 
     /**
      * @param conn Connection to use.
      */
     H2ConnectionWrapper(Connection conn) {
         this.conn = conn;
+
+        initStatementCache();
     }
 
     /**
@@ -54,14 +65,69 @@ public class H2ConnectionWrapper {
     }
 
     /**
+     * Connection for schema.
+     *
+     * @param schema Schema name.
+     * @return Connection.
+     */
+    public Connection connection(@Nullable String schema) {
+        if (schema != null && !F.eq(this.schema, schema)) {
+            try {
+                conn.setSchema(schema);
+
+                this.schema = schema;
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException("Failed to set schema for DB connection for thread [schema=" +
+                    schema + "]", e);
+            }
+        }
+
+        return conn;
+    }
+
+    /**
      * @return Connection.
      */
     public Connection connection() {
         return conn;
     }
 
+    /**
+     * @return Statement cache corresponding to connection.
+     */
+    public H2StatementCache statementCache() {
+        return statementCache;
+    }
+
+    /**
+     * Clears statement cache.
+     */
+    public void clearStatementCache() {
+        initStatementCache();
+    }
+
+    /**
+     * @return Statement cache size.
+     */
+    public int statementCacheSize() {
+        return statementCache == null ? 0 : statementCache.size();
+    }
+
+    /**
+     * Initializes statement cache.
+     */
+    private void initStatementCache() {
+        statementCache = new H2StatementCache(STATEMENT_CACHE_SIZE);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(H2ConnectionWrapper.class, this);
+    }
+
+    /** Closes wrapped connection. */
+    @Override public void close() {
+        U.closeQuiet(conn);
     }
 }
