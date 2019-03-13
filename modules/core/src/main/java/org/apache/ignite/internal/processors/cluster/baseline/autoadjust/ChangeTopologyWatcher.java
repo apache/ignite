@@ -29,14 +29,15 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 
+import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustData.NULL_BASELINE_DATA;
+import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatistic.TaskState.IN_PROGRESS;
+import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatistic.TaskState.NOT_SCHEDULED;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 
 /**
  * Watcher of topology changes. It initiate to set new baseline after some timeout.
  */
 public class ChangeTopologyWatcher implements GridLocalEventListener {
-    /** Task represented NULL value is using when normal task can not be created. */
-    private static final BaselineAutoAdjustData NULL_BASELINE_DATA = new BaselineAutoAdjustData(null, -1);
     /** */
     private final IgniteLogger log;
     /** */
@@ -89,7 +90,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
             return;
 
         synchronized (this) {
-            lastBaselineData = lastBaselineData.next(evt, discoEvt.topologyVersion());
+            lastBaselineData = lastBaselineData.next(discoEvt.topologyVersion());
 
             if (isLocalNodeCoordinator(discoveryMgr)) {
                 exchangeManager.affinityReadyFuture(new AffinityTopologyVersion(discoEvt.topologyVersion()))
@@ -119,5 +120,22 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
      */
     private boolean isBaselineAutoAdjustEnabled() {
         return stateProcessor.clusterState().active() && baselineConfiguration.isBaselineAutoAdjustEnabled();
+    }
+
+    /**
+     * @return Statistic of baseline auto-adjust.
+     */
+    public BaselineAutoAdjustStatistic getStatistic() {
+        synchronized (this) {
+            if (lastBaselineData.isAdjusted())
+                return BaselineAutoAdjustStatistic.notScheduled();
+
+            long timeToLastTask = baselineAutoAdjustScheduler.lastScheduledTaskTime();
+
+            if (timeToLastTask <= 0)
+                return BaselineAutoAdjustStatistic.inProgress();
+
+            return BaselineAutoAdjustStatistic.scheduled(timeToLastTask);
+        }
     }
 }
