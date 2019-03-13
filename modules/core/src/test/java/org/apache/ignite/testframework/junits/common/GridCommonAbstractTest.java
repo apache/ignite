@@ -1154,7 +1154,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 ", aff.primaryPartitions(locNode)=" + Arrays.toString(aff.primaryPartitions(locNode)) +
                 ", local 20 partStates=" + IntStream.range(0, 20).boxed().map(i -> "[" + i + ", " + ctx.topology().partitionState(locNode.id(), i) + "]").collect(Collectors.joining(", ")) +
                 ", isPrimary 20 keys=" + IntStream.range(0, 20).boxed().map(i -> "[" + i + ", " + aff.isPrimary(locNode, i) + "]").collect(Collectors.joining(", ")) +
-
+                ", server nodes=" + ctx.discovery().aliveServerNodes().stream().map(n -> n.id().toString().substring(0,2)).collect(Collectors.joining(", ")) +
+                ", primary nodes 20 keys=" + IntStream.range(0, 20).boxed().map(i -> "[" + i + ", " + aff.mapKeyToPrimaryAndBackups(i).stream().map(n -> n.id().toString().substring(0,2)).collect(Collectors.joining(", ")) + "]").collect(Collectors.joining(", ")) +
                 ", ctx=" + ctx);
 
             throw new IgniteException("Unable to find " + cnt + " required keys. [startFrom=" + startFrom
