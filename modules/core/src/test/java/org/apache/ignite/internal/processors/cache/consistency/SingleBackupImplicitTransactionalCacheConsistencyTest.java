@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.consistency;
 
+/**
+ *
+ */
 public class SingleBackupImplicitTransactionalCacheConsistencyTest extends ImplicitTransactionalCacheConsistencyTest {
     /** {@inheritDoc} */
     @Override protected Integer backupsCount() {

@@ -342,7 +342,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
             Map<Integer, InconsistencyValuesMapping> data,
             Boolean raw) {
             this.cache = cache;
-            this.data = data;
+            this.data = new HashMap<>(data);
             this.raw = raw;
         }
     }
@@ -364,7 +364,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
          *
          */
         public InconsistencyValuesMapping(Map<Ignite, Integer> mapping, Integer primary, Integer latest) {
-            this.mapping = mapping;
+            this.mapping = new HashMap<>(mapping);
             this.primary = primary;
             this.latest = latest;
         }

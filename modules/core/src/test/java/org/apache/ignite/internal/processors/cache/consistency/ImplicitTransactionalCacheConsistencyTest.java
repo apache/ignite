@@ -48,7 +48,14 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
      *
      */
     private void testGet(Ignite initiator, boolean raw) throws Exception {
-        prepareAndCheck(initiator, 1, GET_CHECK_AND_FIX, raw);
+        prepareAndCheck(
+            initiator,
+            1,
+            (ConsistencyRecoveryData data) -> {
+                GET_CHECK_AND_FIX.accept(data);
+                ENSURE_FIXED.accept(data);
+            },
+            raw);
     }
 
     /**
@@ -66,6 +73,13 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
      *
      */
     private void testGetAll(Ignite initiator, Integer amount, boolean raw) throws Exception {
-        prepareAndCheck(initiator, amount, GETALL_CHECK_AND_FIX, raw);
+        prepareAndCheck(
+            initiator,
+            amount,
+            (ConsistencyRecoveryData data) -> {
+                GETALL_CHECK_AND_FIX.accept(data);
+                ENSURE_FIXED.accept(data);
+            },
+            raw);
     }
 }

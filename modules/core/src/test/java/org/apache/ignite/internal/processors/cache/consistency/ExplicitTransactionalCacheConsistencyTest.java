@@ -58,25 +58,34 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     private void test(TransactionConcurrency concurrency,
         TransactionIsolation isolation, boolean raw /*getEntry() or just get()*/) throws Exception {
         for (Ignite node : G.allGrids()) {
-            testGet(node, concurrency, isolation, raw);
+            testGet(node, concurrency, isolation, 1, raw, false);
             testGetAllVariations(node, concurrency, isolation, raw);
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     *
+     */
     protected void testGet(Ignite initiator, TransactionConcurrency concurrency,
-        TransactionIsolation isolation, boolean raw) throws Exception {
-        prepareAndCheck(initiator, 1,
+        TransactionIsolation isolation, Integer cnt, boolean raw, boolean all) throws Exception {
+        prepareAndCheck(
+            initiator,
+            cnt,
             (ConsistencyRecoveryData data) -> {
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
-                    GET_CHECK_AND_FIX.accept(data); // Recovery (inside tx).
+                    // Recovery (inside tx).
+                    if (all)
+                        GETALL_CHECK_AND_FIX.accept(data);
+                    else
+                        GET_CHECK_AND_FIX.accept(data);
+
                     ENSURE_FIXED.accept(data); // Checks (inside tx).
 
                     try {
                         tx.commit();
                     }
                     catch (TransactionRollbackException e) {
-                        fail("Should not happen. " + iterableKey);
+                        fail("Should not happen. " + e);
                     }
                 }
 
@@ -89,31 +98,10 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
      */
     private void testGetAllVariations(Ignite initiator, TransactionConcurrency concurrency,
         TransactionIsolation isolation, boolean raw) throws Exception {
-        testGetAll(initiator, concurrency, isolation, 1, raw); // 1 (all keys available at primary)
-        testGetAll(initiator, concurrency, isolation, 2, raw); // less than backups
-        testGetAll(initiator, concurrency, isolation, 3, raw); // equals to backups
-        testGetAll(initiator, concurrency, isolation, 4, raw); // equals to backups + primary
-        testGetAll(initiator, concurrency, isolation, 10, raw); // more than backups
-    }
-
-    /** {@inheritDoc} */
-    protected void testGetAll(Ignite initiator, TransactionConcurrency concurrency,
-        TransactionIsolation isolation, Integer cnt, boolean raw) throws Exception {
-        prepareAndCheck(initiator, cnt,
-            (ConsistencyRecoveryData data) -> {
-                try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
-                    GETALL_CHECK_AND_FIX.accept(data); // Recovery (inside tx).
-                    ENSURE_FIXED.accept(data); // Checks (inside tx).
-
-                    try {
-                        tx.commit();
-                    }
-                    catch (TransactionRollbackException e) {
-                        fail("Should not happen. " + iterableKey);
-                    }
-                }
-
-                ENSURE_FIXED.accept(data); // Checks (outside tx).
-            }, raw);
+        testGet(initiator, concurrency, isolation, 1, raw, true); // 1 (all keys available at primary)
+        testGet(initiator, concurrency, isolation, 2, raw, true); // less than backups
+        testGet(initiator, concurrency, isolation, 3, raw, true); // equals to backups
+        testGet(initiator, concurrency, isolation, 4, raw, true); // equals to backups + primary
+        testGet(initiator, concurrency, isolation, 10, raw, true); // more than backups
     }
 }
