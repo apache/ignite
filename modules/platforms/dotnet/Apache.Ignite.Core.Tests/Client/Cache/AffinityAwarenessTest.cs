@@ -93,6 +93,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cfg = base.GetClientConfiguration();
 
+            cfg.EnableAffinityAwareness = true;
             cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 1));
             cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 2));
 

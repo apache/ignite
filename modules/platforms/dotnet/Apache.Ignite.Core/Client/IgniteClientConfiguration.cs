@@ -113,6 +113,7 @@ namespace Apache.Ignite.Core.Client
             Password = cfg.Password;
             Endpoints = cfg.Endpoints == null ? null : cfg.Endpoints.ToList();
             ReconnectDisabled = cfg.ReconnectDisabled;
+            EnableAffinityAwareness = cfg.EnableAffinityAwareness;
         }
 
         /// <summary>
