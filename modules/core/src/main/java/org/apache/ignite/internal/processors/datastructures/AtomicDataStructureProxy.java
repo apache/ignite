@@ -32,6 +32,9 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+/**
+ * Represents base class for atomic data structures.
+ */
 public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValue>
     implements GridCacheRemovable,IgniteChangeGlobalStateSupport {
     /** Logger. */
@@ -142,7 +145,9 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
 
     /**
      * Checks removed status after fail.
-     * @returns Ignite runtime exception that corresponds the original {@code cause}.
+     *
+     * @param cause Initial exception.
+     * @return Ignite runtime exception that corresponds the original {@code cause}.
      */
     protected IgniteException checkRemovedAfterFail(Exception cause) {
         assert cause != null: "The original cause must not be null.";
@@ -217,6 +222,9 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
         // No-op.
     }
 
+    /**
+     * Invalidates local state.
+     */
     protected void invalidateLocalState() {
         // No-op
     }
