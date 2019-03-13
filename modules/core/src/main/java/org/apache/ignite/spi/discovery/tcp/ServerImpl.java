@@ -2135,6 +2135,23 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * Sweeps failedNodes collection in msg and fills it with failed nodes observed by local node.
+     *
+     * @param msg {@link TcpDiscoveryAbstractMessage} to sweep failed nodes from.
+     */
+    private void sweepMessageFailedNodes(TcpDiscoveryAbstractMessage msg) {
+        msg.failedNodes(null);
+
+        synchronized (mux) {
+            for (TcpDiscoveryNode n : failedNodes.keySet())
+                msg.addFailedNode(n.id());
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Message failed nodes were replaced with failed nodes observed by local node: " + msg.failedNodes());
+    }
+
+    /**
      * Adds failed nodes specified in the received message to the local failed nodes list.
      *
      * @param msg Message.
@@ -2152,6 +2169,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ", failedNodes=" + msgFailedNodes + ']');
                     }
 
+                    sweepMessageFailedNodes(msg);
+
                     return;
                 }
 
@@ -2162,6 +2181,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 log.debug("Ignore message failed nodes, sender node is in fail list [nodeId=" + sndId +
                                     ", failedNodes=" + msgFailedNodes + ']');
                             }
+
+                            sweepMessageFailedNodes(msg);
 
                             return;
                         }
@@ -2794,11 +2815,21 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Adds message to queue.
+         * Adds message to queue. Equivalent to {@code addMessage(msg, false)}.
          *
          * @param msg Message to add.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg) {
+            addMessage(msg, false);
+        }
+
+        /**
+         * Adds message to queue.
+         *
+         * @param msg Message to add.
+         * @param ignoreHighPriority If {@code true}, high priority messages will be added to the top of the queue.
+         */
+        void addMessage(TcpDiscoveryAbstractMessage msg, boolean ignoreHighPriority) {
             DebugLogger log = messageLogger(msg);
 
             if ((msg instanceof TcpDiscoveryStatusCheckMessage ||
@@ -2812,7 +2843,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            if (msg.highPriority())
+            if (msg.highPriority() && !ignoreHighPriority)
                 queue.addFirst(msg);
             else
                 queue.add(msg);
@@ -3132,7 +3163,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         !(msg instanceof TcpDiscoveryStatusCheckMessage && msg.creatorNodeId().equals(locNodeId))) {
                         msg.senderNodeId(locNodeId);
 
-                        addMessage(msg);
+                        addMessage(msg, true);
                     }
 
                     break;
@@ -5796,8 +5827,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     notifyDiscoveryListener(msg, waitForNotification);
                 }
 
-                if (msg.verified())
-                    msg.message(null, msg.messageBytes());
+                // Clear msg field to prevent possible memory leak.
+                msg.message(null, msg.messageBytes());
 
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
@@ -6473,13 +6504,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                         clientMsgWrk = clientMsgWrk0;
                     }
 
-                    if (log.isDebugEnabled())
-                        log.debug("Initialized connection with remote node [nodeId=" + nodeId +
-                            ", client=" + req.client() + ']');
-
-                    if (debugMode) {
-                        debugLog(msg, "Initialized connection with remote node [nodeId=" + nodeId +
-                            ", client=" + req.client() + ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("Initialized connection with remote " +
+                            (req.client() ? "client" : "server") +
+                            " node [nodeId=" + nodeId +
+                            ", rmtAddr=" + sock.getRemoteSocketAddress() + ']');
                     }
                 }
                 catch (IOException e) {
