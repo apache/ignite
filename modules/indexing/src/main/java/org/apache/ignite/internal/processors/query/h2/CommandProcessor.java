@@ -43,7 +43,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -234,7 +233,7 @@ public class CommandProcessor {
      * Client disconnected callback.
      */
     public void onDisconnected() {
-        completeCancellationFutures("Query was cancelled, client node disconnected.");
+        completeCancellationFutures("Failed to cancel query because local client node has been disconnected from the cluster");
     }
 
     /**
@@ -300,7 +299,7 @@ public class CommandProcessor {
         GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().runningQueryInfo(qryId);
 
         if (runningQryInfo == null)
-            err = "Failed to cancel query due to query doesn't exist" +
+            err = "Failed to cancel query due to query doesn't exist " +
                 "[nodeId=" + ctx.localNodeId() + ",qryId=" + qryId + "]";
 
         if (msg.asyncResponse()) {
@@ -459,7 +458,7 @@ public class CommandProcessor {
                 if (!snd) {
                     cancellationRuns.remove(reqId);
 
-                    throw new IgniteSQLException("Failed to cancel query due comunication problem" +
+                    throw new IgniteSQLException("Failed to cancel query due comunication problem " +
                         "[nodeId=" + cmd.nodeId() + ",qryId=" + cmd.nodeQueryId() + "]");
                 }
             }
@@ -477,11 +476,11 @@ public class CommandProcessor {
 
             if (err != null)
                 throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
-                    + cmd.nodeQueryId() + "err=" + err + "]");
+                    + cmd.nodeQueryId() + ",err=" + err + "]");
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
-                + cmd.nodeQueryId() + "err=" + e + "]", e);
+                + cmd.nodeQueryId() + ",err=" + e + "]", e);
         }
     }
 

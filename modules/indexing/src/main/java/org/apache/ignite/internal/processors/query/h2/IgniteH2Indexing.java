@@ -1299,10 +1299,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     cancel
                 );
 
-                return Collections.singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
+                return singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
                     @SuppressWarnings("NullableProblems")
                     @Override public Iterator<List<?>> iterator() {
-                        return new IgniteSingletonIterator<>(Collections.singletonList(updRes.counter()));
+                        return new IgniteSingletonIterator<>(singletonList(updRes.counter()));
                     }
                 }, cancel));
             }
@@ -1354,7 +1354,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             cursor.fieldsMeta(select.meta());
 
-            return Collections.singletonList(cursor);
+            return singletonList(cursor);
         }
         catch (Exception e) {
             runningQryMgr.unregister(qryId, true);

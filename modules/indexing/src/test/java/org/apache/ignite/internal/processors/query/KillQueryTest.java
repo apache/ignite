@@ -214,7 +214,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
                 .query(createKillQuery(nodeId, Long.MAX_VALUE, async));
 
             return null;
-        }, CacheException.class, "Failed to cancel query due to query doesn't exist[nodeId=" + nodeId);
+        }, CacheException.class, "Failed to cancel query due to query doesn't exist [nodeId=" + nodeId);
     }
 
     /**

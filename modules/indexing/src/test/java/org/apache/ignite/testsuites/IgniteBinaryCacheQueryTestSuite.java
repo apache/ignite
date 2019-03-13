@@ -198,6 +198,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateD
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.KillQueryFromClientTest;
 import org.apache.ignite.internal.processors.query.KillQueryFromNeighbourTest;
+import org.apache.ignite.internal.processors.query.KillQueryOnClientDisconnectTest;
 import org.apache.ignite.internal.processors.query.KillQueryTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
@@ -557,12 +558,13 @@ import org.junit.runners.Suite;
     SqlQueryHistorySelfTest.class,
     SqlQueryHistoryFromClientSelfTest.class,
 
-    SqlIncompatibleDataTypeExceptionTest.class
+    SqlIncompatibleDataTypeExceptionTest.class,
 
     //Cancellation of queries.
     KillQueryTest.class,
     KillQueryFromNeighbourTest.class,
     KillQueryFromClientTest.class,
+    KillQueryOnClientDisconnectTest.class,
 
 })
 public class IgniteBinaryCacheQueryTestSuite {
