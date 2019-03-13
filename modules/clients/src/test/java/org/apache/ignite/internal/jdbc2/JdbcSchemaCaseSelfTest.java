@@ -15,29 +15,27 @@
  * limitations under the License.
  */
 
-'use strict';
+package org.apache.ignite.internal.jdbc2;
 
-const path = require('path');
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
-const appPath = require('app-module-path');
-appPath.addPath(__dirname);
-appPath.addPath(path.join(__dirname, 'node_modules'));
+import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 
-const { checkMongo, migrate, init } = require('./launch-tools');
+/**
+ * Jdbc v2 test for schema name case (in)sensitivity.
+ */
+public class JdbcSchemaCaseSelfTest extends JdbcAbstractSchemaCaseTest {
+    /** JDBC URL. */
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=test0@modules/clients/src/test/config/jdbc-config.xml";
 
-const injector = require('./injector');
+    /** {@inheritDoc} */
+    @Override protected Connection connect(String schema) throws SQLException {
+        Connection conn = DriverManager.getConnection(BASE_URL);
 
-injector.log.info = () => {};
-injector.log.debug = () => {};
+        conn.setSchema(schema);
 
-injector('mongo')
-    .then(() => checkMongo())
-    .then(() => injector('settings'))
-    .then(({mongoUrl}) => migrate(mongoUrl, 'Ignite', path.join(__dirname, 'migrations')))
-    .then(() => Promise.all([injector('settings'), injector('api-server'), injector('agents-handler'), injector('browsers-handler')]))
-    .then(init)
-    .catch((err) => {
-        console.error(err);
-
-        process.exit(1);
-    });
+        return conn;
+    }
+}

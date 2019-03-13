@@ -1502,7 +1502,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Create cache and table from given query entity.
      *
-     * @param schemaName Schema name to create table in.
+     * @param schemaName Schema name to create table in. Case sensitive, must not be \"quoted\".
      * @param entity Entity to create table from.
      * @param templateName Template name.
      * @param cacheName Cache name.
@@ -1580,7 +1580,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             ccfg.setQueryParallelism(qryParallelism);
 
         ccfg.setEncryptionEnabled(encrypted);
-        ccfg.setSqlSchema(schemaName);
+        ccfg.setSqlSchema("\"" + schemaName + "\"");
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
 

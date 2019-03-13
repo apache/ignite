@@ -15,29 +15,19 @@
  * limitations under the License.
  */
 
-'use strict';
+package org.apache.ignite.jdbc.thin;
 
-const path = require('path');
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import org.apache.ignite.internal.jdbc2.JdbcAbstractSchemaCaseTest;
 
-const appPath = require('app-module-path');
-appPath.addPath(__dirname);
-appPath.addPath(path.join(__dirname, 'node_modules'));
-
-const { checkMongo, migrate, init } = require('./launch-tools');
-
-const injector = require('./injector');
-
-injector.log.info = () => {};
-injector.log.debug = () => {};
-
-injector('mongo')
-    .then(() => checkMongo())
-    .then(() => injector('settings'))
-    .then(({mongoUrl}) => migrate(mongoUrl, 'Ignite', path.join(__dirname, 'migrations')))
-    .then(() => Promise.all([injector('settings'), injector('api-server'), injector('agents-handler'), injector('browsers-handler')]))
-    .then(init)
-    .catch((err) => {
-        console.error(err);
-
-        process.exit(1);
-    });
+/**
+ * Jdbc thin test for schema name case (in)sensitivity.
+ */
+public class JdbcThinSchemaCaseSelfTest extends JdbcAbstractSchemaCaseTest {
+    /** {@inheritDoc} */
+    @Override protected Connection connect(String schema) throws SQLException {
+        return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/" + schema);
+    }
+}
