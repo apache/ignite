@@ -852,7 +852,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (ctx.isDaemon() || ctx.clientNode()) {
             GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
-            sendComputeChangeGlobalState(activate, blt, forceChangeBaselineTopology, fut);
+            sendComputeChangeGlobalState(activate, blt, forceChangeBaselineTopology, isAutoAdjust, fut);
 
             return fut;
         }
@@ -1063,6 +1063,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean activate,
         BaselineTopology blt,
         boolean forceBlt,
+        boolean isAutoAdjust,
         final GridFutureAdapter<Void> resFut
     ) {
         AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
@@ -1076,7 +1077,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
 
-        IgniteFuture<Void> fut = comp.runAsync(new ClientChangeGlobalStateComputeRequest(activate, blt, forceBlt));
+        IgniteFuture<Void> fut = comp.runAsync(
+            new ClientChangeGlobalStateComputeRequest(activate, blt, forceBlt, isAutoAdjust)
+        );
 
         fut.listen(new CI1<IgniteFuture>() {
             @Override public void apply(IgniteFuture fut) {
@@ -1622,17 +1625,27 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         /** */
         private final boolean forceChangeBaselineTopology;
 
+        /** */
+        private final boolean isAutoAdjust;
+
         /** Ignite. */
         @IgniteInstanceResource
         private IgniteEx ig;
 
         /**
          * @param activate New cluster state.
+         * @param isAutoAdjust
          */
-        private ClientChangeGlobalStateComputeRequest(boolean activate, BaselineTopology blt, boolean forceBlt) {
+        private ClientChangeGlobalStateComputeRequest(
+            boolean activate,
+            BaselineTopology blt,
+            boolean forceBlt,
+            boolean isAutoAdjust
+        ) {
             this.activate = activate;
             this.baselineTopology = blt;
             this.forceChangeBaselineTopology = forceBlt;
+            this.isAutoAdjust = isAutoAdjust;
         }
 
         /** {@inheritDoc} */
@@ -1641,7 +1654,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ig.context().state().changeGlobalState(
                     activate,
                     baselineTopology != null ? baselineTopology.currentBaseline() : null,
-                    forceChangeBaselineTopology
+                    forceChangeBaselineTopology,
+                    isAutoAdjust
                 ).get();
             }
             catch (IgniteCheckedException ex) {
