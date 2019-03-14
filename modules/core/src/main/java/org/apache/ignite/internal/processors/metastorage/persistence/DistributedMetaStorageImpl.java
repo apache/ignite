@@ -27,6 +27,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.LongStream;
@@ -152,7 +154,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /**
      * Lock to access/update {@link #bridge} and {@link #startupExtras} fields (probably some others as well).
      */
-    private final Object innerStateLock = new Object();
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /**
      * Becomes {@code true} if node was deactivated, this information is useful for joining node validation.
@@ -233,7 +235,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
         if (!isPersistenceEnabled) {
-            synchronized (innerStateLock) {
+            lock.writeLock().lock();
+
+            try {
                 if (!(bridge instanceof InMemoryCachedDistributedMetaStorageBridge)) {
                     assert startupExtras != null;
 
@@ -249,6 +253,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     startupExtras = null;
                 }
             }
+            finally {
+                lock.writeLock().unlock();
+            }
 
             for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
                 subscriber.onReadyForWrite(this);
@@ -262,7 +269,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (isClient)
             return;
 
-        synchronized (innerStateLock) {
+        lock.writeLock().lock();
+
+        try {
             wasDeactivated = true;
 
             if (isPersistenceEnabled) {
@@ -282,6 +291,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 writeAvailable.countDown();
 
             writeAvailable = new CountDownLatch(1);
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -337,7 +349,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void onMetaStorageReadyForWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
         assert isPersistenceEnabled;
 
-        synchronized (innerStateLock) {
+        lock.writeLock().lock();
+
+        try {
             WritableDistributedMetaStorageBridge writableBridge = new WritableDistributedMetaStorageBridge(this, metastorage);
 
             if (startupExtras != null) {
@@ -356,6 +370,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             bridge = writableBridge;
 
             startupExtras = null;
+        }
+        finally {
+            lock.writeLock().unlock();
         }
 
         for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
@@ -464,16 +481,23 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public Long collectTcpHandshakeResponseData() {
-        synchronized (innerStateLock) {
+        lock.readLock().lock();
+
+        try {
             long ver = getActualVersion().id;
 
             return ver == 0L ? null : ver;
+        }
+        finally {
+            lock.readLock().unlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onTcpHandshakeResponseDataReceived(Serializable componentData) {
-        synchronized (innerStateLock) {
+        lock.writeLock().lock();
+
+        try {
             assert startupExtras != null;
 
             if (isClient)
@@ -485,6 +509,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 startupExtras.verFromDiscoveryClusterData = (Long)componentData;
             }
         }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -494,7 +521,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (!isSupported(ctx))
             return null;
 
-        synchronized (innerStateLock) {
+        lock.readLock().lock();
+
+        try {
             //TODO Store it precalculated? Maybe later.
             DistributedMetaStorageVersion actualVer = getActualVersion();
 
@@ -536,6 +565,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 return new DistributedMetaStorageClusterNodeData(ver0, fullData, null, updates);
             }
         }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -543,7 +575,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (prefetchData == null)
             return;
 
-        synchronized (innerStateLock) {
+        lock.writeLock().lock();
+
+        try {
             DistributedMetaStorageClusterNodeData nodeData = (DistributedMetaStorageClusterNodeData)prefetchData;
 
             if (nodeData.fullData == null) {
@@ -555,11 +589,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             else
                 writeFullDataLater(nodeData);
         }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        synchronized (innerStateLock) {
+        lock.readLock().lock();
+
+        try {
             if (isClient) {
                 Serializable data = new DistributedMetaStorageJoiningNodeData(
                     getBaselineTopologyId(),
@@ -607,6 +646,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 throw new IgniteException(e);
             }
         }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /** Returns current baseline topology id of {@code -1} if there's no baseline topology found. */
@@ -624,7 +666,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (isClient)
             return null;
 
-        synchronized (innerStateLock) {
+        lock.readLock().lock();
+
+        try {
             DistributedMetaStorageVersion locVer = getActualVersion();
 
             if (!discoData.hasJoiningNodeData()) {
@@ -736,6 +780,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             return (errorMsg == null) ? null : new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
         }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -753,7 +800,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (!isSupported(ctx) && remoteVer.id > 0)
             return;
 
-        synchronized (innerStateLock) {
+        lock.writeLock().lock();
+
+        try {
             DistributedMetaStorageVersion actualVer = getActualVersion();
 
             if (remoteVer.id > actualVer.id) {
@@ -771,6 +820,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 else
                     assert false : "Joining node is too far ahead [remoteVer=" + remoteVer + "]";
             }
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -797,7 +849,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
-        synchronized (innerStateLock) {
+        lock.readLock().lock();
+
+        try {
             //TODO Store it precalculated? Maybe later.
             DistributedMetaStorageVersion actualVer = getActualVersion();
 
@@ -863,6 +917,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 }
             }
         }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /** */
@@ -887,7 +944,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         assert isClient;
 
-        synchronized (innerStateLock) {
+        lock.writeLock().lock();
+
+        try {
             startupExtras = new StartupExtras();
 
             bridge = new EmptyDistributedMetaStorageBridge();
@@ -906,6 +965,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             updateFuts.clear();
         }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -923,8 +985,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * updates from another remote node. Depends on the current node state.
      */
     private int getAvailableHistorySize() {
-        assert Thread.holdsLock(innerStateLock);
-
         if (startupExtras == null)
             return histCache.size();
         else if (startupExtras.fullNodeData == null)
@@ -938,8 +998,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * otherwise.
      */
     private DistributedMetaStorageVersion getActualVersion() {
-        assert Thread.holdsLock(innerStateLock);
-
         if (startupExtras == null)
             return ver;
         else if (startupExtras.fullNodeData == null)
@@ -955,8 +1013,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @return {@code <key, value>} pair if it was found, {@code null} otherwise.
      */
     private DistributedMetaStorageHistoryItem historyItem(long specificVer) {
-        assert Thread.holdsLock(innerStateLock);
-
         if (startupExtras == null)
             return histCache.get(specificVer);
         else {
@@ -1016,7 +1072,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        synchronized (innerStateLock) {
+        lock.writeLock().lock();
+
+        try {
             DistributedMetaStorageClusterNodeData nodeData = (DistributedMetaStorageClusterNodeData)data.commonData();
 
             if (nodeData != null) {
@@ -1033,6 +1091,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 throw new IgniteException("Cannot join the cluster because it doesn't support distributed metastorage" +
                     " feature and this node has not empty distributed metastorage data");
             }
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -1344,8 +1405,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Add update into the list of deferred updates. Works for inactive nodes only.
      */
     private void updateLater(DistributedMetaStorageHistoryItem update) {
-        assert Thread.holdsLock(innerStateLock);
-
         assert startupExtras != null;
 
         startupExtras.deferredUpdates.add(update);
@@ -1458,8 +1517,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @param nodeData Data received from remote node.
      */
     private void writeFullDataLater(DistributedMetaStorageClusterNodeData nodeData) {
-        assert Thread.holdsLock(innerStateLock);
-
         assert nodeData.fullData != null;
 
         startupExtras.fullNodeData = nodeData;
