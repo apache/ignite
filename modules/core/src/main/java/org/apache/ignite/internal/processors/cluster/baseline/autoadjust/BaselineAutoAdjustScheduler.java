@@ -30,14 +30,15 @@ class BaselineAutoAdjustScheduler {
     private final GridTimeoutProcessor timeoutProcessor;
     /** Executor of set baseline operation. */
     private final BaselineAutoAdjustExecutor baselineAutoAdjustExecutor;
-    /** Last set task for set new baseline. It needed for removing from queue. */
+    /** Last scheduled task for adjust new baseline. It needed for removing from queue. */
     private GridTimeoutObject baselineTimeoutObj;
 
     /**
      * @param timeoutProcessor Timeout processor.
      * @param baselineAutoAdjustExecutor Executor of set baseline operation.
      */
-    public BaselineAutoAdjustScheduler(GridTimeoutProcessor timeoutProcessor, BaselineAutoAdjustExecutor baselineAutoAdjustExecutor) {
+    public BaselineAutoAdjustScheduler(GridTimeoutProcessor timeoutProcessor,
+        BaselineAutoAdjustExecutor baselineAutoAdjustExecutor) {
         this.timeoutProcessor = timeoutProcessor;
         this.baselineAutoAdjustExecutor = baselineAutoAdjustExecutor;
     }
@@ -59,5 +60,17 @@ class BaselineAutoAdjustScheduler {
                 }
             }
         );
+    }
+
+    /**
+     * @return Time of last scheduled task or -1 if it doesn't exist.
+     */
+    public long lastScheduledTaskTime() {
+        if (baselineTimeoutObj == null)
+            return -1;
+
+        long lastScheduledTaskTime = baselineTimeoutObj.endTime() - System.currentTimeMillis();
+
+        return lastScheduledTaskTime < 0 ? -1 : lastScheduledTaskTime;
     }
 }

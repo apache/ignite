@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.IgniteMvccTxSingleThreadedAbs
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 
 /**
  * Test Mvcc txs in single-threaded mode for colocated cache.
@@ -44,8 +43,6 @@ public class GridCacheColocatedMvccTxSingleThreadedSelfTest extends IgniteMvccTx
         ccfg.setEvictionPolicy(null);
 
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
-
-        ccfg.setRebalanceMode(NONE);
 
         cfg.setCacheConfiguration(ccfg);
 
