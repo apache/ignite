@@ -298,6 +298,8 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-7692")
     @Test
     public void testSingleCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7692");
+
         final PersonsCountGetter personsCntGetter = new PersonsCountGetter() {
             @Override public int getPersonsCount(IgniteEx ignite, IgniteLogger log, int orgId) throws Exception {
                 return getPersonsCountSingleCache(ignite, log, orgId);
