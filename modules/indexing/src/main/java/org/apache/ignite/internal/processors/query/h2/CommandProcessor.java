@@ -37,7 +37,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -50,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -160,15 +158,16 @@ public class CommandProcessor {
     /**
      * Execute command.
      *
-     * @param qry Query.
+     * @param sql SQL.
      * @param cmdNative Native command (if any).
      * @param cmdH2 H2 command (if any).
+     * @param params Parameters.
      * @param cliCtx Client context.
      * @param qryId Running query ID.
      * @return Result.
      */
-    public CommandResult runCommand(SqlFieldsQuery qry, SqlCommand cmdNative, GridSqlStatement cmdH2,
-        @Nullable SqlClientContext cliCtx, Long qryId) throws IgniteCheckedException {
+    public CommandResult runCommand(String sql, SqlCommand cmdNative, GridSqlStatement cmdH2,
+        QueryParameters params, @Nullable SqlClientContext cliCtx, Long qryId) throws IgniteCheckedException {
         assert cmdNative != null || cmdH2 != null;
 
         // Do execute.
@@ -179,7 +178,7 @@ public class CommandProcessor {
             assert cmdH2 == null;
 
             if (isDdl(cmdNative))
-                runCommandNativeDdl(qry.getSql(), cmdNative);
+                runCommandNativeDdl(sql, cmdNative);
             else if (cmdNative instanceof SqlBulkLoadCommand) {
                 res = processBulkLoadCommand((SqlBulkLoadCommand) cmdNative, qryId);
 
@@ -188,12 +187,12 @@ public class CommandProcessor {
             else if (cmdNative instanceof SqlSetStreamingCommand)
                 processSetStreamingCommand((SqlSetStreamingCommand)cmdNative, cliCtx);
             else
-                processTxCommand(cmdNative, qry);
+                processTxCommand(cmdNative, params);
         }
         else {
             assert cmdH2 != null;
 
-            runCommandH2(qry.getSql(), cmdH2);
+            runCommandH2(sql, cmdH2);
         }
 
         return new CommandResult(res, unregister);
@@ -840,13 +839,12 @@ public class CommandProcessor {
     /**
      * Process transactional command.
      * @param cmd Command.
-     * @param qry Query.
+     * @param params Parameters.
      * @throws IgniteCheckedException if failed.
      */
-    private void processTxCommand(SqlCommand cmd, SqlFieldsQuery qry)
+    private void processTxCommand(SqlCommand cmd, QueryParameters params)
         throws IgniteCheckedException {
-        NestedTxMode nestedTxMode = qry instanceof SqlFieldsQueryEx ? ((SqlFieldsQueryEx)qry).getNestedTxMode() :
-            NestedTxMode.DEFAULT;
+        NestedTxMode nestedTxMode = params.nestedTxMode();
 
         GridNearTxLocal tx = tx(ctx);
 
@@ -863,7 +861,7 @@ public class CommandProcessor {
                     case COMMIT:
                         doCommit(tx);
 
-                        txStart(ctx, qry.getTimeout());
+                        txStart(ctx, params.timeout());
 
                         break;
 
@@ -882,7 +880,7 @@ public class CommandProcessor {
                 }
             }
             else
-                txStart(ctx, qry.getTimeout());
+                txStart(ctx, params.timeout());
         }
         else if (cmd instanceof SqlCommitTransactionCommand) {
             // Do nothing if there's no transaction.

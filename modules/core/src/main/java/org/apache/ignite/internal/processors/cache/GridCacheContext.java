@@ -2227,13 +2227,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
-     * @param partitionId Partition ID.
+     * @param partId Partition ID.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
     @Nullable public ClusterNode selectAffinityNodeBalanced(
         List<ClusterNode> affNodes,
         Set<ClusterNode> invalidNodes,
-        int partitionId,
+        int partId,
         boolean canRemap
     ) {
         if (!readLoadBalancingEnabled) {
@@ -2283,13 +2283,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * Prepare affinity field for builder (if possible).
      *
-     * @param buider Builder.
+     * @param builder Builder.
      */
-    public void prepareAffinityField(BinaryObjectBuilder buider) {
+    public void prepareAffinityField(BinaryObjectBuilder builder) {
         assert binaryMarshaller();
-        assert buider instanceof BinaryObjectBuilderImpl;
+        assert builder instanceof BinaryObjectBuilderImpl;
 
-        BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)buider;
+        BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)builder;
 
         if (!cacheObjCtx.customAffinityMapper()) {
             CacheDefaultBinaryAffinityKeyMapper mapper =
