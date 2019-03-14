@@ -33,7 +33,11 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 
 /**
- * Testing permissions when the compute closure is executed cache operations on remote node.
+ * Testing operation security context when the compute closure is executed on remote nodes.
+ * <p>
+ * The initiator node broadcasts a task to feature call nodes that starts compute operation. That operation is executed
+ * on feature transition nodes and broadcasts a task to endpoint nodes. On every step, it is performed verification that
+ * operation security context is the initiator context.
  */
 public class DistributedClosureRemoteSecurityContextCheckTest
     extends AbstractRemoteSecurityContextCheckTest {
@@ -260,11 +264,7 @@ public class DistributedClosureRemoteSecurityContextCheckTest
                 runnable.run();
             else {
                 compute(ignite, endpoints)
-                    .broadcast(new IgniteRunnable() {
-                        @Override public void run() {
-                            register();
-                        }
-                    });
+                    .broadcast(() -> register());
             }
         }
 

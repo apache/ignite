@@ -40,7 +40,11 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
- * Testing permissions when the compute task is executed cache operations on remote node.
+ * Testing operation security context when the compute task is executed on remote nodes.
+ * <p>
+ * The initiator node broadcasts a task to feature call nodes that starts compute task. That compute task is executed
+ * on feature transition nodes and broadcasts a task to endpoint nodes. On every step, it is performed verification that
+ * operation security context is the initiator context.
  */
 public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
     /** Name of server initiator node. */
@@ -217,13 +221,8 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
                         @Override public Object execute() throws IgniteException {
                             register();
 
-                            compute(loc, endpoints).broadcast(
-                                new IgniteRunnable() {
-                                    @Override public void run() {
-                                        register();
-                                    }
-                                }
-                            );
+                            compute(loc, endpoints)
+                                .broadcast(() -> register());
 
                             return null;
                         }

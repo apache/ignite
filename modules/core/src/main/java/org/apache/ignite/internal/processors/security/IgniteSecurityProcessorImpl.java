@@ -86,19 +86,19 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContextHolder replaceContext(SecurityContext secCtx) {
+    @Override public OperationSecurityContext withContext(SecurityContext secCtx) {
         assert secCtx != null;
 
         SecurityContext old = curSecCtx.get();
 
         curSecCtx.set(secCtx);
 
-        return new SecurityContextHolderImpl(this, old);
+        return new OperationSecurityContextImpl(this, old);
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContextHolder replaceContext(UUID nodeId) {
-        return replaceContext(
+    @Override public OperationSecurityContext withContext(UUID nodeId) {
+        return withContext(
             secCtxs.computeIfAbsent(nodeId,
                 uuid -> nodeSecurityContext(
                     marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().node(uuid)
@@ -213,16 +213,15 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable IgniteNodeValidationResult validateNode(
-        ClusterNode node) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         IgniteNodeValidationResult res = validateSecProcClass(node);
 
         return res != null ? res : secPrc.validateNode(node);
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable IgniteNodeValidationResult validateNode(
-        ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node,
+        DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
         IgniteNodeValidationResult res = validateSecProcClass(node);
 
         return res != null ? res : secPrc.validateNode(node, discoData);
@@ -259,7 +258,7 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    private IgniteNodeValidationResult validateSecProcClass(ClusterNode node){
+    private IgniteNodeValidationResult validateSecProcClass(ClusterNode node) {
         String rmtCls = node.attribute(ATTR_GRID_SEC_PROC_CLASS);
         String locCls = secPrc.getClass().getName();
 

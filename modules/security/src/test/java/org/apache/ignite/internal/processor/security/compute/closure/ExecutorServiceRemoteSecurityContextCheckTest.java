@@ -32,7 +32,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Testing permissions when the service task is executed cache operations on remote node.
+ * Testing operation security context when the service task is executed on remote nodes.
+ * <p>
+ * The initiator node broadcasts a task to feature call nodes that starts service task. That service task is executed
+ * on feature transition nodes and broadcasts a task to endpoint nodes. On every step, it is performed verification that
+ * operation security context is the initiator context.
  */
 @RunWith(JUnit4.class)
 public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
@@ -181,11 +185,8 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
         @Override public void run() {
             register();
 
-            compute(Ignition.localIgnite(), endpoints).broadcast(new IgniteRunnable() {
-                @Override public void run() {
-                    register();
-                }
-            });
+            compute(Ignition.localIgnite(), endpoints)
+                .broadcast(() -> register());
         }
     }
 }

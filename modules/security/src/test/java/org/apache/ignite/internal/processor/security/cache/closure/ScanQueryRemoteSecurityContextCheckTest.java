@@ -34,7 +34,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Testing permissions when the filter of ScanQuery is executed cache operations on remote node.
+ * Testing operation security context when the filter of ScanQuery is executed on remote node.
+ * <p>
+ * The initiator node broadcasts a task to feature call node that starts ScanQuery's filter. That filter is executed on
+ * feature transition node and broadcasts a task to endpoint nodes. On every step, it is performed verification that
+ * operation security context is the initiator context.
  */
 @RunWith(JUnit4.class)
 public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
@@ -208,11 +212,8 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
             if (node.equals(loc.name())) {
                 register();
 
-                compute(loc, endpoints).broadcast(new IgniteRunnable() {
-                    @Override public void run() {
-                        register();
-                    }
-                });
+                compute(loc, endpoints)
+                    .broadcast(() -> register());
             }
         }
     }

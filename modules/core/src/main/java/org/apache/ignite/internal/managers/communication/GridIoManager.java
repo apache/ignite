@@ -70,7 +70,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
-import org.apache.ignite.internal.processors.security.SecurityContextHolder;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
@@ -1561,7 +1561,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         UUID newSecSubjId = secSubjId != null ? secSubjId : nodeId;
 
-        try(SecurityContextHolder s = ctx.security().replaceContext(newSecSubjId)) {
+        try(OperationSecurityContext s = ctx.security().withContext(newSecSubjId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
@@ -2547,7 +2547,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 if (msgBody != null) {
                     if (predLsnr != null) {
-                        try(SecurityContextHolder s = ctx.security().replaceContext(initNodeId)) {
+                        try(OperationSecurityContext s = ctx.security().withContext(initNodeId)) {
                             if (!predLsnr.apply(nodeId, msgBody))
                                 removeMessageListener(TOPIC_COMM_USER, this);
                         }

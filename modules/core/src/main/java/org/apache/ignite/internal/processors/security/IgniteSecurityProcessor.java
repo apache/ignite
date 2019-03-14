@@ -33,7 +33,7 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  * The differences between {@code IgniteSecurityProcessor} and {@code GridSecurityProcessor} are:
  * <ul>
  * <li>{@code IgniteSecurityProcessor} allows to define a current security context by
- * {@link #replaceContext(SecurityContext)} or {@link #replaceContext(UUID)} methods.
+ * {@link #withContext(SecurityContext)} or {@link #withContext(UUID)} methods.
  * <li>{@code IgniteSecurityProcessor} doesn't require to pass {@code SecurityContext} to authorize operations.
  * <li>{@code IgniteSecurityProcessor} doesn't extend {@code GridProcessor} interface
  * sequentially it doesn't have any methods of the lifecycle of {@code GridProcessor}.
@@ -41,27 +41,27 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  */
 public interface IgniteSecurityProcessor {
     /**
-     * Creates {@link SecurityContextHolder}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
+     * Creates {@link OperationSecurityContext}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
-     * holder {@link SecurityContextHolder} will be closed.
+     * holder {@link OperationSecurityContext} will be closed.
      *
      * @param secCtx Security Context.
      * @return Security context holder.
      */
-    public SecurityContextHolder replaceContext(SecurityContext secCtx);
+    public OperationSecurityContext withContext(SecurityContext secCtx);
 
     /**
-     * Creates {@link SecurityContextHolder}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
+     * Creates {@link OperationSecurityContext}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of {@link SecurityContext} that is owned by
-     * node with given nodeId until holder {@link SecurityContextHolder} will be closed.
+     * node with given nodeId until holder {@link OperationSecurityContext} will be closed.
      *
      * @param nodeId Node id.
      * @return Security context holder.
      */
-    public SecurityContextHolder replaceContext(UUID nodeId);
+    public OperationSecurityContext withContext(UUID nodeId);
 
     /**
-     * @return SecurityContext of holder {@link SecurityContextHolder}.
+     * @return SecurityContext of holder {@link OperationSecurityContext}.
      */
     public SecurityContext securityContext();
 

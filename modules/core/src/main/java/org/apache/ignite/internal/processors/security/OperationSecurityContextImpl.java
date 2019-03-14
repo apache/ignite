@@ -15,7 +15,32 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.security;
+
 /**
- * Contains security tests for compute closure.
+ *
  */
-package org.apache.ignite.internal.processor.security.compute.closure;
+public class OperationSecurityContextImpl implements OperationSecurityContext {
+    /** Ignite Security processor. */
+    private final IgniteSecurityProcessor proc;
+
+    /** Security context. */
+    private final SecurityContext secCtx;
+
+    /**
+     * @param proc Ignite Security processor.
+     * @param secCtx Security context.
+     */
+    public OperationSecurityContextImpl(IgniteSecurityProcessor proc, SecurityContext secCtx) {
+        assert proc != null;
+        assert secCtx != null;
+
+        this.proc = proc;
+        this.secCtx = secCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        proc.withContext(secCtx);
+    }
+}

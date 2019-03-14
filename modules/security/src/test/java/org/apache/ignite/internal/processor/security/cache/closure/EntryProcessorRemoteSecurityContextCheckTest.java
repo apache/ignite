@@ -35,7 +35,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Testing permissions when EntryProcessor closure is executed cache operations on remote node.
+ * Testing operation security context when EntryProcessor closure is executed on remote node.
+ * <p>
+ * The initiator node broadcasts a task to feature call node that starts EntryProcessor closure. That closure is
+ * executed on feature transition node and broadcasts a task to endpoint nodes. On every step, it is performed
+ * verification that operation security context is the initiator context.
  */
 @RunWith(JUnit4.class)
 public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
@@ -170,11 +174,8 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
             throws EntryProcessorException {
             register();
 
-            compute(Ignition.localIgnite(), endpoints).broadcast(new IgniteRunnable() {
-                @Override public void run() {
-                    register();
-                }
-            });
+            compute(Ignition.localIgnite(), endpoints)
+                .broadcast(() -> register());
 
             return null;
         }

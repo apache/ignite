@@ -15,7 +15,12 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.security;
+
 /**
- * Contains security tests for Data Streamer closure.
+ * Representation of Operation Security Context.
  */
-package org.apache.ignite.internal.processor.security.datastreamer.closure;
+public interface OperationSecurityContext extends AutoCloseable {
+    /** {@inheritDoc} */
+    @Override public void close();
+}

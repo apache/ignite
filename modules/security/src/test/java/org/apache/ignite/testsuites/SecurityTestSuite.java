@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processor.security.compute.closure.Distributed
 import org.apache.ignite.internal.processor.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processor.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processor.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
-import org.apache.ignite.internal.processor.security.messaging.MessagingRemoteSecurityContextCheckTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -53,7 +52,6 @@ import org.junit.runners.Suite;
     DataStreamerRemoteSecurityContextCheckTest.class,
     CacheLoadRemoteSecurityContextCheckTest.class,
     ThinClientPermissionCheckTest.class,
-    MessagingRemoteSecurityContextCheckTest.class,
 })
-public class AuthorizeOperationsTestSuite {
+public class SecurityTestSuite {
 }
