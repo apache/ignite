@@ -203,13 +203,9 @@ public class ConnectionManager {
      */
     public Connection connectionNoCache(String schema) throws IgniteSQLException {
         try {
-            Connection conn = DriverManager.getConnection(dbUrl);
-
-            conn.setSchema(schema);
-
-            return conn;
+            return newConnectionWrapper().connection(schema);
         }
-        catch (SQLException e) {
+        catch (Exception e) {
             throw new IgniteSQLException("Failed to initialize system DB connection: " + dbUrl, e);
         }
     }

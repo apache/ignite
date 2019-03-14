@@ -261,9 +261,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap<>();
 
-    /** Statement cache. */
-    private final ConcurrentHashMap<Thread, H2StatementCache> stmtCache = new ConcurrentHashMap<>();
-
     /** */
     private final GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
         new GridBoundedConcurrentLinkedHashMap<>(TWO_STEP_QRY_CACHE_SIZE);
@@ -2304,10 +2301,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         createSchema(QueryUtils.SCHEMA_SYS);
                     }
 
-                    Connection c = connMgr.connectionNoCache(QueryUtils.SCHEMA_SYS);
-
-                    for (SqlSystemView view : systemViews(ctx))
-                        SqlSystemTableEngine.registerView(c, view);
+                    try (Connection c = connMgr.connectionNoCache(QueryUtils.SCHEMA_SYS)) {
+                        for (SqlSystemView view : systemViews(ctx))
+                            SqlSystemTableEngine.registerView(c, view);
+                    }
                 }
                 catch (SQLException e) {
                     throw new IgniteCheckedException("Failed to register system view.", e);
@@ -2580,7 +2577,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
-            stmtCache.clear();
+            connMgr.onCacheDestroyed();
 
             for (H2TableDescriptor tbl : rmvTbls) {
                 for (Index idx : tbl.table().getIndexes())
