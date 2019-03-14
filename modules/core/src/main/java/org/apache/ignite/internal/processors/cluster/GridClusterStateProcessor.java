@@ -346,6 +346,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 && !ctx.isDaemon()
                 && ctx.config().isAutoActivationEnabled()
                 && !state.active()
+                && !inMemoryMode
                 && isBaselineSatisfied(state.baselineTopology(), discoCache.serverNodes())
         )
             changeGlobalState0(true, state.baselineTopology(), false);

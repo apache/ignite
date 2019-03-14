@@ -1413,7 +1413,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      */
     final void checkNoCaches(int nodes) {
         for (int i = 0; i < nodes; i++) {
-            grid(i).context().state().publicApiActiveState(true);
+            assertFalse(grid(i).context().state().publicApiActiveState(true));
 
             GridCacheProcessor cache = ((IgniteEx)ignite(i)).context().cache();
 
