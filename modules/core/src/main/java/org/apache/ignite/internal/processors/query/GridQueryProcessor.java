@@ -114,7 +114,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -2266,7 +2265,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qry Query.
      * @return Schema name.
      */
-    @Nullable private String getSchemaName(@NotNull GridCacheContext<?, ?> cctx, SqlFieldsQuery qry) {
+    private String getSchemaName(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry) {
         if (qry.getSchema() != null)
             return qry.getSchema();
         else if (cctx != null) {
