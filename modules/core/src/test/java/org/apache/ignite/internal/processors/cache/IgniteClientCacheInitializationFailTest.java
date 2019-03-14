@@ -410,7 +410,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void cancelAllQueries() {
+        @Override public void onKernalStop() {
             // No-op
         }
 

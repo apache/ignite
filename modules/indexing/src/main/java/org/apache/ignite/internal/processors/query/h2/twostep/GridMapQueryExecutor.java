@@ -876,7 +876,7 @@ public class GridMapQueryExecutor {
                 .mvccSnapshot(mvccSnapshot)
                 .lazyWorker(worker);
 
-            Connection conn = h2.connectionForSchema(schemaName);
+            Connection conn = h2.connections().connectionForThread(schemaName);
 
             H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
 
