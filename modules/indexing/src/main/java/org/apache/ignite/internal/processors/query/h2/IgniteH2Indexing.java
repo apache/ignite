@@ -799,9 +799,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     @SuppressWarnings("unchecked")
     public GridQueryFieldsResult queryLocalSqlFields(String schemaName, String qry, @Nullable Collection<Object> params,
-        IndexingQueryFilter filter, boolean enforceJoinOrder, boolean startTx, int timeout,
+        IndexingQueryFilter filter, boolean enforceJoinOrder, boolean startTx, int timeout, boolean lazy,
         GridQueryCancel cancel) throws IgniteCheckedException {
-        return queryLocalSqlFields(schemaName, qry, params, filter, enforceJoinOrder, startTx, timeout, cancel, null);
+        return queryLocalSqlFields(schemaName, qry, params, filter, enforceJoinOrder, startTx, timeout, lazy, cancel, null);
     }
 
     /**
@@ -822,7 +822,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     GridQueryFieldsResult queryLocalSqlFields(final String schemaName, String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
-        boolean startTx, int qryTimeout, final GridQueryCancel cancel,
+        boolean startTx, int qryTimeout, boolean lazy, final GridQueryCancel cancel,
         MvccQueryTracker mvccTracker) throws IgniteCheckedException {
 
         GridNearTxLocal tx = null;
@@ -834,7 +834,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             final Connection conn = connMgr.connectionForThread().connection(schemaName);
 
-            H2Utils.setupConnection(conn, false, enforceJoinOrder);
+            H2Utils.setupConnection(conn, false, enforceJoinOrder, lazy);
 
             PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
 
@@ -1308,7 +1308,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         int timeout = qry.getTimeout();
 
         final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, sql, params, filter,
-            enforceJoinOrder, startTx, timeout, cancel);
+            enforceJoinOrder, startTx, timeout, qry.isLazy(), cancel);
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
             @SuppressWarnings("NullableProblems")

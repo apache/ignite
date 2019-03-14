@@ -159,7 +159,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends AbstractIndexingCo
                 range *= 3;
 
                 GridQueryFieldsResult res = spi.queryLocalSqlFields(spi.schema("A"), sql, Arrays.<Object>asList(1,
-                    range), null, false, false, 0, null);
+                    range), null, false, false, 0, false, null);
 
                 assert res.iterator().hasNext();
 
