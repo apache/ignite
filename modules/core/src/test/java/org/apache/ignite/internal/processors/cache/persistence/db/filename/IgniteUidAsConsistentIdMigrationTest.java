@@ -225,9 +225,13 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         stopGrid(0);
 
         this.configuredConsistentId = generatedCid;
-        Ignite igniteRestarted = startActivateFillDataGrid(0);
 
-        assertPdsDirsDefaultExist(U.maskForFileName(configuredConsistentId.toString()));
+        Ignite igniteRestarted = startActivateGrid(0);
+
+        assertEquals("there!", igniteRestarted.getOrCreateCache(CACHE_NAME).get("hi"));
+
+        assertPdsDirsDefaultExist(sub);
+
         stopGrid(0);
     }
 
@@ -383,7 +387,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @return name of storage related subfolders
      */
     @NotNull private String genNewStyleSubfolderName(final int nodeIdx, final Ignite ignite) {
-        final Object consistentId = ignite.cluster().localNode().consistentId();
+        Object consistentId = ignite.cluster().localNode().consistentId();
 
         assertTrue("For new style folders consistent ID should be UUID," +
                 " but actual class is " + (consistentId == null ? null : consistentId.getClass()),
