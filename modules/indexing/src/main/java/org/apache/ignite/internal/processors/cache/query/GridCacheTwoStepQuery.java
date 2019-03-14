@@ -68,25 +68,6 @@ public class GridCacheTwoStepQuery {
     private final int paramsCnt;
 
     /**
-     * Map query for SELECT FOR UPDATE. If a given query is for update, we need to save two
-     * variants of the this query. First variant {@link GridCacheTwoStepQuery#mapQrys} is used
-     * when the query is executed outside of any transaction - it is executed as a plain query.
-     * The second variant of the query - is a "for update" query which is used when running within
-     * transaction. In this query an extra _key column is implicitly appended to query columns.
-     * This extra column is used to lock the selected rows. This column is hidden from client.
-     */
-    private final GridCacheSqlQuery mapForUpdate;
-
-    /** Reduce query for SELECT FOR UPDATE. See {@link GridCacheTwoStepQuery#mapForUpdate} for details*/
-    private final GridCacheSqlQuery rdcForUpdate;
-
-    /**
-     * Original query without FOR UPDATE clause. Original query with remove "FOR UPDATE" clause. This
-     * String is useful when we need to executed an original query instead of two-step one.
-     */
-    private final String originalNoForUpdateSql;
-
-    /**
      *
      * @param originalSql Original SQL.
      * @param paramsCnt Parameters count.
@@ -100,8 +81,6 @@ public class GridCacheTwoStepQuery {
      * @param cacheIds Cache ids.
      * @param mvccEnabled Mvcc flag.
      * @param locSplit Local split flag.
-     * @param mapForUpdate For update version of map query.
-     * @param rdcForUpdate For update version of reduce query.
      */
     public GridCacheTwoStepQuery(
         String originalSql,
@@ -115,10 +94,7 @@ public class GridCacheTwoStepQuery {
         PartitionResult derivedPartitions,
         List<Integer> cacheIds,
         boolean mvccEnabled,
-        boolean locSplit,
-        GridCacheSqlQuery mapForUpdate,
-        GridCacheSqlQuery rdcForUpdate,
-        String originalNoForUpdateSql
+        boolean locSplit
     ) {
         this.originalSql = originalSql;
         this.paramsCnt = paramsCnt;
@@ -132,9 +108,6 @@ public class GridCacheTwoStepQuery {
         this.cacheIds = cacheIds;
         this.mvccEnabled = mvccEnabled;
         this.locSplit = locSplit;
-        this.mapForUpdate = mapForUpdate;
-        this.rdcForUpdate = rdcForUpdate;
-        this.originalNoForUpdateSql = originalNoForUpdateSql;
     }
 
     /**
@@ -257,37 +230,6 @@ public class GridCacheTwoStepQuery {
      */
     public int parametersCount() {
         return paramsCnt;
-    }
-
-    /**
-     *
-     * @return For update version of map query.
-     */
-    public GridCacheSqlQuery mapQueriesForUpdate() {
-        return mapForUpdate;
-    }
-
-    /**
-     * @return For update version of map query.
-     */
-    public GridCacheSqlQuery reduceQueryForUpdate() {
-        return rdcForUpdate;
-    }
-
-    /**
-     * @return Original query without FOR UPDATE clause.
-     */
-    public String originalNoForUpdateSql() {
-        return originalNoForUpdateSql;
-    }
-
-    /**
-     * @return {@code True} if this is a FOR UPDATE query
-     */
-    public boolean forUpdate() {
-        assert (mapForUpdate == null) == (rdcForUpdate == null);
-
-        return rdcForUpdate != null;
     }
 
     /** {@inheritDoc} */

@@ -1293,7 +1293,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (select.splitNeeded()) {
             // Distributed query.
-            GridCacheTwoStepQuery twoStepQry = select.twoStepQuery();
+            GridCacheTwoStepQuery twoStepQry = forUpdate ? select.twoStepQueryForUpdate() : select.twoStepQuery();
 
             assert twoStepQry != null;
 

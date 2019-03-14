@@ -35,6 +35,17 @@ public class QueryParserResultSelect {
     /** Two-step query, or {@code} null if this result is for local query. */
     private final GridCacheTwoStepQuery twoStepQry;
 
+    /**
+     * Two-step query in SELECT FOR UPDATE case, or {@code} null if this result is for local query.
+     * If a query is for update, we need to save two  variants of the this query.
+     * First variant {@link QueryParserResultSelect#twoStepQry} is used  when the query is executed outside
+     * of transaction - it is executed as a plain query.  The second variant of the query - is actually
+     * a "for update" query which is used when running within transaction. In this query an extra _key column
+     * is implicitly appended to query columns. This extra column is used to lock the selected rows.
+     * This column is hidden from client.
+     */
+    private final GridCacheTwoStepQuery twoStepQryForUpdate;
+
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
     private final List<GridQueryFieldMetadata> meta;
 
@@ -49,14 +60,12 @@ public class QueryParserResultSelect {
 
     /**
      * Sql query with cleared "FOR UPDATE" statement. This string is used when executing query out of transaction.
-     * See {@link GridCacheTwoStepQuery#mapForUpdate} for details.
      */
     private final String sqlQry;
 
     /**
      * Sql query for update. Contains additional "_key" column.
      * This string is used when executing query within explicit transaction.
-     * See {@link GridCacheTwoStepQuery#mapForUpdate} for details.
      */
     private final String sqlQryForUpdate;
 
@@ -75,6 +84,7 @@ public class QueryParserResultSelect {
     public QueryParserResultSelect(
         GridSqlStatement stmt,
         @Nullable GridCacheTwoStepQuery twoStepQry,
+        @Nullable GridCacheTwoStepQuery twoStepQryForUpdate,
         List<GridQueryFieldMetadata> meta,
         int paramsCnt,
         List<Integer> cacheIds,
@@ -84,6 +94,7 @@ public class QueryParserResultSelect {
     ) {
         this.stmt = stmt;
         this.twoStepQry = twoStepQry;
+        this.twoStepQryForUpdate = twoStepQryForUpdate;
         this.meta = meta;
         this.paramsCnt = paramsCnt;
         this.cacheIds = cacheIds;
@@ -104,6 +115,13 @@ public class QueryParserResultSelect {
      */
     @Nullable public GridCacheTwoStepQuery twoStepQuery() {
         return twoStepQry;
+    }
+
+    /**
+     * @return Two-step query for update, or {@code} null if this result is for local query.
+     */
+    @Nullable public GridCacheTwoStepQuery twoStepQueryForUpdate() {
+        return twoStepQryForUpdate;
     }
 
     /**

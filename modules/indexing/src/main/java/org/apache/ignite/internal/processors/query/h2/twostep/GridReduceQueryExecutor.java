@@ -436,12 +436,8 @@ public class GridReduceQueryExecutor {
         else {
             mapQueries = new ArrayList<>(qry.mapQueries().size());
 
-            List<GridCacheSqlQuery> mQrs = forUpdate ?
-                Collections.singletonList(qry.mapQueriesForUpdate()) :
-                qry.mapQueries();
-
             // Copy queries here because node ID will be changed below.
-            for (GridCacheSqlQuery mapQry : mQrs)
+            for (GridCacheSqlQuery mapQry : qry.mapQueries())
                 mapQueries.add(mapQry.copy());
         }
 
@@ -730,7 +726,7 @@ public class GridReduceQueryExecutor {
                             if (qry.explain())
                                 return explainPlan(r.connection(), qry, params);
 
-                            GridCacheSqlQuery rdc = forUpdate ? qry.reduceQueryForUpdate() : qry.reduceQuery();
+                            GridCacheSqlQuery rdc = qry.reduceQuery();
 
                             ResultSet res = h2.executeSqlQueryWithTimer(r.connection(),
                                 rdc.query(),
@@ -1310,9 +1306,7 @@ public class GridReduceQueryExecutor {
             }
         }
 
-        String originalSql = forUpdate ? qry.originalNoForUpdateSql() : qry.originalSql();
-
-        GridCacheSqlQuery originalQry = new GridCacheSqlQuery(originalSql);
+        GridCacheSqlQuery originalQry = new GridCacheSqlQuery(qry.originalSql());
 
         if (!F.isEmpty(params)) {
             int[] paramIdxs = new int[params.length];

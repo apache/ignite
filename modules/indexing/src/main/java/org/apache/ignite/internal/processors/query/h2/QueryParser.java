@@ -71,7 +71,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.copySelect;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.keyColumn;
 
 /**
@@ -407,7 +406,8 @@ public class QueryParser {
                     throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
                         "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-                GridSqlSelect sel = copySelect((GridSqlSelect)selectStmt);
+                // We need a copy because we are going to change AST a bit.
+                GridSqlSelect sel = ((GridSqlSelect)selectStmt).copy();
 
                 // Clear this flag to run it as a plain query.
                 sel.forUpdate(false);
@@ -448,6 +448,7 @@ public class QueryParser {
 
             try {
                 GridCacheTwoStepQuery twoStepQry = null;
+                GridCacheTwoStepQuery twoStepQryForUpdate = null;
 
                 if (splitNeeded) {
                     twoStepQry = GridSqlQuerySplitter.split(
@@ -457,8 +458,23 @@ public class QueryParser {
                         newQry.isDistributedJoins(),
                         newQry.isEnforceJoinOrder(),
                         locSplit,
-                        idx
+                        idx,
+                        false
                     );
+
+                    // Prepare additional two-step query for FOR UPDATE case.
+                    if (forUpdate) {
+                        twoStepQryForUpdate = GridSqlQuerySplitter.split(
+                            connMgr.connectionForThread().connection(newQry.getSchema()),
+                            prepared,
+                            newQry.isCollocated(),
+                            newQry.isDistributedJoins(),
+                            newQry.isEnforceJoinOrder(),
+                            locSplit,
+                            idx,
+                            true
+                        );
+                    }
                 }
 
                 List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
@@ -466,6 +482,7 @@ public class QueryParser {
                 QueryParserResultSelect select = new QueryParserResultSelect(
                     selectStmt,
                     twoStepQry,
+                    twoStepQryForUpdate,
                     meta,
                     paramsCnt,
                     cacheIds,

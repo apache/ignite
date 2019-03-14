@@ -413,4 +413,26 @@ public class GridSqlSelect extends GridSqlQuery {
 
         aliases.add((GridSqlAlias)from);
     }
+
+    /**
+     * @return Copy of this select.
+     */
+    public GridSqlSelect copy() {
+        GridSqlSelect copy = new GridSqlSelect();
+
+        copy.from(from())
+            .where(where());
+
+        int vis = visibleColumns();
+
+        for (int i = 0; i < columns(false).size(); i++)
+            copy.addColumn(column(i), i < vis);
+
+        if (!sort().isEmpty()) {
+            for (GridSqlSortColumn sortCol : sort())
+                copy.addSort(sortCol);
+        }
+
+        return copy;
+    }
 }

@@ -878,7 +878,8 @@ public final class UpdatePlanBuilder {
                     planKey.distributedJoins(),
                     planKey.enforceJoinOrder(),
                     false,
-                    idx
+                    idx,
+                    false
                 );
 
                 boolean distributed =
