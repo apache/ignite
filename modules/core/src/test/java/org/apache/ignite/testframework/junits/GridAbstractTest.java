@@ -718,7 +718,13 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     @NotNull protected Method currentTestMethod() {
         if (currTestMtd == null) {
             try {
-                currTestMtd = getClass().getMethod(getName());
+                String testName = getName();
+
+                int bracketIdx = testName.indexOf('[');
+
+                String mtdName = bracketIdx >= 0 ? testName.substring(0, bracketIdx) : testName;
+
+                currTestMtd = getClass().getMethod(mtdName);
             }
             catch (NoSuchMethodException e) {
                 throw new NoSuchMethodError("Current test method is not found: " + getName());
