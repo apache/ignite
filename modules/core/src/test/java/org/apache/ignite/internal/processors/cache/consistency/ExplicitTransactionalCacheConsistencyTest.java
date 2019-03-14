@@ -46,8 +46,7 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     /**
      *
      */
-    protected void test(TransactionConcurrency concurrency,
-        TransactionIsolation isolation) throws Exception {
+    protected void test(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         test(concurrency, isolation, true);
         test(concurrency, isolation, false);
     }
@@ -55,8 +54,10 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     /**
      *
      */
-    private void test(TransactionConcurrency concurrency,
-        TransactionIsolation isolation, boolean raw /*getEntry() or just get()*/) throws Exception {
+    private void test(
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
+        boolean raw /*getEntry() or just get()*/) throws Exception {
         for (Ignite node : G.allGrids()) {
             testGet(node, concurrency, isolation, 1, raw, false);
             testGetAllVariations(node, concurrency, isolation, raw);
@@ -66,8 +67,13 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     /**
      *
      */
-    protected void testGet(Ignite initiator, TransactionConcurrency concurrency,
-        TransactionIsolation isolation, Integer cnt, boolean raw, boolean all) throws Exception {
+    protected void testGet(
+        Ignite initiator,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
+        Integer cnt,
+        boolean raw,
+        boolean all) throws Exception {
         prepareAndCheck(
             initiator,
             cnt,
@@ -96,8 +102,11 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     /**
      *
      */
-    private void testGetAllVariations(Ignite initiator, TransactionConcurrency concurrency,
-        TransactionIsolation isolation, boolean raw) throws Exception {
+    private void testGetAllVariations(
+        Ignite initiator,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
+        boolean raw) throws Exception {
         testGet(initiator, concurrency, isolation, 1, raw, true); // 1 (all keys available at primary)
         testGet(initiator, concurrency, isolation, 2, raw, true); // less than backups
         testGet(initiator, concurrency, isolation, 3, raw, true); // equals to backups
