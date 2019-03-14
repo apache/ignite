@@ -772,10 +772,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     GridQueryFieldsResult queryLocalSqlFields(final String schemaName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
-        final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
+        boolean lazy, final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
         final Connection conn = connMgr.connectionForThread().connection(schemaName);
 
-        H2Utils.setupConnection(conn, false, enforceJoinOrder);
+        H2Utils.setupConnection(conn, false, enforceJoinOrder, lazy);
 
         final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
 
@@ -1102,7 +1102,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Object[] args = qry.getArgs();
 
         final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, sql, F.asList(args), filter,
-            qry.isEnforceJoinOrder(), qry.getTimeout(), cancel);
+            qry.isEnforceJoinOrder(), qry.isLazy(), qry.getTimeout(), cancel);
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
             @SuppressWarnings("NullableProblems")
