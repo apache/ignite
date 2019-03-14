@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -38,7 +39,7 @@ import org.junit.runners.JUnit4;
 /** */
 @SuppressWarnings("ThrowableNotThrown")
 @RunWith(JUnit4.class)
-public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
+public class IgniteSqlDefaultValueTest extends AbstractIndexingCommonTest {
     /** Name of client node. */
     private static final String NODE_CLIENT = "client";
 

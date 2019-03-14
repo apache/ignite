@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -34,7 +35,7 @@ import org.junit.runners.JUnit4;
  * A test for {@link QueryEntity} initialization with incorrect query field name
  */
 @RunWith(JUnit4.class)
-public class IncorrectQueryEntityTest extends GridCommonAbstractTest {
+public class IncorrectQueryEntityTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);

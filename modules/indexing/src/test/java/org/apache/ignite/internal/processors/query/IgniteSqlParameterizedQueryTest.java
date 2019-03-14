@@ -30,7 +30,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -43,7 +43,7 @@ import org.junit.runners.JUnit4;
  * @see <a href="https://issues.apache.org/jira/browse/IGNITE-6286">IGNITE-6286</a>
  */
 @RunWith(JUnit4.class)
-public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
+public class IgniteSqlParameterizedQueryTest extends AbstractIndexingCommonTest {
     /** */
     private static final String CACHE_BOOKMARK = "Bookmark";
 

@@ -671,7 +671,7 @@ public class GridReduceQueryExecutor {
             }
 
             final ReduceQueryRun r = new ReduceQueryRun(qryReqId, qry.originalSql(), schemaName,
-                h2.connections().connectionForThread(schemaName), qry.mapQueries().size(), qry.pageSize(),
+                h2.connections().connectionForThread().connection(schemaName), qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), sfuFut, cancel);
 
             Collection<ClusterNode> nodes;
@@ -956,7 +956,7 @@ public class GridReduceQueryExecutor {
                                 timeoutMillis,
                                 cancel);
 
-                            resIter = new H2FieldsIterator(res, mvccTracker, false);
+                            resIter = new H2FieldsIterator(res, mvccTracker, false, null);
 
                             mvccTracker = null; // To prevent callback inside finally block;
                         }

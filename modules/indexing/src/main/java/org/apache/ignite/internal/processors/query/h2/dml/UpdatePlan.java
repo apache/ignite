@@ -623,7 +623,7 @@ public final class UpdatePlan {
         private final EnlistOperation op;
 
         /** */
-        private volatile ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn;
+        private volatile ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn;
 
         /**
          * @param idx Indexing.
@@ -647,7 +647,7 @@ public final class UpdatePlan {
 
         /** {@inheritDoc} */
         @Override public void beforeDetach() {
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn = idx.connections().detachThreadConnection();
+            ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn0 = conn = idx.connections().detachThreadConnection();
 
             if (isClosed())
                 conn0.recycle();
@@ -657,7 +657,7 @@ public final class UpdatePlan {
         @Override protected void onClose() {
             cur.close();
 
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn;
+            ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn0 = conn;
 
             if (conn0 != null)
                 conn0.recycle();
