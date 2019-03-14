@@ -250,8 +250,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         assert reqId != 0;
 
         synchronized (reqMux) {
-            if (isCancellationSupported() && (cmdType == QRY_EXEC || cmdType == BATCH_EXEC ||
-                cmdType == BATCH_EXEC_ORDERED))
+            if (isCancellationSupported() && (cmdType == QRY_EXEC || cmdType == BATCH_EXEC))
                 reqRegister.put(reqId, new JdbcQueryDescriptor());
         }
     }
@@ -347,16 +346,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse dispatchBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
-        synchronized (orderedBatchesMux) {
-            orderedBatchesQueue.add(req);
-
-            orderedBatchesMux.notify();
-        }
-
         if (!cliCtx.isStreamOrdered())
             executeBatchOrdered(req);
+        else {
+            synchronized (orderedBatchesMux) {
+                orderedBatchesQueue.add(req);
 
-        return null;
+                orderedBatchesMux.notifyAll();
+            }
+        }
+
+       return null;
     }
 
     /**
@@ -380,10 +380,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             U.error(null, "Error processing file batch", e);
 
             sender.send(new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e));
-        }
-
-        synchronized (orderedBatchesMux) {
-            orderedBatchesQueue.poll();
         }
 
         cliCtx.orderedRequestProcessed();
@@ -834,7 +830,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private ClientListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
         GridQueryCancel cancel = null;
 
-        if (isCancellationSupported()) {
+        // Skip request register check for ORDERED batches (JDBC streams)
+        // because ordered batch requests are processed asynchronously at the
+        // separate thread.
+        if (isCancellationSupported() && req.type() == BATCH_EXEC) {
             synchronized (reqMux) {
                 JdbcQueryDescriptor desc = reqRegister.get(req.requestId());
 
@@ -1175,6 +1174,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                         continue;
                     }
+                    else
+                        orderedBatchesQueue.poll();
                 }
 
                 executeBatchOrdered(req);

@@ -154,6 +154,6 @@ public class JdbcQueryExecuteResult extends JdbcResult {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryExecuteResult.class, this);
+        return S.toString(JdbcQueryExecuteResult.class, this, super.toString());
     }
 }

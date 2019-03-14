@@ -473,14 +473,15 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse dispatchBatchOrdered(OdbcStreamingBatchRequest req) {
-        synchronized (orderedBatchesMux) {
-            orderedBatchesQueue.add(req);
-
-            orderedBatchesMux.notify();
-        }
-
         if (!cliCtx.isStreamOrdered())
             processStreamingBatchOrdered(req);
+        else {
+            synchronized (orderedBatchesMux) {
+                orderedBatchesQueue.add(req);
+
+                orderedBatchesMux.notifyAll();
+            }
+        }
 
         return null;
     }
@@ -498,10 +499,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             U.error(null, "Error processing file batch", e);
 
             sender.send(new OdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e));
-        }
-
-        synchronized (orderedBatchesMux) {
-            orderedBatchesQueue.poll();
         }
 
         cliCtx.orderedRequestProcessed();
@@ -1019,6 +1016,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
                         continue;
                     }
+                    else
+                        orderedBatchesQueue.poll();
                 }
 
                 processStreamingBatchOrdered(req);
