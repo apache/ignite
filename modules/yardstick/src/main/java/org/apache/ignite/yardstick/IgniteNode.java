@@ -203,6 +203,8 @@ public class IgniteNode implements BenchmarkServer {
 
             pcCfg.setWalMode(WALMode.valueOf(args.walMode()));
 
+            pcCfg.setCheckpointFrequency(args.checkpointFrequency());
+
             pcCfg.setWalPageCompression(DiskPageCompression.valueOf(args.walPageCompression()));
 
             pcCfg.setWalPageCompressionLevel(args.walPageCompressionLevel());

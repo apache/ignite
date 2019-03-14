@@ -255,6 +255,10 @@ public class IgniteBenchmarkArguments {
     private String walMode = "LOG_ONLY";
 
     /** */
+    @Parameter(names = {"-cpf", "--checkpointFrequency"}, description = "Checkpoint frequency")
+    private int cpFreq = DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
+
+    /** */
     @Parameter(names = {"-wpc", "--walPageCompression"}, description = "WAL page snapshot records compression algorithm")
     private String walPageCompression = "DISABLED";
 
@@ -318,6 +322,13 @@ public class IgniteBenchmarkArguments {
      */
     public String walMode() {
         return walMode;
+    }
+
+    /**
+     * @return Checkpoint frequency.
+     */
+    public int checkpointFrequency() {
+        return cpFreq;
     }
 
     /**

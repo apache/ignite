@@ -17,16 +17,16 @@
 
 package org.apache.ignite.yardstick.probes;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -41,13 +41,26 @@ public class WalSizeProbe implements BenchmarkTotalsOnlyProbe {
     /** WAL manager. */
     private volatile IgniteWriteAheadLogManager wal;
 
-    /** Wal segment size. */
+    /** Checkpoint process supplier. */
+    private volatile CheckpointWriteProgressSupplier chpProc;
+
+    /** WAL segment size. */
     private volatile int walSegmentSize;
 
+    /** Previous WAL ptr. */
     private volatile FileWALPointer prevPtr;
 
-    /** Benchmark points. */
-    private final List<BenchmarkProbePoint> points = new LinkedList<>();
+    /** Current checkpoint written pages. */
+    private volatile int chpPrevWrittenPages;
+
+    /** Current checkpoint fsync pages. */
+    private volatile int chpPrevSyncedPages;
+
+    /** Current checkpoint total pages. */
+    private volatile int chpPrevTotalPages;
+
+    /** Collected points. */
+    private Collection<BenchmarkProbePoint> collected = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override public void start(BenchmarkDriver drv, BenchmarkConfiguration cfg) throws Exception {
@@ -55,6 +68,8 @@ public class WalSizeProbe implements BenchmarkTotalsOnlyProbe {
             IgniteEx ignite = (IgniteEx)((IgniteAbstractBenchmark)drv).ignite();
 
             wal = ignite.context().cache().context().wal();
+
+            chpProc = (CheckpointWriteProgressSupplier)ignite.context().cache().context().database();
 
             if (wal != null) {
                 walSegmentSize = ignite.configuration().getDataStorageConfiguration().getWalSegmentSize();
@@ -71,15 +86,22 @@ public class WalSizeProbe implements BenchmarkTotalsOnlyProbe {
 
     /** {@inheritDoc} */
     @Override public Collection<String> metaInfo() {
-        return Arrays.asList("Time, sec", "WAL segments", "Estimated WAL size");    }
+        return Arrays.asList("Time, sec", "WAL size, bytes/sec", "Checkpoint written pages, pages/sec"
+            , "Checkpoint synced pages, pages/sec");
+    }
 
     /** {@inheritDoc} */
-    @Override public Collection<BenchmarkProbePoint> points() {return Collections.unmodifiableList(points);
+    @Override public Collection<BenchmarkProbePoint> points() {
+        Collection<BenchmarkProbePoint> ret = collected;
+
+        collected = new ArrayList<>(ret.size() + 5);
+
+        return ret;
     }
 
     /** {@inheritDoc} */
     @Override public void buildPoint(long time) {
-        if (wal == null)
+        if (wal == null || chpProc == null)
             return;
 
         try {
@@ -87,11 +109,27 @@ public class WalSizeProbe implements BenchmarkTotalsOnlyProbe {
 
             double estimatedSize = (ptr.index() - prevPtr.index()) * walSegmentSize + ptr.fileOffset() - prevPtr.fileOffset();
 
-            double segmentsCnt = estimatedSize / walSegmentSize;
+            AtomicInteger writtenPagesCntr = chpProc.writtenPagesCounter();
+            AtomicInteger syncedPagesCntr = chpProc.syncedPagesCounter();
 
-            points.add(new BenchmarkProbePoint(TimeUnit.MILLISECONDS.toSeconds(time), new double[] {segmentsCnt, estimatedSize}));
+            int chpCurWrittenPages = writtenPagesCntr == null ? 0 : writtenPagesCntr.get();
+            int chpCurSyncedPages = syncedPagesCntr == null ? 0 : syncedPagesCntr.get();
+            int chpCurTotalPages = chpProc.currentCheckpointPagesCount();
+
+            int writtenPages = chpCurWrittenPages >= chpPrevWrittenPages ? chpCurWrittenPages - chpPrevWrittenPages :
+                chpPrevTotalPages - chpPrevWrittenPages;
+
+            int syncedPages = chpCurSyncedPages >= chpPrevSyncedPages ? chpCurSyncedPages - chpPrevSyncedPages :
+                chpPrevTotalPages - chpPrevSyncedPages;
+
+            chpPrevWrittenPages = chpCurWrittenPages;
+            chpPrevSyncedPages = chpCurSyncedPages;
+            chpPrevTotalPages = chpCurTotalPages;
 
             prevPtr = ptr;
+
+            collected.add(new BenchmarkProbePoint(TimeUnit.MILLISECONDS.toSeconds(time),
+                new double[] {estimatedSize, writtenPages, syncedPages}));
         }
         catch (IgniteCheckedException ignore) {
             // No-op.
