@@ -50,7 +50,7 @@ import org.junit.runners.Suite;
  * Test suite for tests that cover core PDS features and depend on indexing module.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite.SuiteClasses({/*
     IgnitePdsCacheIntegrationTest.class,
     IgnitePdsPageEvictionTest.class,
     IgnitePdsMultiNodePutGetRestartTest.class,
@@ -79,15 +79,63 @@ import org.junit.runners.Suite;
     IgnitePdsCacheDestroyDuringCheckpointTest.class,
 
     IgnitePdsBinaryMetadataOnClusterRestartTest.class,
-    IgnitePdsMarshallerMappingRestoreOnNodeStartTest.class,
-    IgnitePdsThreadInterruptionTest.class,
+    IgnitePdsMarshallerMappingRestoreOnNodeStartTest.class,*/
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
+    IgnitePdsBinarySortObjectFieldsTest.class,
     IgnitePdsBinarySortObjectFieldsTest.class,
 
-    IgnitePdsCorruptedIndexTest.class,
+  /*  IgnitePdsCorruptedIndexTest.class,
 
     IgniteLogicalRecoveryTest.class,
 
-    IgniteSequentialNodeCrashRecoveryTest.class
+    IgniteSequentialNodeCrashRecoveryTest.class*/
 })
 public class IgnitePdsWithIndexingCoreTestSuite {
 }
