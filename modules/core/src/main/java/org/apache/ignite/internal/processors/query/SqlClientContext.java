@@ -61,8 +61,8 @@ public class SqlClientContext implements AutoCloseable {
     /** Data page scan support for query execution. */
     private final @Nullable Boolean dataPageScanEnabled;
 
-    /** Monitor. */
-    private final Object mux = new Object();
+    /** Monitor for stream operations. */
+    private final Object muxStreamer = new Object();
 
     /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
     private boolean streamAllowOverwrite;
@@ -133,7 +133,7 @@ public class SqlClientContext implements AutoCloseable {
      */
     public void enableStreaming(boolean allowOverwrite, long flushFreq, int perNodeBufSize,
         int perNodeParOps, boolean ordered) {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             if (isStream())
                 return;
 
@@ -144,6 +144,7 @@ public class SqlClientContext implements AutoCloseable {
             this.streamNodeBufSize = perNodeBufSize;
             this.streamNodeParOps = perNodeParOps;
             this.streamOrdered = ordered;
+            this.totalProcessedOrderedReqs = 0;
 
             if (ordered) {
                 orderedBatchThread = new IgniteThread(orderedBatchWorkerFactory.create());
@@ -157,7 +158,7 @@ public class SqlClientContext implements AutoCloseable {
      * Turn off streaming on this client context - with closing all open streamers, if any.
      */
     public void disableStreaming() {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             if (!isStream())
                 return;
 
@@ -172,8 +173,8 @@ public class SqlClientContext implements AutoCloseable {
             }
 
             streamers = null;
-
             orderedBatchThread = null;
+            totalProcessedOrderedReqs = 0;
         }
     }
 
@@ -230,7 +231,7 @@ public class SqlClientContext implements AutoCloseable {
      * @return Streaming state flag (on or off).
      */
     public boolean isStream() {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             return streamers != null;
         }
     }
@@ -239,7 +240,7 @@ public class SqlClientContext implements AutoCloseable {
      * @return Stream ordered flag.
      */
     public boolean isStreamOrdered() {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             return streamOrdered;
         }
     }
@@ -249,7 +250,7 @@ public class SqlClientContext implements AutoCloseable {
      * @return Streamer for given cache.
      */
     public IgniteDataStreamer<?, ?> streamerForCache(String cacheName) {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             if (streamers == null)
                 return null;
 
@@ -281,10 +282,10 @@ public class SqlClientContext implements AutoCloseable {
      * @param total Expected total processed request.
      */
     public void waitTotalProcessedOrderedRequests(long total) {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             while (totalProcessedOrderedReqs < total) {
                 try {
-                    mux.wait();
+                    muxStreamer.wait();
                 }
                 catch (InterruptedException e) {
                     throw new IgniteException("Waiting for end of processing the last batch is interrupted", e);
@@ -297,10 +298,10 @@ public class SqlClientContext implements AutoCloseable {
      *
      */
     public void orderedRequestProcessed() {
-        synchronized (mux) {
+        synchronized (muxStreamer) {
             totalProcessedOrderedReqs++;
 
-            mux.notify();
+            muxStreamer.notifyAll();
         }
     }
 

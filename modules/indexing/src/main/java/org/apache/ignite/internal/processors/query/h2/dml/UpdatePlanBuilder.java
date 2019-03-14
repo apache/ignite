@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -74,6 +75,10 @@ public final class UpdatePlanBuilder {
     /** Converter from GridSqlColumn to Column. */
     private static final IgniteClosure<GridSqlColumn, Column> TO_H2_COL =
         (IgniteClosure<GridSqlColumn, Column>)GridSqlColumn::column;
+
+    /** Allow hidden key value columns at the INSERT/UPDATE/MERGE statements (not final for tests). */
+    private static boolean ALLOW_KEY_VAL_UPDATES = IgniteSystemProperties.getBoolean(
+        IgniteSystemProperties.IGNITE_SQL_ALLOW_KEY_VAL_UPDATES, false);
 
     /**
      * Constructor.
@@ -843,6 +848,22 @@ public final class UpdatePlanBuilder {
                 throw new IgniteSQLException("Column " + valColName + " refers to entire value cache object. " +
                     "It must not be mixed with other columns that refer to parts of value.",
                     IgniteQueryErrorCode.PARSING);
+
+            if (!ALLOW_KEY_VAL_UPDATES) {
+                if (desc.isKeyColumn(colId) && !QueryUtils.isSqlType(desc.type().keyClass())) {
+                    throw new IgniteSQLException(
+                        "Update of composite key column is not supported",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION
+                    );
+                }
+
+                if (desc.isValueColumn(colId) && !QueryUtils.isSqlType(desc.type().valueClass())) {
+                    throw new IgniteSQLException(
+                        "Update of composite value column is not supported",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION
+                    );
+                }
+            }
         }
     }
 
