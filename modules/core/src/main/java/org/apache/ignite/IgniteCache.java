@@ -140,7 +140,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      *
      */
-    public IgniteCache<K, V> withConsistencyCheck();
+    public IgniteCache<K, V> withConsistency();
 
     /**
      * Returns cache that will operate with binary objects.

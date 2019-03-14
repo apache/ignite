@@ -365,7 +365,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withConsistencyCheck() {
+    @Override public IgniteCache<K, V> withConsistency() {
         throw new UnsupportedOperationException();
     }
 
