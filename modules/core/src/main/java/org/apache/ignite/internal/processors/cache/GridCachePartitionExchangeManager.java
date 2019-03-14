@@ -508,7 +508,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             }
 
-            if (!n.isClient() && !n.isDaemon() || locJoin)
+            if (!n.isClient() && !n.isDaemon())
                 exchActs = cctx.kernalContext().state().autoAdjustExchangeActions(exchActs);
 
             exchFut = exchangeFuture(exchId, evt, cache, exchActs, null);
