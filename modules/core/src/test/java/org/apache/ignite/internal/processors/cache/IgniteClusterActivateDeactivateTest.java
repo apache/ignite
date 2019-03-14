@@ -442,6 +442,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         if (initiallyActive) {
             ignite(0).cluster().active(true);
 
+            awaitPartitionMapExchange();
+
             minorVer++;
         }
 
