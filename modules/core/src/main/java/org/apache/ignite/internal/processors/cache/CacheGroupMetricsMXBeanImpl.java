@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -51,8 +52,8 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /** */
     private final GroupAllocationTracker groupPageAllocationTracker;
 
-    /** Number of partitions need to finished indexes rebuilding. */
-    private volatile long indexRebuildCountPartitionsLeft;
+    /** Number of partitions need processed for finished indexes create or rebuilding. */
+    private final AtomicLong indexBuildCountPartitionsLeft;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -115,6 +116,8 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         }
         else
             this.groupPageAllocationTracker = new GroupAllocationTracker(AllocatedPageTracker.NO_OP);
+
+        indexBuildCountPartitionsLeft=new AtomicLong();
     }
 
     /** {@inheritDoc} */
@@ -383,18 +386,21 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getIndexRebuildCountPartitionsLeft() {
-        return indexRebuildCountPartitionsLeft;
+    @Override public long getIndexBuildCountPartitionsLeft() {
+        return indexBuildCountPartitionsLeft.get();
     }
 
-    /** Set number of partitions need to finished indexes rebuilding. */
-    public void setIndexRebuildCountPartitionsLeft(long indexRebuildCountPartitionsLeft) {
-        this.indexRebuildCountPartitionsLeft=indexRebuildCountPartitionsLeft;
+    /** Set number of partitions need processed for finished indexes create or rebuilding. */
+    public void setIndexBuildCountPartitionsLeft(long indexBuildCountPartitionsLeft) {
+        this.indexBuildCountPartitionsLeft.set(indexBuildCountPartitionsLeft);
     }
 
-    /** Decrement number of partitions need to finished indexes rebuilding.*/
-    public long decIndexRebuildCountPartitionsLeft() {
-        return --indexRebuildCountPartitionsLeft;
+    /**
+     * Commit the complete index building for partition.
+     * @return Decrement number of partitions need processed for finished indexes create or rebuilding.
+     */
+    public long decIndexBuildCountPartitionsLeft() {
+        return indexBuildCountPartitionsLeft.decrementAndGet();
     }
 
     /**

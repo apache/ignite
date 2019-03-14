@@ -167,7 +167,7 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
         int timeout = 30;
 
         while (!stepStop && timeout > 0) {
-            stepStop = mxBean0Grp1.getIndexRebuildCountPartitionsLeft() > 0;
+            stepStop = mxBean0Grp1.getIndexBuildCountPartitionsLeft() > 0;
 
             Thread.sleep(1000);
 
@@ -181,9 +181,8 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
         timeout = 30;
 
         while (!stepStop && timeout > 0) {
-            stepStop = mxBean0Grp1.getIndexRebuildCountPartitionsLeft() == 0;
-            //TODO
-            System.out.println("TODO mxBean0Grp1 " + mxBean0Grp1.getIndexRebuildCountPartitionsLeft());
+            stepStop = mxBean0Grp1.getIndexBuildCountPartitionsLeft() == 0;
+
             Thread.sleep(1000);
 
             timeout--;

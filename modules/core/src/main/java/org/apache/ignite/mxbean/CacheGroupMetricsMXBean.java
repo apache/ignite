@@ -193,8 +193,10 @@ public interface CacheGroupMetricsMXBean {
     public long getSparseStorageSize();
 
     /**
-     * @return Number of partitions need to finished indexes rebuilding.
+     * @return Number of partitions need processed for finished indexes create or rebuilding.
+     * It is calculated as the number of local partition minus the processed.
+     * A value of 0 indicates that the index is built.
      */
-    @MXBeanDescription("Number of partitions need to finished indexes rebuilding.")
-    public long getIndexRebuildCountPartitionsLeft();
+    @MXBeanDescription("Number of partitions need processed for finished indexes create or rebuilding.")
+    public long getIndexBuildCountPartitionsLeft();
 }

@@ -107,7 +107,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         List<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
 
         if (cctx.group().mxBean() instanceof CacheGroupMetricsMXBeanImpl)
-            ((CacheGroupMetricsMXBeanImpl)(cctx.group().mxBean())).setIndexRebuildCountPartitionsLeft(parts.size());
+            ((CacheGroupMetricsMXBeanImpl)(cctx.group().mxBean())).setIndexBuildCountPartitionsLeft(parts.size());
 
         if (parts.isEmpty())
             return;
@@ -226,7 +226,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             part.release();
 
             if (cctx.group().mxBean() instanceof CacheGroupMetricsMXBeanImpl)
-                ((CacheGroupMetricsMXBeanImpl)(cctx.group().mxBean())).decIndexRebuildCountPartitionsLeft();
+                ((CacheGroupMetricsMXBeanImpl)(cctx.group().mxBean())).decIndexBuildCountPartitionsLeft();
         }
     }
 
@@ -326,9 +326,6 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 U.error(log, "Error during parallel index create/rebuild.", e);
 
                 stop = true;
-
-                if (cctx.group().mxBean() instanceof CacheGroupMetricsMXBeanImpl)
-                    ((CacheGroupMetricsMXBeanImpl)(cctx.group().mxBean())).setIndexRebuildCountPartitionsLeft(0);
             }
             finally {
                 fut.onDone(err);
