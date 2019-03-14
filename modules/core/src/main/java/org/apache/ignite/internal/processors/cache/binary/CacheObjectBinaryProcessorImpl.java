@@ -542,37 +542,46 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
 
         try {
-            BinaryMetadataHolder metaHolder = failIfUnregistered
-                ? metadataLocCache.get(typeId)
-                : metadataLocCache.computeIfAbsent(typeId, (key) -> new BinaryMetadataHolder(newMeta0, 0, 0));
+            GridFutureAdapter<MetadataUpdateResult> fut;
+            Set<Integer> changedSchemas;
+            BinaryMetadataHolder metaHolder;
 
-            BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
+            do {
+                metaHolder = metadataLocCache.get(typeId);
 
-            Set<Integer> changedSchemas = new LinkedHashSet<>();
+                BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
 
-            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0, changedSchemas);
+                changedSchemas = new LinkedHashSet<>();
 
-            if (mergedMeta == oldMeta) {
-                // Metadata locally is up-to-date. Waiting for updating metadata in an entire cluster, if necessary.
-                if (metaHolder.pendingVersion() != metaHolder.acceptedVersion() || metaHolder.pendingVersion() == 0) {
-                    GridFutureAdapter<MetadataUpdateResult> fut =
-                        transport.awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
+                BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0, changedSchemas);
+
+                if (mergedMeta != oldMeta) {
+                    if (failIfUnregistered)
+                        throw new UnregisteredBinaryTypeException(typeId, mergedMeta);
+
+                    fut = transport.requestMetadataUpdate(mergedMeta);
+                }
+                else {
+                    if (metaHolder.pendingVersion() == metaHolder.acceptedVersion())
+                        return;
+
+                    // Metadata locally is up-to-date. Waiting for updating metadata in an entire cluster, if necessary.
+                    fut = transport.awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
 
                     if (failIfUnregistered && !fut.isDone())
                         throw new UnregisteredBinaryTypeException(typeId, fut);
-
-                    fut.get();
                 }
 
-                return;
-            }
+                if (fut == null) {
+                    GridFutureAdapter<MetadataUpdateResult> pending = transport.getPendingMetaUpdate(typeId);
 
-            if (failIfUnregistered)
-                throw new UnregisteredBinaryTypeException(typeId, mergedMeta);
+                    if (pending != null)
+                        pending.get();
+                }
+            }
+            while (fut == null);
 
             long t0 = System.nanoTime();
-
-            GridFutureAdapter<MetadataUpdateResult> fut = transport.requestMetadataUpdate(mergedMeta);
 
             MetadataUpdateResult res = fut.get();
 
