@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -24,21 +33,14 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.jdbc.JdbcStatement;
 import org.h2.server.web.WebServer;
 import org.h2.tools.Server;
 import org.jetbrains.annotations.Nullable;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE_PORT;
@@ -81,16 +83,23 @@ public class ConnectionManager {
 
     /** Shared connection pool. */
     private final ThreadLocalObjectPool<H2ConnectionWrapper> connPool =
-        new ThreadLocalObjectPool<>(this::newConnectionWrapper, 5);
+        new ThreadLocalObjectPool<>(
+            5,
+            this::newConnectionWrapper,
+            this::closeDetachedConnection,
+            this::addConnectionToThreaded);
 
     /** Per-thread connections. */
-    private final ConcurrentMap<Thread, H2ConnectionWrapper> threadConns = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> threadConns = new ConcurrentHashMap<>();
+
+    /** Track detached connections to close on node stop. */
+    private final ConcurrentMap<H2ConnectionWrapper, Boolean> detachedConns = new ConcurrentHashMap<>();
 
     /** Connection cache. */
-    private final ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>> threadConn =
-        new ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>>() {
-        @Override public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> get() {
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusable = super.get();
+    private final ThreadLocal<ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable> threadConn =
+        new ThreadLocal<ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable>() {
+        @Override public ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable get() {
+            ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable reusable = super.get();
 
             boolean reconnect = true;
 
@@ -110,10 +119,10 @@ public class ConnectionManager {
             return reusable;
         }
 
-        @Override protected ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> initialValue() {
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connPool.borrow();
+        @Override protected ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable initialValue() {
+            ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable reusableConnection = connPool.borrow();
 
-            threadConns.put(Thread.currentThread(), reusableConnection.object());
+            addConnectionToThreaded(reusableConnection.object());
 
             return reusableConnection;
         }
@@ -138,6 +147,7 @@ public class ConnectionManager {
      * Constructor.
      *
      * @param ctx Context.
+     * @throws IgniteCheckedException On error.
      */
     public ConnectionManager(GridKernalContext ctx) throws IgniteCheckedException {
         dbUrl = "jdbc:h2:mem:" + ctx.localNodeId() + DB_OPTIONS;
@@ -148,54 +158,23 @@ public class ConnectionManager {
 
         sysConn = connectionNoCache(QueryUtils.SCHEMA_INFORMATION);
 
-        stmtCleanupTask = ctx.timeout().schedule(new Runnable() {
-            @Override public void run() {
-                cleanupStatements();
-            }
-        }, stmtCleanupPeriod, stmtCleanupPeriod);
-
-        connCleanupTask = ctx.timeout().schedule(new Runnable() {
-            @Override public void run() {
-                cleanupConnections();
-            }
-        }, CONN_CLEANUP_PERIOD, CONN_CLEANUP_PERIOD);
+        stmtCleanupTask = ctx.timeout().schedule(this::cleanupStatements, stmtCleanupPeriod, stmtCleanupPeriod);
+        connCleanupTask = ctx.timeout().schedule(this::cleanupConnections, CONN_CLEANUP_PERIOD, CONN_CLEANUP_PERIOD);
 
         startDebugConsole();
     }
 
     /**
-     * Gets DB connection.
-     *
-     * @param schema Whether to set schema for connection or not.
-     * @return DB connection.
+     * @return H2 connection wrapper.
      */
-    public Connection connectionForThread(@Nullable String schema) {
-        H2ConnectionWrapper c = threadConn.get().object();
-
-        if (c == null)
-            throw new IgniteSQLException("Failed to get DB connection for thread (check log for details).");
-
-        if (schema != null && !F.eq(c.schema(), schema)) {
-            try {
-                c.connection().setSchema(schema);
-                c.schema(schema);
-
-                if (log.isDebugEnabled())
-                    log.debug("Set schema: " + schema);
-            }
-            catch (SQLException e) {
-                throw new IgniteSQLException("Failed to set schema for DB connection for thread [schema=" +
-                    schema + "]", e);
-            }
-        }
-
-        return c.connection();
+    public H2ConnectionWrapper connectionForThread() {
+        return threadConn.get().object();
     }
 
     /**
      * @return Per-thread connections (for testing purposes only).
      */
-    public Map<Thread, H2ConnectionWrapper> connectionsForThread() {
+    public Map<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> connectionsForThread() {
         return threadConns;
     }
 
@@ -204,18 +183,24 @@ public class ConnectionManager {
      *
      * @return Connection associated with current thread.
      */
-    public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachThreadConnection() {
+    public ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachThreadConnection() {
         Thread key = Thread.currentThread();
 
-        ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = threadConn.get();
+        ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable reusableConn = threadConn.get();
 
-        H2ConnectionWrapper connection = threadConns.remove(key);
+        ConcurrentMap<H2ConnectionWrapper, Boolean> connSet = threadConns.get(key);
+
+        assert connSet != null;
+
+        Boolean rmv = connSet.remove(reusableConn.object());
+
+        assert rmv != null;
 
         threadConn.remove();
 
-        assert reusableConnection.object().connection() == connection.connection();
+        detachedConns.putIfAbsent(reusableConn.object(), false);
 
-        return reusableConnection;
+        return reusableConn;
     }
 
     /**
@@ -223,6 +208,7 @@ public class ConnectionManager {
      *
      * @param schema Schema name.
      * @return Connection.
+     * @throws IgniteSQLException On error.
      */
     public Connection connectionNoCache(String schema) throws IgniteSQLException {
         try {
@@ -258,15 +244,17 @@ public class ConnectionManager {
     public void executeStatement(String schema, String sql) throws IgniteCheckedException {
         Statement stmt = null;
 
+        Connection c = null;
+
         try {
-            Connection c = connectionForThread(schema);
+            c = connectionForThread().connection(schema);
 
             stmt = c.createStatement();
 
             stmt.executeUpdate(sql);
         }
         catch (SQLException e) {
-            onSqlException();
+            onSqlException(c);
 
             throw new IgniteSQLException("Failed to execute statement: " + sql, e);
         }
@@ -289,7 +277,7 @@ public class ConnectionManager {
             stmt.executeUpdate(sql);
         }
         catch (SQLException e) {
-            onSqlException();
+            onSqlException(sysConn);
 
             throw new IgniteSQLException("Failed to execute system statement: " + sql, e);
         }
@@ -299,28 +287,116 @@ public class ConnectionManager {
     }
 
     /**
+     * Get cached prepared statement (if any).
+     *
+     * @param c Connection.
+     * @param sql SQL.
+     * @return Prepared statement or {@code null}.
+     * @throws SQLException On error.
+     */
+    @Nullable public PreparedStatement cachedPreparedStatement(Connection c, String sql) throws SQLException {
+        H2StatementCache cache = statementCacheForThread();
+
+        H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql);
+
+        PreparedStatement stmt = cache.get(key);
+
+        if (stmt != null && !stmt.isClosed() && !stmt.unwrap(JdbcStatement.class).isCancelled() &&
+            !GridSqlQueryParser.prepared(stmt).needRecompile()) {
+            assert stmt.getConnection() == c;
+
+            return stmt;
+        }
+
+        return null;
+    }
+
+    /**
+     * Prepare statement caching it if needed.
+     *
+     * @param c Connection.
+     * @param sql SQL.
+     * @return Prepared statement.
+     * @throws SQLException If failed.
+     */
+    public PreparedStatement prepareStatement(Connection c, String sql) throws SQLException {
+        PreparedStatement stmt = cachedPreparedStatement(c, sql);
+
+        if (stmt == null) {
+            H2StatementCache cache = statementCacheForThread();
+
+            H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql);
+
+            stmt = PreparedStatementExImpl.wrap(prepareStatementNoCache(c, sql));
+
+            cache.put(key, stmt);
+        }
+
+        return stmt;
+    }
+
+    /**
+     * Get prepared statement without caching.
+     *
+     * @param c Connection.
+     * @param sql SQL.
+     * @return Prepared statement.
+     * @throws SQLException If failed.
+     */
+    public PreparedStatement prepareStatementNoCache(Connection c, String sql) throws SQLException {
+        boolean insertHack = GridH2Table.insertHackRequired(sql);
+
+        if (insertHack) {
+            GridH2Table.insertHack(true);
+
+            try {
+                return c.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            }
+            finally {
+                GridH2Table.insertHack(false);
+            }
+        }
+        else
+            return c.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+    }
+
+    /**
      * Clear statement cache when cache is unregistered..
      */
     public void onCacheUnregistered() {
-        threadConns.values().forEach(H2ConnectionWrapper::clearStatementCache);
+        threadConns.values().forEach(set -> set.keySet().forEach(H2ConnectionWrapper::clearStatementCache));
+    }
+
+    /**
+     * Close all connections.
+     */
+    private void closeConnections() {
+        threadConns.values().forEach(set -> set.keySet().forEach(U::closeQuiet));
+        detachedConns.keySet().forEach(U::closeQuiet);
+
+        threadConns.clear();
+        detachedConns.clear();
     }
 
     /**
      * Cancel all queries.
      */
     public void onKernalStop() {
-        for (H2ConnectionWrapper c : threadConns.values())
-            U.close(c, log);
+        closeConnections();
     }
 
     /**
      * Close executor.
      */
     public void stop() {
-        for (H2ConnectionWrapper c : threadConns.values())
-            U.close(c, log);
+        if (stmtCleanupTask != null)
+            stmtCleanupTask.close();
 
-        threadConns.clear();
+        if (connCleanupTask != null)
+            connCleanupTask.close();
+
+        // Needs to be released before SHUTDOWN.
+        closeConnections();
 
         try (Connection c = connectionNoCache(QueryUtils.SCHEMA_INFORMATION); Statement s = c.createStatement()) {
             s.execute("SHUTDOWN");
@@ -328,12 +404,6 @@ public class ConnectionManager {
         catch (SQLException e) {
             U.error(log, "Failed to shutdown database.", e);
         }
-
-        if (stmtCleanupTask != null)
-            stmtCleanupTask.close();
-
-        if (connCleanupTask != null)
-            connCleanupTask.close();
 
         if (sysConn != null) {
             U.close(sysConn, log);
@@ -344,17 +414,20 @@ public class ConnectionManager {
 
     /**
      * Handles SQL exception.
+     * @param c Connection to close.
      */
-    public void onSqlException() {
-        Connection conn = threadConn.get().object().connection();
+    public void onSqlException(Connection c) {
+        H2ConnectionWrapper conn = threadConn.get().object();
 
-        threadConn.set(null);
+        // Clear thread local cache if connection not detached.
+        if (conn.connection() == c)
+            threadConn.remove();
 
-        if (conn != null) {
+        if (c != null) {
             threadConns.remove(Thread.currentThread());
 
             // Reset connection to receive new one at next call.
-            U.close(conn, log);
+            U.close(c, log);
         }
     }
 
@@ -405,20 +478,50 @@ public class ConnectionManager {
     }
 
     /**
+     * Called by connection bool on connection recycle.
+     *
+     * @param conn recycled connection.
+     */
+    private void addConnectionToThreaded(H2ConnectionWrapper conn) {
+        Thread cur = Thread.currentThread();
+
+        ConcurrentMap<H2ConnectionWrapper, Boolean> setConn = threadConns.get(cur);
+
+        if (setConn == null) {
+            setConn = new ConcurrentHashMap<>();
+
+            threadConns.putIfAbsent(cur, setConn);
+        }
+
+        setConn.put(conn, false);
+    }
+
+    /**
+     * Called by connection bool on connection close.
+     *
+     * @param conn closed connection.
+     */
+    private void closeDetachedConnection(H2ConnectionWrapper conn) {
+        U.close(conn, log);
+
+        detachedConns.remove(conn);
+    }
+
+    /**
      * Called periodically to cleanup connections.
      */
     private void cleanupConnections() {
-        for (Iterator<Map.Entry<Thread, H2ConnectionWrapper>> it = threadConns.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<Thread, H2ConnectionWrapper> entry = it.next();
-
-            Thread t = entry.getKey();
+        threadConns.entrySet().removeIf(e -> {
+            Thread t = e.getKey();
 
             if (t.getState() == Thread.State.TERMINATED) {
-                U.close(entry.getValue(), log);
+                e.getValue().keySet().forEach(c -> U.close(c, log));
 
-                it.remove();
+                return true;
             }
-        }
+
+            return false;
+        });
     }
 
     /**
@@ -427,18 +530,9 @@ public class ConnectionManager {
     private void cleanupStatements() {
         long now = U.currentTimeMillis();
 
-        for (Iterator<Map.Entry<Thread, H2ConnectionWrapper>> it = threadConns.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<Thread, H2ConnectionWrapper> entry = it.next();
-
-            Thread t = entry.getKey();
-
-            if (t.getState() == Thread.State.TERMINATED) {
-                U.close(entry.getValue(), log);
-
-                it.remove();
-            }
-            else if (now - entry.getValue().statementCache().lastUsage() > stmtTimeout)
-                entry.getValue().clearStatementCache();
-        }
+        threadConns.values().forEach(set -> set.keySet().forEach(c ->{
+            if (now - c.statementCache().lastUsage() > stmtTimeout)
+                c.clearStatementCache();
+        }));
     }
 }

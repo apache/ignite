@@ -46,7 +46,7 @@ import org.junit.Test;
 /**
  * A set of basic tests for caches with indexes.
  */
-public class BasicIndexTest extends GridCommonAbstractTest {
+public class BasicIndexTest extends AbstractIndexingCommonTest {
     /** */
     private Collection<QueryIndex> indexes = Collections.emptyList();
 

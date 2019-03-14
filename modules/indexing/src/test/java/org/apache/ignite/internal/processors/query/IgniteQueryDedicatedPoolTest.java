@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -52,7 +53,7 @@ import org.junit.runners.JUnit4;
  * Ensures that SQL queries are executed in a dedicated thread pool.
  */
 @RunWith(JUnit4.class)
-public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
+public class IgniteQueryDedicatedPoolTest extends AbstractIndexingCommonTest {
     /** Name of the cache for test */
     private static final String CACHE_NAME = "query_pool_test";
 

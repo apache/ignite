@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -25,17 +30,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -44,7 +43,7 @@ import org.junit.runners.JUnit4;
  * Tests for all SQL based indexing SPI implementations.
  */
 @RunWith(JUnit4.class)
-public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class GridIndexingSpiAbstractSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final LinkedHashMap<String, String> fieldsAA = new LinkedHashMap<>();
 

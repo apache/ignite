@@ -27,6 +27,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -34,7 +35,7 @@ import org.junit.Test;
 /**
  * Tests for running queries.
  */
-public class RunningQueriesTest extends GridCommonAbstractTest {
+public class RunningQueriesTest extends AbstractIndexingCommonTest {
     /**
      *
      */

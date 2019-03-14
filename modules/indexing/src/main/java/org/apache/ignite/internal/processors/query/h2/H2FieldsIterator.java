@@ -34,17 +34,23 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
     /** */
     private transient MvccQueryTracker mvccTracker;
 
+    /** Detached connection. */
+    private final ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn;
+
     /**
      * @param data Data.
      * @param mvccTracker Mvcc tracker.
      * @param forUpdate {@code SELECT FOR UPDATE} flag.
+     * @param detachedConn Detached connection.
      * @throws IgniteCheckedException If failed.
      */
-    public H2FieldsIterator(ResultSet data, MvccQueryTracker mvccTracker, boolean forUpdate)
+    public H2FieldsIterator(ResultSet data, MvccQueryTracker mvccTracker, boolean forUpdate,
+        ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn)
         throws IgniteCheckedException {
         super(data, forUpdate);
 
         this.mvccTracker = mvccTracker;
+        this.detachedConn = detachedConn;
     }
 
     /** {@inheritDoc} */
@@ -62,6 +68,9 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
             super.onClose();
         }
         finally {
+            if (detachedConn != null)
+                detachedConn.recycle();
+
             if (mvccTracker != null)
                 mvccTracker.onDone();
         }

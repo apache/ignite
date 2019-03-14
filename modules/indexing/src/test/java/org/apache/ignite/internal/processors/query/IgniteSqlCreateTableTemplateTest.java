@@ -24,13 +24,14 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
  * Ensures that SQL queries work for tables created dynamically based on a template.
  */
-public class IgniteSqlCreateTableTemplateTest extends GridCommonAbstractTest {
+public class IgniteSqlCreateTableTemplateTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override public IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration configuration = new IgniteConfiguration();
