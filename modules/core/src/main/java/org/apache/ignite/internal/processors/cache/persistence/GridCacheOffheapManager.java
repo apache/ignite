@@ -68,7 +68,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.DefaultFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.SecondaryCacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.migration.UpgradePendingTreeToPerPartitionTask;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -267,7 +268,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         RowStore rowStore0 = store.rowStore();
 
         if (rowStore0 != null) {
-            CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
+            DefaultFreeList freeList = (DefaultFreeList)rowStore0.freeList();
 
             long updCntr = store.updateCounter();
             long size = store.fullSize(); // TODO FIXME size is wrong (ahead of counter).
@@ -329,7 +330,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             changed = true;
                         }
                         else if (rawGaps != null && link == 0) {
-                            ByteArrayDataRow row = new ByteArrayDataRow(grp.cacheObjectContext(), store.partId(), grp.storeCacheIdInDataPage() ? grp.groupId() : 0, rawGaps);
+                            SecondaryCacheDataRow row = new SecondaryCacheDataRow(store.partId(), rawGaps);
 
                             freeList.insertDataRow(row, grp.statisticsHolderData());
 
@@ -341,7 +342,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             // TODO FIXME update in-place optimization.
                             freeList.removeDataRowByLink(link, grp.statisticsHolderData());
 
-                            ByteArrayDataRow row = new ByteArrayDataRow(grp.cacheObjectContext(), store.partId(), grp.storeCacheIdInDataPage() ? grp.groupId() : 0, rawGaps);
+                            SecondaryCacheDataRow row = new SecondaryCacheDataRow(store.partId(), rawGaps);
 
                             freeList.insertDataRow(row, grp.statisticsHolderData());
 
@@ -1056,7 +1057,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         for (CacheDataStore store : partDataStores.values()) {
             assert store instanceof GridCacheDataStore;
 
-            CacheFreeListImpl freeList = ((GridCacheDataStore)store).freeList;
+            DefaultFreeList freeList = ((GridCacheDataStore)store).freeList;
 
             if (freeList == null)
                 continue;
@@ -1494,7 +1495,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private String name;
 
         /** */
-        private volatile CacheFreeListImpl freeList;
+        private volatile DefaultFreeList freeList;
 
         /** */
         private PendingEntriesTree pendingTree;
@@ -1551,7 +1552,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     RootPage reuseRoot = metas.reuseListRoot;
 
-                    freeList = new CacheFreeListImpl(
+                    freeList = new DefaultFreeList(
                         grp.groupId(),
                         grp.cacheOrGroupName() + "-" + partId,
                         grp.dataRegion().memoryMetrics(),
@@ -1661,8 +1662,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                                 long link = io.getGapsLink(pageAddr);
 
-                                byte[] data = link == 0 ? null :
-                                    new ByteArrayDataRow(grp, link, partId()).value().valueBytes(null);
+                                byte[] data = link == 0 ? null : freeList.readRow(link);
 
                                 delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes, data);
 

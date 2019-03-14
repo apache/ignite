@@ -43,7 +43,7 @@ public class MetastorageRowStore {
      * @return Data row.
      */
     public MetastorageDataRow dataRow(String key, long link) throws IgniteCheckedException {
-        return ((MetaStorage.FreeListImpl)freeList).readRow(key, link);
+        return new MetastorageDataRow(link, key, freeList.readRow(link));
     }
 
     /**
@@ -70,7 +70,7 @@ public class MetastorageRowStore {
         db.checkpointReadLock();
 
         try {
-            freeList.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE, false);
+            freeList.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
         }
         finally {
             db.checkpointReadUnlock();

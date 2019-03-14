@@ -19,41 +19,374 @@ package org.apache.ignite.internal.processors.database;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
+import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.DefaultFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.SecondaryCacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
  */
-public class CacheFreeListImplSelfTest extends FreeListTest {
+public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final long MB = 1024L * 1024L;
+
+    /** */
+    private PageMemory pageMem;
+
+    /** */
+    private LongAdder cacheRowCntr = new LongAdder();
+
+    /** */
+    private LongAdder secondaryRowCntr = new LongAdder();
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        log.info("Created rows: cacheDataRow=" + cacheRowCntr.sum() + ", secondaryDataRow=" + secondaryRowCntr.sum());
+
+        cacheRowCntr.reset();
+        secondaryRowCntr.reset();
+
+        if (pageMem != null)
+            pageMem.stop(true);
+
+        pageMem = null;
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testInsertDeleteSingleThreaded_1024() throws Exception {
+        checkInsertDeleteSingleThreaded(1024);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testInsertDeleteSingleThreaded_2048() throws Exception {
+        checkInsertDeleteSingleThreaded(2048);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testInsertDeleteSingleThreaded_4096() throws Exception {
+        checkInsertDeleteSingleThreaded(4096);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testInsertDeleteSingleThreaded_8192() throws Exception {
+        checkInsertDeleteSingleThreaded(8192);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testInsertDeleteSingleThreaded_16384() throws Exception {
+        checkInsertDeleteSingleThreaded(16384);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testInsertDeleteMultiThreaded_1024() throws Exception {
+        checkInsertDeleteMultiThreaded(1024);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testInsertDeleteMultiThreaded_2048() throws Exception {
+        checkInsertDeleteMultiThreaded(2048);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testInsertDeleteMultiThreaded_4096() throws Exception {
+        checkInsertDeleteMultiThreaded(4096);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testInsertDeleteMultiThreaded_8192() throws Exception {
+        checkInsertDeleteMultiThreaded(8192);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testInsertDeleteMultiThreaded_16384() throws Exception {
+        checkInsertDeleteMultiThreaded(16384);
+    }
+
+    /**
+     * @param pageSize Page size.
+     * @throws Exception If failed.
+     */
+    protected void checkInsertDeleteMultiThreaded(final int pageSize) throws Exception {
+        final FreeList list = createFreeList(pageSize);
+
+        final ConcurrentMap<Long, Storable> stored = new ConcurrentHashMap<>();
+
+        for (int i = 0; i < 100; i++) {
+            Storable row = createStorable(pageSize);
+
+            list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
+
+            assertTrue(row.link() != 0L);
+
+            Storable old = stored.put(row.link(), row);
+
+            assertNull(old);
+        }
+
+        final AtomicBoolean grow = new AtomicBoolean(true);
+
+        GridTestUtils.runMultiThreaded(() -> {
+            Random rnd = ThreadLocalRandom.current();
+
+            for (int i = 0; i < 200_000; i++) {
+                boolean grow0 = grow.get();
+
+                if (grow0) {
+                    if (stored.size() > 20_000) {
+                        if (grow.compareAndSet(true, false))
+                            info("Shrink... [" + stored.size() + ']');
+
+                        grow0 = false;
+                    }
+                }
+                else {
+                    if (stored.size() < 1_000) {
+                        if (grow.compareAndSet(false, true))
+                            info("Grow... [" + stored.size() + ']');
+
+                        grow0 = true;
+                    }
+                }
+
+                boolean insert = rnd.nextInt(100) < 70 == grow0;
+
+                if (insert) {
+                    int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
+                    int valSize = rnd.nextInt(pageSize * 3 / 2) + 10;
+
+                    TestDataRow row = new TestDataRow(keySize, valSize);
+
+                    list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
+
+                    assertTrue(row.link() != 0L);
+
+                    Storable old = stored.put(row.link(), row);
+
+                    assertNull(old);
+                }
+                else {
+                    while (true) {
+                        Iterator<Storable> it = stored.values().iterator();
+
+                        if (it.hasNext()) {
+                            Storable row = it.next();
+
+                            Storable rmvd = stored.remove(row.link());
+
+                            if (rmvd != null) {
+                                list.removeDataRowByLink(row.link(), IoStatisticsHolderNoOp.INSTANCE);
+
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }, 8, "runner");
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    protected void checkInsertDeleteSingleThreaded(int pageSize) throws Exception {
+        FreeList list = createFreeList(pageSize);
+
+        Random rnd = new Random();
+
+        Map<Long, Storable> stored = new HashMap<>();
+
+        for (int i = 0; i < 100; i++) {
+            Storable row = createStorable(pageSize);
+
+            list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
+
+            assertTrue(row.link() != 0L);
+
+            Storable old = stored.put(row.link(), row);
+
+            assertNull(old);
+        }
+
+        boolean grow = true;
+
+        for (int i = 0; i < 1_000_000; i++) {
+            if (grow) {
+                if (stored.size() > 20_000) {
+                    grow = false;
+
+                    info("Shrink... [" + stored.size() + ']');
+                }
+            }
+            else {
+                if (stored.size() < 1_000) {
+                    grow = true;
+
+                    info("Grow... [" + stored.size() + ']');
+                }
+            }
+
+            boolean insert = rnd.nextInt(100) < 70 == grow;
+
+            if (insert) {
+                Storable row = createStorable(pageSize);
+
+                list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
+
+                assertTrue(row.link() != 0L);
+
+                Storable old = stored.put(row.link(), row);
+
+                assertNull(old);
+            }
+            else {
+                Iterator<Storable> it = stored.values().iterator();
+
+                if (it.hasNext()) {
+                    Storable row = it.next();
+
+                    Storable rmvd = stored.remove(row.link());
+
+                    assertTrue(rmvd == row);
+
+                    list.removeDataRowByLink(row.link(), IoStatisticsHolderNoOp.INSTANCE);
+                }
+            }
+        }
+    }
+
+    /**
+     * @return Page memory.
+     */
+    protected PageMemory createPageMemory(int pageSize, DataRegionConfiguration plcCfg) throws Exception {
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
+            new UnsafeMemoryProvider(log),
+            null,
+            pageSize,
+            plcCfg,
+            new DataRegionMetricsImpl(plcCfg),
+            true);
+
+        pageMem.start();
+
+        return pageMem;
+    }
+
+    /**
+     * @param pageSize Page size.
+     * @return Free list.
+     * @throws Exception If failed.
+     */
+    protected FreeList createFreeList(int pageSize) throws Exception {
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration()
+            .setInitialSize(1024 * MB)
+            .setMaxSize(1024 * MB);
+
+        pageMem = createPageMemory(pageSize, plcCfg);
+
+        long metaPageId = pageMem.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
+
+        DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg);
+
+        DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
+
+        return new DefaultFreeList(1, "freelist", regionMetrics, dataRegion, null, null, metaPageId, true);
+    }
+
     /**
      * @param pageSize Page size.
      */
-    @Override protected Storable createTestStorable(int pageSize) {
+    protected Storable createStorable(int pageSize) {
         ThreadLocalRandom cur = ThreadLocalRandom.current();
 
-        int keySize = cur.nextInt(pageSize * 3 / 2) + 10;
-        int valSize = cur.nextInt(pageSize * 5 / 2) + 10;
+        int t = cur.nextInt(10);
 
-        return new TestDataRow(keySize, valSize);
+        if (t < 7) {
+            cacheRowCntr.increment();
+
+            int keySize = cur.nextInt(pageSize * 3 / 2) + 10;
+            int valSize = cur.nextInt(pageSize * 5 / 2) + 10;
+
+            return new CacheFreeListImplSelfTest.TestDataRow(keySize, valSize);
+        }
+        else {
+            secondaryRowCntr.increment();
+
+            return new SecondaryCacheDataRow(0, new byte[ThreadLocalRandom.current().nextInt(pageSize * 3 / 2) + pageSize / 6]);
+        }
     }
 
     /**
      *
      */
-    private static class TestDataRow implements CacheDataRow {
+    static class TestDataRow implements CacheDataRow {
         /** */
         private long link;
 
@@ -70,7 +403,7 @@ public class CacheFreeListImplSelfTest extends FreeListTest {
          * @param keySize Key size.
          * @param valSize Value size.
          */
-        private TestDataRow(int keySize, int valSize) {
+        TestDataRow(int keySize, int valSize) {
             key = new TestCacheObject(keySize);
             val = new TestCacheObject(valSize);
             ver = new GridCacheVersion(keySize, valSize, 1);
@@ -184,7 +517,7 @@ public class CacheFreeListImplSelfTest extends FreeListTest {
     /**
      *
      */
-    private static class TestCacheObject implements KeyCacheObject {
+    static class TestCacheObject implements KeyCacheObject {
         /** */
         private byte[] data;
 

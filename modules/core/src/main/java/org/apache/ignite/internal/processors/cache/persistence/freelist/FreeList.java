@@ -36,9 +36,8 @@ public interface FreeList {
     /**
      * @param row Row.
      * @param statHolder Stat holder.
-     * @param useEmptyPage Use empty page.
      */
-    public void insertDataRow(Storable row, IoStatisticsHolder statHolder, boolean useEmptyPage) throws IgniteCheckedException;
+    public void insertDataRow(Storable row, IoStatisticsHolder statHolder) throws IgniteCheckedException;
 
     /**
      * @param link Row link.

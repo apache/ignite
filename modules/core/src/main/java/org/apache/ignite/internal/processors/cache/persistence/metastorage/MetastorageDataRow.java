@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 
 /**
  *
@@ -49,6 +50,11 @@ public class MetastorageDataRow extends SimpleDataRow implements MetastorageSear
     /** {@inheritDoc} */
     @Override public int hash() {
         return key.hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IOVersions ioVersions() {
+        return MetastoreDataPageIO.VERSIONS;
     }
 
     /** {@inheritDoc} */

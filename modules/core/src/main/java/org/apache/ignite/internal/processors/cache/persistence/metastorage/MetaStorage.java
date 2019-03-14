@@ -130,7 +130,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     private RootPage reuseListRoot;
 
     /** */
-    private FreeListImpl freeList;
+    private DefaultFreeList freeList;
 
     /** */
     private SortedMap<String, byte[]> lastUpdates;
@@ -239,7 +239,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             getOrAllocateMetas(partId = PageIdAllocator.METASTORE_PARTITION);
 
         if (!empty) {
-            freeList = new FreeListImpl(METASTORAGE_CACHE_ID, "metastorage",
+            freeList = new DefaultFreeList(METASTORAGE_CACHE_ID, "metastorage",
                 regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
                 reuseListRoot.isAllocated());
 
@@ -651,29 +651,6 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                 writeRaw(key, value);
             else
                 removeData(key);
-        }
-    }
-
-    /** */
-    public class FreeListImpl extends DefaultFreeList {
-        /** {@inheritDoc} */
-        FreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
-            ReuseList reuseList,
-            IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
-            super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
-            return pageMem.allocatePage(grpId, partId, FLAG_DATA);
-        }
-
-        /**
-         * Read row from data pages.
-         */
-        final MetastorageDataRow readRow(String key, long link)
-            throws IgniteCheckedException {
-            return new MetastorageDataRow(link, key, readRow(link));
         }
     }
 
