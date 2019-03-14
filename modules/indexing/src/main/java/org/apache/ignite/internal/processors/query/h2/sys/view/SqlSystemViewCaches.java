@@ -134,8 +134,7 @@ public class SqlSystemViewCaches extends SqlAbstractLocalSystemView {
                     ccfg.isLoadPreviousValue(),
                     ccfg.isReadFromBackup(),
                     ccfg.getPartitionLossPolicy(),
-                    (ccfg.getNodeFilter() instanceof CacheConfiguration.IgniteAllNodesPredicate) ?
-                        null : ccfg.getNodeFilter(),
+                    nodeFilter(ccfg),
                     ccfg.getTopologyValidator(),
                     ccfg.isEagerTtl(),
                     ccfg.getWriteSynchronizationMode(),

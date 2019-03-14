@@ -91,8 +91,7 @@ public class SqlSystemViewCacheGroups extends SqlAbstractLocalSystemView {
                     ccfg.getAtomicityMode(),
                     ccfg.getAffinity(),
                     ccfg.getAffinity() != null ? ccfg.getAffinity().partitions() : null,
-                    (ccfg.getNodeFilter() instanceof CacheConfiguration.IgniteAllNodesPredicate) ?
-                        null : ccfg.getNodeFilter(),
+                    nodeFilter(ccfg),
                     ccfg.getDataRegionName(),
                     ccfg.getTopologyValidator(),
                     ccfg.getPartitionLossPolicy(),

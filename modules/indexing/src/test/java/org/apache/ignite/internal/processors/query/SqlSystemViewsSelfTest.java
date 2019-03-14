@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -213,10 +214,10 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE","PUBLIC", "AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "true", "true", "10"},
             {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE","PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", "false", "true", "null"},
 
-            {"683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "DEFAULT", "CACHE_SQL", "IDX_2", "BTREE", "\"ID\" DESC, \"ID\" ASC", "false", "false", "13"},
-            {"683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL","DEFAULT", "CACHE_SQL", "__SCAN_", "SCAN", "null", "false", "false",  "null"},
-            {"683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL","DEFAULT", "CACHE_SQL", "_key_PK", "BTREE", "\"ID\" ASC", "true", "true", "5"},
-            {"683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL","DEFAULT", "CACHE_SQL", "_key_PK_hash", "HASH", "\"ID\" ASC", "false", "true", "null"},
+            {"683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "default", "CACHE_SQL", "IDX_2", "BTREE", "\"ID\" DESC, \"ID\" ASC", "false", "false", "13"},
+            {"683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL","default", "CACHE_SQL", "__SCAN_", "SCAN", "null", "false", "false",  "null"},
+            {"683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL","default", "CACHE_SQL", "_key_PK", "BTREE", "\"ID\" ASC", "true", "true", "5"},
+            {"683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL","default", "CACHE_SQL", "_key_PK_hash", "HASH", "\"ID\" ASC", "false", "true", "null"},
 
             {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "false", "false", "10"},
             {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "BTREE", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", "false", "false", "10"},
@@ -806,7 +807,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             "cache_sql",         // CACHE_GROUP_NAME
             cacheSqlId,          // CACHE_ID
             "cache_sql",         // CACHE_NAME
-            "DEFAULT",           // SCHEMA_NAME
+            "default",           // SCHEMA_NAME
             "CACHE_SQL",         // TABLE_NAME
             null,                // AFFINITY_KEY_COLUMN
             "ID",                // KEY_ALIAS
@@ -1024,7 +1025,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("def").setPersistenceEnabled(true))
             .setDataRegionConfigurations(new DataRegionConfiguration().setName("dr1"),
-                new DataRegionConfiguration().setName("dr2"));
+                new DataRegionConfiguration().setName("dr2"), new DataRegionConfiguration().setName("dr3"));
 
         IgniteEx ignite0 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg));
 
@@ -1069,6 +1070,28 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             .setEvictionFilter(new TestEvictionFilter())
             .setEvictionPolicyFactory(new TestEvictionPolicyFactory())
             .setOnheapCacheEnabled(true)
+        );
+
+        ignite0.getOrCreateCache(new CacheConfiguration<>()
+            .setName("cache_cust_node_filter")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setDataRegionName("dr3")
+            .setEvictionFilter(new TestEvictionFilter())
+            .setEvictionPolicyFactory(new TestEvictionPolicyFactory())
+            .setOnheapCacheEnabled(true)
+            .setNodeFilter(new CustomNodeFilter(Integer.MAX_VALUE))
+        );
+
+        ignite0.getOrCreateCache(new CacheConfiguration<>()
+            .setName("cache_cust_err_node_filter")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setDataRegionName("dr3")
+            .setEvictionFilter(new TestEvictionFilter())
+            .setEvictionPolicyFactory(new TestEvictionPolicyFactory())
+            .setOnheapCacheEnabled(true)
+            .setNodeFilter(new CustomNodeFilter(1))
         );
 
         execSql("CREATE TABLE cache_sql (ID INT PRIMARY KEY, VAL VARCHAR) WITH " +
@@ -1156,16 +1179,16 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_ID <> CACHE_ID + 1").get(0).get(0));
 
         // Check that caches are the same on BLT, BLT filtered by node filter, non BLT and client nodes.
-        assertEquals(5L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME like 'cache%'").get(0)
+        assertEquals(7L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME like 'cache%'").get(0)
             .get(0));
 
-        assertEquals(5L, execSql(ignite1, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME like 'cache%'")
+        assertEquals(7L, execSql(ignite1, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME like 'cache%'")
             .get(0).get(0));
 
-        assertEquals(5L, execSql(ignite2, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME like 'cache%'")
+        assertEquals(7L, execSql(ignite2, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME like 'cache%'")
             .get(0).get(0));
 
-        assertEquals(5L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME like 'cache%'")
+        assertEquals(7L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_NAME like 'cache%'")
             .get(0).get(0));
 
         // Check cache groups.
@@ -1204,7 +1227,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             .get(0).get(0));
 
         // Check configuration equality for cache and cache group views.
-        assertEquals(3L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES C JOIN IGNITE.CACHE_GROUPS CG " +
+        assertEquals(5L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES C JOIN IGNITE.CACHE_GROUPS CG " +
             "ON C.CACHE_NAME = CG.CACHE_GROUP_NAME WHERE C.CACHE_NAME like 'cache%' " +
             "AND C.CACHE_MODE = CG.CACHE_MODE " +
             "AND C.ATOMICITY_MODE = CG.ATOMICITY_MODE " +
@@ -1225,17 +1248,26 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                 .get(0).get(0));
 
         // Check that cache groups are the same on different nodes.
-        assertEquals(4L, execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+        assertEquals(6L, execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
             "WHERE CACHE_GROUP_NAME like 'cache%'").get(0).get(0));
 
-        assertEquals(4L, execSql(ignite1, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+        assertEquals(6L, execSql(ignite1, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
             "WHERE CACHE_GROUP_NAME like 'cache%'").get(0).get(0));
 
-        assertEquals(4L, execSql(ignite2, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+        assertEquals(6L, execSql(ignite2, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
             "WHERE CACHE_GROUP_NAME like 'cache%'").get(0).get(0));
 
-        assertEquals(4L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+        assertEquals(6L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
             "WHERE CACHE_GROUP_NAME like 'cache%'").get(0).get(0));
+
+        assertEquals(5L, execSql(ignite0, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+            "WHERE NODE_FILTER is NULL").get(0).get(0));
+
+        assertEquals(1L, execSql(ignite0, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+            "WHERE NODE_FILTER = 'CUSTOM_NODE_FILTER'").get(0).get(0));
+
+        assertEquals(1L, execSql(ignite0, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+            "WHERE NODE_FILTER like '%Oops... incorrect customer realization.'").get(0).get(0));
     }
 
     /**
@@ -1472,6 +1504,27 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             return "TestTopologyValidator";
+        }
+    }
+
+    private static class CustomNodeFilter implements IgnitePredicate<ClusterNode> {
+        private final int attemptsBeforeException;
+
+        private volatile int attempts;
+
+        public CustomNodeFilter(int attemptsBeforeException) {
+            this.attemptsBeforeException = attemptsBeforeException;
+        }
+
+        @Override public boolean apply(ClusterNode node) {
+            return true;
+        }
+
+        @Override public String toString() {
+            if(attempts++ > attemptsBeforeException)
+                throw new NullPointerException("Oops... incorrect customer realization.");
+
+            return "CUSTOM_NODE_FILTER";
         }
     }
 }

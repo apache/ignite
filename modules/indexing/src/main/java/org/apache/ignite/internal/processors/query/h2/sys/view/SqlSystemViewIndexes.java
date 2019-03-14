@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -83,7 +84,14 @@ public class SqlSystemViewIndexes extends SqlAbstractLocalSystemView {
             String schema = tbl.getSchema().getName();
             String tblName = tbl.getName();
             int cacheGrpId = tbl.cacheInfo().groupId();
-            String cacheGrpName = ctx.cache().cacheGroupDescriptors().get(cacheGrpId).cacheOrGroupName();
+
+            CacheGroupDescriptor cacheGrpDesc = ctx.cache().cacheGroupDescriptors().get(cacheGrpId);
+
+            // We should skip all indexes related to the table in case regarding cache group has been removed.
+            if (cacheGrpDesc == null)
+                return;
+
+            String cacheGrpName = cacheGrpDesc.cacheOrGroupName();
             int cacheId = tbl.cacheId();
             String cacheName = tbl.cacheName();
 

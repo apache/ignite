@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
 import java.util.UUID;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -27,6 +28,7 @@ import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Local system view base class (which uses only local node data).
@@ -146,5 +148,31 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
             return ValueNull.INSTANCE;
         else
             return ValueTimestamp.fromMillis(millis);
+    }
+
+    /**
+     * Get node's filter string representation.
+     *
+     * @param ccfg Cache configuration.
+     *
+     * @return String representation of node filter.
+     */
+    @Nullable protected String nodeFilter(CacheConfiguration<?, ?> ccfg) {
+        String nodeFilterName;
+
+        if (ccfg.getNodeFilter() instanceof CacheConfiguration.IgniteAllNodesPredicate)
+            nodeFilterName = null;
+        else {
+            try {
+                nodeFilterName = ccfg.getNodeFilter().toString();
+            }
+            catch (Exception e) {
+                log.warning("Failed to get node filter name", e);
+
+                nodeFilterName = "Failed to get node filter name: " + e.getMessage();
+            }
+        }
+
+        return nodeFilterName;
     }
 }
