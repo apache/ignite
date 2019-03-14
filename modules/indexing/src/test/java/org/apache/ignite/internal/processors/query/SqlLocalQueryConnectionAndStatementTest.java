@@ -45,7 +45,6 @@ public class SqlLocalQueryConnectionAndStatementTest extends AbstractIndexingCom
 
     /**
      */
-    @Test
     public void testReplicated() {
         sql("CREATE TABLE repl_tbl (id LONG PRIMARY KEY, val LONG) WITH \"template=replicated\"").getAll();
 
@@ -68,7 +67,6 @@ public class SqlLocalQueryConnectionAndStatementTest extends AbstractIndexingCom
 
     /**
      */
-    @Test
     public void testLocalQuery() {
         sql("CREATE TABLE tbl (id LONG PRIMARY KEY, val LONG)").getAll();
 
@@ -86,7 +84,8 @@ public class SqlLocalQueryConnectionAndStatementTest extends AbstractIndexingCom
 
             sql(new SqlFieldsQuery("SELECT * FROM tbl where id > ?").setArgs(1).setLocal(true)).getAll();
 
-            it0.next();
+            while (it0.hasNext())
+                it0.next();
         }
         finally {
             sql("DROP TABLE tbl").getAll();

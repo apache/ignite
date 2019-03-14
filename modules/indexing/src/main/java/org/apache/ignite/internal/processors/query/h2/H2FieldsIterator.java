@@ -32,7 +32,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
     private static final long serialVersionUID = 0L;
 
     /** Detached connection. */
-    private final ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn;
+    private ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn;
 
     /**
      * @param data Data.
@@ -61,8 +61,11 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
             super.onClose();
         }
         finally {
-            if (detachedConn != null)
+            if (detachedConn != null) {
                 detachedConn.recycle();
+
+                detachedConn = null;
+            }
         }
     }
 }
