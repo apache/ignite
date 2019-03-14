@@ -26,18 +26,17 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteBinary;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -78,8 +77,6 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
         super.afterTest();
 
         stopAllGrids();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /**
@@ -270,8 +267,6 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
      */
     @Test
     public void testClientStartsFirst() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
         client = true;
 
         final Ignite ignite0 = startGrid(0);

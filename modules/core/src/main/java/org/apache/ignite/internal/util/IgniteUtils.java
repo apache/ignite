@@ -254,8 +254,8 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
-import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
@@ -10935,12 +10935,15 @@ public abstract class IgniteUtils {
     /**
      * @return {@code true} if local node is coordinator.
      */
-    public static boolean isLocalNodeCoordinator(GridDiscoveryManager discoveryManager) {
-        DiscoverySpi spi = discoveryManager.getInjectedDiscoverySpi();
+    public static boolean isLocalNodeCoordinator(GridDiscoveryManager discoMgr) {
+        if (discoMgr.localNode().isClient() || discoMgr.localNode().isDaemon())
+            return false;
+
+        DiscoverySpi spi = discoMgr.getInjectedDiscoverySpi();
 
         return spi instanceof TcpDiscoverySpi
             ? ((TcpDiscoverySpi)spi).isLocalNodeCoordinator()
-            : F.eq(discoveryManager.localNode(), U.oldest(discoveryManager.aliveServerNodes(), null));
+            : F.eq(discoMgr.localNode(), U.oldest(discoMgr.aliveServerNodes(), null));
     }
 
     /**
