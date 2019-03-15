@@ -19,28 +19,43 @@ package org.apache.ignite.prometheus;
 
 import io.prometheus.client.Collector;
 import io.prometheus.client.GaugeMetricFamily;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cluster.ClusterMetrics;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class CacheMetricCollector extends Collector {
-    private int counter;
+    private Ignite ignite;
 
-    public CacheMetricCollector() {
-        counter = 0;
+    public CacheMetricCollector(Ignite ignite) {
+        this.ignite = ignite;
     }
 
     @Override
     public List<MetricFamilySamples> collect() {
+        // Cache metrics
+        GaugeMetricFamily cacheMetrics = new GaugeMetricFamily("cache_metric", "help text", Arrays.asList("measure", "cache"));
+        for (String c : ignite.cacheNames()) {
+            CacheMetrics metrics = ignite.cache(c).localMetrics();
+            cacheMetrics.addMetric(Arrays.asList("GetAverageTime",c), metrics.getAverageGetTime());
+            cacheMetrics.addMetric(Arrays.asList("PutAverageTime",c), metrics.getAveragePutTime());
+            cacheMetrics.addMetric(Arrays.asList("Size",c), metrics.getCacheSize());
+        }
+
+        // Node metrics
+        ClusterMetrics igniteNodeMetrics = ignite.cluster().localNode().metrics();
+        String nodeId = ignite.cluster().localNode().id().toString();
+        GaugeMetricFamily nodeMetrics = new GaugeMetricFamily("node_metric", "help text", Arrays.asList("measure", "node"));
+        nodeMetrics.addMetric(Arrays.asList("BusyTime", nodeId), igniteNodeMetrics.getBusyTimePercentage());
+        nodeMetrics.addMetric(Arrays.asList("CurrentActiveJobs", nodeId), igniteNodeMetrics.getCurrentActiveJobs());
+
+        // Bring it all together
         List<MetricFamilySamples> mfs = new ArrayList<MetricFamilySamples>();
-        // With no labels.
-        mfs.add(new GaugeMetricFamily("my_gauge", "help", counter++));
-        // With labels
-        GaugeMetricFamily labeledGauge = new GaugeMetricFamily("my_other_gauge", "help", Arrays.asList("labelname"));
-        labeledGauge.addMetric(Arrays.asList("foo"), 4);
-        labeledGauge.addMetric(Arrays.asList("bar"), 5);
-        mfs.add(labeledGauge);
+        mfs.add(cacheMetrics);
+        mfs.add(nodeMetrics);
         return mfs;
     }
 }
