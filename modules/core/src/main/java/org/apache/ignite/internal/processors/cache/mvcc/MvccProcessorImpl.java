@@ -425,6 +425,12 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        // Notify all listeners waiting for a snapshot.
+        onCoordinatorFailed(curCrd.nodeId());
+    }
+
     /**
      * Discovery listener. Note: initial join event is handled by {@link MvccProcessorImpl#onLocalJoin}
      * method.
