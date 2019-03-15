@@ -740,7 +740,10 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private ClientListenerResponse getParamsMeta(OdbcQueryGetParamsMetaRequest req) {
         try {
-            List<JdbcParameterMeta> params = ctx.query().getIndexing().parameterMetaData(req.schema(), req.query());
+            // FIXME: IGNITE-11552 odbc unescaping
+            String sql = req.query();
+
+            List<JdbcParameterMeta> params = ctx.query().getIndexing().parameterMetaData(req.schema(), sql);
 
             byte[] typeIds = new byte[params.size()];
 

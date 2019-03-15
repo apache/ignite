@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -132,10 +135,23 @@ public class QueryParserResult {
     }
 
     /**
-     * @return Number of parameters.
+     * @return Number of current statement parameters.
      */
     public int parametersCount() {
+        return parametersMeta().size();
+    }
+
+    /**
+     * @return Descriptions of each query parameter of current statement.
+     */
+    public List<JdbcParameterMeta> parametersMeta() {
         // Only SELECT and DML can have parameters.
-        return select != null ? select.parametersCount() : dml != null ? dml.parametersCount() : 0;
+        if (select != null)
+            return select.parametersMeta();
+
+        if (dml != null)
+            return dml.parametersMeta();
+
+        return Collections.emptyList();
     }
 }

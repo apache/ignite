@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
-import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -284,30 +282,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, String sql) throws SQLException {
-        PreparedStatement statement = prepareNativeStatement(schemaName, sql);
+    @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, String sql) throws IgniteSQLException {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
-        ParameterMetaData h2Params = statement.getParameterMetaData();
+        QueryParserResult parserRes = parser.parse(schemaName, qry, true);
 
-        List<JdbcParameterMeta> params = new ArrayList<>(h2Params.getParameterCount());
-
-        for (int i = 1; i <= h2Params.getParameterCount(); i++)
-            params.add(new JdbcParameterMeta(h2Params, i));
-
-        return params;
+        return parserRes.parametersMeta();
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable List<GridQueryFieldMetadata> resultMetaData(String schemaName,
-        String sql) throws SQLException {
-        PreparedStatement statement = prepareNativeStatement(schemaName, sql);
+    @Override public @Nullable List<GridQueryFieldMetadata> resultMetaData(String schemaName, String sql) throws IgniteSQLException{
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
-        ResultSetMetaData h2Meta = statement.getMetaData();
+        // Multistatements are allowed, but metadata is returned only for the first statement.
+        QueryParserResult parserRes = parser.parse(schemaName, qry, true);
 
-        if (h2Meta == null)
-            return null;
+        if (parserRes.isSelect())
+            return parserRes.select().meta();
 
-        return H2Utils.meta(h2Meta);
+        return null;
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -28,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -62,14 +70,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.jetbrains.annotations.Nullable;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Parser module. Splits incoming request into a series of parsed results.
@@ -333,6 +333,17 @@ public class QueryParser {
             if (remainingQry != null)
                 remainingQry.setArgs(remainingArgs);
 
+            final List<JdbcParameterMeta> paramsMeta;
+
+            try {
+                paramsMeta = H2Utils.parametersMeta(stmt.getParameterMetaData());
+
+                assert prepared.getParameters().size() == paramsMeta.size();
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException(e);
+            }
+
             // Do actual parsing.
             if (CommandProcessor.isCommand(prepared)) {
                 GridSqlStatement cmdH2 = new GridSqlQueryParser(false).parse(prepared);
@@ -361,7 +372,7 @@ public class QueryParser {
                 );
             }
             else if (GridSqlQueryParser.isDml(prepared)) {
-                QueryParserResultDml dml = prepareDmlStatement(newQryDesc, prepared);
+                QueryParserResultDml dml = prepareDmlStatement(newQryDesc, prepared, paramsMeta);
 
                 return new QueryParserResult(
                     newQryDesc,
@@ -431,7 +442,7 @@ public class QueryParser {
                     stmt0,
                     twoStepQry,
                     meta,
-                    prepared.getParameters().size(),
+                    paramsMeta,
                     cacheIds,
                     mvccCacheId,
                     forUpdate
@@ -519,9 +530,11 @@ public class QueryParser {
      *
      * @param planKey Plan key.
      * @param prepared Prepared.
+     * @param paramsMeta description of the query positional parameters.
      * @return Statement.
      */
-    private QueryParserResultDml prepareDmlStatement(QueryDescriptor planKey, Prepared prepared) {
+    private QueryParserResultDml prepareDmlStatement(QueryDescriptor planKey, Prepared prepared,
+        List<JdbcParameterMeta> paramsMeta) {
         if (F.eq(QueryUtils.SCHEMA_SYS, planKey.schemaName()))
             throw new IgniteSQLException("DML statements are not supported on " + planKey.schemaName() + " schema",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -585,7 +598,7 @@ public class QueryParser {
 
         return new QueryParserResultDml(
             stmt,
-            prepared.getParameters().size(),
+            paramsMeta,
             mvccEnabled,
             streamTbl,
             plan
