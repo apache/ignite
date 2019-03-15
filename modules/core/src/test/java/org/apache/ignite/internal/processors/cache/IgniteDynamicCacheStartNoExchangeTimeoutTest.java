@@ -454,12 +454,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     private static class TestFilterExcludeOldest implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            try {
-                return node.order() > 1;
-            }
-            catch (UnsupportedOperationException e) {
-                return false;
-            }
+            return node.order() > 1;
         }
     }
 
@@ -479,12 +474,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            try {
-                return node.order() != excludeOrder;
-            }
-            catch (UnsupportedOperationException e) {
-                return false;
-            }
+            return node.order() != excludeOrder;
         }
     }
 
@@ -504,12 +494,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            try {
-                return node.order() == includeOrder;
-            }
-            catch (UnsupportedOperationException e) {
-                return false;
-            }
+            return node.order() == includeOrder;
         }
     }
 

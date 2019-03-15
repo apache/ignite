@@ -41,6 +41,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
@@ -308,14 +309,23 @@ public class GridAffinityAssignmentCache {
         boolean hasBaseline = false;
         boolean changedBaseline = false;
 
-        if (discoCache != null) {
-            hasBaseline = discoCache.state().baselineTopology() != null;
+        BaselineTopology blt = null;
 
-            changedBaseline = !hasBaseline ? baselineTopology != null :
-                !discoCache.state().baselineTopology().equals(baselineTopology);
+        if (discoCache != null) {
+            blt = discoCache.state().baselineTopology();
+
+            hasBaseline = blt != null;
+
+            changedBaseline = !hasBaseline ? baselineTopology != null : !blt.equals(baselineTopology);
         }
 
         List<List<ClusterNode>> assignment;
+
+        IgniteClusterImpl cluster = ctx.cluster().get();
+
+        boolean zeroDelayBaselineAutoAdjust = !CU.isPersistenceEnabled(ctx.config())
+            && cluster.isBaselineAutoAdjustEnabled()
+            && cluster.baselineAutoAdjustTimeout() == 0L;
 
         if (prevAssignment != null && events != null) {
             /* Skip affinity calculation only when all nodes triggered exchange
@@ -334,7 +344,7 @@ public class GridAffinityAssignmentCache {
 
             if (hasBaseline && changedBaseline) {
                 baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
-                    discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
+                    zeroDelayBaselineAutoAdjust ? sorted : blt.createBaselineView(sorted, nodeFilter),
                     prevAssignment, events.lastEvent(), topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
@@ -344,7 +354,7 @@ public class GridAffinityAssignmentCache {
             else if (hasBaseline && !changedBaseline) {
                 if (baselineAssignment == null)
                     baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
-                        discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
+                        zeroDelayBaselineAutoAdjust ? sorted : blt.createBaselineView(sorted, nodeFilter),
                         prevAssignment, events.lastEvent(), topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
@@ -362,7 +372,7 @@ public class GridAffinityAssignmentCache {
 
             if (hasBaseline) {
                 baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
-                    discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
+                    zeroDelayBaselineAutoAdjust ? sorted : blt.createBaselineView(sorted, nodeFilter),
                     prevAssignment, event, topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
@@ -381,7 +391,7 @@ public class GridAffinityAssignmentCache {
             printDistributionIfThresholdExceeded(assignment, sorted.size());
 
         if (hasBaseline) {
-            baselineTopology = discoCache.state().baselineTopology();
+            baselineTopology = blt;
 
             assert baselineAssignment != null;
         }
