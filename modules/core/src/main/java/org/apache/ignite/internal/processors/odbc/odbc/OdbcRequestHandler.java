@@ -744,10 +744,10 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             byte[] typeIds = new byte[params.size()];
 
-            for (int i = 1; i <= params.size(); ++i) {
+            for (int i = 0; i < params.size(); ++i) {
                 int sqlType = params.get(i).type();
 
-                typeIds[i - 1] = sqlTypeToBinary(sqlType);
+                typeIds[i] = sqlTypeToBinary(sqlType);
             }
 
             OdbcQueryGetParamsMetaResult res = new OdbcQueryGetParamsMetaResult(typeIds);
