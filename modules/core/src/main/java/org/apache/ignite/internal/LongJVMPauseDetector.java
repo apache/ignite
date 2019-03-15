@@ -40,12 +40,19 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  * configured in system or environment properties IGNITE_JVM_PAUSE_DETECTOR_PRECISION,
  * IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD and IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT accordingly.
  */
-class LongJVMPauseDetector {
+public class LongJVMPauseDetector {
+    /** Ignite JVM pause detector threshold default value. */
+    public static final int DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD = 500;
+
+    /** Ignite JVM pause detector disabled default value. */
+    public static final boolean DEFAULT_JVM_PAUSE_DETECTOR_DISABLED = false;
+
     /** Precision. */
     private static final int PRECISION = getInteger(IGNITE_JVM_PAUSE_DETECTOR_PRECISION, 50);
 
     /** Threshold. */
-    private static final int THRESHOLD = getInteger(IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD, 500);
+    private static final int THRESHOLD =
+        getInteger(IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD, DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD);
 
     /** Event count. */
     private static final int EVT_CNT = getInteger(IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT, 20);
@@ -61,6 +68,9 @@ class LongJVMPauseDetector {
 
     /** Long pause total duration. */
     private long longPausesTotalDuration;
+
+    /** Last detector's wake up time. */
+    private long lastWakeUpTime;
 
     /** Long pauses timestamps. */
     @GridToStringInclude
@@ -81,15 +91,16 @@ class LongJVMPauseDetector {
      * Starts worker if not started yet.
      */
     public void start() {
-        if (getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, false)) {
+        if (getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, DEFAULT_JVM_PAUSE_DETECTOR_DISABLED)) {
             if (log.isDebugEnabled())
                 log.debug("JVM Pause Detector is disabled.");
 
             return;
         }
 
+        lastWakeUpTime = System.currentTimeMillis();
+
         final Thread worker = new Thread("jvm-pause-detector-worker") {
-            private long prev = System.currentTimeMillis();
 
             @Override public void run() {
                 if (log.isDebugEnabled())
@@ -100,9 +111,7 @@ class LongJVMPauseDetector {
                         Thread.sleep(PRECISION);
 
                         final long now = System.currentTimeMillis();
-                        final long pause = now - PRECISION - prev;
-
-                        prev = now;
+                        final long pause = now - PRECISION - lastWakeUpTime;
 
                         if (pause >= THRESHOLD) {
                             log.warning("Possible too long JVM pause: " + pause + " milliseconds.");
@@ -117,6 +126,13 @@ class LongJVMPauseDetector {
                                 longPausesTimestamps[next] = now;
 
                                 longPausesDurations[next] = pause;
+
+                                lastWakeUpTime = now;
+                            }
+                        }
+                        else {
+                            synchronized (LongJVMPauseDetector.this) {
+                                lastWakeUpTime = now;
                             }
                         }
                     }
@@ -170,9 +186,16 @@ class LongJVMPauseDetector {
     }
 
     /**
+     * @return Last checker's wake up time.
+     */
+    public synchronized long getLastWakeUpTime() {
+        return lastWakeUpTime;
+    }
+
+    /**
      * @return Last long JVM pause events.
      */
-    synchronized Map<Long, Long> longPauseEvents() {
+    public synchronized Map<Long, Long> longPauseEvents() {
         final Map<Long, Long> evts = new TreeMap<>();
 
         for (int i = 0; i < longPausesTimestamps.length && longPausesTimestamps[i] != 0; i++)

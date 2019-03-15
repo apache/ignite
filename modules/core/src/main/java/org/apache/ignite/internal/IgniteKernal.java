@@ -1024,7 +1024,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
                 startProcessor(createComponent(IGridClusterStateProcessor.class, ctx));
                 startProcessor(new IgniteAuthenticationProcessor(ctx));
-                startProcessor(new GridCacheProcessor(ctx));
+                startProcessor(new GridCacheProcessor(ctx, longJVMPauseDetector));
                 startProcessor(new GridQueryProcessor(ctx));
                 startProcessor(new ClientListenerProcessor(ctx));
                 startProcessor(createServiceProcessor());
