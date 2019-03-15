@@ -24,7 +24,6 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -85,7 +84,7 @@ public class FileDownloaderTest extends GridCommonAbstractTest {
 
         GridFutureAdapter<Long> finishFut = new GridFutureAdapter<>();
 
-        FileUploader uploader = new FileUploader(UPLOADER_PATH);
+        FileUploader uploader = new FileUploader(UPLOADER_PATH, log);
 
         SocketChannel sc = null;
 
@@ -96,13 +95,7 @@ public class FileDownloaderTest extends GridCommonAbstractTest {
             U.warn(log, "Fail connect to " + address, e);
         }
 
-        CountDownLatch downLatch = new CountDownLatch(1);
-
-        runAsync(() -> {
-            downloader.download(finishFut);
-
-            downLatch.countDown();
-        });
+        runAsync(downloader::download);
 
         SocketChannel finalSc = sc;
 
@@ -110,9 +103,9 @@ public class FileDownloaderTest extends GridCommonAbstractTest {
 
         finishFut.get();
 
-        downloader.download(finishFut.get(), null);
+        downloader.onResult(finishFut.get(), null);
 
-        downLatch.await();
+        downloader.finishFuture().get();
 
         assertTrue(DOWNLOADER_PATH.toFile().exists());
 
