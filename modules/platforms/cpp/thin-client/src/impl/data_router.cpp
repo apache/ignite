@@ -136,25 +136,13 @@ namespace ignite
                     IgniteError err;
 
                     if (!typeMgr.ProcessPendingUpdates(err))
-                        throw err;
+                        throw IgniteError(err);
                 }
             }
 
-            void DataRouter::StartTrackingAffinity(int32_t cacheId)
+            void DataRouter::RefreshAffinityMapping(int32_t cacheId)
             {
-                affinityManager.StartTrackingCache(cacheId);
-            }
-
-            void DataRouter::StopTrackingAffinity(int32_t cacheId)
-            {
-                affinityManager.StopTrackingCache(cacheId);
-            }
-
-            void DataRouter::RefreshAffinityMapping()
-            {
-                std::vector<int32_t> ids;
-
-                affinityManager.GetTrackedCaches(ids);
+                std::vector<int32_t> ids(1, cacheId);
 
                 RefreshAffinityMapping(ids);
             }
@@ -177,11 +165,6 @@ namespace ignite
             affinity::SP_AffinityAssignment DataRouter::GetAffinityAssignment(int32_t cacheId) const
             {
                 return affinityManager.GetAffinityAssignment(cacheId);
-            }
-
-            void DataRouter::ReleaseAffinityMapping(int32_t cacheId)
-            {
-                affinityManager.StopTrackingCache(cacheId);
             }
 
             SP_DataChannel DataRouter::GetRandomChannel()

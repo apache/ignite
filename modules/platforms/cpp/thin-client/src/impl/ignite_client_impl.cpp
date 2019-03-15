@@ -101,8 +101,6 @@ namespace ignite
 
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
-
-                router.Get()->ReleaseAffinityMapping(cacheId);
             }
 
             void IgniteClientImpl::GetCacheNames(std::vector<std::string>& cacheNames)

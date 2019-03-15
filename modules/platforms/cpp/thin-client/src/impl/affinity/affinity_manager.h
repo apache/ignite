@@ -68,52 +68,36 @@ namespace ignite
                      */
                     SP_AffinityAssignment GetAffinityAssignment(int32_t cacheId) const;
 
-                    /**
-                     * Start tracking affinity mapping for the cache.
-                     *
-                     * @param cacheId Cache ID.
-                     */
-                    void StartTrackingCache(int32_t cacheId);
-
-                    /**
-                     * Stop tracking affinity mapping for the cache.
-                     *
-                     * @param cacheId Cache ID.
-                     */
-                    void StopTrackingCache(int32_t cacheId);
-
-                    /**
-                     * Get list of tracked caches.
-                     *
-                     * @param caches Caches.
-                     */
-                    void GetTrackedCaches(std::vector<int32_t>& caches) const;
-
-                    /**
-                     * Check if the update required.
-                     *
-                     * @return @c true if the update required.
-                     */
-                    bool IsUpdateNeeded() const;
-
                 private:
+                    /** Cache affinity map. */
+                    typedef std::map<int32_t, SP_AffinityAssignment> CacheAffinityMap;
+
+                    /** Cache affinity map shared pointer. */
+                    typedef common::concurrent::SharedPointer<CacheAffinityMap> SP_CacheAffinityMap;
+
+                    /**
+                     * Set affinity mapping.
+                     *
+                     * @param ver Version.
+                     * @param affinity Affinity mapping.
+                     */
+                    void SetNewAffinity(const AffinityTopologyVersion& ver, SP_CacheAffinityMap& affinity);
+
+                    /**
+                     * Get affinity mapping.
+                     *
+                     * @return Affinity mapping.
+                     */
+                    SP_CacheAffinityMap GetAffinity() const;
+
                     /** Current affinity topology version. */
                     AffinityTopologyVersion topologyVersion;
 
-                    /** Caches to track. */
-                    std::map<int32_t, int32_t> trackedCaches;
-
                     /** Cache affinity mapping. */
-                    std::map<int32_t, SP_AffinityAssignment> cacheAffinityMapping;
+                    SP_CacheAffinityMap cacheAffinity;
 
-                    /** Cache affinity mapping mutex. */
-                    mutable common::concurrent::CriticalSection mappingMutex;
-
-                    /** Tracked caches mutex. */
-                    mutable common::concurrent::CriticalSection cachesMutex;
-
-                    /** Flag that shows that update is required. */
-                    bool updateNeeded;
+                    /** Cache affinity mapping read-write lock. */
+                    mutable common::concurrent::ReadWriteLock affinityRwl;
                 };
             }
         }

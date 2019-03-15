@@ -129,9 +129,6 @@ namespace ignite
 
                     CheckAffinity(rsp);
 
-                    if (affinityManager.IsUpdateNeeded())
-                        RefreshAffinityMapping();
-
                     ProcessMeta(metaVer);
                 }
 
@@ -153,9 +150,6 @@ namespace ignite
                     channel.Get()->SyncMessage(req, rsp, ioTimeout);
 
                     CheckAffinity(rsp);
-
-                    if (affinityManager.IsUpdateNeeded())
-                        RefreshAffinityMapping();
 
                     ProcessMeta(metaVer);
                 }
@@ -180,23 +174,11 @@ namespace ignite
                 }
 
                 /**
-                 * Start tracking affinity mapping for the cache.
-                 *
-                 * @param cacheId Cache ID.
-                 */
-                void StartTrackingAffinity(int32_t cacheId);
-
-                /**
-                 * Stop tracking affinity mapping for the cache.
-                 *
-                 * @param cacheId Cache ID.
-                 */
-                void StopTrackingAffinity(int32_t cacheId);
-
-                /**
                  * Update affinity mapping for the cache.
+                 *
+                 * @param cacheId Cache ID.
                  */
-                void RefreshAffinityMapping();
+                void RefreshAffinityMapping(int32_t cacheId);
 
                 /**
                  * Update affinity mapping for caches.
@@ -212,13 +194,6 @@ namespace ignite
                  * @return Mapping.
                  */
                 affinity::SP_AffinityAssignment GetAffinityAssignment(int32_t cacheId) const;
-
-                /**
-                 * Clear affinity mapping for the cache.
-                 *
-                 * @param cacheId Cache ID.
-                 */
-                void ReleaseAffinityMapping(int32_t cacheId);
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataRouter);
