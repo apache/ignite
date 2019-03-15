@@ -19,19 +19,19 @@ package org.apache.ignite.internal.processors.query;
 
 import java.lang.reflect.Field;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -47,6 +47,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -71,7 +72,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.h2.api.TimestampWithTimeZone;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -187,7 +187,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         execSql("CREATE TABLE CACHE_SQL (ID INT PRIMARY KEY, MY_VAL VARCHAR)");
 
-        execSql("CREATE INDEX IDX_2 ON DEFAULT.CACHE_SQL(ID DESC) INLINE_SIZE 13");
+        execSql("CREATE INDEX IDX_2 ON \"default\".CACHE_SQL(ID DESC) INLINE_SIZE 13");
 
         execSql("CREATE TABLE PUBLIC.DFLT_CACHE (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1 DESC, ID2))");
 
@@ -215,10 +215,10 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             {"PUBLIC", "AFF_CACHE", "_key_PK", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "10"},
             {"PUBLIC", "AFF_CACHE", "_key_PK_hash", "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", "HASH", "false", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
 
-            {"DEFAULT", "CACHE_SQL", "IDX_2", "\"ID\" DESC, \"ID\" ASC", "BTREE", "false", "false", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "13"},
-            {"DEFAULT", "CACHE_SQL", "__SCAN_", "null", "SCAN", "false", "false",  "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
-            {"DEFAULT", "CACHE_SQL", "_key_PK", "\"ID\" ASC", "BTREE", "true", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "5"},
-            {"DEFAULT", "CACHE_SQL", "_key_PK_hash", "\"ID\" ASC", "HASH", "false", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
+            {"default", "CACHE_SQL", "IDX_2", "\"ID\" DESC, \"ID\" ASC", "BTREE", "false", "false", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "13"},
+            {"default", "CACHE_SQL", "__SCAN_", "null", "SCAN", "false", "false",  "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
+            {"default", "CACHE_SQL", "_key_PK", "\"ID\" ASC", "BTREE", "true", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "5"},
+            {"default", "CACHE_SQL", "_key_PK_hash", "\"ID\" ASC", "HASH", "false", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
 
             {"PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
             {"PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", "BTREE", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
@@ -308,6 +308,94 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals(nodeId, ((List<?>)cache.query(qry).getAll().get(0)).get(0));
     }
 
+    /**
+     * Test Query history system view.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testQueryHistoryMetricsModes() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        final String SCHEMA_NAME = "TEST_SCHEMA";
+        final long MAX_SLEEP = 500;
+
+        long tsBeforeRun = System.currentTimeMillis();
+
+        IgniteCache cache = ignite.createCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setIndexedTypes(Integer.class, String.class)
+                .setSqlSchema(SCHEMA_NAME)
+                .setSqlFunctionClasses(GridTestUtils.SqlTestFunctions.class)
+        );
+
+        cache.put(100, "200");
+
+        String sql = "SELECT \"STRING\"._KEY, \"STRING\"._VAL FROM \"STRING\" WHERE _key=100 AND sleep()>0 AND can_fail()=0";
+
+        GridTestUtils.SqlTestFunctions.sleepMs = 50;
+        GridTestUtils.SqlTestFunctions.fail = false;
+
+        cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll();
+
+        GridTestUtils.SqlTestFunctions.sleepMs = MAX_SLEEP;
+        GridTestUtils.SqlTestFunctions.fail = false;
+
+        cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll();
+
+        GridTestUtils.SqlTestFunctions.fail = true;
+
+        GridTestUtils.assertThrows(log,
+            () ->
+                cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll()
+            , CacheException.class,
+            "Exception calling user-defined function");
+
+        String sqlHist = "SELECT SCHEMA_NAME, SQL, LOCAL, EXECUTIONS, FAILURES, DURATION_MIN, DURATION_MAX, LAST_START_TIME " +
+            "FROM IGNITE.LOCAL_SQL_QUERY_HISTORY ORDER BY LAST_START_TIME";
+
+        cache.query(new SqlFieldsQuery(sqlHist).setLocal(true)).getAll();
+        cache.query(new SqlFieldsQuery(sqlHist).setLocal(true)).getAll();
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery(sqlHist).setLocal(true)).getAll();
+
+        assertEquals(2, res.size());
+
+        long tsAfterRun = System.currentTimeMillis();
+
+        List<?> firstRow = res.get(0);
+        List<?> secondRow = res.get(1);
+
+        //SCHEMA_NAME
+        assertEquals(SCHEMA_NAME, firstRow.get(0));
+        assertEquals(SCHEMA_NAME, secondRow.get(0));
+
+        //SQL
+        assertEquals(sql, firstRow.get(1));
+        assertEquals(sqlHist, secondRow.get(1));
+
+        // LOCAL flag
+        assertEquals(false, firstRow.get(2));
+        assertEquals(true, secondRow.get(2));
+
+        // EXECUTIONS
+        assertEquals(3L, firstRow.get(3));
+        assertEquals(2L, secondRow.get(3));
+
+        //FAILURES
+        assertEquals(1L, firstRow.get(4));
+        assertEquals(0L, secondRow.get(4));
+
+        //DURATION_MIN
+        assertTrue((Long)firstRow.get(5) > 0);
+        assertTrue((Long)firstRow.get(5) < (Long)firstRow.get(6));
+
+        //DURATION_MAX
+        assertTrue((Long)firstRow.get(6) > MAX_SLEEP);
+
+        //LAST_START_TIME
+        assertFalse(((Timestamp)firstRow.get(7)).before(new Timestamp(tsBeforeRun)));
+        assertFalse(((Timestamp)firstRow.get(7)).after(new Timestamp(tsAfterRun)));
+    }
 
     /**
      * Test running queries system view.
@@ -333,17 +421,13 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         List<?> res0 = (List<?>)cur.get(0);
         List<?> res1 = (List<?>)cur.get(1);
 
-        TimestampWithTimeZone tsTz = (TimestampWithTimeZone)res0.get(4);
+        Timestamp ts = (Timestamp)res0.get(4);
 
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
 
-        int sysTZOff = TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60 / 1000;
+        long diffInMillis = now.minusMillis(ts.getTime()).toEpochMilli();
 
-        assertEquals(sysTZOff, tsTz.getTimeZoneOffsetMins());
-
-        long diffInMinutes = Math.abs((tsTz.getNanosSinceMidnight() / 1_000_000_000 / 60) - (now.getHour() * 60 + now.getMinute()));
-
-        assertTrue(diffInMinutes < 3);
+        assertTrue(diffInMillis < 3000);
 
         assertEquals(sql, res0.get(0));
 
@@ -763,9 +847,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         execSql("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)");
 
         for (int i = 0; i < 500; i++)
-            execSql("INSERT INTO DEFAULT.TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
+            execSql("INSERT INTO \"default\".TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
 
-        String sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.CACHE_GROUPS_IO";
+        String sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.LOCAL_CACHE_GROUPS_IO";
 
         List<List<?>> res1 = execSql(sql1);
 
@@ -779,7 +863,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertTrue(map.containsKey(DEFAULT_CACHE_NAME));
 
-        sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.CACHE_GROUPS_IO WHERE " +
+        sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.LOCAL_CACHE_GROUPS_IO WHERE " +
             "GROUP_NAME='SQL_default_TST'";
 
         assertEquals(1, execSql(sql1).size());
@@ -806,7 +890,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         List<List<?>> cacheSqlInfos = execSql("SELECT * FROM IGNITE.TABLES WHERE TABLE_NAME = 'CACHE_SQL'");
 
         List<?> expRow = asList(
-            "DEFAULT",           // SCHEMA_NAME
+            "default",           // SCHEMA_NAME
             "CACHE_SQL",         // TABLE_NAME
             "cache_sql",         // CACHE_NAME
             cacheSqlId,          // CACHE_ID

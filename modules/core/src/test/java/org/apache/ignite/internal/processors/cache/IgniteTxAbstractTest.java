@@ -47,7 +47,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests for local transactions.
  */
-@SuppressWarnings( {"BusyWait"})
+@SuppressWarnings({"BusyWait"})
 abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
     /** Random number generator. */
     private static final Random RAND = new Random();
@@ -212,8 +212,8 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                     throw e;
                 }
             }
-            catch (CacheException ex) {
-                MvccFeatureChecker.assertMvccWriteConflict(ex);
+            catch (CacheException e) {
+                MvccFeatureChecker.assertMvccWriteConflict(e);
             }
             catch (Throwable e) {
                 log.error("Unexpected error: " + e, e);
