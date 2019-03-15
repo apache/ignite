@@ -99,7 +99,7 @@ namespace ignite
                 {
                     const AffinityTopologyVersion* ver = rsp.GetAffinityTopologyVersion();
 
-                    if (ver != 0)
+                    if (ver != 0 && config.IsAffinityAwareness())
                         affinityManager.UpdateAffinity(*ver);
                 }
 
@@ -186,6 +186,16 @@ namespace ignite
                  * @param cacheIds Cache IDs.
                  */
                 void RefreshAffinityMapping(const std::vector<int32_t>& cacheIds);
+
+                /**
+                 * Checked whether affinity awareness enabled.
+                 *
+                 * @return @c true if affinity awareness enabled.
+                 */
+                bool IsAffinityAwarenessEnabled() const
+                {
+                    return config.IsAffinityAwareness();
+                }
 
                 /**
                  * Get affinity mapping for the cache.

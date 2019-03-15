@@ -49,24 +49,33 @@ namespace ignite
                 template<typename ReqT, typename RspT>
                 void CacheClientImpl::SyncCacheKeyMessage(const WritableKey& key, const ReqT& req, RspT& rsp)
                 {
-                    affinity::SP_AffinityAssignment affinityInfo = router.Get()->GetAffinityAssignment(id);
+                    DataRouter& router0 = *router.Get();
 
-                    if (!affinityInfo.IsValid())
+                    if (router0.IsAffinityAwarenessEnabled())
                     {
-                        router.Get()->RefreshAffinityMapping(id);
+                        affinity::SP_AffinityAssignment affinityInfo = router0.GetAffinityAssignment(id);
 
-                        affinityInfo = router.Get()->GetAffinityAssignment(id);   
-                    }
+                        if (!affinityInfo.IsValid())
+                        {
+                            router0.RefreshAffinityMapping(id);
 
-                    if (!affinityInfo.IsValid() || affinityInfo.Get()->GetPartitionsNum() == 0)
-                    {
-                        router.Get()->SyncMessage(req, rsp);
+                            affinityInfo = router0.GetAffinityAssignment(id);
+                        }
+
+                        if (!affinityInfo.IsValid() || affinityInfo.Get()->GetPartitionsNum() == 0)
+                        {
+                            router0.SyncMessage(req, rsp);
+                        }
+                        else
+                        {
+                            const Guid& guid= affinityInfo.Get()->GetNodeGuid(key);
+
+                            router0.SyncMessage(req, rsp, guid);
+                        }
                     }
                     else
                     {
-                        const Guid& guid= affinityInfo.Get()->GetNodeGuid(key);
-
-                        router.Get()->SyncMessage(req, rsp, guid);
+                        router0.SyncMessage(req, rsp);
                     }
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
