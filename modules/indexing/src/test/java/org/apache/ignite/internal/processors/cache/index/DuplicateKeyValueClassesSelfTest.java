@@ -27,7 +27,7 @@ import java.util.UUID;
  * Make sure that cache can start with multiple key-value classes of the same type.
  */
 @SuppressWarnings("unchecked")
-public class DuplicateKeyValueClassesSelfTest extends GridCommonAbstractTest {
+public class DuplicateKeyValueClassesSelfTest extends AbstractIndexingCommonTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 

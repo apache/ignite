@@ -375,6 +375,12 @@ public class ConnectionManager {
 
         threadConns.clear();
         detachedConns.clear();
+
+        if (sysConn != null) {
+            U.close(sysConn, log);
+
+            sysConn = null;
+        }
     }
 
     /**
@@ -402,12 +408,6 @@ public class ConnectionManager {
         }
         catch (SQLException e) {
             U.error(log, "Failed to shutdown database.", e);
-        }
-
-        if (sysConn != null) {
-            U.close(sysConn, log);
-
-            sysConn = null;
         }
     }
 

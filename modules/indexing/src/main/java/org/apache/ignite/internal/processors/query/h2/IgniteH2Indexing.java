@@ -783,10 +783,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 runs.putIfAbsent(run.id(), run);
 
+                ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn = connMgr.detachThreadConnection();
+
                 try {
                     ResultSet rs = executeSqlQueryWithTimer(stmt, conn, qry, params, timeout, cancel);
 
-                    return new H2FieldsIterator(rs);
+                    return new H2FieldsIterator(rs, detachedConn);
+                }
+                catch (IgniteCheckedException | RuntimeException | Error e) {
+                    detachedConn.recycle();
+
+                    throw e;
                 }
                 finally {
                     GridH2QueryContext.clearThreadLocal();

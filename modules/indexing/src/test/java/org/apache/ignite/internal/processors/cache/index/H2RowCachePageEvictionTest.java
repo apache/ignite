@@ -40,7 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests for H2RowCacheRegistry with page eviction.
  */
-public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
+public class H2RowCachePageEvictionTest extends AbstractIndexingCommonTest {
     /** Entries count. */
     private static final int ENTRIES = 10_000;
 

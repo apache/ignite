@@ -34,7 +34,7 @@ import java.util.concurrent.Callable;
  * Tests for query entity validation.
  */
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
+public class QueryEntityValidationSelfTest extends AbstractIndexingCommonTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 

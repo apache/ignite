@@ -33,9 +33,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -44,7 +44,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 /**
  *
  */
-public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implements Serializable {
+@SuppressWarnings("Duplicates")
+public class IgniteDynamicSqlRestoreTest extends AbstractIndexingCommonTest implements Serializable {
 
     public static final String TEST_CACHE_NAME = "test";
     public static final String TEST_INDEX_OBJECT = "TestIndexObject";

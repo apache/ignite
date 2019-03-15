@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -41,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * SQL connector configuration validation tests.
  */
 @SuppressWarnings("deprecation")
-public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstractTest {
+public class SqlConnectorConfigurationValidationSelfTest extends AbstractIndexingCommonTest {
     /** Node index generator. */
     private static final AtomicInteger NODE_IDX_GEN = new AtomicInteger();
 

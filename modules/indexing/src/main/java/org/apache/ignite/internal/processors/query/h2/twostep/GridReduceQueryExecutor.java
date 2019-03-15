@@ -831,7 +831,7 @@ public class GridReduceQueryExecutor {
                                 timeoutMillis,
                                 cancel);
 
-                            resIter = new H2FieldsIterator(res);
+                            resIter = new H2FieldsIterator(res, null);
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();
