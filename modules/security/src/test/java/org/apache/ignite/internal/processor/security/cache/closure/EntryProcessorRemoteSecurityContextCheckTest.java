@@ -67,7 +67,7 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
 
         startGrid(SRV_INITIATOR, allowAllPermissionSet());
 
-        startGrid(CLNT_INITIATOR, allowAllPermissionSet(), true);
+        startClient(CLNT_INITIATOR, allowAllPermissionSet());
 
         startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
 
@@ -75,7 +75,7 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
 
-        startGrid(CLNT_ENDPOINT, allowAllPermissionSet(), true);
+        startClient(CLNT_ENDPOINT, allowAllPermissionSet());
 
         G.allGrids().get(0).cluster().active(true);
     }
