@@ -20,6 +20,8 @@ package org.apache.ignite.cache.query;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.IgniteProperties;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -49,6 +51,10 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static boolean DFLT_LAZY = IgniteSystemProperties.getBoolean(
+        IgniteSystemProperties.IGNITE_QUERY_LAZY_DEFAULT, false);
+
     /** SQL Query. */
     private String sql;
 
@@ -72,7 +78,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private boolean replicatedOnly;
 
     /** */
-    private boolean lazy;
+    private boolean lazy = DFLT_LAZY;
 
     /** Partitions for query */
     @GridToStringInclude
