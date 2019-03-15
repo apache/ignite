@@ -37,7 +37,7 @@ public class CacheFreeListSecondaryDataPageIO extends SimpleDataPageIO {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean useEmptyPages() {
+    @Override public boolean useOnlyEmptyPages() {
         return true;
     }
 }

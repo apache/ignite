@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -274,6 +275,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             long size = store.fullSize(); // TODO FIXME size is wrong (ahead of counter).
             long rmvId = globalRemoveId().get();
 
+            // TODO FIXME have to implement byte array input for freelist.insertRow.
             byte[] rawGaps = store.partUpdateCounter().getBytes();
 
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
@@ -338,17 +340,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             changed = true;
                         }
-                        else if (rawGaps != null) {
-                            // TODO FIXME update in-place optimization.
-                            freeList.removeDataRowByLink(link, grp.statisticsHolderData());
+                        else if (rawGaps != null && link != 0) {
+                            byte[] prev = freeList.readRow(link);
 
-                            SecondaryCacheDataRow row = new SecondaryCacheDataRow(store.partId(), rawGaps);
+                            assert prev != null : "Read null gaps using link=" + link;
 
-                            freeList.insertDataRow(row, grp.statisticsHolderData());
+                            if (!Arrays.equals(prev, rawGaps)) {
+                                // TODO FIXME updateRow in-place optimization for same length arrays.
+                                freeList.removeDataRowByLink(link, grp.statisticsHolderData());
 
-                            io.setGapsLink(partMetaPageAddr, (link = row.link()));
+                                SecondaryCacheDataRow row = new SecondaryCacheDataRow(store.partId(), rawGaps);
 
-                            changed = true;
+                                freeList.insertDataRow(row, grp.statisticsHolderData());
+
+                                io.setGapsLink(partMetaPageAddr, (link = row.link()));
+
+                                changed = true;
+                            }
                         }
 
                         changed |= io.setUpdateCounter(partMetaPageAddr, updCntr);

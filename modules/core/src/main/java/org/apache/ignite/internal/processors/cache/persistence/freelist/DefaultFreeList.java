@@ -169,7 +169,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
             // Reread free space after update.
             int newFreeSpace = io.getFreeSpace(pageAddr);
 
-            if (newFreeSpace > MIN_PAGE_FREE_SPACE && !io.useEmptyPages()) {
+            if (newFreeSpace > MIN_PAGE_FREE_SPACE && !io.useOnlyEmptyPages()) {
                 int bucket = bucket(newFreeSpace, false);
 
                 put(null, pageId, page, pageAddr, bucket, statHolder);
@@ -304,8 +304,8 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
 
             int newBucket = bucket(newFreeSpace, false);
 
-            // Pages is present in bucket and must be removed from it.
-            if (oldFreeSpace > MIN_PAGE_FREE_SPACE && !io.useEmptyPages()) {
+            // Pages are present in bucket and must be removed from it.
+            if (oldFreeSpace > MIN_PAGE_FREE_SPACE && !io.useOnlyEmptyPages()) {
                 int oldBucket = bucket(oldFreeSpace, false);
 
                 if (oldBucket != newBucket) {
@@ -322,7 +322,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
 
                 reuseBag.addFreePage(recyclePage(pageId, page, pageAddr, null));
             }
-            else if (newFreeSpace > MIN_PAGE_FREE_SPACE && !io.useEmptyPages())
+            else if (newFreeSpace > MIN_PAGE_FREE_SPACE && !io.useOnlyEmptyPages())
                 put(null, pageId, page, pageAddr, newBucket, statHolder);
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
@@ -573,10 +573,10 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
 
             AbstractDataPageIO<Storable> latest = (AbstractDataPageIO<Storable>)row.ioVersions().latest();
 
-            int b = remaining >= MIN_SIZE_FOR_DATA_PAGE || latest.useEmptyPages() ?
+            int b = remaining >= MIN_SIZE_FOR_DATA_PAGE || latest.useOnlyEmptyPages() ?
                 REUSE_BUCKET :
                 /** Have to search for free space in bucket next to calculated otherwise where is a change what bucket
-                 * will contains page having space less than required.
+                 * will contain a page having space less than required.
                  * Example: remaining = 130, step = 8.
                  * Calculated bucket is 130 / 8 = 16 having pages with free space in range [128, 135]
                  * If first free page in bucket has 128 or 129 free bytes an overflow will happen.

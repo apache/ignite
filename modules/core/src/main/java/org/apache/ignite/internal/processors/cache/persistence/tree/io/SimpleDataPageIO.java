@@ -101,7 +101,7 @@ public class SimpleDataPageIO extends AbstractDataPageIO<SimpleDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean useEmptyPages() {
+    @Override public boolean useOnlyEmptyPages() {
         return true;
     }
 

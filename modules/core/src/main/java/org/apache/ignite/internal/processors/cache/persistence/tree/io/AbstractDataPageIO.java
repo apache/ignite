@@ -1178,10 +1178,11 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     }
 
     /**
-     * @return {@code True} if a page should be excluded from using free list.
-     * This could not be changed between I/O versions.
+     * @return {@code True} if a page should be excluded from using free list intermediate buckets and use only empty pages,
+     * either borrowed from reuse list or newly allocated.
+     * This value could not be changed between I/O versions.
      */
-    public boolean useEmptyPages() {
+    public boolean useOnlyEmptyPages() {
         return false;
     }
 
