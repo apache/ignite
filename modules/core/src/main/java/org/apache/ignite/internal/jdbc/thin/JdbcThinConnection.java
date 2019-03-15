@@ -38,11 +38,10 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
@@ -132,7 +131,7 @@ public class JdbcThinConnection implements Connection {
     private boolean connected;
 
     /** Tracked statements to close on disconnect. */
-    private final Set<JdbcThinStatement> stmts = new HashSet<>();
+    private final IdentityHashMap<JdbcThinStatement, Boolean> stmts = new IdentityHashMap<>();
 
     /** Query timeout timer */
     private final Timer timer;
@@ -264,7 +263,7 @@ public class JdbcThinConnection implements Connection {
         JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability, schema);
 
         synchronized (stmtsMux) {
-            stmts.add(stmt);
+            stmts.put(stmt, false);
         }
 
         return stmt;
@@ -294,7 +293,7 @@ public class JdbcThinConnection implements Connection {
         JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability, schema);
 
         synchronized (stmtsMux) {
-            stmts.add(stmt);
+            stmts.put(stmt, false);
         }
 
         return stmt;
@@ -400,11 +399,28 @@ public class JdbcThinConnection implements Connection {
             streamState = null;
         }
 
+        SQLException err = null;
+
+        for (JdbcThinStatement stmt : stmts.keySet()) {
+            try {
+                stmt.close();
+            }
+            catch (SQLException e) {
+                if (err == null)
+                    err = e;
+                else
+                    err.addSuppressed(e);
+            }
+        }
+
         closed = true;
 
         cliIo.close();
 
         timer.cancel();
+
+        if (err != null)
+            throw err;
     }
 
     /** {@inheritDoc} */
@@ -760,6 +776,7 @@ public class JdbcThinConnection implements Connection {
      * @param req Request.
      * @return Server response.
      * @throws SQLException On any error.
+     * @param <R> Result type.
      */
     <R extends JdbcResult> R sendRequest(JdbcRequest req) throws SQLException {
         return sendRequest(req, null);
@@ -771,6 +788,7 @@ public class JdbcThinConnection implements Connection {
      * @param stmt Jdbc thin statement.
      * @return Server response.
      * @throws SQLException On any error.
+     * @param <R> Result type.
      */
     <R extends JdbcResult> R sendRequest(JdbcRequest req, JdbcThinStatement stmt) throws SQLException {
         ensureConnected();
@@ -882,7 +900,7 @@ public class JdbcThinConnection implements Connection {
         }
 
         synchronized (stmtsMux) {
-            for (JdbcThinStatement s : stmts)
+            for (JdbcThinStatement s : stmts.keySet())
                 s.closeOnDisconnect();
 
             stmts.clear();
