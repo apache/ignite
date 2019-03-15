@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
-import javax.cache.CacheException;
 import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -34,6 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -91,7 +91,6 @@ import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArra
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -129,10 +128,6 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter implements IgniteCacheObjectProcessor {
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
-    /** Default striped lock concurrency level. */
-    private static final int DEFAULT_CONCURRENCY_LEVEL = 50;
-    /** Striped lock. */
-    private GridStripedLock stripedLock = new GridStripedLock(DEFAULT_CONCURRENCY_LEVEL);
 
     /** */
     private volatile boolean discoveryStarted;
