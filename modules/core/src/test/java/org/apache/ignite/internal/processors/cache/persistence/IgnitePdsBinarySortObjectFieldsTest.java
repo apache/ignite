@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -47,14 +48,10 @@ public class IgnitePdsBinarySortObjectFieldsTest extends GridCommonAbstractTest 
         super.beforeTest();
 
         cleanPersistenceDir();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS, "true");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS, "false");
-
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -80,9 +77,8 @@ public class IgnitePdsBinarySortObjectFieldsTest extends GridCommonAbstractTest 
      * @throws Exception if failed.
      */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS, value = "true")
     public void testGivenCacheWithPojoValueAndPds_WhenPut_ThenNoHangup() throws Exception {
-        assert Boolean.getBoolean(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
-
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
