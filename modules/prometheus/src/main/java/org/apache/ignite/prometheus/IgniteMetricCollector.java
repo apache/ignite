@@ -27,10 +27,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class CacheMetricCollector extends Collector {
+public class IgniteMetricCollector extends Collector {
     private Ignite ignite;
 
-    public CacheMetricCollector(Ignite ignite) {
+    public IgniteMetricCollector(Ignite ignite) {
         this.ignite = ignite;
     }
 

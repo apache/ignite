@@ -64,8 +64,7 @@ public class Collector implements LifecycleBean {
             DefaultExports.initialize();
 
             // Start our custm stats
-            new CacheMetricCollector(ignite).register();
-            new NodeMetricCollector().register();
+            new IgniteMetricCollector(ignite).register();
 
             // Let's get this show on the road
             Integer maxPort = port + portRange;
