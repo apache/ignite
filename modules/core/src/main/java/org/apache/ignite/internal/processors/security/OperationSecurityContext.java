@@ -18,9 +18,29 @@
 package org.apache.ignite.internal.processors.security;
 
 /**
- * Representation of Operation Security Context.
+ *
  */
-public interface OperationSecurityContext extends AutoCloseable {
+public class OperationSecurityContext implements AutoCloseable {
+    /** Ignite Security processor. */
+    private final IgniteSecurityProcessor proc;
+
+    /** Security context. */
+    private final SecurityContext secCtx;
+
+    /**
+     * @param proc Ignite Security processor.
+     * @param secCtx Security context.
+     */
+    OperationSecurityContext(IgniteSecurityProcessor proc, SecurityContext secCtx) {
+        assert proc != null;
+        assert secCtx != null || !proc.enabled();
+
+        this.proc = proc;
+        this.secCtx = secCtx;
+    }
+
     /** {@inheritDoc} */
-    @Override public void close();
+    @Override public void close() {
+        proc.withContext(secCtx);
+    }
 }

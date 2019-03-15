@@ -46,11 +46,7 @@ public class NoOpIgniteSecurityProcessor implements IgniteSecurityProcessor, Gri
         "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
 
     /** No operation security context. */
-    private static final OperationSecurityContext NO_OP_SEC_CTX = new OperationSecurityContext() {
-        @Override public void close() {
-            //no-op
-        }
-    };
+    private final OperationSecurityContext opSecCtx = new OperationSecurityContext(this, null);
 
     /** Grid kernal context. */
     private final GridKernalContext ctx;
@@ -64,12 +60,12 @@ public class NoOpIgniteSecurityProcessor implements IgniteSecurityProcessor, Gri
 
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(SecurityContext secCtx) {
-        return NO_OP_SEC_CTX;
+        return opSecCtx;
     }
 
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID nodeId) {
-        return NO_OP_SEC_CTX;
+        return opSecCtx;
     }
 
     /** {@inheritDoc} */

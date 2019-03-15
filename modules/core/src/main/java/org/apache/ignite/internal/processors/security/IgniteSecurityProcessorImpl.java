@@ -93,7 +93,7 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
 
         curSecCtx.set(secCtx);
 
-        return new OperationSecurityContextImpl(this, old);
+        return new OperationSecurityContext(this, old);
     }
 
     /** {@inheritDoc} */
