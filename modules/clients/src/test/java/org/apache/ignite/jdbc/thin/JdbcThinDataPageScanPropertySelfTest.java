@@ -25,7 +25,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
@@ -121,14 +120,19 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
     private void checkDataPageScanInBatch(String qryWithParam, @Nullable Boolean dps) throws Exception {
         String params = (dps == null) ? null : "dataPageScanEnabled=" + dps;
 
+        int expCnt = 0;
+
         try (Connection conn = GridTestUtils.connect(grid(0), params)) {
             try (PreparedStatement upd = conn.prepareStatement(qryWithParam)) {
                 for (int i = 0; i < TOTAL_QUERIES_TO_EXECUTE; i++) {
                     upd.setInt(1, i);
                     upd.addBatch();
 
-                    if ((i + 1) % BATCH_SIZE == 0 || (i + 1) == TOTAL_QUERIES_TO_EXECUTE)
+                    if ((i + 1) % BATCH_SIZE == 0 || (i + 1) == TOTAL_QUERIES_TO_EXECUTE) {
                         upd.executeBatch();
+
+                        expCnt++;
+                    }
                 }
             }
         }
@@ -146,10 +150,7 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
 
         int executed = IndexingWithQueries.queries.size();
 
-        assertTrue(
-            "Expected that there are executed at least " + TOTAL_QUERIES_TO_EXECUTE + " queries. " +
-                "But executed only " + executed,
-            executed >= TOTAL_QUERIES_TO_EXECUTE);
+        assertEquals(expCnt, executed);
 
         IndexingWithQueries.queries.clear();
     }
@@ -198,12 +199,24 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
         static final Queue<SqlFieldsQuery> queries = new LinkedBlockingQueue<>();
 
         /** {@inheritDoc} */
-        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts,
-            MvccQueryTracker tracker, GridQueryCancel cancel, boolean registerAsNewQry) {
+        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(
+            String schemaName,
+            SqlFieldsQuery qry,
+            @Nullable SqlClientContext cliCtx,
+            boolean keepBinary,
+            boolean failOnMultipleStmts,
+            GridQueryCancel cancel
+        ) {
             queries.add(qry);
 
-            return super.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, tracker, cancel, registerAsNewQry);
+            return super.querySqlFields(
+                schemaName,
+                qry,
+                cliCtx,
+                keepBinary,
+                failOnMultipleStmts,
+                cancel
+            );
         }
     }
 }

@@ -185,7 +185,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         execSql("CREATE TABLE CACHE_SQL (ID INT PRIMARY KEY, MY_VAL VARCHAR)");
 
-        execSql("CREATE INDEX IDX_2 ON DEFAULT.CACHE_SQL(ID DESC) INLINE_SIZE 13");
+        execSql("CREATE INDEX IDX_2 ON \"default\".CACHE_SQL(ID DESC) INLINE_SIZE 13");
 
         execSql("CREATE TABLE PUBLIC.DFLT_CACHE (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1 DESC, ID2))");
 
@@ -213,10 +213,10 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             {"PUBLIC", "AFF_CACHE", "_key_PK", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "10"},
             {"PUBLIC", "AFF_CACHE", "_key_PK_hash", "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", "HASH", "false", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
 
-            {"DEFAULT", "CACHE_SQL", "IDX_2", "\"ID\" DESC, \"ID\" ASC", "BTREE", "false", "false", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "13"},
-            {"DEFAULT", "CACHE_SQL", "__SCAN_", "null", "SCAN", "false", "false",  "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
-            {"DEFAULT", "CACHE_SQL", "_key_PK", "\"ID\" ASC", "BTREE", "true", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "5"},
-            {"DEFAULT", "CACHE_SQL", "_key_PK_hash", "\"ID\" ASC", "HASH", "false", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
+            {"default", "CACHE_SQL", "IDX_2", "\"ID\" DESC, \"ID\" ASC", "BTREE", "false", "false", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "13"},
+            {"default", "CACHE_SQL", "__SCAN_", "null", "SCAN", "false", "false",  "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
+            {"default", "CACHE_SQL", "_key_PK", "\"ID\" ASC", "BTREE", "true", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "5"},
+            {"default", "CACHE_SQL", "_key_PK_hash", "\"ID\" ASC", "HASH", "false", "true", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "null"},
 
             {"PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
             {"PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", "BTREE", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
@@ -759,7 +759,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         execSql("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)");
 
         for (int i = 0; i < 500; i++)
-            execSql("INSERT INTO DEFAULT.TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
+            execSql("INSERT INTO \"default\".TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
 
         String sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.LOCAL_CACHE_GROUPS_IO";
 
@@ -802,7 +802,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         List<List<?>> cacheSqlInfos = execSql("SELECT * FROM IGNITE.TABLES WHERE TABLE_NAME = 'CACHE_SQL'");
 
         List<?> expRow = asList(
-            "DEFAULT",           // SCHEMA_NAME
+            "default",           // SCHEMA_NAME
             "CACHE_SQL",         // TABLE_NAME
             "cache_sql",         // CACHE_NAME
             cacheSqlId,          // CACHE_ID
