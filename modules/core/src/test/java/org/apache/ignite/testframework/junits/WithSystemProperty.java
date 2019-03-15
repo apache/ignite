@@ -15,16 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
+package org.apache.ignite.testframework.junits;
 
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_GETALL_AS_ARRAY;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Test for being unaffected by {@link IgniteSystemProperties#IGNITE_REST_GETALL_AS_ARRAY}.
+ *
  */
-@WithSystemProperty(key = IGNITE_REST_GETALL_AS_ARRAY, value = "true")
-public class RedisProtocolGetAllAsArrayTest extends RedisProtocolStringSelfTest {
+@Repeatable(SystemPropertiesList.class)
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+public @interface WithSystemProperty {
+    /** */
+    String key();
+
+    /** */
+    String value();
 }
