@@ -75,11 +75,16 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testUnsupportedCreateTable() {
-        assertSqlUnsupported("CREATE MEMORY TABLE unsupported_tbl0 (id integer primary key, val integer)");
-        assertSqlUnsupported("CREATE GLOBAL TEMPORARY TABLE unsupported_tbl1 (id integer primary key, val integer)");
-        assertSqlUnsupported("CREATE LOCAL TEMPORARY TABLE unsupported_tbl2 (id integer primary key, val integer)");
-        assertSqlUnsupported("CREATE TEMPORARY TABLE unsupported_tbl3 (id integer primary key, val integer)");
-        assertSqlUnsupported("CREATE TABLE unsupported_tbl4 (id integer primary key, val integer) HIDDEN");
+        assertSqlUnsupported("CREATE MEMORY TABLE unsupported_tbl0 (id integer primary key, val integer)",
+            "MEMORY and NOT PERSISTENT keywords are not supported");
+        assertSqlUnsupported("CREATE GLOBAL TEMPORARY TABLE unsupported_tbl1 (id integer primary key, val integer)",
+            "GLOBAL TEMPORARY keyword is not supported");
+        assertSqlUnsupported("CREATE LOCAL TEMPORARY TABLE unsupported_tbl2 (id integer primary key, val integer)",
+            "TEMPORARY keyword is not supported");
+        assertSqlUnsupported("CREATE TEMPORARY TABLE unsupported_tbl3 (id integer primary key, val integer)",
+            "TEMPORARY keyword is not supported");
+        assertSqlUnsupported("CREATE TABLE unsupported_tbl4 (id integer primary key, val integer) HIDDEN",
+            "HIDDEN keyword is not supported");
     }
 
     /**
@@ -133,9 +138,12 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
         assertSqlUnsupported("ALTER TABLE test ALTER COLUMN val SET VISIBLE");
         assertSqlUnsupported("ALTER TABLE test ALTER COLUMN val SET INVISIBLE");
 
-        assertSqlUnsupported("ALTER TABLE test ADD COLUMN (q integer) FIRST");
-        assertSqlUnsupported("ALTER TABLE test ADD COLUMN (q integer) BEFORE val");
-        assertSqlUnsupported("ALTER TABLE test ADD COLUMN (q integer) AFTER val");
+        assertSqlUnsupported("ALTER TABLE test ADD COLUMN (q integer) FIRST",
+            "FIRST keyword is not supported");
+        assertSqlUnsupported("ALTER TABLE test ADD COLUMN (q integer) BEFORE val",
+            "BEFORE keyword is not supported");
+        assertSqlUnsupported("ALTER TABLE test ADD COLUMN (q integer) AFTER val",
+            "AFTER keyword is not supported");
     }
 
     /**
@@ -280,21 +288,31 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
      * @param sql Sql.
      */
     private void assertSqlUnsupported(final String sql) {
+        assertSqlUnsupported(sql, "");
+    }
+
+    /**
+     * @param sql Sql.
+     * @param msg Error message to check.
+     */
+    private void assertSqlUnsupported(final String sql, String msg) {
         try {
             local = false;
-            assertSqlUnsupported0(sql);
+            assertSqlUnsupported0(sql, msg);
 
             local = true;
-            assertSqlUnsupported0(sql);
+            assertSqlUnsupported0(sql, msg);
         }
         finally {
             local = false;
         }
     }
+
     /**
      * @param sql Sql.
+     * @param msg Error message match
      */
-    private void assertSqlUnsupported0(final String sql) {
+    private void assertSqlUnsupported0(final String sql, String msg) {
         Throwable t = GridTestUtils.assertThrowsWithCause((Callable<Void>)() -> {
             execSql(sql);
 
@@ -305,7 +323,7 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
 
         assert sqlE != null;
 
-        if (IgniteQueryErrorCode.UNSUPPORTED_OPERATION != sqlE.statusCode()) {
+        if (IgniteQueryErrorCode.UNSUPPORTED_OPERATION != sqlE.statusCode() || !sqlE.getMessage().contains(msg)) {
             log.error("Unexpected exception", t);
 
             fail("Unexpected exception. See above");

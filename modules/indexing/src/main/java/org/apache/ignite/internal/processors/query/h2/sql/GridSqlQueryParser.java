@@ -1199,10 +1199,23 @@ public class GridSqlQueryParser {
 
         CreateTableData data = CREATE_TABLE_DATA.get(createTbl);
 
-        if (!data.persistIndexes || data.temporary || data.globalTemporary || data.isHidden) {
-            throw new IgniteSQLException("Unsupported type of table (MEMORY, TEMPORARY, HIDDEN) for CREATE TABLE " +
-                "- please specify the table store properties by Ignite table engine parameters: " +
-                "WITH \"<param>=<value>, ...\"",
+        if (data.globalTemporary) {
+            throw new IgniteSQLException("GLOBAL TEMPORARY keyword is not supported",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
+
+        if (data.temporary) {
+            throw new IgniteSQLException("TEMPORARY keyword is not supported",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
+
+        if (data.isHidden) {
+            throw new IgniteSQLException("HIDDEN keyword is not supported",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
+
+        if (!data.persistIndexes) {
+            throw new IgniteSQLException("MEMORY and NOT PERSISTENT keywords are not supported",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
@@ -1464,11 +1477,14 @@ public class GridSqlQueryParser {
     private GridSqlStatement parseAddColumn(AlterTableAlterColumn addCol) {
         assert addCol.getType() == CommandInterface.ALTER_TABLE_ADD_COLUMN;
 
-        if (ALTER_COLUMN_BEFORE_COL.get(addCol) != null || ALTER_COLUMN_AFTER_COL.get(addCol) != null
-            || ALTER_COLUMN_FIRST.get(addCol)) {
-            throw new IgniteSQLException("ALTER TABLE ADD COLUMN BEFORE/AFTER/FIRST is not supported",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-        }
+        if (ALTER_COLUMN_BEFORE_COL.get(addCol) != null )
+            throw new IgniteSQLException("BEFORE keyword is not supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (ALTER_COLUMN_AFTER_COL.get(addCol) != null)
+            throw new IgniteSQLException("AFTER keyword is not supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (ALTER_COLUMN_FIRST.get(addCol) != null)
+            throw new IgniteSQLException("FIRST keyword is not supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         GridSqlAlterTableAddColumn res = new GridSqlAlterTableAddColumn();
 

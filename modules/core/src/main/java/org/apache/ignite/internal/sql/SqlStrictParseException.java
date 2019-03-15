@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+
 /**
  * Parse exception guarantees parse error without. Such error deliver to user
  * statement isn't passed to H2 parser.
@@ -25,11 +27,34 @@ public class SqlStrictParseException extends SqlParseException {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** SQL error code. */
+    private final int errCode;
+
     /**
      * Constructor.
      * @param e SQL parse exception.
      */
     public SqlStrictParseException(SqlParseException e) {
-        super(e);
+        this(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
+    }
+
+
+    /**
+     * Constructor.
+     * @param e SQL parse exception.
+     * @param msg Error message.
+     * @param errCode SQL error code.
+     */
+    public SqlStrictParseException(String msg, int errCode, SqlParseException e) {
+        super(e.sql(), e.position(), e.code(), msg);
+
+        this.errCode = errCode;
+    }
+
+    /**
+     * @return SQL error code.
+     */
+    public int errorCode() {
+        return errCode;
     }
 }

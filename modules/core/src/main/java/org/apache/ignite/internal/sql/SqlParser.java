@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
@@ -404,8 +403,8 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCommand processHelp() {
-        throw new IgniteSQLException("HELP command are not supported.",
-            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        throw new SqlStrictParseException("HELP command are not supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+            SqlParserUtils.errorUnsupported(lex));
     }
 
     /**
@@ -414,8 +413,8 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCommand processShow() {
-        throw new IgniteSQLException("SHOW command are not supported.",
-            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        throw new SqlStrictParseException("SHOW command are not supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+            SqlParserUtils.errorUnsupported(lex));
     }
 
     /**
@@ -424,8 +423,8 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCommand processGrant() {
-        throw new IgniteSQLException("GRANT command are not supported.",
-            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        throw new SqlStrictParseException("GRANT command are not supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+            SqlParserUtils.errorUnsupported(lex));
     }
 
     /**
@@ -434,10 +433,9 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCommand processRevoke() {
-        throw new IgniteSQLException("REVOKE command are not supported.",
-            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        throw new SqlStrictParseException("REVOKE command are not supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+            SqlParserUtils.errorUnsupported(lex));
     }
-
 
     /**
      * Not yet parsed part of the sql query. Result is invalid if parsing error was thrown.

@@ -352,7 +352,7 @@ public class SqlParserUtils {
      * @return Error.
      */
     public static SqlParseException errorUnsupported(SqlLexerToken token) {
-        throw error0(token, IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+        return error0(token, IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
             "Unsupported keyword: \"" + token.token() + "\"");
     }
 
