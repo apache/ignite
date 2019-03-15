@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.DatabaseMetaData.columnNullable;
 import static java.sql.DatabaseMetaData.tableIndexOther;
@@ -308,5 +309,26 @@ public class JdbcUtils {
         row.add(null);
 
         return row;
+    }
+
+
+    /**
+     * Normalize schema name. If it is quoted - unquote and leave as is, otherwise - convert to upper case.
+     *
+     * @param schemaName Schema name.
+     * @return Normalized schema name.
+     */
+    public static String normalizeSchema(String schemaName) {
+        if (F.isEmpty(schemaName))
+            return QueryUtils.DFLT_SCHEMA;
+
+        String res;
+
+        if (schemaName.startsWith("\"") && schemaName.endsWith("\""))
+            res = schemaName.substring(1, schemaName.length() - 1);
+        else
+            res = schemaName.toUpperCase();
+
+        return res;
     }
 }
