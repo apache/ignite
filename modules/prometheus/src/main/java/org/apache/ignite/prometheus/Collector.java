@@ -21,7 +21,6 @@ import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -33,21 +32,26 @@ public class Collector implements LifecycleBean {
 
     private HTTPServer server;
     private Integer port;
+    private Integer portRange;
 
     @IgniteInstanceResource
     private Ignite ignite;
     private IgniteLogger log;
 
     private static final Integer DEFAULT_PORT = 1234;
-    static final CacheMetricCollector cacheMetricCollector = new CacheMetricCollector().register();
-    static final NodeMetricCollector nodeMetricCollector = new NodeMetricCollector().register();
+    private static final Integer DEFAULT_PORT_RANGE = 100;
 
     public Collector() {
-        this(DEFAULT_PORT);
+        this(DEFAULT_PORT, DEFAULT_PORT_RANGE);
     }
 
     public Collector(Integer port) {
+        this(port, DEFAULT_PORT_RANGE);
+    }
+
+    public Collector(Integer port, Integer portRange) {
         this.port = port;
+        this.portRange = portRange;
     }
 
     @Override
@@ -56,13 +60,26 @@ public class Collector implements LifecycleBean {
             log = ignite.log();
         }
         if (evt == LifecycleEventType.AFTER_NODE_START) {
+            // Start JVM stats
             DefaultExports.initialize();
-            try {
-                server = new HTTPServer(port, true);
 
-                log.info("Started Prometheus server");
-            } catch (Exception e) {
-                log.info("Couldn't start Prometheus server " + e);
+            // Start our custm stats
+            new CacheMetricCollector(ignite).register();
+            new NodeMetricCollector().register();
+
+            // Let's get this show on the road
+            Integer maxPort = port + portRange;
+            while (server == null && port < maxPort) {
+                try {
+                    server = new HTTPServer(port, true);
+
+                    log.info("Started Prometheus server on port " + port);
+                } catch (java.io.IOException e) {
+                    port++;
+                }
+            }
+            if (server == null) {
+                log.info("Couldn't start Prometheus server");
             }
         }
         else if (evt == LifecycleEventType.BEFORE_NODE_STOP) {
