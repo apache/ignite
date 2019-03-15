@@ -677,6 +677,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void onCacheStart0(GridCacheContextInfo<?, ?> cacheInfo, QuerySchema schema, boolean isSql)
         throws IgniteCheckedException {
+        if(!cacheSupportSql(cacheInfo.config()))
+            return;
 
         ctx.cache().context().database().checkpointReadLock();
 
@@ -1698,7 +1700,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param destroy Destroy flag.
      */
     public void onCacheStop0(GridCacheContextInfo cacheInfo, boolean destroy) {
-        if (idx == null)
+        if (idx == null || !cacheSupportSql(cacheInfo.config()))
             return;
 
         String cacheName = cacheInfo.name();
@@ -1754,6 +1756,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     missedCacheTypeIter.remove();
             }
         }
+    }
+
+    /**
+     * Check is cache configured for SQL.
+     *
+     * @param cfg Cache configuration.
+     * @return {@code true} If cache configuration support SQL, {@code false} otherwise.
+     */
+    private boolean cacheSupportSql(CacheConfiguration cfg) {
+        return !F.isEmpty(cfg.getQueryEntities())
+            || !F.isEmpty(cfg.getSqlSchema())
+            || !F.isEmpty(cfg.getSqlFunctionClasses());
     }
 
     /**
