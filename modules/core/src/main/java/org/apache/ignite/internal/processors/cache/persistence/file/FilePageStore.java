@@ -358,7 +358,7 @@ public class FilePageStore implements PageStore {
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder();
             assert off <= (allocated.get() - headerSize()) : "calculatedOffset=" + off +
-                ", allocated=" + allocated.get() + ", headerSize="+headerSize();
+                ", allocated=" + allocated.get() + ", headerSize="+headerSize() + ", cfgFile=" + cfgFile;
 
             int n = readWithFailover(pageBuf, off);
 
