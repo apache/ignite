@@ -54,78 +54,6 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends AbstractIndexingCom
     private static final String SELECT_MAX_SAL_SQLF = "select max(salary) from Person";
 
     /**
-     * Non local SQL check nullification after close
-     */
-    @Test
-    public void testSqlQueryClose() {
-        SqlQuery<String, Person> qry = new SqlQuery<>(Person.class, SELECT_ALL_SQL);
-
-        QueryCursor<Cache.Entry<String, Person>> qryCurs = cache().query(qry);
-
-        qryCurs.iterator();
-
-        qryCurs.close();
-
-        H2ResultSetIterator h2It = extractIteratorInnerGridIteratorInnerH2ResultSetIterator(qryCurs);
-
-        checkIterator(h2It);
-    }
-
-    /**
-     * Non local SQL check nullification after complete
-     */
-    @Test
-    public void testSqlQueryComplete() {
-        SqlQuery<String, Person> qry = new SqlQuery<>(Person.class, SELECT_ALL_SQL);
-
-        QueryCursor<Cache.Entry<String, Person>> qryCurs = cache().query(qry);
-
-        qryCurs.getAll();
-
-        H2ResultSetIterator h2It = extractIteratorInnerGridIteratorInnerH2ResultSetIterator(qryCurs);
-
-        checkIterator(h2It);
-    }
-
-    /**
-     * Local SQL check nullification after close
-     */
-    @Test
-    public void testSqlQueryLocalClose() {
-        SqlQuery<String, Person> qry = new SqlQuery<>(Person.class, SELECT_ALL_SQL);
-
-        qry.setLocal(true);
-
-        QueryCursor<Cache.Entry<String, Person>> qryCurs = cache().query(qry);
-
-        qryCurs.iterator();
-
-        qryCurs.close();
-
-        H2ResultSetIterator h2It = extractIterableInnerH2ResultSetIterator(qryCurs);
-
-        checkIterator(h2It);
-    }
-
-    /**
-     * Local SQL check nullification after complete
-     */
-    @Test
-    public void testSqlQueryLocalComplete() {
-        SqlQuery<String, Person> qry = new SqlQuery<>(Person.class, SELECT_ALL_SQL);
-
-        qry.setLocal(true);
-
-        QueryCursor<Cache.Entry<String, Person>> qryCurs = cache().query(qry);
-
-        qryCurs.getAll();
-
-        H2ResultSetIterator h2It = extractIterableInnerH2ResultSetIterator(qryCurs);
-
-        checkIterator(h2It);
-    }
-
-    /**
      * Non local SQL Fields check nullification after close
      */
     @Test
@@ -209,45 +137,6 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends AbstractIndexingCom
     }
 
     /**
-     * Extract H2ResultSetIterator by reflection for non local SQL cases
-     * @param qryCurs source cursor
-     * @return target iterator or null of not extracted
-     */
-    private H2ResultSetIterator extractIteratorInnerGridIteratorInnerH2ResultSetIterator(
-        QueryCursor<Cache.Entry<String, Person>> qryCurs) {
-        if (QueryCursorImpl.class.isAssignableFrom(qryCurs.getClass())) {
-            Iterator inner = GridTestUtils.getFieldValue(qryCurs, QueryCursorImpl.class, "iter");
-
-            GridQueryCacheObjectsIterator it = GridTestUtils.getFieldValue(inner, inner.getClass(), "val$iter0");
-
-            Iterator<List<?>> h2RsIt = GridTestUtils.getFieldValue(it, GridQueryCacheObjectsIterator.class, "iter");
-
-            if (H2ResultSetIterator.class.isAssignableFrom(h2RsIt.getClass()))
-                return (H2ResultSetIterator)h2RsIt;
-        }
-        return null;
-    }
-
-    /**
-     * Extract H2ResultSetIterator by reflection for local SQL cases.
-     *
-     * @param qryCurs source cursor
-     * @return target iterator or null of not extracted
-     */
-    private H2ResultSetIterator extractIterableInnerH2ResultSetIterator(
-        QueryCursor<Cache.Entry<String, Person>> qryCurs) {
-        if (QueryCursorImpl.class.isAssignableFrom(qryCurs.getClass())) {
-            Iterable iterable = GridTestUtils.getFieldValue(qryCurs, QueryCursorImpl.class, "iterExec");
-
-            Iterator h2RsIt = GridTestUtils.getFieldValue(iterable, iterable.getClass(), "val$i");
-
-            if (H2ResultSetIterator.class.isAssignableFrom(h2RsIt.getClass()))
-                return (H2ResultSetIterator)h2RsIt;
-        }
-        return null;
-    }
-
-    /**
      * Extract H2ResultSetIterator by reflection for SQL Fields cases.
      *
      * @param qryCurs source cursor
@@ -281,15 +170,6 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends AbstractIndexingCom
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
-    }
-
-    /**
-     * @return H2 indexing instance.
-     */
-    private IgniteH2Indexing indexing() {
-        GridQueryProcessor qryProcessor = grid(0).context().query();
-
-        return GridTestUtils.getFieldValue(qryProcessor, GridQueryProcessor.class, "idx");
     }
 
     /**
