@@ -85,6 +85,7 @@ public class FreeListSpaceReuseSelfTest extends GridCommonAbstractTest {
     public void testCacheDataRow_3() throws Exception {
         int pageSize = 1024;
 
+        // Free space must be reused.
         testInsertRemoveAll(pageSize, size -> new CacheFreeListImplSelfTest.TestDataRow(size / 3, size * 2 / 3),
             1,
             pageSize * 3 / 2, 100);
@@ -115,6 +116,7 @@ public class FreeListSpaceReuseSelfTest extends GridCommonAbstractTest {
     public void testSecondaryCacheDataRow_3() throws Exception {
         int pageSize = 1024;
 
+        // Free space must not be reused.
         testInsertRemoveAll(pageSize, size -> new SecondaryCacheDataRow(0, new byte[size]),
             2,
             pageSize * 3 / 2, 100);
