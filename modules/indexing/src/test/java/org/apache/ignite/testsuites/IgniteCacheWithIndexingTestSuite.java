@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.BinaryTypeMismatchLoggingTest;
+import org.apache.ignite.internal.processors.cache.BinaryTypeRegistrationTest;
 import org.apache.ignite.internal.processors.cache.CacheBinaryKeyConcurrentQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
 import org.apache.ignite.internal.processors.cache.CacheIndexStreamerTest;
@@ -90,6 +91,8 @@ public class IgniteCacheWithIndexingTestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteDataStreamerTest.class));
 
         suite.addTest(new JUnit4TestAdapter(BinaryTypeMismatchLoggingTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(BinaryTypeRegistrationTest.class));
 
         suite.addTest(new JUnit4TestAdapter(ClusterReadOnlyModeSqlTest.class));
 
