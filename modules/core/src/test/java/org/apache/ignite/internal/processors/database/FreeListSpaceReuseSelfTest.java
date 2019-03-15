@@ -65,9 +65,29 @@ public class FreeListSpaceReuseSelfTest extends GridCommonAbstractTest {
     public void testCacheDataRow_1() throws Exception {
         int pageSize = 1024;
 
-        doTestSecondaryCacheDataRow(pageSize, size -> new CacheFreeListImplSelfTest.TestDataRow(size / 3, size * 2/3),
+        testInsertRemoveAll(pageSize, size -> new CacheFreeListImplSelfTest.TestDataRow(size / 3, size * 2 / 3),
             0,
-            100, 100);
+            100, 100, 100, 100);
+    }
+
+    /** */
+    @Test
+    public void testCacheDataRow_2() throws Exception {
+        int pageSize = 1024;
+
+        testInsertRemoveAll(pageSize, size -> new CacheFreeListImplSelfTest.TestDataRow(size / 3, size * 2 / 3),
+            1,
+            pageSize * 3 / 2);
+    }
+
+    /** */
+    @Test
+    public void testCacheDataRow_3() throws Exception {
+        int pageSize = 1024;
+
+        testInsertRemoveAll(pageSize, size -> new CacheFreeListImplSelfTest.TestDataRow(size / 3, size * 2 / 3),
+            1,
+            pageSize * 3 / 2, 100);
     }
 
     /** */
@@ -75,9 +95,9 @@ public class FreeListSpaceReuseSelfTest extends GridCommonAbstractTest {
     public void testSecondaryCacheDataRow_1() throws Exception {
         int pageSize = 1024;
 
-        doTestSecondaryCacheDataRow(pageSize, size -> new SecondaryCacheDataRow(0, new byte[size]),
-            1,
-            900, 45);
+        testInsertRemoveAll(pageSize, size -> new SecondaryCacheDataRow(0, new byte[size]),
+            3,
+            100, 100, 100, 100);
     }
 
     /** */
@@ -85,16 +105,26 @@ public class FreeListSpaceReuseSelfTest extends GridCommonAbstractTest {
     public void testSecondaryCacheDataRow_2() throws Exception {
         int pageSize = 1024;
 
-        doTestSecondaryCacheDataRow(pageSize, size -> new SecondaryCacheDataRow(0, new byte[size]),
+        testInsertRemoveAll(pageSize, size -> new SecondaryCacheDataRow(0, new byte[size]),
             1,
-            1500);
+            pageSize * 3 / 2);
+    }
+
+    /** */
+    @Test
+    public void testSecondaryCacheDataRow_3() throws Exception {
+        int pageSize = 1024;
+
+        testInsertRemoveAll(pageSize, size -> new SecondaryCacheDataRow(0, new byte[size]),
+            2,
+            pageSize * 3 / 2, 100);
     }
 
     /**
      * @param sizes Sizes.
      */
-    private void doTestSecondaryCacheDataRow(int pageSize, IgniteClosure<Integer, Storable> producer,
-        int expFreeCnt, int... sizes) throws Exception {
+    private void testInsertRemoveAll(int pageSize, IgniteClosure<Integer, Storable> producer,
+        int expEmptyCnt, int... sizes) throws Exception {
         int usableSize = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
         TestFreeList list = createFreeList(pageSize);
@@ -119,9 +149,9 @@ public class FreeListSpaceReuseSelfTest extends GridCommonAbstractTest {
         list.assertEmpty(DefaultFreeList.REUSE_BUCKET);
 
         // Reuse bucket must not be empty.
-        assertTrue(expFreeCnt == 0 || !list.isEmpty(DefaultFreeList.REUSE_BUCKET));
+        assertTrue(expEmptyCnt == 0 || !list.isEmpty(DefaultFreeList.REUSE_BUCKET));
 
-        assertEquals("Free pages count is not as expected", expFreeCnt, list.bucketCount(DefaultFreeList.REUSE_BUCKET));
+        assertEquals("Free pages count is not as expected", expEmptyCnt, list.bucketCount(DefaultFreeList.REUSE_BUCKET));
 
         /** NOTE: first free page will be used for reused pages list. */
     }

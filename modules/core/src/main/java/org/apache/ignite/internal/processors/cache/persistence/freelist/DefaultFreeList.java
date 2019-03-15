@@ -426,8 +426,8 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
                     }
                 }
 
-                //if (log.isInfoEnabled())
-                    U.debug("Bucket [b=" + b +
+                if (log.isInfoEnabled())
+                    log.info("Bucket [b=" + b +
                         ", size=" + size +
                         ", stripes=" + (stripes != null ? stripes.length : 0) +
                         ", stripesEmpty=" + empty + ']');
@@ -435,8 +435,8 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
         }
 
         if (dataPages > 0) {
-            //if (log.isInfoEnabled())
-                U.debug("FreeList [name=" + name +
+            if (log.isInfoEnabled())
+                log.info("FreeList [name=" + name +
                     ", buckets=" + BUCKETS +
                     ", dataPages=" + dataPages +
                     ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
@@ -449,7 +449,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
      * @return Bucket.
      */
     private int bucket(int freeSpace, boolean allowReuse) {
-        assert freeSpace >= 0 : freeSpace;
+        assert freeSpace > 0 : freeSpace;
 
         int bucket = freeSpace >>> shift;
 
@@ -573,9 +573,18 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
 
             AbstractDataPageIO<Storable> latest = (AbstractDataPageIO<Storable>)row.ioVersions().latest();
 
-            int b;
-            for (b = remaining >= MIN_SIZE_FOR_DATA_PAGE || latest.useEmptyPages() ?
-                REUSE_BUCKET : bucket(remaining, false); b < BUCKETS; b++) {
+            int b = remaining >= MIN_SIZE_FOR_DATA_PAGE || latest.useEmptyPages() ?
+                REUSE_BUCKET :
+                /** Have to search for free space in bucket next to calculated otherwise where is a change what bucket
+                 * will contains page having space less than required.
+                 * Example: remaining = 130, step = 8.
+                 * Calculated bucket is 130 / 8 = 16 having pages with free space in range [128, 136]
+                 * If first free page in bucket has 128 or 129 free bytes an overflow will happen.
+                 * Using next bucket is safe.
+                 */
+                bucket(remaining, false) + 1;
+
+            for (; b < BUCKETS; b++) {
                 pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
 
                 if (pageId != 0L)
