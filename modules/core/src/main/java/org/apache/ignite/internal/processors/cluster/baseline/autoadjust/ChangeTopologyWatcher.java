@@ -32,8 +32,6 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustData.NULL_BASELINE_DATA;
-import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatistic.TaskState.IN_PROGRESS;
-import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatistic.TaskState.NOT_SCHEDULED;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 
 /**
