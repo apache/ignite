@@ -575,8 +575,15 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 if (fut == null) {
                     GridFutureAdapter<MetadataUpdateResult> pending = transport.getPendingMetaUpdate(typeId);
 
-                    if (pending != null)
-                        pending.get();
+                    if (pending != null) {
+                        try {
+                            pending.get();
+                        }
+                        catch (IgniteCheckedException ignore) {
+                            //Stacktrace will be logged in thread which created this future.
+                            log.warning("Pending update metadata process was failed. Trying to update to new metadata.");
+                        }
+                    }
                 }
             }
             while (fut == null);
