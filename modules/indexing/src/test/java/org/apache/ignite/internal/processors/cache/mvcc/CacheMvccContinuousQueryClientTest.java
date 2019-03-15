@@ -16,32 +16,15 @@
  */
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.Arrays;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /**
  * Mvcc CQ client test.
  */
-@RunWith(Parameterized.class)
 public class CacheMvccContinuousQueryClientTest extends IgniteCacheContinuousQueryClientTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-    }
-
-    @Parameterized.Parameters
-    public static Iterable<Object[]> data() {
-        return Arrays.asList(new Object[60][0]);
-    }
-
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testNodeJoinsRestartQuery() throws Exception {
-            super.testNodeJoinsRestartQuery();
     }
 }
