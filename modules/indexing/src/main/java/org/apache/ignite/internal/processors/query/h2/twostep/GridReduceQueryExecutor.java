@@ -589,7 +589,8 @@ public class GridReduceQueryExecutor {
             long qryReqId = qryIdGen.incrementAndGet();
 
             final ReduceQueryRun r = new ReduceQueryRun(qryReqId, qry.originalSql(), schemaName,
-                h2.connectionForSchema(schemaName), qry.mapQueries().size(), qry.pageSize(),
+                h2.connections().connectionForThread().connection(schemaName),
+                qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), cancel);
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();

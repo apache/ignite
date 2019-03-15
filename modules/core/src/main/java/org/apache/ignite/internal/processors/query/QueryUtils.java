@@ -92,6 +92,9 @@ public class QueryUtils {
     /** Well-known template name for REPLICATED cache. */
     public static final String TEMPLATE_REPLICATED = "REPLICATED";
 
+    /** Schema for system view. */
+    public static final String SCHEMA_INFORMATION = "INFORMATION_SCHEMA";
+
     /** Discovery history size. */
     private static final int DISCO_HIST_SIZE = getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, 1000);
 

@@ -261,7 +261,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (cancel && idx != null) {
             try {
                 while (!busyLock.tryBlock(500))
-                    idx.cancelAllQueries();
+                    idx.onKernalStop();
 
                 return;
             }
