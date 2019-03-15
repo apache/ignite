@@ -1150,6 +1150,11 @@ public final class IgniteSystemProperties {
         "IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY";
 
     /**
+     * Allow use composite _key, _val columns at the INSERT/UPDATE/MERGE statements.
+     */
+    public static final String IGNITE_SQL_ALLOW_KEY_VAL_UPDATES = "IGNITE_SQL_ALLOW_KEY_VAL_UPDATES";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
