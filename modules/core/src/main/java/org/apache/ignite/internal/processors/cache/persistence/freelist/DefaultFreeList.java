@@ -578,7 +578,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
                 /** Have to search for free space in bucket next to calculated otherwise where is a change what bucket
                  * will contains page having space less than required.
                  * Example: remaining = 130, step = 8.
-                 * Calculated bucket is 130 / 8 = 16 having pages with free space in range [128, 136]
+                 * Calculated bucket is 130 / 8 = 16 having pages with free space in range [128, 135]
                  * If first free page in bucket has 128 or 129 free bytes an overflow will happen.
                  * Using next bucket is safe.
                  */
