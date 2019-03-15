@@ -74,6 +74,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
@@ -2122,5 +2123,42 @@ public final class GridTestUtils {
 
         for (File f : dir.listFiles(n -> n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
             f.delete();
+    }
+
+    public static class SqlTestFunctions {
+        /** Sleep milliseconds. */
+        public static volatile long sleepMs = 0;
+        /** Fail flag. */
+        public static volatile boolean fail = false;
+
+        /**
+         * Do sleep {@code sleepMs} milliseconds
+         *
+         * @return amount of milliseconds to sleep
+         */
+        @QuerySqlFunction
+        public static long sleep() {
+            try {
+                Thread.sleep(sleepMs);
+            }
+            catch (InterruptedException ignored) {
+                // No-op
+            }
+
+            return sleepMs;
+        }
+
+        /**
+         * Function do fail in case of {@code fail} is true, return 0 otherwise.
+         *
+         * @return in case of {@code fail} is false return 0, fail otherwise.
+         */
+        @QuerySqlFunction
+        public static int can_fail() {
+            if (fail)
+                throw new IllegalArgumentException();
+            else
+                return 0;
+        }
     }
 }
