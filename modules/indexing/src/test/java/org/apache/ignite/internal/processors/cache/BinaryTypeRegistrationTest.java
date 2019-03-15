@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
@@ -34,6 +33,8 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.BinaryTypeRegistrationTest.TypeRegistrator.DEFAULT_BINARY_FIELD_NAME;
 
 /**
  *
@@ -60,8 +61,21 @@ public class BinaryTypeRegistrationTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+
+        metadataUpdateProposedMessages.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
 
         cleanPersistenceDir();
 
@@ -93,16 +107,41 @@ public class BinaryTypeRegistrationTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void shouldSendMetadataMessagePerEachNewBinaryData() throws Exception {
+        Ignite ignite = startGrid(0);
+
+        int threadsNum = 20;
+
+        ExecutorService exec = Executors.newFixedThreadPool(threadsNum);
+
+        CyclicBarrier barrier = new CyclicBarrier(threadsNum + 1);
+
+        for (int i = 0; i < threadsNum; i++)
+            exec.submit(new TypeRegistrator(ignite, barrier, DEFAULT_BINARY_FIELD_NAME + i));
+
+        barrier.await();
+
+        exec.shutdown();
+        exec.awaitTermination(10, TimeUnit.SECONDS);
+
+        assertEquals(threadsNum, metadataUpdateProposedMessages.size());
+    }
+
+    /**
      * Register binary type.
      *
      * @param ignite Ignate instance.
+     * @param fieldName Field name of new object.
      */
-    private static void register(Ignite ignite) {
+    private static void register(Ignite ignite, String fieldName) {
         IgniteBinary binary = ignite.binary();
 
         BinaryObjectBuilder builder = binary.builder("TestType");
 
-        builder.setField("intField", 1);
+        builder.setField(fieldName, 1);
 
         builder.build();
     }
@@ -110,19 +149,33 @@ public class BinaryTypeRegistrationTest extends GridCommonAbstractTest {
     /**
      * Thread for binary type registration.
      */
-    private static class TypeRegistrator implements Runnable {
+    static class TypeRegistrator implements Runnable {
+        /** */
+        static final String DEFAULT_BINARY_FIELD_NAME = "intField";
         /** */
         private Ignite ignite;
         /** Barrier for synchronous start of all threads. */
         private CyclicBarrier cyclicBarrier;
+        /** Binary field name for new binary object. */
+        private String binaryFieldName;
 
         /**
          * @param ignite Ignite instance.
          * @param cyclicBarrier Barrier for synchronous start of all threads.
          */
         TypeRegistrator(Ignite ignite, CyclicBarrier cyclicBarrier) {
+            this(ignite, cyclicBarrier, DEFAULT_BINARY_FIELD_NAME);
+        }
+
+        /**
+         * @param ignite Ignite instance.
+         * @param cyclicBarrier Barrier for synchronous start of all threads.
+         * @param binaryFieldName Binary field name for new binary object.
+         */
+        public TypeRegistrator(Ignite ignite, CyclicBarrier cyclicBarrier, String binaryFieldName) {
             this.ignite = ignite;
             this.cyclicBarrier = cyclicBarrier;
+            this.binaryFieldName = binaryFieldName;
         }
 
         /** {@inheritDoc} */
@@ -130,9 +183,9 @@ public class BinaryTypeRegistrationTest extends GridCommonAbstractTest {
             try {
                 cyclicBarrier.await();
 
-                register(ignite);
+                register(ignite, binaryFieldName);
             }
-            catch (InterruptedException | BrokenBarrierException e) {
+            catch (Exception e) {
                 log.error("ERROR", e);
             }
         }
