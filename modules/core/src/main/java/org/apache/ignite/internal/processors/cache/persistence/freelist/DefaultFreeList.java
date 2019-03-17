@@ -302,27 +302,41 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
 
             int newFreeSpace = io.getFreeSpace(pageAddr);
 
+            // Page should always have at least MIN_PAGE_FREE_SPACE empty space.
+            assert newFreeSpace > MIN_PAGE_FREE_SPACE : newFreeSpace;
+
+            if (io.useOnlyEmptyPages()) { // Each removal in this mode should leave page empty.
+                assert io.isEmpty(pageAddr) : io.getFreeSpace(pageAddr);
+
+                evictionTracker.forgetPage(pageId);
+
+                reuseBag.addFreePage(recyclePage(pageId, page, pageAddr, null));
+
+                return nextLink;
+            }
+
             int newBucket = bucket(newFreeSpace, false);
 
-            // Pages are present in bucket and must be removed from it.
-            if (oldFreeSpace > MIN_PAGE_FREE_SPACE && !io.useOnlyEmptyPages()) {
+            boolean putIsNeeded = oldFreeSpace <= MIN_PAGE_FREE_SPACE;
+
+            if (!putIsNeeded) {
                 int oldBucket = bucket(oldFreeSpace, false);
 
                 if (oldBucket != newBucket) {
+                    // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
                     pageId = maskPartId ? PageIdUtils.maskPartitionId(pageId) : pageId;
 
-                    // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
-                    if (!removeDataPage(pageId, page, pageAddr, io, oldBucket, statHolder))
-                        return nextLink;
+                    putIsNeeded = removeDataPage(pageId, page, pageAddr, io, oldBucket, statHolder);
                 }
             }
 
             if (io.isEmpty(pageAddr)) {
                 evictionTracker.forgetPage(pageId);
 
-                reuseBag.addFreePage(recyclePage(pageId, page, pageAddr, null));
+                if (putIsNeeded)
+                    reuseBag.addFreePage(recyclePage(pageId, page, pageAddr, null));
             }
-            else if (newFreeSpace > MIN_PAGE_FREE_SPACE && !io.useOnlyEmptyPages())
+            else if (putIsNeeded)
                 put(null, pageId, page, pageAddr, newBucket, statHolder);
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
@@ -476,7 +490,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
     /**
      * Read row as byte array from data pages.
      */
-    final public byte[] readRow(long link) throws IgniteCheckedException {
+    public final byte[] readRow(long link) throws IgniteCheckedException {
         assert link != 0 : "link";
 
         long nextLink = link;

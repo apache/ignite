@@ -101,11 +101,6 @@ public class SimpleDataPageIO extends AbstractDataPageIO<SimpleDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean useOnlyEmptyPages() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         sb.a("SimpleDataPageIO [\n");
         printPageLayout(addr, pageSize, sb);
