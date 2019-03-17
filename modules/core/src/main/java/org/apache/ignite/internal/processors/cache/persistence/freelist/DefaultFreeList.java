@@ -302,42 +302,38 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
 
             int newFreeSpace = io.getFreeSpace(pageAddr);
 
-            // Page should always have at least MIN_PAGE_FREE_SPACE empty space.
-            assert newFreeSpace > MIN_PAGE_FREE_SPACE : newFreeSpace;
-
-            if (io.useOnlyEmptyPages()) { // Each removal in this mode should leave page empty.
+            if (io.useOnlyEmptyPages()) { // Every removal in this mode must leave page empty.
                 assert io.isEmpty(pageAddr) : io.getFreeSpace(pageAddr);
 
                 evictionTracker.forgetPage(pageId);
 
                 reuseBag.addFreePage(recyclePage(pageId, page, pageAddr, null));
-
-                return nextLink;
             }
+            else if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
+                int newBucket = bucket(newFreeSpace, false);
 
-            int newBucket = bucket(newFreeSpace, false);
+                boolean putIsNeeded = oldFreeSpace <= MIN_PAGE_FREE_SPACE;
 
-            boolean putIsNeeded = oldFreeSpace <= MIN_PAGE_FREE_SPACE;
+                if (!putIsNeeded) {
+                    int oldBucket = bucket(oldFreeSpace, false);
 
-            if (!putIsNeeded) {
-                int oldBucket = bucket(oldFreeSpace, false);
+                    if (oldBucket != newBucket) {
+                        // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
+                        pageId = maskPartId ? PageIdUtils.maskPartitionId(pageId) : pageId;
 
-                if (oldBucket != newBucket) {
-                    // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
-                    pageId = maskPartId ? PageIdUtils.maskPartitionId(pageId) : pageId;
-
-                    putIsNeeded = removeDataPage(pageId, page, pageAddr, io, oldBucket, statHolder);
+                        putIsNeeded = removeDataPage(pageId, page, pageAddr, io, oldBucket, statHolder);
+                    }
                 }
-            }
 
-            if (io.isEmpty(pageAddr)) {
-                evictionTracker.forgetPage(pageId);
+                if (io.isEmpty(pageAddr)) {
+                    evictionTracker.forgetPage(pageId);
 
-                if (putIsNeeded)
-                    reuseBag.addFreePage(recyclePage(pageId, page, pageAddr, null));
+                    if (putIsNeeded)
+                        reuseBag.addFreePage(recyclePage(pageId, page, pageAddr, null));
+                }
+                else if (putIsNeeded)
+                    put(null, pageId, page, pageAddr, newBucket, statHolder);
             }
-            else if (putIsNeeded)
-                put(null, pageId, page, pageAddr, newBucket, statHolder);
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
@@ -417,7 +413,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
     @Override public void dumpStatistics(IgniteLogger log) {
         long dataPages = 0;
 
-        final boolean dumpBucketsInfo = true;
+        final boolean dumpBucketsInfo = false;
 
         for (int b = 0; b < BUCKETS; b++) {
             long size = bucketsSize[b].longValue();
@@ -457,6 +453,43 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
         }
     }
 
+    private void printStatistics() {
+        long dataPages = 0;
+
+        for (int b = 0; b < BUCKETS; b++) {
+            long size = bucketsSize[b].longValue();
+
+            if (!isReuseBucket(b))
+                dataPages += size;
+
+            Stripe[] stripes = getBucket(b);
+
+            boolean empty = true;
+
+            if (stripes != null) {
+                for (Stripe stripe : stripes) {
+                    if (!stripe.empty) {
+                        empty = false;
+
+                        break;
+                    }
+                }
+            }
+
+            U.debug("Bucket [b=" + b +
+                ", size=" + size +
+                ", stripes=" + (stripes != null ? stripes.length : 0) +
+                ", stripesEmpty=" + empty + ']');
+        }
+
+        if (dataPages > 0) {
+            U.debug("FreeList [name=" + name +
+                ", buckets=" + BUCKETS +
+                ", dataPages=" + dataPages +
+                ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
+        }
+    }
+
     /**
      * @param freeSpace Page free space.
      * @param allowReuse {@code True} if it is allowed to get reuse bucket.
@@ -490,7 +523,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
     /**
      * Read row as byte array from data pages.
      */
-    public final byte[] readRow(long link) throws IgniteCheckedException {
+    @Override public final byte[] readRow(long link) throws IgniteCheckedException {
         assert link != 0 : "link";
 
         long nextLink = link;

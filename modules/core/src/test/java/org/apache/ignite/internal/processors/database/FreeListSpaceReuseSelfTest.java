@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.database;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -153,6 +154,8 @@ public class FreeListSpaceReuseSelfTest extends GridCommonAbstractTest {
 
             links.add(row.link());
         }
+
+        Collections.reverse(links);
 
         for (Long link : links)
             list.removeDataRowByLink(link, IoStatisticsHolderNoOp.INSTANCE);
