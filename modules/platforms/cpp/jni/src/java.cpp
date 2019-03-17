@@ -23,10 +23,15 @@
 #include <algorithm>
 #include <stdexcept>
 
-#include "ignite/jni/utils.h"
-#include "ignite/common/concurrent.h"
-#include "ignite/jni/java.h"
+#include <ignite/jni/utils.h>
+#include <ignite/common/concurrent.h>
+#include <ignite/jni/java.h>
 #include <ignite/ignite_error.h>
+#include <ignite/common/utils.h>
+
+#ifndef JNI_VERSION_9
+#define JNI_VERSION_9 0x00090000
+#endif // JNI_VERSION_9
 
 #define IGNITE_SAFE_PROC_NO_ARG(jniEnv, envPtr, type, field) { \
     JniHandlers* hnds = reinterpret_cast<JniHandlers*>(envPtr); \
@@ -94,7 +99,18 @@ namespace ignite
     {
         namespace java
         {
-            namespace gcc = ignite::common::concurrent;
+            namespace icc = ignite::common::concurrent;
+
+            bool IGNITE_IMPORT_EXPORT IsJava9OrLater()
+            {
+                JavaVMInitArgs args;
+
+                memset(&args, 0, sizeof(args));
+
+                args.version = JNI_VERSION_9;
+
+                return JNI_GetDefaultJavaVMInitArgs(&args) == JNI_OK;
+            }
 
             /* --- Startup exception. --- */
             class JvmException : public std::exception {
@@ -114,26 +130,6 @@ namespace ignite
                 }
             };
 
-            /**
-             * Heloper function to copy characters.
-             *
-             * @param src Source.
-             * @return Result.
-             */
-            char* CopyChars(const char* src)
-            {
-                if (src)
-                {
-                    size_t len = strlen(src);
-                    char* dest = new char[len + 1];
-                    strcpy(dest, src);
-                    *(dest + len) = 0;
-                    return dest;
-                }
-                else
-                    return NULL;
-            }
-
             JniErrorInfo::JniErrorInfo() : code(IGNITE_JNI_ERR_SUCCESS), errCls(NULL), errMsg(NULL)
             {
                 // No-op.
@@ -141,14 +137,14 @@ namespace ignite
 
             JniErrorInfo::JniErrorInfo(int code, const char* errCls, const char* errMsg) : code(code)
             {
-                this->errCls = CopyChars(errCls);
-                this->errMsg = CopyChars(errMsg);
+                this->errCls = common::CopyChars(errCls);
+                this->errMsg = common::CopyChars(errMsg);
             }
 
             JniErrorInfo::JniErrorInfo(const JniErrorInfo& other) : code(other.code)
             {
-                this->errCls = CopyChars(other.errCls);
-                this->errMsg = CopyChars(other.errMsg);
+                this->errCls = common::CopyChars(other.errCls);
+                this->errMsg = common::CopyChars(other.errMsg);
             }
 
             JniErrorInfo& JniErrorInfo::operator=(const JniErrorInfo& other)
@@ -159,17 +155,9 @@ namespace ignite
                     JniErrorInfo tmp(other);
 
                     // 2. Swap with temp.
-                    int code0 = code;
-                    char* errCls0 = errCls;
-                    char* errMsg0 = errMsg;
-
-                    code = tmp.code;
-                    errCls = tmp.errCls;
-                    errMsg = tmp.errMsg;
-
-                    tmp.code = code0;
-                    tmp.errCls = errCls0;
-                    tmp.errMsg = errMsg0;
+                    std::swap(code, tmp.code);
+                    std::swap(errCls, tmp.errCls);
+                    std::swap(errMsg, tmp.errMsg);
                 }
 
                 return *this;
@@ -177,11 +165,8 @@ namespace ignite
 
             JniErrorInfo::~JniErrorInfo()
             {
-                if (errCls)
-                    delete[] errCls;
-
-                if (errMsg)
-                    delete[] errMsg;
+                delete[] errCls;
+                delete[] errMsg;
             }
 
             /**
@@ -255,8 +240,8 @@ namespace ignite
             JniMethod M_PLATFORM_IGNITION_STOP_ALL = JniMethod("stopAll", "(Z)V", true);
 
             /* STATIC STATE. */
-            gcc::CriticalSection JVM_LOCK;
-            gcc::CriticalSection CONSOLE_LOCK;
+            icc::CriticalSection JVM_LOCK;
+            icc::CriticalSection CONSOLE_LOCK;
             JniJvm JVM;
             bool PRINT_EXCEPTION = false;
             std::vector<ConsoleWriteHandler> consoleWriteHandlers;
@@ -725,7 +710,7 @@ namespace ignite
             }
 
             void JniContext::Detach() {
-                gcc::Memory::Fence();
+                icc::Memory::Fence();
 
                 if (JVM.GetJvm()) {
                     JNIEnv* env;

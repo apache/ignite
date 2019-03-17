@@ -386,7 +386,10 @@ public final class IgniteSystemProperties {
 
     /**
      * If this property set then debug console will be opened for H2 indexing SPI.
+     *
+     * @deprecated Since 2.8. H2 console is no longer supported.
      */
+    @Deprecated
     public static final String IGNITE_H2_DEBUG_CONSOLE = "IGNITE_H2_DEBUG_CONSOLE";
 
     /**
@@ -394,7 +397,10 @@ public final class IgniteSystemProperties {
      * to start H2 debug console on. If this property is not set or set to 0, H2 debug
      * console will use system-provided dynamic port.
      * This property is only relevant when {@link #IGNITE_H2_DEBUG_CONSOLE} property is set.
+     *
+     * @deprecated Since 2.8. H2 console is no longer supported.
      */
+    @Deprecated
     public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
 
     /**
@@ -1130,6 +1136,16 @@ public final class IgniteSystemProperties {
      * Flag to enable baseline auto-adjust by default.
      */
     public static final String IGNITE_BASELINE_AUTO_ADJUST_ENABLED = "IGNITE_BASELINE_AUTO_ADJUST_ENABLED";
+
+    /**
+     * Maximum number of diagnostic warning messages per category, when waiting for PME.
+     */
+    public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
+
+    /**
+     * Allow use composite _key, _val columns at the INSERT/UPDATE/MERGE statements.
+     */
+    public static final String IGNITE_SQL_ALLOW_KEY_VAL_UPDATES = "IGNITE_SQL_ALLOW_KEY_VAL_UPDATES";
 
     /**
      * Enforces singleton.

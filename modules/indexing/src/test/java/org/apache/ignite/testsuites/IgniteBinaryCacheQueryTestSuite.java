@@ -154,6 +154,7 @@ import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexingComple
 import org.apache.ignite.internal.processors.cache.index.H2DynamicTableSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowCachePageEvictionTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowCacheSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2RowExpireTimeIndexSelfTest;
 import org.apache.ignite.internal.processors.cache.index.IgniteDecimalSelfTest;
 import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest;
@@ -198,6 +199,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
+import org.apache.ignite.internal.processors.query.SqlIncompatibleDataTypeExceptionTest;
 import org.apache.ignite.internal.processors.query.SqlNestedQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelfTest;
@@ -508,6 +510,7 @@ import org.junit.runners.Suite;
     // H2 Rows on-heap cache
     H2RowCacheSelfTest.class,
     H2RowCachePageEvictionTest.class,
+    H2RowExpireTimeIndexSelfTest.class,
 
     // User operation SQL
     SqlParserUserSelfTest.class,
@@ -548,6 +551,8 @@ import org.junit.runners.Suite;
     //Query history.
     SqlQueryHistorySelfTest.class,
     SqlQueryHistoryFromClientSelfTest.class,
+
+    SqlIncompatibleDataTypeExceptionTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }
