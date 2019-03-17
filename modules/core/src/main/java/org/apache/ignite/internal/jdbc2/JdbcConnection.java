@@ -615,7 +615,7 @@ public class JdbcConnection implements Connection {
         else {
             GridQueryIndexing idx = ignite().context().query().getIndexing();
 
-            if (!idx.isStreamableInsertStatement(schemaName(), sql))
+            if (!idx.isStreamableInsertStatement(schemaName(), new SqlFieldsQuery(sql)))
                 throw new IgniteSQLException("Streaming mode supports only INSERT commands without subqueries.",
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION).toJdbcException();
 

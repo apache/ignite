@@ -350,12 +350,12 @@ public interface GridQueryIndexing {
     public String schema(String cacheName);
 
     /**
-     * Whether passed sql statement is insert statement eligible for streaming.
+     * Whether passed sql statement is single insert statement eligible for streaming.
      *
      * @param schemaName name of the schema.
-     * @param sql text of the sql statement.
+     * @param sql sql statement.
      */
-    public boolean isStreamableInsertStatement(String schemaName, String sql) throws SQLException;
+    public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery sql) throws SQLException;
 
     /**
      * Return row cache cleaner.
