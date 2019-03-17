@@ -282,18 +282,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, String sql) throws IgniteSQLException {
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql);
-
+    @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, SqlFieldsQuery qry) throws IgniteSQLException {
+        // Multistatements are allowed, but metadata is returned only for the first statement.
         QueryParserResult parserRes = parser.parse(schemaName, qry, true);
 
         return parserRes.parametersMeta();
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable List<GridQueryFieldMetadata> resultMetaData(String schemaName, String sql) throws IgniteSQLException{
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql);
-
+    @Override public List<GridQueryFieldMetadata> resultMetaData(String schemaName, SqlFieldsQuery qry) throws IgniteSQLException{
         // Multistatements are allowed, but metadata is returned only for the first statement.
         QueryParserResult parserRes = parser.parse(schemaName, qry, true);
 

@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -180,6 +181,23 @@ public class JdbcStatement implements Statement {
             throw convertToSqlException(e, "Failed to query Ignite.");
         }
 
+    }
+
+    /**
+     * Sets parameters to query object. Logic should be consistent with {@link JdbcQueryTask#call()} and {@link
+     * JdbcQueryMultipleStatementsTask#call()}. Parameters are determined from context: connection state and this
+     * statement state.
+     *
+     * @param qry query which parameters to set up
+     */
+    protected void setupQuery(SqlFieldsQueryEx qry) {
+        qry.setPageSize(fetchSize);
+        qry.setLocal(conn.nodeId() == null);
+        qry.setCollocated(conn.isCollocatedQuery());
+        qry.setDistributedJoins(conn.isDistributedJoins());
+        qry.setEnforceJoinOrder(conn.isEnforceJoinOrder());
+        qry.setLazy(conn.isLazy());
+        qry.setSchema(conn.schemaName());
     }
 
     /**

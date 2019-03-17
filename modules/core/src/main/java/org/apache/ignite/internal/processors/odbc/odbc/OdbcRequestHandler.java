@@ -743,7 +743,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             // FIXME: IGNITE-11552 odbc unescaping
             String sql = req.query();
 
-            List<JdbcParameterMeta> params = ctx.query().getIndexing().parameterMetaData(req.schema(), sql);
+            SqlFieldsQueryEx qry = makeQuery(req.schema(), sql);
+
+            List<JdbcParameterMeta> params = ctx.query().getIndexing().parameterMetaData(req.schema(), qry);
 
             byte[] typeIds = new byte[params.size()];
 

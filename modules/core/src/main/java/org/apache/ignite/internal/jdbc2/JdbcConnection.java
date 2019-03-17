@@ -54,6 +54,7 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcDriver;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -921,7 +922,7 @@ public class JdbcConnection implements Connection {
      *
      * @param qry Query fetch parameters meta for.
      */
-    ParameterMetaData parameterMetaData(String qry) throws SQLException {
+    ParameterMetaData parameterMetaData(SqlFieldsQuery qry) throws SQLException {
         List<JdbcParameterMeta> params = ignite().context().query().getIndexing().parameterMetaData(schemaName(), qry);
 
         return new JdbcThinParameterMetadata(params);
@@ -932,7 +933,7 @@ public class JdbcConnection implements Connection {
      *
      * @return metadata describing result set or {@code null} if query is not a SELECT operation.
      */
-    @Nullable ResultSetMetaData resultMetaData(String qry) throws SQLException {
+    @Nullable ResultSetMetaData resultMetaData(SqlFieldsQuery qry) throws SQLException {
         List<GridQueryFieldMetadata> meta = ignite().context().query().getIndexing().resultMetaData(schemaName(), qry);
 
         if (meta == null)

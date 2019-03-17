@@ -40,6 +40,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 
 /**
  * JDBC prepared statement implementation.
@@ -274,8 +275,13 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
         // In this case we don't tell cases "meta is not fetched" and "this statement is not a select, so meta is null".
         // This is ok, because getting metadata of non-select statements is not a happy path.
-        if (resMeta == null)
-            resMeta = conn.resultMetaData(sql);
+        if (resMeta == null) {
+            SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
+
+            setupQuery(qry);
+
+            resMeta = conn.resultMetaData(qry);
+        }
 
         return resMeta;
     }
@@ -309,8 +315,14 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ParameterMetaData getParameterMetaData() throws SQLException {
         ensureNotClosed();
 
-        if (paramsMeta == null)
-            paramsMeta = conn.parameterMetaData(sql);
+        if (paramsMeta == null) {
+            SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
+
+            setupQuery(qry);
+
+            paramsMeta = conn.parameterMetaData(qry);
+
+        }
 
         return paramsMeta;
     }
