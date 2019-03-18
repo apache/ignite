@@ -49,6 +49,9 @@
     .bssm-item-text {
         overflow: visible;
         white-space: nowrap;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
     }
 
     &>li {

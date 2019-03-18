@@ -61,7 +61,7 @@ export default class IgniteChartSeriesSelectorController {
 
             return {
                 key,
-                label: this.$sce.trustAsHtml(`<span class='color-map' style='color: ${this.chartApi.config.data.datasets[datasetIndex].borderColor};'>&#9724;</span> <span>${labels[key].name || key}</span>`),
+                label: this.$sce.trustAsHtml(`<span class='series-selector--color-map' style='color: ${this.chartApi.config.data.datasets[datasetIndex].borderColor};'>&#9724;</span> <span>${labels[key].name || key}</span>`),
                 hidden: labels[key].hidden,
                 title: labels[key].name || labels[key]
             };

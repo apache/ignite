@@ -15,17 +15,9 @@
  * limitations under the License.
  */
 
-.bs-select-menu {
-  .bssm-item-text {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-  }
-
-  .color-map {
-    font-size: 20px;
-    position: relative;
-    top: -3px;
-    margin-right: 5px;
-  }
+.series-selector--color-map {
+  font-size: 20px;
+  position: relative;
+  top: -3px;
+  margin-right: 5px;
 }
