@@ -251,6 +251,8 @@ public class GridSqlQuerySplitter {
 
         assert !forUpdate || qryForUpdate;
 
+        String originalSql;
+
         // Prepare query
         if (qryForUpdate) {
             assert qry instanceof GridSqlSelect; // Select for update in unions is not supported.
@@ -266,9 +268,12 @@ public class GridSqlQuerySplitter {
 
                 sel.addColumn(keyCol, true);
             }
-        }
 
-        String originalSql = qry.getSQL();
+            // Sql string with cleared FOR UPDATE clause.
+            originalSql = qry.getSQL();
+        }
+        else
+            originalSql = prepared.getSQL();
 
         final boolean explain = qry.explain();
 
