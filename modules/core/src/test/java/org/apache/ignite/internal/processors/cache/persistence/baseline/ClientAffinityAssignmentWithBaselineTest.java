@@ -51,10 +51,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -161,6 +163,8 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11559", MvccFeatureChecker.forcedMvcc());
+
         System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
 
         super.beforeTestsStarted();
