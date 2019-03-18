@@ -2086,7 +2086,12 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             assert !stopGridErr : "Error occurred on grid stop (see log for more details).";
         }
         finally {
-            tearDown();
+            try {
+                tearDown();
+            }
+            catch (Exception e) {
+                log.error("Failed to execute tear down after test (will ignore)", e);
+            }
         }
     }
 
