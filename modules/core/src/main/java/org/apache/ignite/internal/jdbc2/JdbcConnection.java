@@ -782,7 +782,7 @@ public class JdbcConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void setSchema(String schemaName) throws SQLException {
-        this.schemaName = schemaName;
+        this.schemaName = JdbcUtils.normalizeSchema(schemaName);
     }
 
     /** {@inheritDoc} */

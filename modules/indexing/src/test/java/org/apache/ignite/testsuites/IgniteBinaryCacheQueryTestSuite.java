@@ -199,6 +199,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
+import org.apache.ignite.internal.processors.query.SqlIncompatibleDataTypeExceptionTest;
 import org.apache.ignite.internal.processors.query.SqlNestedQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelfTest;
@@ -550,6 +551,8 @@ import org.junit.runners.Suite;
     //Query history.
     SqlQueryHistorySelfTest.class,
     SqlQueryHistoryFromClientSelfTest.class,
+
+    SqlIncompatibleDataTypeExceptionTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }

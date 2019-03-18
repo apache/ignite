@@ -1145,6 +1145,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
 
     /**
+     * Allow use composite _key, _val columns at the INSERT/UPDATE/MERGE statements.
+     */
+    public static final String IGNITE_SQL_ALLOW_KEY_VAL_UPDATES = "IGNITE_SQL_ALLOW_KEY_VAL_UPDATES";
+
+    /**
      * Starting from this number of dirty pages in checkpoint, array will be sorted with
      * {@link Arrays#parallelSort(Comparable[])} in case of {@link CheckpointWriteOrder#SEQUENTIAL}.
      */
