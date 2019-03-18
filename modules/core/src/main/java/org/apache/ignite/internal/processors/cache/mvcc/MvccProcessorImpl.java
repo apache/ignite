@@ -298,8 +298,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         if (!ctx.clientNode()) {
             assert mvccEnabled && mvccSupported;
 
-            if (txLog == null)
-                txLog = new TxLog(ctx, ctx.cache().context().database());
+            synchronized (mux) {
+                if (txLog == null)
+                    txLog = new TxLog(ctx, ctx.cache().context().database());
+            }
 
             startVacuumWorkers();
 
@@ -1088,29 +1090,29 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      * Launches vacuum workers and scheduler.
      */
     void startVacuumWorkers() {
-        if (!ctx.clientNode()) {
-            synchronized (mux) {
-                if (vacuumWorkers == null) {
-                    assert cleanupQueue == null;
+        assert !ctx.clientNode();
 
-                    cleanupQueue = new LinkedBlockingQueue<>();
+        synchronized (mux) {
+            if (vacuumWorkers == null) {
+                assert cleanupQueue == null;
 
-                    vacuumWorkers = new ArrayList<>(ctx.config().getMvccVacuumThreadCount() + 1);
+                cleanupQueue = new LinkedBlockingQueue<>();
 
-                    vacuumWorkers.add(new VacuumScheduler(ctx, log, this));
+                vacuumWorkers = new ArrayList<>(ctx.config().getMvccVacuumThreadCount() + 1);
 
-                    for (int i = 0; i < ctx.config().getMvccVacuumThreadCount(); i++)
-                        vacuumWorkers.add(new VacuumWorker(ctx, log, cleanupQueue));
+                vacuumWorkers.add(new VacuumScheduler(ctx, log, this));
 
-                    for (GridWorker worker : vacuumWorkers)
-                        new IgniteThread(worker).start();
+                for (int i = 0; i < ctx.config().getMvccVacuumThreadCount(); i++)
+                    vacuumWorkers.add(new VacuumWorker(ctx, log, cleanupQueue));
 
-                    return;
-                }
+                for (GridWorker worker : vacuumWorkers)
+                    new IgniteThread(worker).start();
+
+                return;
             }
-
-            U.warn(log, "Attempting to start active vacuum.");
         }
+
+        U.warn(log, "Attempting to start active vacuum.");
     }
 
     /**
