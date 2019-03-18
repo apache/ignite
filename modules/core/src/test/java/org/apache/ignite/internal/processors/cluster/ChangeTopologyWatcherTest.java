@@ -34,8 +34,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -43,7 +41,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  *
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_NAME = "TEST_NAME";
@@ -98,7 +95,7 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineConfiguration().updateBaselineAutoAdjustTimeoutAsync(AUTO_ADJUST_TIMEOUT).get();
+        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
 
         Set<Object> initBaseline = ignite0.cluster().currentBaselineTopology().stream()
             .map(BaselineNode::consistentId)
@@ -127,7 +124,7 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineConfiguration().updateBaselineAutoAdjustTimeoutAsync(AUTO_ADJUST_TIMEOUT).get();
+        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
 
         Set<Object> initBaseline = ignite0.cluster().currentBaselineTopology().stream()
             .map(BaselineNode::consistentId)
@@ -162,7 +159,7 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineConfiguration().updateBaselineAutoAdjustTimeoutAsync(AUTO_ADJUST_TIMEOUT).get();
+        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
 
         Set<Object> initBaseline = ignite0.cluster().currentBaselineTopology().stream()
             .map(BaselineNode::consistentId)
@@ -199,7 +196,7 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineConfiguration().updateBaselineAutoAdjustTimeoutAsync(AUTO_ADJUST_TIMEOUT).get();
+        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
 
         assertTrue(isCurrentBaselineFromOneNode(ignite0));
 
@@ -238,7 +235,7 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
             .map(BaselineNode::consistentId)
             .collect(Collectors.toSet());
 
-        ignite0.cluster().baselineConfiguration().updateBaselineAutoAdjustTimeoutAsync(AUTO_ADJUST_TIMEOUT).get();
+        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
 
         IgniteCache<Object, Object> cache = ignite0.getOrCreateCache(new CacheConfiguration<>(TEST_NAME)
             .setBackups(0)
@@ -268,7 +265,7 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineConfiguration().updateBaselineAutoAdjustTimeoutAsync(AUTO_ADJUST_TIMEOUT).get();
+        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
 
         Collection<BaselineNode> baselineNodes = ignite0.cluster().currentBaselineTopology();
 
@@ -290,9 +287,9 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineConfiguration().updateBaselineAutoAdjustTimeoutAsync(AUTO_ADJUST_TIMEOUT).get();
+        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
 
-        assertTrue(ignite0.cluster().baselineConfiguration().isBaselineAutoAdjustEnabled());
+        assertTrue(ignite0.cluster().isBaselineAutoAdjustEnabled());
 
         Set<Object> baselineNodes = ignite0.cluster().currentBaselineTopology().stream()
             .map(BaselineNode::consistentId)
@@ -331,9 +328,9 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineConfiguration().updateBaselineAutoAdjustTimeoutAsync(AUTO_ADJUST_TIMEOUT).get();
+        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
 
-        assertTrue(ignite0.cluster().baselineConfiguration().isBaselineAutoAdjustEnabled());
+        assertTrue(ignite0.cluster().isBaselineAutoAdjustEnabled());
 
         stopGrid(1);
 
