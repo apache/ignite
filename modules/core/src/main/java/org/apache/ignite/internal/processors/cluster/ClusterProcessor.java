@@ -48,6 +48,7 @@ import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatistic;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridTimerTask;
@@ -126,6 +127,9 @@ public class ClusterProcessor extends GridProcessorAdapter {
     /** */
     private boolean sndMetrics;
 
+    /** Watcher of topology change for baseline auto-adjust. */
+    private ChangeTopologyWatcher changeTopologyWatcher;
+
     /**
      * @param ctx Kernal context.
      */
@@ -172,7 +176,10 @@ public class ClusterProcessor extends GridProcessorAdapter {
             }
         }, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
-        ctx.event().addLocalEventListener(new ChangeTopologyWatcher(ctx), EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
+        ctx.event().addLocalEventListener(
+            changeTopologyWatcher = new ChangeTopologyWatcher(ctx),
+            EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED
+        );
 
         ctx.io().addMessageListener(TOPIC_INTERNAL_DIAGNOSTIC, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
@@ -637,6 +644,13 @@ public class ClusterProcessor extends GridProcessorAdapter {
         }
 
         return map;
+    }
+
+    /**
+     * @return Statistic of baseline auto-adjust.
+     */
+    public BaselineAutoAdjustStatistic baselineAutoAdjustStatistic(){
+        return changeTopologyWatcher.getStatistic();
     }
 
     /**

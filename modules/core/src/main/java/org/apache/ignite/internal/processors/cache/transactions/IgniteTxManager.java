@@ -110,6 +110,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TX;
+import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
@@ -152,6 +153,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Deadlock detection maximum iterations. */
     static int DEADLOCK_MAX_ITERS =
         IgniteSystemProperties.getInteger(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, 1000);
+
+    /** Long operation dump timeout. */
+    private static final long LONG_OPERATIONS_DUMP_TIMEOUT = IgniteSystemProperties.getLong(
+            IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,
+            DFLT_LONG_OPERATIONS_DUMP_TIMEOUT
+    );
 
     /** Committing transactions. */
     private final ThreadLocal<IgniteInternalTx> threadCtx = new ThreadLocal<>();
@@ -202,6 +209,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** Slow tx warn timeout. */
     private int slowTxWarnTimeout = SLOW_TX_WARN_TIMEOUT;
+
+    /** Long operations dump timeout. */
+    private long longOpsDumpTimeout = LONG_OPERATIONS_DUMP_TIMEOUT;
 
     /**
      * Near version to DHT version map. Note that we initialize to 5K size from get go,
@@ -1819,6 +1829,20 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void slowTxWarnTimeout(int slowTxWarnTimeout) {
         this.slowTxWarnTimeout = slowTxWarnTimeout;
+    }
+
+    /**
+     * @return Long operations dump timeout.
+     */
+    public long longOperationsDumpTimeout() {
+        return longOpsDumpTimeout;
+    }
+
+    /**
+     * @param longOpsDumpTimeout Long operations dump timeout.
+     */
+    public void longOperationsDumpTimeout(long longOpsDumpTimeout) {
+        this.longOpsDumpTimeout = longOpsDumpTimeout;
     }
 
     /**
