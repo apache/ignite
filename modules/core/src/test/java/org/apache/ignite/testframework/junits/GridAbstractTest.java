@@ -2109,7 +2109,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
 
         try {
-            System.out.println("~~! attemp to stop test");
             afterTest();
         }
         finally {
