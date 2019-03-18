@@ -753,7 +753,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                         + ", missingSchemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
                         + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion())
-                        + ", binMetaUpdateTimeout=" + waitSchemaTimeout +']');
+                        + ", IGNITE_WAIT_SCHEMA_UPDATE=" + waitSchemaTimeout +']');
 
                 long t0 = System.nanoTime();
 
