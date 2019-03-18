@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -103,6 +104,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -432,6 +434,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         OffheapInvokeClosure c)
         throws IgniteCheckedException {
         dataStore(part).invoke(cctx, key, c);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void invokeAll(
+        GridCacheContext cctx,
+        Collection<KeyCacheObject> keys,
+        GridDhtLocalPartition part,
+        OffheapInvokeAllClosure c)
+        throws IgniteCheckedException {
+        dataStore(part).invokeAll(cctx, keys, c);
     }
 
     /** {@inheritDoc} */
@@ -1607,6 +1619,20 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             }
         }
 
+
+        /** {@inheritDoc} */
+        @Override public void invokeAll(GridCacheContext cctx, Collection<KeyCacheObject> keys, OffheapInvokeAllClosure c)
+            throws IgniteCheckedException {
+            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+            List<CacheSearchRow> searchRows = new ArrayList<>(keys.size());
+
+            for (KeyCacheObject key : keys)
+                searchRows.add(new SearchRow(cacheId, key));
+
+            invokeAll0(cctx, searchRows, c);
+        }
+
         /**
          * @param cctx Cache context.
          * @param row Search row.
@@ -1643,6 +1669,57 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 default:
                     assert false : c.operationType();
+            }
+        }
+
+        /**
+         * @param cctx Cache context.
+         * @param rows Search rows.
+         * @param c Closure.
+         * @throws IgniteCheckedException If failed.
+         */
+        private void invokeAll0(GridCacheContext cctx, List<CacheSearchRow> rows, OffheapInvokeAllClosure c)
+            throws IgniteCheckedException {
+            if (!busyLock.enterBusy())
+                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+
+            try {
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
+
+                dataTree.invokeAll(rows, CacheDataRowAdapter.RowData.NO_KEY, c);
+
+                for (T3<IgniteTree.OperationType, CacheDataRow, CacheDataRow> tuple : c.result()) {
+                    IgniteTree.OperationType opType = tuple.get1();
+                    CacheDataRow oldRow = tuple.get2();
+                    CacheDataRow newRow = tuple.get3();
+
+                    switch (opType) {
+                        case PUT: {
+                            assert newRow != null : tuple;
+
+                            finishUpdate(cctx, newRow, oldRow);
+
+                            break;
+                        }
+
+                        case REMOVE: {
+                            finishRemove(cctx, newRow.key(), oldRow);
+
+                            break;
+                        }
+
+                        case NOOP:
+                            break;
+
+                        default:
+                            assert false : opType;
+                    }
+                }
+
+
+            }
+            finally {
+                busyLock.leaveBusy();
             }
         }
 

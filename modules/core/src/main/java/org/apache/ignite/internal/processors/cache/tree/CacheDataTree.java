@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -45,6 +48,8 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccDataPage
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static java.lang.Boolean.FALSE;
@@ -325,6 +330,87 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      */
     public CacheDataRowStore rowStore() {
         return rowStore;
+    }
+
+    /**
+     * todo fake implementation only for checking that closure is working properly with preloader.
+     * @param keys Keys.
+     * @param x Implementation specific argument, {@code null} always means that we need a full detached data row.
+     * @param c Closure.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Override public void invokeAll(List<CacheSearchRow> keys, Object x, InvokeAllClosure<CacheDataRow, CacheSearchRow> c) throws IgniteCheckedException {
+        checkDestroyed();
+
+        int cnt = keys.size();
+
+        assert cnt > 0 : cnt;
+
+        CacheSearchRow lower = keys.get(0);
+        CacheSearchRow upper = keys.get(cnt - 1);
+
+        List<T2<CacheDataRow, CacheSearchRow>> batch = new ArrayList<>(cnt);
+
+        Iterator<CacheSearchRow> rowItr = keys.iterator();
+
+        assert lower.key().hashCode() <= upper.key().hashCode() : "Keys must be lower=" + lower.key().hashCode() + ", upper=" + upper.key().hashCode();
+
+        GridCursor<CacheDataRow> cur = find(lower, upper, CacheDataRowAdapter.RowData.FULL);
+
+        CacheSearchRow lastSearchRow = null;
+        KeyCacheObject newKey = null;
+
+        while (cur.next()) {
+            CacheDataRow oldRow = cur.get();
+            KeyCacheObject oldKey = oldRow.key();
+
+            while (newKey == null || newKey.hashCode() <= oldKey.hashCode()) {
+                if (newKey != null && newKey.hashCode() == oldKey.hashCode()) {
+                    while (newKey.hashCode() == oldKey.hashCode()) {
+                        if (newKey.equals(oldKey))
+                            batch.add(new T2<>(oldRow, lastSearchRow));
+                        else
+                            batch.add(new T2<>(null, lastSearchRow));
+
+                        if (!rowItr.hasNext())
+                            break;
+
+                        lastSearchRow = rowItr.next();
+                        newKey = lastSearchRow.key();
+                    }
+                }
+                else {
+                    if (lastSearchRow != null)
+                        batch.add(new T2<>(null, lastSearchRow));
+
+                    if (!rowItr.hasNext())
+                        break;
+
+                    lastSearchRow = rowItr.next();
+                    newKey = lastSearchRow.key();
+                }
+
+                if (!rowItr.hasNext())
+                    break;
+            }
+        }
+
+        while (rowItr.hasNext())
+            batch.add(new T2<>(null, rowItr.next()));
+
+        c.call(batch);
+
+        for (T3<OperationType, CacheDataRow, CacheDataRow> t3 : c.result()) {
+            OperationType oper = t3.get1();
+            CacheDataRow oldRow = t3.get2();
+            CacheDataRow newRow = t3.get3();
+
+            if (oper == OperationType.PUT)
+                put(newRow);
+            else
+            if (oper == OperationType.REMOVE)
+                remove(oldRow);
+        }
     }
 
     /** {@inheritDoc} */

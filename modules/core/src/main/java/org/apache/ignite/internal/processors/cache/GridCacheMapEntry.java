@@ -3503,6 +3503,102 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
+     * todo explain this and remove code duplication
+     * @param val New value.
+     * @param expireTime Expiration time.
+     * @param ttl Time to live.
+     * @param ver Version to use.
+     * @param topVer Topology version.
+     * @param drType DR type.
+     * @param mvccVer Mvcc version.
+     * @param preload Flag indicating whether entry is being preloaded.
+     * @throws IgniteCheckedException In case of error.
+     */
+    protected void finishInitialUpdate(
+        @Nullable CacheObject val,
+        long expireTime,
+        long ttl,
+        GridCacheVersion ver,
+        AffinityTopologyVersion topVer,
+        GridDrType drType,
+        MvccVersion mvccVer,
+        boolean preload
+    ) throws IgniteCheckedException {
+        boolean fromStore = false;
+        boolean walEnabled = !cctx.isNear() && cctx.group().persistenceEnabled() && cctx.group().walEnabled();
+
+        update(val, expireTime, ttl, ver, true);
+
+        boolean skipQryNtf = false;
+
+        if (val == null) {
+            skipQryNtf = true;
+
+            if (cctx.deferredDelete() && !deletedUnlocked() && !isInternal())
+                deletedUnlocked(true);
+        }
+        else if (deletedUnlocked())
+            deletedUnlocked(false);
+
+        long updateCntr = 0;
+
+        if (!preload)
+            updateCntr = nextPartitionCounter(topVer, true, null);
+
+        if (walEnabled) {
+            if (cctx.mvccEnabled()) {
+                cctx.shared().wal().log(new MvccDataRecord(new MvccDataEntry(
+                    cctx.cacheId(),
+                    key,
+                    val,
+                    val == null ? DELETE : GridCacheOperation.CREATE,
+                    null,
+                    ver,
+                    expireTime,
+                    partition(),
+                    updateCntr,
+                    mvccVer == null ? MvccUtils.INITIAL_VERSION : mvccVer
+                )));
+            } else {
+                cctx.shared().wal().log(new DataRecord(new DataEntry(
+                    cctx.cacheId(),
+                    key,
+                    val,
+                    val == null ? DELETE : GridCacheOperation.CREATE,
+                    null,
+                    ver,
+                    expireTime,
+                    partition(),
+                    updateCntr
+                )));
+            }
+        }
+
+        drReplicate(drType, val, ver, topVer);
+
+        if (!skipQryNtf) {
+            cctx.continuousQueries().onEntryUpdated(
+                key,
+                val,
+                null,
+                this.isInternal() || !this.context().userCache(),
+                this.partition(),
+                true,
+                true,
+                updateCntr,
+                null,
+                topVer);
+        }
+
+        onUpdateFinished(updateCntr);
+
+        if (!fromStore && cctx.store().isLocal()) {
+            if (val != null)
+                cctx.store().put(null, key, val, ver);
+        }
+    }
+
+    /**
      * @param cntr Updated partition counter.
      */
     protected void onUpdateFinished(long cntr) {

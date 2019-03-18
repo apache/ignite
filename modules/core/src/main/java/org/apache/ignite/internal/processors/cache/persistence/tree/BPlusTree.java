@@ -1822,6 +1822,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void invokeAll(List<L> keys, Object z, InvokeAllClosure<T, L> c) throws IgniteCheckedException {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
     /**
      * @param x Invoke operation.
      * @param pageId Page ID.

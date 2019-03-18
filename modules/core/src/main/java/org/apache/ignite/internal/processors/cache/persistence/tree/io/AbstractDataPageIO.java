@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
@@ -810,7 +811,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         final int rowSize,
         final int pageSize
     ) throws IgniteCheckedException {
-        assert rowSize <= getFreeSpace(pageAddr) : "can't call addRow if not enough space for the whole row";
+        assert rowSize <= getFreeSpace(pageAddr) : "can't call addRow if not enough space for the whole row (free=" + getFreeSpace(pageAddr) + ", required=" + rowSize + ")";
 
         int fullEntrySize = getPageEntrySize(rowSize, SHOW_PAYLOAD_LEN | SHOW_ITEM);
 
@@ -978,6 +979,75 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     }
 
     /**
+     * @param pageMem Page memory.
+     * @param pageId Page ID to use to construct a link.
+     * @param pageAddr Page address.
+     * @param rows Data rows.
+     * @param pageSize Page size.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void addRows(
+        final PageMemory pageMem,
+        final long pageId,
+        final long pageAddr,
+        final Collection<T> rows,
+        final int pageSize
+    ) throws IgniteCheckedException {
+        // todo code duplication (3 times!)
+        int maxPayloadSIze = pageSize - MIN_DATA_PAGE_OVERHEAD;
+        int dataOff = pageSize;
+        int cnt = 0;
+        int written = 0;
+
+        for (T row : rows) {
+            boolean fragment = row.size() > maxPayloadSIze;
+
+            int payloadSize = row.size() % maxPayloadSIze;
+
+            assert payloadSize <= getFreeSpace(pageAddr) : "can't call addRow if not enough space for the whole row";
+
+            int sizeSetup = fragment ? SHOW_PAYLOAD_LEN | SHOW_LINK | SHOW_ITEM : SHOW_PAYLOAD_LEN | SHOW_ITEM;
+
+            int fullEntrySize = getPageEntrySize(payloadSize, sizeSetup);
+
+            written += fullEntrySize;
+
+            dataOff -= (fullEntrySize - ITEM_SIZE);
+
+            if (fragment) {
+                ByteBuffer buf = pageMem.pageBuffer(pageAddr);
+
+                buf.position(dataOff);
+
+                buf.putShort((short)(payloadSize | FRAGMENTED_FLAG));
+                buf.putLong(row.link());
+
+                // todo is it 0?
+                writeFragmentData(row, buf, 0, payloadSize);
+            }
+            else
+                writeRowData(pageAddr, dataOff, payloadSize, row, true);
+
+            setItem(pageAddr, cnt, directItemFromOffset(dataOff));
+
+            assert checkIndex(cnt) : cnt;
+            assert getIndirectCount(pageAddr) <= getDirectCount(pageAddr);
+
+            setLinkByPageId(row, pageId, cnt);
+
+            ++cnt;
+        }
+
+        setDirectCount(pageAddr, cnt);
+
+        setFirstEntryOffset(pageAddr, dataOff, pageSize);
+
+        // Update free space. If number of indirect items changed, then we were able to reuse an item slot.
+        // + (getIndirectCount(pageAddr) != indirectCnt ? ITEM_SIZE : 0)
+        setRealFreeSpace(pageAddr, getRealFreeSpace(pageAddr) - written, pageSize);
+    }
+
+    /**
      * Adds maximum possible fragment of the given row to this data page and sets respective link to the row.
      *
      * @param pageMem Page memory.
@@ -1112,6 +1182,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         setItem(pageAddr, directCnt, directItemFromOffset(dataOff));
 
         setDirectCount(pageAddr, directCnt + 1);
+
         assert getDirectCount(pageAddr) == directCnt + 1;
 
         return directCnt; // Previous directCnt will be our itemId.

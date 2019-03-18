@@ -1097,6 +1097,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
 
+    /** */
+    public static final String IGNITE_DATA_STORAGE_BATCH_PAGE_WRITE = "IGNITE_DATA_STORAGE_BATCH_PAGE_WRITE";
+
     /**
      * Maximum number of different partitions to be extracted from between expression within sql query.
      * In case of limit exceeding all partitions will be used.
