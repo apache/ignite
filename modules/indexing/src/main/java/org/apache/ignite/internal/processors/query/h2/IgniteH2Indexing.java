@@ -1361,6 +1361,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             cursor.fieldsMeta(select.meta());
 
+            cursor.partitionResult(select.twoStepQuery().derivedPartitions());
+
             return Collections.singletonList(cursor);
         }
         catch (Exception e) {
