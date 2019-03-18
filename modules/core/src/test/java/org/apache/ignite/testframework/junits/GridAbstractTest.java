@@ -275,7 +275,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
                     base.evaluate();
                 }
                 finally {
-                        afterLastTest();
+                    afterLastTest();
                 }
             }
             finally {
