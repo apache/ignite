@@ -111,7 +111,7 @@ module.exports = {
                     .then((agentSocks) => {
                         const stat = _.reduce(agentSocks, (acc, agentSock) => {
                             acc.count += 1;
-                            acc.hasDemo |= _.get(agentSock, 'demo.enabled');
+                            acc.hasDemo = acc.hasDemo || _.get(agentSock, 'demo.enabled');
 
                             if (agentSock.cluster)
                                 acc.clusters.push(agentSock.cluster);
@@ -245,6 +245,7 @@ module.exports = {
                 this.registerVisorTask('queryFetchX2', internalVisor('query.VisorQueryNextPageTask'), internalVisor('query.VisorQueryNextPageTaskArg'));
 
                 this.registerVisorTask('queryFetchFirstPage', internalVisor('query.VisorQueryFetchFirstPageTask'), internalVisor('query.VisorQueryNextPageTaskArg'));
+                this.registerVisorTask('queryPing', internalVisor('query.VisorQueryPingTask'), internalVisor('query.VisorQueryNextPageTaskArg'));
 
                 this.registerVisorTask('queryClose', internalVisor('query.VisorQueryCleanupTask'), 'java.util.Map', 'java.util.UUID', 'java.util.Set');
                 this.registerVisorTask('queryCloseX2', internalVisor('query.VisorQueryCleanupTask'), internalVisor('query.VisorQueryCleanupTaskArg'));

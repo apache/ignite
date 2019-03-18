@@ -113,7 +113,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testMultipleNodes() throws Exception {
         int cnt = 4;
 
-        startGridsMultiThreaded(cnt);
+        startGrids(cnt);
 
         grid(0).cluster().active(true);
 
@@ -139,7 +139,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testListenersOnWrite() throws Exception {
         int cnt = 4;
 
-        startGridsMultiThreaded(cnt);
+        startGrids(cnt);
 
         grid(0).cluster().active(true);
 
@@ -172,7 +172,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testListenersOnRemove() throws Exception {
         int cnt = 4;
 
-        startGridsMultiThreaded(cnt);
+        startGrids(cnt);
 
         grid(0).cluster().active(true);
 
