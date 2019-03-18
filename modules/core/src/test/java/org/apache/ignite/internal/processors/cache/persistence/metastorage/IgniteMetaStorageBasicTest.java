@@ -98,6 +98,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         assertNotNull(metaStorage);
 
         Random rnd = new Random();
+        rnd.setSeed(0);
 
         db.checkpointReadLock();
 
