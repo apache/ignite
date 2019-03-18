@@ -1081,9 +1081,10 @@ public class JdbcThinConnection implements Connection {
                             break;
                         }
                     }
-
-                    if (resp.status() != ClientListenerResponse.STATUS_SUCCESS)
+                    else if (resp.status() != ClientListenerResponse.STATUS_SUCCESS)
                         err = new SQLException(resp.error(), IgniteQueryErrorCode.codeToSqlState(resp.status()));
+                    else
+                        assert false : "Invalid response: " + resp;
                 }
             }
             catch (Exception e) {
