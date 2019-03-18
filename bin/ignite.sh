@@ -1,10 +1,4 @@
-#!/usr/bin/env bash
-set -o nounset
-set -o errexit
-set -o pipefail
-set -o errtrace
-set -o functrace
-
+#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -29,7 +23,7 @@ set -o functrace
 #
 # Import common functions.
 #
-if [ "${IGNITE_HOME:-}" = "" ];
+if [ "${IGNITE_HOME}" = "" ];
     then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
     else IGNITE_HOME_TMP=${IGNITE_HOME};
 fi
@@ -51,7 +45,7 @@ checkJava
 #
 setIgniteHome
 
-if [ "${DEFAULT_CONFIG:-}" == "" ]; then
+if [ "${DEFAULT_CONFIG}" == "" ]; then
     DEFAULT_CONFIG=config/default-config.xml
 fi
 
@@ -86,7 +80,7 @@ fi
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`
 
-if [ "${DOCK_OPTS:-}" == "" ]; then
+if [ "${DOCK_OPTS}" == "" ]; then
     DOCK_OPTS="-Xdock:name=Ignite Node"
 fi
 
@@ -140,7 +134,7 @@ fi
 #
 # Set main class to start service (grid node by default).
 #
-if [ "${MAIN_CLASS:-}" = "" ]; then
+if [ "${MAIN_CLASS}" = "" ]; then
     MAIN_CLASS=org.apache.ignite.startup.cmdline.CommandLineStartup
 fi
 
@@ -153,7 +147,7 @@ fi
 #
 # Final JVM_OPTS for Java 9+ compatibility
 #
-javaMajorVersion "${JAVA}"
+javaMajorVersion "${JAVA_HOME}/bin/java"
 
 if [ $version -eq 8 ] ; then
     JVM_OPTS="\

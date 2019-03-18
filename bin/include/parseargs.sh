@@ -1,10 +1,4 @@
-#!/usr/bin/env bash
-set -o nounset
-set -o errexit
-set -o pipefail
-set -o errtrace
-set -o functrace
-
+#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -61,9 +55,9 @@ done
 #
 # Set 'file.encoding' to UTF-8 default if not specified otherwise
 #
-case "${JVM_OPTS:-}" in
+case "${JVM_OPTS}" in
     *-Dfile.encoding=*)
         ;;
     *)
-        JVM_OPTS="${JVM_OPTS:-} -Dfile.encoding=UTF-8";;
+        JVM_OPTS="${JVM_OPTS} -Dfile.encoding=UTF-8";;
 esac
