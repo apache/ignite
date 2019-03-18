@@ -19,6 +19,7 @@ package org.apache.ignite.ml.dataset.feature.extractor;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryObject;
@@ -42,11 +43,15 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
     private static final long serialVersionUID = 4301406952131379459L;
     /** If useAllValues == true then Vectorizer extract all fields as features from upstream object (except label). */
     private final boolean useAllValues;
+
     /** Extraction coordinates. */
     private List<C> extractionCoordinates;
+
     /** Label coordinate. */
     private C labelCoord;
 
+    /** Excluded coordinates. */
+    private HashSet<C> excludedCoords = new HashSet<>();
     /**
      * Creates an instance of Vectorizer.
      *
@@ -71,7 +76,7 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
         List<C> allCoords = null;
         if (useAllValues) {
             allCoords = allCoords(key, value).stream()
-                .filter(coord -> !coord.equals(labelCoord))
+                .filter(coord -> !coord.equals(labelCoord) && !excludedCoords.contains(coord))
                 .collect(Collectors.toList());
         }
 
@@ -94,6 +99,17 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
      */
     public Vectorizer<K, V, C, L> labeled(C labelCoord) {
         this.labelCoord = labelCoord;
+        return this;
+    }
+
+    /**
+     * Exclude these coordinates from result vector.
+     *
+     * @param coords Coordinates.
+     * @return this.
+     */
+    public Vectorizer<K,V,C,L> exclude(C ... coords) {
+        this.excludedCoords.addAll(Arrays.asList(coords));
         return this;
     }
 

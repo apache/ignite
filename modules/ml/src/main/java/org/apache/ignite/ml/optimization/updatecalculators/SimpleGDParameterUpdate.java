@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
@@ -28,6 +29,12 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
  * Parameters for {@link SimpleGDUpdateCalculator}.
  */
 public class SimpleGDParameterUpdate implements Serializable {
+    /** Method used to sum updates inside of one of parallel trainings. */
+    public static final IgniteFunction<List<SimpleGDParameterUpdate>, SimpleGDParameterUpdate> AVG = SimpleGDParameterUpdate::avg;
+
+    /** Method used to get total update of all parallel trainings. */
+    public static final IgniteFunction<List<SimpleGDParameterUpdate>, SimpleGDParameterUpdate> SUM_LOCAL = SimpleGDParameterUpdate::sumLocal;
+
     /** */
     private static final long serialVersionUID = -8732955283436005621L;
 

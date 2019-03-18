@@ -26,6 +26,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.ml.composition.CompositionUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.multiclass.MultiClassModel;
@@ -77,8 +79,7 @@ public class OneVsRestClassificationExample {
             MultiClassModel<SVMLinearClassificationModel> mdl = trainer.fit(
                 ignite,
                 dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
+                new DummyVectorizer<Integer>().labeled(0)
             );
 
             System.out.println(">>> One-vs-Rest SVM Multi-class model");
@@ -89,14 +90,14 @@ public class OneVsRestClassificationExample {
             IgniteBiFunction<Integer, Vector, Vector> preprocessor = minMaxScalerTrainer.fit(
                 ignite,
                 dataCache,
-                (k, v) -> v.copyOfRange(1, v.size())
+                CompositionUtils.asFeatureExtractor(new DummyVectorizer<Integer>().exclude(0)) //TODO: IGNITE-11504
             );
 
             MultiClassModel<SVMLinearClassificationModel> mdlWithScaling = trainer.fit(
                 ignite,
                 dataCache,
                 preprocessor,
-                (k, v) -> v.get(0)
+                CompositionUtils.asLabelExtractor(new DummyVectorizer<Integer>().labeled(0)) //TODO: IGNITE-11504
             );
 
             System.out.println(">>> One-vs-Rest SVM Multi-class model with MinMaxScaling");

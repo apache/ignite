@@ -25,6 +25,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.clustering.gmm.GmmModel;
 import org.apache.ignite.ml.clustering.gmm.GmmTrainer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -85,7 +86,7 @@ public class GmmClusterizationExample {
                 .withMaxCountIterations(10)
                 .withMaxCountOfClusters(4)
                 .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(seed))
-                .fit(ignite, dataCache, (k, v) -> v.features(), (k, v) -> v.label());
+                .fit(ignite, dataCache, new LabeledDummyVectorizer<>());
 
             System.out.println(">>> GMM means and covariances");
             for (int i = 0; i < mdl.countOfComponents(); i++) {

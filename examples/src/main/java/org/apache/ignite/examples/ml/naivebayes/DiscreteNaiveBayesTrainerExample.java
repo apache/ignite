@@ -17,18 +17,19 @@
 
 package org.apache.ignite.examples.ml.naivebayes;
 
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.composition.CompositionUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.FileNotFoundException;
 
 /**
  * Run naive Bayes classification model based on <a href=https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Multinomial_naive_Bayes">
@@ -63,14 +64,12 @@ public class DiscreteNaiveBayesTrainerExample {
                 .setBucketThresholds(thresholds);
 
             System.out.println(">>> Perform the training to get the model.");
-            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-            IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
 
             DiscreteNaiveBayesModel mdl = trainer.fit(
                 ignite,
                 dataCache,
-                featureExtractor,
-                lbExtractor
+                vectorizer
             );
 
             System.out.println(">>> Discrete Naive Bayes model: " + mdl);
@@ -78,8 +77,8 @@ public class DiscreteNaiveBayesTrainerExample {
             double accuracy = Evaluator.evaluate(
                 dataCache,
                 mdl,
-                featureExtractor,
-                lbExtractor
+                CompositionUtils.asFeatureExtractor(vectorizer),
+                CompositionUtils.asLabelExtractor(vectorizer)
             ).accuracy();
 
             System.out.println("\n>>> Accuracy " + accuracy);

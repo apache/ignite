@@ -17,20 +17,21 @@
 
 package org.apache.ignite.examples.ml.knn;
 
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.composition.CompositionUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.FileNotFoundException;
 
 /**
  * Run kNN multi-class classification trainer ({@link KNNClassificationTrainer}) over distributed dataset.
@@ -60,14 +61,11 @@ public class KNNClassificationExample {
 
             KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
-            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-            IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
-
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
             NNClassificationModel mdl = trainer.fit(
                 ignite,
                 dataCache,
-                featureExtractor,
-                lbExtractor
+                vectorizer
             ).withK(3)
                 .withDistanceMeasure(new EuclideanDistance())
                 .withStrategy(NNStrategy.WEIGHTED);
@@ -75,8 +73,8 @@ public class KNNClassificationExample {
             double accuracy = Evaluator.evaluate(
                 dataCache,
                 mdl,
-                featureExtractor,
-                lbExtractor
+                CompositionUtils.asFeatureExtractor(vectorizer),
+                CompositionUtils.asLabelExtractor(vectorizer)
             ).accuracy();
 
             System.out.println("\n>>> Accuracy " + accuracy);
