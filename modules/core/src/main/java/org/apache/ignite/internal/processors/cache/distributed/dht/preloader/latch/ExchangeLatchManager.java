@@ -259,6 +259,8 @@ public class ExchangeLatchManager {
             if (log.isDebugEnabled())
                 log.debug("Dropping latch [id=" + id + ", topVer=" + topVer + ", srvLatch=" + srvLatch +
                     ", clientLatch=" + clientLatch + ']');
+
+            pendingAcks.remove(latchUid);
         }
         finally {
             lock.unlock();
@@ -402,7 +404,7 @@ public class ExchangeLatchManager {
                 else {
                     ClientLatch clientLatch = clientLatches.get(latchUid);
 
-                    if (clientLatch != null && !clientLatch.isCompleted())
+                    if (clientLatch != null && clientLatch.isCompleted())
                         sendAck(from, clientLatch.id, true);
                     else
                         pendingAcks.computeIfAbsent(latchUid, id -> new GridConcurrentHashSet<>()).add(from);
@@ -429,10 +431,15 @@ public class ExchangeLatchManager {
 
         for (CompletableLatchUid latchUid : latchesToRestore) {
             AffinityTopologyVersion topVer = latchUid.topVer;
-            Collection<ClusterNode> participants = getLatchParticipants(topVer);
 
-            if (!participants.isEmpty())
-                createServerLatch(latchUid, participants);
+            ClientLatch clientLatch = clientLatches.get(latchUid);
+
+            if (clientLatch == null || !clientLatch.isCompleted()) {
+                Collection<ClusterNode> participants = getLatchParticipants(topVer);
+
+                if (!participants.isEmpty())
+                    createServerLatch(latchUid, participants);
+            }
         }
     }
 
@@ -475,6 +482,7 @@ public class ExchangeLatchManager {
             // Change coordinator for client latches.
             for (Map.Entry<CompletableLatchUid, ClientLatch> latchEntry : clientLatches.entrySet()) {
                 ClientLatch latch = latchEntry.getValue();
+
                 if (latch.hasCoordinator(left.id())) {
                     // Change coordinator for latch and re-send ack if necessary.
                     if (latch.hasParticipant(coordinator.id()))
