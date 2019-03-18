@@ -16,18 +16,13 @@
  */
 
 export default class {
-    static $inject = ['$scope', '$sce'];
+    static $inject = ['$scope'];
 
     /**
      * @param {ng.IScope} $scope
      */
-    constructor($scope, $sce) {
+    constructor($scope) {
         this.$scope = $scope;
-        this.$sce = $sce;
-    }
-
-    trustHtml(str) {
-        return this.$sce.trustAsHtml(str);
     }
 
     areAllSelected() {

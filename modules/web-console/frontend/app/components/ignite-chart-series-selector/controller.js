@@ -16,7 +16,11 @@
  */
 
 export default class IgniteChartSeriesSelectorController {
-    constructor() {
+
+    static $inject = ['$sce'];
+
+    constructor($sce) {
+        this.$sce = $sce;
         this.charts = [];
         this.selectedCharts = [];
     }
@@ -57,7 +61,7 @@ export default class IgniteChartSeriesSelectorController {
 
             return {
                 key,
-                label: `<span class='color-map' style='color: ${this.chartApi.config.data.datasets[datasetIndex].borderColor};'>&#9724;</span> <span>${labels[key].name || key}</span>`,
+                label: this.$sce.trustAsHtml(`<span class='color-map' style='color: ${this.chartApi.config.data.datasets[datasetIndex].borderColor};'>&#9724;</span> <span>${labels[key].name || key}</span>`),
                 hidden: labels[key].hidden,
                 title: labels[key].name || labels[key]
             };

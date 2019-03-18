@@ -17,6 +17,9 @@
 
 export default function() {
     return function(val) {
-        return val ? val.replace(/(<\/?\w+>)/igm, '') : '';
+        if (typeof val !== 'string')
+            return '';
+
+        return val.replace(/(<\/?\w+>)/igm, '');
     };
 }
