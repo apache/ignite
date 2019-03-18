@@ -76,6 +76,8 @@ class BaselineAutoAdjustExecutor {
                     log.error("Error during baseline changing", e);
                 }
                 finally {
+                    data.onAdjust();
+
                     executionGuard.unlock();
                 }
             }
