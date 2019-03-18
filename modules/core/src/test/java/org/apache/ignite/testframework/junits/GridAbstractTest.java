@@ -269,17 +269,17 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             try {
                 setSystemPropertiesBeforeClass();
 
-                beforeFirstTest();
-
-                base.evaluate();
-            }
-            finally {
                 try {
-                    afterLastTest();
+                    beforeFirstTest();
+
+                    base.evaluate();
                 }
                 finally {
-                    clearSystemPropertiesAfterClass();
+                        afterLastTest();
                 }
+            }
+            finally {
+                clearSystemPropertiesAfterClass();
             }
         };
 
