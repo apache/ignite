@@ -1272,7 +1272,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         JdbcAffinityTopologyVersion topVer = connCtx.checkAffinityTopologyVersion();
 
         HashMap<UUID, Set<Integer>> partitionsMap = getPartitionsMap(
-            connCtx.kernalContext().cache().cacheDescriptor(req.cacheNames().iterator().next()),
+            connCtx.kernalContext().cache().cacheDescriptor(req.cacheIds().iterator().next()),
             topVer.getVersion());
 
         return new JdbcResponse(new JdbcCachePartitionsResult(partitionsMap),

@@ -26,44 +26,44 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
 public class JdbcCachePartitionsRequest extends JdbcRequest {
 
-    private Set<String> cacheNames;
+    private Set<Integer> cacheIds;
 
     public JdbcCachePartitionsRequest() {
         super(CACHE_PARTITIONS);
     }
 
-    public JdbcCachePartitionsRequest(Set<String> cacheNames) {
+    public JdbcCachePartitionsRequest(Set<Integer> cacheIds) {
         super(CACHE_PARTITIONS);
 
-        this.cacheNames = cacheNames;
+        this.cacheIds = cacheIds;
     }
 
     /**
      * @return Cache id.
      */
-    public Set<String> cacheNames() {
-        return cacheNames;
+    public Set<Integer> cacheIds() {
+        return cacheIds;
     }
 
     @Override
     public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.writeBinary(writer, ver);
 
-        assert cacheNames != null;
-        assert !cacheNames.isEmpty();
+        assert cacheIds != null;
+        assert !cacheIds.isEmpty();
 
-        writer.writeInt(cacheNames.size());
-        for (String cacheName: cacheNames)
-            writer.writeString(cacheName);
+        writer.writeInt(cacheIds.size());
+        for (Integer cacheId: cacheIds)
+            writer.writeInt(cacheId);
     }
 
     @Override
     public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.readBinary(reader, ver);
-        int cacheNamesSize = reader.readInt();
+        int cacheIdsSize = reader.readInt();
 
-        cacheNames = new HashSet<>();
-        for (int i = 0; i < cacheNamesSize; i++)
-            cacheNames.add(reader.readString());
+        cacheIds = new HashSet<>();
+        for (int i = 0; i < cacheIdsSize; i++)
+            cacheIds.add(reader.readInt());
     }
 }

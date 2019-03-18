@@ -19,6 +19,7 @@ package org.apache.ignite.internal.jdbc.thin;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
@@ -26,12 +27,12 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableAffinityD
 
 public class JdbcThinPartitionResult extends PartitionResult {
 
-    private final String cacheName;
+    private final int cacheId;
 
-    public JdbcThinPartitionResult(PartitionNode tree, PartitionTableAffinityDescriptor aff, String cacheName) {
+    public JdbcThinPartitionResult(PartitionNode tree, PartitionTableAffinityDescriptor aff, int cacheId) {
         super(tree, aff);
 
-        this.cacheName = cacheName;
+        this.cacheId = cacheId;
     }
 
     /**
@@ -53,13 +54,13 @@ public class JdbcThinPartitionResult extends PartitionResult {
         return new JdbcThinPartitionResult(
             tree,
             PartitionTableAffinityDescriptor.readTableAffinityDescriptor(reader, ver),
-            tree != null ? tree.cacheName() : null);
+            tree != null ? GridCacheUtils.cacheId(tree.cacheName()) : null);
     }
 
     /**
-     * @return Cache name.
+     * @return Cache Id.
      */
-    public String cacheName() {
-        return cacheName;
+    public int cacheId() {
+        return cacheId;
     }
 }

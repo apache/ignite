@@ -26,7 +26,7 @@ public final class AffinityCache {
 
     private final AffinityTopologyVersion version;
 
-    private final Map<String, Map<Integer, UUID>> cachePartitionsDistribution;
+    private final Map<Integer, Map<Integer, UUID>> cachePartitionsDistribution;
 
     private final Map<String, JdbcThinPartitionResult> sqlCache;
 
@@ -45,8 +45,8 @@ public final class AffinityCache {
         return version;
     }
 
-    void addCacheDistribution(String cacheName, Map<Integer, UUID> distribution) {
-        cachePartitionsDistribution.put(cacheName, distribution);
+    void addCacheDistribution(Integer cacheId, Map<Integer, UUID> distribution) {
+        cachePartitionsDistribution.put(cacheId, distribution);
     }
 
     void addSqlQuery(String sql, JdbcThinPartitionResult partRes) {
@@ -61,7 +61,7 @@ public final class AffinityCache {
         return sqlCache.containsKey(sqlQry);
     }
 
-    Map<Integer, UUID> cacheDistribution(String cacheName) {
-        return cachePartitionsDistribution.get(cacheName);
+    Map<Integer, UUID> cacheDistribution(int cacheId) {
+        return cachePartitionsDistribution.get(cacheId);
     }
 }

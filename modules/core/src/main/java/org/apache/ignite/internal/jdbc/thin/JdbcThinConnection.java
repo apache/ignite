@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -952,14 +953,14 @@ public class JdbcThinConnection implements Connection {
                 int[] parts = calculatePartitions(partRes, ((JdbcQueryExecuteRequest)req).arguments());
 
                 if (parts != null && parts.length != 0) {
-                    Map<Integer, UUID> cacheDistr = affinityCache.cacheDistribution(partRes.cacheName());
+                    Map<Integer, UUID> cacheDistr = affinityCache.cacheDistribution(partRes.cacheId());
 
                     if (cacheDistr == null) {
                         JdbcResponse res;
 
                         try {
                             res = cliIo(null).sendRequest(
-                                new JdbcCachePartitionsRequest(Collections.singleton(partRes.cacheName())), null);
+                                new JdbcCachePartitionsRequest(Collections.singleton(partRes.cacheId())), null);
                         }
                         catch (IOException e) {
                             // TODO: 07.03.19 log warning or smth.
@@ -980,20 +981,27 @@ public class JdbcThinConnection implements Connection {
 
                         cacheDistr = tmpRevert(((JdbcCachePartitionsResult) res.response()).getPartitionsMap());
 
-                        affinityCache.addCacheDistribution(partRes.cacheName(), cacheDistr);
+                        affinityCache.addCacheDistribution(partRes.cacheId(), cacheDistr);
                     }
 
                     if (parts.length == 1)
                         bestEffortAffinityNodeId = cacheDistr.get(parts[0]);
                     else {
-                        // TODO: 07.03.19 use random node instead of first appliable.
-                        for (int part : parts) {
-                            bestEffortAffinityNodeId = cacheDistr.get(part);
-                            if (bestEffortAffinityNodeId != null)
-                                break;
-                        }
+                        Set<UUID> bestEffortAffinityNodeIds = new HashSet<>();
 
-                        // TODO: 07.03.19 if not found, at all.
+                        for (int part: parts)
+                            bestEffortAffinityNodeIds.add(cacheDistr.get(part));
+
+
+                        // TODO: 07.03.19 choose random node from one presented in connections or totally random
+                        // TODO: if there are no matches.
+
+//                        // TODO: 07.03.19 use random node instead of first appliable.
+//                        for (int part : parts) {
+//                            bestEffortAffinityNodeId = cacheDistr.get(part);
+//                            if (bestEffortAffinityNodeId != null)
+//                                break;
+//                        }
                     }
                 }
             }
@@ -1398,6 +1406,28 @@ public class JdbcThinConnection implements Connection {
             return iosArr[RND.nextInt(iosArr.length)];
 
         JdbcThinTcpIo io = ios.get(nodeId);
+
+       return io != null ? io : iosArr[RND.nextInt(iosArr.length)];
+    }
+
+    private JdbcThinTcpIo cliIo2(Set<UUID> nodeIds) {
+        if (txIo != null)
+            return txIo;
+
+        assert bestEffortAffinity;
+
+        if (nodeIds.isEmpty())
+            return iosArr[RND.nextInt(iosArr.length)];
+
+        // TODO: 11.03.19 optimize?
+        Set<JdbcThinTcpIo> conns = new HashSet<>();
+        for (UUID nodeId: nodeIds) {
+            JdbcThinTcpIo conn = ios.get(nodeId);
+            if (conn != null)
+                conns.add(conn);
+        }
+
+        JdbcThinTcpIo io = conns.toArray(new JdbcThinTcpIo[0])[RND.nextInt(iosArr.length)];
 
         return io != null ? io : iosArr[RND.nextInt(iosArr.length)];
     }
