@@ -59,8 +59,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
@@ -71,7 +69,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CheckpointFreeListTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
