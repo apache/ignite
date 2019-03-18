@@ -748,12 +748,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 // Last resort waiting.
                 U.warn(log,
                     "Schema is missing while no metadata updates are in progress " +
-                        "(will wait for schema update within timeout defined by IGNITE_WAIT_SCHEMA_UPDATE system property)" +
+                        "(will wait for schema update within timeout defined by " + IGNITE_WAIT_SCHEMA_UPDATE + " system property)" +
                         " [typeId=" + typeId
                         + ", missingSchemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
                         + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion())
-                        + ", binMetaUpdateTimeout=" + IGNITE_WAIT_SCHEMA_UPDATE +']');
+                        + ", binMetaUpdateTimeout=" + waitSchemaTimeout +']');
 
                 long t0 = System.nanoTime();
 
