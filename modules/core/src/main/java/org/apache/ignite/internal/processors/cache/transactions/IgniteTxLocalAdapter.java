@@ -95,6 +95,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -493,7 +495,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         GridDhtLocalPartition part = top.localPartition(p);
 
-                        assert part != null && part.state() == GridDhtPartitionState.OWNING :
+                        // LOST state is possible if tx is prepared in cache recovery mode cache.withCacheRecovery.
+                        // TODO need validation for recovery mode.
+                        assert part != null && (part.state() == OWNING || part.state() == LOST):
                             part == null ?
                                 "map=" + top.partitionMap(false) + ", lost=" + top.lostPartitions() :
                                 "part=" + part.toString();
