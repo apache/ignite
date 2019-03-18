@@ -116,7 +116,6 @@
             <version>2.8.4</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.jpmml/pmml-model -->
         <dependency>
             <groupId>org.jpmml</groupId>
             <artifactId>pmml-model</artifactId>
