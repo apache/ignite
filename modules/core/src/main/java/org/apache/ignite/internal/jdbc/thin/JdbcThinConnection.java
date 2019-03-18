@@ -399,19 +399,9 @@ public class JdbcThinConnection implements Connection {
             streamState = null;
         }
 
-        SQLException err = null;
+        stmts.clear();
 
-        for (JdbcThinStatement stmt : stmts.keySet()) {
-            try {
-                stmt.close();
-            }
-            catch (SQLException e) {
-                if (err == null)
-                    err = e;
-                else
-                    err.addSuppressed(e);
-            }
-        }
+        SQLException err = null;
 
         closed = true;
 
