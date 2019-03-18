@@ -138,7 +138,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private final PageHandler<T, Integer> writeRow = new WriteRowHandler();
 
     /** */
-    private final PageHandler<T, Integer> writeRows = new WriteRowHandlerBatch();
+    private final PageHandler<T, Integer> writeRows = new WriteRowsHandler();
 
     /**
      *
@@ -281,7 +281,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
 
         /**
-         * Put page to freelist if needed.
+         * Put page into freelist if needed.
          *
          * @param iox IO.
          * @param pageId Page ID.
@@ -310,9 +310,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /**
      *
      */
-    private class WriteRowHandlerBatch extends WriteRowHandler {
+    private class WriteRowsHandler extends WriteRowHandler {
         /** {@inheritDoc} */
-        @Override public Integer runBatch(
+        @Override public Integer runAll(
             int cacheId,
             long pageId,
             long page,
@@ -344,14 +344,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         addRowFragment(pageId, page, pageAddr, iox, row, size - (size % maxPayloadSize), size) :
                         addRow(pageId, page, pageAddr, iox, row, size);
 
-                    assert written == size : "The object is not fully written into page: " +
-                        "pageId=" + pageId + ", written=" + written + ", size=" + row.size();
+                    assert written == size : "The object is not fully written into page: pageId=" + pageId +
+                        ", written=" + written + ", size=" + row.size();
 
                     evictionTracker.touchPage(pageId);
                 }
             }
 
-            // return page to freelist if needed
             putPage((AbstractDataPageIO)io, pageId, page, pageAddr, statHolder);
 
             return COMPLETE;

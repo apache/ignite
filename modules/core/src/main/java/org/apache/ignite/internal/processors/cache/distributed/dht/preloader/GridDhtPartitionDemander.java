@@ -864,7 +864,7 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * todo should be removed (kept for benchamrking)
+     * todo should be removed (kept for benchmarking)
      */
     public void preloadEntriesSingle(ClusterNode from,
         int p,
@@ -904,7 +904,6 @@ public class GridDhtPartitionDemander {
      * @param p Partition id.
      * @param entries Preloaded entries.
      * @param topVer Topology version.
-     *
      * @throws IgniteCheckedException If failed.
      */
     public void preloadEntriesBatch(ClusterNode from,

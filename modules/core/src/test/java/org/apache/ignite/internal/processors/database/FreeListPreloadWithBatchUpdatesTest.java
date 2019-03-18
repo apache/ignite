@@ -338,5 +338,3 @@ public class FreeListPreloadWithBatchUpdatesTest extends GridCommonAbstractTest 
             .setAtomicityMode(cacheAtomicityMode);
     }
 }
-
-

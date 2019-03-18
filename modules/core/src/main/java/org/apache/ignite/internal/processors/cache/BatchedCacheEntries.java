@@ -265,6 +265,9 @@ public class BatchedCacheEntries {
     /** */
     public class BatchUpdateClosure implements IgniteCacheOffheapManager.OffheapInvokeAllClosure {
         /** */
+        private static final long serialVersionUID = -4782459128689696534L;
+
+        /** */
         private final List<T3<IgniteTree.OperationType, CacheDataRow, CacheDataRow>> resBatch = new ArrayList<>(entries.size());
 
         /** */

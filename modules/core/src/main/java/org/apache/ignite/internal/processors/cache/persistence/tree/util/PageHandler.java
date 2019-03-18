@@ -83,7 +83,7 @@ public abstract class PageHandler<X, R> {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public R runBatch(
+    public R runAll(
         int cacheId,
         long pageId,
         long page,
@@ -93,8 +93,7 @@ public abstract class PageHandler<X, R> {
         Collection<X> args,
         IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
-        // todo
-      throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -384,7 +383,7 @@ public abstract class PageHandler<X, R> {
                 else
                     init = PageIO.getPageIO(pageAddr);
 
-                R res = h.runBatch(grpId, pageId, page, pageAddr, init, walPlc, args, statHolder);
+                R res = h.runAll(grpId, pageId, page, pageAddr, init, walPlc, args, statHolder);
 
                 ok = true;
 
