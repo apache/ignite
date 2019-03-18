@@ -377,25 +377,6 @@ public class GridSqlQuerySplitter {
         else if (!model.needSplit())  // Just split the top level query.
             model.forceSplit();
 
-        // We should clear for update flag because we'll run it as a plain query.
-//        if (qry instanceof GridSqlSelect) {
-//            GridSqlSelect sel = (GridSqlSelect)qry;
-//
-//            forUpdate = sel.isForUpdate();
-//
-//            sel.forUpdate(false);
-//
-//            if (forUpdate) {
-//                GridSqlSelect selFu = copySelect(sel);
-//                GridSqlAlias keyCol = keyColumn(selFu);
-//
-//                selFu.addColumn(keyCol, true);
-//
-//                // Original query rewritten with _KEY column and without SELECT FOR UPDATE clause.
-//                originalNoForUpdateSql = selFu.getSQL();
-//            }
-//        }
-
         // Split the query model into multiple map queries and a single reduce query.
         splitQueryModel(model);
 
