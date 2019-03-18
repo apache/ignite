@@ -541,55 +541,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
     }
 
-    /**
-     * Runs before each test.
-     *
-     * @throws Exception If failed.
-     */
-    @Before
-    public void setUp() throws Exception {
-        stopGridErr = false;
-
-        clsLdr = Thread.currentThread().getContextClassLoader();
-
-        // Change it to the class one.
-        Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-
-        // Clear log throttle.
-        LT.clear();
-
-        info(">>> Starting test: " + testDescription() + " <<<");
-
-        beforeTest();
-
-        ts = System.currentTimeMillis();
-    }
-
-    /**
-     * Runs after each test.
-     *
-     * @throws Exception If failed.
-     */
-    @After
-    public void tearDown() throws Exception {
-        long dur = System.currentTimeMillis() - ts;
-
-        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
-
-        try {
-            afterTest();
-        }
-        finally {
-            serializedObj.clear();
-
-            Thread.currentThread().setContextClassLoader(clsLdr);
-
-            clsLdr = null;
-
-            cleanReferences();
-        }
-    }
-
     /** */
     private void beforeFirstTest() throws Exception {
         sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
@@ -2063,58 +2014,113 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
     /** Runs test with the provided scenario. */
     private void runTest(Statement testRoutine) throws Throwable {
-        final AtomicReference<Throwable> ex = new AtomicReference<>();
+        setUp();
+        
+        try {
+            final AtomicReference<Throwable> ex = new AtomicReference<>();
 
-        Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
-            @Override public void run() {
-                try {
-                    testRoutine.evaluate();
-                }
-                catch (Throwable e) {
-                    IgniteClosure<Throwable, Throwable> hnd = errorHandler();
+            Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
+                @Override public void run() {
+                    try {
+                        testRoutine.evaluate();
+                    }
+                    catch (Throwable e) {
+                        IgniteClosure<Throwable, Throwable> hnd = errorHandler();
 
-                    ex.set(hnd != null ? hnd.apply(e) : e);
+                        ex.set(hnd != null ? hnd.apply(e) : e);
+                    }
                 }
+            });
+
+            runner.start();
+
+            runner.join(isDebug() ? 0 : getTestTimeout());
+
+            if (runner.isAlive()) {
+                U.error(log,
+                    "Test has been timed out and will be interrupted (threads dump will be taken before interruption) [" +
+                        "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
+
+                List<Ignite> nodes = IgnitionEx.allGridsx();
+
+                for (Ignite node : nodes)
+                    ((IgniteKernal)node).dumpDebugInfo();
+
+                // We dump threads to stdout, because we can loose logs in case
+                // the build is cancelled on TeamCity.
+                U.dumpThreads(null);
+
+                U.dumpThreads(log);
+
+                U.interrupt(runner);
+
+                U.join(runner, log);
+
+                throw new TimeoutException("Test has been timed out [test=" + getName() + ", timeout=" +
+                    getTestTimeout() + ']');
             }
-        });
 
-        runner.start();
+            Throwable t = ex.get();
 
-        runner.join(isDebug() ? 0 : getTestTimeout());
+            if (t != null) {
+                U.error(log, "Test failed.", t);
 
-        if (runner.isAlive()) {
-            U.error(log,
-                "Test has been timed out and will be interrupted (threads dump will be taken before interruption) [" +
-                    "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
+                throw t;
+            }
 
-            List<Ignite> nodes = IgnitionEx.allGridsx();
-
-            for (Ignite node : nodes)
-                ((IgniteKernal)node).dumpDebugInfo();
-
-            // We dump threads to stdout, because we can loose logs in case
-            // the build is cancelled on TeamCity.
-            U.dumpThreads(null);
-
-            U.dumpThreads(log);
-
-            U.interrupt(runner);
-
-            U.join(runner, log);
-
-            throw new TimeoutException("Test has been timed out [test=" + getName() + ", timeout=" +
-                getTestTimeout() + ']');
+            assert !stopGridErr : "Error occurred on grid stop (see log for more details).";
         }
-
-        Throwable t = ex.get();
-
-        if (t != null) {
-            U.error(log, "Test failed.", t);
-
-            throw t;
+        finally {
+            tearDown();
         }
+    }
 
-        assert !stopGridErr : "Error occurred on grid stop (see log for more details).";
+    /**
+     * Runs before each test.
+     *
+     * @throws Exception If failed.
+     */
+    private void setUp() throws Exception {
+        stopGridErr = false;
+
+        clsLdr = Thread.currentThread().getContextClassLoader();
+
+        // Change it to the class one.
+        Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+
+        // Clear log throttle.
+        LT.clear();
+
+        info(">>> Starting test: " + testDescription() + " <<<");
+
+        beforeTest();
+
+        ts = System.currentTimeMillis();
+    }
+
+    /**
+     * Runs after each test.
+     *
+     * @throws Exception If failed.
+     */
+    private void tearDown() throws Exception {
+        long dur = System.currentTimeMillis() - ts;
+
+        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+
+        try {
+            System.out.println("~~! attemp to stop test");
+            afterTest();
+        }
+        finally {
+            serializedObj.clear();
+
+            Thread.currentThread().setContextClassLoader(clsLdr);
+
+            clsLdr = null;
+
+            cleanReferences();
+        }
     }
 
     /**
