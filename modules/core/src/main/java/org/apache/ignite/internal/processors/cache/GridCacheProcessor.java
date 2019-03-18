@@ -636,6 +636,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.query().moduleEnabled()) {
             String schema = QueryUtils.normalizeSchemaName(cc.getName(), cc.getSqlSchema());
 
+            ctx.query().getIndexing().validateCacheConfiguration(cc);
+
+            // todo: move checks to indexing.
             if (F.eq(schema, QueryUtils.SCHEMA_SYS)) {
                 if (cc.getSqlSchema() == null) {
                     // Conflict on cache name.

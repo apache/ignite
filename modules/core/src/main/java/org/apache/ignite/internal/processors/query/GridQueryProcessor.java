@@ -374,7 +374,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName));
             }
             else {
-                CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
+                CacheConfiguration<?, ?> ccfg = cacheDesc.cacheConfiguration();
 
                 if (ccfg.getCacheMode() == CacheMode.LOCAL) {
                     // Distributed operation is not allowed on LOCAL caches.
@@ -391,6 +391,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     assert F.eq(cacheDesc.deploymentId(), msg.deploymentId());
                 }
+
+                // Check that index can be created.
+                if (op instanceof SchemaIndexCreateOperation) {
+                    SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
+
+                    Integer typeId = findTypeId(ccfg.getQueryEntities(), op0.tableName());
+
+                    if (typeId == null)
+                        msg.onError(new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, op0.tableName()));
+                    else {
+                        try {
+                            idx.validateCreateIndex(ccfg, op0.indexName(), typeId);
+                        }
+                        catch (IgniteCheckedException e) {
+                            msg.onError(new SchemaOperationException(e.getMessage(), e));
+                        }
+                    }
+                }
             }
         }
 
@@ -405,6 +423,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         return onSchemaProposeDiscovery0(msg);
+    }
+
+    /**
+     * Finds type id of the table with specified name.
+     *
+     * @param entities Entities describing tables.
+     * @param tabName Name of the table, which type id to find.
+     * @return type id or {@code null} if not found.
+     */
+    private Integer findTypeId(Collection<QueryEntity> entities, String tabName) {
+        for (QueryEntity e : entities) {
+            if (F.eq(e.getTableName(), tabName))
+                return ctx.cacheObjects().typeId(e.findValueType());
+        }
+
+        return null;
     }
 
     /**

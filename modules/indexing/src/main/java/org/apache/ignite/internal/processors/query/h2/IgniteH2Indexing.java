@@ -39,11 +39,14 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheServerNotFoundException;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -1762,6 +1765,38 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
+    @Override public void validateCacheConfiguration(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
+        if (!ctx.clientNode()) {
+            boolean persistenceEnabled = CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration());
+
+            if (persistenceEnabled) {
+                for (QueryEntity entity : ccfg.getQueryEntities()) {
+                    int typeId = ctx.cacheObjects().typeId(entity.findValueType());
+
+                    for (QueryIndex index : entity.getIndexes())
+                        H2TreeIndex.validatePdsIndexName(index.getName(), ccfg, typeId);
+
+                    H2TreeIndex.validatePdsIndexName(H2TableDescriptor.PK_IDX_NAME, ccfg, typeId);
+                    H2TreeIndex.validatePdsIndexName(H2TableDescriptor.AFFINITY_KEY_IDX_NAME, ccfg, typeId);
+                }
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void validateCreateIndex(CacheConfiguration<?, ?> ccfg, String idxName, int typeId)
+        throws IgniteCheckedException {
+        assert !ctx.clientNode() : "Cannot validate index on a client node.";
+
+        boolean persistenceEnabled = CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration());
+
+        if (persistenceEnabled)
+            H2TreeIndex.validatePdsIndexName(idxName, ccfg, typeId);
+    }
+
+
+
+    /** {@inheritDoc} */
     @Override public GridCacheContextInfo registeredCacheInfo(String cacheName) {
         for (H2TableDescriptor tbl : schemaMgr.tablesForCache(cacheName)) {
             if (F.eq(tbl.cacheName(), cacheName))
@@ -2125,6 +2160,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void registerCache(String cacheName, String schemaName, GridCacheContextInfo<?, ?> cacheInfo)
         throws IgniteCheckedException {
+
         rowCache.onCacheRegistered(cacheInfo);
 
         schemaMgr.onCacheCreated(cacheName, schemaName, cacheInfo.config().getSqlFunctionClasses());

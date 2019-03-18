@@ -142,7 +142,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.wal(),
             globalRemoveId(),
             grp.groupId(),
-            grp.sharedGroup(),
             PageIdAllocator.INDEX_PARTITION,
             PageIdAllocator.FLAG_IDX,
             reuseList,
@@ -833,13 +832,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage rootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
-        return indexStorage.allocateCacheIndex(cacheId, idxName, segment);
+    @Override public RootPage rootPageForIndex(String segName) throws IgniteCheckedException {
+        return indexStorage.allocateIndex(segName);
     }
 
     /** {@inheritDoc} */
-    @Override public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
-        indexStorage.dropCacheIndex(cacheId, idxName, segment);
+    @Override public void dropRootPageForIndex(String segName) throws IgniteCheckedException {
+        indexStorage.dropIndex(segName);
     }
 
     /** {@inheritDoc} */

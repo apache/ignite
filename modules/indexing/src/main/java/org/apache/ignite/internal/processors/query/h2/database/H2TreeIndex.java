@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -29,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -36,6 +38,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -68,6 +71,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -122,7 +126,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     /** */
     private final String idxName;
 
-    /** Tree name. */
+    /** Cached tree name. */
     private final String treeName;
 
     /** */
@@ -193,9 +197,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         GridQueryTypeDescriptor typeDesc = table.rowDescriptor().type();
 
-        int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
-
-        treeName = BPlusTree.treeName((table.rowDescriptor() == null ? "" : typeId + "_") + idxName, "H2Tree");
+        treeName = treeName(idxName, cctx.config(), typeDesc.typeId());
 
         IndexColumnsInfo unwrappedColsInfo = new IndexColumnsInfo(unwrappedColsList, inlineSize);
 
@@ -221,7 +223,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
             db.checkpointReadLock();
 
             try {
-                RootPage page = getMetaPage(i);
+                String segmentName = segmentName(treeName, i);
+
+                RootPage page = getMetaPage(segmentName);
 
                 segments[i] = new H2Tree(
                     cctx,
@@ -487,7 +491,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
                     tree.destroy();
 
-                    dropMetaPage(i);
+                    String segmentName = segmentName(treeName, i);
+
+                    dropMetaPage(segmentName);
                 }
             }
         }
@@ -532,20 +538,21 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /**
-     * @param segIdx Segment index.
+     * @param segName Segment index.
      * @return RootPage for meta page.
      * @throws IgniteCheckedException If failed.
      */
-    private RootPage getMetaPage(int segIdx) throws IgniteCheckedException {
-        return cctx.offheap().rootPageForIndex(cctx.cacheId(), treeName, segIdx);
+    private RootPage getMetaPage(String segName) throws IgniteCheckedException {
+
+        return cctx.offheap().rootPageForIndex(segName);
     }
 
     /**
-     * @param segIdx Segment index.
+     * @param segName Full segment name.
      * @throws IgniteCheckedException If failed.
      */
-    private void dropMetaPage(int segIdx) throws IgniteCheckedException {
-        cctx.offheap().dropRootPageForIndex(cctx.cacheId(), treeName, segIdx);
+    private void dropMetaPage(String segName) throws IgniteCheckedException {
+        cctx.offheap().dropRootPageForIndex(segName);
     }
 
     /** {@inheritDoc} */
@@ -887,5 +894,48 @@ public class H2TreeIndex extends H2TreeIndexBase {
         public List<InlineIndexHelper> inlineIdx() {
             return inlineIdx;
         }
+    }
+
+    /**
+     * Validates that index name after masking is not too long to store in persistence storage.
+     *
+     * @param idxName Index name.
+     * @param ccfg Cache configuration of the cache containing table.
+     * @param typeId Type id of the table, index created in.
+     */
+    public static void validatePdsIndexName(String idxName, CacheConfiguration ccfg, int typeId)
+        throws IgniteCheckedException {
+        int segCnt = ccfg.getQueryParallelism();
+
+        int maxLenSeg = segCnt - 1;
+
+        String segName = segmentName(treeName(idxName, ccfg, typeId), maxLenSeg);
+
+        int encLen = segName.getBytes(StandardCharsets.UTF_8).length;
+
+        if (encLen > IndexStorageImpl.MAX_IDX_NAME_LEN)
+            throw new IgniteCheckedException("Index name is too long in UTF-8 encoding " +
+                "[maxAllowed=" + IndexStorageImpl.MAX_IDX_NAME_LEN + ", encodedLength=" + encLen +
+                ", indexName=" + segName + "].");
+    }
+
+    /**
+     * Create tree name
+     *
+     * @param idxName Index name.
+     * @param ccfg Ccfg.
+     * @param typeId Type id.
+     */
+    public static String treeName(String idxName, CacheConfiguration ccfg, int typeId) {
+        String masked = BPlusTree.treeName((typeId + "_") + idxName, "H2Tree");
+
+        if (ccfg.getGroupName() != null)
+            masked = CU.cacheId(ccfg.getName()) + "_" + masked;
+
+        return masked;
+    }
+
+    public static String segmentName(String treeName, int segId) {
+        return treeName + "%" + segId;
     }
 }

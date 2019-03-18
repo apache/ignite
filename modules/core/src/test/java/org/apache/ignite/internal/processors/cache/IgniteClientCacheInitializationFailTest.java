@@ -364,6 +364,10 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             return false;
         }
 
+        @Override public void validateCacheConfiguration(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
+            // No-op
+        }
+
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
             CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
@@ -408,6 +412,12 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void onKernalStop() {
             // No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public void validateCreateIndex(CacheConfiguration<?, ?> ccfg, String idxName,
+            int typeId) throws IgniteCheckedException {
+            // No-op.
         }
 
         /** {@inheritDoc} */

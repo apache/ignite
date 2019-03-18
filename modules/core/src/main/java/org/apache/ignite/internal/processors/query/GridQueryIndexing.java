@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -250,6 +251,15 @@ public interface GridQueryIndexing {
         boolean isSql) throws IgniteCheckedException;
 
     /**
+     * Checks if cache configuration is correct for indexing.
+     *
+     * @param ccfg Cache configuration to validate.
+     * @throws IgniteCheckedException cache configuration is incorrect in indexing point of view.
+     */
+    public void validateCacheConfiguration(CacheConfiguration<?, ?> ccfg)
+        throws IgniteCheckedException;
+
+    /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
      * the key should be removed from indexes other than one being updated.
      *
@@ -352,6 +362,17 @@ public interface GridQueryIndexing {
      * @return Row cache cleaner.
      */
     public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
+
+    /**
+     * Check that index with provided name and type id could be created in cache with specified configuration.
+     *
+     * @param idxName index name.
+     * @param ccfg configuration of the cache, index to be created in.
+     * @param typeId type id of the table, index to be created for.
+     * @throws IgniteCheckedException if index couldn't be created.
+     */
+    public void validateCreateIndex(CacheConfiguration<?, ?> ccfg, String idxName, int typeId)
+        throws IgniteCheckedException;
 
     /**
      * Return context for registered cache info.
