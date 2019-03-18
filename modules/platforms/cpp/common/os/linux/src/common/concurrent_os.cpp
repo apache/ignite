@@ -73,6 +73,39 @@ namespace ignite
                 pthread_mutex_unlock(&mux);
             }
 
+            ReadWriteLock::ReadWriteLock() :
+                lock()
+            {
+                pthread_rwlock_init(&lock, NULL);
+
+                Memory::Fence();
+            }
+
+            ReadWriteLock::~ReadWriteLock()
+            {
+                pthread_rwlock_destroy(&lock);
+            }
+
+            void ReadWriteLock::LockExclusive()
+            {
+                pthread_rwlock_wrlock(&lock);
+            }
+
+            void ReadWriteLock::ReleaseExclusive()
+            {
+                pthread_rwlock_unlock(&lock);
+            }
+
+            void ReadWriteLock::LockShared()
+            {
+                pthread_rwlock_rdlock(&lock);
+            }
+
+            void ReadWriteLock::ReleaseShared()
+            {
+                pthread_rwlock_unlock(&lock);
+            }
+
             SingleLatch::SingleLatch()
             {
                 pthread_mutex_init(&mux, NULL);
