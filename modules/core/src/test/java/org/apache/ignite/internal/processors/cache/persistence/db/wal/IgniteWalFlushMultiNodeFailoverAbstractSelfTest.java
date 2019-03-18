@@ -51,6 +51,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assume;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
+
 /**
  * Tests error recovery while node flushing
  */
@@ -91,6 +93,20 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
         System.clearProperty(IgniteSystemProperties.IGNITE_WAL_MMAP);
 
         super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */

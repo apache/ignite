@@ -43,6 +43,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.After;
 import org.junit.Test;
 
@@ -608,8 +609,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
                 fut.get(10, TimeUnit.SECONDS);
             }
             catch (IgniteCheckedException e) {
-                // TODO check expected exceptions once https://issues.apache.org/jira/browse/IGNITE-9470 is resolved
-                if (X.hasCause(e, IgniteTxRollbackCheckedException.class))
+                if (X.hasCause(e, TransactionRollbackException.class))
                     aborted++;
                 else
                     throw e;

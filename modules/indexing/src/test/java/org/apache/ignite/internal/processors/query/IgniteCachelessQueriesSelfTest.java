@@ -326,7 +326,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
 
         QueryParserCacheEntry q = m.values().iterator().next();
 
-        return q.query();
+        return q.select().twoStepQuery();
     }
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -31,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageI
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionException;
@@ -43,7 +44,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_COMPLETED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -173,7 +173,7 @@ public class MvccUtils {
      * @return TxState
      * @see TxState
      */
-    private static byte state(MvccProcessor proc, long mvccCrd, long mvccCntr, int mvccOpCntr) {
+    public static byte state(MvccProcessor proc, long mvccCrd, long mvccCntr, int mvccOpCntr) {
         if (compare(INITIAL_VERSION, mvccCrd, mvccCntr, mvccOpCntr) == 0)
             return TxState.COMMITTED; // Initial version is always committed;
 
@@ -550,7 +550,7 @@ public class MvccUtils {
      * @return {@code True} if version is valid.
      */
     public static boolean mvccVersionIsValid(long crdVer, long cntr) {
-        return crdVer > MVCC_CRD_COUNTER_NA && cntr != MVCC_COUNTER_NA;
+        return crdVer > MVCC_CRD_COUNTER_NA && cntr > MVCC_COUNTER_NA;
     }
 
     /**
@@ -678,9 +678,9 @@ public class MvccUtils {
      * @param tx Transaction.
      * @return Checked transaction.
      */
-    public static GridNearTxLocal checkActive(GridNearTxLocal tx) {
+    public static GridNearTxLocal checkActive(GridNearTxLocal tx) throws IgniteTxAlreadyCompletedCheckedException {
         if (tx != null && tx.state() != TransactionState.ACTIVE)
-            throw new IgniteSQLException("Transaction is already completed.", TRANSACTION_COMPLETED);
+            throw new IgniteTxAlreadyCompletedCheckedException("Transaction is already completed.");
 
         return tx;
     }
@@ -788,16 +788,17 @@ public class MvccUtils {
     /**
      * Initialises MVCC filter and returns MVCC query tracker if needed.
      * @param cctx Cache context.
-     * @param startTx Start transaction flag.
+     * @param autoStartTx Start transaction flag.
      * @return MVCC query tracker.
      * @throws IgniteCheckedException If failed.
      */
-    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean startTx) throws IgniteCheckedException {
+    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean autoStartTx)
+        throws IgniteCheckedException {
         assert cctx != null && cctx.mvccEnabled();
 
         GridNearTxLocal tx = tx(cctx.kernalContext());
 
-        if (tx == null && startTx)
+        if (tx == null && autoStartTx)
             tx = txStart(cctx, 0);
 
         return mvccTracker(cctx, tx);
@@ -817,7 +818,7 @@ public class MvccUtils {
         if (tx == null)
             tracker = new MvccQueryTrackerImpl(cctx);
         else
-            tracker = new StaticMvccQueryTracker(cctx, requestSnapshot(cctx, tx));
+            tracker = new StaticMvccQueryTracker(cctx, requestSnapshot(tx));
 
         if (tracker.snapshot() == null)
             // TODO IGNITE-7388
@@ -827,13 +828,11 @@ public class MvccUtils {
     }
 
     /**
-     * @param cctx Cache context.
      * @param tx Transaction.
      * @throws IgniteCheckedException If failed.
      * @return Mvcc snapshot.
      */
-    public static MvccSnapshot requestSnapshot(GridCacheContext cctx,
-        @NotNull GridNearTxLocal tx) throws IgniteCheckedException {
+    public static MvccSnapshot requestSnapshot(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
         MvccSnapshot snapshot = tx.mvccSnapshot();
 
         if (snapshot == null)
@@ -846,14 +845,14 @@ public class MvccUtils {
     /**
      * Throws atomicity modes compatibility validation exception.
      *
-     * @param ctx1 Cache context.
-     * @param ctx2 Another cache context.
+     * @param ccfg1 Config 1.
+     * @param ccfg2 Config 2.
      */
-    public static void throwAtomicityModesMismatchException(GridCacheContext ctx1, GridCacheContext ctx2) {
+    public static void throwAtomicityModesMismatchException(CacheConfiguration ccfg1, CacheConfiguration ccfg2) {
         throw new IgniteException("Caches with transactional_snapshot atomicity mode cannot participate in the same" +
-            " transaction with caches having another atomicity mode. [cacheName=" + ctx1.name() +
-            ", cacheMode=" + ctx1.config().getAtomicityMode() +
-            ", anotherCacheName=" + ctx2.name() + " anotherCacheMode=" + ctx2.config().getAtomicityMode() + ']');
+            " transaction with caches having another atomicity mode. [cacheName=" + ccfg1.getName() +
+            ", cacheMode=" + ccfg1.getAtomicityMode() + ", anotherCacheName=" + ccfg2.getName() +
+            " anotherCacheMode=" + ccfg2.getAtomicityMode() + ']');
     }
 
     /** */

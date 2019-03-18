@@ -47,7 +47,6 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -56,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -180,17 +180,32 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
         assert grp.dataRegion().pageMemory() instanceof PageMemoryEx;
 
+        syncMetadata(ctx);
+    }
+
+    /** {@inheritDoc} */
+    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        if (!ctx.nextSnapshot())
+            syncMetadata(ctx);
+    }
+
+    /**
+     * Syncs and saves meta-information of all data structures to page memory.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void syncMetadata(Context ctx) throws IgniteCheckedException {
         Executor execSvc = ctx.executor();
 
         boolean needSnapshot = ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
 
         if (needSnapshot) {
             if (execSvc == null)
-                updateSnapshotTag(ctx);
+                addPartitions(ctx);
             else {
                 execSvc.execute(() -> {
                     try {
-                        updateSnapshotTag(ctx);
+                        addPartitions(ctx);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -199,17 +214,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
-        syncMetadata(execSvc, ctx, needSnapshot);
+        syncMetadata(ctx, ctx.executor(), needSnapshot);
     }
 
     /**
      * Syncs and saves meta-information of all data structures to page memory.
      *
      * @param execSvc Executor service to run save process
-     * @param ctx Checkpoint listener context.
      * @throws IgniteCheckedException If failed.
      */
-    private void syncMetadata(Executor execSvc, Context ctx, boolean needSnapshot) throws IgniteCheckedException {
+    private void syncMetadata(Context ctx, Executor execSvc, boolean needSnapshot) throws IgniteCheckedException {
         if (execSvc == null) {
             reuseList.saveMetadata();
 
@@ -239,13 +253,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /**
-     * @return {@code True} is group is not empty.
-     */
-    private boolean notEmpty(CacheDataStore store) {
-        return store.rowStore() != null && (store.fullSize() > 0  || store.updateCounter() > 0);
-    }
-
-    /**
      * @param store Store to save metadata.
      * @throws IgniteCheckedException If failed.
      */
@@ -258,9 +265,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         RowStore rowStore0 = store.rowStore();
 
         if (rowStore0 != null) {
-            CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
-
-            freeList.saveMetadata();
+            ((CacheFreeListImpl)rowStore0.freeList()).saveMetadata();
 
             long updCntr = store.updateCounter();
             long size = store.fullSize();
@@ -380,7 +385,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         else
                             pageCnt = io.getCandidatePageCount(partMetaPageAddr);
 
-                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
+                        if (changed && PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
                             wal.log(new MetaPageUpdatePartitionDataRecord(
                                 grpId,
                                 partMetaId,
@@ -687,10 +692,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      * @param ctx Context.
      */
-    private void updateSnapshotTag(Context ctx) throws IgniteCheckedException {
+    private void addPartitions(Context ctx) throws IgniteCheckedException {
         int grpId = grp.groupId();
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
-        IgniteWriteAheadLogManager wal = this.ctx.wal();
 
         long metaPageId = pageMem.metaPageId(grpId);
         long metaPage = pageMem.acquirePage(grpId, metaPageId);
@@ -700,17 +704,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             try {
                 PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
-
-                long nextSnapshotTag = metaIo.getNextSnapshotTag(metaPageAddr);
-
-                metaIo.setNextSnapshotTag(metaPageAddr, nextSnapshotTag + 1);
-
-                if (log != null && log.isDebugEnabled())
-                    log.debug("Save next snapshot before checkpoint start for grId = " + grpId
-                        + ", nextSnapshotTag = " + nextSnapshotTag);
-
-                if (!wal.disabled(grpId))
-                    wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId, nextSnapshotTag + 1));
 
                 addPartition(
                     null,
@@ -1481,6 +1474,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 try {
                     Metas metas = getOrAllocatePartitionMetas();
 
+                    if (PageIdUtils.partId(metas.reuseListRoot.pageId().pageId()) != partId ||
+                        PageIdUtils.partId(metas.treeRoot.pageId().pageId()) != partId ||
+                        PageIdUtils.partId(metas.pendingTreeRoot.pageId().pageId()) != partId) {
+                        throw new IgniteCheckedException("Invalid meta root allocated [" +
+                            "cacheOrGroupName=" + grp.cacheOrGroupName() +
+                            ", partId=" + partId +
+                            ", metas=" + metas + ']');
+                    }
+
                     RootPage reuseRoot = metas.reuseListRoot;
 
                     freeList = new CacheFreeListImpl(
@@ -1965,24 +1967,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             return delegate.mvccInitialValue(cctx, key, val, ver, expireTime, mvccVer, newMvccVer);
         }
-
+        
         /** {@inheritDoc} */
-        @Override public boolean mvccInitialValueIfAbsent(
+        @Override public boolean mvccApplyHistoryIfAbsent(
             GridCacheContext cctx,
             KeyCacheObject key,
-            @Nullable CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            MvccVersion mvccVer,
-            MvccVersion newMvccVer,
-            byte txState,
-            byte newTxState)
-            throws IgniteCheckedException
-        {
+            List<GridCacheMvccEntryInfo> hist)
+            throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccInitialValueIfAbsent(cctx, key, val, ver, expireTime, mvccVer, newMvccVer,
-                txState, newTxState);
+            return delegate.mvccApplyHistoryIfAbsent(cctx, key, hist);
         }
 
         /** {@inheritDoc} */

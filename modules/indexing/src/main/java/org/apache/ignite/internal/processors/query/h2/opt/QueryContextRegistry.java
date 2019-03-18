@@ -58,8 +58,6 @@ public class QueryContextRegistry {
      * Drops current thread local context.
      */
     public void clearThreadLocal() {
-        assert locCtx.get() != null;
-
         locCtx.remove();
     }
 
@@ -140,10 +138,7 @@ public class QueryContextRegistry {
         if (ctx == null)
             return false;
 
-        if (ctx.lazyWorker() != null)
-            ctx.lazyWorker().stop(nodeStop);
-        else
-            ctx.clearContext(nodeStop);
+        ctx.clearContext(nodeStop);
 
         return true;
     }
