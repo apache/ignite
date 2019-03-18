@@ -88,6 +88,9 @@ final class BinaryMetadataTransport {
     /** */
     private final ConcurrentMap<SyncKey, MetadataUpdateResultFuture> syncMap = new ConcurrentHashMap<>();
 
+    /** It store pending update future for typeId. It allow to do only one update in one moment. */
+    private final ConcurrentMap<Integer, MetadataUpdateResultFuture> pendingTypeIdMap = new ConcurrentHashMap<>();
+
     /** */
     private final ConcurrentMap<Integer, ClientMetadataRequestFuture> clientReqSyncMap = new ConcurrentHashMap<>();
 
@@ -164,11 +167,16 @@ final class BinaryMetadataTransport {
      * @return Future to wait for update result on.
      */
     GridFutureAdapter<MetadataUpdateResult> requestMetadataUpdate(BinaryMetadata metadata) {
-        MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture();
+        MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture(metadata.typeId());
 
         if (log.isDebugEnabled())
             log.debug("Requesting metadata update for " + metadata.typeId() + "; caller thread is blocked on future "
                 + resFut);
+
+        MetadataUpdateResultFuture oldFut = pendingTypeIdMap.putIfAbsent(metadata.typeId(), resFut);
+
+        if(oldFut != null)
+            return null;
 
         try {
             synchronized (this) {
@@ -212,6 +220,14 @@ final class BinaryMetadataTransport {
             resFut.onDone(MetadataUpdateResult.createSuccessfulResult());
 
         return resFut;
+    }
+
+    /**
+     * @param typeId Type id.
+     * @return Pending meta update future.
+     */
+    GridFutureAdapter<MetadataUpdateResult> getPendingMetaUpdate(int typeId) {
+        return pendingTypeIdMap.get(typeId);
     }
 
     /**
@@ -547,10 +563,10 @@ final class BinaryMetadataTransport {
      * Future class responsible for blocking threads until particular events with metadata updates happen,
      * e.g. arriving {@link MetadataUpdateAcceptedMessage} acknowledgment or {@link MetadataResponseMessage} response.
      */
-    private final class MetadataUpdateResultFuture extends GridFutureAdapter<MetadataUpdateResult> {
+    public final class MetadataUpdateResultFuture extends GridFutureAdapter<MetadataUpdateResult> {
         /** */
-        MetadataUpdateResultFuture() {
-            // No-op.
+        MetadataUpdateResultFuture(int typeId) {
+            this.key = new SyncKey(typeId, 0);
         }
 
         /**
@@ -569,8 +585,10 @@ final class BinaryMetadataTransport {
 
             boolean done = super.onDone(res, err);
 
-            if (done && key != null)
+            if (done && key != null) {
                 syncMap.remove(key, this);
+                pendingTypeIdMap.remove(key.typeId, this);
+            }
 
             return done;
         }
