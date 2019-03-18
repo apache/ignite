@@ -31,12 +31,19 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Detached connection. */
+    private ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn;
+
     /**
      * @param data Data.
+     * @param detachedConn Detached connection.
      * @throws IgniteCheckedException If failed.
      */
-    public H2FieldsIterator(ResultSet data) throws IgniteCheckedException {
+    public H2FieldsIterator(ResultSet data,
+        ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn) throws IgniteCheckedException {
         super(data);
+
+        this.detachedConn = detachedConn;
     }
 
     /** {@inheritDoc} */
@@ -46,5 +53,19 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
         Collections.addAll(res, row);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onClose() {
+        try {
+            super.onClose();
+        }
+        finally {
+            if (detachedConn != null) {
+                detachedConn.recycle();
+
+                detachedConn = null;
+            }
+        }
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,7 +27,9 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CAX;
@@ -43,7 +46,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests leaks at the IgniteH2Indexing
  */
-public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
+public class IgniteCacheQueryH2IndexingLeakTest extends AbstractIndexingCommonTest {
     /** */
     private static final long TEST_TIMEOUT = 2 * 60 * 1000;
 
@@ -51,7 +54,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     private static final int THREAD_COUNT = 10;
 
     /** Timeout */
-    private static final long STMT_CACHE_CLEANUP_TIMEOUT = 1000;
+    private static final long STMT_CACHE_CLEANUP_TIMEOUT = 500;
 
     /** Orig cleanup period. */
     private static String origCacheCleanupPeriod;
@@ -113,6 +116,8 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
         System.setProperty(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT,
             origCacheThreadUsageTimeout != null ? origCacheThreadUsageTimeout : "");
+
+        super.afterTestsStopped();
     }
 
     /**
@@ -120,11 +125,14 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      * @return size of statement cache.
      */
     private static int getStatementCacheSize(GridQueryProcessor qryProcessor) {
-        IgniteH2Indexing h2Idx = GridTestUtils.getFieldValue(qryProcessor, GridQueryProcessor.class, "idx");
+        IgniteH2Indexing h2Idx = (IgniteH2Indexing)qryProcessor.getIndexing();
 
-        ConcurrentMap stmtCache = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "stmtCache");
+        Map<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> conns = h2Idx.connections().connectionsForThread();
 
-        return stmtCache.size();
+        return conns.values().stream()
+            .mapToInt(set ->
+                set.keySet().stream()
+                    .mapToInt(H2ConnectionWrapper::statementCacheSize).sum()).sum();
     }
 
     /**
@@ -176,7 +184,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     return getStatementCacheSize(qryProc) == 0;
                 }
-            }, STMT_CACHE_CLEANUP_TIMEOUT * 2));
+            }, STMT_CACHE_CLEANUP_TIMEOUT * 10));
         }
     }
 

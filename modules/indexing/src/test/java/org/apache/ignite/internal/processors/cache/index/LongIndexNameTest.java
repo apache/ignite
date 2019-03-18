@@ -37,7 +37,7 @@ import java.util.List;
 /**
  *
  */
-public class LongIndexNameTest extends GridCommonAbstractTest {
+public class LongIndexNameTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)

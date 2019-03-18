@@ -1031,6 +1031,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
 
     /**
+     * Default value of lazy query execution (Special for ver 2.5). Lazy mode must be used by default later.
+     */
+    public static final String IGNITE_QUERY_LAZY_DEFAULT = "IGNITE_QUERY_LAZY_DEFAULT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

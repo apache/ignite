@@ -44,7 +44,7 @@ import org.jsr166.ConcurrentLinkedHashMap;
  * Tests H2RowCacheRegistry.
  */
 @SuppressWarnings({"unchecked", "ConstantConditions"})
-public class H2RowCacheSelfTest extends GridCommonAbstractTest {
+public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int ENTRIES = 1_000;
 

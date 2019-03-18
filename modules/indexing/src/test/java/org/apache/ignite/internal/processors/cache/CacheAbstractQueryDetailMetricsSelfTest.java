@@ -30,6 +30,7 @@ import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -42,7 +43,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for cache query details metrics.
  */
-public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommonAbstractTest {
+public abstract class CacheAbstractQueryDetailMetricsSelfTest extends AbstractIndexingCommonTest {
     /**  */
     private static final int QRY_DETAIL_METRICS_SIZE = 3;
 
@@ -186,7 +187,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
 
         assertTrue(lastMetrics.contains("SQL_FIELDS select * from String limit 2;"));
         assertTrue(lastMetrics.contains("SCAN A;"));
-        assertTrue(lastMetrics.contains("SQL from String;"));
+        assertTrue(lastMetrics.contains("SELECT \"A\".\"STRING\"._KEY, \"A\".\"STRING\"._VAL from String;"));
 
         cache = grid(0).context().cache().jcache("B");
 
@@ -346,19 +347,6 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
         qry.setPageSize(10);
 
         checkQueryNotFullyFetchedMetrics(cache, qry, true);
-    }
-
-    /**
-     * Test metrics for failed Scan queries.
-     *
-     * @throws Exception In case of error.
-     */
-    public void testSqlQueryFailedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
-
-        SqlQuery<Integer, String> qry = new SqlQuery<>("Long", "from Long");
-
-        checkQueryFailedMetrics(cache, qry);
     }
 
     /**

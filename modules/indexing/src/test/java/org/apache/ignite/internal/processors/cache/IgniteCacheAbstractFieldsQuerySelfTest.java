@@ -44,6 +44,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
@@ -69,7 +70,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Tests for fields queries.
  */
-public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonAbstractTest {
+public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends AbstractIndexingCommonTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

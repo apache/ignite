@@ -25,6 +25,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -39,8 +40,8 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Tests for lazy query execution.
  */
-public class LazyQuerySelfTest extends GridCommonAbstractTest {
-    /** Keys ocunt. */
+public class LazyQuerySelfTest extends AbstractIndexingCommonTest {
+    /** Keys count. */
     private static final int KEY_CNT = 200;
 
     /** Base query argument. */
