@@ -1483,7 +1483,7 @@ public class GridSqlQueryParser {
         if (ALTER_COLUMN_AFTER_COL.get(addCol) != null)
             throw new IgniteSQLException("AFTER keyword is not supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        if (ALTER_COLUMN_FIRST.get(addCol) != null)
+        if (ALTER_COLUMN_FIRST.get(addCol))
             throw new IgniteSQLException("FIRST keyword is not supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         GridSqlAlterTableAddColumn res = new GridSqlAlterTableAddColumn();
