@@ -556,14 +556,29 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             G.start(cfg);
         }
 
-        List<Integer> jvmIds = IgniteNodeRunner.killAll();
+        try {
+            List<Integer> jvmIds = IgniteNodeRunner.killAll();
 
-        if (!jvmIds.isEmpty())
-            log.info("Next processes of IgniteNodeRunner were killed: " + jvmIds);
+            if (!jvmIds.isEmpty())
+                log.info("Next processes of IgniteNodeRunner were killed: " + jvmIds);
 
-        resolveWorkDirectory();
+            resolveWorkDirectory();
 
-        beforeTestsStarted();
+            beforeTestsStarted();
+        }
+        catch (Exception | Error t) {
+            t.printStackTrace();
+
+            try {
+                tearDown();
+            }
+            catch (Exception e) {
+                log.error("Failed to tear down test after exception was thrown in beforeTestsStarted (will " +
+                    "ignore)", e);
+            }
+
+            throw t;
+        }
     }
 
     /** */
@@ -2093,7 +2108,19 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
         info(">>> Starting test: " + testDescription() + " <<<");
 
-        beforeTest();
+        try {
+            beforeTest();
+        }
+        catch (Exception | Error t) {
+            try {
+                tearDown();
+            }
+            catch (Exception e) {
+                log.error("Failed to tear down test after exception was thrown in beforeTest (will ignore)", e);
+            }
+
+            throw t;
+        }
 
         ts = System.currentTimeMillis();
     }
