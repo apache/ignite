@@ -2147,6 +2147,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                     throw e; // Cancelled.
                 }
+                catch (NodeStoppingException e) {
+                    task.onDone(e);
+
+                    return;
+                }
                 catch (Throwable e) {
                     task.onDone(e);
 
