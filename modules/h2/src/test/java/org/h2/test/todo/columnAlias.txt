@@ -1,0 +1,31 @@
+DROP TABLE TEST;
+CREATE TABLE TEST(ID INT);
+INSERT INTO TEST VALUES(1);
+INSERT INTO TEST VALUES(2);
+
+SELECT ID AS A FROM TEST WHERE A>0;
+-- Yes: HSQLDB
+-- Fail: Oracle, MS SQL Server, PostgreSQL, MySQL, H2, Derby
+
+SELECT ID AS A FROM TEST ORDER BY A;
+-- Yes: Oracle, MS SQL Server, PostgreSQL, MySQL, H2, Derby, HSQLDB
+
+SELECT ID AS A FROM TEST ORDER BY -A;
+-- Yes: Oracle, MySQL, HSQLDB
+-- Fail: MS SQL Server, PostgreSQL, H2, Derby
+
+SELECT ID AS A FROM TEST GROUP BY A;
+-- Yes: PostgreSQL, MySQL, HSQLDB
+-- Fail: Oracle, MS SQL Server, H2, Derby
+
+SELECT ID AS A FROM TEST GROUP BY -A;
+-- Yes: MySQL, HSQLDB
+-- Fail: Oracle, MS SQL Server, PostgreSQL, H2, Derby
+
+SELECT ID AS A FROM TEST GROUP BY ID HAVING A>0;
+-- Yes: MySQL, HSQLDB
+-- Fail: Oracle, MS SQL Server, PostgreSQL, H2, Derby
+
+SELECT COUNT(*) AS A FROM TEST GROUP BY ID HAVING A>0;
+-- Yes: MySQL, HSQLDB
+-- Fail: Oracle, MS SQL Server, PostgreSQL, H2, Derby

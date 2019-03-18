@@ -1,0 +1,99 @@
+# Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+# and the EPL 1.0 (http://h2database.com/html/license.html).
+# Initial Developer: H2 Group)
+
+"SECTION","TOPIC","SYNTAX","TEXT"
+"Grammar","Query","
+SELECT { * | { column [ , ... ] } }  FROM { selector [ join ... ] }
+[ WHERE constraint ] [ ORDER BY { ordering [ , ... ] } ]
+","
+"
+
+"Grammar","Column","
+{ [ selectorName . ] propertyName [ AS columnName ] } | { selectorName . * }
+","
+"
+
+"Grammar","Selector","
+nodeTypeName [ AS selectorName ]
+","
+"
+
+"Grammar","Join","
+{ INNER | { LEFT | RIGHT } OUTER } JOIN rightSelector ON
+{ selectorName . propertyName = joinSelectorName . joinPropertyName }
+    | { ISSAMENODE( selectorName , joinSelectorName [ , selectorPathName ] ) }
+    | { ISCHILDNODE( childSelectorName , parentSelectorName ) }
+    | { ISDESCENDANTNODE( descendantSelectorName , ancestorSelectorName ) }
+","
+"
+
+"Grammar","Constraint","
+andCondition [ { OR andCondition } [...] ]
+","
+"
+
+"Grammar","And Condition","
+condition [ { AND condition } [...] ]
+","
+"
+
+"Grammar","Condition","
+comparison | NOT constraint | ( constraint )
+    | [ selectorName . ] propertyName IS [ NOT ] NULL
+    | CONTAINS( { { [ selectorName . ] propertyName } | { selectorName . * } } , fulltextSearchExpression )
+    | { ISSAMENODE | ISCHILDNODE | ISDESCENDANTNODE } (  [ selectorName , ] PathName )
+","
+"
+
+"Grammar","Comparison","
+dynamicOperand { = | <> | < | <= | > | >= | LIKE } staticOperand
+","
+"
+
+"Grammar","Fulltext Search Expression","
+' anythingExceptSingleQuote ' | $ bindVariableName
+","
+"
+
+"Grammar","Static Operand","
+literal
+    | $ bindVariableName
+    | CAST ( literal AS { STRING | BINARY | DATE | LONG | DOUBLE | DECIMAL | BOOLEAN | NAME | PATH | REFERENCE | WEAKREFERENCE | URI } )
+","
+"
+
+"Grammar","Literal","
+' anythingExceptSingleQuote '
+    | "" anythingExceptDoubleQuote ""
+    | numberLiteral
+","
+"
+
+"Grammar","Number Literal","
+[ + | - ] { { number [ . number ] } | { . number } } [ E [ + | - ] expNumber [...] ] ]
+","
+"
+
+"Grammar","Number","
+0-9 [...]
+","
+"
+
+"Grammar","Dynamic Operand","
+[ selectorName . ] propertyName
+    | LENGTH( [ selectorName . ] propertyName  )
+    | { NAME | LOCALNAME | SCORE } ( [ selectorName ] )
+    | { LOWER | UPPER } ( dynamicOperand )
+","
+"
+
+"Grammar","Ordering","
+simpleName [ ASC | DESC ]
+","
+"
+
+"Grammar","Name","
+simpleName | '[' quotedName ']'
+","
+"

@@ -1,0 +1,45 @@
+/*
+ * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * and the EPL 1.0 (http://h2database.com/html/license.html).
+ * Initial Developer: H2 Group
+ */
+package org.h2.dev.mail;
+import java.util.Properties;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.Message.RecipientType;
+import javax.mail.internet.MimeMessage;
+
+/**
+ * Utility class to send a mail over a fixed gmail account.
+ */
+public class SendMail {
+    // http://repo2.maven.org/maven2/javax/mail/mail/1.4.1/mail-1.4.1.jar
+    // http://repo2.maven.org/maven2/javax/activation/activation/1.1/activation-1.1.jar
+
+    public static void main(String[] args) throws Exception {
+        String to = "thomas.tom.mueller" + "@" + "gmail.com";
+        sendMailOverGmail("", to, "Test", "Test Mail");
+    }
+
+    static void sendMailOverGmail(String password, String to, String subject, String body) throws Exception {
+        String username = "testing1212123" + "@" + "gmail.com";
+        String host = "smtp.gmail.com";
+        Properties prop = new Properties();
+        prop.put("mail.smtps.auth", "true");
+        Session session = Session.getDefaultInstance(prop);
+        session.setProtocolForAddress("rfc822", "smtps");
+        session.setDebug(true);
+        MimeMessage msg = new MimeMessage(session);
+        msg.setRecipients(RecipientType.TO, to);
+        msg.setSubject(subject);
+        msg.setText(body);
+        Transport t = session.getTransport("smtps");
+        try {
+            t.connect(host, username, password);
+            t.sendMessage(msg, msg.getAllRecipients());
+        } finally {
+            t.close();
+        }
+    }
+}

@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0, Version 1.0,
+and under the Eclipse Public License, Version 1.0
+Initial Developer: H2 Group
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head><meta http-equiv="Content-Type" content="text/html;charset=utf-8" /><title>
+JCR 2.0 SQL-2 Grammar
+</title><link rel="stylesheet" type="text/css" href="stylesheet.css" />
+</head><body>
+
+<h1>JCR 2.0 SQL-2 Grammar</h1>
+<!-- syntax-start
+<p class="notranslate">
+<c:forEach var="item" items="grammar">
+    <a href="#${item.link}">${item.topic}</a><br />
+</c:forEach>
+</p>
+syntax-end -->
+<!-- railroad-start -->
+<table class="notranslate index">
+    <tr>
+        <td class="index">
+            <c:forEach var="item" items="grammar-0">
+                <a href="#${item.link}" >${item.topic}</a><br />
+            </c:forEach>
+        </td><td class="index">
+            <c:forEach var="item" items="grammar-1">
+                <a href="#${item.link}" >${item.topic}</a><br />
+            </c:forEach>
+        </td><td class="index">
+            <c:forEach var="item" items="grammar-2">
+                <a href="#${item.link}" >${item.topic}</a><br />
+            </c:forEach>
+        </td>
+    </tr>
+</table>
+<!-- railroad-end -->
+
+<hr />
+<p>
+These railroad diagrams are based on the
+<a href="http://www.day.com/specs/jcr/2.0/6_Query.html#6.6.2%20JCR-SQL2%20Notation">JCR 2.0 specification</a>.
+</p><p>
+The diagrams are created with a small <a href="Create.java">Java program</a>
+and this <a href="help.csv">BNF</a>. The program uses the BNF parser / converter
+of the the <a href="http://www.h2database.com">H2 database engine</a>.
+</p><p>
+Please send feedback to the <a href="http://jackrabbit.apache.org/mailing-lists.html">Jackrabbit User List</a>.
+</p>
+
+<c:forEach var="item" items="grammar">
+<hr />
+<h3 id="${item.link}" class="notranslate">${item.topic}</h3>
+<!-- railroad-start -->
+${item.railroad}
+<!-- railroad-end -->
+<!-- syntax-start
+<pre>
+${item.syntax}
+</pre>
+syntax-end -->
+<p>${item.text}</p>
+<!--
+<p>Example:</p>
+<p class="notranslate">
+${item.example}</p>
+-->
+</c:forEach>
+
+</body></html>
