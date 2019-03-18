@@ -73,6 +73,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.OLD_METASTORE_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
@@ -241,7 +242,11 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         if (!empty) {
             freeList = new DefaultFreeList(METASTORAGE_CACHE_ID, "metastorage",
                 regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
-                reuseListRoot.isAllocated());
+                reuseListRoot.isAllocated()) {
+                @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                    return pageMem.allocatePage(grpId, partId, FLAG_DATA);
+                }
+            };
 
             MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
 
