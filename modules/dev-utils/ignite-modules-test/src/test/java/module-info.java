@@ -15,16 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
-
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_GETALL_AS_ARRAY;
-
-/**
- * Test for being unaffected by {@link IgniteSystemProperties#IGNITE_REST_GETALL_AS_ARRAY}.
- */
-@WithSystemProperty(key = IGNITE_REST_GETALL_AS_ARRAY, value = "true")
-public class RedisProtocolGetAllAsArrayTest extends RedisProtocolStringSelfTest {
+module ignite_modules_test {
+    requires ignite.core;
+    requires junit;
 }
