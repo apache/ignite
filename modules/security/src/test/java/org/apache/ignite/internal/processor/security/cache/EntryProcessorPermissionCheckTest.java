@@ -76,13 +76,13 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
      * @param node Node.
      */
     private void invoke(Ignite node) {
-        assertAllowed(node, CACHE_NAME,
+        assertAllowed(node,
             (t) -> node.cache(CACHE_NAME).invoke(
                 t.getKey(), processor(t)
             )
         );
 
-        assertForbidden(node, CACHE_NAME,
+        assertForbidden(node,
             (t) -> node.cache(FORBIDDEN_CACHE).invoke(
                 t.getKey(), processor(t)
             )
@@ -93,13 +93,13 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
      * @param node Node.
      */
     private void invokeAll(Ignite node) {
-        assertAllowed(node, CACHE_NAME,
+        assertAllowed(node,
             (t) -> node.cache(CACHE_NAME).invokeAll(
                 singleton(t.getKey()), processor(t)
             )
         );
 
-        assertForbidden(node, CACHE_NAME,
+        assertForbidden(node,
             (t) -> node.cache(FORBIDDEN_CACHE).invokeAll(
                 singleton(t.getKey()), processor(t)
             )
@@ -110,13 +110,13 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
      * @param node Node.
      */
     private void invokeAsync(Ignite node) {
-        assertAllowed(node, CACHE_NAME,
+        assertAllowed(node,
             (t) -> node.cache(CACHE_NAME).invokeAsync(
                 t.getKey(), processor(t)
             ).get()
         );
 
-        assertForbidden(node, CACHE_NAME,
+        assertForbidden(node,
             (t) -> node.cache(FORBIDDEN_CACHE).invokeAsync(
                 t.getKey(), processor(t)
             ).get()
@@ -127,13 +127,13 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
      * @param node Node.
      */
     private void invokeAsyncAll(Ignite node) {
-        assertAllowed(node, CACHE_NAME,
+        assertAllowed(node,
             (t) -> node.cache(CACHE_NAME).invokeAllAsync(
                 singleton(t.getKey()), processor(t)
             ).get()
         );
 
-        assertForbidden(node, CACHE_NAME,
+        assertForbidden(node,
             (t) -> node.cache(FORBIDDEN_CACHE).invokeAllAsync(
                 singleton(t.getKey()), processor(t)
             ).get()
@@ -154,18 +154,18 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
     /**
      * @param c Consumer.
      */
-    protected void assertAllowed(Ignite validator, String cacheName, Consumer<T2<String, Integer>> c) {
+    protected void assertAllowed(Ignite validator, Consumer<T2<String, Integer>> c) {
         T2<String, Integer> entry = entry();
 
         c.accept(entry);
 
-        assertThat(validator.cache(cacheName).get(entry.getKey()), is(entry.getValue()));
+        assertThat(validator.cache(CACHE_NAME).get(entry.getKey()), is(entry.getValue()));
     }
 
     /**
      * @param c Consumer.
      */
-    protected void assertForbidden(Ignite validator, String cacheName, Consumer<T2<String, Integer>> c) {
+    protected void assertForbidden(Ignite validator, Consumer<T2<String, Integer>> c) {
         T2<String, Integer> entry = entry();
 
         try {
@@ -177,6 +177,6 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
             assertThat(X.cause(e, SecurityException.class), notNullValue());
         }
 
-        assertThat(validator.cache(cacheName).get(entry.getKey()), nullValue());
+        assertThat(validator.cache(CACHE_NAME).get(entry.getKey()), nullValue());
     }
 }

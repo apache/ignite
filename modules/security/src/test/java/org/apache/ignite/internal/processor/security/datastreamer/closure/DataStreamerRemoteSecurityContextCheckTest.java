@@ -28,7 +28,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.stream.StreamVisitor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -105,12 +104,10 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
         runAndCheck(
             secSubjectId(name),
             () -> compute(grid(name), nodeId(SRV_FEATURE_CALL)).broadcast(
-                new IgniteRunnable() {
-                    @Override public void run() {
-                        register();
+                () -> {
+                    register();
 
-                        dataStreamer(Ignition.localIgnite());
-                    }
+                    dataStreamer(Ignition.localIgnite());
                 }
             )
         );

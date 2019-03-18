@@ -156,65 +156,45 @@ public class DistributedClosureRemoteSecurityContextCheckTest
      */
     private List<IgniteRunnable> featureRuns() {
         return Arrays.asList(
-            new IgniteRunnable() {
-                @Override public void run() {
-                    compute(Ignition.localIgnite(), featureTransitions())
-                        .broadcast((IgniteRunnable)new CommonClosure(endpoints()));
+            () -> compute(Ignition.localIgnite(), featureTransitions())
+                .broadcast((IgniteRunnable)new CommonClosure(endpoints())),
+            () -> compute(Ignition.localIgnite(), featureTransitions())
+                .broadcastAsync((IgniteRunnable)new CommonClosure(endpoints()))
+                .get(),
+            () -> {
+                for (UUID id : featureTransitions()) {
+                    compute(Ignition.localIgnite(), id)
+                        .call(new CommonClosure(endpoints()));
                 }
             },
-            new IgniteRunnable() {
-                @Override public void run() {
-                    compute(Ignition.localIgnite(), featureTransitions())
-                        .broadcastAsync((IgniteRunnable)new CommonClosure(endpoints()))
-                        .get();
+            () -> {
+                for (UUID id : featureTransitions()) {
+                    compute(Ignition.localIgnite(), id)
+                        .callAsync(new CommonClosure(endpoints())).get();
                 }
             },
-            new IgniteRunnable() {
-                @Override public void run() {
-                    for (UUID id : featureTransitions()) {
-                        compute(Ignition.localIgnite(), id)
-                            .call(new CommonClosure(endpoints()));
-                    }
+            () -> {
+                for (UUID id : featureTransitions()) {
+                    compute(Ignition.localIgnite(), id)
+                        .run(new CommonClosure(endpoints()));
                 }
             },
-            new IgniteRunnable() {
-                @Override public void run() {
-                    for (UUID id : featureTransitions()) {
-                        compute(Ignition.localIgnite(), id)
-                            .callAsync(new CommonClosure(endpoints())).get();
-                    }
+            () -> {
+                for (UUID id : featureTransitions()) {
+                    compute(Ignition.localIgnite(), id)
+                        .runAsync(new CommonClosure(endpoints())).get();
                 }
             },
-            new IgniteRunnable() {
-                @Override public void run() {
-                    for (UUID id : featureTransitions()) {
-                        compute(Ignition.localIgnite(), id)
-                            .run(new CommonClosure(endpoints()));
-                    }
+            () -> {
+                for (UUID id : featureTransitions()) {
+                    compute(Ignition.localIgnite(), id)
+                        .apply(new CommonClosure(endpoints()), new Object());
                 }
             },
-            new IgniteRunnable() {
-                @Override public void run() {
-                    for (UUID id : featureTransitions()) {
-                        compute(Ignition.localIgnite(), id)
-                            .runAsync(new CommonClosure(endpoints())).get();
-                    }
-                }
-            },
-            new IgniteRunnable() {
-                @Override public void run() {
-                    for (UUID id : featureTransitions()) {
-                        compute(Ignition.localIgnite(), id)
-                            .apply(new CommonClosure(endpoints()), new Object());
-                    }
-                }
-            },
-            new IgniteRunnable() {
-                @Override public void run() {
-                    for (UUID id : featureTransitions()) {
-                        compute(Ignition.localIgnite(), id)
-                            .applyAsync(new CommonClosure(endpoints()), new Object()).get();
-                    }
+            () -> {
+                for (UUID id : featureTransitions()) {
+                    compute(Ignition.localIgnite(), id)
+                        .applyAsync(new CommonClosure(endpoints()), new Object()).get();
                 }
             }
         );

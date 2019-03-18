@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processor.security.cache;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationPermissionCheckTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,43 +64,28 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
                 .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT, CACHE_REMOVE)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), isClient);
 
-        node.cache(CACHE_NAME).put("key", "value");
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).put("key", "value"));
+        for (Consumer<IgniteCache<String, String>> c : consumers()) {
+            c.accept(node.cache(CACHE_NAME));
 
-        node.cache(CACHE_NAME).putAll(singletonMap("key", "value"));
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).putAll(singletonMap("key", "value")));
+            forbiddenRun(() -> c.accept(node.cache(FORBIDDEN_CACHE)));
+        }
+    }
 
-        node.cache(CACHE_NAME).get("key");
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).get("key"));
-
-        node.cache(CACHE_NAME).getAll(Collections.singleton("key"));
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).getAll(Collections.singleton("key")));
-
-        node.cache(CACHE_NAME).containsKey("key");
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).containsKey("key"));
-
-        node.cache(CACHE_NAME).remove("key");
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).remove("key"));
-
-        node.cache(CACHE_NAME).removeAll(Collections.singleton("key"));
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).removeAll(Collections.singleton("key")));
-
-        node.cache(CACHE_NAME).clear();
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).clear());
-
-        node.cache(CACHE_NAME).replace("key", "value");
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).replace("key", "value"));
-
-        node.cache(CACHE_NAME).putIfAbsent("key", "value");
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).putIfAbsent("key", "value"));
-
-        node.cache(CACHE_NAME).getAndPut("key", "value");
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).getAndPut("key", "value"));
-
-        node.cache(CACHE_NAME).getAndRemove("key");
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).getAndRemove("key"));
-
-        node.cache(CACHE_NAME).getAndReplace("key", "value");
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).getAndReplace("key", "value"));
+    private List<Consumer<IgniteCache<String, String>>> consumers() {
+        return Arrays.asList(
+            (c) -> c.put("key", "value"),
+            (c) -> c.putAll(singletonMap("key", "value")),
+            (c) -> c.get("key"),
+            (c) -> c.getAll(Collections.singleton("key")),
+            (c) -> c.containsKey("key"),
+            (c) -> c.remove("key"),
+            (c) -> c.removeAll(Collections.singleton("key")),
+            IgniteCache::clear,
+            (c) -> c.replace("key", "value"),
+            (c) -> c.putIfAbsent("key", "value"),
+            (c) -> c.getAndPut("key", "value"),
+            (c) -> c.getAndRemove("key"),
+            (c) -> c.getAndReplace("key", "value")
+        );
     }
 }

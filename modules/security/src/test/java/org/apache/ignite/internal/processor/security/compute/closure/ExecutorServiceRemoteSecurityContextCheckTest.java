@@ -113,21 +113,19 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
     private void runAndCheck(IgniteEx initiator) {
         runAndCheck(secSubjectId(initiator),
             () -> compute(initiator, featureCalls()).broadcast(
-                new IgniteRunnable() {
-                    @Override public void run() {
-                        register();
+                () -> {
+                    register();
 
-                        Ignite loc = Ignition.localIgnite();
+                    Ignite loc = Ignition.localIgnite();
 
-                        for (UUID nodeId : featureTransitions()) {
-                            ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
+                    for (UUID nodeId : featureTransitions()) {
+                        ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
 
-                            try {
-                                svc.submit(new TestIgniteRunnable(endpoints())).get();
-                            }
-                            catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
+                        try {
+                            svc.submit(new TestIgniteRunnable(endpoints())).get();
+                        }
+                        catch (Exception e) {
+                            throw new RuntimeException(e);
                         }
                     }
                 }

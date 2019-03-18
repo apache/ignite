@@ -108,12 +108,10 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
             runAndCheck(
                 secSubjectId,
                 () -> compute(initiator, nodeId(SRV_FEATURE_CALL)).broadcast(
-                    new IgniteRunnable() {
-                        @Override public void run() {
-                            register();
+                    () -> {
+                        register();
 
-                            r.run();
-                        }
+                        r.run();
                     }
                 )
             );

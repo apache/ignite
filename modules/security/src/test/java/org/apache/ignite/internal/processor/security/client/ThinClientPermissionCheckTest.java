@@ -35,13 +35,14 @@ import org.apache.ignite.internal.processor.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processor.security.TestSecurityData;
 import org.apache.ignite.internal.processor.security.TestSecurityPluginConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonMap;
+import static org.apache.ignite.internal.util.lang.GridFunc.t;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
@@ -162,10 +163,10 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
      */
     @Test
     public void testCacheSinglePermOperations() throws Exception {
-        for (T2<Consumer<IgniteClient>, String> t : consumers(CACHE))
+        for (IgniteBiTuple<Consumer<IgniteClient>, String> t : consumers(CACHE))
             executeOperation(CLIENT, t.get1());
 
-        for (T2<Consumer<IgniteClient>, String> t : consumers(FORBIDDEN_CACHE))
+        for (IgniteBiTuple<Consumer<IgniteClient>, String> t : consumers(FORBIDDEN_CACHE))
             executeForbiddenOperation(t);
     }
 
@@ -181,8 +182,8 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         executeOperation(CLIENT_CACHE_TASK_OPER, c -> c.cache(CACHE).removeAll());
         executeOperation(CLIENT_CACHE_TASK_OPER, c -> c.cache(CACHE).clear());
 
-        executeForbiddenOperation(biTuple(c -> c.cache(CACHE).removeAll(), "removeAll"));
-        executeForbiddenOperation(biTuple(c -> c.cache(CACHE).clear(), "clear"));
+        executeForbiddenOperation(t(c -> c.cache(CACHE).removeAll(), "removeAll"));
+        executeForbiddenOperation(t(c -> c.cache(CACHE).clear(), "clear"));
     }
 
     /**
@@ -200,26 +201,26 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             assertThat(sysPrmClnt.cacheNames().contains(DYNAMIC_CACHE), is(false));
         }
 
-        executeForbiddenOperation(biTuple(c -> c.createCache(DYNAMIC_CACHE), "createCache"));
-        executeForbiddenOperation(biTuple(c -> c.destroyCache(CACHE), "destroyCache"));
+        executeForbiddenOperation(t(c -> c.createCache(DYNAMIC_CACHE), "createCache"));
+        executeForbiddenOperation(t(c -> c.destroyCache(CACHE), "destroyCache"));
     }
 
     /**
      * @param cacheName Cache name.
      */
-    private Collection<T2<Consumer<IgniteClient>, String>> consumers(final String cacheName) {
+    private Collection<IgniteBiTuple<Consumer<IgniteClient>, String>> consumers(final String cacheName) {
         return Arrays.asList(
-            biTuple(c -> c.cache(cacheName).put("key", "value"), "put"),
-            biTuple(c -> c.cache(cacheName).putAll(singletonMap("key", "value")), "putAll"),
-            biTuple(c -> c.cache(cacheName).get("key"), "get)"),
-            biTuple(c -> c.cache(cacheName).getAll(Collections.singleton("key")), "getAll"),
-            biTuple(c -> c.cache(cacheName).containsKey("key"), "containsKey"),
-            biTuple(c -> c.cache(cacheName).remove("key"), "remove"),
-            biTuple(c -> c.cache(cacheName).replace("key", "value"), "replace"),
-            biTuple(c -> c.cache(cacheName).putIfAbsent("key", "value"), "putIfAbsent"),
-            biTuple(c -> c.cache(cacheName).getAndPut("key", "value"), "getAndPut"),
-            biTuple(c -> c.cache(cacheName).getAndRemove("key"), "getAndRemove"),
-            biTuple(c -> c.cache(cacheName).getAndReplace("key", "value"), "getAndReplace")
+            t(c -> c.cache(cacheName).put("key", "value"), "put"),
+            t(c -> c.cache(cacheName).putAll(singletonMap("key", "value")), "putAll"),
+            t(c -> c.cache(cacheName).get("key"), "get)"),
+            t(c -> c.cache(cacheName).getAll(Collections.singleton("key")), "getAll"),
+            t(c -> c.cache(cacheName).containsKey("key"), "containsKey"),
+            t(c -> c.cache(cacheName).remove("key"), "remove"),
+            t(c -> c.cache(cacheName).replace("key", "value"), "replace"),
+            t(c -> c.cache(cacheName).putIfAbsent("key", "value"), "putIfAbsent"),
+            t(c -> c.cache(cacheName).getAndPut("key", "value"), "getAndPut"),
+            t(c -> c.cache(cacheName).getAndRemove("key"), "getAndRemove"),
+            t(c -> c.cache(cacheName).getAndReplace("key", "value"), "getAndReplace")
         );
     }
 
@@ -233,17 +234,9 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     }
 
     /**
-     * @param c Consumer.
-     * @param opName Operation name.
-     */
-    private T2<Consumer<IgniteClient>, String> biTuple(Consumer<IgniteClient> c, String opName) {
-        return new T2<>(c, opName);
-    }
-
-    /**
      * @param t Contains consumer that executes an operation and the name of this operation.
      */
-    private void executeForbiddenOperation(T2<Consumer<IgniteClient>, String> t) {
+    private void executeForbiddenOperation(IgniteBiTuple<Consumer<IgniteClient>, String> t) {
         try (IgniteClient client = startClient(CLIENT)) {
             t.get1().accept(client);
 

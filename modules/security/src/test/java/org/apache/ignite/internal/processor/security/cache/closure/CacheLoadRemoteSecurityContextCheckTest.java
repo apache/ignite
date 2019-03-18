@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemot
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -126,12 +125,10 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
         runAndCheck(
             secSubjectId(name),
             () -> compute(grid(name), nodeId(SRV_FEATURE_CALL)).broadcast(
-                new IgniteRunnable() {
-                    @Override public void run() {
-                        register();
+                () -> {
+                    register();
 
-                        loadCache(Ignition.localIgnite());
-                    }
+                    loadCache(Ignition.localIgnite());
                 }
             )
         );

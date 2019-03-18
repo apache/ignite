@@ -34,7 +34,6 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -120,28 +119,24 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
     private void runAndCheck(IgniteEx initiator) {
         runAndCheck(secSubjectId(initiator),
             () -> compute(initiator, featureCalls()).broadcast(
-                new IgniteRunnable() {
-                    @Override public void run() {
-                        register();
+                () -> {
+                    register();
 
-                        Ignition.localIgnite().compute().execute(
-                            new TestComputeTask(featureTransitions(), endpoints()), 0
-                        );
-                    }
+                    Ignition.localIgnite().compute().execute(
+                        new TestComputeTask(featureTransitions(), endpoints()), 0
+                    );
                 }
             )
         );
 
         runAndCheck(secSubjectId(initiator),
             () -> compute(initiator, featureCalls()).broadcast(
-                new IgniteRunnable() {
-                    @Override public void run() {
-                        register();
+                () -> {
+                    register();
 
-                        Ignition.localIgnite().compute().executeAsync(
-                            new TestComputeTask(featureTransitions(), endpoints()), 0
-                        ).get();
-                    }
+                    Ignition.localIgnite().compute().executeAsync(
+                        new TestComputeTask(featureTransitions(), endpoints()), 0
+                    ).get();
                 }
             )
         );

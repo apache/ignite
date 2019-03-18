@@ -123,26 +123,22 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
      */
     private IgniteRunnable[] runnables() {
         return new IgniteRunnable[] {
-            new IgniteRunnable() {
-                @Override public void run() {
-                    register();
+            () -> {
+                register();
 
-                    Ignition.localIgnite().cache(CACHE_NAME).query(
-                        new ScanQuery<>(
-                            new CommonClosure(SRV_FEATURE_TRANSITION, endpoints())
-                        )
-                    ).getAll();
-                }
-            },
-            new IgniteRunnable() {
-                @Override public void run() {
-                    register();
-
-                    Ignition.localIgnite().cache(CACHE_NAME).query(
-                        new ScanQuery<>((k, v) -> true),
+                Ignition.localIgnite().cache(CACHE_NAME).query(
+                    new ScanQuery<>(
                         new CommonClosure(SRV_FEATURE_TRANSITION, endpoints())
-                    ).getAll();
-                }
+                    )
+                ).getAll();
+            },
+            () -> {
+                register();
+
+                Ignition.localIgnite().cache(CACHE_NAME).query(
+                    new ScanQuery<>((k, v) -> true),
+                    new CommonClosure(SRV_FEATURE_TRANSITION, endpoints())
+                ).getAll();
             }
         };
     }
