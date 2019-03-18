@@ -48,7 +48,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -96,7 +95,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsStateValidator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -132,6 +130,8 @@ import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.IgniteFeatures.LOCAL_AFFINITY_RECALCULATION_EXCHANGE;
+import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -355,6 +355,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
     private T2<Long, UUID> discoveryLag;
+
+    /** Flag indicates that affinity can be recalculated locally. */
+    private volatile boolean isLocalAffinityRecalculation;
 
     /**
      * @param cctx Cache context.
@@ -617,7 +620,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert firstDiscoEvt0 != null;
 
-        if (isLocalAffinityRecalculationExchange() && centralizedAff)
+        if (centralizedAff && isLocalAffinityRecalculation)
             return false;
 
         return firstDiscoEvt0.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
@@ -744,9 +747,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             boolean crdNode = crd != null && crd.isLocal();
 
-            boolean locAffRecalExchange = isLocalAffinityRecalculationExchange();
+            isLocalAffinityRecalculation = isLocalAffinityRecalculationExchange();
 
-            exchCtx = new ExchangeContext(crdNode, this, locAffRecalExchange);
+            exchCtx = new ExchangeContext(crdNode, this, isLocalAffinityRecalculation);
 
             cctx.exchange().exchangerBlockingSectionBegin();
 
@@ -839,7 +842,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (exchId.isLeft())
                         onLeft();
                 }
-                else if (locAffRecalExchange) {
+                else if (isLocalAffinityRecalculation) {
                     onServerNodeEvent(crdNode);
 
                     exchange = ExchangeType.LOCAL_AFFINITY_RECALCULATION;
@@ -932,16 +935,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Local affinity recalculation exchange. Topology/affinity change behavior in case of {@code
+     * LOCAL_AFFINITY_RECALCULATION} mimics centralizedAff=true flow. The only difference is that {@code
+     * assignmentChange} map will be always empty - that's why there's no need to collect it in distributed way.
      *
+     * @throws IgniteCheckedException If failed.
      */
     private void localAffinityRecalculationExchange() throws IgniteCheckedException {
         assert centralizedAff;
 
-        // Topology/affinity change behavior in case of LOCAL_AFFINITY_RECALCULATION mimics centralizedAff=true flow.
-        // The only difference is that assignmentChange map will be always empty -
-        // that's why there's no need to collect it in distributed way.
-        cctx.affinity().onExchangeChangeAffinityMessage(this, crd != null && crd.isLocal(),
-            new CacheAffinityChangeMessage(exchId, null, Collections.emptyMap()));
+        cctx.affinity().onLocalAffinityRecalculation(this, crd != null && crd.isLocal());
 
         for (CacheGroupDescriptor desc : cctx.affinity().cacheGroups().values()) {
             if (desc.config().getCacheMode() == CacheMode.LOCAL)
@@ -955,32 +958,40 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             top.beforeExchange(this, true, false);
         }
 
+        timeBag.finishGlobalStage("Local affinity recalculation");
+
         initDone();
 
         onDone(initialVersion());
     }
 
     /**
+     * Checks if affinity can be recalculated locally without distributed exchange.
      *
+     * @return {@code True} if affinity can be recalculated locally.
      */
     private boolean isLocalAffinityRecalculationExchange() {
-        Set<Object> aliveBltConsIds = firstEvtDiscoCache.aliveBaselineNodes().stream()
-            .map(ClusterNode::consistentId)
-            .collect(Collectors.toSet());
+        if (!allNodesSupports(firstEvtDiscoCache.allNodes(), LOCAL_AFFINITY_RECALCULATION_EXCHANGE))
+            return false;
 
-        Set<Object> bltConsIds = firstEvtDiscoCache.baselineNodes().stream()
-            .map(BaselineNode::consistentId)
-            .collect(Collectors.toSet());
+        // Case for baseline node leave.
+        if ((firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED)
+            && firstEvtDiscoCache.baselineNodes() != null) {
+            // Check that there are no in-memory caches.
+            // TODO: improvement: they are only on left node.
+            if (isInMemoryCachesConfigured())
+                return false;
 
-        bltConsIds.removeAll(aliveBltConsIds);
+            // Check that there are no moving partitions.
+            // TODO: improvement: they are only on left node.
+            if (!cctx.affinity().isLastAffinityIdeal(crd != null && crd.isLocal()))
+                return false;
 
-        // todo add check that there's no moving partitions in cluster (improvement: they are only on left node)
-        // todo add check that backup factor of all caches > 1 (improvement: check that there are no lost partitions)
-        // todo add check that there's no in-memory caches
+            return firstEvtDiscoCache.baselineNodes().stream()
+                .anyMatch(node -> node.consistentId().equals(firstDiscoEvt.eventNode().consistentId()));
+        }
 
-        return (firstDiscoEvt.type() == EVT_NODE_FAILED || firstDiscoEvt.type() == EVT_NODE_LEFT) &&
-            bltConsIds.size() == 1 && bltConsIds.contains(firstDiscoEvt.eventNode().consistentId());
-        // todo support not only leave of first BLT node
+        return false;
     }
 
     /**
@@ -2838,7 +2849,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 if (finishState0 == null) {
-                    assert firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isClient() : this;
+                    assert firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isClient()
+                        || centralizedAff : fut;
 
                     ClusterNode node = cctx.node(nodeId);
 
@@ -3294,6 +3306,24 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         // Currently the rollback process is supported for dynamically started caches only.
         return firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && dynamicCacheStartExchange();
+    }
+
+    /**
+     * Checks that in-memory caches configured.
+     *
+     * @return {@code true} true if in-memory caches configured.
+     */
+    private boolean isInMemoryCachesConfigured() {
+        try {
+            return !U.doInParallel(
+                cctx.kernalContext().getSystemExecutorService(),
+                nonLocalCacheGroupDescriptors(),
+                grpDesc -> CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration())
+            ).stream().allMatch(Boolean::valueOf);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to check caches configuration", e);
+        }
     }
 
     /**

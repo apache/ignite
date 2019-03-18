@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -1066,6 +1067,50 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         grpHolders.clear();
 
         cachesRegistry.unregisterAll();
+    }
+
+    /**
+     * Called on local affinity recalculation exchange.
+     *
+     * @param exchFut Exchange future.
+     * @param crd Coordinator flag.
+     */
+    public void onLocalAffinityRecalculation(GridDhtPartitionsExchangeFuture exchFut, boolean crd) {
+        AffinityTopologyVersion topVer = exchFut.initialVersion();
+
+        Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
+
+        forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
+            @Override public void applyx(GridAffinityAssignmentCache aff) {
+                List<List<ClusterNode>> newAssignment = new ArrayList<>(aff.idealAssignment());
+
+                aff.initialize(topVer, cachedAssignment(aff, newAssignment, affCache));
+
+                exchFut.timeBag().finishLocalStage("Affinity locally recalculated by exchange " +
+                    "[grp=" + aff.cacheOrGroupName() + "]");
+            }
+        });
+    }
+
+    /**
+     * Checks that last initialized affinity is ideal.
+     *
+     * @param crd Coordinator flag.
+     * @return {@code true} true if last initialized affinity is ideal.
+     */
+    public boolean isLastAffinityIdeal(boolean crd) {
+        AtomicBoolean ideal = new AtomicBoolean(true);
+
+        forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
+            @Override public void applyx(GridAffinityAssignmentCache aff) {
+                AffinityAssignment assign = aff.readyAffinity(aff.lastVersion());
+
+                if (!assign.idealAssignment().equals(assign.assignment()))
+                    ideal.set(false);
+            }
+        });
+
+        return ideal.get();
     }
 
     /**

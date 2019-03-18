@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxSalvageSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedFailoverSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteBaselineNodeLeaveExchangeTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteBaselineNodesRestartExchangeTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineDownCachePutAllFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCachePutAllFailoverTest;
 import org.junit.runner.RunWith;
@@ -57,7 +59,10 @@ import org.junit.runners.Suite;
     //suite.addTest(new JUnit4TestAdapter(IgniteStableBaselineCachePutAllFailoverTest.class,
     //suite.addTest(new JUnit4TestAdapter(IgniteStableBaselineCacheRemoveFailoverTest.class,
     IgniteChangingBaselineDownCachePutAllFailoverTest.class,
-    IgniteChangingBaselineUpCachePutAllFailoverTest.class
+    IgniteChangingBaselineUpCachePutAllFailoverTest.class,
+
+    IgniteBaselineNodeLeaveExchangeTest.class,
+    IgniteBaselineNodesRestartExchangeTest.class
 })
 public class IgniteCacheFailoverTestSuite2 {
 }
