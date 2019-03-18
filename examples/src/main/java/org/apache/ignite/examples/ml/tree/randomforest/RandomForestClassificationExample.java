@@ -30,6 +30,8 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
@@ -79,10 +81,8 @@ public class RandomForestClassificationExample {
 
             System.out.println(">>> Configured trainer: " + classifier.getClass().getSimpleName());
 
-            ModelsComposition randomForestMdl = classifier.fit(ignite, dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
-            );
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
+            ModelsComposition randomForestMdl = classifier.fit(ignite, dataCache, vectorizer);
 
             System.out.println(">>> Trained model: " + randomForestMdl.toString(true));
 

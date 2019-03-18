@@ -108,7 +108,7 @@ public class MLPTrainerExample {
             );
 
             // Train neural network and get multilayer perceptron model.
-            LabeledDummyVectorizer<Integer, LabeledVector<double[]>, double[]> vectorizer = new LabeledDummyVectorizer<>();
+            LabeledDummyVectorizer<Integer, double[]> vectorizer = new LabeledDummyVectorizer<>();
             IgniteBiFunction<Integer, LabeledVector<double[]>, Vector> fe = CompositionUtils.asFeatureExtractor(vectorizer);
             IgniteBiFunction<Integer, LabeledVector<double[]>, double[]> le = CompositionUtils.asLabelExtractor(vectorizer);
 

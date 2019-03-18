@@ -17,9 +17,14 @@
 
 package org.apache.ignite.examples.ml.selection.scoring;
 
+import java.io.FileNotFoundException;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.composition.CompositionUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -28,9 +33,6 @@ import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.FileNotFoundException;
-import java.util.Map;
 
 /**
  * Run kNN multi-class classification trainer ({@link KNNClassificationTrainer}) over distributed dataset.
@@ -58,8 +60,9 @@ public class MultipleMetricsExample {
 
             SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer();
 
-            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-            IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
+            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
+            IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
 
             SVMLinearClassificationModel mdl = trainer.fit(
                 ignite,

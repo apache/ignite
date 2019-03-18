@@ -24,6 +24,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -63,8 +64,7 @@ public class GDBOnTreesRegressionTrainerExample {
             Model<Vector, Double> mdl = trainer.fit(
                 ignite,
                 trainingSet,
-                (k, v) -> VectorUtils.of(v[0]),
-                (k, v) -> v[1]
+                new ArraysVectorizer<Integer>().labeled(1)
             );
 
             System.out.println(">>> ---------------------------------");
@@ -101,7 +101,7 @@ public class GDBOnTreesRegressionTrainerExample {
      */
     @NotNull private static IgniteCache<Integer, double[]> fillTrainingData(Ignite ignite,
         CacheConfiguration<Integer, double[]> trainingSetCfg) {
-        IgniteCache<Integer, double[]> trainingSet = ignite.createCache(trainingSetCfg);
+        IgniteCache<Integer, double[]> trainingSet = ignite.getOrCreateCache(trainingSetCfg);
         for(int i = -50; i <= 50; i++) {
             double x = ((double)i) / 10.0;
             double y = Math.pow(x, 2);

@@ -17,9 +17,13 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.composition.CompositionUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -31,8 +35,6 @@ import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.FileNotFoundException;
 
 /**
  * Run linear regression model based on  based on
@@ -64,14 +66,15 @@ public class LinearRegressionSGDTrainerExample {
             System.out.println(">>> Create new linear regression trainer object.");
             LinearRegressionSGDTrainer<?> trainer = new LinearRegressionSGDTrainer<>(new UpdatesStrategy<>(
                 new RPropUpdateCalculator(),
-                RPropParameterUpdate::sumLocal,
-                RPropParameterUpdate::avg
+                RPropParameterUpdate.SUM_LOCAL,
+                RPropParameterUpdate.AVG
             ), 100000,  10, 100, 123L);
 
             System.out.println(">>> Perform the training to get the model.");
 
-            final IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-            final IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
+            final IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
+            final IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
 
             LinearRegressionModel mdl = trainer.fit(
                 ignite,

@@ -28,7 +28,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  *
  * @param <K> Type of key.
  */
-public class LabeledDummyVectorizer<K, V, L> extends Vectorizer<K, LabeledVector<L>, Integer, L> {
+public class LabeledDummyVectorizer<K, L> extends Vectorizer<K, LabeledVector<L>, Integer, L> {
     /** Serial version uid. */
     private static final long serialVersionUID = -6225354615212148224L;
 
@@ -42,18 +42,22 @@ public class LabeledDummyVectorizer<K, V, L> extends Vectorizer<K, LabeledVector
         labeled(-1);
     }
 
+    /** {@inheritDoc} */
     @Override protected Double feature(Integer coord, K key, LabeledVector<L> value) {
         return value.features().get(coord);
     }
 
+    /** {@inheritDoc} */
     @Override protected L label(Integer coord, K key, LabeledVector<L> value) {
         return value.label();
     }
 
+    /** {@inheritDoc} */
     @Override protected L zero() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override protected List<Integer> allCoords(K key, LabeledVector<L> value) {
         return IntStream.range(0, value.features().size()).boxed().collect(Collectors.toList());
     }

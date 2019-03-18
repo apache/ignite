@@ -25,8 +25,8 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.BinaryObjectVectorizer;
 import org.apache.ignite.ml.inference.IgniteModelStorageUtil;
-import org.apache.ignite.ml.sql.SQLFeatureLabelExtractor;
 import org.apache.ignite.ml.sql.SQLFunctions;
 import org.apache.ignite.ml.sql.SqlDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
@@ -59,7 +59,7 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                 .setSqlSchema("PUBLIC")
                 .setSqlFunctionClasses(SQLFunctions.class);
 
-            IgniteCache<?, ?> cache = ignite.createCache(cacheCfg);
+            IgniteCache<?, ?> cache = ignite.getOrCreateCache(cacheCfg);
 
             System.out.println(">>> Creating table with training data...");
             cache.query(new SqlFieldsQuery("create table titanik_train (\n" +
@@ -106,10 +106,9 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
             System.out.println(">>> Perform training...");
             DecisionTreeNode mdl = trainer.fit(
                 new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIK_TRAIN"),
-                new SQLFeatureLabelExtractor()
-                    .withFeatureFields("pclass", "age", "sibsp", "parch", "fare")
-                    .withFeatureField("sex", e -> "male".equals(e) ? 1 : 0)
-                    .withLabelField("survived")
+                new BinaryObjectVectorizer<>("pclass", "age", "sibsp", "parch", "fare")
+                    .withFeature("sex", BinaryObjectVectorizer.Mapping.create().map("male", 1.0).defaultValue(0.0))
+                    .labeled("survived")
             );
 
             System.out.println(">>> Saving model...");

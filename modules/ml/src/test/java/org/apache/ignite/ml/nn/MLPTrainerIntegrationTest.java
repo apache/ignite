@@ -74,8 +74,8 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
     public void testXORSimpleGD() {
         xorTest(new UpdatesStrategy<>(
             new SimpleGDUpdateCalculator(0.3),
-            SimpleGDParameterUpdate::sumLocal,
-            SimpleGDParameterUpdate::avg
+            SimpleGDParameterUpdate.SUM_LOCAL,
+            SimpleGDParameterUpdate.AVG
         ));
     }
 
@@ -86,8 +86,8 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
     public void testXORRProp() {
         xorTest(new UpdatesStrategy<>(
             new RPropUpdateCalculator(),
-            RPropParameterUpdate::sumLocal,
-            RPropParameterUpdate::avg
+            RPropParameterUpdate.SUM_LOCAL,
+            RPropParameterUpdate.AVG
         ));
     }
 

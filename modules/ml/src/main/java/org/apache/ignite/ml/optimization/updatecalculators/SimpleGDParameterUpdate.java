@@ -74,7 +74,7 @@ public class SimpleGDParameterUpdate implements Serializable {
      * @param updates Updates.
      * @return Sum of SimpleGDParameterUpdate.
      */
-    public static SimpleGDParameterUpdate sumLocal(List<SimpleGDParameterUpdate> updates) {
+    private static SimpleGDParameterUpdate sumLocal(List<SimpleGDParameterUpdate> updates) {
         Vector accumulatedGrad = updates.
             stream().
             filter(Objects::nonNull).
@@ -91,7 +91,7 @@ public class SimpleGDParameterUpdate implements Serializable {
      * @param updates Updates.
      * @return Avg of SimpleGDParameterUpdate.
      */
-    public static SimpleGDParameterUpdate avg(List<SimpleGDParameterUpdate> updates) {
+    private static SimpleGDParameterUpdate avg(List<SimpleGDParameterUpdate> updates) {
         SimpleGDParameterUpdate sum = sumLocal(updates);
         return sum != null ? new SimpleGDParameterUpdate(sum.gradient().
             divide(updates.stream().filter(Objects::nonNull).collect(Collectors.toList()).size())) : null;

@@ -25,9 +25,9 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.BinaryObjectVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.sql.SQLFeatureLabelExtractor;
 import org.apache.ignite.ml.sql.SqlDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
@@ -57,7 +57,7 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
             CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DUMMY_CACHE_NAME)
                 .setSqlSchema("PUBLIC");
 
-            IgniteCache<?, ?> cache = ignite.createCache(cacheCfg);
+            IgniteCache<?, ?> cache = ignite.getOrCreateCache(cacheCfg);
 
             System.out.println(">>> Creating table with training data...");
             cache.query(new SqlFieldsQuery("create table titanik_train (\n" +
@@ -104,10 +104,9 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
             System.out.println(">>> Perform training...");
             DecisionTreeNode mdl = trainer.fit(
                 new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIK_TRAIN"),
-                new SQLFeatureLabelExtractor()
-                    .withFeatureFields("pclass", "age", "sibsp", "parch", "fare")
-                    .withFeatureField("sex", e -> "male".equals(e) ? 1 : 0)
-                    .withLabelField("survived")
+                new BinaryObjectVectorizer<>("pclass", "age", "sibsp", "parch", "fare")
+                    .withFeature("sex", BinaryObjectVectorizer.Mapping.create().map("male", 1.0).defaultValue(0.0))
+                    .labeled("survived")
             );
 
             System.out.println(">>> Perform inference...");

@@ -84,8 +84,8 @@ public class MLPTrainerTest {
         public void testXORSimpleGD() {
             xorTest(new UpdatesStrategy<>(
                 new SimpleGDUpdateCalculator(0.2),
-                SimpleGDParameterUpdate::sumLocal,
-                SimpleGDParameterUpdate::avg
+                SimpleGDParameterUpdate.SUM_LOCAL,
+                SimpleGDParameterUpdate.AVG
             ));
         }
 
@@ -96,8 +96,8 @@ public class MLPTrainerTest {
         public void testXORRProp() {
             xorTest(new UpdatesStrategy<>(
                 new RPropUpdateCalculator(),
-                RPropParameterUpdate::sumLocal,
-                RPropParameterUpdate::avg
+                RPropParameterUpdate.SUM_LOCAL,
+                RPropParameterUpdate.AVG
             ));
         }
 
@@ -161,8 +161,8 @@ public class MLPTrainerTest {
         public void testUpdate() {
             UpdatesStrategy<SmoothParametrized, SimpleGDParameterUpdate> updatesStgy = new UpdatesStrategy<>(
                 new SimpleGDUpdateCalculator(0.2),
-                SimpleGDParameterUpdate::sumLocal,
-                SimpleGDParameterUpdate::avg
+                SimpleGDParameterUpdate.SUM_LOCAL,
+                SimpleGDParameterUpdate.AVG
             );
 
             Map<Integer, double[][]> xorData = new HashMap<>();

@@ -53,7 +53,7 @@ public class PipelineTest extends TrainerTest {
 
         LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
+                SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
             .withMaxIterations(100000)
             .withLocIterations(100)
             .withBatchSize(10)

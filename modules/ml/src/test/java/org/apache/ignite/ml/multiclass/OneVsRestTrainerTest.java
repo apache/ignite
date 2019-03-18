@@ -49,7 +49,7 @@ public class OneVsRestTrainerTest extends TrainerTest {
 
         LogisticRegressionSGDTrainer binaryTrainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
+                SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
             .withMaxIterations(1000)
             .withLocIterations(10)
             .withBatchSize(100)
@@ -64,9 +64,9 @@ public class OneVsRestTrainerTest extends TrainerTest {
             (k, v) -> v[0]
         );
 
-        Assert.assertTrue(mdl.toString().length() > 0);
-        Assert.assertTrue(mdl.toString(true).length() > 0);
-        Assert.assertTrue(mdl.toString(false).length() > 0);
+        Assert.assertTrue(!mdl.toString().isEmpty());
+        Assert.assertTrue(!mdl.toString(true).isEmpty());
+        Assert.assertTrue(!mdl.toString(false).isEmpty());
 
         TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(-100, 0)), PRECISION);
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 0)), PRECISION);
@@ -82,7 +82,7 @@ public class OneVsRestTrainerTest extends TrainerTest {
 
         LogisticRegressionSGDTrainer binaryTrainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
+                SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
             .withMaxIterations(1000)
             .withLocIterations(10)
             .withBatchSize(100)

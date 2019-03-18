@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.composition.bagging;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
@@ -40,10 +43,6 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Tests for bagging algorithm.
@@ -92,7 +91,7 @@ public class BaggingTest extends TrainerTest {
         DatasetTrainer<LogisticRegressionModel, Double> trainer =
             new LogisticRegressionSGDTrainer()
                 .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                    SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
+                    SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
                 .withMaxIterations(30000)
                 .withLocIterations(100)
                 .withBatchSize(10)

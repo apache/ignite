@@ -68,8 +68,8 @@ public class StackingTest extends TrainerTest {
 
         UpdatesStrategy<SmoothParametrized, SimpleGDParameterUpdate> updatesStgy = new UpdatesStrategy<>(
             new SimpleGDUpdateCalculator(0.2),
-            SimpleGDParameterUpdate::sumLocal,
-            SimpleGDParameterUpdate::avg
+            SimpleGDParameterUpdate.SUM_LOCAL,
+            SimpleGDParameterUpdate.AVG
         );
 
         MLPArchitecture arch = new MLPArchitecture(2).
@@ -124,8 +124,8 @@ public class StackingTest extends TrainerTest {
 
         UpdatesStrategy<SmoothParametrized, SimpleGDParameterUpdate> updatesStgy = new UpdatesStrategy<>(
             new SimpleGDUpdateCalculator(0.2),
-            SimpleGDParameterUpdate::sumLocal,
-            SimpleGDParameterUpdate::avg
+            SimpleGDParameterUpdate.SUM_LOCAL,
+            SimpleGDParameterUpdate.AVG
         );
 
         MLPArchitecture arch = new MLPArchitecture(2).

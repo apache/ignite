@@ -88,8 +88,8 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
             LossFunctions.MSE,
             new UpdatesStrategy<>(
                 new RPropUpdateCalculator(),
-                RPropParameterUpdate::sum,
-                RPropParameterUpdate::avg
+                RPropParameterUpdate.SUM,
+                RPropParameterUpdate.AVG
             ),
             200,
             2000,

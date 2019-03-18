@@ -29,9 +29,10 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.ConsoleLogger;
-import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
@@ -81,16 +82,14 @@ public class RandomForestRegressionExample {
                 .withSeed(0);
 
             trainer.withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder()
-                .withParallelismStrategyTypeDependency(part -> ParallelismStrategy.Type.ON_DEFAULT_POOL)
-                .withLoggingFactoryDependency(part -> ConsoleLogger.factory(MLLogger.VerboseLevel.LOW))
+                .withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+                .withLoggingFactoryDependency(ConsoleLogger.Factory.LOW)
             );
 
             System.out.println(">>> Configured trainer: " + trainer.getClass().getSimpleName());
 
-            ModelsComposition randomForestMdl = trainer.fit(ignite, dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
-            );
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
+            ModelsComposition randomForestMdl = trainer.fit(ignite, dataCache, vectorizer);
 
             System.out.println(">>> Trained model: " + randomForestMdl.toString(true));
 

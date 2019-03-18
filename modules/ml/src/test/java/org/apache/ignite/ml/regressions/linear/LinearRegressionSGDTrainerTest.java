@@ -53,8 +53,8 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
 
         LinearRegressionSGDTrainer<?> trainer = new LinearRegressionSGDTrainer<>(new UpdatesStrategy<>(
             new RPropUpdateCalculator(),
-            RPropParameterUpdate::sumLocal,
-            RPropParameterUpdate::avg
+            RPropParameterUpdate.SUM_LOCAL,
+            RPropParameterUpdate.AVG
         ), 100000, 10, 100, 123L);
 
         LinearRegressionModel mdl = trainer.fit(
@@ -90,8 +90,8 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
 
         LinearRegressionSGDTrainer<?> trainer = new LinearRegressionSGDTrainer<>(new UpdatesStrategy<>(
             new RPropUpdateCalculator(),
-            RPropParameterUpdate::sumLocal,
-            RPropParameterUpdate::avg
+            RPropParameterUpdate.SUM_LOCAL,
+            RPropParameterUpdate.AVG
         ), 100000, 10, 100, 0L);
 
         LinearRegressionModel originalMdl = trainer.withSeed(0).fit(

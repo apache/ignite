@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -37,8 +38,6 @@ import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-
-import java.io.FileNotFoundException;
 
 /**
  * {@link MinMaxScalerTrainer} and {@link NormalizationTrainer} are used in this example due to different values
@@ -106,7 +105,7 @@ public class Step_10_Scaling_With_Stacking {
 
                 LogisticRegressionSGDTrainer aggregator = new LogisticRegressionSGDTrainer()
                     .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                        SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg));
+                        SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG));
 
                 StackedModel<Vector, Vector, Double, LogisticRegressionModel> mdl =
                     new StackedVectorDatasetTrainer<>(aggregator)

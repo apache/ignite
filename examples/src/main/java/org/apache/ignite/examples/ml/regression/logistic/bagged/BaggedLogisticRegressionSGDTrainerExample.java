@@ -17,12 +17,17 @@
 
 package org.apache.ignite.examples.ml.regression.logistic.bagged;
 
+import java.io.FileNotFoundException;
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.bagging.BaggedModel;
 import org.apache.ignite.ml.composition.bagging.BaggedTrainer;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -34,9 +39,6 @@ import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.FileNotFoundException;
-import java.util.Arrays;
 
 /**
  * This example shows how bagging technique may be applied to arbitrary trainer.
@@ -67,8 +69,8 @@ public class BaggedLogisticRegressionSGDTrainerExample {
             LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
                 .withUpdatesStgy(new UpdatesStrategy<>(
                     new SimpleGDUpdateCalculator(0.2),
-                    SimpleGDParameterUpdate::sumLocal,
-                    SimpleGDParameterUpdate::avg
+                    SimpleGDParameterUpdate.SUM_LOCAL,
+                    SimpleGDParameterUpdate.AVG
                 ))
                 .withMaxIterations(100000)
                 .withLocIterations(100)
@@ -88,13 +90,14 @@ public class BaggedLogisticRegressionSGDTrainerExample {
 
             System.out.println(">>> Perform evaluation of the model.");
 
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
             double[] score = new CrossValidation<BaggedModel, Double, Integer, Vector>().score(
                 baggedTrainer,
                 new Accuracy<>(),
                 ignite,
                 dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0),
+                CompositionUtils.asFeatureExtractor(vectorizer),
+                CompositionUtils.asLabelExtractor(vectorizer),
                 3
             );
 

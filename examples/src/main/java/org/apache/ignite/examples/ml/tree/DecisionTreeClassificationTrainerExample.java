@@ -24,7 +24,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
@@ -54,11 +56,11 @@ public class DecisionTreeClassificationTrainerExample {
             System.out.println(">>> Ignite grid started.");
 
             // Create cache with training data.
-            CacheConfiguration<Integer, LabeledPoint> trainingSetCfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, LabeledVector<Double>> trainingSetCfg = new CacheConfiguration<>();
             trainingSetCfg.setName("TRAINING_SET");
             trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
-            IgniteCache<Integer, LabeledPoint> trainingSet = ignite.createCache(trainingSetCfg);
+            IgniteCache<Integer, LabeledVector<Double>> trainingSet = ignite.createCache(trainingSetCfg);
 
             Random rnd = new Random(0);
 
@@ -70,11 +72,11 @@ public class DecisionTreeClassificationTrainerExample {
             DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
             // Train decision tree model.
+            LabeledDummyVectorizer<Integer, Double> vectorizer = new LabeledDummyVectorizer<>();
             DecisionTreeNode mdl = trainer.fit(
                 ignite,
                 trainingSet,
-                (k, v) -> VectorUtils.of(v.x, v.y),
-                (k, v) -> v.lb
+                vectorizer
             );
 
             System.out.println(">>> Decision tree classification model: " + mdl);
@@ -82,10 +84,10 @@ public class DecisionTreeClassificationTrainerExample {
             // Calculate score.
             int correctPredictions = 0;
             for (int i = 0; i < 1000; i++) {
-                LabeledPoint pnt = generatePoint(rnd);
+                LabeledVector<Double> pnt = generatePoint(rnd);
 
-                double prediction = mdl.predict(VectorUtils.of(pnt.x, pnt.y));
-                double lbl = pnt.lb;
+                double prediction = mdl.predict(pnt.features());
+                double lbl = pnt.label();
 
                 if (i %50 == 1)
                     System.out.printf(">>> test #: %d\t\t predicted: %.4f\t\tlabel: %.4f\n", i, prediction, lbl);
@@ -106,49 +108,11 @@ public class DecisionTreeClassificationTrainerExample {
      * @param rnd Random.
      * @return Point with label.
      */
-    private static LabeledPoint generatePoint(Random rnd) {
+    private static LabeledVector<Double> generatePoint(Random rnd) {
 
         double x = rnd.nextDouble() - 0.5;
         double y = rnd.nextDouble() - 0.5;
 
-        return new LabeledPoint(x, y, x * y > 0 ? 1 : 0);
-    }
-
-    /** Point data class. */
-    private static class Point {
-        /** X coordinate. */
-        final double x;
-
-        /** Y coordinate. */
-        final double y;
-
-        /**
-         * Constructs a new instance of point.
-         *
-         * @param x X coordinate.
-         * @param y Y coordinate.
-         */
-        Point(double x, double y) {
-            this.x = x;
-            this.y = y;
-        }
-    }
-
-    /** Labeled point data class. */
-    private static class LabeledPoint extends Point {
-        /** Point label. */
-        final double lb;
-
-        /**
-         * Constructs a new instance of labeled point data.
-         *
-         * @param x X coordinate.
-         * @param y Y coordinate.
-         * @param lb Point label.
-         */
-        LabeledPoint(double x, double y, double lb) {
-            super(x, y);
-            this.lb = lb;
-        }
+        return new LabeledVector<>(VectorUtils.of(x,y), x * y > 0 ? 1. : 0.);
     }
 }

@@ -24,7 +24,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
@@ -83,11 +84,14 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
         int vectorLength = useAllValues ? allCoords.size() : extractionCoordinates.size();
         A.ensure(vectorLength > 0, "vectorLength > 0");
 
-        double[] features = new double[vectorLength];
         List<C> coordinatesForExtraction = useAllValues ? allCoords : extractionCoordinates;
-        for (int i = 0; i < coordinatesForExtraction.size(); i++)
-            features[i] = feature(coordinatesForExtraction.get(i), key, value);
-        return new LabeledVector<>(VectorUtils.of(features), lbl);
+        Vector vector = createVector(vectorLength);
+        for (int i = 0; i < coordinatesForExtraction.size(); i++) {
+            Double feature = feature(coordinatesForExtraction.get(i), key, value);
+            if(feature != null)
+                vector.set(i, feature);
+        }
+        return new LabeledVector<>(vector, lbl);
     }
 
     /**
@@ -153,4 +157,14 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
      * @return all coordinates list.
      */
     protected abstract List<C> allCoords(K key, V value);
+
+    /**
+     * Create an instance of vector.
+     *
+     * @param size Vector size.
+     * @return vector.
+     */
+    protected Vector createVector(int size) {
+        return new DenseVector(size);
+    }
 }

@@ -61,8 +61,8 @@ public class MLPTrainerMnistTest {
             LossFunctions.MSE,
             new UpdatesStrategy<>(
                 new RPropUpdateCalculator(),
-                RPropParameterUpdate::sum,
-                RPropParameterUpdate::avg
+                RPropParameterUpdate.SUM,
+                RPropParameterUpdate.AVG
             ),
             200,
             2000,
