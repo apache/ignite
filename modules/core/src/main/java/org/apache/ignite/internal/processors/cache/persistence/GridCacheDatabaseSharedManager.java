@@ -3333,8 +3333,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Checkpoint started log message format. */
         private static final String CHECKPOINT_STARTED_LOG_FORMAT = "Checkpoint started [checkpointId=%s, startPtr=%s," +
             " checkpointBeforeLockTime=%dms, checkpointLockWait=%dms, checkpointListenersExecuteTime=%dms, " +
-            "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, possibleJvmPauseDuration=%s, pages=%d, " +
-            "reason='%s']";
+            "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, %s pages=%d, reason='%s']";
 
         /** Temporary write buffer. */
         private final ByteBuffer tmpWriteBuf;
@@ -3985,7 +3984,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     cpPagesTuple, persistenceCfg.getCheckpointThreads());
 
                 if (printCheckpointStats && log.isInfoEnabled()) {
-                    long possibleJvmPauseDuration = possibleLongJvmPauseDuration(tracker);
+                    long possibleJvmPauseDur = possibleLongJvmPauseDuration(tracker);
 
                     log.info(
                         String.format(
@@ -3997,7 +3996,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tracker.listenersExecuteDuration(),
                             tracker.lockHoldDuration(),
                             tracker.walCpRecordFsyncDuration(),
-                            possibleJvmPauseDuration > 0 ? possibleJvmPauseDuration + "ms" : "N/A",
+                            possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms," : "",
                             cpPages.size(),
                             curr.reason
                         )
