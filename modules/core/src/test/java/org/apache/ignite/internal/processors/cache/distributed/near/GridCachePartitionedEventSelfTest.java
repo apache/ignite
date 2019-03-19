@@ -32,10 +32,10 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
  */
 public class GridCachePartitionedEventSelfTest extends GridCacheEventAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
-        super.afterTest();
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
