@@ -40,7 +40,11 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinParameterMetadata;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * JDBC prepared statement implementation.
@@ -275,15 +279,28 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
         // In this case we don't tell cases "meta is not fetched" and "this statement is not a select, so meta is null".
         // This is ok, because getting metadata of non-select statements is not a happy path.
-        if (resMeta == null) {
-            SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
-
-            setupQuery(qry);
-
-            resMeta = conn.resultMetaData(qry);
-        }
+        if (resMeta == null)
+            resMeta = resultMetaData(sql);
 
         return resMeta;
+    }
+
+    /**
+     * Fetches metadata of the result set is returned when specified query gets executed.
+     *
+     * @return metadata describing result set or {@code null} if query is not a SELECT operation.
+     */
+    @Nullable private ResultSetMetaData resultMetaData(String sql) throws SQLException {
+        SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
+
+        setupQuery(qry);
+
+        List<GridQueryFieldMetadata> meta = conn.ignite().context().query().getIndexing().resultMetaData(conn.schemaName(), qry);
+
+        if (meta == null)
+            return null;
+
+        return new JdbcResultSetMetadata(meta);
     }
 
     /** {@inheritDoc} */
@@ -315,16 +332,25 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ParameterMetaData getParameterMetaData() throws SQLException {
         ensureNotClosed();
 
-        if (paramsMeta == null) {
-            SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
-
-            setupQuery(qry);
-
-            paramsMeta = conn.parameterMetaData(qry);
-
-        }
+        if (paramsMeta == null)
+            paramsMeta = parameterMetaData(sql);
 
         return paramsMeta;
+    }
+
+    /**
+     * Fetches parameters metadata of the specified query.
+     *
+     * @param sql Query fetch parameters meta for.
+     */
+    private ParameterMetaData parameterMetaData(String sql) throws SQLException {
+        SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
+
+        setupQuery(qry);
+
+        List<JdbcParameterMeta> params = conn.ignite().context().query().getIndexing().parameterMetaData(conn.schemaName(), qry);
+
+        return new JdbcThinParameterMetadata(params);
     }
 
     /** {@inheritDoc} */
