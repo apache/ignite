@@ -810,7 +810,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testCreateTableIfNotExistsCustomSchema() {
         Ignite ignite = grid(0);
 
-        IgniteCache<Object, Object> cache = ignite.getOrCreateCache("test");
+        IgniteCache cache = ignite.getOrCreateCache(new CacheConfiguration<>("test").setSqlSchema("\"test\""));
 
         String createTblNoSchema = "CREATE TABLE IF NOT EXISTS City(id LONG PRIMARY KEY, name VARCHAR)";
 
