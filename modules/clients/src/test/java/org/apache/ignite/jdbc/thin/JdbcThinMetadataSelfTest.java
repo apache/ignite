@@ -47,6 +47,7 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static java.sql.Types.DATE;
@@ -681,13 +682,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     "update Person p set orgId = 42 where p.name > ? and p.orgId > ?;" +
                         "select orgId from Person p where p.name > ? and p.orgId > ?");
 
-                updateStmt.execute();
-
                 ParameterMetaData meta = updateStmt.getParameterMetaData();
 
                 assertNotNull(meta);
 
-                assertEquals(2, meta.getParameterCount());
+                assertEquals(4, meta.getParameterCount());
 
                 assertEquals(Types.VARCHAR, meta.getParameterType(1));
                 assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
@@ -703,6 +702,21 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 assertEquals(Types.INTEGER, meta.getParameterType(4));
                 assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(4));
             }
+        }
+    }
+
+    /**
+     * Check that parameters metadata throws correct exception on non-parsable statement.
+     */
+    @Test
+    public void testParametersMetadataNegative() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setSchema("\"pers\"");
+
+            PreparedStatement notCorrect = conn.prepareStatement("select * from NotExistingTable;");
+
+            GridTestUtils.assertThrows(log(), notCorrect::getParameterMetaData, SQLException.class,
+                "Table \"NOTEXISTINGTABLE\" not found");
         }
     }
 

@@ -47,6 +47,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -215,7 +216,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     public void testPreparedStatementMetaDataNegative() throws Exception {
         // Perform checks few times due to query/plan caching.
         for (int i = 0; i < 3; i++) {
-            // Check h2 dml statement
+            // Check h2 dml statement.
             try (Connection conn = DriverManager.getConnection(BASE_URL)) {
                 String update = "update \"pers\".Person set name = 'weird' where orgId < 0";
 
@@ -224,16 +225,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 assertNull(psMeta);
             }
 
-            // Check h2 multi-statement
-            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
-                String update = "select * from \"pers\".Person; select name from \"pers\".Person";
-
-                ResultSetMetaData psMeta = conn.prepareStatement(update).getMetaData();
-
-                assertNull(psMeta);
-            }
-
-            // H2 ddl statement
+            // H2 ddl statement.
             try (Connection conn = DriverManager.getConnection(BASE_URL)) {
                 String update = "CREATE TABLE DDL_METADATA_TAB (ID INT PRIMARY KEY, VAL INT)";
 
@@ -249,6 +241,16 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 ResultSetMetaData psMeta = conn.prepareStatement(nativeCmd).getMetaData();
 
                 assertNull(psMeta);
+            }
+
+            // Non parsable.
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement notCorrect = conn.prepareStatement("select * from NotExistingTable;");
+
+                GridTestUtils.assertThrows(log(), notCorrect::getMetaData, SQLException.class,
+                    "Table \"NOTEXISTINGTABLE\" not found");
             }
         }
     }
@@ -617,37 +619,21 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 assertEquals(Types.INTEGER, meta.getParameterType(2));
                 assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
             }
+        }
+    }
 
-            // Multistatement
-            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
-                conn.setSchema("\"pers\"");
+    /**
+     * Check that parameters metadata throws correct exception on non-parsable statement.
+     */
+    @Test
+    public void testParametersMetadataNegative() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            conn.setSchema("\"pers\"");
 
-                PreparedStatement updateStmt = conn.prepareStatement(
-                    "update Person p set orgId = 42 where p.name > ? and p.orgId > ?;" +
-                        "select orgId from Person p where p.name > ? and p.orgId > ?");
+            PreparedStatement notCorrect = conn.prepareStatement("select * from NotExistingTable;");
 
-                updateStmt.execute();
-
-                ParameterMetaData meta = updateStmt.getParameterMetaData();
-
-                assertNotNull(meta);
-
-                assertEquals(2, meta.getParameterCount());
-
-                assertEquals(Types.VARCHAR, meta.getParameterType(1));
-                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
-                assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
-
-                assertEquals(Types.INTEGER, meta.getParameterType(2));
-                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
-
-                assertEquals(Types.VARCHAR, meta.getParameterType(3));
-                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(3));
-                assertEquals(Integer.MAX_VALUE, meta.getPrecision(3));
-
-                assertEquals(Types.INTEGER, meta.getParameterType(4));
-                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(4));
-            }
+            GridTestUtils.assertThrows(log(), notCorrect::getParameterMetaData, SQLException.class,
+                "Table \"NOTEXISTINGTABLE\" not found");
         }
     }
 

@@ -44,6 +44,7 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinParameterMetadata;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -304,12 +305,16 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
         setupQuery(qry);
 
-        List<GridQueryFieldMetadata> meta = conn.ignite().context().query().getIndexing().resultMetaData(conn.schemaName(), qry);
+        try {
+            List<GridQueryFieldMetadata> meta = conn.ignite().context().query().getIndexing().resultMetaData(conn.schemaName(), qry);
 
-        if (meta == null)
-            return null;
+            if (meta == null)
+                return null;
 
-        return new JdbcResultSetMetadata(meta);
+            return new JdbcResultSetMetadata(meta);
+        } catch (IgniteSQLException ex) {
+            throw ex.toJdbcException();
+        }
     }
 
     /** {@inheritDoc} */
@@ -355,9 +360,13 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
         setupQuery(qry);
 
-        List<JdbcParameterMeta> params = conn.ignite().context().query().getIndexing().parameterMetaData(conn.schemaName(), qry);
+        try {
+            List<JdbcParameterMeta> params = conn.ignite().context().query().getIndexing().parameterMetaData(conn.schemaName(), qry);
 
-        return new JdbcThinParameterMetadata(params);
+            return new JdbcThinParameterMetadata(params);
+        } catch (IgniteSQLException ex) {
+            throw ex.toJdbcException();
+        }
     }
 
     /** {@inheritDoc} */
