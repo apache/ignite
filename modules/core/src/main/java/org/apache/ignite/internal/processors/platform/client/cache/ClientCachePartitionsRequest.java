@@ -20,12 +20,15 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import java.util.ArrayList;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.platform.client.ClientAffinityTopologyVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cluster node list request.
@@ -62,7 +65,10 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             DynamicCacheDescriptor cacheDesc = ClientCacheRequest.cacheDescriptor(ctx, cacheId);
 
             ClientCacheAffinityAwarenessGroup currentMapping =
-                new ClientCacheAffinityAwarenessGroup(ctx, cacheDesc, affinityVer.getVersion());
+                tryMakeAffinityAwarenessGroup(ctx, affinityVer.getVersion(), cacheDesc);
+
+            if (currentMapping == null)
+                continue;
 
             boolean merged = tryMerge(mappings, currentMapping);
 
@@ -79,12 +85,34 @@ public class ClientCachePartitionsRequest extends ClientRequest {
                 continue;
 
             ClientCacheAffinityAwarenessGroup currentMapping =
-                new ClientCacheAffinityAwarenessGroup(ctx, cacheDesc, affinityVer.getVersion());
+                tryMakeAffinityAwarenessGroup(ctx, affinityVer.getVersion(), cacheDesc);
+
+            if (currentMapping == null)
+                continue;
 
             tryMerge(mappings, currentMapping);
         }
 
         return new ClientCachePartitionsResponse(requestId(), mappings, affinityVer);
+    }
+
+    /**
+     * Make affinity awareness group.
+     * @param ctx Connection context.
+     * @param affinityVer Affinity topology version.
+     * @param cacheDesc Cache descriptor.
+     * @return ClientCacheAffinityAwarenessGroup or null, if is not available for the cache.
+     */
+    @Nullable private ClientCacheAffinityAwarenessGroup tryMakeAffinityAwarenessGroup(ClientConnectionContext ctx,
+        AffinityTopologyVersion affinityVer, DynamicCacheDescriptor cacheDesc) {
+
+        try {
+            return new ClientCacheAffinityAwarenessGroup(ctx, cacheDesc, affinityVer);
+        }
+        catch (IgniteException e)
+        {
+            return null;
+        }
     }
 
     /**
