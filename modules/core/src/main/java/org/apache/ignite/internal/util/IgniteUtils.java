@@ -510,7 +510,7 @@ public abstract class IgniteUtils {
     public static final String IGNITE_WORK_DIR = System.getenv(IgniteSystemProperties.IGNITE_WORK_DIR);
 
     /** Random is used to get random server node to authentication from client node. */
-    private static final Random RND = new Random(System.currentTimeMillis());
+    public static final Random RND = new Random(System.currentTimeMillis());
 
     /** Clock timer. */
     private static Thread timer;
