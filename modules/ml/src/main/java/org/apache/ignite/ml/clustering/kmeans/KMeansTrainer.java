@@ -28,10 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
@@ -44,7 +44,6 @@ import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -64,8 +63,8 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     private DistanceMeasure distance = new EuclideanDistance();
 
     /** {@inheritDoc} */
-    @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override public <K, V, C> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
 
@@ -75,18 +74,12 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override protected <K, V, C> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
         assert datasetBuilder != null;
 
-        IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
-        IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
-
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder =
-            new LabeledDatasetPartitionDataBuilderOnHeap<>(
-                featureExtractor,
-                lbExtractor
-            );
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(extractor);
 
         Vector[] centers;
 

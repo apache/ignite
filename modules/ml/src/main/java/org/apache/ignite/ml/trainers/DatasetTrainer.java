@@ -24,6 +24,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
@@ -65,6 +67,34 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     }
 
     /**
+     * Returns the trainer which returns identity model.
+     *
+     * @param <I> Type of model input.
+     * @param <L> Type of labels in dataset.
+     * @return Trainer which returns identity model.
+     */
+    public static <I, L> DatasetTrainer<IgniteModel<I, I>, L> identityTrainer() {
+        return new DatasetTrainer<IgniteModel<I, I>, L>() {
+            /** {@inheritDoc} */
+            @Override public <K, V, C> IgniteModel<I, I> fit(DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, L> extractor) {
+                return x -> x;
+            }
+
+            /** {@inheritDoc} */
+            @Override protected <K, V, C> IgniteModel<I, I> updateModel(IgniteModel<I, I> mdl,
+                DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor) {
+                return x -> x;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean isUpdateable(IgniteModel<I, I> mdl) {
+                return true;
+            }
+        };
+    }
+
+    /**
      * Trains model based on the specified data.
      *
      * @param datasetBuilder Dataset builder.
@@ -73,7 +103,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public abstract <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, L> extractor);
+    public abstract <K, V, C> M fit(DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor);
 
     /**
      * Gets state of model in arguments, compare it with training parameters of trainer and if they are fit then
@@ -163,6 +193,19 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     }
 
     /**
+     * Trains model based on the specified data.
+     *
+     * @param datasetBuilder Dataset builder.
+     * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return Model.
+     */
+    public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, L> extractor) {
+        return fit(datasetBuilder, new FeatureLabelExtractorWrapper<>(extractor));
+    }
+
+    /**
      * Gets state of model in arguments, update in according to new data and return new model.
      *
      * @param mdl Learned model.
@@ -172,9 +215,12 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    protected abstract <K, V> M updateModel(M mdl,
+    protected <K, V> M updateModel(M mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor);
+        FeatureLabelExtractor<K, V, L> extractor) {
+
+        return updateModel(mdl, datasetBuilder, new FeatureLabelExtractorWrapper<>(extractor));
+    }
 
 
     /**
@@ -378,6 +424,44 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     }
 
     /**
+     * Gets state of model in arguments, update in according to new data and return new model.
+     *
+     * @param mdl Learned model.
+     * @param datasetBuilder Dataset builder.
+     * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return Updated model.
+     */
+    protected abstract <K, V, C> M updateModel(M mdl,
+        DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor);
+
+    /**
+     * Get learning environment.
+     *
+     * @return Learning environment.
+     */
+    public LearningEnvironment learningEnvironment() {
+        return environment;
+    }
+
+    /**
+     * EmptyDataset exception.
+     */
+    public static class EmptyDatasetException extends IllegalArgumentException {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 6914650522523293521L;
+
+        /**
+         * Constructs an instance of EmptyDatasetException.
+         */
+        public EmptyDatasetException() {
+            super("Cannot train model on empty dataset");
+        }
+    }
+
+    /**
      * Creates {@link DatasetTrainer} with same training logic, but able to accept labels of given new type
      * of labels.
      *
@@ -407,66 +491,14 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
             }
 
             /** {@inheritDoc} */
-            @Override public boolean isUpdateable(M mdl) {
-                return old.isUpdateable(mdl);
-            }
-
-            /** {@inheritDoc} */
-            @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, L1> extractor) {
+            @Override protected <K, V, C> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, L1> extractor) {
                 return old.updateModel(mdl, datasetBuilder, getNewExtractor(extractor));
             }
-        };
-    }
-
-    /**
-     * Get learning environment.
-     *
-     * @return Learning environment.
-     */
-    public LearningEnvironment learningEnvironment() {
-        return environment;
-    }
-
-    /**
-     * EmptyDataset exception.
-     */
-    public static class EmptyDatasetException extends IllegalArgumentException {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 6914650522523293521L;
-
-        /**
-         * Constructs an instance of EmptyDatasetException.
-         */
-        public EmptyDatasetException() {
-            super("Cannot train model on empty dataset");
-        }
-    }
-
-    /**
-     * Returns the trainer which returns identity model.
-     *
-     * @param <I> Type of model input.
-     * @param <L> Type of labels in dataset.
-     * @return Trainer which returns identity model.
-     */
-    public static <I, L> DatasetTrainer<IgniteModel<I, I>, L> identityTrainer() {
-        return new DatasetTrainer<IgniteModel<I, I>, L>() {
-            @Override public <K, V> IgniteModel<I, I> fit(DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, L> featureExtractor) {
-                return x -> x;
-            }
 
             /** {@inheritDoc} */
-            @Override public boolean isUpdateable(IgniteModel<I, I> mdl) {
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override protected <K, V> IgniteModel<I, I> updateModel(IgniteModel<I, I> mdl,
-                DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, L> extractor) {
-                return x -> x;
+            @Override public boolean isUpdateable(M mdl) {
+                return old.isUpdateable(mdl);
             }
         };
     }

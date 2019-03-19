@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.environment.parallelism.Promise;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
@@ -80,8 +81,8 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteModel<I, List<O>> fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+    @Override public <K, V, C> IgniteModel<I, List<O>> fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor) {
         List<IgniteSupplier<IgniteModel<I, O>>> tasks = trainers.stream()
             .map(tr -> (IgniteSupplier<IgniteModel<I, O>>)(() -> tr.fit(datasetBuilder,
                 CompositionUtils.asFeatureExtractor(extractor),
@@ -140,8 +141,8 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
      * @param mdl Model.
      * @return Updated model.
      */
-    @Override protected <K, V> IgniteModel<I, List<O>> updateModel(IgniteModel<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+    @Override protected <K, V, C> IgniteModel<I, List<O>> updateModel(IgniteModel<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor) {
         // Never called.
         throw new IllegalStateException();
     }

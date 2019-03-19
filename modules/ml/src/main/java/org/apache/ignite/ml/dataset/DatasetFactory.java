@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
@@ -32,8 +33,6 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Factory providing a client facing API that allows to construct basic and the most frequently used types of dataset.
@@ -193,11 +192,11 @@ public class DatasetFactory {
      * @param <C> Type of a partition {@code context}.
      * @return Dataset.
      */
-    public static <K, V, C extends Serializable> SimpleDataset<C> createSimpleDataset(
+    public static <K, V, C extends Serializable, CO> SimpleDataset<C> createSimpleDataset(
         DatasetBuilder<K, V> datasetBuilder,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor) {
+        Vectorizer<K, V, CO, ?> featureExtractor) {
         return create(
             datasetBuilder,
             envBuilder,
@@ -221,11 +220,11 @@ public class DatasetFactory {
      * @param <C> Type of a partition {@code context}.
      * @return Dataset.
      */
-    public static <K, V, C extends Serializable> SimpleDataset<C> createSimpleDataset(Ignite ignite,
+    public static <K, V, C extends Serializable, CO> SimpleDataset<C> createSimpleDataset(Ignite ignite,
         IgniteCache<K, V> upstreamCache,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor) {
+        Vectorizer<K, V, CO, ?> featureExtractor) {
         return createSimpleDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             envBuilder,
@@ -242,24 +241,22 @@ public class DatasetFactory {
      * @param datasetBuilder Dataset builder.
      * @param envBuilder Learning environment builder.
      * @param partCtxBuilder Partition {@code context} builder.
-     * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
-     * @param lbExtractor Label extractor used to extract labels and build {@link SimpleLabeledDatasetData}.
+     * @param vectorizer Upstream vectorizer used to extract features and labels and build {@link SimpleLabeledDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
      * @return Dataset.
      */
-    public static <K, V, C extends Serializable> SimpleLabeledDataset<C> createSimpleLabeledDataset(
+    public static <K, V, C extends Serializable, CO> SimpleLabeledDataset<C> createSimpleLabeledDataset(
         DatasetBuilder<K, V> datasetBuilder,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, double[]> lbExtractor) {
+        Vectorizer<K, V, CO, double[]> vectorizer) {
         return create(
             datasetBuilder,
             envBuilder,
             partCtxBuilder,
-            new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
+            new SimpleLabeledDatasetDataBuilder<>(vectorizer)
         ).wrap(SimpleLabeledDataset::new);
     }
 
@@ -272,26 +269,23 @@ public class DatasetFactory {
      * @param upstreamCache Ignite Cache with {@code upstream} data.
      * @param envBuilder Learning environment builder.
      * @param partCtxBuilder Partition {@code context} builder.
-     * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
-     * @param lbExtractor Label extractor used to extract labels and build {@link SimpleLabeledDatasetData}.
+     * @param vectorizer Upstream vectorizer used to extract features and labels and build {@link SimpleLabeledDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
      * @return Dataset.
      */
-    public static <K, V, C extends Serializable> SimpleLabeledDataset<C> createSimpleLabeledDataset(
+    public static <K, V, C extends Serializable, CO> SimpleLabeledDataset<C> createSimpleLabeledDataset(
         Ignite ignite,
         IgniteCache<K, V> upstreamCache,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, double[]> lbExtractor) {
+        Vectorizer<K, V, CO, double[]> vectorizer) {
         return createSimpleLabeledDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             envBuilder,
             partCtxBuilder,
-            featureExtractor,
-            lbExtractor
+            vectorizer
         );
     }
 
@@ -307,10 +301,10 @@ public class DatasetFactory {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Dataset.
      */
-    public static <K, V> SimpleDataset<EmptyContext> createSimpleDataset(
+    public static <K, V, CO> SimpleDataset<EmptyContext> createSimpleDataset(
         DatasetBuilder<K, V> datasetBuilder,
         LearningEnvironmentBuilder envBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor) {
+        Vectorizer<K, V, CO, ?> featureExtractor) {
         return createSimpleDataset(
             datasetBuilder,
             envBuilder,
@@ -332,11 +326,11 @@ public class DatasetFactory {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Dataset.
      */
-    public static <K, V> SimpleDataset<EmptyContext> createSimpleDataset(
+    public static <K, V, CO> SimpleDataset<EmptyContext> createSimpleDataset(
         Ignite ignite,
         IgniteCache<K, V> upstreamCache,
         LearningEnvironmentBuilder envBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor) {
+        Vectorizer<K, V, CO, ?> featureExtractor) {
         return createSimpleDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             envBuilder,
@@ -356,10 +350,10 @@ public class DatasetFactory {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Dataset.
      */
-    public static <K, V> SimpleDataset<EmptyContext> createSimpleDataset(
+    public static <K, V, CO> SimpleDataset<EmptyContext> createSimpleDataset(
         Ignite ignite,
         IgniteCache<K, V> upstreamCache,
-        IgniteBiFunction<K, V, Vector> featureExtractor) {
+        Vectorizer<K, V, CO, ?> featureExtractor) {
         return createSimpleDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             LearningEnvironmentBuilder.defaultBuilder(),
@@ -374,23 +368,20 @@ public class DatasetFactory {
      *
      * @param datasetBuilder Dataset builder.
      * @param envBuilder Learning environment builder.
-     * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
-     * @param lbExtractor Label extractor used to extract labels and build {@link SimpleLabeledDatasetData}.
+     * @param vectorizer Upstream vectorizer used to extract features and labels and build {@link SimpleLabeledDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Dataset.
      */
-    public static <K, V> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(
+    public static <K, V, CO> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(
         DatasetBuilder<K, V> datasetBuilder,
         LearningEnvironmentBuilder envBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, double[]> lbExtractor) {
+        Vectorizer<K, V, CO, double[]> vectorizer) {
         return createSimpleLabeledDataset(
             datasetBuilder,
             envBuilder,
             new EmptyContextBuilder<>(),
-            featureExtractor,
-            lbExtractor
+            vectorizer
         );
     }
 
@@ -402,22 +393,20 @@ public class DatasetFactory {
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
      * @param envBuilder Learning environment builder.
-     * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
-     * @param lbExtractor Label extractor used to extract labels and build {@link SimpleLabeledDatasetData}.
+     * @param vectorizer Upstream vectorizer used to extract features and labels and build {@link SimpleLabeledDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Dataset.
      */
-    public static <K, V> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(
+    public static <K, V, CO> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(
         Ignite ignite,
         LearningEnvironmentBuilder envBuilder,
-        IgniteCache<K, V> upstreamCache, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, double[]> lbExtractor) {
+        IgniteCache<K, V> upstreamCache,
+        Vectorizer<K, V, CO, double[]> vectorizer) {
         return createSimpleLabeledDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             envBuilder,
-            featureExtractor,
-            lbExtractor
+            vectorizer
         );
     }
 
@@ -465,12 +454,12 @@ public class DatasetFactory {
      * @param <C> Type of a partition {@code context}.
      * @return Dataset.
      */
-    public static <K, V, C extends Serializable> SimpleDataset<C> createSimpleDataset(
+    public static <K, V, C extends Serializable, CO> SimpleDataset<C> createSimpleDataset(
         Map<K, V> upstreamMap,
         int partitions,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor) {
+        Vectorizer<K, V, CO, ?> featureExtractor) {
         return createSimpleDataset(
             new LocalDatasetBuilder<>(upstreamMap, partitions),
             envBuilder,
@@ -488,24 +477,23 @@ public class DatasetFactory {
      * @param partitions Number of partitions {@code upstream} {@code Map} will be divided on.
      * @param envBuilder Learning environment builder.
      * @param partCtxBuilder Partition {@code context} builder.
-     * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
-     * @param lbExtractor Label extractor used to extract labels and build {@link SimpleLabeledDatasetData}.
+     * @param vectorizer Upstream vectorizer used to extract features and labels and build {@link SimpleLabeledDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
      * @return Dataset.
      */
-    public static <K, V, C extends Serializable> SimpleLabeledDataset<C> createSimpleLabeledDataset(
+    public static <K, V, C extends Serializable, CO> SimpleLabeledDataset<C> createSimpleLabeledDataset(
         Map<K, V> upstreamMap,
         int partitions,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
+        Vectorizer<K, V, CO, double[]> vectorizer) {
         return createSimpleLabeledDataset(
             new LocalDatasetBuilder<>(upstreamMap, partitions),
             envBuilder,
             partCtxBuilder,
-            featureExtractor, lbExtractor
+            vectorizer
         );
     }
 
@@ -522,9 +510,9 @@ public class DatasetFactory {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Dataset.
      */
-    public static <K, V> SimpleDataset<EmptyContext> createSimpleDataset(Map<K, V> upstreamMap, int partitions,
+    public static <K, V, CO> SimpleDataset<EmptyContext> createSimpleDataset(Map<K, V> upstreamMap, int partitions,
         LearningEnvironmentBuilder envBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor) {
+        Vectorizer<K, V, CO, ?> featureExtractor) {
         return createSimpleDataset(
             new LocalDatasetBuilder<>(upstreamMap, partitions),
             envBuilder,
@@ -540,21 +528,18 @@ public class DatasetFactory {
      * @param upstreamMap {@code Map} with {@code upstream} data.
      * @param partitions Number of partitions {@code upstream} {@code Map} will be divided on.
      * @param envBuilder Learning environment builder.
-     * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
-     * @param lbExtractor Label extractor used to extract labels and build {@link SimpleLabeledDatasetData}.
+     * @param vectorizer Upstream vectorizer used to extract features and labels and build {@link SimpleLabeledDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Dataset.
      */
-    public static <K, V> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(Map<K, V> upstreamMap,
+    public static <K, V, CO> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(Map<K, V> upstreamMap,
         LearningEnvironmentBuilder envBuilder,
-        int partitions, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, double[]> lbExtractor) {
+        int partitions, Vectorizer<K, V, CO, double[]> vectorizer) {
         return createSimpleLabeledDataset(
             new LocalDatasetBuilder<>(upstreamMap, partitions),
             envBuilder,
-            featureExtractor,
-            lbExtractor
+            vectorizer
         );
     }
 }

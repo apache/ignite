@@ -23,6 +23,7 @@ import java.util.Optional;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -35,7 +36,6 @@ import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -84,15 +84,15 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override public <K, V, C> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
+    @Override protected <K, V, C> LinearRegressionModel updateModel(LinearRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+        Vectorizer<K, V, C, Double> extractor) {
 
         assert updatesStgy != null;
 

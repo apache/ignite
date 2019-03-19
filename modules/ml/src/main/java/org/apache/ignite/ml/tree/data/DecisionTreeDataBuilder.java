@@ -21,9 +21,9 @@ import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 /**
  * A partition {@code data} builder that makes {@link DecisionTreeData}.
@@ -32,13 +32,13 @@ import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class DecisionTreeDataBuilder<K, V, C extends Serializable>
+public class DecisionTreeDataBuilder<K, V, C extends Serializable, CO>
     implements PartitionDataBuilder<K, V, C, DecisionTreeData> {
     /** */
     private static final long serialVersionUID = 3678784980215216039L;
 
     /** Extractor of features and labels from an {@code upstream} data. */
-    private final FeatureLabelExtractor<K, V, Double> extractor;
+    private final Vectorizer<K, V, CO, Double> extractor;
 
     /** Build index. */
     private final boolean buildIdx;
@@ -49,7 +49,7 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
      * @param extractor Extractor of features and labels from an {@code upstream} data..
      * @param buildIdx Build index.
      */
-    public DecisionTreeDataBuilder(FeatureLabelExtractor<K, V, Double> extractor, boolean buildIdx) {
+    public DecisionTreeDataBuilder(Vectorizer<K, V, CO, Double> extractor, boolean buildIdx) {
         this.extractor = extractor;
         this.buildIdx = buildIdx;
     }

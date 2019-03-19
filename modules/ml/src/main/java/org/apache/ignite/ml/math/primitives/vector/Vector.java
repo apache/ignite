@@ -31,6 +31,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * A vector interface.
@@ -527,5 +528,16 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      */
     public default double[] asArray() {
         return getStorage().data();
+    }
+
+    /**
+     * Creates {@link LabeledVector} instance.
+     *
+     * @param lbl Label value.
+     * @param <L> Label class.
+     * @return labeled vector.
+     */
+    public default <L> LabeledVector<L> labeled(L lbl) {
+        return new LabeledVector<>(this, lbl);
     }
 }

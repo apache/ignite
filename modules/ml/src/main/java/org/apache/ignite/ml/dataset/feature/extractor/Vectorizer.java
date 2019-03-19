@@ -82,7 +82,7 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
         }
 
         int vectorLength = useAllValues ? allCoords.size() : extractionCoordinates.size();
-        A.ensure(vectorLength > 0, "vectorLength > 0");
+        A.ensure(vectorLength >= 0, "vectorLength >= 0");
 
         List<C> coordinatesForExtraction = useAllValues ? allCoords : extractionCoordinates;
         Vector vector = createVector(vectorLength);

@@ -27,6 +27,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.logging.ConsoleLogger;
@@ -36,7 +37,6 @@ import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.junit.Test;
@@ -87,8 +87,8 @@ public class LearningEnvironmentTest {
 
         DatasetTrainer<IgniteModel<Object, Vector>, Void> trainer = new DatasetTrainer<IgniteModel<Object, Vector>, Void>() {
             /** {@inheritDoc} */
-            @Override public <K, V> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, Void> extractor) {
+            @Override public <K, V, C> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, Void> extractor) {
                 Dataset<EmptyContext, TestUtils.DataWrapper<Integer>> ds = datasetBuilder.build(envBuilder,
                     new EmptyContextBuilder<>(),
                     (PartitionDataBuilder<K, V, EmptyContext, TestUtils.DataWrapper<Integer>>)(env, upstreamData, upstreamDataSize, ctx) ->
@@ -108,9 +108,9 @@ public class LearningEnvironmentTest {
             }
 
             /** {@inheritDoc} */
-            @Override protected <K, V> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
+            @Override protected <K, V, C> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
                 DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, Void> extractor) {
+                Vectorizer<K, V, C, Void> extractor) {
                 return null;
             }
         };

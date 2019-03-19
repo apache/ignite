@@ -36,6 +36,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
@@ -43,7 +44,6 @@ import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilde
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
@@ -110,8 +110,8 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override public <K, V, C> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
         List<TreeRoot> models = null;
         try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
             envBuilder,
@@ -245,8 +245,8 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override protected <K, V, C> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
 
         ArrayList<IgniteModel<Vector, Double>> oldModels = new ArrayList<>(mdl.getModels());
         ModelsComposition newModels = fit(datasetBuilder, extractor);

@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.examples.ml.util.DatasetHelper;
 import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -39,8 +40,8 @@ import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
  * <p>
  * After that it defines preprocessors that extract features from an upstream data and impute missing values.</p>
  * <p>
- * Finally, it creates the dataset based on the processed data and uses Dataset API to find and output
- * various statistical metrics of the data.</p>
+ * Finally, it creates the dataset based on the processed data and uses Dataset API to find and output various
+ * statistical metrics of the data.</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  */
@@ -63,7 +64,7 @@ public class ImputingExample {
                 .fit(ignite, persons, featureExtractor);
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
-            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, preprocessor)) {
+            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, FeatureLabelExtractorWrapper.wrap(preprocessor))) {
                 new DatasetHelper(dataset).describe();
             }
 

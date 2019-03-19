@@ -21,9 +21,9 @@ import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
@@ -33,20 +33,20 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class SimpleDatasetDataBuilder<K, V, C extends Serializable>
+public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO>
     implements PartitionDataBuilder<K, V, C, SimpleDatasetData> {
     /** */
     private static final long serialVersionUID = 756800193212149975L;
 
     /** Function that extracts features from an {@code upstream} data. */
-    private final IgniteBiFunction<K, V, Vector> featureExtractor;
+    private final Vectorizer<K, V, CO, ?> featureExtractor;
 
     /**
      * Construct a new instance of partition {@code data} builder that makes {@link SimpleDatasetData}.
      *
      * @param featureExtractor Function that extracts features from an {@code upstream} data.
      */
-    public SimpleDatasetDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor) {
+    public SimpleDatasetDataBuilder(Vectorizer<K, V, CO, ?> featureExtractor) {
         this.featureExtractor = featureExtractor;
     }
 
@@ -61,7 +61,7 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable>
         int ptr = 0;
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
-            Vector row = featureExtractor.apply(entry.getKey(), entry.getValue());
+            Vector row = featureExtractor.apply(entry.getKey(), entry.getValue()).features();
 
             if (cols < 0) {
                 cols = row.size();

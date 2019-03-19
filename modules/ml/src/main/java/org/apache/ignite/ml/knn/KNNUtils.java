@@ -20,10 +20,9 @@ package org.apache.ignite.ml.knn;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -38,18 +37,14 @@ public class KNNUtils {
      *
      * @param envBuilder Learning environment builder.
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @return Dataset.
      */
-    @Nullable public static <K, V> Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> buildDataset(
+    @Nullable public static <K, V, C> Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> buildDataset(
         LearningEnvironmentBuilder envBuilder,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        DatasetBuilder<K, V> datasetBuilder, Vectorizer<K,V,C,Double> vectorizer) {
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder
-            = new LabeledDatasetPartitionDataBuilderOnHeap<>(
-            featureExtractor,
-            lbExtractor
-        );
+            = new LabeledDatasetPartitionDataBuilderOnHeap<>(vectorizer);
 
         Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = null;
 

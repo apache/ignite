@@ -17,30 +17,30 @@
 
 package org.apache.ignite.ml.svm;
 
+import java.util.List;
 import java.util.Random;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Base class for a soft-margin SVM linear classification trainer based on the communication-efficient distributed dual
  * coordinate ascent algorithm (CoCoA) with hinge-loss function. <p> This trainer takes input as Labeled Dataset with 0
- * and 1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found
- * here https://arxiv.org/abs/1409.1458.
+ * and 1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found here
+ * https://arxiv.org/abs/1409.1458.
  */
 public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SVMLinearClassificationModel> {
     /** Amount of outer SDCA algorithm iterations. */
@@ -62,31 +62,29 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
      * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
      * @return Model.
      */
-    @Override public <K, V> SVMLinearClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override public <K, V, C> SVMLinearClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> SVMLinearClassificationModel updateModel(SVMLinearClassificationModel mdl,
+    @Override protected <K, V, C> SVMLinearClassificationModel updateModel(SVMLinearClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+        Vectorizer<K, V, C, Double> extractor) {
 
         assert datasetBuilder != null;
 
-        IgniteBiFunction<K, V, Double> patchedLbExtractor = (k, v) ->  {
-            final Double lb = extractor.extractLabel(k, v);
+        IgniteFunction<Double, Double> patchedLbExtractor = lb -> {
             if (lb == 0.0)
                 return -1.0;
             else
                 return lb;
         };
+        Vectorizer<K, V, C, Double> patchedVectorizer = patchVectorizer(extractor, patchedLbExtractor);
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
-            CompositionUtils.asFeatureExtractor(extractor),
-            patchedLbExtractor
-        );
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder =
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(patchedVectorizer);
 
         Vector weights;
 
@@ -120,6 +118,19 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
             throw new RuntimeException(e);
         }
         return new SVMLinearClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
+    }
+
+    /**
+     * Patch vetorizer by changing label value.
+     *
+     * @param vectorizer Vectorizer.
+     * @param lbMapper Label Mapper.
+     * @return Vectorizer.
+     */
+    private <V, C, K> Vectorizer<K, V, C, Double> patchVectorizer(Vectorizer<K, V, C, Double> vectorizer,
+        IgniteFunction<Double, Double> lbMapper) {
+
+        return new PatchedVectorizer<>(vectorizer, lbMapper);
     }
 
     /** {@inheritDoc} */
@@ -337,6 +348,53 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
     public SVMLinearClassificationTrainer withSeed(long seed) {
         this.seed = seed;
         return this;
+    }
+
+    /**
+     * Wrapper for label patching.
+     */
+    private static class PatchedVectorizer<K, V, C> extends Vectorizer<K, V, C, Double> {
+        private final Vectorizer<K, V, C, Double> originalVectorizer;
+        private final IgniteFunction<Double, Double> labelMapping;
+
+        /**
+         * Create an instance of PatchedVectorizer.
+         *
+         * @param originalVectorizer Original vectorizer.
+         * @param labelMapping Label mapping.
+         */
+        public PatchedVectorizer(
+            Vectorizer<K, V, C, Double> originalVectorizer,
+            IgniteFunction<Double, Double> labelMapping) {
+            this.originalVectorizer = originalVectorizer;
+            this.labelMapping = labelMapping;
+        }
+
+        /** {@inheritDoc} */
+        @Override public LabeledVector<Double> apply(K key, V value) {
+            LabeledVector<Double> labeledVector = originalVectorizer.extract(key, value);
+            return labeledVector.features().labeled(labelMapping.apply(labeledVector.label()));
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Double feature(C coord, K key, V value) {
+            throw new IllegalStateException();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Double label(C coord, K key, V value) {
+            throw new IllegalStateException();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Double zero() {
+            throw new IllegalStateException();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected List<C> allCoords(K key, V value) {
+            throw new IllegalStateException();
+        }
     }
 }
 

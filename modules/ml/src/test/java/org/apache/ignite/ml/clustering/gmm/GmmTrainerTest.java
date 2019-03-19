@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -98,13 +99,13 @@ public class GmmTrainerTest extends TrainerTest {
 
         model = trainer.updateModel(model,
             new LocalDatasetBuilder<>(new HashMap<>(), parts),
-            new FeatureLabelExtractor<Double, Vector, Double>() {
+            new FeatureLabelExtractorWrapper<>(new FeatureLabelExtractor<Double, Vector, Double>() {
                 private static final long serialVersionUID = -7245682432641745217L;
 
                 @Override public LabeledVector<Double> extract(Double aDouble, Vector vector) {
                     return new LabeledVector<>(new DenseVector(2), 1.0);
                 }
-            }
+            })
         );
 
         Assert.assertEquals(2, model.countOfComponents());

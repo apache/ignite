@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.examples.ml.util.DatasetHelper;
 import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -63,7 +64,7 @@ public class NormalizationExample {
                 .fit(ignite, persons, featureExtractor);
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
-            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, preprocessor)) {
+            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, FeatureLabelExtractorWrapper.wrap(preprocessor))) {
                 new DatasetHelper(dataset).describe();
             }
 

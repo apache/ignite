@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
@@ -45,7 +46,7 @@ public class SimpleDatasetTest {
             dataPoints,
             2,
             TestUtils.testEnvBuilder(),
-            (k, v) -> VectorUtils.of(v.getAge(), v.getSalary())
+            new FeatureLabelExtractorWrapper<>((k, v) -> VectorUtils.of(v.getAge(), v.getSalary()).labeled(0.0))
         )) {
             assertArrayEquals("Mean values.", new double[] {37.75, 66000.0}, dataset.mean(), 0);
 

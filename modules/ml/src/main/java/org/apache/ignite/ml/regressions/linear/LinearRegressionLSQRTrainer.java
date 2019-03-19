@@ -18,8 +18,9 @@
 package org.apache.ignite.ml.regressions.linear;
 
 import java.util.Arrays;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.math.isolve.lsqr.AbstractLSQR;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeap;
@@ -36,40 +37,43 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  */
 public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<LinearRegressionModel> {
     /** {@inheritDoc} */
-    @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override public <K, V, C> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
+    @Override protected <K, V, C> LinearRegressionModel updateModel(LinearRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+        Vectorizer<K, V, C, Double> extractor) {
 
         LSQRResult res;
 
+        FeatureLabelExtractor<K, V, double[]> vectorizer = extractor.andThen(v -> v.features().labeled(new double[] {v.label()}));
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             envBuilder,
-            new SimpleLabeledDatasetDataBuilder<>(
-                new FeatureExtractorWrapper<>(CompositionUtils.asFeatureExtractor(extractor)),
-                CompositionUtils.asLabelExtractor(extractor).andThen(e -> new double[] {e})
-            )
-        )) {
+            new SimpleLabeledDatasetDataBuilder<>(new FeatureLabelExtractorWrapper<>(vectorizer)))) {
+            
             double[] x0 = null;
-            if (mdl != null) {
+            if(mdl !=null)
+
+            {
                 int x0Size = mdl.getWeights().size() + 1;
                 Vector weights = mdl.getWeights().like(x0Size);
                 mdl.getWeights().nonZeroes().forEach(ith -> weights.set(ith.index(), ith.get()));
                 weights.set(weights.size() - 1, mdl.getIntercept());
                 x0 = weights.asArray();
             }
-            res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, x0);
-            if (res == null)
-                return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
+
+            res =lsqr.solve(0,1e-12,1e-12,1e8,-1,false,x0);
+            if(res ==null)
+                return
+
+            getLastTrainedModelOrThrowEmptyDatasetException(mdl);
         }
-        catch (Exception e) {
+        catch(Exception e) {
             throw new RuntimeException(e);
         }
 

@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.examples.ml.util.DatasetHelper;
 import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
@@ -51,7 +52,7 @@ public class CacheBasedDatasetExample {
             try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
                 ignite,
                 persons,
-                (k, v) -> VectorUtils.of(v.getAge(), v.getSalary())
+                FeatureLabelExtractorWrapper.wrap((k, v) -> VectorUtils.of(v.getAge(), v.getSalary()))
             )) {
                 new DatasetHelper(dataset).describe();
             }

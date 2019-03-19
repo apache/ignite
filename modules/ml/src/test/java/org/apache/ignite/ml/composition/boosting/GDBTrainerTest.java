@@ -26,11 +26,13 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.convergence.simple.ConvergenceCheckerStubFactory;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
@@ -197,8 +199,8 @@ public class GDBTrainerTest extends TrainerTest {
         ModelsComposition updatedOnSameDataset = trainer.update(originalMdl, dataset, 1, fExtr, lExtr);
 
         LocalDatasetBuilder<Integer, double[]> epmtyDataset = new LocalDatasetBuilder<>(new HashMap<>(), 1);
-        ModelsComposition updatedOnEmptyDataset = trainer.updateModel(originalMdl,
-            epmtyDataset, (k, v) -> new LabeledVector<>(fExtr.apply(k, v), lExtr.apply(k, v)));
+        FeatureLabelExtractor<Integer, double[], Double> extractor = (k, v) -> new LabeledVector<>(fExtr.apply(k, v), lExtr.apply(k, v));
+        ModelsComposition updatedOnEmptyDataset = trainer.updateModel(originalMdl, epmtyDataset, new FeatureLabelExtractorWrapper<>(extractor));
 
         dataset.forEach((k,v) -> {
             Vector features = fExtr.apply(k, v);

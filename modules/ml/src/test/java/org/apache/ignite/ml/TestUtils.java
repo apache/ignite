@@ -17,15 +17,14 @@
 
 package org.apache.ignite.ml;
 
+import java.util.stream.IntStream;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.junit.Assert;
-
-import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertTrue;
 
@@ -448,8 +447,8 @@ public class TestUtils {
     public static <I, O, M extends IgniteModel<I, O>, L> DatasetTrainer<M, L> constantTrainer(M ml) {
         return new DatasetTrainer<M, L>() {
             /** {@inheritDoc} */
-            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, L> extractor) {
+            @Override public <K, V, C> M fit(DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, L> extractor) {
                 return ml;
             }
 
@@ -459,8 +458,8 @@ public class TestUtils {
             }
 
             /** {@inheritDoc} */
-            @Override public <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, L> extractor) {
+            @Override public <K, V, C> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, L> extractor) {
                 return ml;
             }
         };

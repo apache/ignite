@@ -25,6 +25,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDataset;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
@@ -73,10 +74,11 @@ public class DataStreamGeneratorFillCacheTest extends GridCommonAbstractTest {
             DataStreamGenerator generator = new GaussRandomProducer(0).vectorize(1).asDataStream();
             generator.fillCacheWithVecUUIDAsKey(datasetSize, cache);
 
+            LabeledDummyVectorizer<UUID, Double> vectorizer = new LabeledDummyVectorizer<>();
             CacheBasedDatasetBuilder<UUID, LabeledVector<Double>> datasetBuilder = new CacheBasedDatasetBuilder<>(ignite, cache);
             try (CacheBasedDataset<UUID, LabeledVector<Double>, EmptyContext, SimpleDatasetData> dataset =
                      datasetBuilder.build(LearningEnvironmentBuilder.defaultBuilder(),
-                         new EmptyContextBuilder<>(), new SimpleDatasetDataBuilder<>((k, v) -> v.features()))) {
+                         new EmptyContextBuilder<>(), new SimpleDatasetDataBuilder<>(vectorizer))) {
 
                 StatPair result = dataset.compute(
                     data -> new StatPair(DoubleStream.of(data.getFeatures()).sum(), data.getRows()),

@@ -26,8 +26,10 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.primitive.DatasetWrapper;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
@@ -74,10 +76,10 @@ public class AlgorithmSpecificDatasetExample {
                 ignite,
                 persons,
                 (env, upstream, upstreamSize) -> new AlgorithmSpecificPartitionContext(),
-                new SimpleLabeledDatasetDataBuilder<Integer, Person, AlgorithmSpecificPartitionContext>(
+                new SimpleLabeledDatasetDataBuilder<Integer, Person, AlgorithmSpecificPartitionContext, Object>(new FeatureLabelExtractorWrapper<>(CompositionUtils.asFeatureLabelExtractor(
                     (k, v) -> VectorUtils.of(v.getAge()),
                     (k, v) -> new double[] {v.getSalary()}
-                ).andThen((data, ctx) -> {
+                ))).andThen((data, ctx) -> {
                     double[] features = data.getFeatures();
                     int rows = data.getRows();
 

@@ -22,12 +22,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasure;
@@ -74,8 +74,8 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> DecisionTreeNode fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override public <K, V, C> DecisionTreeNode fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
@@ -98,8 +98,8 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      * @param <V> Type of a value in {@code upstream} data.
      * @return New model based on new dataset.
      */
-    @Override protected <K, V> DecisionTreeNode updateModel(DecisionTreeNode mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override protected <K, V, C> DecisionTreeNode updateModel(DecisionTreeNode mdl, DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
 
         return fit(datasetBuilder, extractor);
     }

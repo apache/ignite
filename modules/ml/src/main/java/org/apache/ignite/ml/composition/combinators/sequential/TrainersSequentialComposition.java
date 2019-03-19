@@ -24,6 +24,7 @@ import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.DatasetMapping;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -82,6 +83,93 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
             out2In);
     }
 
+    /** {@inheritDoc} */
+    @Override public <K, V, C> ModelsSequentialComposition<I, O1, O2> fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor) {
+
+        IgniteModel<I, O1> mdl1 = tr1.fit(datasetBuilder, extractor);
+        IgniteFunction<LabeledVector<L>, LabeledVector<L>> mapping = datasetMapping.apply(0, mdl1);
+
+        IgniteModel<O1, O2> mdl2 = tr2.fit(datasetBuilder, extractor.andThen(mapping));
+
+        return new ModelsSequentialComposition<>(mdl1, mdl2);
+    }
+
+    /**
+     * Construct sequential composition of given two trainers.
+     *
+     * @param tr1 First trainer.
+     * @param tr2 Second trainer.
+     * @param datasetMapping Dataset mapping.
+     */
+    public TrainersSequentialComposition(DatasetTrainer<? extends IgniteModel<I, O1>, L> tr1,
+        DatasetTrainer<? extends IgniteModel<O1, O2>, L> tr2,
+        IgniteFunction<? super IgniteModel<I, O1>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>> datasetMapping) {
+        this.tr1 = CompositionUtils.unsafeCoerce(tr1);
+        this.tr2 = CompositionUtils.unsafeCoerce(tr2);
+        this.datasetMapping = (i, mdl) -> datasetMapping.apply(mdl);
+    }
+
+    /**
+     * Create sequential composition of two trainers.
+     * @param tr1 First trainer.
+     * @param tr2 Second trainer.
+     * @param datasetMapping Dataset mapping containing dependence between first and second trainer.
+     */
+    public TrainersSequentialComposition(DatasetTrainer<? extends IgniteModel<I, O1>, L> tr1,
+        DatasetTrainer<? extends IgniteModel<O1, O2>, L> tr2,
+        IgniteBiFunction<Integer, ? super IgniteModel<I, O1>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>> datasetMapping) {
+        this.tr1 = CompositionUtils.unsafeCoerce(tr1);
+        this.tr2 = CompositionUtils.unsafeCoerce(tr2);
+        this.datasetMapping = datasetMapping;
+    }
+
+    /**
+     * This method is never called, instead of constructing logic of update from
+     * {@link DatasetTrainer#isUpdateable(IgniteModel)} and
+     * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, IgniteBiFunction, IgniteBiFunction)}
+     * in this class we explicitly override update method.
+     *
+     * @param mdl Model.
+     * @return Updated model.
+     */
+    @Override protected <K, V, C> ModelsSequentialComposition<I, O1, O2> updateModel(
+        ModelsSequentialComposition<I, O1, O2> mdl,
+        DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor) {
+        // Never called.
+        throw new IllegalStateException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> ModelsSequentialComposition<I, O1, O2> update(
+        ModelsSequentialComposition<I, O1, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
+        FeatureLabelExtractor<K, V, L> extractor) {
+
+        IgniteModel<I, O1> firstUpdated = tr1.update(mdl.firstModel(), datasetBuilder, extractor);
+        IgniteFunction<LabeledVector<L>, LabeledVector<L>> mapping = datasetMapping.apply(0, firstUpdated);
+
+        IgniteModel<O1, O2> secondUpdated = tr2.update(mdl.secondModel(),
+            datasetBuilder,
+            extractor.andThen(mapping));
+
+        return new ModelsSequentialComposition<>(firstUpdated, secondUpdated);
+    }
+
+    /**
+     * This method is never called, instead of constructing logic of update from
+     * {@link DatasetTrainer#isUpdateable} and
+     * {@link DatasetTrainer#updateModel}
+     * in this class we explicitly override update method.
+     *
+     * @param mdl Model.
+     * @return True if current critical for training parameters correspond to parameters from last training.
+     */
+    @Override public boolean isUpdateable(ModelsSequentialComposition<I, O1, O2> mdl) {
+        // Never called.
+        throw new IllegalStateException();
+    }
+
     /**
      * Sequential composition of same trainers.
      *
@@ -123,8 +211,8 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> ModelsSequentialComposition<I, O, O> fit(DatasetBuilder<K, V> datasetBuilder,
-            FeatureLabelExtractor<K, V, L> extractor) {
+        @Override public <K, V, C> ModelsSequentialComposition<I, O, O> fit(DatasetBuilder<K, V> datasetBuilder,
+            Vectorizer<K, V, C, L> extractor) {
 
             int i = 0;
             IgniteModel<I, O> currMdl = null;
@@ -145,93 +233,6 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
 
             return ModelsSequentialComposition.ofSame(mdls, out2Input);
         }
-    }
-
-    /**
-     * Construct sequential composition of given two trainers.
-     *
-     * @param tr1 First trainer.
-     * @param tr2 Second trainer.
-     * @param datasetMapping Dataset mapping.
-     */
-    public TrainersSequentialComposition(DatasetTrainer<? extends IgniteModel<I, O1>, L> tr1,
-        DatasetTrainer<? extends IgniteModel<O1, O2>, L> tr2,
-        IgniteFunction<? super IgniteModel<I, O1>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>> datasetMapping) {
-        this.tr1 = CompositionUtils.unsafeCoerce(tr1);
-        this.tr2 = CompositionUtils.unsafeCoerce(tr2);
-        this.datasetMapping = (i, mdl) -> datasetMapping.apply(mdl);
-    }
-
-    /**
-     * Create sequential composition of two trainers.
-     * @param tr1 First trainer.
-     * @param tr2 Second trainer.
-     * @param datasetMapping Dataset mapping containing dependence between first and second trainer.
-     */
-    public TrainersSequentialComposition(DatasetTrainer<? extends IgniteModel<I, O1>, L> tr1,
-        DatasetTrainer<? extends IgniteModel<O1, O2>, L> tr2,
-        IgniteBiFunction<Integer, ? super IgniteModel<I, O1>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>> datasetMapping) {
-        this.tr1 = CompositionUtils.unsafeCoerce(tr1);
-        this.tr2 = CompositionUtils.unsafeCoerce(tr2);
-        this.datasetMapping = datasetMapping;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> ModelsSequentialComposition<I, O1, O2> fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
-
-        IgniteModel<I, O1> mdl1 = tr1.fit(datasetBuilder, extractor);
-        IgniteFunction<LabeledVector<L>, LabeledVector<L>> mapping = datasetMapping.apply(0, mdl1);
-
-        IgniteModel<O1, O2> mdl2 = tr2.fit(datasetBuilder, extractor.andThen(mapping));
-
-        return new ModelsSequentialComposition<>(mdl1, mdl2);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> ModelsSequentialComposition<I, O1, O2> update(
-        ModelsSequentialComposition<I, O1, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
-
-        IgniteModel<I, O1> firstUpdated = tr1.update(mdl.firstModel(), datasetBuilder, extractor);
-        IgniteFunction<LabeledVector<L>, LabeledVector<L>> mapping = datasetMapping.apply(0, firstUpdated);
-
-        IgniteModel<O1, O2> secondUpdated = tr2.update(mdl.secondModel(),
-            datasetBuilder,
-            extractor.andThen(mapping));
-
-        return new ModelsSequentialComposition<>(firstUpdated, secondUpdated);
-    }
-
-    /**
-     * This method is never called, instead of constructing logic of update from
-     * {@link DatasetTrainer#isUpdateable} and
-     * {@link DatasetTrainer#updateModel}
-     * in this class we explicitly override update method.
-     *
-     * @param mdl Model.
-     * @return True if current critical for training parameters correspond to parameters from last training.
-     */
-    @Override public boolean isUpdateable(ModelsSequentialComposition<I, O1, O2> mdl) {
-        // Never called.
-        throw new IllegalStateException();
-    }
-
-    /**
-     * This method is never called, instead of constructing logic of update from
-     * {@link DatasetTrainer#isUpdateable(IgniteModel)} and
-     * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, IgniteBiFunction, IgniteBiFunction)}
-     * in this class we explicitly override update method.
-     *
-     * @param mdl Model.
-     * @return Updated model.
-     */
-    @Override protected <K, V> ModelsSequentialComposition<I, O1, O2> updateModel(
-        ModelsSequentialComposition<I, O1, O2> mdl,
-        DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
-        // Never called.
-        throw new IllegalStateException();
     }
 
     /**

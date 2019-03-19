@@ -19,6 +19,7 @@ package org.apache.ignite.ml.composition;
 
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -44,8 +45,8 @@ public class CompositionUtils {
         DatasetTrainer<? extends M, L> trainer) {
         return new DatasetTrainer<IgniteModel<I, O>, L>() {
             /** {@inheritDoc} */
-            @Override public <K, V> IgniteModel<I, O> fit(DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, L> extractor) {
+            @Override public <K, V, C> IgniteModel<I, O> fit(DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, L> extractor) {
                 return trainer.fit(datasetBuilder, extractor);
             }
 
@@ -78,8 +79,8 @@ public class CompositionUtils {
              * @param mdl Model.
              * @return Updated model.
              */
-            @Override protected <K, V> IgniteModel<I, O> updateModel(IgniteModel<I, O> mdl, DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, L> extractor) {
+            @Override protected <K, V, C> IgniteModel<I, O> updateModel(IgniteModel<I, O> mdl, DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, L> extractor) {
                 throw new IllegalStateException();
             }
         };

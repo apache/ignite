@@ -22,12 +22,12 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -37,7 +37,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public abstract class ConvergenceChecker<K, V> implements Serializable {
+public abstract class ConvergenceChecker<K, V, C> implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 710762134746674105L;
 
@@ -50,11 +50,8 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
     /** Loss function. */
     private Loss loss;
 
-    /** Feature extractor. */
-    private IgniteBiFunction<K, V, Vector> featureExtractor;
-
-    /** Label extractor. */
-    private IgniteBiFunction<K, V, Double> lbExtractor;
+    /** Upastream vectorizer. */
+    private Vectorizer<K, V, C, Double> vectorizer;
 
     /** Precision of convergence check. */
     private double precision;
@@ -66,24 +63,21 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
      * @param externalLbToInternalMapping External label to internal mapping.
      * @param loss Loss gradient.
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param precision Precision.
      */
     public ConvergenceChecker(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor,
-        double precision) {
+        DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> vectorizer, double precision) {
 
         assert precision < 1 && precision >= 0;
 
         this.sampleSize = sampleSize;
         this.externalLbToInternalMapping = externalLbToInternalMapping;
         this.loss = loss;
-        this.featureExtractor = featureExtractor;
-        this.lbExtractor = lbExtractor;
         this.precision = precision;
+        this.vectorizer = vectorizer;
     }
 
     /**
@@ -100,7 +94,7 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
         try (Dataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new FeatureMatrixWithLabelsOnHeapDataBuilder<>(featureExtractor, lbExtractor)
+            new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer)
         )) {
             return isConverged(dataset, currMdl);
         }
@@ -116,7 +110,8 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
      * @param currMdl Current model.
      * @return true if GDB is converged.
      */
-    public boolean isConverged(Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset, ModelsComposition currMdl) {
+    public boolean isConverged(Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset,
+        ModelsComposition currMdl) {
         Double error = computeMeanErrorOnDataset(dataset, currMdl);
         return error < precision || error.isNaN();
     }

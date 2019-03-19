@@ -31,6 +31,7 @@ import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
@@ -41,7 +42,6 @@ import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -69,15 +69,15 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * @param extractor Mapping from upstream entry to {@link LabeledVector}.
      * @return Model.
      */
-    @Override public <K, V> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override public <K, V, C> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> ANNClassificationModel updateModel(ANNClassificationModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override protected <K, V, C> ANNClassificationModel updateModel(ANNClassificationModel mdl,
+        DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> extractor) {
 
         IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
         IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
@@ -86,14 +86,14 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         CentroidStat centroidStat;
         if (mdl != null) {
             centers = Arrays.stream(mdl.getCandidates().data()).map(x -> x.features()).collect(Collectors.toList());
-            CentroidStat newStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
-            if(newStat == null)
+            CentroidStat newStat = getCentroidStat(datasetBuilder, extractor, centers);
+            if (newStat == null)
                 return mdl;
             CentroidStat oldStat = mdl.getCentroindsStat();
             centroidStat = newStat.merge(oldStat);
         } else {
             centers = getCentroids(featureExtractor, lbExtractor, datasetBuilder);
-            centroidStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
+            centroidStat = getCentroidStat(datasetBuilder, extractor, centers);
         }
 
         final LabeledVectorSet<ProbableLabel, LabeledVector> dataset = buildLabelsForCandidates(centers, centroidStat);
@@ -176,14 +176,11 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     }
 
     /** */
-    private <K, V> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor, List<Vector> centers) {
+    private <K, V, C> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> vectorizer,
+        List<Vector> centers) {
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
-            featureExtractor,
-            lbExtractor
-        );
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(vectorizer);
 
         try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
             envBuilder,

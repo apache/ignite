@@ -30,19 +30,19 @@ import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataOnHeap;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
  * This is a common heuristic trainer for multi-class labeled models.
  *
- * NOTE: The current implementation suffers from unbalanced training over the dataset due to unweighted approach
- * during the process of reassign labels from all range of labels to 0,1.
+ * NOTE: The current implementation suffers from unbalanced training over the dataset due to unweighted approach during
+ * the process of reassign labels from all range of labels to 0,1.
  */
 public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
     extends SingleLabelDatasetTrainer<MultiClassModel<M>> {
@@ -55,20 +55,20 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> MultiClassModel<M> fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override public <K, V, C> MultiClassModel<M> fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> MultiClassModel<M> updateModel(MultiClassModel<M> newMdl,
-        DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override protected <K, V, C> MultiClassModel<M> updateModel(MultiClassModel<M> newMdl,
+        DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> extractor) {
 
         IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
         IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
 
-        List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
+        List<Double> classes = extractClassLabels(datasetBuilder, extractor);
 
         if (classes.isEmpty())
             return getLastTrainedModelOrThrowEmptyDatasetException(newMdl);
@@ -102,11 +102,11 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
     }
 
     /** Iterates among dataset and collects class labels. */
-    private <K, V> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+    private <K, V, C> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> vectorizer) {
         assert datasetBuilder != null;
 
-        PartitionDataBuilder<K, V, EmptyContext, LabelPartitionDataOnHeap> partDataBuilder = new LabelPartitionDataBuilderOnHeap<>(lbExtractor);
+        PartitionDataBuilder<K, V, EmptyContext, LabelPartitionDataOnHeap> partDataBuilder = new LabelPartitionDataBuilderOnHeap<>(vectorizer);
 
         List<Double> res = new ArrayList<>();
 

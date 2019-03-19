@@ -22,7 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -49,10 +51,10 @@ public class LSQROnHeapTest extends TrainerTest {
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             TestUtils.testEnvBuilder(),
-            new SimpleLabeledDatasetDataBuilder<>(
+            new SimpleLabeledDatasetDataBuilder<>(new FeatureLabelExtractorWrapper<>(CompositionUtils.asFeatureLabelExtractor(
                 (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[3]}
-            )
+            )))
         );
 
         LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
@@ -67,7 +69,7 @@ public class LSQROnHeapTest extends TrainerTest {
         assertEquals(3.000000000000001, res.getXnorm(), 0.0001);
         assertArrayEquals(new double[]{0.0, 0.0, 0.0}, res.getVar(), 1e-6);
         assertArrayEquals(new double[]{1, -2, -2}, res.getX(), 1e-6);
-        assertTrue(res.toString().length() > 0);
+        assertTrue(!res.toString().isEmpty());
     }
 
     /** Tests solving simple linear system with specified x0. */
@@ -83,10 +85,10 @@ public class LSQROnHeapTest extends TrainerTest {
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             TestUtils.testEnvBuilder(),
-            new SimpleLabeledDatasetDataBuilder<>(
+            new SimpleLabeledDatasetDataBuilder<>(new FeatureLabelExtractorWrapper<>(CompositionUtils.asFeatureLabelExtractor(
                 (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[3]}
-            )
+            )))
         );
 
         LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false,
@@ -117,11 +119,11 @@ public class LSQROnHeapTest extends TrainerTest {
         try (LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             TestUtils.testEnvBuilder(),
-            new SimpleLabeledDatasetDataBuilder<>(
+            new SimpleLabeledDatasetDataBuilder<>(new FeatureLabelExtractorWrapper<>(CompositionUtils.asFeatureLabelExtractor(
                 (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[4]}
             )
-        )) {
+        )))) {
             LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
 
             assertEquals(8, res.getIterations());

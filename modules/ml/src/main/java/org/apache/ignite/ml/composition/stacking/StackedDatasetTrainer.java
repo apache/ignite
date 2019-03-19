@@ -25,6 +25,7 @@ import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.combinators.parallel.ModelsParallelComposition;
 import org.apache.ignite.ml.composition.combinators.parallel.TrainersParallelComposition;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -230,8 +231,8 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> StackedModel<IS, IA, O, AM> fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+    @Override public <K, V, C> StackedModel<IS, IA, O, AM> fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor) {
 
         return new StackedModel<>(getTrainer().fit(datasetBuilder, extractor));
     }
@@ -353,9 +354,9 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
      * @param mdl Model.
      * @return Updated model.
      */
-    @Override protected <K, V> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
+    @Override protected <K, V, C> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+        Vectorizer<K, V, C, L> extractor) {
         // This method is never called, we override "update" instead.
         throw new IllegalStateException();
     }

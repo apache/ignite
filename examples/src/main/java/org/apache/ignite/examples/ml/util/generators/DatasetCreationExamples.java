@@ -27,6 +27,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDataset;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
@@ -68,7 +69,7 @@ public class DatasetCreationExamples {
         double meanFromLocDataset;
         try (Dataset<EmptyContext, SimpleDatasetData> dataset = generator.asDatasetBuilder(DATASET_SIZE, 10)
             .build(LearningEnvironmentBuilder.defaultBuilder(), new EmptyContextBuilder<>(),
-                new SimpleDatasetDataBuilder<>((k, v) -> k))) {
+                new SimpleDatasetDataBuilder<>(FeatureLabelExtractorWrapper.wrap((k, v) -> k)))) {
 
             meanFromLocDataset = dataset.compute(
                 data -> DoubleStream.of(data.getFeatures()).sum(),
@@ -135,7 +136,7 @@ public class DatasetCreationExamples {
         try (CacheBasedDataset<UUID, LabeledVector<Double>, EmptyContext, SimpleDatasetData> dataset =
                  builder.build(LearningEnvironmentBuilder.defaultBuilder(),
                      new EmptyContextBuilder<>(),
-                     new SimpleDatasetDataBuilder<>((k, v) -> v.features()))) {
+                     new SimpleDatasetDataBuilder<>(FeatureLabelExtractorWrapper.wrap((k, v) -> v.features())))) {
 
             result = dataset.compute(
                 data -> DoubleStream.of(data.getFeatures()).sum(),

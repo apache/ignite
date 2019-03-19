@@ -23,6 +23,7 @@ import org.apache.commons.math3.distribution.PoissonDistribution;
 import org.apache.commons.math3.random.Well19937c;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -58,10 +59,7 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
      * @param samplesCnt Samples count.
      * @param subsampleSize Subsample size.
      */
-    public BootstrappedDatasetBuilder(FeatureLabelExtractor<K, V, Double> extractor,
-        int samplesCnt,
-        double subsampleSize) {
-
+    public <C> BootstrappedDatasetBuilder(Vectorizer<K, V, C, Double> extractor, int samplesCnt, double subsampleSize) {
         this.extractor = extractor;
         this.samplesCnt = samplesCnt;
         this.subsampleSize = subsampleSize;

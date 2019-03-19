@@ -25,12 +25,12 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 /**
  * Partition data for GMM algorithm. Unlike partition data for other algorithms this class aggregate probabilities of
@@ -104,12 +104,12 @@ class GmmPartitionData implements AutoCloseable {
     /**
      * Builder for GMM partition data.
      */
-    public static class Builder<K, V> implements PartitionDataBuilder<K, V, EmptyContext, GmmPartitionData> {
+    public static class Builder<K, V, C> implements PartitionDataBuilder<K, V, EmptyContext, GmmPartitionData> {
         /** Serial version uid. */
         private static final long serialVersionUID = 1847063348042022561L;
 
-        /** Extractor. */
-        private final FeatureLabelExtractor<K, V, Double> extractor;
+        /** Upsteam vectorizer. */
+        private final Vectorizer<K, V, C, Double> extractor;
 
         /** Count of components of mixture. */
         private final int countOfComponents;
@@ -120,7 +120,7 @@ class GmmPartitionData implements AutoCloseable {
          * @param extractor Extractor.
          * @param countOfComponents Count of components.
          */
-        public Builder(FeatureLabelExtractor<K, V, Double> extractor, int countOfComponents) {
+        public Builder(Vectorizer<K, V, C, Double> extractor, int countOfComponents) {
             this.extractor = extractor;
             this.countOfComponents = countOfComponents;
         }
