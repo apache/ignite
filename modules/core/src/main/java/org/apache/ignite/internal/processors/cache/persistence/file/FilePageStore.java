@@ -349,7 +349,7 @@ public class FilePageStore implements PageStore {
 
                 long delta = newSize - allocated.getAndSet(newSize);
 
-                assert delta % pageSize == 0;
+                assert delta % pageSize == 0 : delta;
 
                 allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
             }
@@ -396,7 +396,7 @@ public class FilePageStore implements PageStore {
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder();
             assert off <= allocated.get() : "calculatedOffset=" + off +
-                ", allocated=" + allocated.get() + ", headerSize=" + headerSize();
+                ", allocated=" + allocated.get() + ", headerSize=" + headerSize() + ", cfgFile=" + cfgFile;
 
             int n = readWithFailover(pageBuf, off);
 
