@@ -555,7 +555,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
             // No-op.
         }
 
-        checkMetrics(1, 0, 2, 2, true);
+        checkMetrics(1, 0, 2, 2, false);
     }
 
     /**

@@ -298,8 +298,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         if (!ctx.clientNode()) {
             assert mvccEnabled && mvccSupported;
 
-            if (txLog == null)
-                txLog = new TxLog(ctx, ctx.cache().context().database());
+            synchronized (mux) {
+                if (txLog == null)
+                    txLog = new TxLog(ctx, ctx.cache().context().database());
+            }
 
             startVacuumWorkers();
 
@@ -1088,29 +1090,29 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      * Launches vacuum workers and scheduler.
      */
     void startVacuumWorkers() {
-        if (!ctx.clientNode()) {
-            synchronized (mux) {
-                if (vacuumWorkers == null) {
-                    assert cleanupQueue == null;
+        assert !ctx.clientNode();
 
-                    cleanupQueue = new LinkedBlockingQueue<>();
+        synchronized (mux) {
+            if (vacuumWorkers == null) {
+                assert cleanupQueue == null;
 
-                    vacuumWorkers = new ArrayList<>(ctx.config().getMvccVacuumThreadCount() + 1);
+                cleanupQueue = new LinkedBlockingQueue<>();
 
-                    vacuumWorkers.add(new VacuumScheduler(ctx, log, this));
+                vacuumWorkers = new ArrayList<>(ctx.config().getMvccVacuumThreadCount() + 1);
 
-                    for (int i = 0; i < ctx.config().getMvccVacuumThreadCount(); i++)
-                        vacuumWorkers.add(new VacuumWorker(ctx, log, cleanupQueue));
+                vacuumWorkers.add(new VacuumScheduler(ctx, log, this));
 
-                    for (GridWorker worker : vacuumWorkers)
-                        new IgniteThread(worker).start();
+                for (int i = 0; i < ctx.config().getMvccVacuumThreadCount(); i++)
+                    vacuumWorkers.add(new VacuumWorker(ctx, log, cleanupQueue));
 
-                    return;
-                }
+                for (GridWorker worker : vacuumWorkers)
+                    new IgniteThread(worker).start();
+
+                return;
             }
-
-            U.warn(log, "Attempting to start active vacuum.");
         }
+
+        U.warn(log, "Attempting to start active vacuum.");
     }
 
     /**
@@ -2145,6 +2147,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                     throw e; // Cancelled.
                 }
+                catch (NodeStoppingException e) {
+                    task.onDone(e);
+
+                    return;
+                }
                 catch (Throwable e) {
                     task.onDone(e);
 
@@ -2173,8 +2180,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             int curCacheId = CU.UNDEFINED_CACHE_ID;
 
             try {
-                GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(KEY_ONLY);
-
                 KeyCacheObject prevKey = null;
 
                 Object rest = null;
@@ -2190,6 +2195,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 if (!shared && (cctx = F.first(part.group().caches())) == null)
                     return metrics;
 
+                GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(KEY_ONLY);
+
                 while (cursor.next()) {
                     if (isCancelled())
                         throw new IgniteInterruptedCheckedException("Operation has been cancelled.");
@@ -2199,14 +2206,14 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     if (prevKey == null)
                         prevKey = row.key();
 
-                    if (cctx == null) {
+                    if (cctx == null) { // Shared group.
                         cctx = part.group().shared().cacheContext(curCacheId = row.cacheId());
 
                         if (cctx == null)
-                            return metrics;
+                            continue;
                     }
 
-                    if (!prevKey.equals(row.key()) || (shared && curCacheId != row.cacheId())) {
+                    if ((shared && curCacheId != row.cacheId()) || !prevKey.equals(row.key())) {
                         if (rest != null || !F.isEmpty(cleanupRows))
                             cleanup(part, prevKey, cleanupRows, rest, cctx, metrics);
 
@@ -2218,7 +2225,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                             cctx = part.group().shared().cacheContext(curCacheId = row.cacheId());
 
                             if (cctx == null)
-                                return metrics;
+                                continue;
                         }
 
                         prevKey = row.key();
