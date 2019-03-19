@@ -104,8 +104,16 @@ public class DistributedProperty<T extends Serializable> {
     /**
      * @return Current property value.
      */
-    public T value() {
+    public T get() {
         return val;
+    }
+
+    /**
+     * @param dfltVal Default value when current value is null.
+     * @return Current property value.
+     */
+    public T getOrDefault(T dfltVal) {
+        return val == null ? dfltVal : val;
     }
 
     /**
@@ -136,7 +144,7 @@ public class DistributedProperty<T extends Serializable> {
      *
      * @param newVal New value.
      */
-    public void localUpdate(Serializable newVal) {
+   void localUpdate(Serializable newVal) {
         val = (T)newVal;
     }
 

@@ -19,8 +19,8 @@ package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
@@ -28,10 +28,10 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_SEMAPHORE_PERMITS;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
+import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 
 /**
  * Distributed baseline configuration.
@@ -45,49 +45,76 @@ public class DistributedBaselineConfiguration {
     private static final String AUTO_ADJUST_CONFIGURED_MESSAGE = "Baseline auto-adjust is '%s' with timeout='%d' ms";
     /** Value of manual baseline control or auto adjusting baseline. */
     private volatile DistributedBooleanProperty baselineAutoAdjustEnabled =
-        detachedBooleanProperty("baselineAutoAdjustEnabled", false);
+        detachedBooleanProperty("baselineAutoAdjustEnabled");
+    /** */
+    private volatile long dfltTimeout = DEFAULT_PERSISTENCE_TIMEOUT;
+    /** */
+    private final GridKernalContext ctx;
+    /** */
+    private final IgniteLogger log;
 
     /**
      * Value of time which we would wait before the actual topology change since last discovery event(node join/exit).
      */
     private volatile DistributedLongProperty baselineAutoAdjustTimeout =
-        detachedLongProperty("baselineAutoAdjustTimeout", -1L);
+        detachedLongProperty("baselineAutoAdjustTimeout");
 
     /**
-     * @param cfg Static config.
      * @param isp Subscription processor.
+     * @param ctx Kernal context.
      */
     public DistributedBaselineConfiguration(
-        IgniteConfiguration cfg,
         GridInternalSubscriptionProcessor isp,
+        GridKernalContext ctx,
         IgniteLogger log) {
+        this.ctx = ctx;
+        this.log = log;
         isp.registerDistributedConfigurationListener(
             dispatcher -> {
-                boolean persistenceEnabled = cfg != null && CU.isPersistenceEnabled(cfg);
-
-                long timeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
-
-                //It set default value locally only.
-                baselineAutoAdjustEnabled.localUpdate(getBoolean(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, true));
-                baselineAutoAdjustTimeout.localUpdate(timeout);
-
                 dispatcher.registerProperty(baselineAutoAdjustEnabled);
                 dispatcher.registerProperty(baselineAutoAdjustTimeout);
-
-                log.info(
-                    String.format(AUTO_ADJUST_CONFIGURED_MESSAGE,
-                        (baselineAutoAdjustEnabled.value() ? "enabled" : "disabled"),
-                        baselineAutoAdjustTimeout.value()
-                    ));
             }
         );
+    }
+
+    /**
+     * Called when cluster performing activation.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onActivate() throws IgniteCheckedException {
+        if (baselineAutoAdjustTimeout.get() == null) {
+            boolean persistenceEnabled = ctx.config() != null && CU.isPersistenceEnabled(ctx.config());
+
+            dfltTimeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
+        }
+
+        if (baselineAutoAdjustEnabled.get() == null && isLocalNodeCoordinator(ctx.discovery())) {
+            BaselineTopology baselineTop = ctx.state().clusterState().baselineTopology();
+
+            boolean isNewTop = baselineTop != null && baselineTop.isNewTopology();
+
+            boolean dfltEnableVal = getBoolean(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, isNewTop);
+
+            //Set default enable flag to cluster only if it is true.
+            if (dfltEnableVal)
+                baselineAutoAdjustEnabled.propagate(dfltEnableVal);
+        }
+
+        if (isLocalNodeCoordinator(ctx.discovery())) {
+            log.info(String.format(
+                AUTO_ADJUST_CONFIGURED_MESSAGE,
+                (isBaselineAutoAdjustEnabled() ? "enabled" : "disabled"),
+                getBaselineAutoAdjustTimeout()
+            ));
+        }
     }
 
     /**
      * @return Value of manual baseline control or auto adjusting baseline.
      */
     public boolean isBaselineAutoAdjustEnabled() {
-        return baselineAutoAdjustEnabled.value();
+        return baselineAutoAdjustEnabled.getOrDefault(false);
     }
 
     /**
@@ -104,7 +131,7 @@ public class DistributedBaselineConfiguration {
      * join/exit).
      */
     public long getBaselineAutoAdjustTimeout() {
-        return baselineAutoAdjustTimeout.value();
+        return baselineAutoAdjustTimeout.getOrDefault(dfltTimeout);
     }
 
     /**

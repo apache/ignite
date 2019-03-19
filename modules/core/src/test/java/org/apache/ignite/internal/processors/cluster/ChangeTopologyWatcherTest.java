@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -29,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.After;
@@ -37,6 +39,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -346,5 +349,44 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
         igniteClient.close();
 
         assertTrue(isCurrentBaselineFromOneNode(ignite0));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testBaselineAutoAdjustDisableByDefaultBecauseNotNewCluster() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+        try {
+            Ignite ignite0 = startGrids(2);
+
+            ignite0.cluster().active(true);
+
+            ignite0.cluster().baselineAutoAdjustTimeout(0);
+
+            stopAllGrids();
+        }
+        finally {
+            System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+        }
+
+        Ignite ignite0 = startGrids(2);
+
+        ignite0.cluster().active(true);
+
+        Set<Object> initBaseline = ignite0.cluster().currentBaselineTopology().stream()
+            .map(BaselineNode::consistentId)
+            .collect(Collectors.toSet());
+
+        stopGrid(1);
+
+        assertFalse(waitForCondition(
+            () -> !initBaseline.equals(
+                ignite0.cluster().currentBaselineTopology().stream()
+                    .map(BaselineNode::consistentId)
+                    .collect(Collectors.toSet())
+            ),
+            5_000
+        ));
     }
 }

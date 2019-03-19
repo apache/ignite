@@ -29,10 +29,9 @@ public class DistributedLongProperty extends DistributedComparableProperty<Long>
 
     /**
      * @param name Name of property.
-     * @param initVal Initial initVal of property.
      * @return Property detached from processor.(Distributed updating are not accessable).
      */
-    public static DistributedLongProperty detachedLongProperty(String name, Long initVal) {
-        return new DistributedLongProperty(name, initVal);
+    public static DistributedLongProperty detachedLongProperty(String name) {
+        return new DistributedLongProperty(name, null);
     }
 }

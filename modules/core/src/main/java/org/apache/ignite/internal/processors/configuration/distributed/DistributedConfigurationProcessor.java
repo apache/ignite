@@ -239,8 +239,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
             log.error("Can not read value of property '" + prop.getName() + "'", e);
         }
 
-        if (readVal != null)
-            prop.localUpdate(readVal);
+        prop.localUpdate(readVal);
     }
 
     /**

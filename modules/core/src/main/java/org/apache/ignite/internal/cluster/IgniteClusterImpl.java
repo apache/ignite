@@ -51,7 +51,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.nodestart.IgniteRemoteStartSpecification;
 import org.apache.ignite.internal.util.nodestart.IgniteSshHelper;
@@ -69,6 +68,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
@@ -115,7 +115,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         nodeLoc = new ClusterNodeLocalMapImpl(ctx);
 
         distributedBaselineConfiguration = new DistributedBaselineConfiguration(
-            cfg, ctx.internalSubscriptionProcessor(), ctx.log(DistributedBaselineConfiguration.class)
+            ctx.internalSubscriptionProcessor(),
+            ctx,
+            ctx.log(DistributedBaselineConfiguration.class)
         );
     }
 
@@ -908,6 +910,15 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** {@inheritDoc} */
     @Override protected Object readResolve() throws ObjectStreamException {
         return ctx.grid().cluster();
+    }
+
+    /**
+     * Called when cluster performing activation.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onActivate() throws IgniteCheckedException {
+        distributedBaselineConfiguration.onActivate();
     }
 
     /** {@inheritDoc} */

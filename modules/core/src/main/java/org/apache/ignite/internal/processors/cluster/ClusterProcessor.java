@@ -70,6 +70,7 @@ import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DIAGNOSTIC_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -84,7 +85,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 /**
  *
  */
-public class ClusterProcessor extends GridProcessorAdapter {
+public class ClusterProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** */
     private static final String ATTR_UPDATE_NOTIFIER_STATUS = "UPDATE_NOTIFIER_STATUS";
 
@@ -651,6 +652,15 @@ public class ClusterProcessor extends GridProcessorAdapter {
      */
     public BaselineAutoAdjustStatistic baselineAutoAdjustStatistic(){
         return changeTopologyWatcher.getStatistic();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        cluster.onActivate();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
     }
 
     /**

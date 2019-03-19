@@ -85,14 +85,14 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
         DistributedLongProperty long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
         DistributedLongProperty long1 = ignite1.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
 
-        assertEquals(0, long0.value().longValue());
-        assertEquals(0, long1.value().longValue());
+        assertEquals(0, long0.get().longValue());
+        assertEquals(0, long1.get().longValue());
 
         assertTrue(long0.propagate(2L));
 
         //Value changed on whole grid.
-        assertEquals(2L, long0.value().longValue());
-        assertEquals(2L, long1.value().longValue());
+        assertEquals(2L, long0.get().longValue());
+        assertEquals(2L, long1.get().longValue());
 
         stopAllGrids();
 
@@ -104,8 +104,8 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
         long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
         long1 = ignite1.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
 
-        assertEquals(2, long0.value().longValue());
-        assertEquals(2, long1.value().longValue());
+        assertEquals(2, long0.get().longValue());
+        assertEquals(2, long1.get().longValue());
     }
 
     /**
@@ -122,7 +122,7 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
 
         DistributedLongProperty long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
 
-        assertEquals(0, long0.value().longValue());
+        assertEquals(0, long0.get().longValue());
 
         assertTrue(long0.propagate(2L));
 
@@ -132,7 +132,7 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
 
         long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
 
-        assertEquals(2, long0.value().longValue());
+        assertEquals(2, long0.get().longValue());
     }
 
     /**
@@ -147,14 +147,14 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
 
         DistributedLongProperty long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
 
-        assertEquals(0, long0.value().longValue());
+        assertEquals(0, long0.get().longValue());
 
         assertTrue(long0.propagate(2L));
 
         DistributedLongProperty long1 = ignite1.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
 
         //Already changed to 2.
-        assertEquals(2, long1.value().longValue());
+        assertEquals(2, long1.get().longValue());
     }
 
     /**
@@ -162,8 +162,8 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
      */
     @Test(expected = DetachedPropertyException.class)
     public void testNotAttachedProperty() throws Exception {
-        DistributedLongProperty long0 = DistributedLongProperty.detachedLongProperty(TEST_PROP, 0L);
-        assertEquals(0, long0.value().longValue());
+        DistributedLongProperty long0 = DistributedLongProperty.detachedLongProperty(TEST_PROP);
+        assertEquals(0, long0.get().longValue());
 
         long0.propagate(1L);
     }
@@ -196,7 +196,7 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
 
         DistributedLongProperty long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
 
-        assertEquals(0, long0.value().longValue());
+        assertEquals(0, long0.get().longValue());
 
         long0.propagate(2L);
 
@@ -207,7 +207,7 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
             longProperty = ctx.distributedConfiguration().registerLong(TEST_PROP, -1L);
 
             //Read init value because onReadyForReady have not happened yet.
-            assertEquals(-1, longProperty.value().longValue());
+            assertEquals(-1, longProperty.get().longValue());
         };
 
         ignite0 = startGrid(0);
@@ -217,8 +217,8 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
         DistributedLongProperty long1 = ignite1.context().distributedConfiguration().getProperty(TEST_PROP);
 
         //After start it should read from local storage.
-        assertEquals(2, long0.value().longValue());
-        assertEquals(2, long1.value().longValue());
+        assertEquals(2, long0.get().longValue());
+        assertEquals(2, long1.get().longValue());
     }
 
 }
