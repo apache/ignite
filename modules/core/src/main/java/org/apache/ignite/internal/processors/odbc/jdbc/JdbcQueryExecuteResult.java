@@ -45,7 +45,6 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     /** Update count. */
     private long updateCnt;
 
-    // TODO: 04.03.19 Check that if best effort affinity is not appliable on the server side, null will be set.
     /** Partition result. */
     private PartitionResult partRes;
 
@@ -75,15 +74,16 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     /**
      * @param cursorId Cursor ID.
      * @param updateCnt Update count for DML queries.
+     * @param partRes partition result to use for best affort affinity on the client side.
      */
-    // TODO: 07.03.19 add part result to dml queries
-    public JdbcQueryExecuteResult(long cursorId, long updateCnt) {
+    public JdbcQueryExecuteResult(long cursorId, long updateCnt, PartitionResult partRes) {
         super(QRY_EXEC);
 
         this.cursorId = cursorId;
         this.last = true;
         this.isQuery = false;
         this.updateCnt = updateCnt;
+        this.partRes = partRes;
     }
 
     /**

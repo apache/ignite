@@ -438,7 +438,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 default:
                     throw new IllegalArgumentException();
             }
-            return new JdbcResponse(new JdbcQueryExecuteResult(req.cursorId(), processor.updateCnt()),
+            return new JdbcResponse(new JdbcQueryExecuteResult(req.cursorId(), processor.updateCnt(), null),
                 connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
         }
         catch (Exception e) {
@@ -637,7 +637,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         "Invalid result set for not-SELECT query. [qry=" + sql +
                             ", res=" + S.toString(List.class, items) + ']';
 
-                    res = new JdbcQueryExecuteResult(cur.cursorId(), (Long)items.get(0).get(0));
+                    res = new JdbcQueryExecuteResult(cur.cursorId(), (Long)items.get(0).get(0),
+                        req.partitionResponseRequest() &&
+                            (partRes == null || partRes.affinity().isClientBestEffortAffinityApplicable()) ?
+                            partRes :
+                            null);
                 }
 
                 if (res.last() && (!res.isQuery() || autoCloseCursors)) {
