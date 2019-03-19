@@ -47,7 +47,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -174,6 +173,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
     /**
      * Test indexes system view.
+     *
      * @throws Exception in case of failure.
      */
     @Test
@@ -212,14 +212,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         String[][] expectedResults = {
             {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "AFFINITY_KEY", "BTREE", "\"ID2\" ASC, \"ID1\" ASC", "false", "false", "10"},
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE","PUBLIC", "AFF_CACHE", "__SCAN_", "SCAN", "null", "false", "false", "null"},
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE","PUBLIC", "AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "true", "true", "10"},
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE","PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", "false", "true", "null"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "__SCAN_", "SCAN", "null", "false", "false", "null"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "true", "true", "10"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", "false", "true", "null"},
 
             {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "IDX_2", "BTREE", "\"ID\" DESC, \"ID\" ASC", "false", "false", "13"},
-            {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL","PUBLIC", "CACHE_SQL", "__SCAN_", "SCAN", "null", "false", "false",  "null"},
-            {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL","PUBLIC", "CACHE_SQL", "_key_PK", "BTREE", "\"ID\" ASC", "true", "true", "5"},
-            {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL","PUBLIC", "CACHE_SQL", "_key_PK_hash", "HASH", "\"ID\" ASC", "false", "true", "null"},
+            {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "__SCAN_", "SCAN", "null", "false", "false", "null"},
+            {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK", "BTREE", "\"ID\" ASC", "true", "true", "5"},
+            {"707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK_hash", "HASH", "\"ID\" ASC", "false", "true", "null"},
 
             {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "false", "false", "10"},
             {"1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "BTREE", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", "false", "false", "10"},
