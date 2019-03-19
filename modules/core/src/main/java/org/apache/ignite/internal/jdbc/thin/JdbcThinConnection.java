@@ -38,10 +38,12 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
@@ -131,7 +133,7 @@ public class JdbcThinConnection implements Connection {
     private boolean connected;
 
     /** Tracked statements to close on disconnect. */
-    private final IdentityHashMap<JdbcThinStatement, Boolean> stmts = new IdentityHashMap<>();
+    private final Set<JdbcThinStatement> stmts = Collections.newSetFromMap(new IdentityHashMap<>());
 
     /** Query timeout timer */
     private final Timer timer;
@@ -263,7 +265,7 @@ public class JdbcThinConnection implements Connection {
         JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability, schema);
 
         synchronized (stmtsMux) {
-            stmts.put(stmt, false);
+            stmts.add(stmt);
         }
 
         return stmt;
@@ -293,7 +295,7 @@ public class JdbcThinConnection implements Connection {
         JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability, schema);
 
         synchronized (stmtsMux) {
-            stmts.put(stmt, false);
+            stmts.add(stmt);
         }
 
         return stmt;
@@ -399,7 +401,9 @@ public class JdbcThinConnection implements Connection {
             streamState = null;
         }
 
-        stmts.clear();
+        synchronized (stmtsMux) {
+            stmts.clear();
+        }
 
         SQLException err = null;
 
@@ -890,7 +894,7 @@ public class JdbcThinConnection implements Connection {
         }
 
         synchronized (stmtsMux) {
-            for (JdbcThinStatement s : stmts.keySet())
+            for (JdbcThinStatement s : stmts)
                 s.closeOnDisconnect();
 
             stmts.clear();
