@@ -525,7 +525,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org", "metaTest", "dep", "PUBLIC", "IGNITE", "ignite-sys-cache"));
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org", "metaTest", "dep", "PUBLIC", "IGNITE"));
 
             Set<String> schemas = new HashSet<>();
 
