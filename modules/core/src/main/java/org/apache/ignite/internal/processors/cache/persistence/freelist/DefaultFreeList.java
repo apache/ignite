@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  */
@@ -484,11 +485,20 @@ public abstract class DefaultFreeList<T extends Storable> extends PagesList impl
 
             long pageId = 0L;
 
-            for (int b = remaining < MIN_SIZE_FOR_DATA_PAGE ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS; b++) {
-                pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
+            if (remaining < MIN_SIZE_FOR_DATA_PAGE) {
+                for (int b = bucket(remaining, false) + 1; b < BUCKETS - 1; b++) {
+                    pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
 
-                if (pageId != 0L)
-                    break;
+                    if (pageId != 0L)
+                        break;
+                }
+            }
+
+            if (pageId == 0L) { // Handle reuse bucket.
+                if (reuseList == this)
+                    pageId = takeEmptyPage(REUSE_BUCKET, row.ioVersions(), statHolder);
+                else
+                    pageId = reuseList.takeRecycledPage();
             }
 
             AbstractDataPageIO initIo = null;
@@ -498,9 +508,9 @@ public abstract class DefaultFreeList<T extends Storable> extends PagesList impl
 
                 initIo = row.ioVersions().latest();
             }
-            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
+            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) // Page is taken from reuse bucket.
                 pageId = initReusedPage(row, pageId, row.partition(), statHolder);
-            else
+            else // Page is taken from free space bucket. For in-memory mode partition must be changed.
                 pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
             written = write(pageId, writeRow, initIo, row, written, FAIL_I, statHolder);
