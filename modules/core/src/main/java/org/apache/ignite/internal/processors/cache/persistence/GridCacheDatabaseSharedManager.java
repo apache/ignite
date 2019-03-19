@@ -218,8 +218,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final boolean skipSync = getBoolean(IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC);
 
     /** */
-    private final int walRebalanceThreshold = getInteger(
-        IGNITE_PDS_WAL_REBALANCE_THRESHOLD, 500_000);
+    private final int walRebalanceThreshold = getInteger(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, 500_000);
 
     /** Value of property for throttling policy override. */
     private final String throttlingPolicyOverride = IgniteSystemProperties.getString(
@@ -375,8 +374,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private volatile long checkpointReadLockTimeout;
 
     /** Flag allows to log additional information about partitions during recovery phases. */
-    private final boolean recoveryVerboseLogging = getBoolean(
-            IgniteSystemProperties.IGNITE_RECOVERY_VERBOSE_LOGGING, true);
+    private final boolean recoveryVerboseLogging =
+        getBoolean(IgniteSystemProperties.IGNITE_RECOVERY_VERBOSE_LOGGING, true);
 
     private final LongJVMPauseDetector pauseDetector;
 
@@ -3986,7 +3985,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     cpPagesTuple, persistenceCfg.getCheckpointThreads());
 
                 if (printCheckpointStats && log.isInfoEnabled()) {
-                    int possibleJvmPauseDuration = possibleLongJvmPauseDuration(tracker);
+                    long possibleJvmPauseDuration = possibleLongJvmPauseDuration(tracker);
 
                     log.info(
                         String.format(
@@ -4031,7 +4030,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param tracker Checkpoint metrics tracker.
          * @return Duration of possible JVM pause, if it was detected, or {@code -1} otherwise.
          */
-        private int possibleLongJvmPauseDuration(CheckpointMetricsTracker tracker) {
+        private long possibleLongJvmPauseDuration(CheckpointMetricsTracker tracker) {
             if (pauseDetectorEnabled) {
                 if (tracker.lockWaitDuration() + tracker.lockHoldDuration() > longJvmPauseThreshold) {
                     long now = System.currentTimeMillis();
@@ -4039,19 +4038,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     // We must get last wake up time before search possible pause in events map.
                     long wakeUpTime = pauseDetector.getLastWakeUpTime();
 
-                    Map<Long, Long> pauseEvents = pauseDetector.longPauseEvents();
+                    IgniteBiTuple<Long, Long> lastLongPause = pauseDetector.getLastLongPause();
 
-                    for(Long eventTime : pauseEvents.keySet()) {
-                        if(tracker.checkpointStartTime() < eventTime)
-                            return pauseEvents.get(eventTime).intValue();
-                    }
+                    if (lastLongPause != null && tracker.checkpointStartTime() < lastLongPause.get1())
+                        return lastLongPause.get2();
 
-                    if(now - wakeUpTime > longJvmPauseThreshold)
-                        return (int)(now - wakeUpTime);
+                    if (now - wakeUpTime > longJvmPauseThreshold)
+                        return now - wakeUpTime;
                 }
             }
 
-            return -1;
+            return -1L;
         }
 
         /**

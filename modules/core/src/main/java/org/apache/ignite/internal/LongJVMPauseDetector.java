@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
@@ -98,11 +100,11 @@ public class LongJVMPauseDetector {
             return;
         }
 
-        lastWakeUpTime = System.currentTimeMillis();
-
         final Thread worker = new Thread("jvm-pause-detector-worker") {
 
             @Override public void run() {
+                lastWakeUpTime = System.currentTimeMillis();
+
                 if (log.isDebugEnabled())
                     log.debug(getName() + " has been started.");
 
@@ -195,13 +197,26 @@ public class LongJVMPauseDetector {
     /**
      * @return Last long JVM pause events.
      */
-    public synchronized Map<Long, Long> longPauseEvents() {
+    synchronized Map<Long, Long> longPauseEvents() {
         final Map<Long, Long> evts = new TreeMap<>();
 
         for (int i = 0; i < longPausesTimestamps.length && longPausesTimestamps[i] != 0; i++)
             evts.put(longPausesTimestamps[i], longPausesDurations[i]);
 
         return evts;
+    }
+
+    /**
+     * @return Pair ({@code last long pause event time}, {@code pause time duration}) or {@code null}, if long pause
+     * wasn't occurred.
+     */
+    public synchronized @Nullable IgniteBiTuple<Long, Long> getLastLongPause() {
+        int lastPauseIdx = (int)((EVT_CNT + longPausesCnt - 1) % EVT_CNT);
+
+        if (longPausesTimestamps[lastPauseIdx] == 0)
+            return null;
+
+        return new IgniteBiTuple<>(longPausesTimestamps[lastPauseIdx], longPausesDurations[lastPauseIdx]);
     }
 
     /** {@inheritDoc} */
