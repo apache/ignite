@@ -56,11 +56,17 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     /** Batch arguments. */
     private List<List<Object>> batchArgs;
 
-    /** Cached parameters meta of the {@link #sql}. */
+    /** Cached parameters meta of the {@link #sql}. {@code Null} if not fetched yet*/
     private ParameterMetaData paramsMeta;
 
-    /** Cached result set meta of the {@link #sql}. */
-    private ResultSetMetaData resMeta;
+    /**
+     * Cached result set meta of the {@link #sql}. {@code Null} if this statement is not a SELECT statement or if it
+     * just not fetched yet.
+     */
+    @Nullable private ResultSetMetaData resMeta;
+
+    /** Whether metadata of returning result set have been fetched. */
+    private boolean resMetaFetched = false;
 
     /**
      * Creates new prepared statement.
@@ -277,10 +283,13 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        // In this case we don't tell cases "meta is not fetched" and "this statement is not a select, so meta is null".
-        // This is ok, because getting metadata of non-select statements is not a happy path.
-        if (resMeta == null)
-            resMeta = resultMetaData(sql);
+        if (!resMetaFetched) {
+            assert resMeta == null;
+
+            resMeta = resultMetaData();
+
+            resMetaFetched = true;
+        }
 
         return resMeta;
     }
@@ -290,7 +299,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
      *
      * @return metadata describing result set or {@code null} if query is not a SELECT operation.
      */
-    @Nullable private ResultSetMetaData resultMetaData(String sql) throws SQLException {
+    @Nullable private ResultSetMetaData resultMetaData() throws SQLException {
         SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
 
         setupQuery(qry);
@@ -333,17 +342,15 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         ensureNotClosed();
 
         if (paramsMeta == null)
-            paramsMeta = parameterMetaData(sql);
+            paramsMeta = parameterMetaData();
 
         return paramsMeta;
     }
 
     /**
      * Fetches parameters metadata of the specified query.
-     *
-     * @param sql Query fetch parameters meta for.
      */
-    private ParameterMetaData parameterMetaData(String sql) throws SQLException {
+    private ParameterMetaData parameterMetaData() throws SQLException {
         SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
 
         setupQuery(qry);
