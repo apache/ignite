@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -46,6 +47,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -306,6 +308,94 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals(nodeId, ((List<?>)cache.query(qry).getAll().get(0)).get(0));
     }
 
+    /**
+     * Test Query history system view.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testQueryHistoryMetricsModes() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        final String SCHEMA_NAME = "TEST_SCHEMA";
+        final long MAX_SLEEP = 500;
+
+        long tsBeforeRun = System.currentTimeMillis();
+
+        IgniteCache cache = ignite.createCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setIndexedTypes(Integer.class, String.class)
+                .setSqlSchema(SCHEMA_NAME)
+                .setSqlFunctionClasses(GridTestUtils.SqlTestFunctions.class)
+        );
+
+        cache.put(100, "200");
+
+        String sql = "SELECT \"STRING\"._KEY, \"STRING\"._VAL FROM \"STRING\" WHERE _key=100 AND sleep()>0 AND can_fail()=0";
+
+        GridTestUtils.SqlTestFunctions.sleepMs = 50;
+        GridTestUtils.SqlTestFunctions.fail = false;
+
+        cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll();
+
+        GridTestUtils.SqlTestFunctions.sleepMs = MAX_SLEEP;
+        GridTestUtils.SqlTestFunctions.fail = false;
+
+        cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll();
+
+        GridTestUtils.SqlTestFunctions.fail = true;
+
+        GridTestUtils.assertThrows(log,
+            () ->
+                cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll()
+            , CacheException.class,
+            "Exception calling user-defined function");
+
+        String sqlHist = "SELECT SCHEMA_NAME, SQL, LOCAL, EXECUTIONS, FAILURES, DURATION_MIN, DURATION_MAX, LAST_START_TIME " +
+            "FROM IGNITE.LOCAL_SQL_QUERY_HISTORY ORDER BY LAST_START_TIME";
+
+        cache.query(new SqlFieldsQuery(sqlHist).setLocal(true)).getAll();
+        cache.query(new SqlFieldsQuery(sqlHist).setLocal(true)).getAll();
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery(sqlHist).setLocal(true)).getAll();
+
+        assertEquals(2, res.size());
+
+        long tsAfterRun = System.currentTimeMillis();
+
+        List<?> firstRow = res.get(0);
+        List<?> secondRow = res.get(1);
+
+        //SCHEMA_NAME
+        assertEquals(SCHEMA_NAME, firstRow.get(0));
+        assertEquals(SCHEMA_NAME, secondRow.get(0));
+
+        //SQL
+        assertEquals(sql, firstRow.get(1));
+        assertEquals(sqlHist, secondRow.get(1));
+
+        // LOCAL flag
+        assertEquals(false, firstRow.get(2));
+        assertEquals(true, secondRow.get(2));
+
+        // EXECUTIONS
+        assertEquals(3L, firstRow.get(3));
+        assertEquals(2L, secondRow.get(3));
+
+        //FAILURES
+        assertEquals(1L, firstRow.get(4));
+        assertEquals(0L, secondRow.get(4));
+
+        //DURATION_MIN
+        assertTrue((Long)firstRow.get(5) > 0);
+        assertTrue((Long)firstRow.get(5) < (Long)firstRow.get(6));
+
+        //DURATION_MAX
+        assertTrue((Long)firstRow.get(6) > MAX_SLEEP);
+
+        //LAST_START_TIME
+        assertFalse(((Timestamp)firstRow.get(7)).before(new Timestamp(tsBeforeRun)));
+        assertFalse(((Timestamp)firstRow.get(7)).after(new Timestamp(tsAfterRun)));
+    }
 
     /**
      * Test running queries system view.
@@ -332,8 +422,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         List<?> res1 = (List<?>)cur.get(1);
 
         Timestamp ts = (Timestamp)res0.get(4);
-
-        System.out.println(ts);
 
         Instant now = Instant.now();
 
