@@ -1925,6 +1925,54 @@ BOOST_AUTO_TEST_CASE(CacheClientGetAndPutIfAbsentComplexValue)
     BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut.objField.f2);
 }
 
+BOOST_AUTO_TEST_CASE(CacheClientGetAndPutIfAbsentComplexValuePtr)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, ignite::ComplexType*> cache = client.GetCache<int32_t, ignite::ComplexType*>("local");
+
+    int32_t key = 42;
+
+    ignite::ComplexType valIn1;
+    valIn1.i32Field = 123;
+    valIn1.strField = "Test value";
+    valIn1.objField.f1 = 42;
+    valIn1.objField.f2 = "Inner value";
+
+    ignite::ComplexType valIn2;
+    valIn2.i32Field = 4234;
+    valIn2.strField = "Some";
+    valIn2.objField.f1 = 654;
+    valIn2.objField.f2 = "Lorem";
+
+    ignite::ComplexType* valOut = cache.GetAndPutIfAbsent(key, &valIn1);
+
+    BOOST_CHECK(cache.ContainsKey(key));
+    BOOST_CHECK(valOut == 0);
+
+    cache.GetAndPutIfAbsent(key, &valIn2, valOut);
+
+    BOOST_CHECK_EQUAL(valIn1.i32Field, valOut->i32Field);
+    BOOST_CHECK_EQUAL(valIn1.strField, valOut->strField);
+    BOOST_CHECK_EQUAL(valIn1.objField.f1, valOut->objField.f1);
+    BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut->objField.f2);
+
+    delete valOut;
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valIn1.i32Field, valOut->i32Field);
+    BOOST_CHECK_EQUAL(valIn1.strField, valOut->strField);
+    BOOST_CHECK_EQUAL(valIn1.objField.f1, valOut->objField.f1);
+    BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut->objField.f2);
+
+    delete valOut;
+}
+
 BOOST_AUTO_TEST_CASE(CacheClientGetAndPutIfAbsentComplexKey)
 {
     IgniteClientConfiguration cfg;
