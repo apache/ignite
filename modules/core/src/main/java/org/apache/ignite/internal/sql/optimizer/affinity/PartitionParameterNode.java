@@ -126,7 +126,6 @@ public class PartitionParameterNode extends PartitionSingleNode {
      */
     public static PartitionParameterNode readParameterNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
-        int part = reader.readInt();
 
         int idx = reader.readInt();
 
@@ -136,6 +135,6 @@ public class PartitionParameterNode extends PartitionSingleNode {
 
         PartitionTable tbl = PartitionTable.readTable(reader, ver);
 
-        return new PartitionParameterNode(tbl, null, part, type, mappedType);
+        return new PartitionParameterNode(tbl, null, idx, type, mappedType);
     }
 }

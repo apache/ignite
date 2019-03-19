@@ -17,19 +17,15 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinAffinityAwarenessMappings;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
 public class JdbcCachePartitionsResult extends JdbcResult {
 
-    private Map<UUID, Set<Integer>> partitionsMap;
+    private JdbcThinAffinityAwarenessMappings mappings;
 
     /**
      * Default constructor.
@@ -38,53 +34,29 @@ public class JdbcCachePartitionsResult extends JdbcResult {
         super(CACHE_PARTITIONS);
     }
 
-    public JdbcCachePartitionsResult(Map<UUID, Set<Integer>> partitionsMap) {
+    public JdbcCachePartitionsResult(JdbcThinAffinityAwarenessMappings mappings) {
         super(CACHE_PARTITIONS);
 
-        this.partitionsMap = partitionsMap;
+        this.mappings = mappings;
     }
 
-    public Map<UUID, Set<Integer>> getPartitionsMap() {
-        return partitionsMap;
+    public JdbcThinAffinityAwarenessMappings getMappings() {
+        return mappings;
     }
 
     @Override
     public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.writeBinary(writer, ver);
-        writer.writeInt(partitionsMap == null ? 0 : partitionsMap.size());
 
-        if (partitionsMap != null) {
-            for (UUID nodeId: partitionsMap.keySet()) {
-                writer.writeUuid(nodeId);
+        assert mappings != null;
 
-                Set<Integer> partitionsPerNode = partitionsMap.get(nodeId);
-
-                writer.writeInt(partitionsPerNode == null ? 0 : partitionsPerNode.size());
-
-                for (Integer partition: partitionsPerNode)
-                    writer.writeInt(partition);
-            }
-        }
+        mappings.writeBinary(writer, ver);
     }
 
     @Override
     public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.readBinary(reader, ver);
-        int partitionsMapSize = reader.readInt();
 
-        partitionsMap = new HashMap<>(partitionsMapSize);
-
-        for (int i = 0; i < partitionsMapSize; i++) {
-            UUID nodeId = reader.readUuid();
-
-            int partitionsPerNodeSize = reader.readInt();
-
-            Set<Integer> partitionsPerNode = new HashSet<>(partitionsPerNodeSize);
-
-            for (int j = 0; j < partitionsPerNodeSize; j++)
-                partitionsPerNode.add(reader.readInt());
-
-            partitionsMap.put(nodeId, partitionsPerNode);
-        }
+        mappings = JdbcThinAffinityAwarenessMappings.readMappings(reader, ver);
     }
 }

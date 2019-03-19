@@ -43,7 +43,6 @@ import java.sql.Struct;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -120,7 +119,7 @@ public class JdbcThinConnection implements Connection {
     /** Best effort affinity enabled flag. */
     // TODO: 13.02.19 IGNITE-11309 JDBC Thin: add flag or property to disable best effort affinity
     @SuppressWarnings("unused")
-    private static boolean bestEffortAffinity;
+    private static boolean bestEffortAffinity = true;
 
     /** Statements modification mutex. */
     private final Object stmtsMux = new Object();
@@ -979,9 +978,19 @@ public class JdbcThinConnection implements Connection {
                         if (res.affinityVersionChanged())
                             affinityCache = new AffinityCache(res.affinityVersion());
 
-                        cacheDistr = tmpRevert(((JdbcCachePartitionsResult) res.response()).getPartitionsMap());
+                        JdbcThinAffinityAwarenessMappings mappings =
+                            ((JdbcCachePartitionsResult) res.response()).getMappings();
 
-                        affinityCache.addCacheDistribution(partRes.cacheId(), cacheDistr);
+                        // Despite the fact that, at this moment, we request partition destribution only for one cache,
+                        // we might retrieve multiple caches but exactly with same distribution.
+                        assert mappings.mappings().size() == 1;
+
+                        JdbcThinAffinityAwarenessMappingGroup mappingGroup = mappings.mappings().get(0);
+
+                        cacheDistr = mappingGroup.revertMappings();
+
+                        for (int cacheId: mappingGroup.cacheIds())
+                            affinityCache.addCacheDistribution(cacheId, cacheDistr);
                     }
 
                     if (parts.length == 1)
@@ -1008,22 +1017,6 @@ public class JdbcThinConnection implements Connection {
         }
 
         return bestEffortAffinityNodeId;
-    }
-
-    // TODO: 07.03.19 tmp
-    private Map<Integer, UUID> tmpRevert(Map<UUID, Set<Integer>> partDistr) {
-        if (partDistr == null)
-            return null;
-
-        Map<Integer, UUID> reverted = new HashMap<>();
-
-        for (UUID nodeId: partDistr.keySet()) {
-            for (Integer partition: partDistr.get(nodeId)) {
-                reverted.put(partition, nodeId);
-            }
-        }
-
-        return reverted;
     }
 
     /**

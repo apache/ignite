@@ -41,6 +41,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinAffinityAwarenessMappings;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
@@ -1269,13 +1270,19 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     private JdbcResponse getCachePartitions (JdbcCachePartitionsRequest req) {
+        JdbcThinAffinityAwarenessMappings mappings = new JdbcThinAffinityAwarenessMappings();
+
         JdbcAffinityTopologyVersion topVer = connCtx.checkAffinityTopologyVersion();
 
-        HashMap<UUID, Set<Integer>> partitionsMap = getPartitionsMap(
-            connCtx.kernalContext().cache().cacheDescriptor(req.cacheIds().iterator().next()),
-            topVer.getVersion());
+        for (int cacheId: req.cacheIds()) {
+            Map<UUID, Set<Integer>> partitionsMap = getPartitionsMap(
+                connCtx.kernalContext().cache().cacheDescriptor(cacheId),
+                topVer.getVersion());
 
-        return new JdbcResponse(new JdbcCachePartitionsResult(partitionsMap),
+            mappings.add(cacheId, partitionsMap);
+        }
+
+        return new JdbcResponse(new JdbcCachePartitionsResult(mappings),
             topVer.getVersionIfChanged());
     }
 
@@ -1284,7 +1291,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param cacheDesc Cache descriptor.
      * @return Partitions mapping for cache.
      */
-    private HashMap<UUID, Set<Integer>> getPartitionsMap(DynamicCacheDescriptor cacheDesc, AffinityTopologyVersion affVer) {
+    private Map<UUID, Set<Integer>> getPartitionsMap(DynamicCacheDescriptor cacheDesc, AffinityTopologyVersion affVer) {
         GridCacheContext cacheContext = connCtx.kernalContext().cache().context().cacheContext(cacheDesc.cacheId());
 
         AffinityAssignment assignment = cacheContext.affinity().assignment(affVer);
