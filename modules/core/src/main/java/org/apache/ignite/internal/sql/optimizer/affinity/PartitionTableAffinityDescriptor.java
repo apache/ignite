@@ -95,7 +95,7 @@ public class PartitionTableAffinityDescriptor implements Serializable, JdbcRawBi
     }
 
     public boolean isClientBestEffortAffinityApplicable() {
-        return affFunc == PartitionAffinityFunctionType.RENDEZVOUS && !hasNodeFilter;
+        return affFunc == PartitionAffinityFunctionType.RENDEZVOUS && !hasNodeFilter && parts == 1024;
     }
 
     /** {@inheritDoc} */
