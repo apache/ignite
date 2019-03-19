@@ -22,6 +22,8 @@ import org.jetbrains.annotations.Nullable;
  * Client context. Passed to partition resolver on thin clients.
  */
 public class PartitionClientContext {
+    // TODO: 19.03.19 IGNITE-11566 add support for custom partitions count within the client side best effort affinity.
+
     /** Mask to use in calculation when partitions count is power of 2. */
     private int mask = 1023;
 

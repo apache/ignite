@@ -43,12 +43,10 @@ import java.sql.Struct;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -119,7 +117,7 @@ public class JdbcThinConnection implements Connection {
     /** Best effort affinity enabled flag. */
     // TODO: 13.02.19 IGNITE-11309 JDBC Thin: add flag or property to disable best effort affinity
     @SuppressWarnings("unused")
-    private static boolean bestEffortAffinity = false;
+    private static boolean bestEffortAffinity = true;
 
     /** Statements modification mutex. */
     private final Object stmtsMux = new Object();
@@ -984,32 +982,19 @@ public class JdbcThinConnection implements Connection {
                         // we might retrieve multiple caches but exactly with same distribution.
                         assert mappings.mappings().size() == 1;
 
-                        JdbcThinAffinityAwarenessMappingGroup mappingGroup = mappings.mappings().get(0);
+                        JdbcThinAffinityAwarenessMappingGroup mappingGrp = mappings.mappings().get(0);
 
-                        cacheDistr = mappingGroup.revertMappings();
+                        cacheDistr = mappingGrp.revertMappings();
 
-                        for (int cacheId: mappingGroup.cacheIds())
+                        for (int cacheId: mappingGrp.cacheIds())
                             affinityCache.addCacheDistribution(cacheId, cacheDistr);
                     }
 
                     if (parts.length == 1)
                         bestEffortAffinityNodeId = cacheDistr.get(parts[0]);
                     else {
-                        Set<UUID> bestEffortAffinityNodeIds = new HashSet<>();
-
-                        for (int part: parts)
-                            bestEffortAffinityNodeIds.add(cacheDistr.get(part));
-
-
-                        // TODO: 07.03.19 choose random node from one presented in connections or totally random
-                        // TODO: if there are no matches.
-
-//                        // TODO: 07.03.19 use random node instead of first appliable.
-//                        for (int part : parts) {
-//                            bestEffortAffinityNodeId = cacheDistr.get(part);
-//                            if (bestEffortAffinityNodeId != null)
-//                                break;
-//                        }
+                        // TODO: 19.03.19 IGNITE-11565 add connection resolution in case of multiple partitons
+                        return null;
                     }
                 }
             }
@@ -1400,28 +1385,6 @@ public class JdbcThinConnection implements Connection {
         JdbcThinTcpIo io = ios.get(nodeId);
 
        return io != null ? io : iosArr[RND.nextInt(iosArr.length)];
-    }
-
-    private JdbcThinTcpIo cliIo2(Set<UUID> nodeIds) {
-        if (txIo != null)
-            return txIo;
-
-        assert bestEffortAffinity;
-
-        if (nodeIds.isEmpty())
-            return iosArr[RND.nextInt(iosArr.length)];
-
-        // TODO: 11.03.19 optimize?
-        Set<JdbcThinTcpIo> conns = new HashSet<>();
-        for (UUID nodeId: nodeIds) {
-            JdbcThinTcpIo conn = ios.get(nodeId);
-            if (conn != null)
-                conns.add(conn);
-        }
-
-        JdbcThinTcpIo io = conns.toArray(new JdbcThinTcpIo[0])[RND.nextInt(iosArr.length)];
-
-        return io != null ? io : iosArr[RND.nextInt(iosArr.length)];
     }
 
     /**
