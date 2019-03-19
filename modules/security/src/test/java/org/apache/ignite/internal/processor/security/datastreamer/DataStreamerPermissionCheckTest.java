@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processor.security.datastreamer;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationPermissionCheckTest;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,8 +31,6 @@ import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
 
 /**
  * Test cache permissions for Data Streamer.
@@ -66,27 +64,32 @@ public class DataStreamerPermissionCheckTest extends AbstractCacheOperationPermi
                 .appendCachePermissions(FORBIDDEN_CACHE, SecurityPermission.CACHE_READ)
                 .build(), isClient);
 
-        allowed(node, s -> s.addData("k", 1));
-        forbidden(node, s -> s.addData("k", 1));
+        consumers().forEach(
+            (c) -> {
+                assertAllowed(node, c);
 
-        allowed(node, s -> s.addData(singletonMap("key", 2)));
-        forbidden(node, s -> s.addData(singletonMap("key", 2)));
+                assertForbidden(node, c);
+            }
+        );
+    }
 
-        Map.Entry<String, Integer> entry = entry();
-
-        allowed(node, s -> s.addData(entry));
-        forbidden(node, s -> s.addData(entry));
-
-        allowed(node, s -> s.addData(singletonList(entry())));
-        forbidden(node, s -> s.addData(singletonList(entry())));
-
+    /**
+     * @return Collections of consumers to invoke data streamer addData method.
+     */
+    private List<Consumer<IgniteDataStreamer<String, Integer>>> consumers() {
+        return Arrays.asList(
+            s -> s.addData("k", 1),
+            s -> s.addData(singletonMap("key", 2)),
+            s -> s.addData((Map.Entry<String, Integer>)entry()),
+            s -> s.addData(singletonList(entry()))
+        );
     }
 
     /**
      * @param node Node.
      * @param c Consumer.
      */
-    private void allowed(Ignite node, Consumer<IgniteDataStreamer<String, Integer>> c) {
+    private void assertAllowed(Ignite node, Consumer<IgniteDataStreamer<String, Integer>> c) {
         try (IgniteDataStreamer<String, Integer> s = node.dataStreamer(CACHE_NAME)) {
             c.accept(s);
         }
@@ -96,14 +99,12 @@ public class DataStreamerPermissionCheckTest extends AbstractCacheOperationPermi
      * @param node Node.
      * @param c Consumer.
      */
-    private void forbidden(Ignite node, Consumer<IgniteDataStreamer<String, Integer>> c) {
-        try (IgniteDataStreamer<String, Integer> s = node.dataStreamer(FORBIDDEN_CACHE)) {
-            c.accept(s);
-
-            fail("Should not happen");
-        }
-        catch (Throwable e) {
-            assertThat(X.cause(e, SecurityException.class), notNullValue());
-        }
+    private void assertForbidden(Ignite node, Consumer<IgniteDataStreamer<String, Integer>> c) {
+        assertForbidden(() -> {
+                try (IgniteDataStreamer<String, Integer> s = node.dataStreamer(FORBIDDEN_CACHE)) {
+                    c.accept(s);
+                }
+            }
+        );
     }
 }

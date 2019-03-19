@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processor.security.cache.closure;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
 import javax.cache.Cache;
@@ -46,27 +45,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
-    /** Transition load cache. */
-    private static final String TRANSITION_LOAD_CACHE = "TRANSITION_LOAD_CACHE";
-
-    /** Name of server initiator node. */
-    private static final String SRV_INITIATOR = "srv_initiator";
-
-    /** Name of client initiator node. */
-    private static final String CLNT_INITIATOR = "clnt_initiator";
-
-    /** Name of server feature call node. */
-    private static final String SRV_FEATURE_CALL = "srv_feature_call";
-
-    /** Name of server feature transit node. */
-    private static final String SRV_FEATURE_TRANSITION = "srv_feature_transition";
-
-    /** Name of server endpoint node. */
-    private static final String SRV_ENDPOINT = "srv_endpoint";
-
-    /** Name of client endpoint node. */
-    private static final String CLNT_ENDPOINT = "clnt_endpoint";
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -140,16 +118,6 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
     private void loadCache(Ignite node) {
         node.<Integer, Integer>cache(CACHE_NAME).loadCache(
             new TestClosure(SRV_FEATURE_TRANSITION, endpoints())
-        );
-    }
-
-    /**
-     * @return Collection of endpont nodes ids.
-     */
-    private Collection<UUID> endpoints() {
-        return Arrays.asList(
-            nodeId(SRV_ENDPOINT),
-            nodeId(CLNT_ENDPOINT)
         );
     }
 

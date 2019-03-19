@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processor.security;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -40,6 +41,33 @@ import static org.junit.Assert.assertThat;
  *
  */
 public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSecurityTest {
+    /** Transition load cache. */
+    protected static final String TRANSITION_LOAD_CACHE = "TRANSITION_LOAD_CACHE";
+
+    /** Name of server initiator node. */
+    protected static final String SRV_INITIATOR = "srv_initiator";
+
+    /** Name of client initiator node. */
+    protected static final String CLNT_INITIATOR = "clnt_initiator";
+
+    /** Name of server feature call node. */
+    protected static final String SRV_FEATURE_CALL = "srv_feature_call";
+
+    /** Name of client feature call node. */
+    protected static final String CLNT_FEATURE_CALL = "clnt_feature_call";
+
+    /** Name of server feature transit node. */
+    protected static final String SRV_FEATURE_TRANSITION = "srv_feature_transition";
+
+    /** Name of client feature transit node. */
+    protected static final String CLNT_FEATURE_TRANSITION = "clnt_feature_transition";
+
+    /** Name of server endpoint node. */
+    protected static final String SRV_ENDPOINT = "srv_endpoint";
+
+    /** Name of client endpoint node. */
+    protected static final String CLNT_ENDPOINT = "clnt_endpoint";
+
     /** Verifier to check results of tests. */
     private static final Verifier VERIFIER = new Verifier();
 
@@ -78,6 +106,36 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
      */
     protected UUID secSubjectId(String name) {
         return secSubjectId(grid(name));
+    }
+
+    /**
+     * @return Collection of feature call nodes ids.
+     */
+    protected Collection<UUID> featureCalls() {
+        return Arrays.asList(
+            nodeId(SRV_FEATURE_CALL),
+            nodeId(CLNT_FEATURE_CALL)
+        );
+    }
+
+    /**
+     * @return Collection of feature transit nodes ids.
+     */
+    protected Collection<UUID> featureTransitions() {
+        return Arrays.asList(
+            nodeId(SRV_FEATURE_TRANSITION),
+            nodeId(CLNT_FEATURE_TRANSITION)
+        );
+    }
+
+    /**
+     * @return Collection of endpont nodes ids.
+     */
+    protected Collection<UUID> endpoints() {
+        return Arrays.asList(
+            nodeId(SRV_ENDPOINT),
+            nodeId(CLNT_ENDPOINT)
+        );
     }
 
     /**

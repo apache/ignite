@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processor.security;
 
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -54,18 +53,11 @@ public abstract class AbstractCacheOperationRemoteSecurityContextCheckTest exten
      * @param ignite Node.
      * @return Key.
      */
-    protected static Integer prmKey(IgniteEx ignite) {
-        Affinity<Integer> affinity = ignite.affinity(CACHE_NAME);
-
-        int i = 0;
-        do {
-            if (affinity.isPrimary(ignite.localNode(), ++i))
-                return i;
-
-        }
-        while (i <= 1_000);
-
-        throw new IllegalStateException(ignite.name() + " isn't primary node for any key.");
+    protected Integer prmKey(IgniteEx ignite) {
+        return findKeys(ignite.localNode(), ignite.cache(CACHE_NAME), 1, 0, 0)
+            .stream()
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException(ignite.name() + " isn't primary node for any key."));
     }
 
     /**
@@ -74,7 +66,7 @@ public abstract class AbstractCacheOperationRemoteSecurityContextCheckTest exten
      * @param nodeName Node name.
      * @return Key.
      */
-    protected static Integer prmKey(String nodeName) {
+    protected Integer prmKey(String nodeName) {
         return prmKey((IgniteEx)G.ignite(nodeName));
     }
 }

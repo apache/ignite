@@ -136,7 +136,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
             allowedRun(r);
 
         for (TestRunnable r : runnables(srvForbidden, clntForbidden))
-            forbiddenRun(r);
+            assertForbidden(r);
 
         for (Supplier<FutureAdapter> s : suppliers(srvAllowed, clntAllowed))
             allowedCancel(s);
@@ -228,7 +228,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
         try {
             FutureAdapter f = s.get();
 
-            forbiddenRun(f::cancel);
+            assertForbidden(f::cancel);
         }
         finally {
             RNT_LOCK.unlock();

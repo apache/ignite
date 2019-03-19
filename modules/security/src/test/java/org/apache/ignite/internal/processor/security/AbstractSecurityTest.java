@@ -53,12 +53,10 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
 
     /**
      * @param instanceName Instance name.
-     * @param login Login.
-     * @param pwd Password.
-     * @param prmSet Security permission set.
+     * @param secCfg Security plugin configuration.
      */
     protected IgniteConfiguration getConfiguration(String instanceName,
-        String login, String pwd, SecurityPermissionSet prmSet) throws Exception {
+        TestSecurityPluginConfiguration secCfg) throws Exception {
 
         return getConfiguration(instanceName)
             .setDataStorageConfiguration(
@@ -68,13 +66,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
                     )
             )
             .setAuthenticationEnabled(true)
-            .setPluginConfigurations(
-                new TestSecurityPluginConfiguration()
-                    .setSecurityProcessorClass(TEST_SECURITY_PROCESSOR)
-                    .setLogin(login)
-                    .setPwd(pwd)
-                    .setPermissions(prmSet)
-            );
+            .setPluginConfigurations(secCfg);
     }
 
     /**
@@ -85,7 +77,21 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      */
     protected IgniteConfiguration getConfiguration(int idx, String login, String pwd,
         SecurityPermissionSet prmSet) throws Exception {
-        return getConfiguration(getTestIgniteInstanceName(idx), login, pwd, prmSet);
+        return getConfiguration(getTestIgniteInstanceName(idx), secPluginCfg(login, pwd, prmSet));
+    }
+
+    /**
+     * @param login Login.
+     * @param pwd Password.
+     * @param prmSet Security permission set.
+     * @return Security plaugin configuration.
+     */
+    protected TestSecurityPluginConfiguration secPluginCfg(String login, String pwd, SecurityPermissionSet prmSet){
+        return new TestSecurityPluginConfiguration()
+            .setSecurityProcessorClass(TEST_SECURITY_PROCESSOR)
+            .setLogin(login)
+            .setPwd(pwd)
+            .setPermissions(prmSet);
     }
 
     /**
@@ -113,7 +119,8 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet,
         boolean isClient) throws Exception {
         return startGrid(
-            getConfiguration(login, login, "", prmSet).setClientMode(isClient)
+            getConfiguration(login, secPluginCfg(login, "", prmSet))
+                .setClientMode(isClient)
         );
     }
 
@@ -134,7 +141,8 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     protected IgniteEx startGrid(String login, String pwd, SecurityPermissionSet prmSet,
         boolean isClient) throws Exception {
         return startGrid(
-            getConfiguration(login, login, pwd, prmSet).setClientMode(isClient)
+            getConfiguration(login, secPluginCfg(login, pwd, prmSet))
+                .setClientMode(isClient)
         );
     }
 
@@ -146,7 +154,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      */
     protected IgniteEx startGrid(String instanceName, String login, String pwd,
         SecurityPermissionSet prmSet) throws Exception {
-        return startGrid(getConfiguration(instanceName, login, pwd, prmSet));
+        return startGrid(getConfiguration(instanceName, secPluginCfg(login, pwd, prmSet)));
     }
 
     /**
@@ -158,7 +166,8 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      */
     protected IgniteEx startGrid(String instanceName, String login, String pwd,
         SecurityPermissionSet prmSet, boolean isClient) throws Exception {
-        return startGrid(getConfiguration(instanceName, login, pwd, prmSet).setClientMode(isClient));
+        return startGrid(getConfiguration(instanceName, secPluginCfg(login, pwd, prmSet))
+            .setClientMode(isClient));
     }
 
     /**
@@ -180,15 +189,15 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      *
      * @param r Runnable.
      */
-    protected void forbiddenRun(TestRunnable r) {
-        forbiddenRun(r, SecurityException.class);
+    protected void assertForbidden(TestRunnable r) {
+        assertForbidden(r, SecurityException.class);
     }
 
     /**
      * @param r Runnable.
      * @param types Array of expected exception types.
      */
-    protected void forbiddenRun(TestRunnable r, Class... types) {
+    protected void assertForbidden(TestRunnable r, Class... types) {
         try {
             r.run();
 

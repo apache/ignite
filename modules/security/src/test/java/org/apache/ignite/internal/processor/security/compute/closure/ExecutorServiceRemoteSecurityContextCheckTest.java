@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -40,30 +39,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
-    /** Name of server initiator node. */
-    private static final String SRV_INITIATOR = "srv_initiator";
-
-    /** Name of client initiator node. */
-    private static final String CLNT_INITIATOR = "clnt_initiator";
-
-    /** Name of server feature call node. */
-    private static final String SRV_FEATURE_CALL = "srv_feature_call";
-
-    /** Name of client feature call node. */
-    private static final String CLNT_FEATURE_CALL = "clnt_feature_call";
-
-    /** Name of server feature transit node. */
-    private static final String SRV_FEATURE_TRANSITION = "srv_feature_transition";
-
-    /** Name of client feature transit node. */
-    private static final String CLNT_FEATURE_TRANSITION = "clnt_feature_transition";
-
-    /** Name of server endpoint node. */
-    private static final String SRV_ENDPOINT = "srv_endpoint";
-
-    /** Name of client endpoint node. */
-    private static final String CLNT_ENDPOINT = "clnt_endpoint";
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -130,36 +105,6 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
                     }
                 }
             )
-        );
-    }
-
-    /**
-     * @return Collection of feature call nodes ids.
-     */
-    private Collection<UUID> featureCalls() {
-        return Arrays.asList(
-            nodeId(SRV_FEATURE_CALL),
-            nodeId(CLNT_FEATURE_CALL)
-        );
-    }
-
-    /**
-     * @return Collection of feature transit nodes ids.
-     */
-    private Collection<UUID> featureTransitions() {
-        return Arrays.asList(
-            nodeId(SRV_FEATURE_TRANSITION),
-            nodeId(CLNT_FEATURE_TRANSITION)
-        );
-    }
-
-    /**
-     * @return Collection of endpont nodes ids.
-     */
-    private Collection<UUID> endpoints() {
-        return Arrays.asList(
-            nodeId(SRV_ENDPOINT),
-            nodeId(CLNT_ENDPOINT)
         );
     }
 

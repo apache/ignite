@@ -67,10 +67,13 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
         for (Consumer<IgniteCache<String, String>> c : consumers()) {
             c.accept(node.cache(CACHE_NAME));
 
-            forbiddenRun(() -> c.accept(node.cache(FORBIDDEN_CACHE)));
+            assertForbidden(() -> c.accept(node.cache(FORBIDDEN_CACHE)));
         }
     }
 
+    /**
+     * @return Collection of consumers to invoke a cache operation.
+     */
     private List<Consumer<IgniteCache<String, String>>> consumers() {
         return Arrays.asList(
             (c) -> c.put("key", "value"),

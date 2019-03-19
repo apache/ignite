@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.processor.security.cache;
 
-import java.util.function.Consumer;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.plugin.security.SecurityException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -32,7 +33,6 @@ import org.junit.runners.JUnit4;
 import static java.util.Collections.singleton;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
@@ -59,82 +59,33 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
 
         srvNode.cluster().active(true);
 
-        invoke(srvNode);
-        invoke(clientNode);
+        Stream.of(srvNode, clientNode)
+            .forEach(
+                (n) -> consumers(n).forEach(
+                    (c) -> {
+                        assertAllowed(n, c);
 
-        invokeAll(srvNode);
-        invokeAll(clientNode);
-
-        invokeAsync(srvNode);
-        invokeAsync(clientNode);
-
-        invokeAsyncAll(srvNode);
-        invokeAsyncAll(clientNode);
+                        assertForbidden(n, c);
+                    }
+                )
+            );
     }
 
     /**
-     * @param node Node.
+     * @return Collection of consumers to invoke entry processor.
      */
-    private void invoke(Ignite node) {
-        assertAllowed(node,
-            (t) -> node.cache(CACHE_NAME).invoke(
+    private List<BiConsumer<String, T2<String, Integer>>> consumers(final Ignite node) {
+        return Arrays.asList(
+            (cacheName, t) -> node.cache(cacheName).invoke(
                 t.getKey(), processor(t)
-            )
-        );
-
-        assertForbidden(node,
-            (t) -> node.cache(FORBIDDEN_CACHE).invoke(
-                t.getKey(), processor(t)
-            )
-        );
-    }
-
-    /**
-     * @param node Node.
-     */
-    private void invokeAll(Ignite node) {
-        assertAllowed(node,
-            (t) -> node.cache(CACHE_NAME).invokeAll(
+            ),
+            (cacheName, t) -> node.cache(cacheName).invokeAll(
                 singleton(t.getKey()), processor(t)
-            )
-        );
-
-        assertForbidden(node,
-            (t) -> node.cache(FORBIDDEN_CACHE).invokeAll(
-                singleton(t.getKey()), processor(t)
-            )
-        );
-    }
-
-    /**
-     * @param node Node.
-     */
-    private void invokeAsync(Ignite node) {
-        assertAllowed(node,
-            (t) -> node.cache(CACHE_NAME).invokeAsync(
+            ),
+            (cacheName, t) -> node.cache(cacheName).invokeAsync(
                 t.getKey(), processor(t)
-            ).get()
-        );
-
-        assertForbidden(node,
-            (t) -> node.cache(FORBIDDEN_CACHE).invokeAsync(
-                t.getKey(), processor(t)
-            ).get()
-        );
-    }
-
-    /**
-     * @param node Node.
-     */
-    private void invokeAsyncAll(Ignite node) {
-        assertAllowed(node,
-            (t) -> node.cache(CACHE_NAME).invokeAllAsync(
-                singleton(t.getKey()), processor(t)
-            ).get()
-        );
-
-        assertForbidden(node,
-            (t) -> node.cache(FORBIDDEN_CACHE).invokeAllAsync(
+            ).get(),
+            (cacheName, t) -> node.cache(cacheName).invokeAllAsync(
                 singleton(t.getKey()), processor(t)
             ).get()
         );
@@ -154,29 +105,22 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
     /**
      * @param c Consumer.
      */
-    protected void assertAllowed(Ignite validator, Consumer<T2<String, Integer>> c) {
+    private void assertAllowed(Ignite node, BiConsumer<String, T2<String, Integer>> c) {
         T2<String, Integer> entry = entry();
 
-        c.accept(entry);
+        c.accept(CACHE_NAME, entry);
 
-        assertThat(validator.cache(CACHE_NAME).get(entry.getKey()), is(entry.getValue()));
+        assertThat(node.cache(CACHE_NAME).get(entry.getKey()), is(entry.getValue()));
     }
 
     /**
      * @param c Consumer.
      */
-    protected void assertForbidden(Ignite validator, Consumer<T2<String, Integer>> c) {
+    private void assertForbidden(Ignite node, BiConsumer<String, T2<String, Integer>> c) {
         T2<String, Integer> entry = entry();
 
-        try {
-            c.accept(entry);
+        assertForbidden(() -> c.accept(FORBIDDEN_CACHE, entry));
 
-            fail("Should not happen.");
-        }
-        catch (Throwable e) {
-            assertThat(X.cause(e, SecurityException.class), notNullValue());
-        }
-
-        assertThat(validator.cache(CACHE_NAME).get(entry.getKey()), nullValue());
+        assertThat(node.cache(CACHE_NAME).get(entry.getKey()), nullValue());
     }
 }

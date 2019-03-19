@@ -63,7 +63,7 @@ public class ScanQueryPermissionCheckTest extends AbstractCacheOperationPermissi
 
         assertFalse(node.cache(CACHE_NAME).query(new ScanQuery<String, Integer>()).getAll().isEmpty());
 
-        forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).query(new ScanQuery<String, Integer>()).getAll());
+        assertForbidden(() -> node.cache(FORBIDDEN_CACHE).query(new ScanQuery<String, Integer>()).getAll());
     }
 
     /**
