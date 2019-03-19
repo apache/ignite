@@ -116,7 +116,7 @@ public class RowStore {
      * @param rows Rows.
      * @throws IgniteCheckedException If failed.
      */
-    public void addRows(Collection<CacheDataRow> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    public void addRows(Collection<? extends CacheDataRow> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         if (!persistenceEnabled)
             freeList.insertDataRows(rows, statHolder);
         else {

@@ -272,7 +272,7 @@ public class CacheMapEntries {
 
         /** {@inheritDoc} */
         @Override public void call(@Nullable Collection<T2<CacheDataRow, CacheSearchRow>> rows) throws IgniteCheckedException {
-            List<CacheDataRow> newRows = new ArrayList<>(16);
+            List<DataRow> newRows = new ArrayList<>(16);
 
             int partId = batch.part().id();
             GridCacheContext cctx = batch.context();
@@ -284,20 +284,20 @@ public class CacheMapEntries {
 
                 try {
                     if (newRowInfo.needUpdate(oldRow)) {
-                        CacheDataRow newRow;
-
                         CacheObject val = newRowInfo.value();
 
                         if (val != null) {
                             if (oldRow != null) {
                                 // todo batch updates
-                                newRow = cctx.offheap().dataStore(batch.part()).createRow(
+                                CacheDataRow newRow = cctx.offheap().dataStore(batch.part()).createRow(
                                     cctx,
                                     key,
                                     newRowInfo.value(),
                                     newRowInfo.version(),
                                     newRowInfo.expireTime(),
                                     oldRow);
+
+                                resBatch.add(new T3<>(oldRow.link() == newRow.link() ? NOOP : PUT, oldRow, newRow));
                             }
                             else {
                                 CacheObjectContext coCtx = cctx.cacheObjectContext();
@@ -308,20 +308,18 @@ public class CacheMapEntries {
                                 if (key.partition() == -1)
                                     key.partition(partId);
 
-                                newRow = new DataRow(key, val, newRowInfo.version(), partId, newRowInfo.expireTime(), cacheId);
+                                DataRow newRow = new DataRow(key, val, newRowInfo.version(), partId,
+                                    newRowInfo.expireTime(), cacheId);
 
                                 newRows.add(newRow);
+
+                                resBatch.add(new T3<>(PUT, oldRow, newRow));
                             }
-
-                            IgniteTree.OperationType treeOp = oldRow != null && oldRow.link() == newRow.link() ?
-                                NOOP : PUT;
-
-                            resBatch.add(new T3<>(treeOp, oldRow, newRow));
                         }
                         else {
                             // todo   we should pass key somehow to remove old row
                             // todo   (in particular case oldRow should not contain key)
-                            newRow = new DataRow(key, null, null, 0, 0, 0);
+                            DataRow newRow = new DataRow(key, null, null, 0, 0, cacheId);
 
                             resBatch.add(new T3<>(oldRow != null ? REMOVE : NOOP, oldRow, newRow));
                         }
@@ -332,8 +330,16 @@ public class CacheMapEntries {
                 }
             }
 
-            if (!newRows.isEmpty())
+            if (!newRows.isEmpty()) {
                 cctx.offheap().dataStore(batch.part()).rowStore().addRows(newRows, cctx.group().statisticsHolderData());
+
+                if (cacheId == CU.UNDEFINED_CACHE_ID) {
+                    // Set cacheId before write keys into tree.
+                    for (DataRow row : newRows)
+                        row.cacheId(cctx.cacheId());
+
+                }
+            }
         }
 
         /** {@inheritDoc} */
