@@ -20,13 +20,10 @@ package org.apache.ignite.internal.processors.affinity;
 import org.apache.ignite.IgniteSystemProperties;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests affinity history assignment diff calculation for history assignment without optimization.
  */
-@RunWith(JUnit4.class)
 public class GridHistoryAffinityAssignmentTestNoOptimization extends GridHistoryAffinityAssignmentTest {
     /** */
     @BeforeClass
