@@ -119,7 +119,7 @@ public class JdbcThinConnection implements Connection {
     /** Best effort affinity enabled flag. */
     // TODO: 13.02.19 IGNITE-11309 JDBC Thin: add flag or property to disable best effort affinity
     @SuppressWarnings("unused")
-    private static boolean bestEffortAffinity = true;
+    private static boolean bestEffortAffinity = false;
 
     /** Statements modification mutex. */
     private final Object stmtsMux = new Object();
@@ -876,13 +876,13 @@ public class JdbcThinConnection implements Connection {
                     timer.schedule(reqTimeoutTimerTask, 0, REQUEST_TIMEOUT_PERIOD);
                 }
 
-            boolean reqPartRes = bestEffortAffinity && req instanceof JdbcQueryExecuteRequest &&
-                (affinityCache == null ||
-                    !affinityCache.containsPartitionResult(((JdbcQueryExecuteRequest)req).sqlQuery()));
+                boolean reqPartRes = bestEffortAffinity && req instanceof JdbcQueryExecuteRequest &&
+                    (affinityCache == null ||
+                        !affinityCache.containsPartitionResult(((JdbcQueryExecuteRequest)req).sqlQuery()));
 
-            // Set boolean flag to JdbcQueryExecuteRequest in order to request PartitionResult.
-            if (req instanceof JdbcQueryExecuteRequest)
-                ((JdbcQueryExecuteRequest) req).partitionResponseRequest(reqPartRes);
+                // Set boolean flag to JdbcQueryExecuteRequest in order to request PartitionResult.
+                if (req instanceof JdbcQueryExecuteRequest)
+                    ((JdbcQueryExecuteRequest)req).partitionResponseRequest(reqPartRes);
 
                 JdbcResponse res = cliIo.sendRequest(req, stmt);
 
@@ -901,9 +901,8 @@ public class JdbcThinConnection implements Connection {
                 if (res.affinityVersionChanged())
                     affinityCache = new AffinityCache(res.affinityVersion());
 
-                // TODO: 07.03.19 for now we probably should ignore tree if version was changed.
                 // Partition result was requested.
-                if (reqPartRes) {
+                if (reqPartRes && res.response() instanceof JdbcQueryExecuteResult) {
                     affinityCache.addSqlQuery(((JdbcQueryExecuteRequest)req).sqlQuery(),
                         (JdbcThinPartitionResult)((JdbcQueryExecuteResult)res.response()).partitionResult());
                 }

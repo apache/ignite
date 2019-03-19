@@ -120,8 +120,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     public void testExecuteQuery0() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
-        stmt.executeQuery(SQL);
-
         assert rs != null;
 
         int cnt = 0;
