@@ -43,6 +43,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -55,6 +56,7 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTest
 /**
  * Test for 6 retry cases
  */
+@WithSystemProperty(key = IGNITE_SQL_RETRY_TIMEOUT, value = "5000")
 public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 2;
@@ -335,8 +337,6 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        System.setProperty(IGNITE_SQL_RETRY_TIMEOUT, "5000");
-
         Ignite ignite = startGridsMultiThreaded(NODES_COUNT, false);
 
         GridQueryProcessor qryProc = grid(ignite.name()).context().query();

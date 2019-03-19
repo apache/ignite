@@ -47,13 +47,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for OOME on query.
  */
-@RunWith(JUnit4.class)
 public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     /** */
     private static final long KEY_CNT = 1_000_000L;
