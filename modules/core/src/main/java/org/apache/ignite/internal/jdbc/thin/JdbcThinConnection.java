@@ -896,7 +896,8 @@ public class JdbcThinConnection implements Connection {
                     throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
 
             if (bestEffortAffinity) {
-                if (res.affinityVersionChanged())
+                if (res.affinityVersionChanged() &&
+                    (affinityCache == null || !affinityCache.version().equals(res.affinityVersion())))
                     affinityCache = new AffinityCache(res.affinityVersion());
 
                 // Partition result was requested.
@@ -972,7 +973,8 @@ public class JdbcThinConnection implements Connection {
                             return null;
                         }
 
-                        if (res.affinityVersionChanged())
+                        if (res.affinityVersionChanged() &&
+                            (affinityCache == null || !affinityCache.version().equals(res.affinityVersion())))
                             affinityCache = new AffinityCache(res.affinityVersion());
 
                         JdbcThinAffinityAwarenessMappings mappings =
