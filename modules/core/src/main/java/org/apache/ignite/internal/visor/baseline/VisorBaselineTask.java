@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatistic;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
@@ -85,8 +86,17 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
                 cluster.baselineAutoAdjustTimeout()
             );
 
-            return new VisorBaselineTaskResult(ignite.cluster().active(), cluster.topologyVersion(),
-                F.isEmpty(baseline) ? null : baseline, srvrs, autoAdjustSettings);
+            BaselineAutoAdjustStatistic adjustStatistic = ignite.context().cluster().baselineAutoAdjustStatistic();
+
+            return new VisorBaselineTaskResult(
+                ignite.cluster().active(),
+                cluster.topologyVersion(),
+                F.isEmpty(baseline) ? null : baseline,
+                srvrs,
+                autoAdjustSettings,
+                adjustStatistic.getBaselineAdjustTimeout(),
+                adjustStatistic.getTaskState() == BaselineAutoAdjustStatistic.TaskState.IN_PROGRESS
+            );
         }
 
         /**
@@ -220,10 +230,11 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          * @return New baseline.
          */
         private VisorBaselineTaskResult updateAutoAdjustmentSettings(VisorBaselineAutoAdjustSettings settings) {
-            if (settings.isEnabled())
+            if (settings.getSoftTimeout() != null)
                 ignite.cluster().baselineAutoAdjustTimeout(settings.getSoftTimeout());
 
-            ignite.cluster().baselineAutoAdjustEnabled(settings.isEnabled());
+            if (settings.getEnabled() != null)
+                ignite.cluster().baselineAutoAdjustEnabled(settings.getEnabled());
 
             return collect();
         }
