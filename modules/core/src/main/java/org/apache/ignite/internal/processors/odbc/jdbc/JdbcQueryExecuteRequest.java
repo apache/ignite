@@ -192,6 +192,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryExecuteRequest.class, this);
+        return S.toString(JdbcQueryExecuteRequest.class, this, super.toString());
     }
 }
