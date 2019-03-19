@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.List;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
@@ -30,7 +32,7 @@ public class QueryParserResultDml {
     private final GridSqlStatement stmt;
 
     /** Number of parameters. */
-    private final int paramsCnt;
+    private final List<JdbcParameterMeta> paramsMeta;
 
     /** MVCC enabled flag. */
     private final boolean mvccEnabled;
@@ -45,20 +47,20 @@ public class QueryParserResultDml {
      * Constructor.
      *
      * @param stmt Command.
-     * @param paramsCnt Number of parameters.
+     * @param paramsMeta Description of positional query parameters.
      * @param mvccEnabled Whether MVCC is enabled.
      * @param streamTbl Streamer table.
      * @param plan Update plan.
      */
     public QueryParserResultDml(
         GridSqlStatement stmt,
-        int paramsCnt,
+        List<JdbcParameterMeta> paramsMeta,
         boolean mvccEnabled,
         @Nullable GridH2Table streamTbl,
         UpdatePlan plan
     ) {
         this.stmt = stmt;
-        this.paramsCnt = paramsCnt;
+        this.paramsMeta = paramsMeta;
         this.mvccEnabled = mvccEnabled;
         this.streamTbl = streamTbl;
         this.plan = plan;
@@ -95,8 +97,8 @@ public class QueryParserResultDml {
     /**
      * @return Number of parameters.
      */
-    public int parametersCount() {
-        return paramsCnt;
+    public List<JdbcParameterMeta> parametersMeta() {
+        return paramsMeta;
     }
 
     /**

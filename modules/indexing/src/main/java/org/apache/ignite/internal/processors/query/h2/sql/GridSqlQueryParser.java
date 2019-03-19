@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -2304,18 +2303,6 @@ public class GridSqlQueryParser {
 
         throw new IgniteException("Unsupported expression: " + expression + " [type=" +
             expression.getClass().getSimpleName() + ']');
-    }
-
-    /**
-     * Check if passed statement is insert statement eligible for streaming.
-     *
-     * @param nativeStmt Native statement.
-     * @return {@code True} if streamable insert.
-     */
-    public static boolean isStreamableInsertStatement(PreparedStatement nativeStmt) {
-        Prepared prep = prepared(nativeStmt);
-
-        return isStreamableInsertStatement(prep);
     }
 
     /**

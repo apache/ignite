@@ -550,16 +550,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setArgs(req.arguments());
 
-            qry.setDistributedJoins(cliCtx.isDistributedJoins());
-            qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
-            qry.setCollocated(cliCtx.isCollocated());
-            qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
-            qry.setLazy(cliCtx.isLazy());
-            qry.setNestedTxMode(nestedTxMode);
-            qry.setAutoCommit(req.autoCommit());
+            setupQuery(qry);
 
-            if (cliCtx.dataPageScanEnabled() != null)
-                qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
+            qry.setAutoCommit(req.autoCommit());
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
@@ -869,17 +862,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                     qry = new SqlFieldsQueryEx(q.sql(), false);
 
-                    qry.setDistributedJoins(cliCtx.isDistributedJoins());
-                    qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
-                    qry.setCollocated(cliCtx.isCollocated());
-                    qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
-                    qry.setLazy(cliCtx.isLazy());
-                    qry.setNestedTxMode(nestedTxMode);
+                    setupQuery(qry);
+
                     qry.setAutoCommit(req.autoCommit());
-
-                    if (cliCtx.dataPageScanEnabled() != null)
-                        qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
-
                     qry.setSchema(schemaName);
                 }
 
@@ -908,6 +893,23 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         finally {
             cleanupQueryCancellationMeta(true, req.requestId());
         }
+    }
+
+    /**
+     * Sets up query object with settings from current client context state and handler state.
+     *
+     * @param qry Query to setup.
+     */
+    private void setupQuery(SqlFieldsQueryEx qry) {
+        qry.setDistributedJoins(cliCtx.isDistributedJoins());
+        qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
+        qry.setCollocated(cliCtx.isCollocated());
+        qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
+        qry.setLazy(cliCtx.isLazy());
+        qry.setNestedTxMode(nestedTxMode);
+
+        if (cliCtx.dataPageScanEnabled() != null)
+            qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
     }
 
     /**
@@ -1069,8 +1071,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse getParametersMeta(JdbcMetaParamsRequest req) {
+        SqlFieldsQueryEx qry = new SqlFieldsQueryEx(req.sql(), null);
+
+        setupQuery(qry);
+
         try {
-            List<JdbcParameterMeta> meta = ctx.query().getIndexing().parameterMetaData(req.schemaName(), req.sql());
+            List<JdbcParameterMeta> meta = ctx.query().getIndexing().parameterMetaData(req.schemaName(), qry);
 
             JdbcMetaParamsResult res = new JdbcMetaParamsResult(meta);
 

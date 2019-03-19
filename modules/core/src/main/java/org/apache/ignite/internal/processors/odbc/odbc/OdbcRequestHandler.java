@@ -740,14 +740,19 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private ClientListenerResponse getParamsMeta(OdbcQueryGetParamsMetaRequest req) {
         try {
-            List<JdbcParameterMeta> params = ctx.query().getIndexing().parameterMetaData(req.schema(), req.query());
+            // FIXME: IGNITE-11552 odbc unescaping
+            String sql = req.query();
+
+            SqlFieldsQueryEx qry = makeQuery(req.schema(), sql);
+
+            List<JdbcParameterMeta> params = ctx.query().getIndexing().parameterMetaData(req.schema(), qry);
 
             byte[] typeIds = new byte[params.size()];
 
-            for (int i = 1; i <= params.size(); ++i) {
+            for (int i = 0; i < params.size(); ++i) {
                 int sqlType = params.get(i).type();
 
-                typeIds[i - 1] = sqlTypeToBinary(sqlType);
+                typeIds[i] = sqlTypeToBinary(sqlType);
             }
 
             OdbcQueryGetParamsMetaResult res = new OdbcQueryGetParamsMetaResult(typeIds);

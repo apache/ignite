@@ -186,21 +186,24 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPreparedStatementMetaData() throws Exception {
-        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
-            String select = "select p.name, o.id as orgId from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id";
+        // Perform checks few times due to query/plan caching.
+        for (int i = 0; i < 3; i++) {
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                String select = "select p.name, o.id as orgId from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id";
 
-            ResultSetMetaData rsMeta = conn.createStatement().executeQuery(select).getMetaData();
-            ResultSetMetaData psMeta = conn.prepareStatement(select).getMetaData();
+                ResultSetMetaData rsMeta = conn.createStatement().executeQuery(select).getMetaData();
+                ResultSetMetaData psMeta = conn.prepareStatement(select).getMetaData();
 
-            assertEquals(rsMeta.getColumnCount(), rsMeta.getColumnCount());
+                assertEquals(rsMeta.getColumnCount(), rsMeta.getColumnCount());
 
-            for (int i = 1; i <= rsMeta.getColumnCount(); i++) {
-                assertEquals(rsMeta.getTableName(i), psMeta.getTableName(i));
-                assertEquals(rsMeta.getColumnName(i), psMeta.getColumnName(i));
-                assertEquals(rsMeta.getColumnLabel(i), psMeta.getColumnLabel(i));
-                assertEquals(rsMeta.getColumnType(i), psMeta.getColumnType(i));
-                assertEquals(rsMeta.getColumnTypeName(i), psMeta.getColumnTypeName(i));
-                assertEquals(rsMeta.getColumnClassName(i), psMeta.getColumnClassName(i));
+                for (int j = 1; j <= rsMeta.getColumnCount(); j++) {
+                    assertEquals(rsMeta.getTableName(j), psMeta.getTableName(j));
+                    assertEquals(rsMeta.getColumnName(j), psMeta.getColumnName(j));
+                    assertEquals(rsMeta.getColumnLabel(j), psMeta.getColumnLabel(j));
+                    assertEquals(rsMeta.getColumnType(j), psMeta.getColumnType(j));
+                    assertEquals(rsMeta.getColumnTypeName(j), psMeta.getColumnTypeName(j));
+                    assertEquals(rsMeta.getColumnClassName(j), psMeta.getColumnClassName(j));
+                }
             }
         }
     }
@@ -210,31 +213,34 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPreparedStatementMetaDataNegative() throws Exception {
-        // Check h2 dml statements
-        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
-            String update = "update \"pers\".Person set name = 'weird' where orgId < 0";
+        // Perform checks few times due to query/plan caching.
+        for (int i = 0; i < 3; i++) {
+            // Check h2 dml statements
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                String update = "update \"pers\".Person set name = 'weird' where orgId < 0";
 
-            ResultSetMetaData psMeta = conn.prepareStatement(update).getMetaData();
+                ResultSetMetaData psMeta = conn.prepareStatement(update).getMetaData();
 
-            assertNull(psMeta);
-        }
+                assertNull(psMeta);
+            }
 
-        // H2 ddl statements
-        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
-            String update = "CREATE TABLE DDL_METADATA_TAB (ID INT, VAL INT)";
+            // H2 ddl statements
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                String update = "CREATE TABLE DDL_METADATA_TAB (ID INT PRIMARY KEY, VAL INT)";
 
-            ResultSetMetaData psMeta = conn.prepareStatement(update).getMetaData();
+                ResultSetMetaData psMeta = conn.prepareStatement(update).getMetaData();
 
-            assertNull(psMeta);
-        }
+                assertNull(psMeta);
+            }
 
-        // And native parser statements.
-        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
-            String nativeCmd = "create index my_idx on PUBLIC.TEST(name)";
+            // And native parser statements.
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                String nativeCmd = "create index my_idx on PUBLIC.TEST(name)";
 
-            ResultSetMetaData psMeta = conn.prepareStatement(nativeCmd).getMetaData();
+                ResultSetMetaData psMeta = conn.prepareStatement(nativeCmd).getMetaData();
 
-            assertNull(psMeta);
+                assertNull(psMeta);
+            }
         }
     }
 
@@ -551,44 +557,48 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testParametersMetadata() throws Exception {
-        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
-            conn.setSchema("\"pers\"");
+        // Perform checks few times due to query/plan caching.
+        for (int i = 0; i < 3; i++) {
+            // Selects.
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                conn.setSchema("\"pers\"");
 
-            PreparedStatement selectStmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
+                PreparedStatement selectStmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
 
-            ParameterMetaData meta = selectStmt.getParameterMetaData();
+                ParameterMetaData meta = selectStmt.getParameterMetaData();
 
-            assertNotNull(meta);
+                assertNotNull(meta);
 
-            assertEquals(2, meta.getParameterCount());
+                assertEquals(2, meta.getParameterCount());
 
-            assertEquals(Types.VARCHAR, meta.getParameterType(1));
-            assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
-            assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
+                assertEquals(Types.VARCHAR, meta.getParameterType(1));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
 
-            assertEquals(Types.INTEGER, meta.getParameterType(2));
-            assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+                assertEquals(Types.INTEGER, meta.getParameterType(2));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+            }
+
+            // Updates.
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement updateStmt = conn.prepareStatement("update Person p set orgId = 42 where p.name > ? and p.orgId > ?");
+
+                ParameterMetaData meta = updateStmt.getParameterMetaData();
+
+                assertNotNull(meta);
+
+                assertEquals(2, meta.getParameterCount());
+
+                assertEquals(Types.VARCHAR, meta.getParameterType(1));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
+
+                assertEquals(Types.INTEGER, meta.getParameterType(2));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+            }
         }
-
-        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
-            conn.setSchema("\"pers\"");
-
-            PreparedStatement updateStmt = conn.prepareStatement("update Person p set orgId = 42 where p.name > ? and p.orgId > ?");
-
-            ParameterMetaData meta = updateStmt.getParameterMetaData();
-
-            assertNotNull(meta);
-
-            assertEquals(2, meta.getParameterCount());
-
-            assertEquals(Types.VARCHAR, meta.getParameterType(1));
-            assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
-            assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
-
-            assertEquals(Types.INTEGER, meta.getParameterType(2));
-            assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
-        }
-
     }
 
     /**

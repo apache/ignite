@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
-import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -167,7 +165,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.request
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.codeToSqlState;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.session;
@@ -271,43 +268,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException {
-        Connection conn = connMgr.connectionForThread().connection(schemaName);
+    @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, SqlFieldsQuery qry) throws IgniteSQLException {
+        // Multistatements are allowed, but metadata is returned only for the first statement.
+        QueryParserResult parserRes = parser.parse(schemaName, qry, true);
 
-        try {
-            return connMgr.prepareStatement(conn, sql);
-        }
-        catch (SQLException e) {
-            throw new SQLException("Failed to parse query. " + e.getMessage(),
-                codeToSqlState(IgniteQueryErrorCode.PARSING), e);
-        }
+        return parserRes.parametersMeta();
     }
 
     /** {@inheritDoc} */
-    @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, String sql) throws SQLException {
-        PreparedStatement statement = prepareNativeStatement(schemaName, sql);
+    @Override public List<GridQueryFieldMetadata> resultMetaData(String schemaName, SqlFieldsQuery qry) throws IgniteSQLException{
+        // Multistatements are allowed, but metadata is returned only for the first statement.
+        QueryParserResult parserRes = parser.parse(schemaName, qry, true);
 
-        ParameterMetaData h2Params = statement.getParameterMetaData();
+        if (parserRes.isSelect())
+            return parserRes.select().meta();
 
-        List<JdbcParameterMeta> params = new ArrayList<>(h2Params.getParameterCount());
-
-        for (int i = 1; i <= h2Params.getParameterCount(); i++)
-            params.add(new JdbcParameterMeta(h2Params, i));
-
-        return params;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable List<GridQueryFieldMetadata> resultMetaData(String schemaName,
-        String sql) throws SQLException {
-        PreparedStatement statement = prepareNativeStatement(schemaName, sql);
-
-        ResultSetMetaData h2Meta = statement.getMetaData();
-
-        if (h2Meta == null)
-            return null;
-
-        return H2Utils.meta(h2Meta);
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -1798,13 +1774,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return schemaMgr.schemaName(cacheName);
     }
 
-    /** {@inheritDoc}
-     * @param schemaName
-     * @param sql*/
-    @Override public boolean isStreamableInsertStatement(String schemaName, String sql) throws SQLException{
-        PreparedStatement stmt = prepareNativeStatement(schemaName, sql);
+    /** {@inheritDoc} */
+    @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery qry) throws SQLException{
+        QueryParserResult parsed = parser.parse(schemaName, qry, true);
 
-        return GridSqlQueryParser.isStreamableInsertStatement(stmt);
+        return parsed.isDml() && parsed.dml().streamable() && parsed.remainingQuery() == null;
     }
 
     /** {@inheritDoc} */

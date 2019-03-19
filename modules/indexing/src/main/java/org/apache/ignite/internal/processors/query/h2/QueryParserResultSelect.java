@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
 
 /**
  * Parsing result for SELECT.
@@ -38,8 +38,8 @@ public class QueryParserResultSelect {
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
     private final List<GridQueryFieldMetadata> meta;
 
-    /** Number of parameters. */
-    private final int paramsCnt;
+    /** Metadata for the positional query parameters ('?'). */
+    private final List<JdbcParameterMeta> paramsMeta;
 
     /** Involved cache IDs. */
     private final List<Integer> cacheIds;
@@ -56,7 +56,7 @@ public class QueryParserResultSelect {
      * @param stmt Statement.
      * @param twoStepQry Distributed query plan.
      * @param meta Fields metadata.
-     * @param paramsCnt Parameters count.
+     * @param paramsMeta Description of positional query parameters.
      * @param cacheIds Cache IDs.
      * @param mvccCacheId ID of the first MVCC cache.
      * @param forUpdate Whether this is FOR UPDATE flag.
@@ -65,7 +65,7 @@ public class QueryParserResultSelect {
         GridSqlStatement stmt,
         @Nullable GridCacheTwoStepQuery twoStepQry,
         List<GridQueryFieldMetadata> meta,
-        int paramsCnt,
+        List<JdbcParameterMeta> paramsMeta,
         List<Integer> cacheIds,
         @Nullable Integer mvccCacheId,
         boolean forUpdate
@@ -73,7 +73,7 @@ public class QueryParserResultSelect {
         this.stmt = stmt;
         this.twoStepQry = twoStepQry;
         this.meta = meta;
-        this.paramsCnt = paramsCnt;
+        this.paramsMeta = paramsMeta;
         this.cacheIds = cacheIds;
         this.mvccCacheId = mvccCacheId;
         this.forUpdate = forUpdate;
@@ -136,9 +136,9 @@ public class QueryParserResultSelect {
     }
 
     /**
-     * @return Number of parameters.
+     * @return Descriptions of each query parameter.
      */
-    public int parametersCount() {
-        return paramsCnt;
+    public List<JdbcParameterMeta> parametersMeta() {
+        return paramsMeta;
     }
 }

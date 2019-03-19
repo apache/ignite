@@ -365,11 +365,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             return false;
         }
 
-        @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, String sql) throws SQLException {
+        @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, SqlFieldsQuery sql) throws SQLException {
             return null;
         }
 
-        @Override public List<GridQueryFieldMetadata> resultMetaData(String schemaName, String sql) throws SQLException {
+        @Override public List<GridQueryFieldMetadata> resultMetaData(String schemaName, SqlFieldsQuery sql) throws SQLException {
             return null;
         }
 
@@ -420,7 +420,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isStreamableInsertStatement(String schemaName, String sql) {
+        @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery sql) {
             // No-op.
             return true;
         }
