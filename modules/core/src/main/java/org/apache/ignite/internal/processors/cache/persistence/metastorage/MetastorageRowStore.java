@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionStorage;
-import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionStorageImpl;
+import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 
 /**
@@ -29,13 +27,13 @@ import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
  */
 public class MetastorageRowStore {
     /** */
-    private final PartitionStorage<MetastorageDataRow> partStorage;
+    private final PartitionMetaStorage<MetastorageDataRow> partStorage;
 
     /** */
     protected final IgniteCacheDatabaseSharedManager db;
 
     /** */
-    public MetastorageRowStore(PartitionStorage<MetastorageDataRow> partStorage, IgniteCacheDatabaseSharedManager db) {
+    public MetastorageRowStore(PartitionMetaStorage<MetastorageDataRow> partStorage, IgniteCacheDatabaseSharedManager db) {
         this.partStorage = partStorage;
         this.db = db;
     }

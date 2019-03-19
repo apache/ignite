@@ -77,8 +77,8 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
-import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionStorage;
-import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionStorageImpl;
+import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
@@ -274,7 +274,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (rowStore0 != null) {
             ((CacheFreeListImpl)rowStore0.freeList()).saveMetadata();
 
-            PartitionStorage<SimpleDataRow> partStore = store.partStorage();
+            PartitionMetaStorage<SimpleDataRow> partStore = store.partStorage();
 
             long updCntr = store.updateCounter();
             long size = store.fullSize(); // TODO FIXME size is wrong (ahead of counter).
@@ -1523,7 +1523,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private volatile CacheDataStore delegate;
 
         /** */
-        private PartitionStorage<SimpleDataRow> partStorage;
+        private PartitionMetaStorage<SimpleDataRow> partStorage;
 
         /** Timestamp when next clean try will be allowed for current partition.
          * Used for fine-grained throttling on per-partition basis. */
@@ -1593,7 +1593,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     RootPage partMetastoreReuseListRoot = metas.partMetastoreReuseListRoot;
 
-                    partStorage = new PartitionStorageImpl<SimpleDataRow>(
+                    partStorage = new PartitionMetaStorageImpl<SimpleDataRow>(
                         grp.groupId(),
                         grp.cacheOrGroupName() + "-partstore-" + partId,
                         grp.dataRegion().memoryMetrics(),
@@ -2619,7 +2619,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
-        @Override public PartitionStorage partStorage() {
+        @Override public PartitionMetaStorage partStorage() {
             return partStorage;
         }
     }

@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionStorageImpl;
+import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
@@ -127,7 +127,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     private RootPage reuseListRoot;
 
     /** */
-    private PartitionStorageImpl<MetastorageDataRow> partStorage;
+    private PartitionMetaStorageImpl<MetastorageDataRow> partStorage;
 
     /** */
     private SortedMap<String, byte[]> lastUpdates;
@@ -236,7 +236,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             getOrAllocateMetas(partId = PageIdAllocator.METASTORE_PARTITION);
 
         if (!empty) {
-            partStorage = new PartitionStorageImpl<MetastorageDataRow>(METASTORAGE_CACHE_ID, "metastorage",
+            partStorage = new PartitionMetaStorageImpl<MetastorageDataRow>(METASTORAGE_CACHE_ID, "metastorage",
                 regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
                 reuseListRoot.isAllocated()) {
                 @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
