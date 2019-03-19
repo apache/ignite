@@ -44,7 +44,7 @@ public class JUnit3TestLegacySupport extends JUnitAssertAware {
     }
 
     /**
-     * Called before execution of every test method in class.
+     * Used at the beginning of {@link #runTest} scenario and called before execution of every test method in class.
      * <p>
      * Do not annotate with Before in overriding methods.</p>
      *
@@ -55,8 +55,8 @@ public class JUnit3TestLegacySupport extends JUnitAssertAware {
     }
 
     /**
-     * Called after execution of every test method in class or if {@link #beforeTest()} failed without test method
-     * execution.
+     * Used in the end of {@link #runTest} scenario and called after execution of every test method in class
+     * or if something failed during the test execution.
      * <p>
      * Do not annotate with After in overriding methods.</p>
      *
