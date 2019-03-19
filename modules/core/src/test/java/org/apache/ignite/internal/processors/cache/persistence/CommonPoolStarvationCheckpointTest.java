@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -94,43 +95,37 @@ public class CommonPoolStarvationCheckpointTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.CHECKPOINT_PARALLEL_SORT_THRESHOLD, value = "0")
     public void testCommonPoolStarvation() throws Exception {
-        System.setProperty(IgniteSystemProperties.CHECKPOINT_PARALLEL_SORT_THRESHOLD, "0");
+        IgniteEx grid = startGrid(0);
 
-        try {
-            IgniteEx grid = startGrid(0);
+        grid.cluster().active(true);
 
-            grid.cluster().active(true);
+        IgniteCache<Integer, OnePageValue> cache = grid.cache(CACHE_NAME);
 
-            IgniteCache<Integer, OnePageValue> cache = grid.cache(CACHE_NAME);
+        forceCheckpoint();
 
-            forceCheckpoint();
+        for (int i = 0; i < ENTRIES_COUNT; i++)
+            cache.put(i, new OnePageValue());
 
-            for (int i = 0; i < ENTRIES_COUNT; i++)
-                cache.put(i, new OnePageValue());
+        CountDownLatch latch = new CountDownLatch(1);
 
-            CountDownLatch latch = new CountDownLatch(1);
+        ForkJoinPool commonPool = ForkJoinPool.commonPool();
 
-            ForkJoinPool commonPool = ForkJoinPool.commonPool();
-
-            for (int i = 0; i < Runtime.getRuntime().availableProcessors() * 10; i++) {
-                commonPool.submit(() -> {
-                    try {
-                        latch.await();
-                    }
-                    catch (InterruptedException e) {
-                        throw new IgniteInterruptedException(e);
-                    }
-                });
-            }
-
-            forceCheckpoint();
-
-            latch.countDown();
+        for (int i = 0; i < Runtime.getRuntime().availableProcessors() * 10; i++) {
+            commonPool.submit(() -> {
+                try {
+                    latch.await();
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteInterruptedException(e);
+                }
+            });
         }
-        finally {
-            System.clearProperty(IgniteSystemProperties.CHECKPOINT_PARALLEL_SORT_THRESHOLD);
-        }
+
+        forceCheckpoint();
+
+        latch.countDown();
     }
 
     /**
