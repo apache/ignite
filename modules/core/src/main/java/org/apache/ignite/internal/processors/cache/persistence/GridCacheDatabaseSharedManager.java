@@ -260,6 +260,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private static final String CHECKPOINT_RUNNER_THREAD_PREFIX = "checkpoint-runner";
 
+    /** Long JVM puase detector enabled flag. */
+    private static final boolean PAUSE_DETECTOR_ENABLED =
+        getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, DEFAULT_JVM_PAUSE_DETECTOR_DISABLED);
+
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
 
@@ -3329,7 +3333,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Checkpoint started log message format. */
         private static final String CHECKPOINT_STARTED_LOG_FORMAT = "Checkpoint started [checkpointId=%s, startPtr=%s," +
             " checkpointBeforeLockTime=%dms, checkpointLockWait=%dms, checkpointListenersExecuteTime=%dms, " +
-            "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, possibleJvmPauseDuration=%dms, pages=%d, " +
+            "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, possibleJvmPauseDuration=%s, pages=%d, " +
             "reason='%s']";
 
         /** Temporary write buffer. */
@@ -3350,10 +3354,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Long JVM pause threshold. */
         private final int longJvmPauseThreshold =
             getInteger(IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD, DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD);
-
-        /** Long JVM puase detector enabled flag. */
-        private final boolean pauseDetectorEnabled =
-            getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, DEFAULT_JVM_PAUSE_DETECTOR_DISABLED);
 
         /**
          * @param gridName Grid name.
@@ -3997,7 +3997,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tracker.listenersExecuteDuration(),
                             tracker.lockHoldDuration(),
                             tracker.walCpRecordFsyncDuration(),
-                            possibleJvmPauseDuration,
+                            possibleJvmPauseDuration > 0 ? possibleJvmPauseDuration + "ms" : "N/A",
                             cpPages.size(),
                             curr.reason
                         )
@@ -4031,7 +4031,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return Duration of possible JVM pause, if it was detected, or {@code -1} otherwise.
          */
         private long possibleLongJvmPauseDuration(CheckpointMetricsTracker tracker) {
-            if (pauseDetectorEnabled) {
+            if (PAUSE_DETECTOR_ENABLED) {
                 if (tracker.lockWaitDuration() + tracker.lockHoldDuration() > longJvmPauseThreshold) {
                     long now = System.currentTimeMillis();
 
