@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionStorage;
+import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionStorageImpl;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 
 /**
@@ -27,14 +29,14 @@ import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
  */
 public class MetastorageRowStore {
     /** */
-    private final FreeList freeList;
+    private final PartitionStorage<MetastorageDataRow> partStorage;
 
     /** */
     protected final IgniteCacheDatabaseSharedManager db;
 
     /** */
-    public MetastorageRowStore(FreeList freeList, IgniteCacheDatabaseSharedManager db) {
-        this.freeList = freeList;
+    public MetastorageRowStore(PartitionStorage<MetastorageDataRow> partStorage, IgniteCacheDatabaseSharedManager db) {
+        this.partStorage = partStorage;
         this.db = db;
     }
 
@@ -43,7 +45,7 @@ public class MetastorageRowStore {
      * @return Data row.
      */
     public MetastorageDataRow dataRow(String key, long link) throws IgniteCheckedException {
-        return new MetastorageDataRow(link, key, freeList.readRow(link));
+        return new MetastorageDataRow(link, key, partStorage.readRow(link));
     }
 
     /**
@@ -55,7 +57,7 @@ public class MetastorageRowStore {
         db.checkpointReadLock();
 
         try {
-            freeList.removeDataRowByLink(link, IoStatisticsHolderNoOp.INSTANCE);
+            partStorage.removeDataRowByLink(link, IoStatisticsHolderNoOp.INSTANCE);
         }
         finally {
             db.checkpointReadUnlock();
@@ -70,28 +72,10 @@ public class MetastorageRowStore {
         db.checkpointReadLock();
 
         try {
-            freeList.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
+            partStorage.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
         }
         finally {
             db.checkpointReadUnlock();
         }
     }
-
-    /**
-     * @param link Row link.
-     * @param row New row data.
-     * @return {@code True} if was able to update row.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean updateRow(long link, MetastorageDataRow row) throws IgniteCheckedException {
-        return freeList.updateDataRow(link, row, IoStatisticsHolderNoOp.INSTANCE);
-    }
-
-    /**
-     * @return Free list.
-     */
-    public FreeList freeList() {
-        return freeList;
-    }
-
 }

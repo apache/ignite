@@ -69,6 +69,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuc
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuccessfulSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageListMetaResetCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListAddPageRecord;
@@ -366,7 +367,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
                 return /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
-                        + /*allocatedIdxCandidate*/ 4 + /*link*/ 8;
+                        + /*allocatedIdxCandidate*/ 4;
+
+            case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
+                return /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
+                    + /*allocatedIdxCandidate*/ 4 + /*link*/ 8;
 
             case MEMORY_RECOVERY:
                 return 8;
@@ -599,9 +604,25 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 long countersPageId = in.readLong();
                 byte state = in.readByte();
                 int allocatedIdxCandidate = in.readInt();
-                long link = in.readLong();
 
                 res = new MetaPageUpdatePartitionDataRecord(cacheId, pageId, updCntr, rmvId,
+                    partSize, countersPageId, state, allocatedIdxCandidate);
+
+                break;
+
+            case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                updCntr = in.readLong();
+                rmvId = in.readLong();
+                partSize = in.readInt();
+                countersPageId = in.readLong();
+                state = in.readByte();
+                allocatedIdxCandidate = in.readInt();
+                long link = in.readLong();
+
+                res = new MetaPageUpdatePartitionDataRecordV2(cacheId, pageId, updCntr, rmvId,
                     partSize, countersPageId, state, allocatedIdxCandidate, link);
 
                 break;
@@ -1207,7 +1228,22 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putLong(partDataRec.countersPageId());
                 buf.put(partDataRec.state());
                 buf.putInt(partDataRec.allocatedIndexCandidate());
-                buf.putLong(partDataRec.link());
+
+                break;
+
+            case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
+                MetaPageUpdatePartitionDataRecordV2 partDataRec2 = (MetaPageUpdatePartitionDataRecordV2)rec;
+
+                buf.putInt(partDataRec2.groupId());
+                buf.putLong(partDataRec2.pageId());
+
+                buf.putLong(partDataRec2.updateCounter());
+                buf.putLong(partDataRec2.globalRemoveId());
+                buf.putInt(partDataRec2.partitionSize());
+                buf.putLong(partDataRec2.countersPageId());
+                buf.put(partDataRec2.state());
+                buf.putInt(partDataRec2.allocatedIndexCandidate());
+                buf.putLong(partDataRec2.link());
 
                 break;
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -27,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  *
  */
-public abstract class SimpleDataRow implements Storable {
+public class SimpleDataRow implements Storable {
     /** */
     private long link;
 
@@ -71,6 +72,10 @@ public abstract class SimpleDataRow implements Storable {
 
     public byte[] value() {
         return val;
+    }
+
+    @Override public IOVersions<? extends AbstractDataPageIO> ioVersions() {
+        return SimpleDataPageIO.VERSIONS;
     }
 
     @Override public String toString() {

@@ -45,14 +45,10 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /** */
     private long cntrsPageId;
 
-    /** */
-    private long link;
-
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param allocatedIdxCandidate Page Allocated index candidate
-     * @param link Gap link.
      */
     public MetaPageUpdatePartitionDataRecord(
         int grpId,
@@ -62,8 +58,7 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         int partSize,
         long cntrsPageId,
         byte state,
-        int allocatedIdxCandidate,
-        long link) {
+        int allocatedIdxCandidate) {
         super(grpId, pageId);
 
         this.updateCntr = updateCntr;
@@ -72,7 +67,6 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         this.state = state;
         this.allocatedIdxCandidate = allocatedIdxCandidate;
         this.cntrsPageId = cntrsPageId;
-        this.link = link;
     }
 
     /**
@@ -120,7 +114,6 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         io.setCountersPageId(pageAddr, cntrsPageId);
         io.setPartitionState(pageAddr, state);
         io.setCandidatePageCount(pageAddr, allocatedIdxCandidate);
-        io.setGapsLink(pageAddr, link);
     }
 
     /**
@@ -128,13 +121,6 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
      */
     public int allocatedIndexCandidate() {
         return allocatedIdxCandidate;
-    }
-
-    /**
-     *
-     */
-    public long link() {
-        return link;
     }
 
     /** {@inheritDoc} */
