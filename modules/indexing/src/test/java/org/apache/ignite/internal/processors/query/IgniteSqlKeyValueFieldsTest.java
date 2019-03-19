@@ -33,6 +33,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -62,6 +63,8 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
     /** */
     private static String CACHE_JOB = "Job";
 
+    /** */
+    private boolean oldAllowKeyValCol;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -90,15 +93,22 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        oldAllowKeyValCol = GridTestUtils.getFieldValue(UpdatePlanBuilder.class,
+            UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES");
+
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
+
         startGrid(0);
         startGrid(NODE_CLIENT);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
         stopAllGrids();
+
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowKeyValCol);
+
+        super.afterTest();
     }
 
     private CacheConfiguration buildCacheConfiguration(String name) {
