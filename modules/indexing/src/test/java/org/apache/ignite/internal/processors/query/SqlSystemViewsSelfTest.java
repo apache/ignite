@@ -189,13 +189,13 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         List<List<?>> clientNodeSchemas = execSql(client, schemasSql);
 
-        String[] expSchemasSrv = new String[] {"PREDIFINED_SCHEMA_1", "default", "IGNITE", "ignite-sys-cache", "PUBLIC", "TST1"};
+        String[] expSchemasSrv = new String[] {"PREDIFINED_SCHEMA_1", "IGNITE", "PUBLIC", "TST1"};
 
         String[] schemasSrv = srvNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).toArray(String[]::new);
 
         Assert.assertArrayEquals(expSchemasSrv, schemasSrv);
 
-        String[] expSchemasCli = new String[] {"PREDIFINED_SCHEMA_2", "default", "IGNITE", "ignite-sys-cache", "PUBLIC", "TST1"};
+        String[] expSchemasCli = new String[] {"PREDIFINED_SCHEMA_2", "IGNITE", "PUBLIC", "TST1"};
 
         String[] schemasCli = clientNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).toArray(String[]::new);
 
