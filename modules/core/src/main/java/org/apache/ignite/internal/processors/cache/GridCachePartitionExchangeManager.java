@@ -50,8 +50,11 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.ClusterActivationEvent;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
@@ -520,6 +523,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
                     exchFut = exchangeFuture(exchId, evt, cache, exchActions, null);
+
+                    exchFut.listen(f -> {
+                        if (exchActions.activate())
+                            recordEvent("Cluster activated.", EventType.EVT_CLUSTER_ACTIVATED);
+                        else if (exchActions.deactivate())
+                            recordEvent("Cluster deactivated.", EventType.EVT_CLUSTER_DEACTIVATED);
+                    });
                 }
             }
             else if (customMsg instanceof DynamicCacheChangeBatch) {
@@ -599,6 +609,31 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(evt.eventNode()));
             exchWorker.addCustomTask(new WalStateNodeLeaveExchangeTask(evt.eventNode()));
         }
+    }
+
+    /**
+     * @param msg Event message.
+     * @param evtType Event type.
+     */
+    private void recordEvent(String msg, int evtType) {
+        GridKernalContext ctx = cctx.kernalContext();
+
+        Collection<ClusterNode> srvNodes = ctx.cluster().get().forServers().nodes();
+
+        ArrayList baselineNodes = new ArrayList(srvNodes.size());
+
+        for (ClusterNode clN : srvNodes)
+            baselineNodes.add(clN);
+
+        ctx.getSystemExecutorService().execute(new Runnable() {
+            @Override public void run() {
+                if (ctx.event().isRecordable(evtType)) {
+                    ClusterActivationEvent evt = new ClusterActivationEvent(ctx.discovery().localNode(), msg, evtType, baselineNodes);
+
+                    ctx.event().record(evt);
+                }
+            }
+        });
     }
 
     /**

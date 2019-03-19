@@ -20,9 +20,11 @@ package org.apache.ignite.internal.cluster;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -35,7 +37,20 @@ public class ClusterActivationEventTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClusterActivation() throws Exception {
-        checkClusterActivation(true, EventType.EVT_CLUSTER_ACTIVATED);
+        ClusterActivationTestTask task = new ClusterActivationTestTask() {
+            @Override public void execute(IgniteCluster cluster) throws Exception {
+                deactivateCluster(cluster);
+
+                activateCluster(cluster);
+            }
+        };
+
+        IgnitePredicate<? extends Event> lsnr = (evt) -> {
+            System.out.println("Received event [id=" + evt.id().toString() + ", type=" + evt.type() + ']' + ", msg=" + evt.message() + ']');
+            return true;
+        };
+
+        checkClusterActivation(task, lsnr, EventType.EVT_CLUSTER_ACTIVATED, 1);
     }
 
     /**
@@ -43,29 +58,150 @@ public class ClusterActivationEventTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClusterDeactivation() throws Exception {
-        checkClusterActivation(false, EventType.EVT_CLUSTER_DEACTIVATED);
+        ClusterActivationTestTask task = new ClusterActivationTestTask() {
+            @Override public void execute(IgniteCluster cluster) throws Exception {
+                deactivateCluster(cluster);
+            }
+        };
+
+        IgnitePredicate<? extends Event> lsnr = (evt) -> {
+            System.out.println("Received event [id=" + evt.id().toString() + ", type=" + evt.type() + ']' + ", msg=" + evt.message() + ']');
+            return true;
+        };
+
+        checkClusterActivation(task, lsnr, EventType.EVT_CLUSTER_DEACTIVATED, 1);
     }
 
     /**
-     * @param active If {@code True} start activation process. If {@code False} start deactivation process.
-     * @param evtType Expected event type.
      * @throws Exception If failed.
      */
-    private void checkClusterActivation(boolean active, int evtType) throws Exception {
+    @Test
+    public void testClusterDoubleActivation() throws Exception {
+        ClusterActivationTestTask task = new ClusterActivationTestTask() {
+            @Override public void execute(IgniteCluster cluster) throws Exception {
+                deactivateCluster(cluster);
+
+                activateCluster(cluster);
+
+                activateCluster(cluster);
+            }
+        };
+
+        IgnitePredicate<? extends Event> lsnr = (evt) -> {
+            System.out.println("Received event [id=" + evt.id().toString() + ", type=" + evt.type() + ']' + ", msg=" + evt.message() + ']');
+            return true;
+        };
+
+        checkClusterActivation(task, lsnr, EventType.EVT_CLUSTER_ACTIVATED, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterActivationListenerSleep() throws Exception {
+        ClusterActivationTestTask task = new ClusterActivationTestTask() {
+            @Override public void execute(IgniteCluster cluster) throws Exception {
+                deactivateCluster(cluster);
+
+                activateCluster(cluster);
+            }
+        };
+
+        IgnitePredicate<? extends Event> lsnr = (evt) -> {
+            try {
+                Thread.sleep(10000);
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedException(e);
+            }
+
+            System.out.println("Received event [id=" + evt.id().toString() + ", type=" + evt.type() + ']' + ", msg=" + evt.message() + ']');
+
+            return true;
+        };
+
+        checkClusterActivation(task, lsnr, EventType.EVT_CLUSTER_ACTIVATED, 1);
+    }
+
+    /**
+     * @param task Test.
+     * @param lsnr Listener.
+     * @param evt Event type.
+     * @param evtCnt Events count.
+     * @throws Exception If failed.
+     */
+    private void checkClusterActivation(
+        ClusterActivationTestTask task,
+        IgnitePredicate<? extends Event> lsnr,
+        int evt,
+        int evtCnt
+    ) throws Exception {
         try {
-            Ignite ignite = startGrid(0);
+            Ignite ignite1 = startGrid(1);
+            Ignite ignite2 = startGrid(2);
 
-            IgniteCluster cluster = ignite.cluster();
+            ignite1.events().localListen(lsnr, evt);
+            ignite2.events().localListen(lsnr, evt);
 
-            cluster.active(active);
+            IgniteCluster cluster = ignite1.cluster();
 
-            Collection<Event> evts = ignite.events(cluster).remoteQuery(F.alwaysTrue(), 0, evtType);
+            assert cluster.active();
 
-            assert evts != null;
-            assert evts.size() == 1;
+            task.execute(cluster);
+
+            assertEventsCount(ignite1, evt, evtCnt);
+
+            assertEventsCount(ignite2, evt, evtCnt);
         }
         finally {
-            stopGrid(0);
+            stopGrid(1);
+            stopGrid(2);
         }
+    }
+
+    /**
+     * @param ignite Ignite instance
+     * @param evt Event
+     * @param cnt Count
+     */
+    private void assertEventsCount(Ignite ignite, int evt, int cnt) {
+        Collection<Event> evts = ignite.events().localQuery(F.alwaysTrue(), evt);
+
+        assert evts != null;
+        assert evts.size() == cnt;
+    }
+
+    /**
+     * @param cluster Cluster
+     */
+    private void activateCluster(IgniteCluster cluster) throws InterruptedException {
+        cluster.active(true);
+
+        Thread.sleep(200);
+
+        assert cluster.active();
+    }
+
+    /**
+     * @param cluster Cluster
+     */
+    private void deactivateCluster(IgniteCluster cluster) throws InterruptedException {
+        cluster.active(false);
+
+        Thread.sleep(200);
+
+        assert !cluster.active();
+    }
+
+    /**
+     * Cluster activation test task interface
+     */
+    private interface ClusterActivationTestTask {
+        /**
+         * @param cluster Cluster
+         * @throws Exception If failed.
+         */
+        void execute(IgniteCluster cluster) throws Exception;
     }
 }

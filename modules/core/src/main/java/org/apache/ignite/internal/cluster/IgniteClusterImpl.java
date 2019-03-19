@@ -316,32 +316,13 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            Collection<BaselineNode> baselineNodes = baselineNodes();
-
-            ctx.state().changeGlobalState(active, baselineNodes, false).get();
-
-            if (active)
-                recordEvent("Cluster activated.", EventType.EVT_CLUSTER_ACTIVATED, baselineNodes);
-            else
-                recordEvent("Cluster deactivated.", EventType.EVT_CLUSTER_DEACTIVATED, baselineNodes);
+            ctx.state().changeGlobalState(active, baselineNodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
         finally {
             unguard();
-        }
-    }
-
-    /**
-     * @param msg Event message.
-     * @param evtType Event type.
-     * @param baselineNodes Baseline nodes.
-     */
-    private void recordEvent(String msg, int evtType, Collection<BaselineNode> baselineNodes) {
-        if (ctx.event().isRecordable(evtType)) {
-            ClusterActivationEvent evt = new ClusterActivationEvent(ctx.discovery().localNode(), msg, evtType, baselineNodes);
-            ctx.event().record(evt);
         }
     }
 
