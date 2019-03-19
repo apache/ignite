@@ -19,13 +19,15 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.OffheapInvokeAllClosure;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -36,7 +38,6 @@ import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheMapEntry.ATOMIC_VER_COMPARATOR;
@@ -45,17 +46,14 @@ import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.REMOVE;
 
 /**
- * Batch of cache entries to optimize page memory processing.
+ * Batch of cache map entries.
  */
-public class BatchedCacheEntries {
+public class CacheMapEntries {
     /** */
     private final GridDhtLocalPartition part;
 
     /** */
     private final GridCacheContext cctx;
-
-    /** */
-    private final LinkedHashMap<KeyCacheObject, CacheMapEntryInfo> infos = new LinkedHashMap<>();
 
     /** */
     private final AffinityTopologyVersion topVer;
@@ -64,13 +62,13 @@ public class BatchedCacheEntries {
     private final boolean preload;
 
     /** */
-    private List<GridDhtCacheEntry> entries;
+    private final LinkedHashMap<KeyCacheObject, CacheMapEntryInfo> infos = new LinkedHashMap<>();
 
     /** */
-    private int skipped;
+    private Set<KeyCacheObject> skipped = new HashSet<>();
 
     /** */
-    public BatchedCacheEntries(AffinityTopologyVersion topVer, int partId, GridCacheContext cctx, boolean preload) {
+    public CacheMapEntries(AffinityTopologyVersion topVer, int partId, GridCacheContext cctx, boolean preload) {
         this.topVer = topVer;
         this.cctx = cctx;
         this.preload = preload;
@@ -79,8 +77,7 @@ public class BatchedCacheEntries {
 
     /** */
     public void addEntry(KeyCacheObject key, CacheObject val, long expTime, long ttl, GridCacheVersion ver, GridDrType drType) {
-        // todo remove `key` duplication (Map<Key, Entry<Key...)
-        infos.put(key, new CacheMapEntryInfo(this, key, val, expTime, ttl, ver, drType));
+        infos.put(key, new CacheMapEntryInfo(this, val, expTime, ttl, ver, drType));
     }
 
     /** */
@@ -115,49 +112,30 @@ public class BatchedCacheEntries {
 
     /** */
     public void onRemove(KeyCacheObject key) {
-        // todo  - remove from original collection
-        ++skipped;
+        skipped.add(key);
     }
 
     /** */
     public void onError(KeyCacheObject key, IgniteCheckedException e) {
-        // todo  - remove from original collection
-        ++skipped;
+        skipped.add(key);
     }
 
     /** */
     public boolean skip(KeyCacheObject key) {
-        // todo
-        return false;
+        return skipped.contains(key);
     }
 
     /** */
-    public List<GridDhtCacheEntry> lock() {
-        return entries = lockEntries(infos.values(), topVer);
-    }
-
-    /** */
-    public void unlock() {
-        unlockEntries(infos.values(), topVer);
-    }
-
-    /** */
-    public int size() {
-        return infos.size() - skipped;
-    }
-
-    /** */
-    private List<GridDhtCacheEntry> lockEntries(Collection<CacheMapEntryInfo> list, AffinityTopologyVersion topVer)
-        throws GridDhtInvalidPartitionException {
-        List<GridDhtCacheEntry> locked = new ArrayList<>(list.size());
+    public void lock() {
+        List<GridDhtCacheEntry> locked = new ArrayList<>(infos.size());
 
         while (true) {
-            for (CacheMapEntryInfo info : list) {
-                GridDhtCacheEntry entry = (GridDhtCacheEntry)cctx.cache().entryEx(info.key(), topVer);
+            for (Map.Entry<KeyCacheObject, CacheMapEntryInfo> e : infos.entrySet()) {
+                GridDhtCacheEntry entry = (GridDhtCacheEntry)cctx.cache().entryEx(e.getKey(), topVer);
 
                 locked.add(entry);
 
-                info.cacheEntry(entry);
+                e.getValue().cacheEntry(entry);
             }
 
             boolean retry = false;
@@ -191,43 +169,36 @@ public class BatchedCacheEntries {
             }
 
             if (!retry)
-                return locked;
+                return;
         }
     }
 
     /**
-     * Releases java-level locks on cache entries
-     * todo carefully think about possible reorderings in locking/unlocking.
-     *
-     * @param locked Locked entries.
-     * @param topVer Topology version.
+     * Releases java-level locks on cache entries.
      */
-    private void unlockEntries(Collection<CacheMapEntryInfo> locked, AffinityTopologyVersion topVer) {
+    public void unlock() {
         // Process deleted entries before locks release.
         assert cctx.deferredDelete() : this;
 
         // Entries to skip eviction manager notification for.
         // Enqueue entries while holding locks.
-        // todo Common skip list.
-        Collection<KeyCacheObject> skip = null;
-
-        int size = locked.size();
+        int size = infos.size();
 
         try {
-            for (CacheMapEntryInfo info : locked) {
-                GridCacheMapEntry entry = info.cacheEntry();
+            for (Map.Entry<KeyCacheObject, CacheMapEntryInfo> e : infos.entrySet()) {
+                KeyCacheObject key = e.getKey();
+                GridCacheMapEntry entry = e.getValue().cacheEntry();
 
-                if (entry != null && entry.deleted()) {
-                    if (skip == null)
-                        skip = U.newHashSet(locked.size());
+                if (skipped.contains(key))
+                    continue;
 
-                    skip.add(entry.key());
-                }
+                if (entry != null && entry.deleted())
+                    skipped.add(entry.key());
 
                 try {
-                    info.updateCacheEntry();
-                } catch (IgniteCheckedException e) {
-                    skip.add(entry.key());
+                    e.getValue().updateCacheEntry();
+                } catch (IgniteCheckedException ex) {
+                    skipped.add(entry.key());
                 }
             }
         }
@@ -235,57 +206,81 @@ public class BatchedCacheEntries {
             // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
             // an attempt to use cleaned resources.
             // That's why releasing locks in the finally block..
-            for (CacheMapEntryInfo info : locked) {
+            for (CacheMapEntryInfo info : infos.values()) {
                 GridCacheMapEntry entry = info.cacheEntry();
+
                 if (entry != null)
                     entry.unlockEntry();
             }
         }
 
         // Try evict partitions.
-        for (CacheMapEntryInfo info : locked) {
+        for (CacheMapEntryInfo info : infos.values()) {
             GridDhtCacheEntry entry = info.cacheEntry();
             if (entry != null)
                 entry.onUnlock();
         }
 
-        if (skip != null && skip.size() == size)
+        if (skipped.size() == size)
             // Optimization.
             return;
 
         // Must touch all entries since update may have deleted entries.
         // Eviction manager will remove empty entries.
-        for (CacheMapEntryInfo info : locked) {
+        for (CacheMapEntryInfo info : infos.values()) {
             GridCacheMapEntry entry = info.cacheEntry();
-            if (entry != null && (skip == null || !skip.contains(entry.key())))
+
+            if (entry != null && !skipped.contains(entry.key()))
                 entry.touch();
         }
     }
 
+    /**
+     * @return Count of batch entries.
+     */
+    public int size() {
+        return infos.size() - skipped.size();
+    }
+
+    /**
+     * @return Off heap update closure.
+     */
+    public OffheapInvokeAllClosure updateClosure() {
+        return new UpdateAllClosure(this, cctx, part);
+    }
+
     /** */
-    public class BatchUpdateClosure implements IgniteCacheOffheapManager.OffheapInvokeAllClosure {
+    private static class UpdateAllClosure implements OffheapInvokeAllClosure {
         /** */
         private static final long serialVersionUID = -4782459128689696534L;
 
         /** */
-        private final List<T3<IgniteTree.OperationType, CacheDataRow, CacheDataRow>> resBatch = new ArrayList<>(entries.size());
+        private final List<T3<IgniteTree.OperationType, CacheDataRow, CacheDataRow>> resBatch;
 
         /** */
-        private final int cacheId = context().group().storeCacheIdInDataPage() ? context().cacheId() : CU.UNDEFINED_CACHE_ID;
+        private final int cacheId;
 
         /** */
-        private final int partId = part().id();
+        private final CacheMapEntries batch;
+
+        /** */
+        public UpdateAllClosure(CacheMapEntries entries, GridCacheContext cctx, GridDhtLocalPartition part) {
+            batch = entries;
+            resBatch = new ArrayList<>(entries.size());
+            cacheId = cctx.group().storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+        }
 
         /** {@inheritDoc} */
         @Override public void call(@Nullable Collection<T2<CacheDataRow, CacheSearchRow>> rows) throws IgniteCheckedException {
             List<CacheDataRow> newRows = new ArrayList<>(16);
 
+            int partId = batch.part().id();
+            GridCacheContext cctx = batch.context();
+
             for (T2<CacheDataRow, CacheSearchRow> t2 : rows) {
                 CacheDataRow oldRow = t2.get1();
-
                 KeyCacheObject key = t2.get2().key();
-
-                CacheMapEntryInfo newRowInfo = get(key);
+                CacheMapEntryInfo newRowInfo = batch.get(key);
 
                 try {
                     if (newRowInfo.needUpdate(oldRow)) {
@@ -295,9 +290,9 @@ public class BatchedCacheEntries {
 
                         if (val != null) {
                             if (oldRow != null) {
-                                // todo think about batch updates
-                                newRow = context().offheap().dataStore(part()).createRow(
-                                    context(),
+                                // todo batch updates
+                                newRow = cctx.offheap().dataStore(batch.part()).createRow(
+                                    cctx,
                                     key,
                                     newRowInfo.value(),
                                     newRowInfo.version(),
@@ -305,7 +300,7 @@ public class BatchedCacheEntries {
                                     oldRow);
                             }
                             else {
-                                CacheObjectContext coCtx = context().cacheObjectContext();
+                                CacheObjectContext coCtx = cctx.cacheObjectContext();
                                 // todo why we need this
                                 val.valueBytes(coCtx);
                                 key.valueBytes(coCtx);
@@ -324,7 +319,8 @@ public class BatchedCacheEntries {
                             resBatch.add(new T3<>(treeOp, oldRow, newRow));
                         }
                         else {
-                            // todo we should pass key somehow to remove old row (because in particular case oldRow should not contain key)
+                            // todo   we should pass key somehow to remove old row
+                            // todo   (in particular case oldRow should not contain key)
                             newRow = new DataRow(key, null, null, 0, 0, 0);
 
                             resBatch.add(new T3<>(oldRow != null ? REMOVE : NOOP, oldRow, newRow));
@@ -332,12 +328,12 @@ public class BatchedCacheEntries {
                     }
                 }
                 catch (GridCacheEntryRemovedException e) {
-                    onRemove(key);
+                    batch.onRemove(key);
                 }
             }
 
             if (!newRows.isEmpty())
-                context().offheap().dataStore(part()).rowStore().addRows(newRows, cctx.group().statisticsHolderData());
+                cctx.offheap().dataStore(batch.part()).rowStore().addRows(newRows, cctx.group().statisticsHolderData());
         }
 
         /** {@inheritDoc} */
@@ -352,18 +348,15 @@ public class BatchedCacheEntries {
     }
 
     /** */
-    public static class CacheMapEntryInfo {
-        /** todo think about remove */
-        private final BatchedCacheEntries batch;
-
+    private static class CacheMapEntryInfo {
         /** */
-        private final KeyCacheObject key;
+        private final CacheMapEntries batch;
 
         /** */
         private final CacheObject val;
 
         /** */
-        private final long expTime;
+        private final long expireTime;
 
         /** */
         private final long ttl;
@@ -382,28 +375,19 @@ public class BatchedCacheEntries {
 
         /** */
         public CacheMapEntryInfo(
-            BatchedCacheEntries batch,
-            KeyCacheObject key,
+            CacheMapEntries batch,
             CacheObject val,
-            long expTime,
+            long expireTime,
             long ttl,
             GridCacheVersion ver,
             GridDrType drType
         ) {
             this.batch = batch;
-            this.key = key;
             this.val = val;
-            this.expTime = expTime;
+            this.expireTime = expireTime;
             this.ver = ver;
             this.drType = drType;
             this.ttl = ttl;
-        }
-
-        /**
-         * @return Key.
-         */
-        public KeyCacheObject key() {
-            return key;
         }
 
         /**
@@ -424,7 +408,7 @@ public class BatchedCacheEntries {
          * @return Expire time.
          */
         public long expireTime() {
-            return expTime;
+            return expireTime;
         }
 
         /**
@@ -446,7 +430,7 @@ public class BatchedCacheEntries {
             if (!update)
                 return;
 
-            entry.finishInitialUpdate(val, expTime, ttl, ver, batch.topVer, drType, null, batch.preload);
+            entry.finishInitialUpdate(val, expireTime, ttl, ver, batch.topVer, drType, null, batch.preload);
         }
 
         /** */
