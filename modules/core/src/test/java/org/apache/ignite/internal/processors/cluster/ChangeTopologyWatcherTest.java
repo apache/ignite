@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -30,14 +29,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -46,7 +42,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  *
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_NAME = "TEST_NAME";
