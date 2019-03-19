@@ -215,7 +215,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     public void testPreparedStatementMetaDataNegative() throws Exception {
         // Perform checks few times due to query/plan caching.
         for (int i = 0; i < 3; i++) {
-            // Check h2 dml statements
+            // Check h2 dml statement
             try (Connection conn = DriverManager.getConnection(BASE_URL)) {
                 String update = "update \"pers\".Person set name = 'weird' where orgId < 0";
 
@@ -224,7 +224,16 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 assertNull(psMeta);
             }
 
-            // H2 ddl statements
+            // Check h2 multi-statement
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                String update = "select * from \"pers\".Person; select name from \"pers\".Person";
+
+                ResultSetMetaData psMeta = conn.prepareStatement(update).getMetaData();
+
+                assertNull(psMeta);
+            }
+
+            // H2 ddl statement
             try (Connection conn = DriverManager.getConnection(BASE_URL)) {
                 String update = "CREATE TABLE DDL_METADATA_TAB (ID INT PRIMARY KEY, VAL INT)";
 
@@ -233,7 +242,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 assertNull(psMeta);
             }
 
-            // And native parser statements.
+            // And native parser statement.
             try (Connection conn = DriverManager.getConnection(BASE_URL)) {
                 String nativeCmd = "create index my_idx on PUBLIC.TEST(name)";
 
@@ -559,6 +568,16 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     public void testParametersMetadata() throws Exception {
         // Perform checks few times due to query/plan caching.
         for (int i = 0; i < 3; i++) {
+            // No parameters statement.
+            try(Connection conn = DriverManager.getConnection(BASE_URL)) {
+                conn.setSchema("\"pers\"");
+                
+                PreparedStatement noParams = conn.prepareStatement("select * from Person;");
+                ParameterMetaData params = noParams.getParameterMetaData();
+
+                assertEquals("Parameters should be empty.", 0, params.getParameterCount());
+            }
+
             // Selects.
             try (Connection conn = DriverManager.getConnection(BASE_URL)) {
                 conn.setSchema("\"pers\"");
@@ -597,6 +616,37 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
                 assertEquals(Types.INTEGER, meta.getParameterType(2));
                 assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+            }
+
+            // Multistatement
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement updateStmt = conn.prepareStatement(
+                    "update Person p set orgId = 42 where p.name > ? and p.orgId > ?;" +
+                        "select orgId from Person p where p.name > ? and p.orgId > ?");
+
+                updateStmt.execute();
+
+                ParameterMetaData meta = updateStmt.getParameterMetaData();
+
+                assertNotNull(meta);
+
+                assertEquals(2, meta.getParameterCount());
+
+                assertEquals(Types.VARCHAR, meta.getParameterType(1));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
+
+                assertEquals(Types.INTEGER, meta.getParameterType(2));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+
+                assertEquals(Types.VARCHAR, meta.getParameterType(3));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(3));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(3));
+
+                assertEquals(Types.INTEGER, meta.getParameterType(4));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(4));
             }
         }
     }
