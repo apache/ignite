@@ -677,6 +677,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void onCacheStart0(GridCacheContextInfo<?, ?> cacheInfo, QuerySchema schema, boolean isSql)
         throws IgniteCheckedException {
+        if (!cacheSupportSql(cacheInfo.config()))
+            return;
 
         ctx.cache().context().database().checkpointReadLock();
 
@@ -1501,7 +1503,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Create cache and table from given query entity.
      *
-     * @param schemaName Schema name to create table in.
+     * @param schemaName Schema name to create table in. Case sensitive, must not be \"quoted\".
      * @param entity Entity to create table from.
      * @param templateName Template name.
      * @param cacheName Cache name.
@@ -1579,7 +1581,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             ccfg.setQueryParallelism(qryParallelism);
 
         ccfg.setEncryptionEnabled(encrypted);
-        ccfg.setSqlSchema(schemaName);
+        ccfg.setSqlSchema("\"" + schemaName + "\"");
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
 
@@ -1698,7 +1700,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param destroy Destroy flag.
      */
     public void onCacheStop0(GridCacheContextInfo cacheInfo, boolean destroy) {
-        if (idx == null)
+        if (idx == null || !cacheSupportSql(cacheInfo.config()))
             return;
 
         String cacheName = cacheInfo.name();
@@ -1754,6 +1756,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     missedCacheTypeIter.remove();
             }
         }
+    }
+
+    /**
+     * Check is cache configured for SQL.
+     *
+     * @param cfg Cache configuration.
+     * @return {@code true} If cache configuration support SQL, {@code false} otherwise.
+     */
+    private boolean cacheSupportSql(CacheConfiguration cfg) {
+        return !F.isEmpty(cfg.getQueryEntities())
+            || !F.isEmpty(cfg.getSqlSchema())
+            || !F.isEmpty(cfg.getSqlFunctionClasses());
     }
 
     /**
@@ -2231,24 +2245,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
         return executeQuerySafe(cctx, () -> {
-            final String schemaName = qry.getSchema() != null ? qry.getSchema()
-                : (cctx != null ? idx.schema(cctx.name()) : QueryUtils.DFLT_SCHEMA);
+            assert idx != null;
+
+            final String schemaName = getSchemaName(cctx, qry);
 
             IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
                 new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
                     @Override public List<FieldsQueryCursor<List<?>>> applyx() {
                         GridQueryCancel cancel0 = cancel != null ? cancel : new GridQueryCancel();
 
-                        List<FieldsQueryCursor<List<?>>> res =
-                            idx.querySqlFields(
+                        List<FieldsQueryCursor<List<?>>> res = idx.querySqlFields(
                                 schemaName,
                                 qry,
                                 cliCtx,
                                 keepBinary,
                                 failOnMultipleStmts,
-                                null,
-                                cancel0,
-                                true
+                                cancel0
                             );
 
                         if (cctx != null)
@@ -2260,6 +2272,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             return executeQuery(qryType, qry.getSql(), cctx, clo, true);
         });
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @return Schema name.
+     */
+    private String getSchemaName(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry) {
+        if (qry.getSchema() != null)
+            return qry.getSchema();
+        else if (cctx != null) {
+            String cacheSchemaName = idx.schema(cctx.name());
+
+            if (!F.isEmpty(cacheSchemaName))
+                return cacheSchemaName;
+        }
+
+        return QueryUtils.DFLT_SCHEMA;
     }
 
     /**
