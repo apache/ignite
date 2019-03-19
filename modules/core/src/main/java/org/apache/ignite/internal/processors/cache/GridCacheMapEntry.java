@@ -3349,6 +3349,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             };
 
             if (unswapped) {
+                assert false : key;
+
                 update = p.apply(null);
 
                 if (update) {
@@ -3407,75 +3409,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (update) {
-                update(val, expTime, ttl, ver, true);
-
-                boolean skipQryNtf = false;
-
-                if (val == null) {
-                    skipQryNtf = true;
-
-                    if (cctx.deferredDelete() && !deletedUnlocked() && !isInternal())
-                        deletedUnlocked(true);
-                }
-                else if (deletedUnlocked())
-                    deletedUnlocked(false);
-
-                long updateCntr = 0;
-
-                if (!preload)
-                    updateCntr = nextPartitionCounter(topVer, true, null);
-
-                if (walEnabled) {
-                    if (cctx.mvccEnabled()) {
-                        cctx.shared().wal().log(new MvccDataRecord(new MvccDataEntry(
-                            cctx.cacheId(),
-                            key,
-                            val,
-                            val == null ? DELETE : GridCacheOperation.CREATE,
-                            null,
-                            ver,
-                            expireTime,
-                            partition(),
-                            updateCntr,
-                            mvccVer == null ? MvccUtils.INITIAL_VERSION : mvccVer
-                        )));
-                    } else {
-                        cctx.shared().wal().log(new DataRecord(new DataEntry(
-                            cctx.cacheId(),
-                            key,
-                            val,
-                            val == null ? DELETE : GridCacheOperation.CREATE,
-                            null,
-                            ver,
-                            expireTime,
-                            partition(),
-                            updateCntr
-                        )));
-                    }
-                }
-
-                drReplicate(drType, val, ver, topVer);
-
-                if (!skipQryNtf) {
-                    cctx.continuousQueries().onEntryUpdated(
-                        key,
-                        val,
-                        null,
-                        this.isInternal() || !this.context().userCache(),
-                        this.partition(),
-                        true,
-                        preload,
-                        updateCntr,
-                        null,
-                        topVer);
-                }
-
-                onUpdateFinished(updateCntr);
-
-                if (!fromStore && cctx.store().isLocal()) {
-                    if (val != null)
-                        cctx.store().put(null, key, val, ver);
-                }
+                finishInitialUpdate(val, expireTime, ttl, ver, topVer, drType, mvccVer, preload);
 
                 return true;
             }
