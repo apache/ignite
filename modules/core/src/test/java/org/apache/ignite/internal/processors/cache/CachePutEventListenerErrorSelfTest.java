@@ -33,6 +33,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 /**
@@ -53,6 +54,7 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+        expectFailure(NoClassDefFoundError.class);
 
         startGridsMultiThreaded(3);
 
@@ -78,6 +80,14 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
         finally {
             Ignition.setClientMode(false);
         }
+    }
+
+    /**
+     *
+     */
+    @AfterClass
+    public static void clearHandler() {
+        expectNothing();
     }
 
     /**

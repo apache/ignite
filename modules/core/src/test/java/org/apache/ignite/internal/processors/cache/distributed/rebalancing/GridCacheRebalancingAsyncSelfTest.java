@@ -25,6 +25,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -42,10 +43,21 @@ public class GridCacheRebalancingAsyncSelfTest extends GridCacheRebalancingSyncS
     }
 
     /**
+     *
+     */
+    @After
+    public void clearHandler() {
+        expectNothing();
+    }
+
+    /**
      * @throws Exception Exception.
      */
     @Test
     public void testNodeFailedAtRebalancing() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         IgniteEx ignite = startGrid(0);
 
         generateData(ignite, 0, 0);

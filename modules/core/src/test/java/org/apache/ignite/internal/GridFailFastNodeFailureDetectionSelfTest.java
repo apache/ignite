@@ -56,6 +56,8 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids();
     }
 
@@ -64,6 +66,9 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
      */
     @Test
     public void testFailFast() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         startGridsMultiThreaded(5);
 
         final CountDownLatch failLatch = new CountDownLatch(4);

@@ -48,6 +48,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.Test;
 
@@ -105,6 +106,9 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         super.beforeTestsStarted();
 
         lastKey = 0;
+
+        expectFailure(TransactionHeuristicException.class);
+        expectFailure(IgniteSpiException.class);
     }
 
     /** {@inheritDoc} */
@@ -130,6 +134,14 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         super.beforeTest();
 
         lastKey = 0;
+    }
+
+    /**
+     *
+     */
+    @AfterClass
+    public static void clearHandler() {
+        expectNothing();
     }
 
     /**

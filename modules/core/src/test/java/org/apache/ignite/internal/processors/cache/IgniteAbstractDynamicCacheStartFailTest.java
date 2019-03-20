@@ -67,6 +67,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -109,6 +110,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11562")
     public void testBrokenAffinityFunStartOnServerFailedOnClient() throws Exception {
         final String clientName = CLIENT_GRID_NAME + "testBrokenAffinityFunStartOnServerFailedOnClient";
 

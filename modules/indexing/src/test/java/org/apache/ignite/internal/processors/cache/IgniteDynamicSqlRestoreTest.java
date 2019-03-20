@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -57,7 +58,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 @SuppressWarnings("Duplicates")
 public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implements Serializable {
-
     public static final String TEST_CACHE_NAME = "test";
     public static final String TEST_INDEX_OBJECT = "TestIndexObject";
 
@@ -88,6 +88,8 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -524,6 +526,8 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     @SuppressWarnings("ConstantConditions")
     @Test
     public void testFailJoiningNodeBecauseDifferentSql() throws Exception {
+        expectFailure(NodeStoppingException.class);
+
         {
             //given: two started nodes with test table
             Ignite ig = startGrid(0);
@@ -570,6 +574,8 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     @SuppressWarnings("ConstantConditions")
     @Test
     public void testFailJoiningNodeBecauseFieldInlineSizeIsDifferent() throws Exception {
+        expectFailure(NodeStoppingException.class);
+
         {
             //given: two started nodes with test table
             Ignite ig = startGrid(0);
@@ -612,6 +618,8 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     @SuppressWarnings("ConstantConditions")
     @Test
     public void testFailJoiningNodeBecauseNeedConfigUpdateOnActiveGrid() throws Exception {
+        expectFailure(NodeStoppingException.class);
+
         {
             startGrid(0);
             startGrid(1);

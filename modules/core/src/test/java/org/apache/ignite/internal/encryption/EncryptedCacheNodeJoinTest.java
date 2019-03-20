@@ -59,6 +59,8 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -146,6 +148,8 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     /** */
     @Test
     public void testNodeCantJoinWithDifferentCacheKeys() throws Exception {
+        expectFailure(IgniteCheckedException.class);
+
         IgniteEx grid0 = startGrid(GRID_0);
         startGrid(GRID_3);
 

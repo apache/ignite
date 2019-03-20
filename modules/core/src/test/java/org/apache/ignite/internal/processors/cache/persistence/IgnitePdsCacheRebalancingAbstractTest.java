@@ -37,6 +37,7 @@ import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -51,7 +52,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -191,6 +194,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -317,6 +322,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      */
     @Test
     public void testTopologyChangesWithConstantLoad() throws Exception {
+        expectFailure(IgniteException.class, "Test exception.");
+        expectFailure(IgniteTxHeuristicCheckedException.class);
+        expectFailure(NodeStoppingException.class);
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         final long timeOut = U.currentTimeMillis() + 5 * 60 * 1000;
 
         final int entriesCnt = 10_000;

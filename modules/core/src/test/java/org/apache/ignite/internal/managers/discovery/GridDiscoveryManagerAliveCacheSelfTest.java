@@ -23,16 +23,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -108,6 +112,16 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         return cfg;
     }
 
+    /**
+     *
+     */
+    @BeforeClass
+    public static void setupHandler() {
+        expectFailure(NodeStoppingException.class);
+        expectFailure(IgniteCheckedException.class, "Node is stopping: ");
+        expectFailure(InterruptedException.class);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < PERM_NODES_CNT; i++) {
@@ -125,6 +139,14 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+    }
+
+    /**
+     *
+     */
+    @AfterClass
+    public static void clearHandler() {
+        expectNothing();
     }
 
     /**

@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -50,12 +51,23 @@ public class GridCacheJtaConfigurationValidationSelfTest extends GridCommonAbstr
     }
 
     /**
+     *
+     */
+    @After
+    public void clearHandler() {
+        expectNothing();
+    }
+
+    /**
      * Tests that a user did not set 'transactionManagerLookupClassName' property for atomic cache.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testAtomicWithTmLookup() throws Exception {
+        expectFailure(IgniteCheckedException.class, "Grid configuration parameter invalid: " +
+            "transaction manager can not be used with ATOMIC cache");
+
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 startGrid(0);

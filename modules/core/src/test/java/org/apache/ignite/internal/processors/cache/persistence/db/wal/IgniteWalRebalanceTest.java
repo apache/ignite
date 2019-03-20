@@ -42,6 +42,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -130,6 +132,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
         System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING);
+
+        expectNothing();
 
         boolean walRebalanceInvoked = !IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances()
             .isEmpty();
@@ -409,6 +413,11 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalanceCancelOnSupplyError() throws Exception {
+        expectFailure(IgniteException.class, "Test exception.");
+        expectFailure(IgniteTxHeuristicCheckedException.class);
+        expectFailure(NodeStoppingException.class);
+        expectFailure(InterruptedException.class);
+
         // Prepare some data.
         IgniteEx crd = (IgniteEx) startGrids(3);
 

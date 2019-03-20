@@ -26,12 +26,14 @@ import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.GridStringLogger;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -62,16 +64,25 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
      */
     @Test
     public void testNodeWithAttributeFailure() throws Exception {
+        expectFailure(IgniteException.class, "Class not found for continuous query remote filter ");
+        expectFailure(IgniteException.class, "GridWorker ");
+        expectFailure(InterruptedException.class);
+
         try (Ignite node1 = startNodeWithCache()) {
-            GridStringLogger log = new GridStringLogger();
+            ListeningTestLogger log = new ListeningTestLogger();
+            LogListener lsnr = LogListener.matches("Class not found for continuous query remote filter " +
+                "[name=org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilter]").atLeast(1).build();
+            log.registerListener(lsnr);
 
             try (Ignite node2 = startGrid("node2", getConfiguration("node2", true, log))) {
                 fail();
             }
             catch (IgniteException ignored) {
-                assertTrue(log.toString().contains("Class not found for continuous query remote filter " +
-                    "[name=org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilter]"));
+                assertTrue(lsnr.check());
             }
+        }
+        finally {
+            expectNothing();
         }
     }
 
@@ -122,7 +133,7 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
      * @return Node configuration w/specified name.
      * @throws Exception If failed.
      */
-    private IgniteConfiguration getConfiguration(String name, boolean setAttr, GridStringLogger log) throws Exception {
+    private IgniteConfiguration getConfiguration(String name, boolean setAttr, IgniteLogger log) throws Exception {
         IgniteConfiguration cfg = optimize(getConfiguration(name));
 
         if (setAttr)

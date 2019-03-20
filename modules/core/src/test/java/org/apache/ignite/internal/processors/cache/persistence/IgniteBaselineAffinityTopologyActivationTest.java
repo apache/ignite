@@ -38,6 +38,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
@@ -123,6 +124,8 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids(false);
 
         cleanPersistenceDir();
@@ -245,6 +248,8 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
      */
     @Test
     public void testNodeFailsToJoinWithIncompatiblePreviousBaselineTopology() throws Exception {
+        expectFailure(NodeStoppingException.class);
+
         startGridWithConsistentId("A");
         startGridWithConsistentId("B");
         Ignite nodeC = startGridWithConsistentId("C");
@@ -294,6 +299,8 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
      */
     @Test
     public void testIncompatibleBltNodeIsProhibitedToJoinCluster() throws Exception {
+        expectFailure(NodeStoppingException.class);
+
         startGridWithConsistentId("A");
         startGridWithConsistentId("B");
         startGridWithConsistentId("C").cluster().active(true);
@@ -502,6 +509,8 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
      */
     @Test
     public void testNodeWithBltIsNotAllowedToJoinClusterDuringFirstActivation() throws Exception {
+        expectFailure(NodeStoppingException.class);
+
         Ignite nodeC = startGridWithConsistentId("C");
 
         nodeC.cluster().active(true);
@@ -1028,6 +1037,8 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
      */
     @Test
     public void testNodeWithBltIsProhibitedToJoinNewCluster() throws Exception {
+        expectFailure(NodeStoppingException.class);
+
         BaselineTopologyVerifier nullVerifier = new BaselineTopologyVerifier() {
             @Override public void verify(BaselineTopology blt) {
                 assertNull(blt);

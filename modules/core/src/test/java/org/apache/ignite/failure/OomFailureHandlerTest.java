@@ -205,7 +205,8 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
      * @param igniteWork Working ignite instance.
      * @param igniteFail Failed ignite instance.
      */
-    private static void assertFailureState(Ignite igniteWork, Ignite igniteFail) throws IgniteInterruptedCheckedException {
+    protected void assertFailureState(IgniteEx igniteWork, IgniteEx igniteFail)
+        throws IgniteInterruptedCheckedException {
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return dummyFailureHandler(igniteFail).failure();

@@ -41,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -65,7 +66,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
+import org.apache.ignite.failure.TestFailingFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -176,6 +177,12 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
+
+    /** Show that test is currently running. */
+    public static AtomicBoolean testIsRunning = new AtomicBoolean();
+
+    /** Failure catched by test failure handler. */
+    public final AtomicReference<Throwable> ex = new AtomicReference<>();
 
     /** Manages first and last test execution. */
     @ClassRule public static final TestRule firstLastTestRule = new TestRule() {
@@ -1782,7 +1789,33 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @return Failure handler implementation.
      */
     protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
+        return new TestFailingFailureHandler(this);
+    }
+
+    /**
+     * Expect critical failure for default {@link TestFailingFailureHandler}.
+     *
+     * @param cls Class.
+     */
+    protected static boolean expectFailure(Class<? extends Throwable> cls) {
+        return TestFailingFailureHandler.expect(cls);
+    }
+
+    /**
+     * Expect critical failure for default {@link TestFailingFailureHandler}.
+     *
+     * @param cls Class.
+     * @param msg Failure message.
+     */
+    protected static boolean expectFailure(Class<? extends Throwable> cls, String msg) {
+        return TestFailingFailureHandler.expect(cls, msg);
+    }
+
+    /**
+     * Clear all expected failures for default {@link TestFailingFailureHandler}.
+     */
+    protected static void expectNothing() {
+        TestFailingFailureHandler.clear();
     }
 
     /**
@@ -2125,17 +2158,17 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
     /** {@inheritDoc} */
     @Override void runTest(Statement testRoutine) throws Throwable {
-        final AtomicReference<Throwable> ex = new AtomicReference<>();
-
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
+                testIsRunning.set(true);
+
                 try {
                     testRoutine.evaluate();
                 }
                 catch (Throwable e) {
-                    IgniteClosure<Throwable, Throwable> hnd = errorHandler();
-
-                    ex.set(hnd != null ? hnd.apply(e) : e);
+                    handleFailure(e);
+                } finally {
+                    testIsRunning.set(false);
                 }
             }
         });
@@ -2177,6 +2210,17 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         }
 
         assert !stopGridErr : "Error occurred on grid stop (see log for more details).";
+    }
+
+    /**
+     * Handle failure, which happened during the test.
+     *
+     * @param t Throwable.
+     */
+    public void handleFailure(Throwable t) {
+        IgniteClosure<Throwable, Throwable> hnd = errorHandler();
+
+        ex.set(hnd != null ? hnd.apply(t) : t);
     }
 
     /**

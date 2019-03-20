@@ -249,6 +249,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         discoMap = null;
 
+        expectNothing();
+
         super.afterTest();
     }
 
@@ -386,6 +388,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailureDetectionOnNodePing1() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         try {
             Ignite g1 = startGrid("testFailureDetectionOnNodePingCoordinator");
             startGrid("testFailureDetectionOnNodePing2");
@@ -403,6 +408,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailureDetectionOnNodePing2() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         try {
             startGrid("testFailureDetectionOnNodePingCoordinator");
             Ignite g2 = startGrid("testFailureDetectionOnNodePing2");
@@ -420,6 +428,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailureDetectionOnNodePing3() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         try {
             Ignite g1 = startGrid("testFailureDetectionOnNodePingCoordinator");
             Ignite g2 = startGrid("testFailureDetectionOnNodePing2");
@@ -470,6 +481,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPingInterruptedOnNodeFailed() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         try {
             final Ignite pingingNode = startGrid("testPingInterruptedOnNodeFailedPingingNode");
             final Ignite failedNode = startGrid("testPingInterruptedOnNodeFailedFailingNode");
@@ -727,6 +741,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOrdinaryNodeFailure() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         try {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
@@ -762,6 +779,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCoordinatorNodeFailure() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         try {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
@@ -866,6 +886,10 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailBeforeNodeAddedSent() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+        expectFailure(RuntimeException.class, "Avoid message sending: ");
+
         try {
             Ignite g1 = startGrid(1);
 
@@ -912,6 +936,10 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailBeforeNodeLeftSent() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+        expectFailure(RuntimeException.class, "Avoid message sending: ");
+
         try {
             startGrid(1);
             startGrid(2);
@@ -1433,6 +1461,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCustomEventCoordinatorFailure1() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         try {
             customEventCoordinatorFailure(true);
         }
@@ -1446,6 +1477,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCustomEventCoordinatorFailure2() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         try {
             customEventCoordinatorFailure(false);
         }
@@ -1459,6 +1493,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNodeShutdownOnRingMessageWorkerFailure() throws Exception {
+        expectFailure(RuntimeException.class, "Failing ring message worker explicitly");
+        expectFailure(IgniteException.class, "GridWorker ");
+
         try {
             final TestMessageWorkerFailureSpi1 spi0 = new TestMessageWorkerFailureSpi1(
                 TestMessageWorkerFailureSpi1.EXCEPTION_MODE);
@@ -1594,6 +1631,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNodeShutdownOnRingMessageWorkerStartNotFinished() throws Exception {
+        expectFailure(RuntimeException.class, "Failing ring message worker explicitly");
+        expectFailure(IgniteException.class, "GridWorker ");
+
         try {
             Ignite ignite0 = startGrid(0);
 
@@ -2074,6 +2114,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoExtraNodeFailedMessage() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         try {
             final int NODES = 10;
 

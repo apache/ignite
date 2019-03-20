@@ -62,6 +62,8 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids();
     }
 
@@ -80,6 +82,8 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMissingDataRegion() {
+        expectFailure(IgniteCheckedException.class, "nonExistingMemPlc");
+
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setDataRegionName("nonExistingMemPlc");
@@ -92,6 +96,8 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTooSmallDataRegion() throws Exception {
+        expectFailure(IgniteOutOfMemoryException.class);
+
         memCfg = new DataStorageConfiguration();
 
         DataRegionConfiguration dfltPlcCfg = new DataRegionConfiguration();

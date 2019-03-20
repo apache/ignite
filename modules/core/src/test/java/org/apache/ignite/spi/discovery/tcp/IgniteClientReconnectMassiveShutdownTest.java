@@ -75,6 +75,8 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids();
     }
 
@@ -91,6 +93,9 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
      */
     @Test
     public void testMassiveServersShutdown2() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         massiveServersShutdown(StopType.SIMULATE_FAIL);
     }
 

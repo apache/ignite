@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * Tests that requests of change service's state won't be missed and will be handled correctly if coordinator fail.
@@ -24,6 +26,23 @@ package org.apache.ignite.internal.processors.service;
  * {@inheritDoc}
  */
 public class ServiceDeploymentProcessingOnCoordinatorFailTest extends ServiceDeploymentProcessingOnCoordinatorLeftTest {
+    /**
+     *
+     */
+    @BeforeClass
+    public static void setupHandler() {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+    }
+
+    /**
+     *
+     */
+    @AfterClass
+    public static void clearHandler() {
+        expectNothing();
+    }
+
     /** {@inheritDoc} */
     @Override protected boolean failNode() {
         return true;

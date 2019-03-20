@@ -40,6 +40,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -69,6 +70,14 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
+    }
+
+    /**
+     *
+     */
+    @After
+    public void clearHandler() {
+        expectNothing();
     }
 
     /** */
@@ -101,6 +110,8 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     private void doTestIndexingSpiWithTx(IgniteEx ignite, int key) throws Exception {
+        expectFailure(IgniteTxHeuristicCheckedException.class);;
+
         final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         final IgniteTransactions txs = ignite.transactions();

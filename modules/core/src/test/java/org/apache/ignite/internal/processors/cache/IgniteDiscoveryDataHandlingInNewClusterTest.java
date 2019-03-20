@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -136,6 +137,9 @@ public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstr
      */
     @Test
     public void testNewClusterFiltersDiscoveryDataReceivedFromStoppedCluster() throws Exception {
+        expectFailure(RuntimeException.class, "Simulation of failure of node ");
+        expectFailure(IgniteException.class, "GridWorker ");
+
         IgniteEx ig0 = startGrid(NODE_1_CONS_ID);
 
         prepareDynamicCaches(ig0);
@@ -218,9 +222,10 @@ public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @After
     @Override public void afterTest() throws Exception {
         super.afterTest();
+
+        expectNothing();
 
         stopAllGrids();
     }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -89,6 +90,8 @@ public class IgniteCacheNoClassQuerySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoClass() throws Exception {
+        expectFailure(IgniteCheckedException.class, "default marshaller");
+
         try {
             startGrid();
 
@@ -98,6 +101,8 @@ public class IgniteCacheNoClassQuerySelfTest extends GridCommonAbstractTest {
             assertTrue(e.getMessage().contains("default marshaller"));
         }
         finally {
+            expectNothing();
+
             stopAllGrids();
         }
     }

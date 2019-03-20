@@ -91,6 +91,8 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        expectNothing();
+
         stopAllGrids();
     }
 
@@ -266,6 +268,9 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMassiveFailForceNodeFail() throws Exception {
+        expectFailure(IllegalStateException.class);
+        expectFailure(InterruptedException.class);
+
         failNodes = true;
 
         // Must be greater than failureDetectionTimeout / 3 as it calculated into

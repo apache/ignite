@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -243,6 +244,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -495,6 +498,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBinaryRecoverBeforePMEWhenMiddleCheckpoint() throws Exception {
+        expectFailure(NoSuchFileException.class);
+
         startGrids(3);
 
         IgniteEx ig2 = grid(2);

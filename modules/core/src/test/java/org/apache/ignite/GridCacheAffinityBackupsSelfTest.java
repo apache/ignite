@@ -25,7 +25,9 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -54,10 +56,22 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    @After
+    public static void clearHandler() {
+        expectNothing();
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @Test
     public void testRendezvousBackups() throws Exception {
+        expectFailure(NodeStoppingException.class);
+        expectFailure(IgniteCheckedException.class, "Node is stopping: ");
+        expectFailure(InterruptedException.class);
+
         for (int i = 0; i < nodesCnt; i++)
             checkBackups(i);
     }

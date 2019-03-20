@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -24,7 +25,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -111,6 +115,15 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
         return cfg;
     }
 
+    /**
+     *
+     */
+    @BeforeClass
+    public static void setupHandler() {
+        expectFailure(NodeStoppingException.class);
+        expectFailure(InterruptedException.class);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
@@ -121,5 +134,13 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
         cleanPersistenceDir();
+    }
+
+    /**
+     *
+     */
+    @AfterClass
+    public static void clearHandler() {
+        expectNothing();
     }
 }

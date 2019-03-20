@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -296,6 +297,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      */
     @Test
     public void testNodeWithIncompatibleMetadataIsProhibitedToJoinTheCluster() throws Exception {
+        expectFailure(NodeStoppingException.class);
+
         final String decimalFieldName = "decField";
 
         Ignite igniteA = startGridInASeparateWorkDir("A");
@@ -622,6 +625,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        expectNothing();
+
         stopAllGrids();
 
         cleanIgniteWorkDir();
