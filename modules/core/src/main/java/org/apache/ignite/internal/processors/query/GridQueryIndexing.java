@@ -36,6 +36,9 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
+import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
@@ -316,4 +319,16 @@ public interface GridQueryIndexing {
      * @return Row cache cleaner.
      */
     public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
+
+    /**
+     * @return Timeout in milliseconds after which long query warning will be printed.
+     */
+    public long getLongQueryWarningTimeout();
+
+    /**
+     * Sets timeout in milliseconds after which long query warning will be printed.
+     *
+     * @param longQueryWarningTimeout Timeout in milliseconds after which long query warning will be printed.
+     */
+    public void setLongQueryWarningTimeout(long longQueryWarningTimeout);
 }

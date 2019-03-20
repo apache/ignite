@@ -19,14 +19,11 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -139,7 +136,6 @@ import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -1021,35 +1017,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private ResultSet executeSqlQueryWithTimer(PreparedStatement stmt, Connection conn, String sql,
         @Nullable Collection<Object> params, int timeoutMillis, @Nullable GridQueryCancel cancel)
         throws IgniteCheckedException {
-//        long start = U.currentTimeMillis();
 
+        IgniteH2QueryInfo qryInfo = longRunningQryMgr.registerQuery(stmt, sql, params);
         try {
-            longRunningQryMgr.registerQuery(stmt, sql, params);
-
-            ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
-
-//            long time = U.currentTimeMillis() - start;
-//
-//            long longQryExecTimeout = ctx.config().getLongQueryWarningTimeout();
-//
-//            if (time > longQryExecTimeout) {
-//                ResultSet plan = executeSqlQuery(conn, preparedStatementWithParams(conn, "EXPLAIN " + sql,
-//                    params, false), 0, null);
-//
-//                plan.next();
-//
-//                // Add SQL explain result message into log.
-//                String msg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
-//                    ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
-//                    (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
-//
-//                LT.warn(log, msg);
-//            }
-
-            return rs;
+            return executeSqlQuery(conn, stmt, timeoutMillis, cancel);
         }
         finally {
-            longRunningQryMgr.unregisterQuery(stmt);
+            longRunningQryMgr.unregisterQuery(qryInfo);
         }
     }
 
@@ -2464,6 +2438,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
+        longRunningQryMgr.stop();
+
         mapQryExec.cancelLazyWorkers();
 
         schemas.clear();
@@ -2762,5 +2738,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return false;
+    }
+    /**
+     * @return Long running queries manager.
+     */
+    public LongRunningQueryManager longRunningQueries() {
+        return longRunningQryMgr;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public long getLongQueryWarningTimeout() {
+        return longRunningQryMgr.getLongQueryWarningTimeout();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setLongQueryWarningTimeout(long timeout) {
+        longRunningQryMgr.setLongQueryWarningTimeout(timeout);
     }
 }

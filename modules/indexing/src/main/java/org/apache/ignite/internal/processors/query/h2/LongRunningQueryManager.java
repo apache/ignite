@@ -18,15 +18,11 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 
 /**
  * Long running query manager.
@@ -35,42 +31,39 @@ public class LongRunningQueryManager {
     /** Check period. */
     private static final long CHECK_PERIOD = 1_000;
 
-    /** Query timeout milliseconds. */
-    public static long QUERY_TIMEOUT_MS = 1_000;
-
-    /** Kernal context. */
-    private final GridKernalContext ctx;
-
     /** Connection manager. */
     private final ConnectionManager connMgr;
 
-    /** Queries collection sorted by begin time. */
-    private final GridConcurrentSkipListSet<IgniteH2QueryInfo> qrys = new GridConcurrentSkipListSet<>();
+    /** Queries collection. Sorted collection isn't used to reduce 'put' time. */
+    private final ConcurrentHashMap<IgniteH2QueryInfo, Boolean> qrys = new ConcurrentHashMap<>();
 
     /** Check long query task. */
-    private final GridTimeoutProcessor.CancelableTask checkLongQueryTask;
+    private final GridTimeoutProcessor.CancelableTask checkLongQryTask;
 
     /** Logger. */
     private final IgniteLogger log;
+
+    /** Query timeout milliseconds. */
+    private long longQryWarnTimeout;
 
     /**
      * @param ctx Kernal context.
      */
     public LongRunningQueryManager(GridKernalContext ctx) {
-        this.ctx = ctx;
-
         connMgr = ((IgniteH2Indexing)ctx.query().getIndexing()).connections();
 
         log = ctx.log(LongRunningQueryManager.class);
 
-        checkLongQueryTask = ctx.timeout().schedule(this::checkLongRunning, CHECK_PERIOD, CHECK_PERIOD);
+        checkLongQryTask = ctx.timeout().schedule(this::checkLongRunning, CHECK_PERIOD, CHECK_PERIOD);
+
+        longQryWarnTimeout = ctx.config().getLongQueryWarningTimeout();
     }
 
     /**
      *
      */
     public void stop() {
-        checkLongQueryTask.close();
+        checkLongQryTask.close();
 
         qrys.clear();
     }
@@ -79,32 +72,46 @@ public class LongRunningQueryManager {
      * @param stmt Query statement.
      * @param sql Query statement.
      * @param params Query parameters.
+     * @return Registered info.
      */
-    public void registerQuery(PreparedStatement stmt, String sql, Collection<Object> params) {
-        try {
-            String schema = stmt.getConnection().getSchema();
+    public IgniteH2QueryInfo registerQuery(PreparedStatement stmt, String sql, Collection<Object> params) {
+        IgniteH2QueryInfo info = IgniteH2QueryInfo.collectInfo(stmt, sql, params);
 
-            qrys.add(new IgniteH2QueryInfo(stmt, schema, sql, params));
-        }
-        catch (SQLException e) {
-            throw new IgniteSQLException("Cannot track query", IgniteQueryErrorCode.UNKNOWN, e);
-        }
+        qrys.put(info, true);
+
+        return info;
     }
 
     /**
-     * @param stmt Query statement.
+     * @param qryInfo Query info to remove.
      */
-    public void unregisterQuery(PreparedStatement stmt) {
-        qrys.remove(new IgniteH2QueryInfo(stmt));
+    public void unregisterQuery(IgniteH2QueryInfo qryInfo) {
+        qrys.remove(qryInfo);
     }
 
     /**
      *
      */
     private void checkLongRunning() {
-        for (IgniteH2QueryInfo qinfo : qrys) {
-            if (qinfo.isLong(QUERY_TIMEOUT_MS))
+        for (IgniteH2QueryInfo qinfo : qrys.keySet()) {
+            if (qinfo.isLong(longQryWarnTimeout))
                 qinfo.printLogMessage(log, connMgr);
         }
+    }
+
+    /**
+     * @return Timeout in milliseconds after which long query warning will be printed.
+     */
+    public long getLongQueryWarningTimeout() {
+        return longQryWarnTimeout;
+    }
+
+    /**
+     * Sets timeout in milliseconds after which long query warning will be printed.
+     *
+     * @param timeout Timeout in milliseconds after which long query warning will be printed.
+     */
+    public void setLongQueryWarningTimeout(long timeout) {
+        longQryWarnTimeout = timeout;
     }
 }
