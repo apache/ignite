@@ -141,7 +141,7 @@ public class IgniteYarnClient {
         appContext.setApplicationName("ignition"); // application name
         appContext.setAMContainerSpec(amContainer);
         appContext.setResource(capability);
-        appContext.setQueue("default"); // queue
+        appContext.setQueue(props.yarnQueue()); // queue
 
         // Submit application
         ApplicationId appId = appContext.getApplicationId();
