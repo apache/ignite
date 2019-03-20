@@ -208,17 +208,14 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /** Timestamp for tests. */
     private static long ts = System.currentTimeMillis();
 
-    /** Force failure flag. */
-    private static boolean forceFailure;
-
-    /** Force failure message. */
-    private static String forceFailureMsg;
-
     /** Lazily initialized current test method. */
     private volatile Method currTestMtd;
 
+    /** List of system properties to set when all tests in class are finished. */
+    private final List<T2<String, String>> clsSysProps = new LinkedList<>();
+
     /** List of system properties to set when test is finished. */
-    private final List<T2<String, String>> sysProps = new LinkedList<>();
+    private final List<T2<String, String>> testSysProps = new LinkedList<>();
 
     /** */
     static {
@@ -270,12 +267,19 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         GridAbstractTestWithAssumption src = () ->
         {
             try {
-                beforeFirstTest();
+                setSystemPropertiesBeforeClass();
 
-                base.evaluate();
+                try {
+                    beforeFirstTest();
+
+                    base.evaluate();
+                }
+                finally {
+                    afterLastTest();
+                }
             }
             finally {
-                afterLastTest();
+                clearSystemPropertiesAfterClass();
             }
         };
 
@@ -647,8 +651,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /** */
-    @Before
-    public void setSystemPropertiesBeforeTest() {
+    private void setSystemPropertiesBeforeClass() {
         List<WithSystemProperty[]> allProps = new LinkedList<>();
 
         for (Class<?> clazz = getClass(); clazz != GridAbstractTest.class; clazz = clazz.getSuperclass()) {
@@ -664,22 +667,48 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             }
         }
 
-        SystemPropertiesList testProps = currentTestAnnotation(SystemPropertiesList.class);
-
-        if (testProps != null)
-            allProps.add(testProps.value());
-        else {
-            WithSystemProperty testProp = currentTestAnnotation(WithSystemProperty.class);
-
-            if (testProp != null)
-                allProps.add(new WithSystemProperty[] {testProp});
-        }
-
         for (WithSystemProperty[] props : allProps) {
             for (WithSystemProperty prop : props) {
                 String oldVal = System.setProperty(prop.key(), prop.value());
 
-                sysProps.add(0, new T2<>(prop.key(), oldVal));
+                clsSysProps.add(0, new T2<>(prop.key(), oldVal));
+            }
+        }
+    }
+
+    /** */
+    private void clearSystemPropertiesAfterClass() {
+        for (T2<String, String> t2 : clsSysProps) {
+            if (t2.getValue() == null)
+                System.clearProperty(t2.getKey());
+            else
+                System.setProperty(t2.getKey(), t2.getValue());
+        }
+
+        clsSysProps.clear();
+    }
+
+    /** */
+    @Before
+    public void setSystemPropertiesBeforeTest() {
+        WithSystemProperty[] allProps = null;
+
+        SystemPropertiesList testProps = currentTestAnnotation(SystemPropertiesList.class);
+
+        if (testProps != null)
+            allProps = testProps.value();
+        else {
+            WithSystemProperty testProp = currentTestAnnotation(WithSystemProperty.class);
+
+            if (testProp != null)
+                allProps = new WithSystemProperty[] {testProp};
+        }
+
+        if (allProps != null) {
+            for (WithSystemProperty prop : allProps) {
+                String oldVal = System.setProperty(prop.key(), prop.value());
+
+                testSysProps.add(0, new T2<>(prop.key(), oldVal));
             }
         }
     }
@@ -687,14 +716,14 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /** */
     @After
     public void clearSystemPropertiesAfterTest() {
-        for (T2<String, String> t2 : sysProps) {
+        for (T2<String, String> t2 : testSysProps) {
             if (t2.getValue() == null)
                 System.clearProperty(t2.getKey());
             else
                 System.setProperty(t2.getKey(), t2.getValue());
         }
 
-        sysProps.clear();
+        testSysProps.clear();
     }
 
     /**
@@ -2101,9 +2130,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
                 try {
-                    if (forceFailure)
-                        fail("Forced failure: " + forceFailureMsg);
-
                     testRoutine.evaluate();
                 }
                 catch (Throwable e) {
@@ -2158,17 +2184,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      */
     protected IgniteClosure<Throwable, Throwable> errorHandler() {
         return null;
-    }
-
-    /**
-     * Force test failure.
-     *
-     * @param msg Message.
-     */
-    public void forceFailure(@Nullable String msg) {
-        forceFailure = true;
-
-        forceFailureMsg = msg;
     }
 
     /**
