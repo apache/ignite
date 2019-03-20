@@ -104,9 +104,9 @@ public class GridDirectParser implements GridNioParser {
         }
         catch (Throwable e) {
             U.error(log, "Failed to read message [msg=" + msg +
-                ", buf=" + buf +
-                ", reader=" + reader +
-                ", ses=" + ses + "]",
+                    ", buf=" + buf +
+                    ", reader=" + reader +
+                    ", ses=" + ses + "]",
                 e);
 
             throw e;

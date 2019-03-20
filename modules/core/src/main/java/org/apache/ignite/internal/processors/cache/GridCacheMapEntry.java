@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
@@ -78,9 +78,10 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConfl
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
+import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -101,6 +102,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
@@ -119,8 +121,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicR
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_MAX_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareIgnoreOpCounter;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.NO_KEY;
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 
 /**
@@ -228,7 +228,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** Read Lock for continuous query listener */
     @GridToStringExclude
-    private final Lock listenerLock;
+    private final ReadWriteLock listenerLock;
 
     /**
      * Flags:
@@ -258,7 +258,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         this.key = key;
         this.hash = key.hashCode();
         this.cctx = cctx;
-        this.listenerLock = cctx.continuousQueries().getListenerReadLock();
+        this.listenerLock = cctx.group().listenerLock();
 
         ver = cctx.shared().versions().startVersion();
     }
@@ -1161,7 +1161,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
             else if (op == CREATE && tx.local() && (res.resultType() == ResultType.PREV_NOT_NULL ||
                 res.resultType() == ResultType.VERSION_FOUND))
-                throw new IgniteSQLException("Duplicate key during INSERT [key=" + key + ']', DUPLICATE_KEY);
+                throw new IgniteTxDuplicateKeyCheckedException("Duplicate key during INSERT [key=" + key + ']');
 
             if (cctx.deferredDelete() && deletedUnlocked() && !detached())
                 deletedUnlocked(false);
@@ -3369,18 +3369,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     }
 
                     if (cctx.mvccEnabled()) {
-                        if (preload && mvccVer != null) {
-                            cctx.offheap().mvccInitialValueIfAbsent(this,
-                                val,
-                                ver,
-                                expTime,
-                                mvccVer,
-                                newMvccVer,
-                                mvccTxState,
-                                newMvccTxState);
-                        }
-                        else
-                            cctx.offheap().mvccInitialValue(this, val, ver, expTime, mvccVer, newMvccVer);
+                        assert !preload;
+
+                        cctx.offheap().mvccInitialValue(this, val, ver, expTime, mvccVer, newMvccVer);
                     }
                     else
                         storeValue(val, expTime, ver);
@@ -3407,18 +3398,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             }
                         }
 
-                        if (preload && mvccVer != null) {
-                            cctx.offheap().mvccInitialValueIfAbsent(this,
-                                val,
-                                ver,
-                                expTime,
-                                mvccVer,
-                                newMvccVer,
-                                mvccTxState,
-                                newMvccTxState);
-                        }
-                        else
-                            cctx.offheap().mvccInitialValue(this, val, ver, expTime, mvccVer, newMvccVer);
+                        assert !preload;
+
+                        cctx.offheap().mvccInitialValue(this, val, ver, expTime, mvccVer, newMvccVer);
                     }
                 }
                 else
@@ -5014,7 +4996,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * query notified before the next cache listener update
      */
     private void lockListenerReadLock() {
-        listenerLock.lock();
+        listenerLock.readLock().lock();
     }
 
     /**
@@ -5023,7 +5005,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @see #lockListenerReadLock()
      */
     private void unlockListenerReadLock() {
-        listenerLock.unlock();
+        listenerLock.readLock().unlock();
     }
 
     /** {@inheritDoc} */
@@ -5160,7 +5142,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 valid = entry.valid(tx.topologyVersion());
 
-                boolean needOldVal = cctx.shared().mvccCaching().continuousQueryListeners(cctx, tx, entry.key()) != null;
+                boolean needOldVal = tx.txState().useMvccCaching(cctx.cacheId());
 
                 cctx.shared().database().checkpointReadLock();
 
@@ -5527,8 +5509,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
                 else if (op == CREATE && tx.local() && (res.resultType() == ResultType.PREV_NOT_NULL ||
                     res.resultType() == ResultType.VERSION_FOUND)) {
-                    resFut.onDone(new IgniteSQLException("Duplicate key during INSERT [key=" + entry.key() + ']',
-                        DUPLICATE_KEY));
+                    resFut.onDone(new IgniteTxDuplicateKeyCheckedException("Duplicate key during INSERT [key=" + entry.key() + ']'));
 
                     return;
                 }
@@ -5607,6 +5588,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 updRes.invokeResult(res.invokeResult());
             }
+
+            updRes.newValue(res.newValue());
 
             if (needOldVal && compareIgnoreOpCounter(res.resultVersion(), mvccVer) != 0 &&
                 (res.resultType() == ResultType.PREV_NOT_NULL || res.resultType() == ResultType.REMOVED_NOT_NULL))
@@ -6688,10 +6671,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 return null;
             }
+            catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
+                throw e;
+            }
             catch (Exception e) {
-                if (e instanceof UnregisteredClassException || e instanceof UnregisteredBinaryTypeException)
-                    throw (IgniteException)e;
-
                 writeObj = invokeEntry.valObj;
 
                 return new IgniteBiTuple<>(null, e);
@@ -6718,6 +6701,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         IgniteUuid futId,
         int batchNum)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
+        assert mvccVer != null &&
+            MvccUtils.mvccVersionIsValid(mvccVer.coordinatorVersion(), mvccVer.counter(), mvccVer.operationCounter());
+        assert !F.isEmpty(entries);
 
         WALPointer logPtr = null;
 
@@ -6731,17 +6717,23 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
             checkObsolete();
 
+            boolean walEnabled = cctx.group().persistenceEnabled() && cctx.group().walEnabled();
 
+            List<DataEntry> walEntries = walEnabled ? new ArrayList<>(entries.size() + 1) : Collections.EMPTY_LIST;
+
+            // Apply updates in reverse order (oldest is last) until any of previous versions found.
+            // If we found prev version then it means history has been actualized either with previous update
+            // or via rebalance.
             for (int i = 0; i < entries.size(); i++) {
                 GridCacheMvccEntryInfo info = (GridCacheMvccEntryInfo)entries.get(i);
 
-                if (val == null && op != DELETE && MvccUtils.compare(info.mvccVersion(),
-                    mvccVer.coordinatorVersion(),
-                    mvccVer.counter(),
-                    mvccVer.operationCounter()) == 0)
-                    val = info.value();
+                assert info.mvccTxState() == TxState.COMMITTED ||
+                    MvccUtils.compare(info, mvccVer.coordinatorVersion(), mvccVer.counter()) == 0;
+                assert info.newMvccTxState() == TxState.COMMITTED ||
+                    MvccUtils.compareNewVersion(info, mvccVer.coordinatorVersion(), mvccVer.counter()) == 0 ||
+                    info.newMvccCoordinatorVersion() == MvccUtils.MVCC_CRD_COUNTER_NA;
 
-                cctx.offheap().mvccUpdateRowWithPreloadInfo(this,
+                boolean added = cctx.offheap().mvccUpdateRowWithPreloadInfo(this,
                     info.value(),
                     info.version(),
                     info.expireTime(),
@@ -6749,45 +6741,53 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     info.newMvccVersion(),
                     info.mvccTxState(),
                     info.newMvccTxState());
-            }
 
+                if (walEnabled)
+                    walEntries.add(toMvccDataEntry(info, tx));
 
-            // Assume list contains  only previous committed row and rows changed by the current tx.
-            if (!entries.isEmpty()) {
-                // Assume the oldest value is the last one.
-                GridCacheMvccEntryInfo last = (GridCacheMvccEntryInfo)entries.get(entries.size() - 1);
-
-                if (MvccUtils.compare(last.mvccVersion(),
+                if (oldVal == null
+                    && MvccUtils.compare(info.mvccVersion(),
                     mvccVer.coordinatorVersion(),
-                    mvccVer.counter(),
-                    mvccVer.operationCounter()) != 0)
-                    oldVal = last.value();
+                    mvccVer.counter()) != 0
+                    && MvccUtils.compareNewVersion(info,
+                    mvccVer.coordinatorVersion(),
+                    mvccVer.counter()) == 0)
+                    oldVal = info.value(); // Old means a value before current transaction.
+
+                if (!added)
+                    break;
             }
 
-            if (cctx.deferredDelete() && deletedUnlocked() && !detached())
-                deletedUnlocked(false);
+            GridCacheMvccEntryInfo last = (GridCacheMvccEntryInfo)entries.get(0);
 
-            long expireTime = CU.EXPIRE_TIME_ETERNAL;
-            long ttl = CU.TTL_ETERNAL;
+            if (walEnabled)
+                Collections.reverse(walEntries);
 
-            GridCacheVersion ver = tx.writeVersion();
+            if (op == DELETE) {
+                assert MvccUtils.compareNewVersion(last, mvccVer) == 0;
 
-            if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                logPtr = cctx.shared().wal().log(new MvccDataRecord(new MvccDataEntry(
-                    cctx.cacheId(),
-                    key,
-                    val,
-                    op,
-                    tx.nearXidVersion(),
-                    ver,
-                    CU.EXPIRE_TIME_ETERNAL,
-                    key.partition(),
-                    0L,
-                    mvccVer)));
+                if (walEnabled)
+                    walEntries.add(new MvccDataEntry(
+                        cctx.cacheId(),
+                        key,
+                        null,
+                        DELETE,
+                        tx.nearXidVersion(),
+                        last.version(),
+                        last.expireTime(),
+                        key.partition(),
+                        0,
+                        last.mvccVersion()));
+            }
+            else {
+                assert last.newMvccCoordinatorVersion() == MvccUtils.MVCC_CRD_COUNTER_NA;
+                assert MvccUtils.compare(last, mvccVer) == 0;
 
-            update(val, expireTime, ttl, ver, true);
+                val = last.value();
+            }
 
-            recordNodeId(affNodeId, topVer);
+            if (walEnabled)
+                logPtr = cctx.shared().wal().log(new MvccDataRecord(walEntries));
         }
         finally {
             if (lockedByCurrentThread()) {
@@ -6805,10 +6805,87 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         return res;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean mvccPreloadEntry(List<GridCacheMvccEntryInfo> entryHist)
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
+        assert !entryHist.isEmpty();
+
+        WALPointer logPtr = null;
+
+        ensureFreeSpace();
+
+        boolean updated = false;
+
+        lockEntry();
+
+        try {
+            checkObsolete();
+
+            key.valueBytes(cctx.cacheObjectContext());
+
+            if (cctx.offheap().mvccApplyHistoryIfAbsent(this, entryHist)) {
+                updated = true;
+
+                if (!cctx.isNear() && cctx.group().persistenceEnabled() && cctx.group().walEnabled()) {
+                    MvccDataRecord rec;
+
+                    if (entryHist.size() == 1) {
+                        GridCacheMvccEntryInfo info = entryHist.get(0);
+
+                        rec = new MvccDataRecord(toMvccDataEntry(info, null));
+                    }
+                    else {
+                        // Batched WAL update.
+                        List<DataEntry> dataEntries = new ArrayList<>(entryHist.size());
+
+                        for (GridCacheMvccEntryInfo info : entryHist)
+                            dataEntries.add(toMvccDataEntry(info, null));
+
+                        rec = new MvccDataRecord(dataEntries);
+                    }
+
+                    logPtr = cctx.shared().wal().log(rec);
+                }
+            }
+        }
+        finally {
+            if (lockedByCurrentThread()) {
+                unlockEntry();
+
+                cctx.evicts().touch(this);
+            }
+        }
+
+        if (logPtr != null)
+            cctx.shared().wal().flush(logPtr, false);
+
+        return updated;
+    }
+
+    /**
+     * Converts mvcc entry info to WAL record entry.
+     * @param info Mvcc entry info.
+     * @return Mvcc data entry.
+     */
+    private @NotNull MvccDataEntry toMvccDataEntry(@NotNull  GridCacheMvccEntryInfo info, @Nullable IgniteInternalTx tx) {
+        return new MvccDataEntry(
+            cctx.cacheId(),
+            key,
+            info.value(),
+            CREATE,
+            tx == null ? null : tx.nearXidVersion(),
+            info.version(),
+            info.expireTime(),
+            key.partition(),
+            0,
+            info.mvccVersion()
+        );
+    }
+
     /**
      * @return Common serialization error.
      */
-    private static IgniteSQLException serializationError() {
-        return new IgniteSQLException("Cannot serialize transaction due to write conflict (transaction is marked for rollback)", TRANSACTION_SERIALIZATION_ERROR);
+    private static IgniteTxSerializationCheckedException serializationError() {
+        return new IgniteTxSerializationCheckedException("Cannot serialize transaction due to write conflict (transaction is marked for rollback)");
     }
 }

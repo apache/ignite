@@ -22,6 +22,11 @@
 @import "./blocks/error";
 @import "./form-field";
 
+:root {
+    --sans-serif-font: Roboto;
+    --serif-font: Roboto_slab;
+}
+
 body {
     overflow-y: scroll !important;
 }
@@ -534,13 +539,6 @@ button.form-control {
         color: $ignite-placeholder-color;
         height: 65px;
         line-height: 65px;
-    }
-
-    .empty-caches {
-        text-align: center;
-        color: $ignite-placeholder-color;
-        height: 55px;
-        line-height: 55px;
     }
 
     .panel-collapse {
@@ -1164,7 +1162,6 @@ button.form-control {
 }
 
 .popover.validation-error {
-    font-family: Roboto;
     white-space: pre-wrap;
     width: auto !important;
     max-width: 400px !important;
@@ -2074,11 +2071,10 @@ header.header-with-selector {
 
 
     h1 {
-        height: 36px;
+        min-height: 36px;
         margin: 0;
         margin-right: 8px;
 
-        font-family: Roboto, sans-serif;
         font-size: 24px;
         line-height: 36px;
     }
@@ -2108,7 +2104,6 @@ header.header-with-selector {
 
                 ul.dropdown-menu {
                     min-width: 100%;
-                    font-family: Roboto;
                 }
             }
         }

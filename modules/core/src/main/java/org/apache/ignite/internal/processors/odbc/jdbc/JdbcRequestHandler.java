@@ -64,6 +64,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionSerializationException;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
@@ -162,11 +166,23 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param actx Authentication context.
      * @param protocolVer Protocol version.
      */
-    public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock,
-        ClientListenerResponseSender sender, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate, NestedTxMode nestedTxMode,
-        AuthorizationContext actx, ClientListenerProtocolVersion protocolVer) {
+    public JdbcRequestHandler(
+        GridKernalContext ctx,
+        GridSpinBusyLock busyLock,
+        ClientListenerResponseSender sender,
+        int maxCursors,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean collocated,
+        boolean replicatedOnly,
+        boolean autoCloseCursors,
+        boolean lazy,
+        boolean skipReducerOnUpdate,
+        NestedTxMode nestedTxMode,
+        @Nullable Boolean dataPageScanEnabled,
+        AuthorizationContext actx,
+        ClientListenerProtocolVersion protocolVer
+    ) {
         this.ctx = ctx;
         this.sender = sender;
 
@@ -186,7 +202,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             collocated,
             replicatedOnly,
             lazy,
-            skipReducerOnUpdate
+            skipReducerOnUpdate,
+            dataPageScanEnabled
         );
 
         this.busyLock = busyLock;
@@ -234,8 +251,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         assert reqId != 0;
 
         synchronized (reqMux) {
-            if (isCancellationSupported() && (cmdType == QRY_EXEC || cmdType == BATCH_EXEC ||
-                cmdType == BATCH_EXEC_ORDERED))
+            if (isCancellationSupported() && (cmdType == QRY_EXEC || cmdType == BATCH_EXEC))
                 reqRegister.put(reqId, new JdbcQueryDescriptor());
         }
     }
@@ -331,16 +347,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse dispatchBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
-        synchronized (orderedBatchesMux) {
-            orderedBatchesQueue.add(req);
-
-            orderedBatchesMux.notify();
-        }
-
         if (!cliCtx.isStreamOrdered())
             executeBatchOrdered(req);
+        else {
+            synchronized (orderedBatchesMux) {
+                orderedBatchesQueue.add(req);
 
-        return null;
+                orderedBatchesMux.notifyAll();
+            }
+        }
+
+       return null;
     }
 
     /**
@@ -364,10 +381,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             U.error(null, "Error processing file batch", e);
 
             sender.send(new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e));
-        }
-
-        synchronized (orderedBatchesMux) {
-            orderedBatchesQueue.poll();
         }
 
         cliCtx.orderedRequestProcessed();
@@ -545,6 +558,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setLazy(cliCtx.isLazy());
             qry.setNestedTxMode(nestedTxMode);
             qry.setAutoCommit(req.autoCommit());
+
+            if (cliCtx.dataPageScanEnabled() != null)
+                qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
@@ -815,7 +831,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private ClientListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
         GridQueryCancel cancel = null;
 
-        if (isCancellationSupported()) {
+        // Skip request register check for ORDERED batches (JDBC streams)
+        // because ordered batch requests are processed asynchronously at the
+        // separate thread.
+        if (isCancellationSupported() && req.type() == BATCH_EXEC) {
             synchronized (reqMux) {
                 JdbcQueryDescriptor desc = reqRegister.get(req.requestId());
 
@@ -859,6 +878,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qry.setNestedTxMode(nestedTxMode);
                     qry.setAutoCommit(req.autoCommit());
 
+                    if (cliCtx.dataPageScanEnabled() != null)
+                        qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
+
                     qry.setSchema(schemaName);
                 }
 
@@ -898,13 +920,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param cancel Hook for query cancellation.
      * @throws QueryCancelledException If query was cancelled during execution.
      */
-    @SuppressWarnings({"ForLoopReplaceableByForEach", "unchecked"})
+    @SuppressWarnings({"ForLoopReplaceableByForEach"})
     private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
         IgniteBiTuple<Integer, String> firstErr, GridQueryCancel cancel) throws QueryCancelledException {
         try {
             if (cliCtx.isStream()) {
-                List<Long> cnt = ctx.query().streamBatchedUpdateQuery(qry.getSchema(), cliCtx, qry.getSql(),
-                    qry.batchedArguments());
+                List<Long> cnt = ctx.query().streamBatchedUpdateQuery(
+                    qry.getSchema(),
+                    cliCtx,
+                    qry.getSql(),
+                    qry.batchedArguments()
+                );
 
                 for (int i = 0; i < cnt.size(); i++)
                     updCntsAcc.add(cnt.get(i).intValue());
@@ -1112,6 +1138,16 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private JdbcResponse exceptionToResult(Exception e) {
         if (e instanceof QueryCancelledException)
             return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, e.getMessage());
+        if (e instanceof TransactionSerializationException)
+            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, e.getMessage());
+        if (e instanceof TransactionAlreadyCompletedException)
+            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_COMPLETED, e.getMessage());
+        if (e instanceof TransactionDuplicateKeyException)
+            return new JdbcResponse(IgniteQueryErrorCode.DUPLICATE_KEY, e.getMessage());
+        if (e instanceof MvccUtils.NonMvccTransactionException)
+            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH, e.getMessage());
+        if (e instanceof MvccUtils.UnsupportedTxModeException)
+            return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION, e.getMessage());
         if (e instanceof IgniteSQLException)
             return new JdbcResponse(((IgniteSQLException)e).statusCode(), e.getMessage());
         else
@@ -1147,6 +1183,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                         continue;
                     }
+                    else
+                        orderedBatchesQueue.poll();
                 }
 
                 executeBatchOrdered(req);

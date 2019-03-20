@@ -17,6 +17,11 @@
 
 package org.apache.ignite.ml.trainers;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.bagging.BaggedTrainer;
@@ -33,12 +38,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 import org.apache.ignite.ml.util.Utils;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * Class containing various trainer transformers.

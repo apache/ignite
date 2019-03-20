@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveAtomicTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveTransactionalTest;
 import org.apache.ignite.lang.GridByteArrayListSelfTest;
+import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeCompatibilityTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.thread.GridThreadTest;
@@ -103,6 +104,7 @@ import org.junit.runners.Suite;
 
     // Metrics.
     ClusterMetricsSnapshotSerializeSelfTest.class,
+    ClusterMetricsSnapshotSerializeCompatibilityTest.class,
 
     // Unsafe.
     GridUnsafeMemorySelfTest.class,

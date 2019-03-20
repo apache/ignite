@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.regressions.logistic;
 
-import java.util.Arrays;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -38,6 +37,8 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalcula
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Arrays;
 
 /**
  * Trainer of the logistic regression model based on stochastic gradient descent algorithm.
@@ -89,6 +90,9 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
                 return a;
             });
 
+            if (cols == null)
+                throw new IllegalStateException("Cannot train on empty dataset");
+
             MLPArchitecture architecture = new MLPArchitecture(cols);
             architecture = architecture.withAddedLayer(1, true, Activators.SIGMOID);
 
@@ -103,7 +107,7 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
             batchSize,
             locIterations,
             seed
-        );
+        ).withEnvironmentBuilder(envBuilder);
 
         IgniteBiFunction<K, V, double[]> lbExtractorWrapper = (k, v) -> new double[] {lbExtractor.apply(k, v)};
         MultilayerPerceptron mlp;

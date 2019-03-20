@@ -120,6 +120,6 @@ public class JdbcBatchExecuteResult extends JdbcResult {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcBatchExecuteResult.class, this);
+        return S.toString(JdbcBatchExecuteResult.class, this, super.toString());
     }
 }

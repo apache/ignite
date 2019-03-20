@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryReq
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
@@ -41,21 +42,26 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTest
 /**
  * Failed to reserve partitions for query (cache is not found on local node) Root cause test
  */
+@WithSystemProperty(key = IGNITE_SQL_RETRY_TIMEOUT, value = "5000")
 public class DisappearedCacheCauseRetryMessageSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 2;
+
     /** */
     private static final String ORG = "org";
+
     /** */
     private IgniteCache<String, JoinSqlTestHelper.Person> personCache;
+
     /** */
     private IgniteCache<String, JoinSqlTestHelper.Organization> orgCache;
 
     /** */
     @Test
     public void testDisappearedCacheCauseRetryMessage() {
-
-        SqlQuery<String, JoinSqlTestHelper.Person> qry = new SqlQuery<String, JoinSqlTestHelper.Person>(JoinSqlTestHelper.Person.class, JoinSqlTestHelper.JOIN_SQL).setArgs("Organization #0");
+        SqlQuery<String, JoinSqlTestHelper.Person> qry =
+            new SqlQuery<String, JoinSqlTestHelper.Person>(JoinSqlTestHelper.Person.class, JoinSqlTestHelper.JOIN_SQL)
+                .setArgs("Organization #0");
 
         qry.setDistributedJoins(true);
 
@@ -65,6 +71,9 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends AbstractIndexingC
             fail("No CacheException emitted.");
         }
         catch (CacheException e) {
+            if (!e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) ["))
+                e.printStackTrace();
+
             assertTrue(e.getMessage(), e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) ["));
         }
     }
@@ -92,11 +101,11 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends AbstractIndexingC
                         GridQueryCancelRequest req = (GridQueryCancelRequest) (gridMsg.message());
 
                         if (reqId == req.queryRequestId())
-                            orgCache = DisappearedCacheCauseRetryMessageSelfTest.this.ignite(0).getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
+                            orgCache = DisappearedCacheCauseRetryMessageSelfTest.this.ignite(0)
+                                .getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
                                 .setCacheMode(CacheMode.REPLICATED)
                                 .setQueryEntities(JoinSqlTestHelper.organizationQueryEntity())
                             );
-
                     }
                 }
 
@@ -109,8 +118,6 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends AbstractIndexingC
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        System.setProperty(IGNITE_SQL_RETRY_TIMEOUT, "5000");
-
         startGridsMultiThreaded(NODES_COUNT, false);
 
         personCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Person>("pers")

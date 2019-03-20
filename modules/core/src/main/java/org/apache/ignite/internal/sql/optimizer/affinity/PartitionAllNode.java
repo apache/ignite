@@ -36,7 +36,7 @@ public class PartitionAllNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) {
+    @Override public Collection<Integer> apply(PartitionClientContext cliCtx, Object... args) {
         return null;
     }
 

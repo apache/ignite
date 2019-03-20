@@ -30,9 +30,12 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -40,7 +43,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for validation of inserts sql queries.
  */
-public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingCommonTest {
     /** Entry point for sql api. Contains table configurations too. */
     private static IgniteCache<Object, Object> cache;
 
@@ -50,11 +53,26 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
     /** Default value for fk2 field of WITH_KEY_FLDS table. */
     private static final Long DEFAULT_FK1_VAL = null;
 
+    /** Old allow value. */
+    private static boolean oldAllowColumnsVal;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_UPDATES");
+
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
+
         startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -117,8 +135,8 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * Check forgotten key fields.
-     * If we've forgotten to specify key fields and we don't specify _key, then default key is inserted.
+     * Check forgotten key fields. If we've forgotten to specify key fields and we don't specify _key, then default key
+     * is inserted.
      */
     @Test
     public void testIncorrectComplex() {
@@ -126,7 +144,7 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
 
         GridTestUtils.assertThrows(log(),
             () -> execute("INSERT INTO FORGOTTEN_KEY_FLDS(FK1, FK2, FV1, FV2) VALUES (8,9,10,11)"),
-            IgniteSQLException.class,
+            TransactionDuplicateKeyException.class,
             "Duplicate key during INSERT");
     }
 

@@ -51,13 +51,13 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ExplicitWalDe
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBufferTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SysPropWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAwareTest;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationPersistentTest;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbPutGetWithCacheStoreTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeTinyPutGetTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStoragePersistentTest;
-import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -169,5 +169,6 @@ public class IgnitePdsTestSuite {
         //MetaStorage
         GridTestUtils.addTestIfNeeded(suite, IgniteMetaStorageBasicTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DistributedMetaStoragePersistentTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, DistributedConfigurationPersistentTest.class, ignoredTests);
     }
 }
