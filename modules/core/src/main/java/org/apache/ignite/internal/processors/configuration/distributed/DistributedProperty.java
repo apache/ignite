@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.io.Serializable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -34,6 +35,8 @@ public class DistributedProperty<T extends Serializable> {
     protected volatile T val;
     /** Sign of attachment to the processor. */
     private volatile boolean attached = false;
+    /** Listeners of property update. */
+    private final ConcurrentLinkedQueue<DistributePropertyListener<T>> updateListeners = new ConcurrentLinkedQueue<>();
     /**
      * Specific consumer for update value in cluster. It is null when property doesn't ready to update value on cluster
      * wide.
@@ -124,6 +127,13 @@ public class DistributedProperty<T extends Serializable> {
     }
 
     /**
+     * @param listener Update listener.
+     */
+    public void addListener(DistributePropertyListener<T> listener) {
+        updateListeners.add(listener);
+    }
+
+    /**
      * This property have been attached to processor.
      */
     void onAttached() {
@@ -144,8 +154,12 @@ public class DistributedProperty<T extends Serializable> {
      *
      * @param newVal New value.
      */
-   void localUpdate(Serializable newVal) {
+    void localUpdate(Serializable newVal) {
+        T oldVal = val;
+
         val = (T)newVal;
+
+        updateListeners.forEach(listener -> listener.listen(name, oldVal, val));
     }
 
     /** {@inheritDoc} */

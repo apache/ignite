@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal.cluster;
 
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.jetbrains.annotations.NotNull;
 
 import static java.lang.String.format;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
@@ -46,6 +49,12 @@ public class DistributedBaselineConfiguration {
     private static final boolean DEFAULT_AUTO_ADJUST_ENABLED = false;
     /** Message of baseline auto-adjust configuration. */
     private static final String AUTO_ADJUST_CONFIGURED_MESSAGE = "Baseline auto-adjust is '%s' with timeout='%d' ms";
+    /** Message of baseline auto-adjust parameter was changed from default. */
+    private static final String DEFAULT_PROPERTY_UPDATE_MESSAGE =
+        "Baseline parameter '%s' was changed from default value='%s' to '%s'";
+    /** Message of baseline auto-adjust parameter was changed. */
+    private static final String PROPERTY_UPDATE_MESSAGE =
+        "Baseline parameter '%s' was changed from '%s' to '%s'";
     /** */
     private volatile long dfltTimeout = DEFAULT_PERSISTENCE_TIMEOUT;
     /** */
@@ -74,10 +83,33 @@ public class DistributedBaselineConfiguration {
         this.log = log;
         isp.registerDistributedConfigurationListener(
             dispatcher -> {
+                boolean persistenceEnabled = ctx.config() != null && CU.isPersistenceEnabled(ctx.config());
+
+                dfltTimeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
+
+                baselineAutoAdjustEnabled.addListener(makeUpdateListener(DEFAULT_AUTO_ADJUST_ENABLED));
+                baselineAutoAdjustTimeout.addListener(makeUpdateListener(dfltTimeout));
+
                 dispatcher.registerProperty(baselineAutoAdjustEnabled);
                 dispatcher.registerProperty(baselineAutoAdjustTimeout);
             }
         );
+    }
+
+    /**
+     * @param defaultVal Default value from which property can be changed in first time.
+     * @param <T> Type of property value.
+     * @return Update property listener.
+     */
+    @NotNull private <T> DistributePropertyListener<T> makeUpdateListener(Object defaultVal) {
+        return (name, oldVal, newVal) -> {
+            if (!Objects.equals(oldVal, newVal)) {
+                if (oldVal == null)
+                    log.info(format(DEFAULT_PROPERTY_UPDATE_MESSAGE, name, defaultVal, newVal));
+                else
+                    log.info(format(PROPERTY_UPDATE_MESSAGE, name, oldVal, newVal));
+            }
+        };
     }
 
     /**
@@ -86,12 +118,6 @@ public class DistributedBaselineConfiguration {
      * @throws IgniteCheckedException If failed.
      */
     public void onActivate() throws IgniteCheckedException {
-        if (baselineAutoAdjustTimeout.get() == null) {
-            boolean persistenceEnabled = ctx.config() != null && CU.isPersistenceEnabled(ctx.config());
-
-            dfltTimeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
-        }
-
         if (baselineAutoAdjustEnabled.get() == null && isLocalNodeCoordinator(ctx.discovery())) {
             boolean dfltEnableVal = getBoolean(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, isCurrentBaselineNew());
 
