@@ -17,9 +17,12 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
+import java.io.FileNotFoundException;
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
@@ -38,9 +41,6 @@ import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-
-import java.io.FileNotFoundException;
-import java.util.Arrays;
 
 /**
  * To choose the best hyperparameters the cross-validation with {@link ParamGrid} will be used in this example.
@@ -165,8 +165,7 @@ public class Step_8_CV_with_Param_Grid_and_metrics {
                     ignite,
                     dataCache,
                     split.getTrainFilter(),
-                    normalizationPreprocessor,
-                    lbExtractor
+                    FeatureLabelExtractorWrapper.wrap(normalizationPreprocessor, lbExtractor) //TODO: IGNITE-11581
                 );
 
                 System.out.println("\n>>> Trained model: " + bestMdl);

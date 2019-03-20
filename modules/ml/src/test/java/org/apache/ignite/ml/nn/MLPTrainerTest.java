@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -36,6 +38,7 @@ import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -119,11 +122,11 @@ public class MLPTrainerTest {
          * @param <P> Updater parameters type.
          */
         private <P extends Serializable> void xorTest(UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy) {
-            Map<Integer, double[][]> xorData = new HashMap<>();
-            xorData.put(0, new double[][]{{0.0, 0.0}, {0.0}});
-            xorData.put(1, new double[][]{{0.0, 1.0}, {1.0}});
-            xorData.put(2, new double[][]{{1.0, 0.0}, {1.0}});
-            xorData.put(3, new double[][]{{1.0, 1.0}, {0.0}});
+            Map<Integer, LabeledVector<double[]>> xorData = new HashMap<>();
+            xorData.put(0, VectorUtils.of(0.0, 0.0).labeled(new double[]{0.0}));
+            xorData.put(1, VectorUtils.of(0.0, 1.0).labeled(new double[]{1.0}));
+            xorData.put(2, VectorUtils.of(1.0, 0.0).labeled(new double[]{1.0}));
+            xorData.put(3, VectorUtils.of(1.0, 1.0).labeled(new double[]{0.0}));
 
             MLPArchitecture arch = new MLPArchitecture(2).
                 withAddedLayer(10, true, Activators.RELU).
@@ -139,12 +142,7 @@ public class MLPTrainerTest {
                 123L
             );
 
-            MultilayerPerceptron mlp = trainer.fit(
-                xorData,
-                parts,
-                (k, v) -> VectorUtils.of(v[0]),
-                (k, v) -> v[1]
-            );
+            MultilayerPerceptron mlp = trainer.fit(xorData, parts, new LabeledDummyVectorizer<>());
 
             Matrix predict = mlp.predict(new DenseMatrix(new double[][]{
                 {0.0, 0.0},
@@ -165,11 +163,11 @@ public class MLPTrainerTest {
                 SimpleGDParameterUpdate.AVG
             );
 
-            Map<Integer, double[][]> xorData = new HashMap<>();
-            xorData.put(0, new double[][]{{0.0, 0.0}, {0.0}});
-            xorData.put(1, new double[][]{{0.0, 1.0}, {1.0}});
-            xorData.put(2, new double[][]{{1.0, 0.0}, {1.0}});
-            xorData.put(3, new double[][]{{1.0, 1.0}, {0.0}});
+            Map<Integer, LabeledVector<double[]>> xorData = new HashMap<>();
+            xorData.put(0, VectorUtils.of(0.0, 0.0).labeled(new double[]{0.0}));
+            xorData.put(1, VectorUtils.of(0.0, 1.0).labeled(new double[]{1.0}));
+            xorData.put(2, VectorUtils.of(1.0, 0.0).labeled(new double[]{1.0}));
+            xorData.put(3, VectorUtils.of(1.0, 1.0).labeled(new double[]{0.0}));
 
             MLPArchitecture arch = new MLPArchitecture(2).
                 withAddedLayer(10, true, Activators.RELU).
@@ -185,27 +183,20 @@ public class MLPTrainerTest {
                 123L
             );
 
-            MultilayerPerceptron originalMdl = trainer.fit(
-                xorData,
-                parts,
-                (k, v) -> VectorUtils.of(v[0]),
-                (k, v) -> v[1]
-            );
+            MultilayerPerceptron originalMdl = trainer.fit(xorData, parts, new LabeledDummyVectorizer<>());
 
             MultilayerPerceptron updatedOnSameDS = trainer.update(
                 originalMdl,
                 xorData,
                 parts,
-                (k, v) -> VectorUtils.of(v[0]),
-                (k, v) -> v[1]
+                new LabeledDummyVectorizer<>()
             );
 
             MultilayerPerceptron updatedOnEmptyDS = trainer.update(
                 originalMdl,
                 new HashMap<Integer, double[][]>(),
                 parts,
-                (k, v) -> VectorUtils.of(v[0]),
-                (k, v) -> v[1]
+                FeatureLabelExtractorWrapper.wrap((k, v) -> VectorUtils.of(v[0]), (k, v) -> v[1])
             );
 
             DenseMatrix matrix = new DenseMatrix(new double[][] {

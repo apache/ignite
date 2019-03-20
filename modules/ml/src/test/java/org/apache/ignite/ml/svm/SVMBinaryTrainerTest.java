@@ -17,11 +17,12 @@
 
 package org.apache.ignite.ml.svm;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
@@ -44,10 +45,8 @@ public class SVMBinaryTrainerTest extends TrainerTest {
             .withSeed(1234L);
 
         SVMLinearClassificationModel mdl = trainer.fit(
-            cacheMock,
-            parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            cacheMock, parts,
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
 
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
@@ -66,27 +65,24 @@ public class SVMBinaryTrainerTest extends TrainerTest {
             .withAmountOfIterations(1000)
             .withSeed(1234L);
 
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
         SVMLinearClassificationModel originalMdl = trainer.fit(
-            cacheMock,
-            parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            cacheMock, parts,
+            vectorizer
         );
 
         SVMLinearClassificationModel updatedOnSameDS = trainer.update(
             originalMdl,
             cacheMock,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            vectorizer
         );
 
         SVMLinearClassificationModel updatedOnEmptyDS = trainer.update(
             originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            vectorizer
         );
 
         Vector v = VectorUtils.of(100, 10);

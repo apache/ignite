@@ -73,16 +73,11 @@ public class LinearRegressionSGDTrainerExample {
             System.out.println(">>> Perform the training to get the model.");
 
             Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
+
+            LinearRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+
             final IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
             final IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
-
-            LinearRegressionModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                featureExtractor,
-                lbExtractor
-            );
-
             System.out.println(">>> Linear regression model: " + mdl);
 
             double rmse = Evaluator.evaluate(

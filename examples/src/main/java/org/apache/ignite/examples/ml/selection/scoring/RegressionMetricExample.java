@@ -42,11 +42,11 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * After that it trains the model based on the specified data using
  * <a href="https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm">kNN</a> regression algorithm.</p>
  * <p>
- * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
- * does this point belong to, and compares prediction to expected outcome (ground truth).</p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster does
+ * this point belong to, and compares prediction to expected outcome (ground truth).</p>
  * <p>
- * You can change the test data used in this example or trainer object settings and re-run it to explore
- * this algorithm further.</p>
+ * You can change the test data used in this example or trainer object settings and re-run it to explore this algorithm
+ * further.</p>
  */
 public class RegressionMetricExample {
     /** Run example. */
@@ -63,19 +63,13 @@ public class RegressionMetricExample {
             KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 
             Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
-            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
-            IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
 
-            KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
-                ignite,
-                dataCache,
-                featureExtractor,
-                lbExtractor
-            ).withK(5)
+            KNNRegressionModel knnMdl = (KNNRegressionModel)trainer.fit(ignite, dataCache, vectorizer).withK(5)
                 .withDistanceMeasure(new ManhattanDistance())
                 .withStrategy(NNStrategy.WEIGHTED);
 
-
+            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
+            IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
             double mae = Evaluator.evaluate(
                 dataCache,
                 knnMdl,

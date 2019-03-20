@@ -37,7 +37,6 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -121,10 +120,10 @@ public class GDBLearningStrategy {
             if (convCheck.isConverged(envBuilder, datasetBuilder, currComposition))
                 break;
 
-            FeatureLabelExtractor<K, V, Double> extractor = new FeatureLabelExtractor<K, V, Double>() {
+            Vectorizer<K, V, C, Double> extractor = new Vectorizer.VectorizerAdapter<K, V, C, Double>() {
                 /** {@inheritDoc} */
                 @Override public LabeledVector<Double> extract(K k, V v) {
-                    LabeledVector<Double> labeledVector = vectorizer.extract(k,v);
+                    LabeledVector<Double> labeledVector = vectorizer.extract(k, v);
                     Vector features = labeledVector.features();
                     Double realAnswer = externalLbToInternalMapping.apply(labeledVector.label());
                     Double mdlAnswer = currComposition.predict(features);

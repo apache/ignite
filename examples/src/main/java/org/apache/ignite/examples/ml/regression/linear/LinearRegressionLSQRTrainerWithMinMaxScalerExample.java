@@ -21,6 +21,7 @@ import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerPreprocessor;
@@ -77,7 +78,7 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
 
             final IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
 
-            LinearRegressionModel mdl = trainer.fit(ignite, dataCache, preprocessor, lbExtractor);
+            LinearRegressionModel mdl = trainer.fit(ignite, dataCache, FeatureLabelExtractorWrapper.wrap(preprocessor, lbExtractor)); //TODO: IGNITE-11581
 
             System.out.println(">>> Linear regression model: " + mdl);
 

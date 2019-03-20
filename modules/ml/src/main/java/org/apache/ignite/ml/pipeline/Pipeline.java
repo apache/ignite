@@ -151,6 +151,7 @@ public class Pipeline<K, V, R> {
             );
         });
 
+        //TODO: IGNITE-11481
         IgniteModel<Vector, Double> internalMdl = finalStage
             .fit(
                 datasetBuilder,

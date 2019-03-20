@@ -33,7 +33,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.AdaptableDatasetTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 import org.apache.ignite.ml.util.Utils;
 
@@ -156,8 +155,8 @@ public class BaggedTrainer<L> extends
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> BaggedModel update(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+    @Override public <K, V, C> BaggedModel update(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor) {
         IgniteModel<Vector, Double> updated = getTrainer().update(mdl.model(), datasetBuilder, extractor);
         return new BaggedModel(updated);
     }

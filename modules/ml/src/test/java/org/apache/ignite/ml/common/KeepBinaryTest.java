@@ -26,9 +26,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.BinaryObjectVectorizer;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -73,17 +72,12 @@ public class KeepBinaryTest extends GridCommonAbstractTest {
     public void test() {
         IgniteCache<Integer, BinaryObject> dataCache = populateCache(ignite);
 
-        IgniteBiFunction<Integer, BinaryObject, Vector> featureExtractor
-            = (k, v) -> VectorUtils.of(new double[]{v.field("feature1")});
-
-        IgniteBiFunction<Integer, BinaryObject, Double> lbExtractor = (k, v) -> (double) v.field("label");
-
         KMeansTrainer trainer = new KMeansTrainer();
 
         CacheBasedDatasetBuilder<Integer, BinaryObject> datasetBuilder =
             new CacheBasedDatasetBuilder<>(ignite, dataCache).withKeepBinary(true);
 
-        KMeansModel kmdl = trainer.fit(datasetBuilder, featureExtractor, lbExtractor);
+        KMeansModel kmdl = trainer.fit(datasetBuilder, new BinaryObjectVectorizer<Integer>("feature1").labeled("label"));
 
         Integer zeroCentre = kmdl.predict(VectorUtils.num2Vec(0.0));
 

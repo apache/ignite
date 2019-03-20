@@ -22,6 +22,7 @@ import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -201,8 +202,7 @@ public class Step_9_Go_to_LogReg {
                     ignite,
                     dataCache,
                     split.getTrainFilter(),
-                    normalizationPreprocessor,
-                    lbExtractor
+                    FeatureLabelExtractorWrapper.wrap(normalizationPreprocessor, lbExtractor) //TODO: IGNITE-11581
                 );
 
                 System.out.println("\n>>> Trained model: " + bestMdl);

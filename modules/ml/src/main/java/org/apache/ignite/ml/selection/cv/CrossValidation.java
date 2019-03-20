@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -323,7 +324,7 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> {
             };
 
             DatasetBuilder<K, V> datasetBuilder = datasetBuilderSupplier.apply(trainSetFilter);
-            M mdl = trainer.fit(datasetBuilder, featureExtractor, lbExtractor);
+            M mdl = trainer.fit(datasetBuilder, FeatureLabelExtractorWrapper.wrap(featureExtractor, lbExtractor)); //TODO: IGNITE-11580
 
             try (LabelPairCursor<L> cursor = testDataIterSupplier.apply(trainSetFilter, mdl)) {
                 scores[i] = scoreCalculator.score(cursor.iterator());

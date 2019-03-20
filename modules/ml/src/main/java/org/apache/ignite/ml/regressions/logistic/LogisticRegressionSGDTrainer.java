@@ -75,7 +75,6 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
         Vectorizer<K, V, C, Double> extractor) {
 
         IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
-        IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
 
         IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
             Integer cols = dataset.compute(data -> {
@@ -108,14 +107,14 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
             seed
         ).withEnvironmentBuilder(envBuilder);
 
-        IgniteBiFunction<K, V, double[]> lbExtractorWrapper = (k, v) -> new double[] {lbExtractor.apply(k, v)};
         MultilayerPerceptron mlp;
+        Vectorizer<K, V, C, double[]> vectorizer = extractor.map(lv -> lv.features().labeled(new double[] {lv.label()}));
         if (mdl != null) {
             mlp = restoreMLPState(mdl);
-            mlp = trainer.update(mlp, datasetBuilder, featureExtractor, lbExtractorWrapper);
+            mlp = trainer.update(mlp, datasetBuilder, vectorizer);
         }
         else
-            mlp = trainer.fit(datasetBuilder, featureExtractor, lbExtractorWrapper);
+            mlp = trainer.fit(datasetBuilder, vectorizer);
 
         double[] params = mlp.parameters().getStorage().data();
 

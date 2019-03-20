@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.performance.MnistMLPTestUtil;
@@ -81,8 +82,10 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
         DecisionTreeNode mdl = trainer.fit(
             ignite,
             trainingSet,
-            (k, v) -> VectorUtils.of(v.getPixels()),
-            (k, v) -> (double) v.getLabel()
+            FeatureLabelExtractorWrapper.wrap(
+                (k, v) -> VectorUtils.of(v.getPixels()),
+                (k, v) -> (double)v.getLabel()
+            )
         );
 
         int correctAnswers = 0;

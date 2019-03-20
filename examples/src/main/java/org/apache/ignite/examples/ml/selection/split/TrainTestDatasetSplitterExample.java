@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -70,13 +69,7 @@ public class TrainTestDatasetSplitterExample {
 
             System.out.println(">>> Perform the training to get the model.");
             Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
-            LinearRegressionModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                split.getTrainFilter(),
-                CompositionUtils.asFeatureExtractor(vectorizer),
-                CompositionUtils.asLabelExtractor(vectorizer)
-            );
+            LinearRegressionModel mdl = trainer.fit(ignite, dataCache, split.getTrainFilter(), vectorizer);
 
             System.out.println(">>> Linear regression model: " + mdl);
 

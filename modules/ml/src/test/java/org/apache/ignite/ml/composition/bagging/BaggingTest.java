@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.composition.bagging;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
@@ -29,6 +28,7 @@ import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredicti
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
@@ -86,7 +86,7 @@ public class BaggingTest extends TrainerTest {
      */
     @Test
     public void testNaiveBaggingLogRegression() {
-        Map<Integer, Double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
+        Map<Integer, double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
 
         DatasetTrainer<LogisticRegressionModel, Double> trainer =
             new LogisticRegressionSGDTrainer()
@@ -109,8 +109,7 @@ public class BaggingTest extends TrainerTest {
         BaggedModel mdl = baggedTrainer.fit(
             cacheMock,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            new ArraysVectorizer<Integer>().labeled(0)
         );
 
         Vector weights = ((LogisticRegressionModel)((AdaptableDatasetModel)((ModelsParallelComposition)((AdaptableDatasetModel)mdl
@@ -127,7 +126,7 @@ public class BaggingTest extends TrainerTest {
      * @param cntr Function specifying which data we should count.
      */
     protected void count(IgniteTriFunction<Long, CountData, LearningEnvironment, Long> cntr) {
-        Map<Integer, Double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
+        Map<Integer, double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
 
         CountTrainer cntTrainer = new CountTrainer(cntr);
 
@@ -140,10 +139,7 @@ public class BaggingTest extends TrainerTest {
             2,
             2,
             new MeanValuePredictionsAggregator())
-            .fit(cacheMock,
-                parts,
-                (integer, doubles) -> VectorUtils.of(doubles),
-                (integer, doubles) -> doubles[doubles.length - 1]);
+            .fit(cacheMock, parts, new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
 
         Double res = mdl.predict(null);
 

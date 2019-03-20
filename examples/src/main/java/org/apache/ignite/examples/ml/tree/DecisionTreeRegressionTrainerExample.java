@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -69,13 +68,7 @@ public class DecisionTreeRegressionTrainerExample {
             DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(10, 0);
 
             // Train decision tree model.
-            LabeledDummyVectorizer<Integer, Double> vectorizer = new LabeledDummyVectorizer<>();
-            DecisionTreeNode mdl = trainer.fit(
-                ignite,
-                trainingSet,
-                CompositionUtils.asFeatureExtractor(vectorizer),
-                CompositionUtils.asLabelExtractor(vectorizer)
-            );
+            DecisionTreeNode mdl = trainer.fit(ignite, trainingSet, new LabeledDummyVectorizer<>());
 
             System.out.println(">>> Decision tree regression model: " + mdl);
 

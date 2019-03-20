@@ -17,7 +17,11 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
@@ -30,9 +34,6 @@ import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetric
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -69,8 +70,7 @@ public class RegressionEvaluatorTest extends TrainerTest {
 
         KNNRegressionModel mdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            featureExtractor,
-            lbExtractor
+            new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance());
 
@@ -106,8 +106,6 @@ public class RegressionEvaluatorTest extends TrainerTest {
 
         KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 
-        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
 
         TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
             .split(0.5);
@@ -116,11 +114,12 @@ public class RegressionEvaluatorTest extends TrainerTest {
             data,
             split.getTestFilter(),
             parts,
-            featureExtractor,
-            lbExtractor
+            new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance());
 
+        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
+        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
         double score = Evaluator.evaluate(data, split.getTrainFilter(), mdl, featureExtractor, lbExtractor,
             new RegressionMetrics()
                 .withMetric(RegressionMetricValues::rss)

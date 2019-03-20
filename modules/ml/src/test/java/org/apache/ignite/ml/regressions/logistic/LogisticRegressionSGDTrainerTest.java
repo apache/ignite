@@ -17,11 +17,12 @@
 
 package org.apache.ignite.ml.regressions.logistic;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -51,12 +52,7 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
             .withBatchSize(14)
             .withSeed(123L);
 
-        LogisticRegressionModel mdl = trainer.fit(
-            cacheMock,
-            parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
-        );
+        LogisticRegressionModel mdl = trainer.fit(cacheMock, parts, new ArraysVectorizer<Integer>().labeled(0));
 
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
@@ -81,24 +77,22 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
         LogisticRegressionModel originalMdl = trainer.fit(
             cacheMock,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            new ArraysVectorizer<Integer>().labeled(0)
         );
 
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
         LogisticRegressionModel updatedOnSameDS = trainer.update(
             originalMdl,
             cacheMock,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            vectorizer
         );
 
         LogisticRegressionModel updatedOnEmptyDS = trainer.update(
             originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            vectorizer
         );
 
         Vector v1 = VectorUtils.of(100, 10);

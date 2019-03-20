@@ -20,6 +20,7 @@ package org.apache.ignite.ml.tree.performance;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.performance.MnistMLPTestUtil;
@@ -44,7 +45,6 @@ public class DecisionTreeMNISTTest {
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTrainingSet(60_000))
             trainingSet.put(i++, e);
 
-
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(
             8,
             0,
@@ -52,9 +52,10 @@ public class DecisionTreeMNISTTest {
 
         DecisionTreeNode mdl = trainer.fit(
             trainingSet,
-            10,
-            (k, v) -> VectorUtils.of(v.getPixels()),
-            (k, v) -> (double) v.getLabel()
+            10, FeatureLabelExtractorWrapper.wrap(
+                (k, v) -> VectorUtils.of(v.getPixels()),
+                (k, v) -> (double)v.getLabel()
+            )
         );
 
         int correctAnswers = 0;

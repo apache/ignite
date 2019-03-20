@@ -60,10 +60,10 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
+    @Deprecated //TODO: IGNITE-11481 - delete this method after ticket.
     public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
-        return fit(datasetBuilder, (k, v) -> new LabeledVector<>(featureExtractor.apply(k, v),
-            lbExtractor.apply(k, v)));
+        return fit(datasetBuilder, FeatureLabelExtractorWrapper.wrap(featureExtractor, lbExtractor));
     }
 
     /**
@@ -106,8 +106,8 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     public abstract <K, V, C> M fit(DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor);
 
     /**
-     * Gets state of model in arguments, compare it with training parameters of trainer and if they are fit then
-     * trainer updates model in according to new data and return new model. In other case trains new model.
+     * Gets state of model in arguments, compare it with training parameters of trainer and if they are fit then trainer
+     * updates model in according to new data and return new model. In other case trains new model.
      *
      * @param mdl Learned model.
      * @param datasetBuilder Dataset builder.
@@ -116,10 +116,9 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+    public <K, V, C> M update(M mdl, DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor) {
 
-        if(mdl != null) {
+        if (mdl != null) {
             if (isUpdateable(mdl))
                 return updateModel(mdl, datasetBuilder, extractor);
             else {
@@ -135,33 +134,14 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     }
 
     /**
-     * Gets state of model in arguments, compare it with training parameters of trainer and if they are fit then
-     * trainer updates model in according to new data and return new model. In other case trains new model.
-     *
-     * @param mdl Learned model.
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @param <K> Type of a key in {@code upstream} data.
-     * @param <V> Type of a value in {@code upstream} data.
-     * @return Updated model.
-     */
-    public <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-
-        return update(mdl, datasetBuilder, (k, v) -> new LabeledVector<>(featureExtractor.apply(k, v),
-            lbExtractor.apply(k, v)));
-    }
-
-    /**
      * @param mdl Model.
      * @return true if current critical for training parameters correspond to parameters from last training.
      */
     public abstract boolean isUpdateable(M mdl);
 
     /**
-     * Used on update phase when given dataset is empty.
-     * If last trained model exist then method returns it. In other case throws IllegalArgumentException.
+     * Used on update phase when given dataset is empty. If last trained model exist then method returns it. In other
+     * case throws IllegalArgumentException.
      *
      * @param lastTrainedMdl Model.
      */
@@ -170,95 +150,23 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
         if (lastTrainedMdl != null) {
             environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH, msg);
             return lastTrainedMdl;
-        } else
+        }
+        else
             throw new EmptyDatasetException();
     }
 
     /**
-     * Gets state of model in arguments, update in according to new data and return new model.
-     *
-     * @param mdl Learned model.
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @param <K> Type of a key in {@code upstream} data.
-     * @param <V> Type of a value in {@code upstream} data.
-     * @return Updated model.
-     */
-    protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        return updateModel(mdl,
-            datasetBuilder, (k, v) -> new LabeledVector<>(featureExtractor.apply(k, v),
-            lbExtractor.apply(k, v)));
-    }
-
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param datasetBuilder Dataset builder.
-     * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
-     * @param <K> Type of a key in {@code upstream} data.
-     * @param <V> Type of a value in {@code upstream} data.
-     * @return Model.
-     */
-    public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, L> extractor) {
-        return fit(datasetBuilder, new FeatureLabelExtractorWrapper<>(extractor));
-    }
-
-    /**
-     * Gets state of model in arguments, update in according to new data and return new model.
-     *
-     * @param mdl Learned model.
-     * @param datasetBuilder Dataset builder.
-     * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
-     * @param <K> Type of a key in {@code upstream} data.
-     * @param <V> Type of a value in {@code upstream} data.
-     * @return Updated model.
-     */
-    protected <K, V> M updateModel(M mdl,
-        DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
-
-        return updateModel(mdl, datasetBuilder, new FeatureLabelExtractorWrapper<>(extractor));
-    }
-
-
-    /**
      * Trains model based on the specified data.
      *
      * @param ignite Ignite instance.
      * @param cache Ignite cache.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public <K, V> M fit(Ignite ignite, IgniteCache<K, V> cache,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        return fit(
-            new CacheBasedDatasetBuilder<>(ignite, cache),
-            featureExtractor,
-            lbExtractor
-        );
-    }
-
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param ignite Ignite instance.
-     * @param cache Ignite cache.
-     * @param extractor Features and labels extractor.
-     * @param <K> Type of a key in {@code upstream} data.
-     * @param <V> Type of a value in {@code upstream} data.
-     * @return Model.
-     */
-    public <K, V> M fit(Ignite ignite, IgniteCache<K, V> cache,
-        FeatureLabelExtractor<K, V, L> extractor) {
-        return fit(
-            new CacheBasedDatasetBuilder<>(ignite, cache),
-            extractor
-        );
+    public <K, V, C> M fit(Ignite ignite, IgniteCache<K, V> cache, Vectorizer<K, V, C, L> vectorizer) {
+        return fit(new CacheBasedDatasetBuilder<>(ignite, cache), vectorizer);
     }
 
     /**
@@ -267,19 +175,13 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param mdl Learned model.
      * @param ignite Ignite instance.
      * @param cache Ignite cache.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public <K, V> M update(M mdl, Ignite ignite, IgniteCache<K, V> cache,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        return update(
-            mdl, new CacheBasedDatasetBuilder<>(ignite, cache),
-            featureExtractor,
-            lbExtractor
-        );
+    public <K, V, C> M update(M mdl, Ignite ignite, IgniteCache<K, V> cache, Vectorizer<K, V, C, L> vectorizer) {
+        return update(mdl, new CacheBasedDatasetBuilder<>(ignite, cache), vectorizer);
     }
 
     /**
@@ -288,19 +190,15 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param ignite Ignite instance.
      * @param cache Ignite cache.
      * @param filter Filter for {@code upstream} data.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public <K, V> M fit(Ignite ignite, IgniteCache<K, V> cache, IgniteBiPredicate<K, V> filter,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        return fit(
-            new CacheBasedDatasetBuilder<>(ignite, cache, filter),
-            featureExtractor,
-            lbExtractor
-        );
+    public <K, V, C> M fit(Ignite ignite, IgniteCache<K, V> cache, IgniteBiPredicate<K, V> filter,
+        Vectorizer<K, V, C, L> vectorizer) {
+
+        return fit(new CacheBasedDatasetBuilder<>(ignite, cache, filter), vectorizer);
     }
 
     /**
@@ -310,18 +208,16 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param ignite Ignite instance.
      * @param cache Ignite cache.
      * @param filter Filter for {@code upstream} data.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public <K, V> M update(M mdl, Ignite ignite, IgniteCache<K, V> cache, IgniteBiPredicate<K, V> filter,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+    public <K, V, C> M update(M mdl, Ignite ignite, IgniteCache<K, V> cache, IgniteBiPredicate<K, V> filter,
+        Vectorizer<K,V,C,L> vectorizer) {
         return update(
             mdl, new CacheBasedDatasetBuilder<>(ignite, cache, filter),
-            featureExtractor,
-            lbExtractor
+            vectorizer
         );
     }
 
@@ -330,19 +226,13 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      *
      * @param data Data.
      * @param parts Number of partitions.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public <K, V> M fit(Map<K, V> data, int parts, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor) {
-        return fit(
-            new LocalDatasetBuilder<>(data, parts),
-            featureExtractor,
-            lbExtractor
-        );
+    public <K, V, C> M fit(Map<K, V> data, int parts, Vectorizer<K, V, C, L> vectorizer) {
+        return fit(new LocalDatasetBuilder<>(data, parts), vectorizer);
     }
 
     /**
@@ -351,18 +241,15 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param mdl Learned model.
      * @param data Data.
      * @param parts Number of partitions.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public <K, V> M update(M mdl, Map<K, V> data, int parts, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor) {
+    public <K, V, C> M update(M mdl, Map<K, V> data, int parts, Vectorizer<K,V,C,L> vectorizer) {
         return update(
             mdl, new LocalDatasetBuilder<>(data, parts),
-            featureExtractor,
-            lbExtractor
+            vectorizer
         );
     }
 
@@ -372,20 +259,14 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param data Data.
      * @param filter Filter for {@code upstream} data.
      * @param parts Number of partitions.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public <K, V> M fit(Map<K, V> data, IgniteBiPredicate<K, V> filter, int parts,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor) {
-        return fit(
-            new LocalDatasetBuilder<>(data, filter, parts),
-            featureExtractor,
-            lbExtractor
-        );
+    public <K, V, C> M fit(Map<K, V> data, IgniteBiPredicate<K, V> filter, int parts,
+        Vectorizer<K, V, C, L> vectorizer) {
+        return fit(new LocalDatasetBuilder<>(data, filter, parts), vectorizer);
     }
 
     /**
@@ -394,19 +275,16 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param data Data.
      * @param filter Filter for {@code upstream} data.
      * @param parts Number of partitions.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public <K, V> M update(M mdl, Map<K, V> data, IgniteBiPredicate<K, V> filter, int parts,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor) {
+    public <K, V, C> M update(M mdl, Map<K, V> data, IgniteBiPredicate<K, V> filter, int parts,
+        Vectorizer<K,V,C,L> vectorizer) {
         return update(
             mdl, new LocalDatasetBuilder<>(data, filter, parts),
-            featureExtractor,
-            lbExtractor
+            vectorizer
         );
     }
 
@@ -417,7 +295,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      */
     // TODO: IGNITE-10441 Think about more elegant ways to perform fluent API.
     public DatasetTrainer<M, L> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
-        this.envBuilder  = envBuilder;
+        this.envBuilder = envBuilder;
         environment = envBuilder.buildForTrainer();
 
         return this;
@@ -462,22 +340,20 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     }
 
     /**
-     * Creates {@link DatasetTrainer} with same training logic, but able to accept labels of given new type
-     * of labels.
+     * Creates {@link DatasetTrainer} with same training logic, but able to accept labels of given new type of labels.
      *
      * @param new2Old Converter of new labels to old labels.
      * @param <L1> New labels type.
-     * @return {@link DatasetTrainer} with same training logic, but able to accept labels of given new type
-     * of labels.
+     * @return {@link DatasetTrainer} with same training logic, but able to accept labels of given new type of labels.
      */
     public <L1> DatasetTrainer<M, L1> withConvertedLabels(IgniteFunction<L1, L> new2Old) {
         DatasetTrainer<M, L> old = this;
         return new DatasetTrainer<M, L1>() {
-            private <K, V> FeatureLabelExtractor<K, V, L> getNewExtractor(
-                FeatureLabelExtractor<K, V, L1> extractor) {
-                return new FeatureLabelExtractor<K, V, L>() {
+            private <K, V, C> Vectorizer<K, V, C, L> getNewExtractor(
+                Vectorizer<K, V, C, L1> extractor) {
+                return new Vectorizer.VectorizerAdapter<K, V, C, L>() {
                     /** {@inheritDoc} */
-                    @Override public LabeledVector<L> extract(K k, V v) {
+                    @Override public LabeledVector<L> apply(K k, V v) {
                         return new LabeledVector<>(extractor.extractFeatures(k, v),
                             new2Old.apply(extractor.extractLabel(k, v)));
                     }
@@ -489,7 +365,6 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
                 Vectorizer<K, V, C, L1> extractor) {
                 return old.fit(datasetBuilder, getNewExtractor(extractor));
             }
-
 
             /** {@inheritDoc} */
             @Override protected <K, V, C> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,

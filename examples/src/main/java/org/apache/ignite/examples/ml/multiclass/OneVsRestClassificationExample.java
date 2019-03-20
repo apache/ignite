@@ -28,6 +28,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.multiclass.MultiClassModel;
@@ -40,21 +41,21 @@ import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Run One-vs-Rest multi-class classification trainer ({@link OneVsRestTrainer}) parametrized by binary SVM classifier
- * ({@link SVMLinearClassificationTrainer}) over distributed dataset
- * to build two models: one with min-max scaling and one without min-max scaling.
+ * ({@link SVMLinearClassificationTrainer}) over distributed dataset to build two models: one with min-max scaling and
+ * one without min-max scaling.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points (preprocessed
  * <a href="https://archive.ics.uci.edu/ml/datasets/Glass+Identification">Glass dataset</a>).</p>
  * <p>
- * After that it trains two One-vs-Rest multi-class models based on the specified data - one model is with min-max scaling
- * and one without min-max scaling.</p>
+ * After that it trains two One-vs-Rest multi-class models based on the specified data - one model is with min-max
+ * scaling and one without min-max scaling.</p>
  * <p>
- * Finally, this example loops over the test set of data points, applies the trained models to predict what cluster
- * does this point belong to, compares prediction to expected outcome (ground truth), and builds
+ * Finally, this example loops over the test set of data points, applies the trained models to predict what cluster does
+ * this point belong to, compares prediction to expected outcome (ground truth), and builds
  * <a href="https://en.wikipedia.org/wiki/Confusion_matrix">confusion matrix</a>.</p>
  * <p>
- * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
- * NOTE: the smallest 3rd class could not be classified via linear SVM here.
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p> NOTE: the
+ * smallest 3rd class could not be classified via linear SVM here.
  */
 public class OneVsRestClassificationExample {
     /** Run example. */
@@ -96,8 +97,10 @@ public class OneVsRestClassificationExample {
             MultiClassModel<SVMLinearClassificationModel> mdlWithScaling = trainer.fit(
                 ignite,
                 dataCache,
-                preprocessor,
-                CompositionUtils.asLabelExtractor(new DummyVectorizer<Integer>().labeled(0)) //TODO: IGNITE-11504
+                FeatureLabelExtractorWrapper.wrap(
+                    preprocessor,
+                    CompositionUtils.asLabelExtractor(new DummyVectorizer<Integer>().labeled(0)) //TODO: IGNITE-11504
+                )
             );
 
             System.out.println(">>> One-vs-Rest SVM Multi-class model with MinMaxScaling");

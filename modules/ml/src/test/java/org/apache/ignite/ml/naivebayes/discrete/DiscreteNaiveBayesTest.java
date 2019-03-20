@@ -17,9 +17,10 @@
 
 package org.apache.ignite.ml.naivebayes.discrete;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -57,8 +58,7 @@ public class DiscreteNaiveBayesTest {
 
         DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
         Vector observation = VectorUtils.of(1, 0, 1, 1, 0);
 

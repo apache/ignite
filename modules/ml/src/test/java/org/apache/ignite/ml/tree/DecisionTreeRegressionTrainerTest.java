@@ -18,12 +18,11 @@
 package org.apache.ignite.ml.tree;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -75,12 +74,7 @@ public class DecisionTreeRegressionTrainerTest {
         DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(1, 0)
             .withUsingIdx(useIdx == 1);
 
-        DecisionTreeNode tree = trainer.fit(
-            data,
-            parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
-            (k, v) -> v[v.length - 1]
-        );
+        DecisionTreeNode tree = trainer.fit(data, parts, new ArraysVectorizer<Integer>().labeled(1));
 
         assertTrue(tree instanceof DecisionTreeConditionalNode);
 

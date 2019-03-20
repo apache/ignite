@@ -31,6 +31,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -85,10 +86,11 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
                     return 0.0;
             };
 
+            FeatureLabelExtractorWrapper<K, V, Double> vectorizer = FeatureLabelExtractorWrapper.wrap(featureExtractor, lbTransformer);
             M mdl = Optional.ofNullable(newMdl)
                 .flatMap(multiClassModel -> multiClassModel.getModel(clsLb))
-                .map(learnedModel -> classifier.update(learnedModel, datasetBuilder, featureExtractor, lbTransformer))
-                .orElseGet(() -> classifier.fit(datasetBuilder, featureExtractor, lbTransformer));
+                .map(learnedModel -> classifier.update(learnedModel, datasetBuilder, vectorizer))
+                .orElseGet(() -> classifier.fit(datasetBuilder, vectorizer));
 
             multiClsMdl.add(clsLb, mdl);
         });

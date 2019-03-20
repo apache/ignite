@@ -17,9 +17,10 @@
 
 package org.apache.ignite.ml.naivebayes.gaussian;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -52,8 +53,7 @@ public class GaussianNaiveBayesTest {
         GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
         Vector observation = VectorUtils.of(6, 130, 8);
 
@@ -75,8 +75,7 @@ public class GaussianNaiveBayesTest {
         GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
         Vector observation = VectorUtils.of(-0.8, -1);
 

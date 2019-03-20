@@ -23,7 +23,6 @@ import org.apache.ignite.ml.composition.combinators.sequential.TrainersSequentia
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -99,7 +98,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
         M fit = wrapped.
             withEnvironmentBuilder(envBuilder)
             .fit(datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
-                extractor.andThen(afterExtractor));
+                extractor.map(afterExtractor));
 
         return new AdaptableDatasetModel<>(before, fit, after);
     }
@@ -117,7 +116,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
             .updateModel(
                 mdl.innerModel(),
                 datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
-                extractor.andThen(afterExtractor));
+                extractor.map(afterExtractor));
 
         return mdl.withInnerModel(updated);
     }
@@ -165,29 +164,20 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
      */
     public AdaptableDatasetTrainer<I, O, IW, OW, M, L> withDatasetMapping(DatasetMapping<L, L> mapping) {
         return of(new DatasetTrainer<M, L>() {
-            @Override public <K, V> M fit(
-                DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-                IgniteBiFunction<K, V, L> lbExtractor) {
-                IgniteBiFunction<K, V, Vector> fe = featureExtractor.andThen(mapping::mapFeatures);
-                IgniteBiFunction<K, V, L> le = lbExtractor.andThen(mapping::mapLabels);
-
-                return wrapped.fit(datasetBuilder,
-                    fe,
-                    le);
+            /** {@inheritDoc} */
+            @Override public <K, V, C> M fit(DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor) {
+                return wrapped.fit(datasetBuilder, extractor.map(lv -> new LabeledVector<>(
+                    mapping.mapFeatures(lv.features()),
+                    mapping.mapLabels(lv.label())
+                )));
             }
 
             /** {@inheritDoc} */
-            @Override public <K, V, C> M fit(DatasetBuilder<K, V> datasetBuilder,
-                Vectorizer<K, V, C, L> extractor) {
-                return wrapped.fit(datasetBuilder, extractor);
-            }
-
-            /** {@inheritDoc} */
-            @Override public <K, V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-                return wrapped.update(mdl, datasetBuilder,
-                    featureExtractor.andThen(mapping::mapFeatures),
-                    lbExtractor.andThen((IgniteFunction<L, L>)mapping::mapLabels));
+            @Override public <K, V, C> M update(M mdl, DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> vectorizer) {
+                return wrapped.update(mdl, datasetBuilder, vectorizer.map(lv -> new LabeledVector<>(
+                    mapping.mapFeatures(lv.features()),
+                    mapping.mapLabels(lv.label())
+                )));
             }
 
             /** {@inheritDoc} */

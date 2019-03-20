@@ -62,16 +62,11 @@ public class EvaluatorExample {
             SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer();
 
             Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
+
+            SVMLinearClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+
             IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
             IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
-
-            SVMLinearClassificationModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                featureExtractor,
-                lbExtractor
-            );
-
             double accuracy = Evaluator.evaluate(
                 dataCache,
                 mdl,

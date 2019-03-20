@@ -17,12 +17,12 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import org.apache.ignite.ml.common.TrainerTest;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -54,8 +54,7 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
         LinearRegressionModel mdl = trainer.fit(
             data,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[4]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         assertArrayEquals(
@@ -93,8 +92,7 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
         LinearRegressionModel mdl = trainer.fit(
             data,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[coef.length]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         assertArrayEquals(coef, mdl.getWeights().getStorage().data(), 1e-6);
@@ -123,27 +121,25 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
 
         LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST);
         LinearRegressionModel originalMdl = trainer.fit(
             data,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[coef.length]
+            vectorizer
         );
 
         LinearRegressionModel updatedOnSameDS = trainer.update(
             originalMdl,
             data,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[coef.length]
+            vectorizer
         );
 
         LinearRegressionModel updatedOnEmptyDS = trainer.update(
             originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[coef.length]
+            vectorizer
         );
 
         assertArrayEquals(originalMdl.getWeights().getStorage().data(), updatedOnSameDS.getWeights().getStorage().data(), 1e-6);

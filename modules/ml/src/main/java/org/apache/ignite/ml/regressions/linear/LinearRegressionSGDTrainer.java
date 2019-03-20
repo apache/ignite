@@ -131,10 +131,11 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
 
         IgniteBiFunction<K, V, double[]> lbE = (IgniteBiFunction<K, V, double[]>)(k, v) -> new double[] {lbExtractor.apply(k, v)};
 
+        Vectorizer<K, V, C, double[]> vectorizer = extractor.map(lv -> lv.features().labeled(new double[] {lv.label()}));
         MultilayerPerceptron mlp = Optional.ofNullable(mdl)
             .map(this::restoreMLPState)
-            .map(m -> trainer.update(m, datasetBuilder, featureExtractor, lbE))
-            .orElseGet(() -> trainer.fit(datasetBuilder, featureExtractor, lbE));
+            .map(m -> trainer.update(m, datasetBuilder, vectorizer))
+            .orElseGet(() -> trainer.fit(datasetBuilder, vectorizer));
 
         double[] p = mlp.parameters().getStorage().data();
 

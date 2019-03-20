@@ -17,14 +17,13 @@
 
 package org.apache.ignite.ml.tree;
 
-import java.util.Arrays;
 import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -81,8 +80,7 @@ public class DecisionTreeRegressionTrainerIntegrationTest extends GridCommonAbst
         DecisionTreeNode tree = trainer.fit(
             ignite,
             data,
-            (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+            new ArraysVectorizer<Integer>().labeled(1)
         );
 
         assertTrue(tree instanceof DecisionTreeConditionalNode);

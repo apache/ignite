@@ -22,13 +22,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.composition.CompositionUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
@@ -70,7 +70,7 @@ public class LinearRegressionLSQRTrainerExample {
              // DatasetTrainer#fit(Ignite, IgniteCache, IgniteBiFunction, IgniteBiFunction) method call
              // where there is a separate lambda for extracting label from (key, value) and a separate labmda for
              // extracting features.
-            FeatureLabelExtractor<Integer, Vector, Double> extractor = new DummyVectorizer<Integer>().labeled(0);
+            Vectorizer<Integer, Vector, Integer, Double> extractor = new DummyVectorizer<Integer>().labeled(0);
 
             LinearRegressionModel mdl = trainer.fit(ignite, dataCache, extractor);
 

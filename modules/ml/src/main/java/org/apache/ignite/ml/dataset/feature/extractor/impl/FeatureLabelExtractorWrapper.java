@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.dataset.feature.extractor.impl;
 
 import java.util.List;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -45,7 +46,13 @@ public class FeatureLabelExtractorWrapper<K, V, L> extends Vectorizer<K, V, Obje
      * @return wrapper.
      */
     public static <K, V> FeatureLabelExtractorWrapper<K, V, Double> wrap(IgniteBiFunction<K, V, Vector> featuresEx) {
-        return new FeatureLabelExtractorWrapper<>((k,v) -> featuresEx.apply(k,v).labeled(0.0));
+        return new FeatureLabelExtractorWrapper<>((k, v) -> featuresEx.apply(k, v).labeled(0.0));
+    }
+
+    public static <K, V, L> FeatureLabelExtractorWrapper<K, V, L> wrap(IgniteBiFunction<K, V, Vector> featuresEx,
+        IgniteBiFunction<K, V, L> lbExtractor) {
+
+        return new FeatureLabelExtractorWrapper<>(CompositionUtils.asFeatureLabelExtractor(featuresEx, lbExtractor));
     }
 
     /** {@inheritDoc} */

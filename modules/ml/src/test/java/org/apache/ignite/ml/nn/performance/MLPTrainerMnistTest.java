@@ -20,6 +20,7 @@ package org.apache.ignite.ml.nn.performance;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -75,8 +76,10 @@ public class MLPTrainerMnistTest {
         MultilayerPerceptron mdl = trainer.fit(
             trainingSet,
             1,
-            (k, v) -> VectorUtils.of(v.getPixels()),
-            (k, v) -> VectorUtils.oneHot(v.getLabel(), 10).getStorage().data()
+            FeatureLabelExtractorWrapper.wrap(
+                (k, v) -> VectorUtils.of(v.getPixels()),
+                (k, v) -> VectorUtils.oneHot(v.getLabel(), 10).getStorage().data()
+            )
         );
         System.out.println("Training completed in " + (System.currentTimeMillis() - start) + "ms");
 
@@ -84,10 +87,10 @@ public class MLPTrainerMnistTest {
         int incorrectAnswers = 0;
 
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(10_000)) {
-            Matrix input = new DenseMatrix(new double[][]{e.getPixels()});
+            Matrix input = new DenseMatrix(new double[][] {e.getPixels()});
             Matrix outputMatrix = mdl.predict(input);
 
-            int predicted = (int) VectorUtils.vec2Num(outputMatrix.getRow(0));
+            int predicted = (int)VectorUtils.vec2Num(outputMatrix.getRow(0));
 
             if (predicted == e.getLabel())
                 correctAnswers++;

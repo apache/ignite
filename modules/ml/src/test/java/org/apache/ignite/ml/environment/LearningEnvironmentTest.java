@@ -115,7 +115,7 @@ public class LearningEnvironmentTest {
             }
         };
         trainer.withEnvironmentBuilder(envBuilder);
-        IgniteModel<Object, Vector> mdl = trainer.fit(getCacheMock(partitions), partitions, null, null);
+        IgniteModel<Object, Vector> mdl = trainer.fit(getCacheMock(partitions), partitions, null);
 
         Vector exp = VectorUtils.zeroes(partitions);
         for (int i = 0; i < partitions; i++)

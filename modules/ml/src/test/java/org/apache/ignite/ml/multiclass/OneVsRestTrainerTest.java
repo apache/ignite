@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -58,10 +60,8 @@ public class OneVsRestTrainerTest extends TrainerTest {
         OneVsRestTrainer<LogisticRegressionModel> trainer = new OneVsRestTrainer<>(binaryTrainer);
 
         MultiClassModel mdl = trainer.fit(
-            cacheMock,
-            parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            cacheMock, parts,
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
 
         Assert.assertTrue(!mdl.toString().isEmpty());
@@ -90,27 +90,24 @@ public class OneVsRestTrainerTest extends TrainerTest {
 
         OneVsRestTrainer<LogisticRegressionModel> trainer = new OneVsRestTrainer<>(binaryTrainer);
 
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
         MultiClassModel originalMdl = trainer.fit(
-            cacheMock,
-            parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            cacheMock, parts,
+            vectorizer
         );
 
         MultiClassModel updatedOnSameDS = trainer.update(
             originalMdl,
             cacheMock,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            vectorizer
         );
 
         MultiClassModel updatedOnEmptyDS = trainer.update(
             originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            vectorizer
         );
 
         List<Vector> vectors = Arrays.asList(

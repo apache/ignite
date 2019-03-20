@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -56,8 +58,7 @@ public class GmmTrainerTest extends TrainerTest {
                 VectorUtils.of(-1.0, -2.0)));
         GmmModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Assert.assertEquals(2, model.countOfComponents());
@@ -75,8 +76,7 @@ public class GmmTrainerTest extends TrainerTest {
         try {
             trainer.fit(
                 new LocalDatasetBuilder<>(new HashMap<>(), parts),
-                (k, v) -> new DenseVector(2),
-                (k, v) -> 1.0
+                FeatureLabelExtractorWrapper.wrap((k, v) -> new DenseVector(2), (k, v) -> 1.0)
             );
         }
         catch (RuntimeException e) {
@@ -93,8 +93,7 @@ public class GmmTrainerTest extends TrainerTest {
                 VectorUtils.of(-1.0, -2.0)));
         GmmModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         model = trainer.updateModel(model,

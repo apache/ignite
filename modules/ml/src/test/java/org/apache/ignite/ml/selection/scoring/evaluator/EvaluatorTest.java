@@ -17,11 +17,20 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
@@ -40,11 +49,6 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
-
-import java.text.NumberFormat;
-import java.text.ParseException;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.ml.TestUtils.testEnvBuilder;
 import static org.junit.Assert.assertArrayEquals;
@@ -252,8 +256,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
                 ignite,
                 cache,
                 split.getTrainFilter(),
-                preprocessor,
-                lbExtractor
+                FeatureLabelExtractorWrapper.wrap(preprocessor, lbExtractor) //TODO: IGNITE-11504
             );
 
             actualAccuracy.set(Evaluator.evaluate(

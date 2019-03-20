@@ -17,9 +17,11 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
@@ -32,8 +34,6 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
-
-import java.io.FileNotFoundException;
 
 /**
  * Change classification algorithm that was used in {@link Step_5_Scaling} from decision tree to kNN
@@ -101,8 +101,7 @@ public class Step_6_KNN {
                 NNClassificationModel mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    normalizationPreprocessor,
-                    lbExtractor
+                    FeatureLabelExtractorWrapper.wrap(normalizationPreprocessor, lbExtractor) //TODO: IGNITE-11581
                 ).withK(1).withStrategy(NNStrategy.WEIGHTED);
 
                 System.out.println("\n>>> Trained model: " + mdl);

@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -79,9 +78,6 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     @Override protected <K, V, C> ANNClassificationModel updateModel(ANNClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> extractor) {
 
-        IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
-        IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
-
         List<Vector> centers;
         CentroidStat centroidStat;
         if (mdl != null) {
@@ -92,7 +88,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
             CentroidStat oldStat = mdl.getCentroindsStat();
             centroidStat = newStat.merge(oldStat);
         } else {
-            centers = getCentroids(featureExtractor, lbExtractor, datasetBuilder);
+            centers = getCentroids(extractor, datasetBuilder);
             centroidStat = getCentroidStat(datasetBuilder, extractor, centers);
         }
 
@@ -128,27 +124,20 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     /**
      * Perform KMeans clusterization algorithm to find centroids.
      *
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param datasetBuilder The dataset builder.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return The arrays of vectors.
      */
-    private <K, V> List<Vector> getCentroids(IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor, DatasetBuilder<K, V> datasetBuilder) {
+    private <K, V, C> List<Vector> getCentroids(Vectorizer<K,V,C,Double> vectorizer, DatasetBuilder<K, V> datasetBuilder) {
         KMeansTrainer trainer = new KMeansTrainer()
             .withAmountOfClusters(k)
             .withMaxIterations(maxIterations)
             .withDistance(distance)
             .withEpsilon(epsilon);
 
-        KMeansModel mdl = trainer.fit(
-            datasetBuilder,
-            featureExtractor,
-            lbExtractor
-        );
-
+        KMeansModel mdl = trainer.fit(datasetBuilder, vectorizer);
         return Arrays.asList(mdl.getCenters());
     }
 

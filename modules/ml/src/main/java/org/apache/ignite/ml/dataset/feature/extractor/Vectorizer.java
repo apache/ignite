@@ -24,15 +24,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 /**
- * Class for extracting labeled vectors from upstream. This is an abstract class providing API for
- * extracting feature and label values by "coordinates" of them from upstream objects. For example
- * {@link BinaryObject} can be upstream object and coordinates for them are names of fields with double-values.
+ * Class for extracting labeled vectors from upstream. This is an abstract class providing API for extracting feature
+ * and label values by "coordinates" of them from upstream objects. For example {@link BinaryObject} can be upstream
+ * object and coordinates for them are names of fields with double-values.
  *
  * @param <K> Type of keys in upstream.
  * @param <V> Type of values in upstream.
@@ -40,6 +41,9 @@ import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
  * @param <L> Type of label for resulting vectors.
  */
 public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K, V, L>, Serializable {
+    /** Label coordinate shortcut. */
+    private LabelCoordinate lbCoordinateShortcut = null;
+
     /** Serial version uid. */
     private static final long serialVersionUID = 4301406952131379459L;
     /** If useAllValues == true then Vectorizer extract all fields as features from upstream object (except label). */
@@ -51,19 +55,6 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
     /** Label coordinate. */
     private C labelCoord;
 
-    /** Excluded coordinates. */
-    private HashSet<C> excludedCoords = new HashSet<>();
-    /**
-     * Creates an instance of Vectorizer.
-     *
-     * @param coords Coordinates for feature extraction. If array is empty then Vectorizer will extract all fields from
-     * upstream object.
-     */
-    public Vectorizer(C... coords) {
-        extractionCoordinates = Arrays.asList(coords);
-        this.useAllValues = coords.length == 0;
-    }
-
     /**
      * Extracts labeled vector from upstream object.
      *
@@ -72,7 +63,7 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
      * @return vector.
      */
     public LabeledVector<L> apply(K key, V value) {
-        L lbl = labelCoord != null ? label(labelCoord, key, value) : zero();
+        L lbl = isLabeled() ? label(labelCoord(key, value), key, value) : zero();
 
         List<C> allCoords = null;
         if (useAllValues) {
@@ -88,21 +79,78 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
         Vector vector = createVector(vectorLength);
         for (int i = 0; i < coordinatesForExtraction.size(); i++) {
             Double feature = feature(coordinatesForExtraction.get(i), key, value);
-            if(feature != null)
+            if (feature != null)
                 vector.set(i, feature);
         }
         return new LabeledVector<>(vector, lbl);
     }
 
+    /** Excluded coordinates. */
+    private HashSet<C> excludedCoords = new HashSet<>();
+
     /**
-     * Sets label coordinate for Vectorizer. By default it equals null and zero() will be used
-     * as label value.
+     * Creates an instance of Vectorizer.
+     *
+     * @param coords Coordinates for feature extraction. If array is empty then Vectorizer will extract all fields from
+     * upstream object.
+     */
+    public Vectorizer(C... coords) {
+        extractionCoordinates = Arrays.asList(coords);
+        this.useAllValues = coords.length == 0;
+    }
+
+    /**
+     * @return true if label in vector is valid.
+     */
+    private boolean isLabeled() {
+        return labelCoord != null || lbCoordinateShortcut != null;
+    }
+
+    /**
+     * @param key Key.
+     * @param value Value.
+     * @return label coordinate.
+     */
+    private C labelCoord(K key, V value) {
+        A.ensure(isLabeled(), "isLabeled");
+        if (labelCoord != null)
+            return labelCoord;
+        else {
+            List<C> allCoords = allCoords(key, value);
+            A.ensure(!allCoords.isEmpty(), "!allCoords.isEmpty()");
+
+            switch (lbCoordinateShortcut) {
+                case FIRST:
+                    allCoords.get(0);
+                case LAST:
+                    allCoords.get(allCoords.size() - 1);
+                default:
+                    throw new IllegalArgumentException();
+            }
+        }
+    }
+
+    /**
+     * Sets label coordinate for Vectorizer. By default it equals null and zero() will be used as label value.
      *
      * @param labelCoord Label coordinate.
      * @return this.
      */
     public Vectorizer<K, V, C, L> labeled(C labelCoord) {
         this.labelCoord = labelCoord;
+        this.lbCoordinateShortcut = null;
+        return this;
+    }
+
+    /**
+     * Sets label coordinate for Vectorizer. By default it equals null and zero() will be used as label value.
+     *
+     * @param labelCoord Label coordinate.
+     * @return this.
+     */
+    public Vectorizer<K, V, C, L> labeled(LabelCoordinate labelCoord) {
+        this.lbCoordinateShortcut = labelCoord;
+        this.labelCoord = null;
         return this;
     }
 
@@ -112,9 +160,21 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
      * @param coords Coordinates.
      * @return this.
      */
-    public Vectorizer<K,V,C,L> exclude(C ... coords) {
+    public Vectorizer<K, V, C, L> exclude(C... coords) {
         this.excludedCoords.addAll(Arrays.asList(coords));
         return this;
+    }
+
+    public <L1> Vectorizer<K, V, C, L1> map(IgniteFunction<LabeledVector<L>, LabeledVector<L1>> after) {
+        return new MappedVectorizer<>(this, after);
+    }
+
+    /**
+     * Shotrcuts for coordinates in feature vector.
+     */
+    public static enum LabelCoordinate {
+        /** First. */FIRST,
+        /** Last. */LAST
     }
 
     /** {@inheritDoc} */
@@ -166,5 +226,43 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
      */
     protected Vector createVector(int size) {
         return new DenseVector(size);
+    }
+
+    private static class MappedVectorizer<K, V, C, L0, L1> extends VectorizerAdapter<K, V, C, L1> {
+        protected final Vectorizer<K, V, C, L0> original;
+        private final IgniteFunction<LabeledVector<L0>, LabeledVector<L1>> labelMapping;
+
+        public MappedVectorizer(Vectorizer<K, V, C, L0> original,
+            IgniteFunction<LabeledVector<L0>, LabeledVector<L1>> andThen) {
+            this.original = original;
+            this.labelMapping = andThen;
+        }
+
+        /** {@inheritDoc} */
+        @Override public LabeledVector<L1> apply(K key, V value) {
+            return labelMapping.apply(original.apply(key, value));
+        }
+    }
+
+    public static class VectorizerAdapter<K,V,C,L> extends Vectorizer<K,V,C,L> {
+        /** {@inheritDoc} */
+        @Override protected Double feature(C coord, K key, V value) {
+            throw new IllegalStateException();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected L label(C coord, K key, V value) {
+            throw new IllegalStateException();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected L zero() {
+            throw new IllegalStateException();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected List<C> allCoords(K key, V value) {
+            throw new IllegalStateException();
+        }
     }
 }

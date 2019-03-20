@@ -17,11 +17,11 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
@@ -58,10 +58,8 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
         ), 100000, 10, 100, 123L);
 
         LinearRegressionModel mdl = trainer.fit(
-            data,
-            parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[4]
+            data, parts,
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         assertArrayEquals(
@@ -95,10 +93,8 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
         ), 100000, 10, 100, 0L);
 
         LinearRegressionModel originalMdl = trainer.withSeed(0).fit(
-            data,
-            parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[4]
+            data, parts,
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
 
@@ -106,16 +102,14 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
             originalMdl,
             data,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[4]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         LinearRegressionModel updatedOnEmptyDS = trainer.withSeed(0).update(
             originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[4]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         assertArrayEquals(

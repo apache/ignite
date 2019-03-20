@@ -76,18 +76,13 @@ public class LogisticRegressionSGDTrainerExample {
 
             System.out.println(">>> Perform the training to get the model.");
             Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
-            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
-            IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
 
-            LogisticRegressionModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                featureExtractor,
-                lbExtractor
-            );
+            LogisticRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
             System.out.println(">>> Logistic regression model: " + mdl);
 
+            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
+            IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
             double accuracy = Evaluator.evaluate(
                 dataCache,
                 mdl,

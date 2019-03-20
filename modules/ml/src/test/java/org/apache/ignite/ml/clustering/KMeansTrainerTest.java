@@ -17,16 +17,16 @@
 
 package org.apache.ignite.ml.clustering;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -61,8 +61,7 @@ public class KMeansTrainerTest extends TrainerTest {
         KMeansTrainer trainer = createAndCheckTrainer();
         KMeansModel knnMdl = trainer.withAmountOfClusters(1).fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
@@ -77,22 +76,20 @@ public class KMeansTrainerTest extends TrainerTest {
     @Test
     public void testUpdateMdl() {
         KMeansTrainer trainer = createAndCheckTrainer();
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST);
         KMeansModel originalMdl = trainer.withAmountOfClusters(1).fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            vectorizer
         );
         KMeansModel updatedMdlOnSameDataset = trainer.update(
             originalMdl,
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            vectorizer
         );
         KMeansModel updatedMdlOnEmptyDataset = trainer.update(
             originalMdl,
             new LocalDatasetBuilder<>(new HashMap<Integer, double[]>(), parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            vectorizer
         );
 
         Vector firstVector = new DenseVector(new double[] {2.0, 2.0});

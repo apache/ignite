@@ -23,12 +23,9 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
@@ -108,15 +105,7 @@ public class MLPTrainerExample {
             );
 
             // Train neural network and get multilayer perceptron model.
-            LabeledDummyVectorizer<Integer, double[]> vectorizer = new LabeledDummyVectorizer<>();
-            IgniteBiFunction<Integer, LabeledVector<double[]>, Vector> fe = CompositionUtils.asFeatureExtractor(vectorizer);
-            IgniteBiFunction<Integer, LabeledVector<double[]>, double[]> le = CompositionUtils.asLabelExtractor(vectorizer);
-
-            MultilayerPerceptron mlp = trainer.fit(
-                ignite,
-                trainingSet,
-                fe, le
-            );
+            MultilayerPerceptron mlp = trainer.fit(ignite, trainingSet, new LabeledDummyVectorizer<>());
 
             int totalCnt = 4;
             int failCnt = 0;
