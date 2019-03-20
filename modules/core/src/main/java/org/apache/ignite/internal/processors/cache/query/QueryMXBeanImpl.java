@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.internal.GridKernalContextImpl;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.QueryMXBean;
 
@@ -43,10 +44,5 @@ public class QueryMXBeanImpl implements QueryMXBean {
     /** {@inheritDoc} */
     @Override public void setLongQueryWarningTimeout(long longQueryWarningTimeout) {
         ctx.query().getIndexing().setLongQueryWarningTimeout(longQueryWarningTimeout);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(QueryMXBeanImpl.class, this);
     }
 }
