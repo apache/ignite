@@ -46,10 +46,9 @@ public class DistributedProperty<T extends Serializable> {
 
     /**
      * @param name Name of property.
-     * @param initVal Initial value of property.
+     *
      */
-    public DistributedProperty(String name, T initVal) {
-        this.val = initVal;
+    public DistributedProperty(String name) {
         this.name = name;
     }
 

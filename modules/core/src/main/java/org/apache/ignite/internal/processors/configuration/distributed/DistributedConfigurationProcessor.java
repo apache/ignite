@@ -154,23 +154,20 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      * Create and attach new long property.
      *
      * @param name Name of property.
-     * @param initVal Initial value of property.
      * @return Attached new property.
      */
-    @Override public DistributedLongProperty registerLong(String name, Long initVal) {
-        return registerProperty(new DistributedLongProperty(name, initVal));
+    @Override public DistributedLongProperty registerLong(String name) {
+        return registerProperty(new DistributedLongProperty(name));
     }
 
     /**
      * Create and attach new boolean property.
      *
      * @param name Name of property.
-     * @param initVal Initial value of property.
      * @return Attached new property.
      */
-    @Override public DistributedBooleanProperty registerBoolean(String name,
-        Boolean initVal) {
-        return registerProperty(new DistributedBooleanProperty(name, initVal));
+    @Override public DistributedBooleanProperty registerBoolean(String name) {
+        return registerProperty(new DistributedBooleanProperty(name));
     }
 
     /**
