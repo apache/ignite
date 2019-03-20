@@ -950,8 +950,6 @@ public class GridDhtPartitionDemander {
         }
 
         for (CacheMapEntries batch : cctxMap.values()) {
-            assert batch.size() > BATCH_PRELOAD_THRESHOLD : batch.size();
-
             GridCacheContext cctx = batch.context();
 
             batch.lock();

@@ -326,12 +326,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             AbstractDataPageIO<T> iox = (AbstractDataPageIO<T>)io;
 
-            // todo !! DO NOT FORGET WAL DELTA !!
-            if (iox.getFreeSpace(pageAddr) == maxPayloadSize) {
+            // todo !! optimize WAL recording
+            if (iox.getFreeSpace(pageAddr) == maxPayloadSize && !needWalDeltaRecord(pageId, page, null)) {
                 // todo save links for WAL
-
                 iox.addRows(pageMem, pageId, pageAddr, args, pageSize());
-
                 // todo update wal
             }
             else {
