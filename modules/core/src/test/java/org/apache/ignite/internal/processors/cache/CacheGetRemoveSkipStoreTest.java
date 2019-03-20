@@ -17,25 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -45,25 +45,41 @@ public class CacheGetRemoveSkipStoreTest extends GridCommonAbstractTest {
     /** */
     public static final String TEST_CACHE = "testCache";
 
+    /** Number of nodes for the test. */
+    public static final int GRID_CNT = 3;
+
+    /** Read semaphore to delay read-through. */
+    private static volatile Semaphore readSemaphore;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        CacheConfiguration<String, String> ccfg = new CacheConfiguration<String, String>()
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setName(TEST_CACHE)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-            .setBackups(0)
-            .setCacheStoreFactory(TestCacheStore::new)
-            .setReadThrough(true)
-            .setWriteThrough(false);
-
-        cfg.setCacheConfiguration(ccfg);
 
         if (igniteInstanceName.contains("client"))
             cfg.setClientMode(true);
 
         return cfg;
+    }
+
+    /**
+     * Creates cache configuration with the given atomicity mode and number of backups.
+     *
+     * @param atomicity Atomicity mode.
+     * @param backups Number of backups.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration<Integer, Integer> configuration(
+        CacheAtomicityMode atomicity,
+        int backups
+    ) {
+        return new CacheConfiguration<Integer, Integer>()
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setName(TEST_CACHE)
+            .setAtomicityMode(atomicity)
+            .setBackups(backups)
+            .setCacheStoreFactory(TestCacheStore::new)
+            .setReadThrough(true)
+            .setWriteThrough(false);
     }
 
     /** {@inheritDoc} */
@@ -73,26 +89,83 @@ public class CacheGetRemoveSkipStoreTest extends GridCommonAbstractTest {
         super.setUp();
     }
 
-    /**
-     */
-    @After
-    public void cleanUp() {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        readSemaphore = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrids(GRID_CNT);
+
+        startGrid("client");
     }
 
     /**
      * @throws Exception if failed.
      */
     @Test
-    public void testNoNullReads() throws Exception {
-        startGrid(0);
+    public void testTransactionalNoBackups() throws Exception {
+        checkNoNullReads(grid("client"), configuration(CacheAtomicityMode.TRANSACTIONAL, 0));
+    }
 
-        IgniteEx client = startGrid("client");
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testTransactionalOneBackup() throws Exception {
+        checkNoNullReads(grid("client"), configuration(CacheAtomicityMode.TRANSACTIONAL, 1));
+    }
 
-        IgniteCache<Object, Object> cache = client.cache(TEST_CACHE);
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testAtomicNoBackups() throws Exception {
+        checkNoNullReads(grid("client"), configuration(CacheAtomicityMode.ATOMIC, 0));
+    }
 
-        String key = "key";
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testAtomicOneBackup() throws Exception {
+        checkNoNullReads(grid("client"), configuration(CacheAtomicityMode.ATOMIC, 1));
+    }
 
+    /**
+     * @throws Exception if failed.
+     */
+    private void checkNoNullReads(Ignite client, CacheConfiguration<Integer, Integer> ccfg) throws Exception {
+        client.getOrCreateCache(ccfg);
+
+        try {
+            checkNoNullReads(client.cache(ccfg.getName()), 0);
+            checkNoNullReads(grid(0).cache(ccfg.getName()), primaryKey(grid(0).cache(ccfg.getName())));
+
+            if (ccfg.getBackups() > 0)
+                checkNoNullReads(grid(0).cache(ccfg.getName()), backupKey(grid(0).cache(ccfg.getName())));
+        }
+        finally {
+            client.destroyCache(ccfg.getName());
+        }
+    }
+
+    /**
+     * @param cache Cache to check.
+     * @param key Key to check.
+     * @throws Exception If failed.
+     */
+    private void checkNoNullReads(IgniteCache<Integer, Integer> cache, Integer key) throws Exception {
         assertNotNull(cache.get(key));
 
         AtomicReference<String> failure = new AtomicReference<>();
@@ -121,18 +194,86 @@ public class CacheGetRemoveSkipStoreTest extends GridCommonAbstractTest {
     }
 
     /**
+     */
+    @Test
+    public void testRemoveIsAppliedTransactionalNoBackups() {
+        checkRemoveIsApplied(grid("client"), configuration(CacheAtomicityMode.TRANSACTIONAL, 0));
+    }
+
+    /**
+     */
+    @Test
+    public void testRemoveIsAppliedTransactionalOneBackups() {
+        checkRemoveIsApplied(grid("client"), configuration(CacheAtomicityMode.TRANSACTIONAL, 1));
+    }
+
+    /**
+     */
+    @Test
+    public void testRemoveIsAppliedAtomicNoBackups() {
+        checkRemoveIsApplied(grid("client"), configuration(CacheAtomicityMode.ATOMIC, 0));
+    }
+
+    /**
+     */
+    @Test
+    public void testRemoveIsAppliedAtomicOneBackups() {
+        checkRemoveIsApplied(grid("client"), configuration(CacheAtomicityMode.ATOMIC, 1));
+    }
+
+    /**
+     * @param client Client to test.
+     * @param ccfg Cache configuration
+     */
+    public void checkRemoveIsApplied(Ignite client, CacheConfiguration<Integer, Integer> ccfg) {
+        // Allow first read.
+        readSemaphore = new Semaphore(1);
+
+        IgniteCache<Integer, Integer> cache = client.getOrCreateCache(ccfg);
+
+        try {
+            Integer key = 1;
+
+            assertNotNull(cache.get(key));
+
+            Ignite primary = grid(client.affinity(ccfg.getName()).mapKeyToNode(key));
+
+            assertNotNull(primary.cache(ccfg.getName()).localPeek(key));
+
+            // Read-through will be blocked on semaphore.
+            IgniteFuture<Integer> getFut = cache.getAsync(key);
+
+            cache.remove(key);
+
+            assertNull(primary.cache(ccfg.getName()).localPeek(key)); // Check that remove actually takes place.
+
+            readSemaphore.release(2);
+
+            assertNotNull(getFut.get());
+            assertNotNull(cache.get(key));
+            assertNotNull(primary.cache(ccfg.getName()).localPeek(key));
+        }
+        finally {
+            client.destroyCache(ccfg.getName());
+        }
+    }
+
+    /**
      * Dummy cache store which delays key load and loads a predefined value.
      */
-    public static class TestCacheStore extends CacheStoreAdapter<String, String> {
+    public static class TestCacheStore extends CacheStoreAdapter<Integer, Integer> {
         /** */
-        static final String CONSTANT_VALUE = "expected_value";
+        static final Integer CONSTANT_VALUE = -1;
 
         /** {@inheritDoc} */
-        @Override public String load(String s) throws CacheLoaderException {
+        @Override public Integer load(Integer s) throws CacheLoaderException {
             try {
-                U.sleep(1000);
+                if (readSemaphore != null)
+                    readSemaphore.acquire();
+                else
+                    U.sleep(1000);
             }
-            catch (IgniteInterruptedCheckedException e) {
+            catch (Exception e) {
                 throw new CacheLoaderException(e);
             }
 
@@ -140,7 +281,7 @@ public class CacheGetRemoveSkipStoreTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends String, ? extends String> entry) throws CacheWriterException {
+        @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> entry) throws CacheWriterException {
             // No-op.
         }
 
