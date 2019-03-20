@@ -47,7 +47,6 @@ import org.junit.runners.JUnit4;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartitionCounterStateAbstractTest {
     /** Tx sizes. */
     private static final int [] SIZES = new int[] {5, 7, 3};

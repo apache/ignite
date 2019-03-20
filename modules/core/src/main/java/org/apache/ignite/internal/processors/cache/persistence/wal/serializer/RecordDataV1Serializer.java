@@ -595,35 +595,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
-                cacheId = in.readInt();
-                pageId = in.readLong();
-
-                long updCntr = in.readLong();
-                long rmvId = in.readLong();
-                int partSize = in.readInt();
-                long countersPageId = in.readLong();
-                byte state = in.readByte();
-                int allocatedIdxCandidate = in.readInt();
-
-                res = new MetaPageUpdatePartitionDataRecord(cacheId, pageId, updCntr, rmvId,
-                    partSize, countersPageId, state, allocatedIdxCandidate);
+                res = new MetaPageUpdatePartitionDataRecord(in);
 
                 break;
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
-                cacheId = in.readInt();
-                pageId = in.readLong();
-
-                updCntr = in.readLong();
-                rmvId = in.readLong();
-                partSize = in.readInt();
-                countersPageId = in.readLong();
-                state = in.readByte();
-                allocatedIdxCandidate = in.readInt();
-                long link = in.readLong();
-
-                res = new MetaPageUpdatePartitionDataRecordV2(cacheId, pageId, updCntr, rmvId,
-                    partSize, countersPageId, state, allocatedIdxCandidate, link);
+                res = new MetaPageUpdatePartitionDataRecordV2(in);
 
                 break;
 
@@ -966,7 +943,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 int dstIdx = in.readUnsignedShort();
                 long srcPageId = in.readLong();
                 int srcIdx = in.readUnsignedShort();
-                rmvId = in.readLong();
+                long rmvId = in.readLong();
 
                 res = new InnerReplaceRecord<>(cacheId, pageId, dstIdx, srcPageId, srcIdx, rmvId);
 
@@ -1128,7 +1105,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 partId = in.readInt();
 
-                state = in.readByte();
+                byte state = in.readByte();
 
                 long updateCntr = in.readLong();
 
@@ -1217,33 +1194,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
-                MetaPageUpdatePartitionDataRecord partDataRec = (MetaPageUpdatePartitionDataRecord)rec;
-
-                buf.putInt(partDataRec.groupId());
-                buf.putLong(partDataRec.pageId());
-
-                buf.putLong(partDataRec.updateCounter());
-                buf.putLong(partDataRec.globalRemoveId());
-                buf.putInt(partDataRec.partitionSize());
-                buf.putLong(partDataRec.countersPageId());
-                buf.put(partDataRec.state());
-                buf.putInt(partDataRec.allocatedIndexCandidate());
-
-                break;
-
             case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
-                MetaPageUpdatePartitionDataRecordV2 partDataRec2 = (MetaPageUpdatePartitionDataRecordV2)rec;
-
-                buf.putInt(partDataRec2.groupId());
-                buf.putLong(partDataRec2.pageId());
-
-                buf.putLong(partDataRec2.updateCounter());
-                buf.putLong(partDataRec2.globalRemoveId());
-                buf.putInt(partDataRec2.partitionSize());
-                buf.putLong(partDataRec2.countersPageId());
-                buf.put(partDataRec2.state());
-                buf.putInt(partDataRec2.allocatedIndexCandidate());
-                buf.putLong(partDataRec2.link());
+                ((MetaPageUpdatePartitionDataRecord)rec).toBytes(buf);
 
                 break;
 

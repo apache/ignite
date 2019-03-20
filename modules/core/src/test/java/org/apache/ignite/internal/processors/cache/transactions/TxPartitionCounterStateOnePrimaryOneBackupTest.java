@@ -47,7 +47,6 @@ import org.junit.runners.JUnit4;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionCounterStateAbstractTest {
     /** */
     private static final int[] PREPARE_ORDER = new int[] {0, 1, 2};

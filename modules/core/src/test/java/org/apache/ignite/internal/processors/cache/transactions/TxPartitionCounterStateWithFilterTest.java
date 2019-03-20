@@ -44,7 +44,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test if NOOP tx operation skips incrementing update counter for entry partition.
  */
-@RunWith(JUnit4.class)
 public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = 4;

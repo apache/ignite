@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
+import java.io.DataInput;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -70,6 +73,21 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     }
 
     /**
+     * @param in In.
+     */
+    public MetaPageUpdatePartitionDataRecord(DataInput in) throws IOException{
+        super(in.readInt(), in.readLong());
+
+        this.updateCntr = in.readLong();
+        this.globalRmvId = in.readLong();
+        this.partSize = in.readInt();
+        this.cntrsPageId = in.readLong();
+        this.state = in.readByte();
+        this.allocatedIdxCandidate = in.readInt();
+    }
+
+
+    /**
      * @return Update counter.
      */
     public long updateCounter() {
@@ -105,7 +123,7 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
+    public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
         io.setUpdateCounter(pageAddr, updateCntr);
@@ -121,6 +139,21 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
      */
     public int allocatedIndexCandidate() {
         return allocatedIdxCandidate;
+    }
+
+    /**
+     * @param buf Buffer.
+     */
+    public void toBytes(ByteBuffer buf) {
+        buf.putInt(groupId());
+        buf.putLong(pageId());
+
+        buf.putLong(updateCounter());
+        buf.putLong(globalRemoveId());
+        buf.putInt(partitionSize());
+        buf.putLong(countersPageId());
+        buf.put(state());
+        buf.putInt(allocatedIndexCandidate());
     }
 
     /** {@inheritDoc} */

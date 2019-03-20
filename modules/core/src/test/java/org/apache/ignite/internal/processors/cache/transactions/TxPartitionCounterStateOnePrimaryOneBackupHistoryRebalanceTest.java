@@ -26,7 +26,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest extends TxPartitionCounterStateOnePrimaryOneBackupTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

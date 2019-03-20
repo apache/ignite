@@ -1867,7 +1867,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         new RootPage(new FullPageId(treeRoot, grpId), allocated),
                         new RootPage(new FullPageId(reuseListRoot, grpId), allocated),
                         new RootPage(new FullPageId(pendingTreeRoot, grpId), allocated || pendingTreeAllocated),
-                        new RootPage(new FullPageId(pendingTreeRoot, grpId), allocated || partMetastoreReuseListAllocated));
+                        new RootPage(new FullPageId(partMetaStoreReuseListRoot, grpId), allocated || partMetastoreReuseListAllocated));
                 }
                 finally {
                     pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null,

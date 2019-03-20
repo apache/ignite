@@ -46,7 +46,6 @@ import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 /**
  * Test scenario when entries are updates using non tx counter assignment.
  */
-@RunWith(JUnit4.class)
 public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     /** */
     private static final String ATOMIC_CACHE = "atomic";

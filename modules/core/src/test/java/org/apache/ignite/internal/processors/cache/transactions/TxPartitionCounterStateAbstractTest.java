@@ -95,7 +95,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
 /**
  * Test framework for ordering transaction's prepares and commits by intercepting messages and releasing then in user defined order.
  */
-@RunWith(JUnit4.class)
 public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
