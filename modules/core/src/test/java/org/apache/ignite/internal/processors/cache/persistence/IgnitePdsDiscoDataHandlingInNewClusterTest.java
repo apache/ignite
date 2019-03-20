@@ -35,9 +35,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -136,6 +135,7 @@ public class IgnitePdsDiscoDataHandlingInNewClusterTest extends GridCommonAbstra
      * @throws Exception
      */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
     public void testNewDynamicCacheDoesntStartOnOldNode() throws Exception {
         IgniteEx ig0 = startGrid(NODE_CONS_ID_0);
 
@@ -191,23 +191,5 @@ public class IgnitePdsDiscoDataHandlingInNewClusterTest extends GridCommonAbstra
         }
 
         assertTrue(defaultGroupFound && mixedCachesGroupFound);
-    }
-
-    /** */
-    @Before
-    public void setUp() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, "false");
-
-        cleanPersistenceDir();
-    }
-
-    /** */
-    @After
-    public void tearDown() throws Exception {
-        stopAllGrids();
-
-        cleanPersistenceDir();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, "true");
     }
 }

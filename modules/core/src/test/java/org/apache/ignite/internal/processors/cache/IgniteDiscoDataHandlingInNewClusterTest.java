@@ -264,7 +264,9 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @After
-    public void afterTest() throws Exception {
+    @Override public void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
     }
 
