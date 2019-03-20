@@ -357,43 +357,52 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         GridCursor<CacheDataRow> cur = find(lower, upper, CacheDataRowAdapter.RowData.FULL);
 
-        CacheSearchRow lastSearchRow = null;
-        KeyCacheObject newKey = null;
+        CacheSearchRow row = null;
+        KeyCacheObject key = null;
+
+        CacheDataRow oldRow = null;
+        KeyCacheObject oldKey = null;
 
         while (cur.next()) {
-            CacheDataRow oldRow = cur.get();
-            KeyCacheObject oldKey = oldRow.key();
+            oldRow = cur.get();
+            oldKey = oldRow.key();
 
-            while (newKey == null || newKey.hashCode() <= oldKey.hashCode()) {
-                if (newKey != null && newKey.hashCode() == oldKey.hashCode()) {
-                    while (newKey.hashCode() == oldKey.hashCode()) {
-                        if (newKey.equals(oldKey))
-                            batch.add(new T2<>(oldRow, lastSearchRow));
+            while (key == null || key.hashCode() <= oldKey.hashCode()) {
+                if (key != null && key.hashCode() == oldKey.hashCode()) {
+                    while (key.hashCode() == oldKey.hashCode()) {
+                        if (key.equals(oldKey))
+                            batch.add(new T2<>(oldRow, row));
                         else
-                            batch.add(new T2<>(null, lastSearchRow));
+                            batch.add(new T2<>(null, row));
+
+                        row = null;
 
                         if (!rowItr.hasNext())
                             break;
 
-                        lastSearchRow = rowItr.next();
-                        newKey = lastSearchRow.key();
+                        row = rowItr.next();
+                        key = row.key();
                     }
                 }
                 else {
-                    if (lastSearchRow != null)
-                        batch.add(new T2<>(null, lastSearchRow));
+                    if (row != null)
+                        batch.add(new T2<>(null, row));
 
-                    if (!rowItr.hasNext())
-                        break;
+                    row = null;
 
-                    lastSearchRow = rowItr.next();
-                    newKey = lastSearchRow.key();
+                    if (rowItr.hasNext()) {
+                        row = rowItr.next();
+                        key = row.key();
+                    }
                 }
 
                 if (!rowItr.hasNext())
                     break;
             }
         }
+
+        if (row != null)
+            batch.add(new T2<>(key.equals(oldKey) ? oldRow : null, row));
 
         while (rowItr.hasNext())
             batch.add(new T2<>(null, rowItr.next()));
@@ -402,14 +411,11 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         for (T3<OperationType, CacheDataRow, CacheDataRow> t3 : c.result()) {
             OperationType oper = t3.get1();
-            CacheDataRow oldRow = t3.get2();
-            CacheDataRow newRow = t3.get3();
 
             if (oper == OperationType.PUT)
-                put(newRow);
-            else
-            if (oper == OperationType.REMOVE)
-                remove(oldRow);
+                put(t3.get3());
+            else if (oper == OperationType.REMOVE)
+                remove(t3.get2()); // old row
         }
     }
 

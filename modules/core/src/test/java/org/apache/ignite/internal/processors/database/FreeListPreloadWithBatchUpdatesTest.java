@@ -51,7 +51,6 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_BATCH_PAGE_WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
-import static org.junit.Assert.assertArrayEquals;
 
 /**
  *
@@ -232,6 +231,9 @@ public class FreeListPreloadWithBatchUpdatesTest extends GridCommonAbstractTest 
 
         for (int i = 0; i < cnt; i++) {
             byte[] obj = new byte[ThreadLocalRandom.current().nextInt(16384)];
+
+            if (i > 0 && i < 1000 && i % 37 == 0)
+                continue;
 
             srcMap.put(i, obj);
         }
