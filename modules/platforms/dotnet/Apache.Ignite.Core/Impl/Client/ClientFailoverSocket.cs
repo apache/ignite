@@ -354,6 +354,8 @@ namespace Apache.Ignite.Core.Impl.Client
                     if (_distributionMap != null)
                     {
                         // Map exists: request update for all caches.
+                        // TODO: Add a limit for map size, use LRU.
+                        // TODO: Make sure we handle the situation when returned map does not have cacheId
                         var mapContainsCacheId = _distributionMap.CachePartitionMap.ContainsKey(cacheId);
                         var count = _distributionMap.CachePartitionMap.Count;
                         if (!mapContainsCacheId)
