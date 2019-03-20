@@ -43,10 +43,12 @@ import java.sql.Struct;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -861,9 +863,9 @@ public class JdbcThinConnection implements Connection {
         }
         try {
             try {
-                UUID nodeId = calculateNodeId(req);
+                Set<UUID> nodeIds = calculateNodeId(req);
 
-                JdbcThinTcpIo cliIo = stickyIo == null ? cliIo(nodeId) : stickyIo;
+                JdbcThinTcpIo cliIo = stickyIo == null ? cliIo(nodeIds) : stickyIo;
 
                 if (stmt != null && stmt.requestTimeout() != NO_TIMEOUT) {
                     reqTimeoutTimerTask = new RequestTimeoutTimerTask(
@@ -938,8 +940,8 @@ public class JdbcThinConnection implements Connection {
      * @param req Jdbc request for which we'll try to calculate node id.
      * @return node UUID or null if failed to calculate.
      */
-    @Nullable private UUID calculateNodeId(JdbcRequest req) {
-        UUID bestEffortAffinityNodeId = null;
+    @Nullable private Set<UUID> calculateNodeId(JdbcRequest req) {
+        Set<UUID> bestEffortAffinityNodeIds = null;
 
         if (bestEffortAffinity && req instanceof JdbcQueryExecuteRequest && affinityCache != null &&
             affinityCache.containsPartitionResult(((JdbcQueryExecuteRequest)req).sqlQuery())) {
@@ -993,16 +995,20 @@ public class JdbcThinConnection implements Connection {
                     }
 
                     if (parts.length == 1)
-                        bestEffortAffinityNodeId = cacheDistr.get(parts[0]);
+                        bestEffortAffinityNodeIds = Collections.singleton(cacheDistr.get(parts[0]));
                     else {
-                        // TODO: 19.03.19 IGNITE-11565 add connection resolution in case of multiple partitons
-                        return null;
+                        bestEffortAffinityNodeIds = new HashSet<>();
+
+                        for (int part: parts)
+                            bestEffortAffinityNodeIds.add(cacheDistr.get(part));
+
+                        return bestEffortAffinityNodeIds;
                     }
                 }
             }
         }
 
-        return bestEffortAffinityNodeId;
+        return bestEffortAffinityNodeIds;
     }
 
     /**
@@ -1371,22 +1377,37 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
-     * @param nodeId Node UUID.
+     * @param nodeIds Set of node's UUIDs.
      * @return Ignite endpoint to use for request/response transferring.
      */
-    private JdbcThinTcpIo cliIo(UUID nodeId) {
-        if (txIo != null)
-            return txIo;
-
+    private JdbcThinTcpIo cliIo(Set<UUID> nodeIds) {
         if (!bestEffortAffinity)
             return singleIo;
 
-        if (nodeId == null)
+        if (txIo != null)
+            return txIo;
+
+        if (nodeIds == null || nodeIds.isEmpty())
             return iosArr[RND.nextInt(iosArr.length)];
 
-        JdbcThinTcpIo io = ios.get(nodeId);
+        JdbcThinTcpIo io;
 
-       return io != null ? io : iosArr[RND.nextInt(iosArr.length)];
+        if (nodeIds.size() == 1)
+            io = ios.get(nodeIds.iterator().next());
+        else {
+            Set<JdbcThinTcpIo> conns = new HashSet<>();
+
+            for (UUID nodeId : nodeIds) {
+                JdbcThinTcpIo conn = ios.get(nodeId);
+
+                if (conn != null)
+                    conns.add(conn);
+            }
+
+            io = conns.toArray(new JdbcThinTcpIo[0])[RND.nextInt(iosArr.length)];
+        }
+
+        return io != null ? io : iosArr[RND.nextInt(iosArr.length)];
     }
 
     /**
