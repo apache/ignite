@@ -103,7 +103,9 @@ public class LongJVMPauseDetector {
         final Thread worker = new Thread("jvm-pause-detector-worker") {
 
             @Override public void run() {
-                lastWakeUpTime = System.currentTimeMillis();
+                synchronized (LongJVMPauseDetector.this) {
+                    lastWakeUpTime = System.currentTimeMillis();
+                }
 
                 if (log.isDebugEnabled())
                     log.debug(getName() + " has been started.");
