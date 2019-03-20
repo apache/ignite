@@ -90,6 +90,7 @@ public class EvaluatorExample {
             ).f1Score();
 
             System.out.println("\n>>> F1-Score " + f1Score);
+            dataCache.destroy();
         }
     }
 }

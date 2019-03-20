@@ -63,6 +63,7 @@ public class MaxAbsScalerExample {
             }
 
             System.out.println(">>> Max abs example completed.");
+            persons.destroy();
         }
     }
 

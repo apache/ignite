@@ -71,6 +71,7 @@ public class ImputingWithMostFrequentValuesExample {
             }
 
             System.out.println(">>> Imputing with most frequent values example completed.");
+            persons.destroy();
         }
     }
 

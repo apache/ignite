@@ -87,6 +87,7 @@ public class GaussianNaiveBayesTrainerExample {
             System.out.println("\n>>> Accuracy " + accuracy);
 
             System.out.println(">>> Naive bayes model over partitioned dataset usage example completed.");
+            dataCache.destroy();
         }
     }
 

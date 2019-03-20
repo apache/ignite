@@ -68,6 +68,7 @@ public class BinarizationExample {
             }
 
             System.out.println(">>> Binarization example completed.");
+            persons.destroy();
         }
     }
 

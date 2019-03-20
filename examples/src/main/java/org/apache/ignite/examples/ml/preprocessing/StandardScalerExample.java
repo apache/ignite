@@ -63,6 +63,7 @@ public class StandardScalerExample {
             }
 
             System.out.println(">>> Standard scaler example completed.");
+            persons.destroy();
         }
     }
 

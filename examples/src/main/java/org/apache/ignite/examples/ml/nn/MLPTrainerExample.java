@@ -136,6 +136,7 @@ public class MLPTrainerExample {
 
             System.out.println("\n>>> Fail percentage: " + (failRatio * 100) + "%.");
             System.out.println("\n>>> Distributed multilayer perceptron example completed.");
+            trainingSet.destroy();
         }
     }
 

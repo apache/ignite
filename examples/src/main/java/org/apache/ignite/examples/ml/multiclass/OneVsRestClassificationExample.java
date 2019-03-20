@@ -158,6 +158,7 @@ public class OneVsRestClassificationExample {
                 System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtxWithMinMaxScaling));
 
                 System.out.println(">>> One-vs-Rest SVM model over cache based dataset usage example completed.");
+                dataCache.destroy();
             }
         }
     }

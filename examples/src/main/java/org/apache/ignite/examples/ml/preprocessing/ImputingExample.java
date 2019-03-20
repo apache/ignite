@@ -69,6 +69,7 @@ public class ImputingExample {
             }
 
             System.out.println(">>> Imputing example completed.");
+            persons.destroy();
         }
     }
 

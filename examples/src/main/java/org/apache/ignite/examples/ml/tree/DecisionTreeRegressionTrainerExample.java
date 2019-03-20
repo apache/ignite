@@ -93,6 +93,7 @@ public class DecisionTreeRegressionTrainerExample {
             System.out.println(">>> ---------------------------------");
 
             System.out.println(">>> Decision tree regression trainer example completed.");
+            trainingSet.destroy();
         }
     }
 

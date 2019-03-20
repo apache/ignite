@@ -84,6 +84,7 @@ public class KMeansFromSparkExample {
             }
 
             System.out.println(">>> ---------------------------------");
+            dataCache.destroy();
         }
     }
 }

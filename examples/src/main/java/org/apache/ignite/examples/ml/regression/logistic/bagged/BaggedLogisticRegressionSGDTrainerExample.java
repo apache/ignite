@@ -106,6 +106,7 @@ public class BaggedLogisticRegressionSGDTrainerExample {
             Arrays.stream(score).forEach(sc -> System.out.println("\n>>> Accuracy " + sc));
 
             System.out.println(">>> Bagged logistic regression model over partitioned dataset usage example completed.");
+            dataCache.destroy();
         }
     }
 }

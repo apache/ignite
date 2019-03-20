@@ -81,6 +81,7 @@ public class MultipleMetricsExample {
             scores.forEach(
                 (metricName, score) -> System.out.println("\n>>>" + metricName + ": " + score)
             );
+            dataCache.destroy();
         }
     }
 }

@@ -111,6 +111,7 @@ public class AlgorithmSpecificDatasetExample {
             }
 
             System.out.println(">>> Algorithm Specific Dataset example completed.");
+            persons.destroy();
         }
     }
 

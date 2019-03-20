@@ -85,6 +85,7 @@ public class LinearRegressionLSQRTrainerExample {
             System.out.println("\n>>> Rmse = " + rmse);
 
             System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
+            dataCache.destroy();
         }
     }
 }

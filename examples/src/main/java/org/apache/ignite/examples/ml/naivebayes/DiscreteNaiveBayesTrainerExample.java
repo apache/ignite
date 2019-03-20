@@ -84,6 +84,7 @@ public class DiscreteNaiveBayesTrainerExample {
             System.out.println("\n>>> Accuracy " + accuracy);
 
             System.out.println(">>> Discrete Naive bayes model over partitioned dataset usage example completed.");
+            dataCache.destroy();
         }
     }
 

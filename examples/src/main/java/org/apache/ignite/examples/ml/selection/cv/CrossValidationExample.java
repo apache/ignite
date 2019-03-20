@@ -112,6 +112,7 @@ public class CrossValidationExample {
             System.out.println(">>> Balanced Accuracy: " + Arrays.toString(balancedAccuracyScores));
 
             System.out.println(">>> Cross validation score calculator example completed.");
+            trainingSet.destroy();
         }
     }
 

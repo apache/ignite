@@ -58,6 +58,7 @@ public class CacheBasedDatasetExample {
             }
 
             System.out.println(">>> Cache Based Dataset example completed.");
+            persons.destroy();
         }
     }
 

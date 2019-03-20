@@ -80,6 +80,7 @@ public class GDBOnTreesRegressionTrainerExample {
 
             System.out.println(">>> ---------------------------------");
             System.out.println(">>> GDB regression trainer example completed.");
+            trainingSet.destroy();
         }
     }
 

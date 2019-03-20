@@ -98,6 +98,7 @@ public class DecisionTreeClassificationTrainerExample {
 
             System.out.println(">>> Accuracy: " + correctPredictions / 10.0 + "%");
             System.out.println(">>> Decision tree classification trainer example completed.");
+            trainingSet.destroy();
         }
     }
 

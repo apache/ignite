@@ -72,6 +72,7 @@ public class MinMaxScalerExample {
             }
 
             System.out.println(">>> MinMax preprocessing example completed.");
+            persons.destroy();
         }
     }
 

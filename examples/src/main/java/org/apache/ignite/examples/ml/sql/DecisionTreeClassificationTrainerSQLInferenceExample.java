@@ -131,6 +131,9 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
             }
 
             IgniteModelStorageUtil.removeModel(ignite, "titanik_model_tree");
+            cache.query(new SqlFieldsQuery("DROP TABLE titanik_train"));
+            cache.query(new SqlFieldsQuery("DROP TABLE titanik_test"));
+            cache.destroy();
         }
     }
 }

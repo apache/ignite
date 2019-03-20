@@ -98,6 +98,7 @@ public class LogisticRegressionSGDTrainerExample {
             System.out.println("\n>>> Accuracy " + accuracy);
 
             System.out.println(">>> Logistic regression model over partitioned dataset usage example completed.");
+            dataCache.destroy();
         }
     }
 }

@@ -85,6 +85,7 @@ public class LinearRegressionFromSparkExample {
             }
 
             System.out.println(">>> ---------------------------------");
+            dataCache.destroy();
         }
     }
 }

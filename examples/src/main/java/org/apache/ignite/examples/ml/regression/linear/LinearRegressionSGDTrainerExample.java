@@ -97,6 +97,7 @@ public class LinearRegressionSGDTrainerExample {
 
             System.out.println(">>> ---------------------------------");
             System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
+            dataCache.destroy();
         }
     }
 }

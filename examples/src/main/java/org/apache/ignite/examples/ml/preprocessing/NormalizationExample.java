@@ -69,6 +69,7 @@ public class NormalizationExample {
             }
 
             System.out.println(">>> Normalization example completed.");
+            persons.destroy();
         }
     }
 

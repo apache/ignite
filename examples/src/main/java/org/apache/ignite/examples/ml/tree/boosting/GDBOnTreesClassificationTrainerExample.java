@@ -81,6 +81,7 @@ public class GDBOnTreesClassificationTrainerExample {
             System.out.println(">>> ---------------------------------");
 
             System.out.println(">>> GDB classification trainer example completed.");
+            trainingSet.destroy();
         }
     }
 

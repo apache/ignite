@@ -57,7 +57,7 @@ public class GmmClusterizationExample {
             System.out.println(">>> Ignite grid started.");
 
             long seed = 0;
-            IgniteCache<Integer, LabeledVector<Double>> dataCache = ignite.getOrCreateCache(
+            IgniteCache<Integer, LabeledVector<Double>> dataCache = ignite.createCache(
                 new CacheConfiguration<Integer, LabeledVector<Double>>("GMM_EXAMPLE_CACHE")
                     .setAffinity(new RendezvousAffinityFunction(false, 10))
             );
@@ -103,6 +103,8 @@ public class GmmClusterizationExample {
             }
 
             System.out.println(">>>");
+
+            dataCache.destroy();
         }
     }
 }

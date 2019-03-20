@@ -85,6 +85,7 @@ public class RegressionMetricExample {
             );
 
             System.out.println("\n>>> Mae " + mae);
+            dataCache.destroy();
         }
     }
 }

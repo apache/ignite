@@ -117,6 +117,7 @@ public class ANNClassificationExample {
                 System.out.println(totalAmount);
 
                 System.out.println(">>> ANN multi-class classification algorithm over cached dataset usage example completed.");
+                dataCache.destroy();
             }
         }
     }

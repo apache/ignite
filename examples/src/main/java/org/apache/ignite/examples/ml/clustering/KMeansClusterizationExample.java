@@ -89,6 +89,8 @@ public class KMeansClusterizationExample {
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> KMeans clustering algorithm over cached dataset usage example completed.");
             }
+
+            dataCache.destroy();
         }
     }
 }

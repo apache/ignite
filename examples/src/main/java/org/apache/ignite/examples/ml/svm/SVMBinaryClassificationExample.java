@@ -83,6 +83,7 @@ public class SVMBinaryClassificationExample {
             System.out.println("\n>>> Accuracy " + accuracy);
 
             System.out.println(">>> SVM Binary classification model over cache based dataset usage example completed.");
+            dataCache.destroy();
         }
     }
 }

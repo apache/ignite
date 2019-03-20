@@ -78,6 +78,7 @@ public class KNNClassificationExample {
             ).accuracy();
 
             System.out.println("\n>>> Accuracy " + accuracy);
+            dataCache.destroy();
         }
     }
 }

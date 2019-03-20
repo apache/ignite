@@ -121,6 +121,8 @@ public class RandomForestRegressionExample {
 
                 System.out.println(">>> Random Forest regression algorithm over cached dataset usage example completed.");
             }
+
+            dataCache.destroy();
         }
     }
 }
