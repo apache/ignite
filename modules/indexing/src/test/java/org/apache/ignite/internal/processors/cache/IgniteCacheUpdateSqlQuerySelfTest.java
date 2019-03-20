@@ -35,6 +35,8 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static java.util.Arrays.asList;
+
 /**
  *
  */
@@ -82,16 +84,16 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         assertEquals(4, leftovers.size());
 
-        assertEqualsCollections(Arrays.asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
+        assertEqualsCollections(asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
             leftovers.get(0));
 
-        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+        assertEqualsCollections(asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
             leftovers.get(1));
 
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+        assertEqualsCollections(asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
             leftovers.get(2));
 
-        assertEqualsCollections(Arrays.asList("k3", createPerson(6, "Sy", "Green"), 6, "Sy", "Green"),
+        assertEqualsCollections(asList("k3", createPerson(6, "Sy", "Green"), 6, "Sy", "Green"),
             leftovers.get(3));
     }
 
@@ -119,16 +121,16 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
             assertEquals(4, leftovers.size());
 
-            assertEqualsCollections(Arrays.asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
+            assertEqualsCollections(asList("FirstKey", createPerson(2, "Jo", "White"), 2, "Jo", "White"),
                 leftovers.get(0));
 
-            assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+            assertEqualsCollections(asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
                 leftovers.get(1));
 
-            assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
+            assertEqualsCollections(asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
                 leftovers.get(2));
 
-            assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+            assertEqualsCollections(asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
                 leftovers.get(3));
         }
         finally {
@@ -164,14 +166,14 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             // Update inner fields just by their names
             p.query(new SqlFieldsQuery("UPDATE \"AllTypes\" " +
                 "SET \"innerLongCol\" = ?, \"innerStrCol\" = ?, \"arrListCol\" = ?;"
-            ).setArgs(50L, "sss", new ArrayList<>(Arrays.asList(3L, 2L, 1L)))).getAll();
+            ).setArgs(50L, "sss", new ArrayList<>(asList(3L, 2L, 1L)))).getAll();
 
             AllTypes res = p.get(ROOT_KEY);
 
             AllTypes.InnerType resInner = new AllTypes.InnerType(50L);
 
             resInner.innerStrCol = "sss";
-            resInner.arrListCol = new ArrayList<>(Arrays.asList(3L, 2L, 1L));
+            resInner.arrListCol = new ArrayList<>(asList(3L, 2L, 1L));
 
             assertEquals(resInner, res.innerTypeCol);
         }
@@ -200,16 +202,16 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         assertEquals(4, leftovers.size());
 
-        assertEqualsCollections(Arrays.asList("FirstKey", createPerson(0, "Jo", "Woo"), 0, "Jo", "Woo"),
+        assertEqualsCollections(asList("FirstKey", createPerson(0, "Jo", "Woo"), 0, "Jo", "Woo"),
             leftovers.get(0));
 
-        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+        assertEqualsCollections(asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
             leftovers.get(1));
 
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+        assertEqualsCollections(asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
             leftovers.get(2));
 
-        assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
+        assertEqualsCollections(asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
             leftovers.get(3));
     }
 
@@ -343,6 +345,91 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
         }
     }
+
+    /**
+     * Drop and create tables for the update parameters tests.
+     */
+    private void dropAndCreateParamsTables() {
+        execute(new SqlFieldsQuery("DROP TABLE IF EXISTS PARAMS"));
+        execute(new SqlFieldsQuery("DROP TABLE IF EXISTS CONST_TAB"));
+
+        execute(new SqlFieldsQuery("CREATE TABLE PARAMS(ID INT PRIMARY KEY, VAL1 INT, VAL2 INT) WITH \"template=replicated\""));
+        execute(new SqlFieldsQuery("INSERT INTO PARAMS VALUES (1, 2, 3), (2, 3, 4), (3, 2, 1), (4, 2, 1)"));
+
+        execute(new SqlFieldsQuery("CREATE TABLE CONST_TAB(ID INT PRIMARY KEY, VAL INT) WITH \"template=replicated\""));
+        execute(new SqlFieldsQuery("INSERT INTO CONST_TAB VALUES (42, 2)"));
+    }
+
+    /**
+     * Check parameters from update are passed to implicit select correctly.
+     */
+    @Test
+    public void testUpdateParameters() {
+        asList(true, false).forEach(loc -> {
+            dropAndCreateParamsTables();
+
+            execute(new SqlFieldsQuery(
+                "UPDATE PARAMS SET VAL1 = ?, VAL2 = ? WHERE ID = ?")
+                .setArgs(1, 2, 3).setLocal(loc));
+
+            List<List<?>> tab = execute(new SqlFieldsQuery("SELECT * FROM PARAMS ORDER BY ID"));
+
+            List<List<?>> exp = asList(asList(1, 2, 3), asList(2, 3, 4), asList(3, 1, 2), asList(4, 2, 1));
+
+            assertEqualsCollections(exp, tab);
+        });
+    }
+
+    /**
+     * Check query positional parameters using update statement. Parameters have explicit indexes.
+     */
+    @Test
+    public void testUpdateParametersWithIndexes() {
+        asList(true, false).forEach(loc -> {
+            dropAndCreateParamsTables();
+
+            execute(new SqlFieldsQuery(
+                "UPDATE PARAMS SET VAL1 = ?3, VAL2 = ?2 WHERE ID = ?1")
+                .setArgs(1, 2, 3).setLocal(loc));
+
+            List<List<?>> tab = execute(new SqlFieldsQuery("SELECT * FROM PARAMS ORDER BY ID"));
+
+            List<List<?>> exp = asList(asList(1, 3, 2), asList(2, 3, 4), asList(3, 2, 1), asList(4, 2, 1));
+
+            assertEqualsCollections(exp, tab);
+        });
+    }
+
+    /**
+     * Check query positional parameters using update statement with the subquery.
+     */
+    @Test
+    public void testUpdateParametersWithSubQuery() {
+        asList(true, false).forEach(loc -> {
+            dropAndCreateParamsTables();
+
+            execute(new SqlFieldsQuery(
+                "UPDATE PARAMS SET VAL1 = ?, VAL2 = ( SELECT ID FROM CONST_TAB WHERE VAL = ? ) WHERE ID = ?")
+                .setArgs(1, 2, 3).setLocal(loc));
+
+            List<List<?>> tab = execute(new SqlFieldsQuery("SELECT * FROM PARAMS ORDER BY ID"));
+
+            List<List<?>> exp = asList(asList(1, 2, 3), asList(2, 3, 4), asList(3, 1, 42), asList(4, 2, 1));
+
+            assertEqualsCollections(exp, tab);
+        });
+    }
+
+    /**
+     * Execute sql query with the public schema.
+     *
+     * @param qry to execute.
+     * @return fetched result.
+     */
+    private List<List<?>> execute(SqlFieldsQuery qry) {
+        return ignite(0).cache("L2AT").query(qry.setSchema("PUBLIC")).getAll();
+    }
+
 
     /**
      *
