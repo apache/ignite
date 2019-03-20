@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
@@ -39,8 +40,21 @@ import org.jsr166.LongAdder8;
  * {@link CacheConfiguration#isEagerTtl()} flag is set.
  */
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
-    /** Entries pending removal. */
+    /**
+     * Throttling timeout in millis which avoid excessive PendingTree access on unwind
+     * if there is nothing to clean yet.
+     */
+    public static final long UNWIND_THROTTLING_TIMEOUT = Long.getLong(
+        IgniteSystemProperties.IGNITE_UNWIND_THROTTLING_TIMEOUT, 500L);
+
+    /** Entries pending removal. This collection tracks entries for near cache only. */
     private GridConcurrentSkipListSetEx pendingEntries;
+
+    /** Indicates that  */
+    protected volatile boolean hasPendingEntries;
+
+    /** Timestamp when next clean try will be allowed. Used for throttling on per-cache basis. */
+    protected volatile long nextCleanTime;
 
     /** See {@link CacheConfiguration#isEagerTtl()}. */
     private volatile boolean eagerTtlEnabled;
@@ -141,6 +155,22 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         return (pendingEntries != null ? pendingEntries.sizex() : 0) + cctx.offheap().expiredSize();
     }
 
+    /**
+     * Updates the flag {@code hasPendingEntries} with the given value.
+     *
+     * @param update {@code true} if the underlying pending tree has entries with expire policy enabled.
+     */
+    public void hasPendingEntries(boolean update) {
+        hasPendingEntries = update;
+    }
+
+    /**
+     * @return {@code true} if the underlying pending tree has entries with expire policy enabled.
+     */
+    public boolean hasPendingEntries() {
+        return hasPendingEntries;
+    }
+
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         try {
@@ -152,13 +182,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to print statistics: " + e, e);
         }
-    }
-
-    /**
-     * Expires entries by TTL.
-     */
-    public void expire() {
-        expire(-1);
     }
 
     /**
@@ -202,13 +225,19 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 }
             }
 
-            if(!(cctx.affinityNode() && cctx.ttl().eagerTtlEnabled()))
+            if(!cctx.affinityNode())
                 return false;  /* Pending tree never contains entries for that cache */
+
+            if (!hasPendingEntries || nextCleanTime > U.currentTimeMillis())
+                return false;
 
             boolean more = cctx.offheap().expire(dhtCtx, expireC, amount);
 
             if (more)
                 return true;
+
+            // There is nothing to clean, so the next clean up can be postponed.
+            nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
 
             if (amount != -1 && pendingEntries != null) {
                 EntryWrapper e = pendingEntries.firstx();
