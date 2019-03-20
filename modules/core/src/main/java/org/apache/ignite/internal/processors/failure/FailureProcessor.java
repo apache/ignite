@@ -30,9 +30,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.util.Collections;
-
-import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
 
 /**
  * General failure processing API
@@ -93,11 +91,7 @@ public class FailureProcessor extends GridProcessorAdapter {
      * @return Default {@link FailureHandler} implementation.
      */
     protected FailureHandler getDefaultFailureHandler() {
-        FailureHandler hnd = new StopNodeOrHaltFailureHandler();
-
-        hnd.setIgnoredFailureTypes(Collections.singleton(SYSTEM_WORKER_BLOCKED));
-
-        return hnd;
+        return new StopNodeOrHaltFailureHandler();
     }
 
     /**
@@ -130,7 +124,7 @@ public class FailureProcessor extends GridProcessorAdapter {
             return;
 
         U.error(ignite.log(), "Critical system error detected. Will be handled accordingly to configured handler " +
-            "[hnd=" + hnd + ", failureCtx=" + failureCtx + ']', failureCtx.error());
+            "[hnd=" + hnd.getClass() + ", failureCtx=" + failureCtx + ']', failureCtx.error());
 
         if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
             reserveBuf = null;

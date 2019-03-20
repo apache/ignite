@@ -1467,8 +1467,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            blockingSectionBegin();
-
             try {
                 allocateRemainingFiles();
             }
@@ -1484,24 +1482,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
                 return;
             }
-            finally {
-                blockingSectionEnd();
-            }
 
             Throwable err = null;
 
             try {
                 synchronized (this) {
-                    while (curAbsWalIdx == -1 && !isCancelled()) {
-                        blockingSectionBegin();
-
-                        try {
-                            wait();
-                        }
-                        finally {
-                            blockingSectionEnd();
-                        }
-                    }
+                    while (curAbsWalIdx == -1 && !isCancelled())
+                        wait();
 
                     // If the archive directory is empty, we can be sure that there were no WAL segments archived.
                     // This is ensured by the check in truncate() which will leave at least one file there
@@ -1515,16 +1502,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         assert lastAbsArchivedIdx <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx +
                             ", current=" + curAbsWalIdx;
 
-                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !isCancelled()) {
-                            blockingSectionBegin();
-
-                            try {
-                                wait();
-                            }
-                            finally {
-                                blockingSectionEnd();
-                            }
-                        }
+                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !isCancelled())
+                            wait();
 
                         toArchive = lastAbsArchivedIdx + 1;
                     }
@@ -1532,28 +1511,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     if (isCancelled())
                         break;
 
-                    SegmentArchiveResult res;
-
-                    blockingSectionBegin();
-
-                    try {
-                        res = archiveSegment(toArchive);
-                    }
-                    finally {
-                        blockingSectionEnd();
-                    }
+                    final SegmentArchiveResult res = archiveSegment(toArchive);
 
                     synchronized (this) {
-                        while (locked.containsKey(toArchive) && !isCancelled()) {
-                            blockingSectionBegin();
-
-                            try {
-                                wait();
-                            }
-                            finally {
-                                blockingSectionEnd();
-                            }
-                        }
+                        while (locked.containsKey(toArchive) && !isCancelled())
+                            wait();
 
                         changeLastArchivedIndexAndWakeupCompressor(toArchive);
 
@@ -1564,8 +1526,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         evt.record(new WalSegmentArchivedEvent(cctx.discovery().localNode(),
                             res.getAbsIdx(), res.getDstArchiveFile()));
                     }
-
-                    onIdle();
                 }
             }
             catch (InterruptedException t) {
@@ -2034,14 +1994,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     long segmentToDecompress = -1L;
 
                     try {
-                        blockingSectionBegin();
-
-                        try {
-                            segmentToDecompress = segmentsQueue.take();
-                        }
-                        finally {
-                            blockingSectionEnd();
-                        }
+                        segmentToDecompress = segmentsQueue.take();
 
                         if (isCancelled())
                             break;
@@ -2057,7 +2010,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             zis.getNextEntry();
 
                             while (io.writeFully(arr, 0, zis.read(arr)) > 0)
-                                updateHeartbeat();
+                                ;
                         }
 
                         try {
@@ -2070,8 +2023,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             if (!unzipTmp.delete())
                                 U.error(log, "Can't delete temporary unzipped segment [tmp=" + unzipTmp + ']');
                         }
-
-                        updateHeartbeat();
 
                         synchronized (this) {
                             decompressionFutures.remove(segmentToDecompress).onDone();

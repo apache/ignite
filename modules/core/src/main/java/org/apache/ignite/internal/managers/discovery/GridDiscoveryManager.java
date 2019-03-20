@@ -225,7 +225,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private final DiscoveryWorker discoWrk = new DiscoveryWorker();
 
     /** Discovery event notyfier worker. */
-    private final DiscoveryMessageNotifierWorker discoNtfWrk = new DiscoveryMessageNotifierWorker();
+    private final DiscoveryMessageNotifyerWorker discoNotifierWrk = new DiscoveryMessageNotifyerWorker();
 
     /** Network segment check worker. */
     private SegmentCheckWorker segChkWrk;
@@ -599,7 +599,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             ) {
                 GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
-                discoNtfWrk.submit(notificationFut, () -> {
+                discoNotifierWrk.submit(notificationFut, () -> {
                     synchronized (discoEvtMux) {
                         onDiscovery0(type, topVer, node, topSnapshot, snapshots, spiCustomMsg);
                     }
@@ -928,7 +928,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
         });
 
-        new IgniteThread(discoNtfWrk).start();
+        new IgniteThread(discoNotifierWrk).start();
 
         startSpi();
 
@@ -1703,9 +1703,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         U.join(discoWrk, log);
 
-        U.cancel(discoNtfWrk);
+        U.cancel(discoNotifierWrk);
 
-        U.join(discoNtfWrk, log);
+        U.join(discoNotifierWrk, log);
 
         // Stop SPI itself.
         stopSpi();
@@ -2516,7 +2516,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @param cacheMap Map to add to.
      * @param cacheName Cache name.
-     * @param rich Node to add
+     * @param node Node to add
      */
     private void addToMap(Map<Integer, List<ClusterNode>> cacheMap, String cacheName, ClusterNode rich) {
         List<ClusterNode> cacheNodes = cacheMap.get(CU.cacheId(cacheName));
@@ -2688,14 +2688,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      *
      */
-    private class DiscoveryMessageNotifierWorker extends GridWorker implements IgniteDiscoveryThread {
+    private class DiscoveryMessageNotifyerWorker extends GridWorker implements IgniteDiscoveryThread {
         /** Queue. */
         private final BlockingQueue<T2<GridFutureAdapter, Runnable>> queue = new LinkedBlockingQueue<>();
 
         /**
          * Default constructor.
          */
-        protected DiscoveryMessageNotifierWorker() {
+        protected DiscoveryMessageNotifyerWorker() {
             super(ctx.igniteInstanceName(), "disco-notyfier-worker", GridDiscoveryManager.this.log, ctx.workersRegistry());
         }
 
@@ -2703,16 +2703,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          *
          */
         private void body0() throws InterruptedException {
-            T2<GridFutureAdapter, Runnable> notification;
-
-            blockingSectionBegin();
-
-            try {
-                notification = queue.take();
-            }
-            finally {
-                blockingSectionEnd();
-            }
+            T2<GridFutureAdapter, Runnable> notification = queue.take();
 
             try {
                 notification.get2().run();
@@ -2791,9 +2782,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         /** Node segmented event fired flag. */
         private boolean nodeSegFired;
-
-        /** */
-        private long lastOnIdleTs = U.currentTimeMillis();
 
         /**
          *
@@ -2877,8 +2865,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             while (!isCancelled()) {
                 try {
                     body0();
-
-                    onIdle();
                 }
                 catch (InterruptedException e) {
                     if (!isCancelled)
@@ -2902,16 +2888,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         @SuppressWarnings("DuplicateCondition")
         private void body0() throws InterruptedException {
             GridTuple6<Integer, AffinityTopologyVersion, ClusterNode, DiscoCache, Collection<ClusterNode>,
-                DiscoveryCustomMessage> evt;
-
-            blockingSectionBegin();
-
-            try {
-                evt = evts.take();
-            }
-            finally {
-                blockingSectionEnd();
-            }
+                DiscoveryCustomMessage> evt = evts.take();
 
             int type = evt.get1();
 
