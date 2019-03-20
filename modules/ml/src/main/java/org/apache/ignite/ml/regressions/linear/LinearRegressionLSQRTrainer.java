@@ -26,7 +26,9 @@ import org.apache.ignite.ml.math.isolve.lsqr.AbstractLSQR;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeap;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQRResult;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
@@ -43,6 +45,16 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
         return updateModel(null, datasetBuilder, extractor);
     }
 
+    private static LabeledVector<double[]> extendLabeledVector(LabeledVector<Double> lb) {
+        double[] featuresArray = new double[lb.features().size() + 1];
+        System.arraycopy(lb.features().asArray(), 0, featuresArray, 0, lb.features().size());
+        featuresArray[featuresArray.length - 1] = 1.0;
+
+        Vector features = VectorUtils.of(featuresArray);
+        double[] lbl = new double[] {lb.label()};
+        return features.labeled(lbl);
+    }
+
     /** {@inheritDoc} */
     @Override protected <K, V, C> LinearRegressionModel updateModel(LinearRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
@@ -50,30 +62,24 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
 
         LSQRResult res;
 
-        FeatureLabelExtractor<K, V, double[]> vectorizer = extractor.andThen(v -> v.features().labeled(new double[] {v.label()}));
+        FeatureLabelExtractor<K, V, double[]> vectorizer = extractor.andThen(LinearRegressionLSQRTrainer::extendLabeledVector);
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
-            datasetBuilder,
-            envBuilder,
+            datasetBuilder, envBuilder,
             new SimpleLabeledDatasetDataBuilder<>(new FeatureLabelExtractorWrapper<>(vectorizer)))) {
-            
-            double[] x0 = null;
-            if(mdl !=null)
 
-            {
+            double[] x0 = null;
+            if (mdl != null) {
                 int x0Size = mdl.getWeights().size() + 1;
                 Vector weights = mdl.getWeights().like(x0Size);
                 mdl.getWeights().nonZeroes().forEach(ith -> weights.set(ith.index(), ith.get()));
                 weights.set(weights.size() - 1, mdl.getIntercept());
                 x0 = weights.asArray();
             }
-
-            res =lsqr.solve(0,1e-12,1e-12,1e8,-1,false,x0);
-            if(res ==null)
-                return
-
-            getLastTrainedModelOrThrowEmptyDatasetException(mdl);
+            res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, x0);
+            if (res == null)
+                return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
         }
-        catch(Exception e) {
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
 

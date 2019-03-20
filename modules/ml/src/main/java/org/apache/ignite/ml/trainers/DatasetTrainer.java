@@ -485,10 +485,11 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
             }
 
             /** {@inheritDoc} */
-            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, L1> extractor) {
+            @Override public <K, V, C> M fit(DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, L1> extractor) {
                 return old.fit(datasetBuilder, getNewExtractor(extractor));
             }
+
 
             /** {@inheritDoc} */
             @Override protected <K, V, C> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
