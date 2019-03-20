@@ -964,9 +964,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     ) throws IgniteCheckedException {
         assert !cctx.isNear() : cctx.name();
 
-        if (!hasPendingEntries || nextCleanTime > U.currentTimeMillis())
-            return false;
-
         // Prevent manager being stopped in the middle of pds operation.
         if (!busyLock.enterBusy())
             return false;
@@ -980,10 +977,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 if (amount != -1 && cleared >= amount)
                     return true;
             }
-
-            // Throttle if there is nothing to clean anymore.
-            if (cleared < amount)
-                nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
         }
         finally {
             busyLock.leaveBusy();
@@ -1449,8 +1442,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** */
         private volatile CacheDataStore delegate;
 
-        /** Timestamp when next clean try will be allowed for current partition.
-         * Used for fine-grained throttling on per-partition basis. */
+        /**
+         * Cache id which should be throttled.
+         */
+        private volatile int lastThrottledCacheId;
+
+        /**
+         * Timestamp when next clean try will be allowed for the current partition
+         * in accordance with the value of {@code lastThrottledCacheId}.
+         * Used for fine-grained throttling on per-partition basis.
+         */
         private volatile long nextStoreCleanTime;
 
         /** */
@@ -1596,8 +1597,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     pendingTree = pendingTree0;
 
-                    if (!hasPendingEntries && !pendingTree0.isEmpty())
-                        hasPendingEntries = true;
+                    if (!pendingTree0.isEmpty())
+                        grp.caches().forEach(cctx -> cctx.ttl().hasPendingEntries(true));
 
                     int grpId = grp.groupId();
                     long partMetaId = pageMem.partitionMetaPageId(grpId, partId);
@@ -2336,14 +2337,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @return cleared entries count.
          * @throws IgniteCheckedException If failed.
          */
-        public int purgeExpired(GridCacheContext cctx,
+        public int purgeExpired(
+            GridCacheContext cctx,
             IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
-            int amount) throws IgniteCheckedException {
+            int amount
+        ) throws IgniteCheckedException {
             CacheDataStore delegate0 = init0(true);
 
             long now = U.currentTimeMillis();
 
-            if (delegate0 == null || nextStoreCleanTime > now)
+            if (delegate0 == null || (cctx.cacheId() == lastThrottledCacheId && nextStoreCleanTime > now))
                 return 0;
 
             assert pendingTree != null : "Partition data store was not initialized.";
@@ -2351,8 +2354,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int cleared = purgeExpiredInternal(cctx, c, amount);
 
             // Throttle if there is nothing to clean anymore.
-            if (cleared < amount)
-                nextStoreCleanTime = now + UNWIND_THROTTLING_TIMEOUT;
+            if (cleared < amount) {
+                lastThrottledCacheId = cctx.cacheId();
+
+                nextStoreCleanTime = now + GridCacheTtlManager.UNWIND_THROTTLING_TIMEOUT;
+            }
 
             return cleared;
         }
@@ -2366,10 +2372,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @return cleared entries count.
          * @throws IgniteCheckedException If failed.
          */
-        private int purgeExpiredInternal(GridCacheContext cctx,
+        private int purgeExpiredInternal(
+            GridCacheContext cctx,
             IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
-            int amount) throws IgniteCheckedException {
-
+            int amount
+        ) throws IgniteCheckedException {
             GridDhtLocalPartition part = cctx.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
 
             // Skip non-owned partitions.
