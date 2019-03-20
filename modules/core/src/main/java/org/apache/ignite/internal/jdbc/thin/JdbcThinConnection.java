@@ -863,7 +863,7 @@ public class JdbcThinConnection implements Connection {
         }
         try {
             try {
-                Set<UUID> nodeIds = calculateNodeId(req);
+                Set<UUID> nodeIds = calculateNodeIds(req);
 
                 JdbcThinTcpIo cliIo = stickyIo == null ? cliIo(nodeIds) : stickyIo;
 
@@ -940,7 +940,7 @@ public class JdbcThinConnection implements Connection {
      * @param req Jdbc request for which we'll try to calculate node id.
      * @return node UUID or null if failed to calculate.
      */
-    @Nullable private Set<UUID> calculateNodeId(JdbcRequest req) {
+    @Nullable private Set<UUID> calculateNodeIds(JdbcRequest req) {
         Set<UUID> bestEffortAffinityNodeIds = null;
 
         if (bestEffortAffinity && req instanceof JdbcQueryExecuteRequest && affinityCache != null &&
@@ -1022,7 +1022,8 @@ public class JdbcThinConnection implements Connection {
     public static int[] calculatePartitions(PartitionResult derivedParts, Object[] args) {
         if (derivedParts != null) {
             try {
-                Collection<Integer> realParts = derivedParts.tree().apply(new PartitionClientContext(), args);
+                Collection<Integer> realParts = derivedParts.tree().apply(
+                    new PartitionClientContext(derivedParts.affinity().parts()), args);
 
                 if (realParts == null)
                     return null;

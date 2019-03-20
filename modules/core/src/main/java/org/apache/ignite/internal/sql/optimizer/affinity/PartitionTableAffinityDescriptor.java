@@ -85,9 +85,9 @@ public class PartitionTableAffinityDescriptor implements Serializable, JdbcRawBi
             if (!hasNodeFilter) {
                 return
                     other.affFunc == PartitionAffinityFunctionType.RENDEZVOUS &&
-                    !other.hasNodeFilter &&
-                    other.parts == parts &&
-                    F.eq(other.dataRegion, dataRegion);
+                        !other.hasNodeFilter &&
+                        other.parts == parts &&
+                        F.eq(other.dataRegion, dataRegion);
             }
         }
 
@@ -95,7 +95,14 @@ public class PartitionTableAffinityDescriptor implements Serializable, JdbcRawBi
     }
 
     public boolean isClientBestEffortAffinityApplicable() {
-        return affFunc == PartitionAffinityFunctionType.RENDEZVOUS && !hasNodeFilter && parts == 1024;
+        return affFunc == PartitionAffinityFunctionType.RENDEZVOUS && !hasNodeFilter;
+    }
+
+    /**
+     * @return Number of partitions.
+     */
+    public int parts() {
+        return parts;
     }
 
     /** {@inheritDoc} */

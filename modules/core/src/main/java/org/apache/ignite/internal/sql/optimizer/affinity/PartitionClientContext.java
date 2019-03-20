@@ -16,16 +16,28 @@
  */
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Client context. Passed to partition resolver on thin clients.
  */
 public class PartitionClientContext {
-    // TODO: 19.03.19 IGNITE-11566 add support for custom partitions count within the client side best effort affinity.
+    /** Number of partitions. */
+    private int parts;
 
     /** Mask to use in calculation when partitions count is power of 2. */
-    private int mask = 1023;
+    private int mask;
+
+    public PartitionClientContext(int parts) {
+        assert parts <= CacheConfiguration.MAX_PARTITIONS_COUNT;
+        assert parts > 0;
+
+        this.parts = parts;
+
+        mask = (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+    }
 
     /**
      * Resolve partition.
@@ -40,8 +52,11 @@ public class PartitionClientContext {
 
         assert cacheName != null;
 
-        int h;
+        if (mask >= 0) {
+            int h;
+            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
+        }
 
-        return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
+        return U.safeAbs(key.hashCode() % parts);
     }
 }
