@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -95,6 +96,9 @@ public class DdlStatementsProcessor {
     /** Indexing. */
     IgniteH2Indexing idx;
 
+    /** Logger. */
+    private IgniteLogger log;
+
     /** Is backward compatible handling of UUID through DDL enabled. */
     private static final boolean handleUuidAsByte =
             IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_UUID_DDL_BYTE_FORMAT, false);
@@ -108,6 +112,8 @@ public class DdlStatementsProcessor {
     public void start(final GridKernalContext ctx, IgniteH2Indexing idx) {
         this.ctx = ctx;
         this.idx = idx;
+
+        log = ctx.log(DdlStatementsProcessor.class);
     }
 
     /**
@@ -237,6 +243,8 @@ public class DdlStatementsProcessor {
             return H2Utils.zeroCursor();
         }
         catch (SchemaOperationException e) {
+            U.error(log, "DDL statement execution failed. sql: " + sql, e);
+
             throw convert(e);
         }
         catch (IgniteSQLException e) {
@@ -490,7 +498,8 @@ public class DdlStatementsProcessor {
             return resCur;
         }
         catch (SchemaOperationException e) {
-            U.error(null, "DDL operation failure", e);
+            U.error(log, "DDL operation failure. sql: " + sql, e);
+
             throw convert(e);
         }
         catch (IgniteSQLException e) {
