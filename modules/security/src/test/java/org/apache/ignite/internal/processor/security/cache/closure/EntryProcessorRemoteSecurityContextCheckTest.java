@@ -17,16 +17,14 @@
 
 package org.apache.ignite.internal.processor.security.cache.closure;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -51,9 +49,9 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
 
         startClient(CLNT_INITIATOR, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
+        startGrid(SRV_RUN, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
+        startGrid(SRV_CHECK, allowAllPermissionSet());
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
 
@@ -65,8 +63,8 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .expect(SRV_FEATURE_CALL, 1)
-            .expect(SRV_FEATURE_TRANSITION, 1)
+            .expect(SRV_RUN, 1)
+            .expect(SRV_CHECK, 1)
             .expect(SRV_ENDPOINT, 1)
             .expect(CLNT_ENDPOINT, 1);
     }
@@ -76,78 +74,42 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
      */
     @Test
     public void test() {
-        runAndCheck(grid(SRV_INITIATOR));
-        runAndCheck(grid(CLNT_INITIATOR));
+        runAndCheck(grid(SRV_INITIATOR), checkCases());
+        runAndCheck(grid(CLNT_INITIATOR), checkCases());
     }
 
-    /**
-     * @param initiator Node that initiates an execution.
-     */
-    private void runAndCheck(IgniteEx initiator) {
-        UUID secSubjectId = secSubjectId(initiator);
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> nodesToRun() {
+        return Collections.singletonList(nodeId(SRV_RUN));
+    }
 
-        for (IgniteRunnable r : featureRuns()) {
-            runAndCheck(
-                secSubjectId,
-                () -> compute(initiator, nodeId(SRV_FEATURE_CALL)).broadcast(
-                    () -> {
-                        register();
-
-                        r.run();
-                    }
-                )
-            );
-        }
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> nodesToCheck() {
+        return Collections.singletonList(nodeId(SRV_CHECK));
     }
 
     /**
      * @return Collection of runnables to call invoke methods.
      */
-    private List<IgniteRunnable> featureRuns() {
-        final Integer key = prmKey(grid(SRV_FEATURE_TRANSITION));
+    private List<IgniteRunnable> checkCases() {
+        final Integer key = prmKey(grid(SRV_CHECK));
 
-        return Arrays.asList(
+        return Stream.<IgniteRunnable>of(
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invoke(key, new TestEntryProcessor(endpoints())),
-
-            () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAll(Collections.singleton(key), new TestEntryProcessor(endpoints())),
+                .invoke(key, new CommonClosure(endpoints())),
 
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAsync(key, new TestEntryProcessor(endpoints()))
+                .invokeAll(Collections.singleton(key), new CommonClosure(endpoints())),
+
+            () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
+                .invokeAsync(key, new CommonClosure(endpoints()))
                 .get(),
 
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAllAsync(Collections.singleton(key), new TestEntryProcessor(endpoints()))
+                .invokeAllAsync(Collections.singleton(key), new CommonClosure(endpoints()))
                 .get()
-        );
-    }
-
-    /**
-     * Entry processor for tests with transition invoke call.
-     */
-    static class TestEntryProcessor implements EntryProcessor<Integer, Integer, Object> {
-        /** Collection of endpont nodes ids. */
-        private final Collection<UUID> endpoints;
-
-        /**
-         * @param endpoints Collection of endpont nodes ids.
-         */
-        public TestEntryProcessor(Collection<UUID> endpoints) {
-            assert !endpoints.isEmpty();
-
-            this.endpoints = endpoints;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object process(MutableEntry<Integer, Integer> entry, Object... objects)
-            throws EntryProcessorException {
-            register();
-
-            compute(Ignition.localIgnite(), endpoints)
-                .broadcast(() -> register());
-
-            return null;
-        }
+        )
+            .map(CommonClosure::new)
+            .collect(Collectors.toCollection(ArrayList::new));
     }
 }

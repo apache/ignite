@@ -17,26 +17,22 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.Ignite;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 
 /**
  * Testing operation security context when the compute closure is executed on remote nodes.
  * <p>
- * The initiator node broadcasts a task to feature call nodes that starts compute operation. That operation is executed
- * on feature transition nodes and broadcasts a task to endpoint nodes. On every step, it is performed verification that
+ * The initiator node broadcasts a task to run nodes that starts compute operation. That operation is executed
+ * on check nodes and broadcasts a task to endpoint nodes. On every step, it is performed verification that
  * operation security context is the initiator context.
  */
 public class DistributedClosureRemoteSecurityContextCheckTest
@@ -49,13 +45,13 @@ public class DistributedClosureRemoteSecurityContextCheckTest
 
         startClient(CLNT_INITIATOR, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
+        startGrid(SRV_RUN, allowAllPermissionSet());
 
-        startClient(CLNT_FEATURE_CALL, allowAllPermissionSet());
+        startClient(CLNT_RUN, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
+        startGrid(SRV_CHECK, allowAllPermissionSet());
 
-        startClient(CLNT_FEATURE_TRANSITION, allowAllPermissionSet());
+        startClient(CLNT_CHECK, allowAllPermissionSet());
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
 
@@ -67,10 +63,10 @@ public class DistributedClosureRemoteSecurityContextCheckTest
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .expect(SRV_FEATURE_CALL, 1)
-            .expect(CLNT_FEATURE_CALL, 1)
-            .expect(SRV_FEATURE_TRANSITION, 2)
-            .expect(CLNT_FEATURE_TRANSITION, 2)
+            .expect(SRV_RUN, 1)
+            .expect(CLNT_RUN, 1)
+            .expect(SRV_CHECK, 2)
+            .expect(CLNT_CHECK, 2)
             .expect(SRV_ENDPOINT, 4)
             .expect(CLNT_ENDPOINT, 4);
     }
@@ -80,130 +76,59 @@ public class DistributedClosureRemoteSecurityContextCheckTest
      */
     @Test
     public void test() {
-        runAndCheck(grid(SRV_INITIATOR));
-        runAndCheck(grid(CLNT_INITIATOR));
+        runAndCheck(grid(SRV_INITIATOR), checkCases());
+        runAndCheck(grid(CLNT_INITIATOR), checkCases());
     }
 
     /**
-     * @param initiator Initiator node.
+     * @return Collection of check cases.
      */
-    private void runAndCheck(IgniteEx initiator) {
-        for (IgniteRunnable r : featureRuns()) {
-            runAndCheck(secSubjectId(initiator),
-                () -> compute(initiator, featureCalls()).broadcast((IgniteRunnable)
-                    new CommonClosure(r)
-                )
-            );
-        }
-    }
-
-    /**
-     * @return Collection of consumers to call compute methods.
-     */
-    private List<IgniteRunnable> featureRuns() {
-        return Arrays.asList(
-            () -> compute(Ignition.localIgnite(), featureTransitions())
+    private List<IgniteRunnable> checkCases() {
+        return Stream.<IgniteRunnable>of(
+            () -> compute(Ignition.localIgnite(), nodesToCheck())
                 .broadcast((IgniteRunnable)new CommonClosure(endpoints())),
-            () -> compute(Ignition.localIgnite(), featureTransitions())
+
+            () -> compute(Ignition.localIgnite(), nodesToCheck())
                 .broadcastAsync((IgniteRunnable)new CommonClosure(endpoints()))
                 .get(),
             () -> {
-                for (UUID id : featureTransitions()) {
+                for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
                         .call(new CommonClosure(endpoints()));
                 }
             },
             () -> {
-                for (UUID id : featureTransitions()) {
+                for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
                         .callAsync(new CommonClosure(endpoints())).get();
                 }
             },
             () -> {
-                for (UUID id : featureTransitions()) {
+                for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
                         .run(new CommonClosure(endpoints()));
                 }
             },
             () -> {
-                for (UUID id : featureTransitions()) {
+                for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
                         .runAsync(new CommonClosure(endpoints())).get();
                 }
             },
             () -> {
-                for (UUID id : featureTransitions()) {
+                for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
                         .apply(new CommonClosure(endpoints()), new Object());
                 }
             },
             () -> {
-                for (UUID id : featureTransitions()) {
+                for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
                         .applyAsync(new CommonClosure(endpoints()), new Object()).get();
                 }
             }
-        );
-    }
-
-    /**
-     * Common closure for tests.
-     */
-    static class CommonClosure implements IgniteRunnable, IgniteCallable<Object>,
-        IgniteClosure<Object, Object> {
-
-        /** Runnable. */
-        private final IgniteRunnable runnable;
-
-        /** Collection of endpoint node ids. */
-        private final Collection<UUID> endpoints;
-
-        /**
-         * @param runnable Runnable.
-         */
-        public CommonClosure(IgniteRunnable runnable) {
-            assert runnable != null;
-
-            this.runnable = runnable;
-            endpoints = Collections.emptyList();
-        }
-
-        /**
-         * @param endpoints Collection of endpoint node ids.
-         */
-        private CommonClosure(Collection<UUID> endpoints) {
-            assert !endpoints.isEmpty();
-
-            runnable = null;
-            this.endpoints = endpoints;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            register();
-
-            Ignite ignite = Ignition.localIgnite();
-
-            if (runnable != null)
-                runnable.run();
-            else {
-                compute(ignite, endpoints)
-                    .broadcast(() -> register());
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object call() {
-            run();
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(Object o) {
-            run();
-
-            return null;
-        }
+        )
+            .map(CommonClosure::new)
+            .collect(Collectors.toCollection(ArrayList::new));
     }
 }

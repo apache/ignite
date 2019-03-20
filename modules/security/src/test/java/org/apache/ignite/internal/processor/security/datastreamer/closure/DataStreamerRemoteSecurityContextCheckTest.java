@@ -18,15 +18,14 @@
 package org.apache.ignite.internal.processor.security.datastreamer.closure;
 
 import java.util.Collection;
-import java.util.Map;
+import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.stream.StreamVisitor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,9 +48,9 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
 
         startClient(CLNT_INITIATOR, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
+        startGrid(SRV_RUN, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
+        startGrid(SRV_CHECK, allowAllPermissionSet());
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
 
@@ -63,8 +62,8 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .expect(SRV_FEATURE_CALL, 1)
-            .expect(SRV_FEATURE_TRANSITION, 1)
+            .expect(SRV_RUN, 1)
+            .expect(SRV_CHECK, 1)
             .expect(SRV_ENDPOINT, 1)
             .expect(CLNT_ENDPOINT, 1);
     }
@@ -74,24 +73,24 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
      */
     @Test
     public void testDataStreamer() {
-        runAndCheck(SRV_INITIATOR);
-        runAndCheck(CLNT_INITIATOR);
+        IgniteRunnable checkCase = () -> {
+            register();
+
+            dataStreamer(Ignition.localIgnite());
+        };
+
+        runAndCheck(grid(SRV_INITIATOR), checkCase);
+        runAndCheck(grid(CLNT_INITIATOR), checkCase);
     }
 
-    /**
-     * @param name Initiator node name.
-     */
-    private void runAndCheck(String name) {
-        runAndCheck(
-            secSubjectId(name),
-            () -> compute(grid(name), nodeId(SRV_FEATURE_CALL)).broadcast(
-                () -> {
-                    register();
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> nodesToRun() {
+        return Collections.singletonList(nodeId(SRV_RUN));
+    }
 
-                    dataStreamer(Ignition.localIgnite());
-                }
-            )
-        );
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> nodesToCheck() {
+        return Collections.singletonList(nodeId(SRV_CHECK));
     }
 
     /**
@@ -99,36 +98,9 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
      */
     private void dataStreamer(Ignite node) {
         try (IgniteDataStreamer<Integer, Integer> strm = node.dataStreamer(CACHE_NAME)) {
-            strm.receiver(StreamVisitor.from(new TestClosure(endpoints())));
+            strm.receiver(StreamVisitor.from(new CommonClosure(endpoints())));
 
-            strm.addData(prmKey(grid(SRV_FEATURE_TRANSITION)), 100);
-        }
-    }
-
-    /**
-     * Closure for tests.
-     */
-    static class TestClosure implements
-        IgniteBiInClosure<IgniteCache<Integer, Integer>, Map.Entry<Integer, Integer>> {
-        /** Endpoint node id. */
-        private final Collection<UUID> endpoints;
-
-        /**
-         * @param endpoints Collection of endpont nodes ids.
-         */
-        public TestClosure(Collection<UUID> endpoints) {
-            assert !endpoints.isEmpty();
-
-            this.endpoints = endpoints;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(IgniteCache<Integer, Integer> entries,
-            Map.Entry<Integer, Integer> entry) {
-            register();
-
-            compute(Ignition.localIgnite(), endpoints)
-                .broadcast(() -> register());
+            strm.addData(prmKey(grid(SRV_CHECK)), 100);
         }
     }
 }

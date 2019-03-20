@@ -22,15 +22,24 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.SecurityException;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -51,16 +60,16 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     protected static final String CLNT_INITIATOR = "clnt_initiator";
 
     /** Name of server feature call node. */
-    protected static final String SRV_FEATURE_CALL = "srv_feature_call";
+    protected static final String SRV_RUN = "srv_run";
 
     /** Name of client feature call node. */
-    protected static final String CLNT_FEATURE_CALL = "clnt_feature_call";
+    protected static final String CLNT_RUN = "clnt_run";
 
     /** Name of server feature transit node. */
-    protected static final String SRV_FEATURE_TRANSITION = "srv_feature_transition";
+    protected static final String SRV_CHECK = "srv_check";
 
     /** Name of client feature transit node. */
-    protected static final String CLNT_FEATURE_TRANSITION = "clnt_feature_transition";
+    protected static final String CLNT_CHECK = "clnt_check";
 
     /** Name of server endpoint node. */
     protected static final String SRV_ENDPOINT = "srv_endpoint";
@@ -111,20 +120,20 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     /**
      * @return Collection of feature call nodes ids.
      */
-    protected Collection<UUID> featureCalls() {
+    protected Collection<UUID> nodesToRun() {
         return Arrays.asList(
-            nodeId(SRV_FEATURE_CALL),
-            nodeId(CLNT_FEATURE_CALL)
+            nodeId(SRV_RUN),
+            nodeId(CLNT_RUN)
         );
     }
 
     /**
      * @return Collection of feature transit nodes ids.
      */
-    protected Collection<UUID> featureTransitions() {
+    protected Collection<UUID> nodesToCheck() {
         return Arrays.asList(
-            nodeId(SRV_FEATURE_TRANSITION),
-            nodeId(CLNT_FEATURE_TRANSITION)
+            nodeId(SRV_CHECK),
+            nodeId(CLNT_CHECK)
         );
     }
 
@@ -161,17 +170,27 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     protected abstract void setupVerifier(Verifier verifier);
 
     /**
+     * @param initiator Node that initiates an execution.
+     * @param runnable Check case.
+     */
+    protected void runAndCheck(IgniteEx initiator, IgniteRunnable runnable) {
+        runAndCheck(initiator, Collections.singleton(runnable));
+    }
+
+    /**
      * Sets up VERIFIER, performs the runnable and checks the result.
      *
-     * @param secSubjId Expected security subject id.
-     * @param r Runnable.
+     * @param initiator Node that initiates an execution.
+     * @param runnables Collection of check cases.
      */
-    protected final void runAndCheck(UUID secSubjId, Runnable r) {
-        setupVerifier(VERIFIER.start(secSubjId));
+    protected void runAndCheck(IgniteEx initiator, Collection<IgniteRunnable> runnables) {
+        for (IgniteRunnable r : runnables) {
+            setupVerifier(VERIFIER.start(secSubjectId(initiator)));
 
-        r.run();
+            compute(initiator, nodesToRun()).broadcast(r);
 
-        VERIFIER.checkResult();
+            VERIFIER.checkResult();
+        }
     }
 
     /**
@@ -262,6 +281,84 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
             map.clear();
 
             expSecSubjId = null;
+        }
+    }
+
+    /**
+     * Common closure for tests.
+     */
+    protected static class CommonClosure implements
+        IgniteRunnable,
+        IgniteCallable<Object>,
+        IgniteClosure<Object, Object>,
+        EntryProcessor<Integer, Integer, Object>,
+        IgniteBiInClosure<IgniteCache<Integer, Integer>, Map.Entry<Integer, Integer>> {
+
+        /** Runnable. */
+        private final IgniteRunnable runnable;
+
+        /** Collection of endpoint node ids. */
+        private final Collection<UUID> endpoints;
+
+        /**
+         * @param runnable Runnable.
+         */
+        public CommonClosure(IgniteRunnable runnable) {
+            assert runnable != null;
+
+            this.runnable = runnable;
+            endpoints = Collections.emptyList();
+        }
+
+        /**
+         * @param endpoints Collection of endpoint node ids.
+         */
+        public CommonClosure(Collection<UUID> endpoints) {
+            assert !endpoints.isEmpty();
+
+            runnable = null;
+            this.endpoints = endpoints;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            register();
+
+            Ignite ignite = Ignition.localIgnite();
+
+            if (runnable != null)
+                runnable.run();
+            else {
+                compute(ignite, endpoints)
+                    .broadcast(() -> register());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() {
+            run();
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object apply(Object o) {
+            run();
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry<Integer, Integer> entry,
+            Object... arguments) throws EntryProcessorException {
+            run();
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(IgniteCache<Integer, Integer> entries, Map.Entry<Integer, Integer> entry) {
+            run();
         }
     }
 }

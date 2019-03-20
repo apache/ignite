@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
-import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -47,13 +45,13 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
 
         startClient(CLNT_INITIATOR, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
+        startGrid(SRV_RUN, allowAllPermissionSet());
 
-        startClient(CLNT_FEATURE_CALL, allowAllPermissionSet());
+        startClient(CLNT_RUN, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
+        startGrid(SRV_CHECK, allowAllPermissionSet());
 
-        startClient(CLNT_FEATURE_TRANSITION, allowAllPermissionSet());
+        startClient(CLNT_CHECK, allowAllPermissionSet());
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
 
@@ -65,10 +63,10 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .expect(SRV_FEATURE_CALL, 1)
-            .expect(CLNT_FEATURE_CALL, 1)
-            .expect(SRV_FEATURE_TRANSITION, 2)
-            .expect(CLNT_FEATURE_TRANSITION, 2)
+            .expect(SRV_RUN, 1)
+            .expect(CLNT_RUN, 1)
+            .expect(SRV_CHECK, 2)
+            .expect(CLNT_CHECK, 2)
             .expect(SRV_ENDPOINT, 4)
             .expect(CLNT_ENDPOINT, 4);
     }
@@ -78,58 +76,25 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
      */
     @Test
     public void test() {
-        runAndCheck(grid(SRV_INITIATOR));
-        runAndCheck(grid(CLNT_INITIATOR));
-    }
-
-    /**
-     * Performs test case.
-     */
-    private void runAndCheck(IgniteEx initiator) {
-        runAndCheck(secSubjectId(initiator),
-            () -> compute(initiator, featureCalls()).broadcast(
-                () -> {
-                    register();
-
-                    Ignite loc = Ignition.localIgnite();
-
-                    for (UUID nodeId : featureTransitions()) {
-                        ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
-
-                        try {
-                            svc.submit(new TestIgniteRunnable(endpoints())).get();
-                        }
-                        catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-            )
-        );
-    }
-
-    /**
-     * Runnable for tests.
-     */
-    static class TestIgniteRunnable implements IgniteRunnable {
-        /** Collection of endpoint node ids. */
-        private final Collection<UUID> endpoints;
-
-        /**
-         * @param endpoints Collection of endpoint node ids.
-         */
-        public TestIgniteRunnable(Collection<UUID> endpoints) {
-            assert !endpoints.isEmpty();
-
-            this.endpoints = endpoints;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
+        IgniteRunnable checkCase = () -> {
             register();
 
-            compute(Ignition.localIgnite(), endpoints)
-                .broadcast(() -> register());
-        }
+            Ignite loc = Ignition.localIgnite();
+
+            for (UUID nodeId : nodesToCheck()) {
+                ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
+
+                try {
+                    svc.submit((Runnable)new CommonClosure(endpoints())).get();
+                }
+                catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+
+
+        runAndCheck(grid(SRV_INITIATOR), checkCase);
+        runAndCheck(grid(CLNT_INITIATOR), checkCase);
     }
 }

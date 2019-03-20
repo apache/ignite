@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processor.security.cache.closure;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemot
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,24 +55,15 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
         startClient(CLNT_INITIATOR, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
+        startGrid(SRV_RUN, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
+        startGrid(SRV_CHECK, allowAllPermissionSet());
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
 
         startClient(CLNT_ENDPOINT, allowAllPermissionSet());
 
         G.allGrids().get(0).cluster().active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void setupVerifier(Verifier verifier) {
-        verifier
-            .expect(SRV_FEATURE_CALL, 1)
-            .expect(SRV_FEATURE_TRANSITION, 1)
-            .expect(SRV_ENDPOINT, 1)
-            .expect(CLNT_ENDPOINT, 1);
     }
 
     /** {@inheritDoc} */
@@ -87,29 +80,38 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
         };
     }
 
+    /** {@inheritDoc} */
+    @Override protected void setupVerifier(Verifier verifier) {
+        verifier
+            .expect(SRV_RUN, 1)
+            .expect(SRV_CHECK, 1)
+            .expect(SRV_ENDPOINT, 1)
+            .expect(CLNT_ENDPOINT, 1);
+    }
+
     /**
      *
      */
     @Test
     public void test() {
-        runAndCheck(SRV_INITIATOR);
-        runAndCheck(CLNT_INITIATOR);
+        IgniteRunnable checkCase = () -> {
+            register();
+
+            loadCache(Ignition.localIgnite());
+        };
+
+        runAndCheck(grid(SRV_INITIATOR), checkCase);
+        runAndCheck(grid(CLNT_INITIATOR), checkCase);
     }
 
-    /**
-     * @param name Initiator node name.
-     */
-    private void runAndCheck(String name) {
-        runAndCheck(
-            secSubjectId(name),
-            () -> compute(grid(name), nodeId(SRV_FEATURE_CALL)).broadcast(
-                () -> {
-                    register();
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> nodesToRun() {
+        return Collections.singletonList(nodeId(SRV_RUN));
+    }
 
-                    loadCache(Ignition.localIgnite());
-                }
-            )
-        );
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> nodesToCheck() {
+        return Collections.singletonList(nodeId(SRV_CHECK));
     }
 
     /**
@@ -117,7 +119,7 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
      */
     private void loadCache(Ignite node) {
         node.<Integer, Integer>cache(CACHE_NAME).loadCache(
-            new TestClosure(SRV_FEATURE_TRANSITION, endpoints())
+            new TestClosure(SRV_CHECK, endpoints())
         );
     }
 

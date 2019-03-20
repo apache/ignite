@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processor.security.cache.closure;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -49,11 +51,11 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
         startClient(CLNT_INITIATOR, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
+        startGrid(SRV_RUN, allowAllPermissionSet());
 
-        startClient(CLNT_FEATURE_CALL, allowAllPermissionSet());
+        startClient(CLNT_RUN, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
+        startGrid(SRV_CHECK, allowAllPermissionSet());
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
 
@@ -65,9 +67,9 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .expect(SRV_FEATURE_CALL, 1)
-            .expect(CLNT_FEATURE_CALL, 1)
-            .expect(SRV_FEATURE_TRANSITION, 2)
+            .expect(SRV_RUN, 1)
+            .expect(CLNT_RUN, 1)
+            .expect(SRV_CHECK, 2)
             .expect(SRV_ENDPOINT, 2)
             .expect(CLNT_ENDPOINT, 2);
     }
@@ -78,35 +80,30 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     @Test
     public void test() throws Exception {
         grid(SRV_INITIATOR).cache(CACHE_NAME)
-            .put(prmKey(grid(SRV_FEATURE_TRANSITION)), 1);
+            .put(prmKey(grid(SRV_CHECK)), 1);
 
         awaitPartitionMapExchange();
 
-        runAndCheck(SRV_INITIATOR);
-        runAndCheck(CLNT_INITIATOR);
+        runAndCheck(grid(SRV_INITIATOR), runnables());
+        runAndCheck(grid(CLNT_INITIATOR), runnables());
     }
 
-    /**
-     * @param name Inintiator node name.
-     */
-    private void runAndCheck(String name) {
-        for (IgniteRunnable r : runnables()) {
-            runAndCheck(secSubjectId(name),
-                () -> compute(grid(name), featureCalls()).broadcast(r));
-        }
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> nodesToCheck() {
+        return Collections.singletonList(nodeId(SRV_CHECK));
     }
 
     /**
      *
      */
-    private IgniteRunnable[] runnables() {
-        return new IgniteRunnable[] {
+    private Collection<IgniteRunnable> runnables() {
+        return Arrays.asList(
             () -> {
                 register();
 
                 Ignition.localIgnite().cache(CACHE_NAME).query(
                     new ScanQuery<>(
-                        new CommonClosure(SRV_FEATURE_TRANSITION, endpoints())
+                        new CommonClosure(SRV_CHECK, endpoints())
                     )
                 ).getAll();
             },
@@ -115,16 +112,17 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
                 Ignition.localIgnite().cache(CACHE_NAME).query(
                     new ScanQuery<>((k, v) -> true),
-                    new CommonClosure(SRV_FEATURE_TRANSITION, endpoints())
+                    new CommonClosure(SRV_CHECK, endpoints())
                 ).getAll();
             }
-        };
+        );
     }
 
     /**
      * Common closure for tests.
      */
-    static class CommonClosure implements IgniteClosure<Cache.Entry<Integer, Integer>, Integer>,
+    static class CommonClosure implements
+        IgniteClosure<Cache.Entry<Integer, Integer>, Integer>,
         IgniteBiPredicate<Integer, Integer> {
         /** Expected local node name. */
         private final String node;

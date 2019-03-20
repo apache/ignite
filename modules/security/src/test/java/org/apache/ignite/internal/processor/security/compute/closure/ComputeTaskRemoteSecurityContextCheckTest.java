@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -30,9 +31,9 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -40,8 +41,8 @@ import org.junit.Test;
 /**
  * Testing operation security context when the compute task is executed on remote nodes.
  * <p>
- * The initiator node broadcasts a task to feature call nodes that starts compute task. That compute task is executed
- * on feature transition nodes and broadcasts a task to endpoint nodes. On every step, it is performed verification that
+ * The initiator node broadcasts a task to feature call nodes that starts compute task. That compute task is executed on
+ * feature transition nodes and broadcasts a task to endpoint nodes. On every step, it is performed verification that
  * operation security context is the initiator context.
  */
 public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
@@ -53,13 +54,13 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
 
         startClient(CLNT_INITIATOR, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_CALL, allowAllPermissionSet());
+        startGrid(SRV_RUN, allowAllPermissionSet());
 
-        startClient(CLNT_FEATURE_CALL, allowAllPermissionSet());
+        startClient(CLNT_RUN, allowAllPermissionSet());
 
-        startGrid(SRV_FEATURE_TRANSITION, allowAllPermissionSet());
+        startGrid(SRV_CHECK, allowAllPermissionSet());
 
-        startClient(CLNT_FEATURE_TRANSITION, allowAllPermissionSet());
+        startClient(CLNT_CHECK, allowAllPermissionSet());
 
         startGrid(SRV_ENDPOINT, allowAllPermissionSet());
 
@@ -71,10 +72,10 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .expect(SRV_FEATURE_CALL, 1)
-            .expect(CLNT_FEATURE_CALL, 1)
-            .expect(SRV_FEATURE_TRANSITION, 2)
-            .expect(CLNT_FEATURE_TRANSITION, 2)
+            .expect(SRV_RUN, 1)
+            .expect(CLNT_RUN, 1)
+            .expect(SRV_CHECK, 2)
+            .expect(CLNT_CHECK, 2)
             .expect(SRV_ENDPOINT, 4)
             .expect(CLNT_ENDPOINT, 4);
     }
@@ -84,36 +85,29 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
      */
     @Test
     public void test() {
-        runAndCheck(grid(SRV_INITIATOR));
-        runAndCheck(grid(CLNT_INITIATOR));
+        runAndCheck(grid(SRV_INITIATOR), checkCases());
+        runAndCheck(grid(CLNT_INITIATOR), checkCases());
     }
 
     /**
-     * @param initiator Node that initiates an execution.
+     * @return Collection of check cases.
      */
-    private void runAndCheck(IgniteEx initiator) {
-        runAndCheck(secSubjectId(initiator),
-            () -> compute(initiator, featureCalls()).broadcast(
-                () -> {
-                    register();
+    private List<IgniteRunnable> checkCases() {
+        return Arrays.asList(
+            () -> {
+                register();
 
-                    Ignition.localIgnite().compute().execute(
-                        new TestComputeTask(featureTransitions(), endpoints()), 0
-                    );
-                }
-            )
-        );
+                Ignition.localIgnite().compute().execute(
+                    new TestComputeTask(nodesToCheck(), endpoints()), 0
+                );
+            },
+            () -> {
+                register();
 
-        runAndCheck(secSubjectId(initiator),
-            () -> compute(initiator, featureCalls()).broadcast(
-                () -> {
-                    register();
-
-                    Ignition.localIgnite().compute().executeAsync(
-                        new TestComputeTask(featureTransitions(), endpoints()), 0
-                    ).get();
-                }
-            )
+                Ignition.localIgnite().compute().executeAsync(
+                    new TestComputeTask(nodesToCheck(), endpoints()), 0
+                ).get();
+            }
         );
     }
 
