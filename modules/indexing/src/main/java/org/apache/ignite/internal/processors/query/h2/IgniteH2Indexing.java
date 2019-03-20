@@ -1019,6 +1019,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         throws IgniteCheckedException {
 
         IgniteH2QueryInfo qryInfo = longRunningQryMgr.registerQuery(stmt, sql, params);
+
         try {
             return executeSqlQuery(conn, stmt, timeoutMillis, cancel);
         }
@@ -2185,7 +2186,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         longRunningQryMgr = new LongRunningQueryManager(ctx);
 
-
         if (ctx == null) {
             // This is allowed in some tests.
             nodeId = UUID.randomUUID();
@@ -2739,13 +2739,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         return false;
     }
+
     /**
      * @return Long running queries manager.
      */
     public LongRunningQueryManager longRunningQueries() {
         return longRunningQryMgr;
     }
-
 
     /** {@inheritDoc} */
     @Override public long getLongQueryWarningTimeout() {

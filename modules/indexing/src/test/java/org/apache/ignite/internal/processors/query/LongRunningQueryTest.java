@@ -45,9 +45,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Local query mode. */
     private boolean local;
 
-    /** Lazy query mode. */
-    private boolean lazy;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -83,7 +80,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      */
     public void testLongDistributed() {
         local = false;
-        lazy = false;
 
         checkLongRunning();
         checkFastQueries();
@@ -94,7 +90,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      */
     public void testLongLocal() {
         local = true;
-        lazy = false;
 
         checkLongRunning();
         checkFastQueries();
@@ -155,7 +150,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         return grid().context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setTimeout(10, TimeUnit.SECONDS)
             .setLocal(local)
-            .setLazy(lazy)
             .setSchema("TEST")
             .setArgs(args), false);
     }

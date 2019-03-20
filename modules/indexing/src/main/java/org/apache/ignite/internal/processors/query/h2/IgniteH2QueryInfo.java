@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
+import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -69,15 +70,6 @@ public class IgniteH2QueryInfo {
     private final boolean lazy;
 
     /**
-     * Constructor to remove object from collection.
-     *
-     * @param stmt Query statement.
-     */
-    public IgniteH2QueryInfo(PreparedStatement stmt) {
-        this(stmt, null, null, null, false, false, false);
-    }
-
-    /**
      * @param stmt Query statement.
      * @param schema Query schema.
      * @param sql Query statement.
@@ -107,8 +99,14 @@ public class IgniteH2QueryInfo {
      * @param qry H2 query.
      * @param sb Output string builder.
      */
-    public static void printScanCounts(Query qry, final StringBuilder sb) {
-        if (qry instanceof Select) {
+    private static void printScanCounts(Query qry, final StringBuilder sb) {
+        if (qry.isUnion()) {
+            SelectUnion union = (SelectUnion)qry;
+
+            printScanCounts(union.getLeft(), sb);
+            printScanCounts(union.getRight(), sb);
+        }
+        else {
             Select select = (Select)qry;
 
             select.getTopTableFilter().visit(f -> {
@@ -123,12 +121,6 @@ public class IgniteH2QueryInfo {
                 sb.append(", scan=").append(GridSqlQueryParser.TABLE_FILTER_SCAN_COUNT.get(f));
                 sb.append("]");
             });
-        }
-        else if (qry instanceof SelectUnion) {
-            SelectUnion union = (SelectUnion)qry;
-
-            printScanCounts(union.getLeft(), sb);
-            printScanCounts(union.getRight(), sb);
         }
     }
 
@@ -147,7 +139,7 @@ public class IgniteH2QueryInfo {
             return new IgniteH2QueryInfo(stmt, schema, sql, params,
                 s.isJoinBatchEnabled(),
                 s.isForceJoinOrder(),
-                s.isLazyQueryExecution()
+                s.isLazyQueryExecution() || MapQueryLazyWorker.currentWorker() != null
             );
         }
         catch (SQLException e) {
@@ -156,36 +148,10 @@ public class IgniteH2QueryInfo {
     }
 
     /**
-     * @param timeout Query timeout.
-     * @return {@code true} in case query execution time is too long.
-     */
-    public boolean isLong(long timeout) {
-        return U.currentTimeMillis() - beginTs > timeout;
-    }
-
-    /**
      * @return Query time execution.
      */
     public long time() {
         return U.currentTimeMillis() - beginTs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        IgniteH2QueryInfo info = (IgniteH2QueryInfo)o;
-
-        return F.eq(stmt, info.stmt);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return stmt.hashCode();
     }
 
     /**

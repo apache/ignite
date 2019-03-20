@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
  * Long running query manager.
  */
 public class LongRunningQueryManager {
-    /** Check period. */
+    /** Check period in ms. */
     private static final long CHECK_PERIOD = 1_000;
 
     /** Connection manager. */
@@ -44,7 +44,7 @@ public class LongRunningQueryManager {
     private final IgniteLogger log;
 
     /** Query timeout milliseconds. */
-    private long longQryWarnTimeout;
+    private volatile long longQryWarnTimeout;
 
     /**
      * @param ctx Kernal context.
@@ -94,7 +94,7 @@ public class LongRunningQueryManager {
      */
     private void checkLongRunning() {
         for (IgniteH2QueryInfo qinfo : qrys.keySet()) {
-            if (qinfo.isLong(longQryWarnTimeout))
+            if (qinfo.time() > longQryWarnTimeout)
                 qinfo.printLogMessage(log, connMgr);
         }
     }
