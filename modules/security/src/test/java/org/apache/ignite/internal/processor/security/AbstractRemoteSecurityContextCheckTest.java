@@ -72,7 +72,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     private static final Verifier VERIFIER = new Verifier();
 
     /**
-     * Registers current security context and incriments invoke's counter.
+     * Registers current security context and increments invoke's counter.
      */
     protected static void register() {
         VERIFIER.register((IgniteEx)Ignition.localIgnite());
@@ -212,16 +212,16 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * passed name.
          *
          * @param nodeName Node name.
-         * @param exp Expected number of invokes.
+         * @param num Expected number of invokes.
          */
-        public Verifier add(String nodeName, int exp) {
-            map.put(nodeName, new T2<>(exp, 0));
+        public Verifier expect(String nodeName, int num) {
+            map.put(nodeName, new T2<>(num, 0));
 
             return this;
         }
 
         /**
-         * Registers current security context and incriments invoke's counter.
+         * Registers current security context and increments invoke's counter.
          *
          * @param ignite Local node.
          */

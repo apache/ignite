@@ -71,12 +71,12 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .add(SRV_FEATURE_CALL, 1)
-            .add(CLNT_FEATURE_CALL, 1)
-            .add(SRV_FEATURE_TRANSITION, 2)
-            .add(CLNT_FEATURE_TRANSITION, 2)
-            .add(SRV_ENDPOINT, 4)
-            .add(CLNT_ENDPOINT, 4);
+            .expect(SRV_FEATURE_CALL, 1)
+            .expect(CLNT_FEATURE_CALL, 1)
+            .expect(SRV_FEATURE_TRANSITION, 2)
+            .expect(CLNT_FEATURE_TRANSITION, 2)
+            .expect(SRV_ENDPOINT, 4)
+            .expect(CLNT_ENDPOINT, 4);
     }
 
     /**

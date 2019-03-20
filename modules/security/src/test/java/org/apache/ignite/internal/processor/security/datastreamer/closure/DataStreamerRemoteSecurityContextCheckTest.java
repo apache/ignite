@@ -63,10 +63,10 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .add(SRV_FEATURE_CALL, 1)
-            .add(SRV_FEATURE_TRANSITION, 1)
-            .add(SRV_ENDPOINT, 1)
-            .add(CLNT_ENDPOINT, 1);
+            .expect(SRV_FEATURE_CALL, 1)
+            .expect(SRV_FEATURE_TRANSITION, 1)
+            .expect(SRV_ENDPOINT, 1)
+            .expect(CLNT_ENDPOINT, 1);
     }
 
     /**
