@@ -1404,7 +1404,7 @@ public class JdbcThinConnection implements Connection {
                     conns.add(conn);
             }
 
-            io = conns.toArray(new JdbcThinTcpIo[0])[RND.nextInt(iosArr.length)];
+            io = conns.toArray(new JdbcThinTcpIo[0])[RND.nextInt(conns.size())];
         }
 
         return io != null ? io : iosArr[RND.nextInt(iosArr.length)];
