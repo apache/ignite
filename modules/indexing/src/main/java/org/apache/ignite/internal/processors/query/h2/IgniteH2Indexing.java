@@ -280,6 +280,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** H2 Connection manager. */
     private ConnectionManager connMgr;
 
+    /** H2 Connection manager. */
+    private LongRunningQueryManager longRunningQryMgr;
+
     /**
      * @return Kernal context.
      */
@@ -454,31 +457,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (log.isDebugEnabled())
             log.debug("Dropped H2 schema for index database: " + schema);
-    }
-
-    /**
-     * Binds object to prepared statement.
-     *
-     * @param stmt SQL statement.
-     * @param idx Index.
-     * @param obj Value to store.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj) throws IgniteCheckedException {
-        try {
-            if (obj == null)
-                stmt.setNull(idx, Types.VARCHAR);
-            else if (obj instanceof BigInteger)
-                stmt.setObject(idx, obj, Types.JAVA_OBJECT);
-            else if (obj instanceof BigDecimal)
-                stmt.setObject(idx, obj, Types.DECIMAL);
-            else
-                stmt.setObject(idx, obj);
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ", stmt=" +
-                stmt + ']', e);
-        }
     }
 
     /** {@inheritDoc} */
@@ -934,7 +912,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
         }
 
-        bindParameters(stmt, params);
+        H2Utils.bindParameters(stmt, params);
 
         return stmt;
     }
@@ -1043,52 +1021,35 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private ResultSet executeSqlQueryWithTimer(PreparedStatement stmt, Connection conn, String sql,
         @Nullable Collection<Object> params, int timeoutMillis, @Nullable GridQueryCancel cancel)
         throws IgniteCheckedException {
-        long start = U.currentTimeMillis();
+//        long start = U.currentTimeMillis();
 
         try {
+            longRunningQryMgr.registerQuery(stmt, sql, params);
+
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
 
-            long time = U.currentTimeMillis() - start;
-
-            long longQryExecTimeout = ctx.config().getLongQueryWarningTimeout();
-
-            if (time > longQryExecTimeout) {
-                ResultSet plan = executeSqlQuery(conn, preparedStatementWithParams(conn, "EXPLAIN " + sql,
-                    params, false), 0, null);
-
-                plan.next();
-
-                // Add SQL explain result message into log.
-                String msg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
-                    ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
-                    (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
-
-                LT.warn(log, msg);
-            }
+//            long time = U.currentTimeMillis() - start;
+//
+//            long longQryExecTimeout = ctx.config().getLongQueryWarningTimeout();
+//
+//            if (time > longQryExecTimeout) {
+//                ResultSet plan = executeSqlQuery(conn, preparedStatementWithParams(conn, "EXPLAIN " + sql,
+//                    params, false), 0, null);
+//
+//                plan.next();
+//
+//                // Add SQL explain result message into log.
+//                String msg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
+//                    ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
+//                    (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
+//
+//                LT.warn(log, msg);
+//            }
 
             return rs;
         }
-        catch (SQLException e) {
-            connMgr.onSqlException(conn);
-
-            throw new IgniteCheckedException(e);
-        }
-    }
-
-    /**
-     * Binds parameters to prepared statement.
-     *
-     * @param stmt Prepared statement.
-     * @param params Parameters collection.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void bindParameters(PreparedStatement stmt,
-        @Nullable Collection<Object> params) throws IgniteCheckedException {
-        if (!F.isEmpty(params)) {
-            int idx = 1;
-
-            for (Object arg : params)
-                bindObject(stmt, idx++, arg);
+        finally {
+            longRunningQryMgr.unregisterQuery(stmt);
         }
     }
 
@@ -1618,7 +1579,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
        if (prepared.isQuery()) {
             try {
-                bindParameters(stmt, F.asList(args));
+                H2Utils.bindParameters(stmt, F.asList(args));
             }
             catch (IgniteCheckedException e) {
                 U.closeQuiet(stmt);
@@ -2247,6 +2208,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         connMgr = new ConnectionManager(ctx);
+
+        longRunningQryMgr = new LongRunningQueryManager(ctx);
+
 
         if (ctx == null) {
             // This is allowed in some tests.

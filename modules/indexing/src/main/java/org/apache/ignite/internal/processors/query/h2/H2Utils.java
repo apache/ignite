@@ -18,10 +18,15 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.lang.reflect.Constructor;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
@@ -40,6 +45,7 @@ import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.value.DataType;
 import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 
@@ -298,5 +304,47 @@ public class H2Utils {
         resCur.fieldsMeta(UPDATE_RESULT_META);
 
         return resCur;
+    }
+
+    /**
+     * Binds parameters to prepared statement.
+     *
+     * @param stmt Prepared statement.
+     * @param params Parameters collection.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static void bindParameters(PreparedStatement stmt,
+        @Nullable Collection<Object> params) throws IgniteCheckedException {
+        if (!F.isEmpty(params)) {
+            int idx = 1;
+
+            for (Object arg : params)
+                bindObject(stmt, idx++, arg);
+        }
+    }
+
+    /**
+     * Binds object to prepared statement.
+     *
+     * @param stmt SQL statement.
+     * @param idx Index.
+     * @param obj Value to store.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj) throws IgniteCheckedException {
+        try {
+            if (obj == null)
+                stmt.setNull(idx, Types.VARCHAR);
+            else if (obj instanceof BigInteger)
+                stmt.setObject(idx, obj, Types.JAVA_OBJECT);
+            else if (obj instanceof BigDecimal)
+                stmt.setObject(idx, obj, Types.DECIMAL);
+            else
+                stmt.setObject(idx, obj);
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ", stmt=" +
+                stmt + ']', e);
+        }
     }
 }
