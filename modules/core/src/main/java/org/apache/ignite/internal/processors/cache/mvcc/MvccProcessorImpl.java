@@ -55,6 +55,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -85,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -225,6 +227,18 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      */
     private final ConcurrentHashMap<UUID, RecoveryBallotBox> recoveryBallotBoxes = new ConcurrentHashMap<>();
 
+    /** */
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+
+    /** */
+    private final DiscoveryEventListener discoLsnr;
+
+    /** */
+    private final GridMessageListener msgLsnr;
+
+    /** */
+    private final CustomEventListener customLsnr;
+
     /**
      * @param ctx Context.
      */
@@ -232,20 +246,24 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         super(ctx);
 
         ctx.internalSubscriptionProcessor().registerDatabaseListener(this);
+
+        discoLsnr = this::onDiscovery;
+        msgLsnr = new MvccMessageListener();
+        customLsnr = new CustomEventListener<DynamicCacheChangeBatch>() {
+            @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+                DynamicCacheChangeBatch msg) {
+                checkMvccCacheStarted(msg);
+            }
+        };
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.event().addDiscoveryEventListener(this::onDiscovery, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
+        ctx.event().addDiscoveryEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
 
-        ctx.io().addMessageListener(TOPIC_CACHE_COORDINATOR, new MvccMessageListener());
+        ctx.io().addMessageListener(TOPIC_CACHE_COORDINATOR, msgLsnr);
 
-        ctx.discovery().setCustomEventListener(DynamicCacheChangeBatch.class,
-            new CustomEventListener<DynamicCacheChangeBatch>() {
-                @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, DynamicCacheChangeBatch msg) {
-                    checkMvccCacheStarted(msg);
-                }
-            });
+        ctx.discovery().setCustomEventListener(DynamicCacheChangeBatch.class, customLsnr);
     }
 
     /** {@inheritDoc} */
@@ -298,8 +316,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         if (!ctx.clientNode()) {
             assert mvccEnabled && mvccSupported;
 
-            if (txLog == null)
-                txLog = new TxLog(ctx, ctx.cache().context().database());
+            synchronized (mux) {
+                if (txLog == null)
+                    txLog = new TxLog(ctx, ctx.cache().context().database());
+            }
 
             startVacuumWorkers();
 
@@ -422,6 +442,21 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             curCrd = MvccCoordinator.DISCONNECTED_COORDINATOR;
 
             readyVer = AffinityTopologyVersion.NONE;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        busyLock.block();
+
+        try {
+            ctx.io().removeMessageListener(TOPIC_CACHE_COORDINATOR, msgLsnr);
+
+            ctx.event().removeDiscoveryEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
+        }
+        finally {
+            // Cleanup pending futures.
+            onCoordinatorFailed(curCrd.nodeId());
         }
     }
 
@@ -759,44 +794,55 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             return;
         }
 
-        if (ctx.localNodeId().equals(crd.nodeId())) {
-            if (!initFut.isDone()) {
-                // Wait for the local coordinator init.
-                initFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                    @Override public void apply(IgniteInternalFuture fut) {
-                        if (forRead)
-                            lsnr.onResponse(activeQueries.assignQueryCounter(ctx.localNodeId(), 0L));
-                        else
-                            lsnr.onResponse(assignTxSnapshot(0L, ctx.localNodeId(), false));
-                    }
-                });
-            }
-            else if (forRead)
-                lsnr.onResponse(activeQueries.assignQueryCounter(ctx.localNodeId(), 0L));
-            else
-                lsnr.onResponse(assignTxSnapshot(0L, ctx.localNodeId(), false));
+        if (!busyLock.enterBusy()) {
+            lsnr.onError(new NodeStoppingException("Failed to request snapshot (Node is stopping)."));
 
             return;
         }
 
-        // Send request to the remote coordinator.
-        UUID nodeId = crd.nodeId();
-
-        long id = futIdCntr.incrementAndGet();
-
-        Map<Long, MvccSnapshotResponseListener> map = snapLsnrs.get(nodeId), map0;
-
-        if (map == null && (map0 = snapLsnrs.putIfAbsent(nodeId, map = new ConcurrentHashMap<>())) != null)
-            map = map0;
-
-        map.put(id, lsnr);
-
         try {
-            sendMessage(nodeId, forRead ? new MvccQuerySnapshotRequest(id) : new MvccTxSnapshotRequest(id));
+            if (ctx.localNodeId().equals(crd.nodeId())) {
+                if (!initFut.isDone()) {
+                    // Wait for the local coordinator init.
+                    initFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                        @Override public void apply(IgniteInternalFuture fut) {
+                            if (forRead)
+                                lsnr.onResponse(activeQueries.assignQueryCounter(ctx.localNodeId(), 0L));
+                            else
+                                lsnr.onResponse(assignTxSnapshot(0L, ctx.localNodeId(), false));
+                        }
+                    });
+                }
+                else if (forRead)
+                    lsnr.onResponse(activeQueries.assignQueryCounter(ctx.localNodeId(), 0L));
+                else
+                    lsnr.onResponse(assignTxSnapshot(0L, ctx.localNodeId(), false));
+
+                return;
+            }
+
+            // Send request to the remote coordinator.
+            UUID nodeId = crd.nodeId();
+
+            long id = futIdCntr.incrementAndGet();
+
+            Map<Long, MvccSnapshotResponseListener> map = snapLsnrs.get(nodeId), map0;
+
+            if (map == null && (map0 = snapLsnrs.putIfAbsent(nodeId, map = new ConcurrentHashMap<>())) != null)
+                map = map0;
+
+            map.put(id, lsnr);
+
+            try {
+                sendMessage(nodeId, forRead ? new MvccQuerySnapshotRequest(id) : new MvccTxSnapshotRequest(id));
+            }
+            catch (IgniteCheckedException e) {
+                if (map.remove(id) != null)
+                    lsnr.onError(e);
+            }
         }
-        catch (IgniteCheckedException e) {
-            if (map.remove(id) != null)
-                lsnr.onError(e);
+        finally {
+            busyLock.leaveBusy();
         }
     }
 
@@ -1088,29 +1134,29 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      * Launches vacuum workers and scheduler.
      */
     void startVacuumWorkers() {
-        if (!ctx.clientNode()) {
-            synchronized (mux) {
-                if (vacuumWorkers == null) {
-                    assert cleanupQueue == null;
+        assert !ctx.clientNode();
 
-                    cleanupQueue = new LinkedBlockingQueue<>();
+        synchronized (mux) {
+            if (vacuumWorkers == null) {
+                assert cleanupQueue == null;
 
-                    vacuumWorkers = new ArrayList<>(ctx.config().getMvccVacuumThreadCount() + 1);
+                cleanupQueue = new LinkedBlockingQueue<>();
 
-                    vacuumWorkers.add(new VacuumScheduler(ctx, log, this));
+                vacuumWorkers = new ArrayList<>(ctx.config().getMvccVacuumThreadCount() + 1);
 
-                    for (int i = 0; i < ctx.config().getMvccVacuumThreadCount(); i++)
-                        vacuumWorkers.add(new VacuumWorker(ctx, log, cleanupQueue));
+                vacuumWorkers.add(new VacuumScheduler(ctx, log, this));
 
-                    for (GridWorker worker : vacuumWorkers)
-                        new IgniteThread(worker).start();
+                for (int i = 0; i < ctx.config().getMvccVacuumThreadCount(); i++)
+                    vacuumWorkers.add(new VacuumWorker(ctx, log, cleanupQueue));
 
-                    return;
-                }
+                for (GridWorker worker : vacuumWorkers)
+                    new IgniteThread(worker).start();
+
+                return;
             }
-
-            U.warn(log, "Attempting to start active vacuum.");
         }
+
+        U.warn(log, "Attempting to start active vacuum.");
     }
 
     /**
@@ -1304,15 +1350,20 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** */
     @NotNull private IgniteInternalFuture<Void> sendTxCommit(MvccCoordinator crd, MvccAckRequestTx msg) {
-        WaitAckFuture fut = new WaitAckFuture(msg.futureId(), crd.nodeId(), true);
+        if (!busyLock.enterBusy())
+            return new GridFinishedFuture<>();
 
-        ackFuts.put(fut.id, fut);
+        WaitAckFuture fut = null;
 
         try {
+            fut = new WaitAckFuture(msg.futureId(), crd.nodeId(), true);
+
+            ackFuts.put(fut.id, fut);
+
             sendMessage(crd.nodeId(), msg);
         }
         catch (IgniteCheckedException e) {
-            if (ackFuts.remove(fut.id) != null) {
+            if (fut != null && ackFuts.remove(fut.id) != null) {
                 if (e instanceof ClusterTopologyCheckedException) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to send tx ack, node left [crd=" + crd + ", msg=" + msg + ']');
@@ -1323,8 +1374,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     fut.onDone(e);
             }
         }
+        finally {
+            busyLock.leaveBusy();
+        }
 
-        return fut;
+        return fut != null ? fut : new GridFinishedFuture<>();
     }
 
     /**
@@ -2145,6 +2199,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                     throw e; // Cancelled.
                 }
+                catch (NodeStoppingException e) {
+                    task.onDone(e);
+
+                    return;
+                }
                 catch (Throwable e) {
                     task.onDone(e);
 
@@ -2173,8 +2232,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             int curCacheId = CU.UNDEFINED_CACHE_ID;
 
             try {
-                GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(KEY_ONLY);
-
                 KeyCacheObject prevKey = null;
 
                 Object rest = null;
@@ -2190,6 +2247,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 if (!shared && (cctx = F.first(part.group().caches())) == null)
                     return metrics;
 
+                GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(KEY_ONLY);
+
                 while (cursor.next()) {
                     if (isCancelled())
                         throw new IgniteInterruptedCheckedException("Operation has been cancelled.");
@@ -2199,14 +2258,14 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     if (prevKey == null)
                         prevKey = row.key();
 
-                    if (cctx == null) {
+                    if (cctx == null) { // Shared group.
                         cctx = part.group().shared().cacheContext(curCacheId = row.cacheId());
 
                         if (cctx == null)
-                            return metrics;
+                            continue;
                     }
 
-                    if (!prevKey.equals(row.key()) || (shared && curCacheId != row.cacheId())) {
+                    if ((shared && curCacheId != row.cacheId()) || !prevKey.equals(row.key())) {
                         if (rest != null || !F.isEmpty(cleanupRows))
                             cleanup(part, prevKey, cleanupRows, rest, cctx, metrics);
 
@@ -2218,7 +2277,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                             cctx = part.group().shared().cacheContext(curCacheId = row.cacheId());
 
                             if (cctx == null)
-                                return metrics;
+                                continue;
                         }
 
                         prevKey = row.key();

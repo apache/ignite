@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationExcepti
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.NotNull;
@@ -1546,6 +1547,11 @@ public class QueryUtils {
         }
         else if (e instanceof TransactionSerializationException){
             code = IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
+
+            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
+        }
+        else if (e instanceof TransactionAlreadyCompletedException){
+            code = IgniteQueryErrorCode.TRANSACTION_COMPLETED;
 
             sqlState = IgniteQueryErrorCode.codeToSqlState(code);
         }

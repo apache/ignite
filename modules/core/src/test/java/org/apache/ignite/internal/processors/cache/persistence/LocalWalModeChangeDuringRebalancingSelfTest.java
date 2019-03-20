@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
@@ -59,6 +61,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -169,6 +172,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
         super.beforeTestsStarted();
 
         cleanPersistenceDir();
@@ -212,6 +217,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING);
 
         System.clearProperty(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED);
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /**
@@ -565,7 +572,14 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         cache = newIgnite.cache(DEFAULT_CACHE_NAME);
 
         for (int k = 0; k < keysCnt; k++)
-            assertFalse("k=" + k +", v=" + cache.get(k), cache.containsKey(k));
+            assertFalse("k=" + k +", v="  + cache.get(k), cache.containsKey(k));
+
+        Set<Integer> keys = new TreeSet<>();
+
+        for (int k = 0; k < keysCnt; k++)
+            keys.add(k);
+
+        assertFalse(cache.containsKeys(keys));
     }
 
     /**

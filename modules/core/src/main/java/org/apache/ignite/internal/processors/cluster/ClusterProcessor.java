@@ -48,6 +48,8 @@ import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatistic;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridTimerTask;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -72,6 +74,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DIAGNOSTIC_ENABLED
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CLUSTER_PROC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_INTERNAL_DIAGNOSTIC;
@@ -124,6 +127,9 @@ public class ClusterProcessor extends GridProcessorAdapter {
     /** */
     private boolean sndMetrics;
 
+    /** Watcher of topology change for baseline auto-adjust. */
+    private ChangeTopologyWatcher changeTopologyWatcher;
+
     /**
      * @param ctx Kernal context.
      */
@@ -169,6 +175,11 @@ public class ClusterProcessor extends GridProcessorAdapter {
                 allNodesMetrics.remove(nodeId);
             }
         }, EVT_NODE_FAILED, EVT_NODE_LEFT);
+
+        ctx.event().addLocalEventListener(
+            changeTopologyWatcher = new ChangeTopologyWatcher(ctx),
+            EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED
+        );
 
         ctx.io().addMessageListener(TOPIC_INTERNAL_DIAGNOSTIC, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
@@ -340,7 +351,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
                 Map<String, Object> map = (Map<String, Object>)ser;
 
                 if (map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
-                    flag = (Boolean) map.get(ATTR_UPDATE_NOTIFIER_STATUS);
+                    flag = (Boolean)map.get(ATTR_UPDATE_NOTIFIER_STATUS);
             }
         }
 
@@ -539,8 +550,8 @@ public class ClusterProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Sends diagnostic message closure to remote node. When response received dumps
-     * remote message and local communication info about connection(s) with remote node.
+     * Sends diagnostic message closure to remote node. When response received dumps remote message and local
+     * communication info about connection(s) with remote node.
      *
      * @param nodeId Target node ID.
      * @param c Closure to send.
@@ -633,6 +644,13 @@ public class ClusterProcessor extends GridProcessorAdapter {
         }
 
         return map;
+    }
+
+    /**
+     * @return Statistic of baseline auto-adjust.
+     */
+    public BaselineAutoAdjustStatistic baselineAutoAdjustStatistic(){
+        return changeTopologyWatcher.getStatistic();
     }
 
     /**

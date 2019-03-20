@@ -19,12 +19,15 @@ import {StateService} from '@uirouter/angularjs';
 import {default as LegacyConfirmFactory} from 'app/services/Confirm.service';
 
 export default class DemoModeButton {
-    static $inject = ['$rootScope', '$state', '$window', 'IgniteConfirm'];
+    static $inject = ['$rootScope', '$state', '$window', 'IgniteConfirm', 'AgentManager', 'IgniteMessages'];
+
     constructor(
         private $root: ng.IRootScopeService,
         private $state: StateService,
         private $window: ng.IWindowService,
-        private Confirm: ReturnType<typeof LegacyConfirmFactory>
+        private Confirm: ReturnType<typeof LegacyConfirmFactory>,
+        private agentMgr: AgentManager,
+        private Messages
     ) {}
 
     private _openTab(stateName: string) {
@@ -32,15 +35,23 @@ export default class DemoModeButton {
     }
 
     startDemo() {
-        if (!this.$root.user.demoCreated)
-            return this._openTab('demo.reset');
+        const connectionState = this.agentMgr.connectionSbj.getValue();
+        const disconnected = _.get(connectionState, 'state') === 'AGENT_DISCONNECTED';
+        const demoEnabled = _.get(connectionState, 'hasDemo');
 
-        this.Confirm.confirm('Would you like to continue with previous demo session?', true, false)
-            .then((resume) => {
-                if (resume)
-                    return this._openTab('demo.resume');
+        if (disconnected || demoEnabled || _.isNil(demoEnabled)) {
+            if (!this.$root.user.demoCreated)
+                return this._openTab('demo.reset');
 
-                this._openTab('demo.reset');
-            });
+            this.Confirm.confirm('Would you like to continue with previous demo session?', true, false)
+                .then((resume) => {
+                    if (resume)
+                        return this._openTab('demo.resume');
+
+                    this._openTab('demo.reset');
+                });
+        }
+        else
+            this.Messages.showError('Demo mode disabled by administrator');
     }
 }

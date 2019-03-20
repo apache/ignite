@@ -63,8 +63,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         long connTimeout,
         IgniteLogger log,
         MessageFormatter formatter)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         super(connIdx, metricsLsnr);
 
         assert metricsLsnr != null;
