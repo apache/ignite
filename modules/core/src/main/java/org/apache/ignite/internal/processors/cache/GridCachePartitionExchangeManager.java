@@ -283,12 +283,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     return;
                 }
 
-                if (cache.state().transition()) {
-                    if (log.isDebugEnabled())
-                        log.debug("Adding pending event: " + evt);
-
-                    pendingEvts.add(new PendingDiscoveryEvent(evt, cache));
-                }
+//                if (cache.state().transition()) {
+//                    if (log.isDebugEnabled())
+//                        log.debug("Adding pending event: " + evt);
+//
+//                    pendingEvts.add(new PendingDiscoveryEvent(evt, cache));
+//                }
                 else if (cache.state().active())
                     onDiscoveryEvent(evt, cache);
                 else
