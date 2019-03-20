@@ -80,6 +80,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg1);
 
+        cfg.setFailureDetectionTimeout(20_000);
+
         return cfg;
     }
 
