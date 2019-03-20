@@ -88,13 +88,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 @SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
-    /**
-     * Throttling timeout in millis which avoid excessive PendingTree access on unwind
-     * if there is nothing to clean yet.
-     */
-    public static final long UNWIND_THROTTLING_TIMEOUT = Long.getLong(
-        IgniteSystemProperties.IGNITE_UNWIND_THROTTLING_TIMEOUT, 500L);
-
     /** */
     protected GridCacheSharedContext ctx;
 
@@ -112,12 +105,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** */
     protected PendingEntriesTree pendingEntries;
-
-    /** */
-    protected volatile boolean hasPendingEntries;
-
-    /** Timestamp when next clean try will be allowed. Used for throttling on per-group basis. */
-    protected volatile long nextCleanTime;
 
     /** */
     private final GridAtomicLong globalRmvId = new GridAtomicLong(U.currentTimeMillis() * 1000_000);
@@ -1053,54 +1040,71 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     ) throws IgniteCheckedException {
         assert !cctx.isNear() : cctx.name();
 
-        if (hasPendingEntries && pendingEntries != null) {
+        assert pendingEntries != null;
+
+        int cleared = expireInternal(cctx, c, amount);
+
+        return amount != -1 && cleared >= amount;
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param c Closure.
+     * @param amount Limit of processed entries by single call, {@code -1} for no limit.
+     * @return cleared entries count.
+     * @throws IgniteCheckedException If failed.
+     */
+    private int expireInternal(
+        GridCacheContext cctx,
+        IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
+        int amount
+    ) throws IgniteCheckedException {
+        long now = U.currentTimeMillis();
+
+        if (!busyLock.enterBusy())
+            return 0;
+
+        try {
+            GridCursor<PendingRow> cur;
+
+            cur = grp.sharedGroup() ?
+                pendingEntries.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0)) :
+                pendingEntries.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
+
+            if (!cur.next())
+                return 0;
+
+            int cleared = 0;
+
             GridCacheVersion obsoleteVer = null;
 
-            long now = U.currentTimeMillis();
+            do {
+                PendingRow row = cur.get();
 
-            if (!busyLock.enterBusy())
-                return false;
+                if (amount != -1 && cleared > amount)
+                    return cleared;
 
-            try {
-                GridCursor<PendingRow> cur;
+                if (row.key.partition() == -1)
+                    row.key.partition(cctx.affinity().partition(row.key));
 
-                cur = grp.sharedGroup() ?
-                    pendingEntries.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0)) :
-                    pendingEntries.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
+                assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
-                if (!cur.next())
-                    return false;
+                if (pendingEntries.removex(row)) {
+                    if (obsoleteVer == null)
+                        obsoleteVer = ctx.versions().next();
 
-                int cleared = 0;
-
-                do {
-                    PendingRow row = cur.get();
-
-                    if (amount != -1 && cleared > amount)
-                        return true;
-
-                    if (row.key.partition() == -1)
-                        row.key.partition(cctx.affinity().partition(row.key));
-
-                    assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
-
-                    if (pendingEntries.removex(row)) {
-                        if (obsoleteVer == null)
-                            obsoleteVer = ctx.versions().next();
-
-                        c.apply(cctx.cache().entryEx(row.key), obsoleteVer);
-                    }
-
-                    cleared++;
+                    c.apply(cctx.cache().entryEx(row.key), obsoleteVer);
                 }
-                while (cur.next());
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
 
-        return false;
+                cleared++;
+            }
+            while (cur.next());
+
+            return cleared;
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /** {@inheritDoc} */
@@ -1519,7 +1523,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (pendingTree() != null && expireTime != 0) {
                 pendingTree().putx(new PendingRow(cacheId, expireTime, newRow.link()));
 
-                hasPendingEntries = true;
+                if (!cctx.ttl().hasPendingEntries())
+                    cctx.ttl().hasPendingEntries(true);
             }
 
             updateIgfsMetrics(cctx, key, (oldRow != null ? oldRow.value() : null), newRow.value());
