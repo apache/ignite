@@ -34,6 +34,7 @@ import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -1004,8 +1005,19 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @return {@code True} if {@code done} flag was changed as a result of this call.
      */
     private boolean onComplete(@Nullable GridNearTxPrepareResponse res) {
-        if (!tx.onePhaseCommit() && ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local())))
-            tx.state(PREPARED);
+        if (!tx.onePhaseCommit() && ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local()))) {
+            try {
+                tx.state(PREPARED);
+            }
+            catch (IgniteException ex){
+                if (err == null) {
+                    err = ex;
+                    tx.systemInvalidate(true);
+                }
+                else
+                    err.addSuppressed(ex);
+            }
+        }
 
         if (super.onDone(res, res == null ? err : null)) {
             // Don't forget to clean up.
