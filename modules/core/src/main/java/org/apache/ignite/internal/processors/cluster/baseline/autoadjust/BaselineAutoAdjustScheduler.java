@@ -120,7 +120,8 @@ class BaselineAutoAdjustScheduler {
             long executionTimeout,
             BaselineAutoAdjustExecutor executor,
             GridTimeoutProcessor processor,
-            IgniteLogger log) {
+            IgniteLogger log
+        ) {
             baselineAutoAdjustData = data;
             baselineAutoAdjustExecutor = executor;
             timeoutProcessor = processor;
