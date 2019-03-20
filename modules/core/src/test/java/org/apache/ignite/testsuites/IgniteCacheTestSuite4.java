@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticSerial
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticReadCommittedSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticRepeatableReadSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticSerializableSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheGetRemoveSkipStoreTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapMapEntrySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughAtomicRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughLocalAtomicRestartSelfTest;
@@ -207,6 +208,7 @@ public class IgniteCacheTestSuite4 {
         addTestIfNeeded(suite, IgniteCacheTxNoReadThroughTest.class, ignoredTests);
         addTestIfNeeded(suite, IgniteCacheTxNearEnabledNoReadThroughTest.class, ignoredTests);
         addTestIfNeeded(suite, IgniteCacheTxLocalNoReadThroughTest.class, ignoredTests);
+        addTestIfNeeded(suite, CacheGetRemoveSkipStoreTest.class, ignoredTests);
 
         addTestIfNeeded(suite, IgniteCacheAtomicNoLoadPreviousValueTest.class, ignoredTests);
         addTestIfNeeded(suite, IgniteCacheAtomicNearEnabledNoLoadPreviousValueTest.class, ignoredTests);

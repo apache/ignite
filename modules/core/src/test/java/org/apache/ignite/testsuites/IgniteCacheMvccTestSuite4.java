@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticSerial
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticReadCommittedSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticRepeatableReadSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticSerializableSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheGetRemoveSkipStoreTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapMapEntrySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughAtomicRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughLocalAtomicRestartSelfTest;
@@ -145,6 +146,7 @@ public class IgniteCacheMvccTestSuite4 {
         ignoredTests.add(IgniteCacheAtomicNoReadThroughTest.class);
         ignoredTests.add(IgniteCacheAtomicNearEnabledNoReadThroughTest.class);
         ignoredTests.add(IgniteCacheAtomicLocalNoReadThroughTest.class);
+        ignoredTests.add(CacheGetRemoveSkipStoreTest.class);
         ignoredTests.add(IgniteCacheAtomicNoLoadPreviousValueTest.class);
         ignoredTests.add(IgniteCacheAtomicNearEnabledNoLoadPreviousValueTest.class);
         ignoredTests.add(IgniteCacheAtomicLocalNoLoadPreviousValueTest.class);
