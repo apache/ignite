@@ -775,13 +775,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             //TODO Store it precalculated? Maybe later.
             DistributedMetaStorageVersion actualVer = getActualVersion();
 
-            if (remoteVer.id > actualVer.id) {
+            if (remoteVer.id > actualVer.id) { // Impossible for client.
                 Serializable nodeData = new DistributedMetaStorageClusterNodeData(remoteVer, null, null, null);
 
                 dataBag.addGridCommonData(COMPONENT_ID, nodeData);
             }
             else {
-                if (remoteVer.id == actualVer.id) {
+                if (remoteVer.id == actualVer.id) { // On client this would mean that cluster metastorage is empty.
                     Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, null);
 
                     dataBag.addGridCommonData(COMPONENT_ID, nodeData);
@@ -789,10 +789,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 else {
                     int availableHistSize = getAvailableHistorySize();
 
-                    if (actualVer.id - remoteVer.id <= availableHistSize) {
-                        DistributedMetaStorageHistoryItem[] hist = history(remoteVer.id + 1, actualVer.id);
+                    if (actualVer.id - remoteVer.id <= availableHistSize && !dataBag.isJoiningNodeClient()) {
+                        DistributedMetaStorageHistoryItem[] updates = history(remoteVer.id + 1, actualVer.id);
 
-                        Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, hist);
+                        Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, updates);
 
                         dataBag.addGridCommonData(COMPONENT_ID, nodeData);
                     }
@@ -813,14 +813,20 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                                 throw criticalError(e);
                             }
 
-                            hist = history(ver.id - histCache.size() + 1, actualVer.id);
+                            if (dataBag.isJoiningNodeClient())
+                                hist = EMPTY_ARRAY;
+                            else
+                                hist = history(ver.id - histCache.size() + 1, actualVer.id);
                         }
                         else {
                             ver0 = startupExtras.fullNodeData.ver;
 
                             fullData = startupExtras.fullNodeData.fullData;
 
-                            hist = startupExtras.fullNodeData.hist;
+                            if (dataBag.isJoiningNodeClient())
+                                hist = EMPTY_ARRAY;
+                            else
+                                hist = startupExtras.fullNodeData.hist;
                         }
 
                         DistributedMetaStorageHistoryItem[] updates;
