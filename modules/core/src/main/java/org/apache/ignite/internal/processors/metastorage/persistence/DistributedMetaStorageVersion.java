@@ -127,14 +127,8 @@ class DistributedMetaStorageVersion implements Serializable {
 
         long hash = this.hash;
 
-        for (long idx = fromVer; idx <= toVer; idx++) {
-            DistributedMetaStorageHistoryItem applied = update.apply(idx);
-
-            if (applied == null)
-                System.out.println("of boy");
-
+        for (long idx = fromVer; idx <= toVer; idx++)
             hash = nextHash(hash, update.apply(idx));
-        }
 
         return new DistributedMetaStorageVersion(id + toVer + 1 - fromVer, hash);
     }

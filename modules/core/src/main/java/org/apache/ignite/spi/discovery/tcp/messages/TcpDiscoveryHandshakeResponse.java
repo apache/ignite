@@ -45,6 +45,9 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
 
         order = locNodeOrder;
         this.componentsData = componentsData;
+
+        if (componentsData != null)
+            hasComponentsData(true);
     }
 
     /**
