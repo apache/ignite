@@ -75,7 +75,7 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     private ConnectionManager connectionMgr;
 
     /** Result set size threshold. */
-    private final long threshold;
+    private long threshold;
 
     /** Query info to print log message. */
     private IgniteH2QueryInfo qryInfo;
@@ -158,9 +158,12 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
 
             fetchedSize++;
 
-            if (fetchedSize % threshold == 0)
+            if (fetchedSize >= threshold) {
                 qryInfo.printLogMessage(log, connectionMgr, "Query produces too big result set. " +
                     "[fetched=" + fetchedSize + ']');
+
+                threshold *= 2;
+            }
 
             return true;
         }

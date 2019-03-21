@@ -108,7 +108,7 @@ class MapQueryResult {
     private final IgniteLogger log;
 
     /** Result set size threshold. */
-    private final long threshold;
+    private long threshold;
 
     /** Fetched count of rows. */
     private long fetchedSize;
@@ -265,9 +265,11 @@ class MapQueryResult {
 
             ++fetchedSize;
 
-            if (fetchedSize % threshold == 0) {
+            if (fetchedSize >= threshold) {
                 qryInfo.printLogMessage(log, h2.connections(), "Query produces too big result set. " +
                     "[fetched=" + fetchedSize + ']');
+
+                threshold *= 2;
             }
         }
 
