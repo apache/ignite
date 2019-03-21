@@ -1025,6 +1025,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         finally {
             longRunningQryMgr.unregisterQuery(qryInfo);
+
+            // Print log message on end of query again.
+            if (qryInfo.time() > longRunningQryMgr.getLongQueryWarningTimeout())
+                qryInfo.printLogMessage(log, connMgr, "Long running query is finished or canceled");
         }
     }
 

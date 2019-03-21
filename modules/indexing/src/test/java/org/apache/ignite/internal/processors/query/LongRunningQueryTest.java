@@ -123,7 +123,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         ListeningTestLogger testLog = testLog();
 
         LogListener lsnr = LogListener
-            .matches(Pattern.compile("Query execution is too long"))
+            .matches("Query execution is too long")
             .build();
 
         testLog.registerListener(lsnr);
