@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -123,7 +122,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
 
         /** Local ignite. */
         @IgniteInstanceResource
-        protected Ignite loc;
+        protected transient Ignite loc;
 
         /**
          * @param remotes Collection of transition node ids.
@@ -139,7 +138,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
 
         /** {@inheritDoc} */
         @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Integer arg) throws IgniteException {
+            @Nullable Integer arg) {
             Map<ComputeJob, ClusterNode> res = new HashMap<>();
 
             for (UUID id : remotes) {
@@ -152,7 +151,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
                             // no-op
                         }
 
-                        @Override public Object execute() throws IgniteException {
+                        @Override public Object execute() {
                             register();
 
                             compute(loc, endpoints)
@@ -168,8 +167,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-            List<ComputeJobResult> rcvd) throws IgniteException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             if (res.getException() != null)
                 throw res.getException();
 
@@ -177,7 +175,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
         }
 
         /** {@inheritDoc} */
-        @Override public @Nullable Integer reduce(List<ComputeJobResult> results) throws IgniteException {
+        @Override public @Nullable Integer reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

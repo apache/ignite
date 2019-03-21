@@ -61,8 +61,8 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
 
         Stream.of(srvNode, clientNode)
             .forEach(
-                (n) -> consumers(n).forEach(
-                    (c) -> {
+                n -> consumers(n).forEach(
+                    c -> {
                         assertAllowed(n, c);
 
                         assertForbidden(n, c);
