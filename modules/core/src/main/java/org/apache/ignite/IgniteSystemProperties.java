@@ -1148,6 +1148,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SQL_ALLOW_KEY_VAL_UPDATES = "IGNITE_SQL_ALLOW_KEY_VAL_UPDATES";
 
     /**
+     * Interval between logging of time of next auto-adjust.
+     */
+    public static final String IGNITE_BASELINE_AUTO_ADJUST_LOG_INTERVAL = "IGNITE_BASELINE_AUTO_ADJUST_LOG_INTERVAL";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
