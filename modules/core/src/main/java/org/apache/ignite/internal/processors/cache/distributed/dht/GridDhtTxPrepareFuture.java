@@ -1010,12 +1010,14 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.state(PREPARED);
             }
             catch (IgniteException ex){
-                if (err == null) {
-                    err = ex;
-                    tx.systemInvalidate(true);
-                }
-                else
+                if (err != null)
                     err.addSuppressed(ex);
+                else
+                    err = ex;
+
+                res = null;
+
+                tx.systemInvalidate(true);
             }
         }
 
