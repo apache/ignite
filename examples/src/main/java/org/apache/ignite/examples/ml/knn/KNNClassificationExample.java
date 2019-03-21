@@ -61,12 +61,10 @@ public class KNNClassificationExample {
 
             KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
-            NNClassificationModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                vectorizer
-            ).withK(3)
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                .labeled(Vectorizer.LabelCoordinate.FIRST);
+
+            NNClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer).withK(3)
                 .withDistanceMeasure(new EuclideanDistance())
                 .withStrategy(NNStrategy.WEIGHTED);
 

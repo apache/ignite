@@ -107,7 +107,7 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
 
         LinearRegressionModel updatedOnEmptyDS = trainer.withSeed(0).update(
             originalMdl,
-            new HashMap<Integer, double[]>(),
+            new HashMap<>(),
             parts,
             new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );

@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
@@ -194,9 +193,9 @@ public class MLPTrainerTest {
 
             MultilayerPerceptron updatedOnEmptyDS = trainer.update(
                 originalMdl,
-                new HashMap<Integer, double[][]>(),
+                new HashMap<Integer, LabeledVector<double[]>>(),
                 parts,
-                FeatureLabelExtractorWrapper.wrap((k, v) -> VectorUtils.of(v[0]), (k, v) -> v[1])
+                new LabeledDummyVectorizer<>()
             );
 
             DenseMatrix matrix = new DenseMatrix(new double[][] {

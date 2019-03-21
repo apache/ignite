@@ -28,7 +28,6 @@ import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
@@ -64,15 +63,11 @@ public class KNNRegressionExample {
 
             KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 
-            final IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-            final IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
-            KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
-                ignite,
-                dataCache,
-                vectorizer
-            ).withK(5)
+            KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(ignite, dataCache, vectorizer)
+                .withK(5)
                 .withDistanceMeasure(new ManhattanDistance())
                 .withStrategy(NNStrategy.WEIGHTED);
 

@@ -121,12 +121,16 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
 
             switch (lbCoordinateShortcut) {
                 case FIRST:
-                    allCoords.get(0);
+                    labelCoord = allCoords.get(0);
+                    break;
                 case LAST:
-                    allCoords.get(allCoords.size() - 1);
+                    labelCoord = allCoords.get(allCoords.size() - 1);
+                    break;
                 default:
                     throw new IllegalArgumentException();
             }
+
+            return labelCoord;
         }
     }
 

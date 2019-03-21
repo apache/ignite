@@ -75,7 +75,8 @@ public class LogisticRegressionSGDTrainerExample {
                 .withSeed(123L);
 
             System.out.println(">>> Perform the training to get the model.");
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                .labeled(Vectorizer.LabelCoordinate.FIRST);
 
             LogisticRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 

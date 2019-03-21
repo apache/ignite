@@ -61,7 +61,8 @@ public class EvaluatorExample {
 
             SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer();
 
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                .labeled(Vectorizer.LabelCoordinate.FIRST);
 
             SVMLinearClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 

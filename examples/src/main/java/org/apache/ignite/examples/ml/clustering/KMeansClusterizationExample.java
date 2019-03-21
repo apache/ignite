@@ -26,6 +26,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -63,7 +64,7 @@ public class KMeansClusterizationExample {
             KMeansModel mdl = trainer.fit(
                 ignite,
                 dataCache,
-                new DummyVectorizer<Integer>().labeled(0)
+                new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
             );
 
             System.out.println(">>> KMeans centroids");

@@ -64,14 +64,10 @@ public class DiscreteNaiveBayesTrainerExample {
                 .setBucketThresholds(thresholds);
 
             System.out.println(">>> Perform the training to get the model.");
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            DiscreteNaiveBayesModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                vectorizer
-            );
-
+            DiscreteNaiveBayesModel mdl = trainer.fit(ignite, dataCache, vectorizer);
             System.out.println(">>> Discrete Naive Bayes model: " + mdl);
 
             double accuracy = Evaluator.evaluate(

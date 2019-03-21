@@ -67,7 +67,7 @@ public class GDBTrainerTest extends TrainerTest {
 
         IgniteModel<Vector, Double> mdl = trainer.fit(
             learningSample, 1,
-            new ArraysVectorizer<Integer>().labeled(1)
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         double mse = 0.0;
@@ -100,7 +100,7 @@ public class GDBTrainerTest extends TrainerTest {
     public void testFitClassifier() {
         testClassifier((trainer, learningSample) -> trainer.fit(
             learningSample, 1,
-            new ArraysVectorizer<Integer>().labeled(1)
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ));
     }
 

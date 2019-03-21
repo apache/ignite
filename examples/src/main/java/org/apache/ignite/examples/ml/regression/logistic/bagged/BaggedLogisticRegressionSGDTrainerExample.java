@@ -90,7 +90,9 @@ public class BaggedLogisticRegressionSGDTrainerExample {
 
             System.out.println(">>> Perform evaluation of the model.");
 
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                .labeled(Vectorizer.LabelCoordinate.FIRST);
+
             double[] score = new CrossValidation<BaggedModel, Double, Integer, Vector>().score(
                 baggedTrainer,
                 new Accuracy<>(),

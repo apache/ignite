@@ -109,7 +109,7 @@ public class BaggingTest extends TrainerTest {
         BaggedModel mdl = baggedTrainer.fit(
             cacheMock,
             parts,
-            new ArraysVectorizer<Integer>().labeled(0)
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
 
         Vector weights = ((LogisticRegressionModel)((AdaptableDatasetModel)((ModelsParallelComposition)((AdaptableDatasetModel)mdl

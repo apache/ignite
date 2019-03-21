@@ -70,7 +70,8 @@ public class LinearRegressionLSQRTrainerExample {
              // DatasetTrainer#fit(Ignite, IgniteCache, IgniteBiFunction, IgniteBiFunction) method call
              // where there is a separate lambda for extracting label from (key, value) and a separate labmda for
              // extracting features.
-            Vectorizer<Integer, Vector, Integer, Double> extractor = new DummyVectorizer<Integer>().labeled(0);
+            Vectorizer<Integer, Vector, Integer, Double> extractor = new DummyVectorizer<Integer>()
+                .labeled(Vectorizer.LabelCoordinate.FIRST);
 
             LinearRegressionModel mdl = trainer.fit(ignite, dataCache, extractor);
 

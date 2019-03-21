@@ -50,14 +50,14 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
-        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
 
         NNClassificationModel mdl = trainer.fit(
             cacheMock, parts,
-            new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(3);
 
+        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
+        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
         double score = Evaluator.evaluate(cacheMock, mdl, featureExtractor, lbExtractor, new Accuracy<>());
 
         assertEquals(0.9839357429718876, score, 1e-12);

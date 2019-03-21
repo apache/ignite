@@ -81,7 +81,8 @@ public class RandomForestClassificationExample {
 
             System.out.println(">>> Configured trainer: " + classifier.getClass().getSimpleName());
 
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                .labeled(Vectorizer.LabelCoordinate.FIRST);
             ModelsComposition randomForestMdl = classifier.fit(ignite, dataCache, vectorizer);
 
             System.out.println(">>> Trained model: " + randomForestMdl.toString(true));

@@ -64,9 +64,10 @@ public class GaussianNaiveBayesTrainerExample {
 
             System.out.println(">>> Perform the training to get the model.");
 
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
-            GaussianNaiveBayesModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                .labeled(Vectorizer.LabelCoordinate.FIRST);
 
+            GaussianNaiveBayesModel mdl = trainer.fit(ignite, dataCache, vectorizer);
             System.out.println(">>> Naive Bayes model: " + mdl);
 
             IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);

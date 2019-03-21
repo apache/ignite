@@ -27,6 +27,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.examples.ml.regression.linear.LinearRegressionLSQRTrainerExample;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.ml.inference.builder.IgniteDistributedModelBuilder;
@@ -63,7 +64,7 @@ public class IgniteModelDistributedInferenceExample {
             LinearRegressionModel mdl = trainer.fit(
                 ignite,
                 dataCache,
-                new DummyVectorizer<Integer>().labeled(0)
+                new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
             );
 
             System.out.println(">>> Linear regression model: " + mdl);

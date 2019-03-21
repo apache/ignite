@@ -28,6 +28,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
@@ -72,7 +73,7 @@ public class ANNClassificationExample {
             NNClassificationModel knnMdl = trainer.fit(
                 ignite,
                 dataCache,
-                new ArraysVectorizer<Integer>().labeled(0)
+                new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
             ).withK(5)
                 .withDistanceMeasure(new EuclideanDistance())
                 .withStrategy(NNStrategy.WEIGHTED);

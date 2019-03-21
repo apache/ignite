@@ -68,7 +68,8 @@ public class TrainTestDatasetSplitterExample {
                 .split(0.75);
 
             System.out.println(">>> Perform the training to get the model.");
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(0);
+            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                .labeled(Vectorizer.LabelCoordinate.FIRST);
             LinearRegressionModel mdl = trainer.fit(ignite, dataCache, split.getTrainFilter(), vectorizer);
 
             System.out.println(">>> Linear regression model: " + mdl);
