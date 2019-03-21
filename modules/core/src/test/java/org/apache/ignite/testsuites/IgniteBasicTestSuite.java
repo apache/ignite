@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryCacheTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
@@ -216,6 +217,7 @@ import org.junit.runners.Suite;
 
     // In-memory Distributed MetaStorage.
     DistributedMetaStorageTest.class,
+    DistributedMetaStorageHistoryCacheTest.class,
     DistributedConfigurationInMemoryTest.class,
     BaselineConfigurationMXBeanTest.class,
 
