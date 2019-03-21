@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -29,8 +30,10 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -99,6 +102,26 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     *
+     */
+    public void testBigResultSetLocal() {
+        local = true;
+        lazy = true;
+
+        checkBigResultSet();
+    }
+
+    /**
+     *
+     */
+    public void testBigResultDistributed() {
+        local = false;
+        lazy = true;
+
+        checkBigResultSet();
+    }
+
+    /**
      * Do several fast queries.
      * Log messages must not contain info about long query.
      */
@@ -132,6 +155,34 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         testLog.registerListener(lsnr);
 
         sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2");
+
+        assertTrue(lsnr.check());
+    }
+
+    /**
+     */
+    private void checkBigResultSet() {
+        ListeningTestLogger testLog = testLog();
+
+        LogListener lsnr = LogListener
+            .matches("Query produces too big result set")
+            .build();
+
+        testLog.registerListener(lsnr);
+
+        try(FieldsQueryCursor cur = sql("SELECT T0.id FROM test AS T0, test AS T1")) {
+            Iterator it = cur.iterator();
+
+            while (it.hasNext())
+                it.next();
+        }
+
+        try {
+            U.sleep(1000);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            e.printStackTrace();
+        }
 
         assertTrue(lsnr.check());
     }
@@ -189,6 +240,11 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         GridTestUtils.setFieldValue(((IgniteH2Indexing)grid().context().query().getIndexing()).longRunningQueries(),
             "log", testLog);
+
+        GridTestUtils.setFieldValue(((IgniteH2Indexing)grid().context().query().getIndexing()).mapQueryExecutor(),
+            "log", testLog);
+
+        GridTestUtils.setFieldValue(grid().context().query().getIndexing(), "log", testLog);
 
         return testLog;
     }
