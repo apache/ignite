@@ -85,7 +85,7 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
                 ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
 
                 try {
-                    svc.submit((Runnable) new ExecRegisterAndForward<>(endpoints())).get();
+                    svc.submit((Runnable) new RegisterExecAndForward<>(endpoints())).get();
                 }
                 catch (Exception e) {
                     throw new RuntimeException(e);

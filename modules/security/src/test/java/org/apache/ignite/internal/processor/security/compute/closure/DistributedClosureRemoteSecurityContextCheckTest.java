@@ -32,8 +32,7 @@ import org.junit.Test;
  * 'check' nodes and broadcasts a task to 'endpoint' nodes. On every step, it is performed verification that operation
  * security context is the initiator context.
  */
-public class DistributedClosureRemoteSecurityContextCheckTest
-    extends AbstractRemoteSecurityContextCheckTest {
+public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -83,47 +82,47 @@ public class DistributedClosureRemoteSecurityContextCheckTest
     private Stream<IgniteRunnable> checkCases() {
         return Stream.<IgniteRunnable>of(
             () -> compute(Ignition.localIgnite(), nodesToCheck())
-                .broadcast((IgniteRunnable)new ExecRegisterAndForward<>(endpoints())),
+                .broadcast((IgniteRunnable)new RegisterExecAndForward<>(endpoints())),
 
             () -> compute(Ignition.localIgnite(), nodesToCheck())
-                .broadcastAsync((IgniteRunnable)new ExecRegisterAndForward<>(endpoints()))
+                .broadcastAsync((IgniteRunnable)new RegisterExecAndForward<>(endpoints()))
                 .get(),
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .call(new ExecRegisterAndForward<>(endpoints()));
+                        .call(new RegisterExecAndForward<>(endpoints()));
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .callAsync(new ExecRegisterAndForward<>(endpoints())).get();
+                        .callAsync(new RegisterExecAndForward<>(endpoints())).get();
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .run(new ExecRegisterAndForward<>(endpoints()));
+                        .run(new RegisterExecAndForward<>(endpoints()));
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .runAsync(new ExecRegisterAndForward<>(endpoints())).get();
+                        .runAsync(new RegisterExecAndForward<>(endpoints())).get();
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .apply(new ExecRegisterAndForward<Object, Object>(endpoints()), new Object());
+                        .apply(new RegisterExecAndForward<Object, Object>(endpoints()), new Object());
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .applyAsync(new ExecRegisterAndForward<>(endpoints()), new Object()).get();
+                        .applyAsync(new RegisterExecAndForward<>(endpoints()), new Object()).get();
                 }
             }
-        ).map(ExecRegisterAndForward::new);
+        ).map(RegisterExecAndForward::new);
     }
 }

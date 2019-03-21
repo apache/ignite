@@ -98,7 +98,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     };
 
     /** Synchronization for tests TASK_CANCEL. */
-    private static void syncForCancel() throws IgniteException {
+    private static void syncForCancel() {
         boolean isLocked = false;
 
         try {
@@ -314,7 +314,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     private static class TestComputeTask implements ComputeTask<Object, Object> {
         /** {@inheritDoc} */
         @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Object arg) throws IgniteException {
+            @Nullable Object arg) {
             IS_EXECUTED.set(true);
 
             return Collections.singletonMap(
@@ -323,7 +323,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
                         // no-op
                     }
 
-                    @Override public Object execute() throws IgniteException {
+                    @Override public Object execute() {
                         syncForCancel();
 
                         return null;
@@ -333,8 +333,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-            List<ComputeJobResult> rcvd) throws IgniteException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             if (res.getException() != null)
                 throw res.getException();
 
@@ -342,7 +341,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
         }
 
         /** {@inheritDoc} */
-        @Override public @Nullable Integer reduce(List<ComputeJobResult> results) throws IgniteException {
+        @Override public @Nullable Integer reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

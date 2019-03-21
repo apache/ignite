@@ -76,19 +76,19 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
      */
     private List<Consumer<IgniteCache<String, String>>> consumers() {
         return Arrays.asList(
-            (c) -> c.put("key", "value"),
-            (c) -> c.putAll(singletonMap("key", "value")),
-            (c) -> c.get("key"),
-            (c) -> c.getAll(Collections.singleton("key")),
-            (c) -> c.containsKey("key"),
-            (c) -> c.remove("key"),
-            (c) -> c.removeAll(Collections.singleton("key")),
+            c -> c.put("key", "value"),
+            c -> c.putAll(singletonMap("key", "value")),
+            c -> c.get("key"),
+            c -> c.getAll(Collections.singleton("key")),
+            c -> c.containsKey("key"),
+            c -> c.remove("key"),
+            c -> c.removeAll(Collections.singleton("key")),
             IgniteCache::clear,
-            (c) -> c.replace("key", "value"),
-            (c) -> c.putIfAbsent("key", "value"),
-            (c) -> c.getAndPut("key", "value"),
-            (c) -> c.getAndRemove("key"),
-            (c) -> c.getAndReplace("key", "value")
+            c -> c.replace("key", "value"),
+            c -> c.putIfAbsent("key", "value"),
+            c -> c.getAndPut("key", "value"),
+            c -> c.getAndRemove("key"),
+            c -> c.getAndReplace("key", "value")
         );
     }
 }

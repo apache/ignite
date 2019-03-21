@@ -94,18 +94,18 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
 
         return Stream.<IgniteRunnable>of(
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invoke(key, new ExecRegisterAndForward<Integer, Integer>(endpoints())),
+                .invoke(key, new RegisterExecAndForward<Integer, Integer>(endpoints())),
 
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAll(Collections.singleton(key), new ExecRegisterAndForward<Integer, Integer>(endpoints())),
+                .invokeAll(Collections.singleton(key), new RegisterExecAndForward<Integer, Integer>(endpoints())),
 
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAsync(key, new ExecRegisterAndForward<Integer, Integer>(endpoints()))
+                .invokeAsync(key, new RegisterExecAndForward<Integer, Integer>(endpoints()))
                 .get(),
 
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAllAsync(Collections.singleton(key), new ExecRegisterAndForward<Integer, Integer>(endpoints()))
+                .invokeAllAsync(Collections.singleton(key), new RegisterExecAndForward<Integer, Integer>(endpoints()))
                 .get()
-        ).map(ExecRegisterAndForward::new);
+        ).map(RegisterExecAndForward::new);
     }
 }

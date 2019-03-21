@@ -96,7 +96,7 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
             Ignition.localIgnite()
                 .<Integer, Integer>cache(CACHE_NAME).loadCache(
-                new ExecRegisterAndForward<Integer, Integer>(SRV_CHECK, endpoints())
+                new RegisterExecAndForward<Integer, Integer>(SRV_CHECK, endpoints())
             );
         };
 
@@ -134,7 +134,7 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
         }
 
         /** {@inheritDoc} */
-        @Override public Integer load(Integer key) throws CacheLoaderException {
+        @Override public Integer load(Integer key) {
             return key;
         }
 

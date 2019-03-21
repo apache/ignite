@@ -286,10 +286,10 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     }
 
     protected static class ExecRegisterAndForwardAdapter<K, V> implements IgniteBiInClosure<K, V> {
-        private ExecRegisterAndForward<K, V> instance;
+        private RegisterExecAndForward<K, V> instance;
 
         public ExecRegisterAndForwardAdapter(IgniteRunnable runnable) {
-            instance = new ExecRegisterAndForward<>(runnable);
+            instance = new RegisterExecAndForward<>(runnable);
         }
 
         /**
@@ -297,14 +297,14 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * @param endpoints Collection of endpont nodes ids.
          */
         public ExecRegisterAndForwardAdapter(String node, Collection<UUID> endpoints) {
-            instance = new ExecRegisterAndForward<>(node, endpoints);
+            instance = new RegisterExecAndForward<>(node, endpoints);
         }
 
         /**
          * @param endpoints Collection of endpont nodes ids.
          */
         public ExecRegisterAndForwardAdapter(Collection<UUID> endpoints) {
-            instance = new ExecRegisterAndForward<>(endpoints);
+            instance = new RegisterExecAndForward<>(endpoints);
         }
 
         @Override
@@ -314,7 +314,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     }
 
     /** */
-    protected static class ExecRegisterAndForward<K, V> implements IgniteBiPredicate<K, V>, IgniteRunnable,
+    protected static class RegisterExecAndForward<K, V> implements IgniteBiPredicate<K, V>, IgniteRunnable,
             IgniteCallable<V>, EntryProcessor<K, V, Object>, IgniteClosure<K, V> {
         /** Runnable. */
         private final IgniteRunnable runnable;
@@ -328,7 +328,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /**
          * @param runnable Runnable.
          */
-        public ExecRegisterAndForward(IgniteRunnable runnable) {
+        public RegisterExecAndForward(IgniteRunnable runnable) {
             this.runnable = Objects.requireNonNull(runnable);
             node = null;
             endpoints = Collections.emptyList();
@@ -338,7 +338,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * @param node Expected local node name.
          * @param endpoints Collection of endpont nodes ids.
          */
-        public ExecRegisterAndForward(String node, Collection<UUID> endpoints) {
+        public RegisterExecAndForward(String node, Collection<UUID> endpoints) {
             this.node = node;
             this.endpoints = endpoints;
             runnable = null;
@@ -347,7 +347,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /**
          * @param endpoints Collection of endpont nodes ids.
          */
-        public ExecRegisterAndForward(Collection<UUID> endpoints) {
+        public RegisterExecAndForward(Collection<UUID> endpoints) {
             this.endpoints = endpoints;
             runnable = null;
             node = null;
