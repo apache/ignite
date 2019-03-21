@@ -319,6 +319,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         final String SCHEMA_NAME = "TEST_SCHEMA";
         final long MAX_SLEEP = 500;
+        final long MIN_SLEEP = 50;
 
         long tsBeforeRun = System.currentTimeMillis();
 
@@ -331,9 +332,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         cache.put(100, "200");
 
-        String sql = "SELECT \"STRING\"._KEY, \"STRING\"._VAL FROM \"STRING\" WHERE _key=100 AND sleep()>0 AND can_fail()=0";
+        String sql = "SELECT \"STRING\"._KEY, \"STRING\"._VAL FROM \"STRING\" WHERE _key=100 AND sleep_and_can_fail()>0";
 
-        GridTestUtils.SqlTestFunctions.sleepMs = 50;
+        GridTestUtils.SqlTestFunctions.sleepMs = MIN_SLEEP;
         GridTestUtils.SqlTestFunctions.fail = false;
 
         cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll();
@@ -343,6 +344,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll();
 
+        GridTestUtils.SqlTestFunctions.sleepMs = MIN_SLEEP;
         GridTestUtils.SqlTestFunctions.fail = true;
 
         GridTestUtils.assertThrows(log,
@@ -387,11 +389,11 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals(0L, secondRow.get(4));
 
         //DURATION_MIN
-        assertTrue((Long)firstRow.get(5) > 0);
+        assertTrue((Long)firstRow.get(5) >= MIN_SLEEP);
         assertTrue((Long)firstRow.get(5) < (Long)firstRow.get(6));
 
         //DURATION_MAX
-        assertTrue((Long)firstRow.get(6) > MAX_SLEEP);
+        assertTrue((Long)firstRow.get(6) >= MAX_SLEEP);
 
         //LAST_START_TIME
         assertFalse(((Timestamp)firstRow.get(7)).before(new Timestamp(tsBeforeRun)));
