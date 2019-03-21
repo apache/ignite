@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -90,10 +90,10 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
     }
 
     /**
-     * @return Collection of check cases.
+     * @return Stream of check cases.
      */
-    private List<IgniteRunnable> checkCases() {
-        return Arrays.asList(
+    private Stream<IgniteRunnable> checkCases() {
+        return Stream.of(
             () -> {
                 register();
 

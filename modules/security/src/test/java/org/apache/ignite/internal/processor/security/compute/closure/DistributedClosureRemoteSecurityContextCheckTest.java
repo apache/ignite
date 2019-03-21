@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
@@ -31,9 +28,9 @@ import org.junit.Test;
 /**
  * Testing operation security context when the compute closure is executed on remote nodes.
  * <p>
- * The initiator node broadcasts a task to run nodes that starts compute operation. That operation is executed
- * on check nodes and broadcasts a task to endpoint nodes. On every step, it is performed verification that
- * operation security context is the initiator context.
+ * The initiator node broadcasts a task to run nodes that starts compute operation. That operation is executed on check
+ * nodes and broadcasts a task to endpoint nodes. On every step, it is performed verification that operation security
+ * context is the initiator context.
  */
 public class DistributedClosureRemoteSecurityContextCheckTest
     extends AbstractRemoteSecurityContextCheckTest {
@@ -81,9 +78,9 @@ public class DistributedClosureRemoteSecurityContextCheckTest
     }
 
     /**
-     * @return Collection of check cases.
+     * @return Stream of check cases.
      */
-    private List<IgniteRunnable> checkCases() {
+    private Stream<IgniteRunnable> checkCases() {
         return Stream.<IgniteRunnable>of(
             () -> compute(Ignition.localIgnite(), nodesToCheck())
                 .broadcast((IgniteRunnable)new CommonClosure(endpoints())),
@@ -127,8 +124,6 @@ public class DistributedClosureRemoteSecurityContextCheckTest
                         .applyAsync(new CommonClosure(endpoints()), new Object()).get();
                 }
             }
-        )
-            .map(CommonClosure::new)
-            .collect(Collectors.toCollection(ArrayList::new));
+        ).map(CommonClosure::new);
     }
 }

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processor.security.cache.closure;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
+import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
@@ -84,8 +84,8 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
         awaitPartitionMapExchange();
 
-        runAndCheck(grid(SRV_INITIATOR), runnables());
-        runAndCheck(grid(CLNT_INITIATOR), runnables());
+        runAndCheck(grid(SRV_INITIATOR), checkCases());
+        runAndCheck(grid(CLNT_INITIATOR), checkCases());
     }
 
     /** {@inheritDoc} */
@@ -94,10 +94,10 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     }
 
     /**
-     *
+     * Stream of runnables to call query methods.
      */
-    private Collection<IgniteRunnable> runnables() {
-        return Arrays.asList(
+    private Stream<IgniteRunnable> checkCases() {
+        return Stream.of(
             () -> {
                 register();
 

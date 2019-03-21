@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processor.security.cache.closure;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
@@ -89,9 +86,9 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
     }
 
     /**
-     * @return Collection of runnables to call invoke methods.
+     * @return Stream of runnables to call invoke methods.
      */
-    private List<IgniteRunnable> checkCases() {
+    private Stream<IgniteRunnable> checkCases() {
         final Integer key = prmKey(grid(SRV_CHECK));
 
         return Stream.<IgniteRunnable>of(
@@ -109,7 +106,6 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
                 .invokeAllAsync(Collections.singleton(key), new CommonClosure(endpoints()))
                 .get()
         )
-            .map(CommonClosure::new)
-            .collect(Collectors.toCollection(ArrayList::new));
+            .map(CommonClosure::new);
     }
 }

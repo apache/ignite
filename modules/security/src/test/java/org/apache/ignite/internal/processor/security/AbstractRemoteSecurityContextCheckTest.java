@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -174,23 +175,25 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
      * @param runnable Check case.
      */
     protected void runAndCheck(IgniteEx initiator, IgniteRunnable runnable) {
-        runAndCheck(initiator, Collections.singleton(runnable));
+        runAndCheck(initiator, Stream.of(runnable));
     }
 
     /**
      * Sets up VERIFIER, performs the runnable and checks the result.
      *
      * @param initiator Node that initiates an execution.
-     * @param runnables Collection of check cases.
+     * @param runnables Stream of check cases.
      */
-    protected void runAndCheck(IgniteEx initiator, Collection<IgniteRunnable> runnables) {
-        for (IgniteRunnable r : runnables) {
-            setupVerifier(VERIFIER.start(secSubjectId(initiator)));
+    protected void runAndCheck(IgniteEx initiator, Stream<IgniteRunnable> runnables) {
+        runnables.forEach(
+            r -> {
+                setupVerifier(VERIFIER.start(secSubjectId(initiator)));
 
-            compute(initiator, nodesToRun()).broadcast(r);
+                compute(initiator, nodesToRun()).broadcast(r);
 
-            VERIFIER.checkResult();
-        }
+                VERIFIER.checkResult();
+            }
+        );
     }
 
     /**

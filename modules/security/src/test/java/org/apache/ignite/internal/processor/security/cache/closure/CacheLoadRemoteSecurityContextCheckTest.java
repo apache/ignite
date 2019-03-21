@@ -97,7 +97,10 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
         IgniteRunnable checkCase = () -> {
             register();
 
-            loadCache(Ignition.localIgnite());
+            Ignition.localIgnite()
+                .<Integer, Integer>cache(CACHE_NAME).loadCache(
+                new TestClosure(SRV_CHECK, endpoints())
+            );
         };
 
         runAndCheck(grid(SRV_INITIATOR), checkCase);
@@ -112,15 +115,6 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
     /** {@inheritDoc} */
     @Override protected Collection<UUID> nodesToCheck() {
         return Collections.singletonList(nodeId(SRV_CHECK));
-    }
-
-    /**
-     * @param node Node.
-     */
-    private void loadCache(Ignite node) {
-        node.<Integer, Integer>cache(CACHE_NAME).loadCache(
-            new TestClosure(SRV_CHECK, endpoints())
-        );
     }
 
     /**
