@@ -27,11 +27,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.management.InstanceNotFoundException;
+
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -352,7 +354,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_DATA_REG_DEFAULT_NAME;
 
-        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(dataRegionCfg, freeSpaceProvider(dataRegionCfg));
+        DataRegionMetricsImpl memMetrics =
+                new DataRegionMetricsImpl(dataRegionCfg, dataRegionMetricsProvider(dataRegionCfg));
 
         DataRegion region = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable);
 
@@ -372,7 +375,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @param dataRegCfg Data region configuration.
      * @return Closure.
+     *
+     * @Deprecated use {@link #dataRegionMetricsProvider(DataRegionConfiguration)} instead.
      */
+    @Deprecated
     protected IgniteOutClosure<Long> freeSpaceProvider(final DataRegionConfiguration dataRegCfg) {
         final String dataRegName = dataRegCfg.getName();
 
@@ -390,6 +396,33 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 }
 
                 return freeList.freeSpace();
+            }
+        };
+    }
+
+    protected DataRegionMetricsProvider dataRegionMetricsProvider(final DataRegionConfiguration dataRegCfg) {
+        final String dataRegName = dataRegCfg.getName();
+
+        return new DataRegionMetricsProvider() {
+            private CacheFreeListImpl freeList;
+
+            private CacheFreeListImpl getFreeList() {
+                if (freeList == null) {
+                    freeList = freeListMap.get(dataRegName);
+                }
+                return freeList;
+            }
+
+            @Override
+            public long freeSpace() {
+                CacheFreeListImpl freeList0 = getFreeList();
+                return freeList0 == null ? 0L : freeList0.freeSpace();
+            }
+
+            @Override
+            public long emptyDataPages() {
+                CacheFreeListImpl freeList0 = getFreeList();
+                return freeList0 == null ? 0L : freeList0.emptyDataPages();
             }
         };
     }

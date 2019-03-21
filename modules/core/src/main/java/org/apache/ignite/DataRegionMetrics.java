@@ -64,6 +64,13 @@ public interface DataRegionMetrics {
     public long getTotalAllocatedPages();
 
     /**
+     * Gets a total number of pages used for storing the data.
+     *
+     * @return Total number of used pages.
+     */
+    public long getTotalUsedPages();
+
+    /**
      * Gets a total size of memory allocated in the data region. When persistence is disabled, this
      * metric shows the total size of pages in memory. When persistence is enabled, this metric shows the
      * total size of pages in memory and on disk.
