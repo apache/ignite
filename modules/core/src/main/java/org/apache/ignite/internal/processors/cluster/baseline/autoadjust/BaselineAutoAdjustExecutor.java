@@ -62,12 +62,12 @@ class BaselineAutoAdjustExecutor {
     public void execute(BaselineAutoAdjustData data) {
         executorService.submit(() ->
             {
-                if (data.isInvalidated() || !isBaselineAutoAdjustEnabled.getAsBoolean())
+                if (isExecutionExpired(data))
                     return;
 
                 executionGuard.lock();
                 try {
-                    if (data.isInvalidated() || !isBaselineAutoAdjustEnabled.getAsBoolean())
+                    if (isExecutionExpired(data))
                         return;
 
                     cluster.triggerBaselineAutoAdjust(data.getTargetTopologyVersion());
@@ -82,5 +82,13 @@ class BaselineAutoAdjustExecutor {
                 }
             }
         );
+    }
+
+    /**
+     * @param data Baseline data for adjust.
+     * @return {@code true} If baseline auto-adjust shouldn't be executed for given data.
+     */
+    public boolean isExecutionExpired(BaselineAutoAdjustData data) {
+        return data.isInvalidated() || !isBaselineAutoAdjustEnabled.getAsBoolean();
     }
 }
