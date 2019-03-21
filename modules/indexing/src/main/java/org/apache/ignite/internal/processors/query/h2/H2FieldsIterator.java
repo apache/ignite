@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.IgniteLogger;
 
 /**
  * Special field set iterator based on database result set.
@@ -37,11 +38,15 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
     /**
      * @param data Data.
      * @param detachedConn Detached connection.
+     * @param log Logger.
+     * @param h2 Indexing H2.
+     * @param qryInfo Query info.
      * @throws IgniteCheckedException If failed.
      */
     public H2FieldsIterator(ResultSet data,
-        ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn) throws IgniteCheckedException {
-        super(data);
+        ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn,
+        IgniteLogger log, IgniteH2Indexing h2, IgniteH2QueryInfo qryInfo) throws IgniteCheckedException {
+        super(data, log, h2, qryInfo);
 
         this.detachedConn = detachedConn;
     }

@@ -125,6 +125,21 @@ public class IgniteH2QueryInfo {
     }
 
     /**
+     * @param rs Query results.
+     * @param sql Query statement.
+     * @param params Query parameters.
+     * @return Info object.
+     */
+    public static IgniteH2QueryInfo collectInfo(ResultSet rs, String sql, Collection<Object> params) {
+        try {
+            return collectInfo((PreparedStatement)rs.getStatement(), sql, params);
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException("Cannot collect query info", IgniteQueryErrorCode.UNKNOWN, e);
+        }
+    }
+
+    /**
      * @param stmt Query statement.
      * @param sql Query statement.
      * @param params Query parameters.

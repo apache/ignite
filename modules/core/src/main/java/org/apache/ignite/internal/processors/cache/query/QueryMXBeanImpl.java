@@ -45,4 +45,14 @@ public class QueryMXBeanImpl implements QueryMXBean {
     @Override public void setLongQueryWarningTimeout(long longQueryWarningTimeout) {
         ctx.query().getIndexing().setLongQueryWarningTimeout(longQueryWarningTimeout);
     }
+
+    /** {@inheritDoc} */
+    @Override public long getResultSetSizeThreshold() {
+        return ctx.query().getIndexing().getResultSetSizeThreshold();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setResultSetSizeThreshold(long resultSetSizeThreshold) {
+        ctx.query().getIndexing().setResultSetSizeThreshold(resultSetSizeThreshold);
+    }
 }

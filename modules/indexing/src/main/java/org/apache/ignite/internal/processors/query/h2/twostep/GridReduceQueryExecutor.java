@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
@@ -833,14 +835,17 @@ public class GridReduceQueryExecutor {
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
+                            Collection<Object> params0 = F.asList(rdc.parameters(params));
+
                             ResultSet res = h2.executeSqlQueryWithTimer(r.connection(),
                                 rdc.query(),
-                                F.asList(rdc.parameters(params)),
+                                params0,
                                 false, // The statement will cache some extra thread local objects.
                                 timeoutMillis,
                                 cancel);
 
-                            resIter = new H2FieldsIterator(res, null);
+                            resIter = new H2FieldsIterator(res, null, log, h2,
+                                IgniteH2QueryInfo.collectInfo(res, rdc.query(), params0));
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();

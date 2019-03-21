@@ -39,4 +39,26 @@ public interface QueryMXBean {
     @MXBeanParametersNames("longQueryWarningTimeout")
     @MXBeanParametersDescriptions("Timeout in milliseconds after which long query warning will be printed.")
     void setLongQueryWarningTimeout(long longQueryWarningTimeout);
+
+    /**
+     * @return Threshold result's row count, when count of fetched rows is bigger than the threshold
+     *      warning will be printed.
+     */
+    @MXBeanDescription("Threshold result's row count, when count of fetched rows is bigger than the threshold " +
+        "warning will be printed.")
+    long getResultSetSizeThreshold();
+
+    /**
+     * Sets threshold result's row count, when count of fetched rows is bigger than the threshold
+     *      warning will be printed.
+     *
+     * @param resultSetSizeThreshold Threshold result's row count, when count of fetched rows is bigger
+     *      than the threshold warning will be printed.
+     */
+    @MXBeanDescription("Sets threshold result's row count, when count of fetched rows is bigger than the threshold " +
+        "warning will be printed.")
+    @MXBeanParametersNames("resultSetSizeThreshold")
+    @MXBeanParametersDescriptions("Threshold result's row count, when count of fetched rows is bigger than the " +
+        "threshold warning will be printed.")
+    void setResultSetSizeThreshold(long resultSetSizeThreshold);
 }

@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -67,11 +68,30 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     /** */
     private boolean hasRow;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
+    /** Connection manager. */
+    private ConnectionManager connectionMgr;
+
+    /** Result set size threshold. */
+    private final long threshold;
+
+    /** Query info to print log message. */
+    private IgniteH2QueryInfo qryInfo;
+
+    /** Fetched count of rows. */
+    private long fetchedSize;
+
     /**
      * @param data Data array.
+     * @param log Logger.
+     * @param h2 Indexing H2.
+     * @param qryInfo Query info.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2ResultSetIterator(ResultSet data) throws IgniteCheckedException {
+    protected H2ResultSetIterator(ResultSet data, IgniteLogger log, IgniteH2Indexing h2,
+        IgniteH2QueryInfo qryInfo) throws IgniteCheckedException {
         this.data = data;
 
         try {
@@ -91,6 +111,15 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
         }
         else
             row = null;
+
+        assert log != null;
+        assert h2 != null;
+        assert qryInfo != null;
+
+        this.log = log;
+        connectionMgr = h2.connections();
+        threshold = h2.longRunningQueries().getResultSetSizeThreshold();
+        this.qryInfo = qryInfo;
     }
 
     /**
@@ -126,6 +155,11 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
                 for (int c = 0; c < row.length; c++)
                     row[c] = data.getObject(c + 1);
             }
+
+            fetchedSize++;
+
+            if (fetchedSize % threshold == 0)
+                qryInfo.printLogMessage(log, connectionMgr);
 
             return true;
         }
@@ -170,6 +204,8 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
 
         res = null;
         data = null;
+        connectionMgr = null;
+        qryInfo = null;
     }
 
     /** {@inheritDoc} */

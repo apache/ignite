@@ -31,6 +31,12 @@ public class LongRunningQueryManager {
     /** Check period in ms. */
     private static final long CHECK_PERIOD = 1_000;
 
+    /**
+     * Default threshold result's row count, when count of fetched rows is bigger than the threshold
+     * warning will be printed.
+     */
+    private static final long DFLT_FETCHED_SIZE_THRESHOLD = 100_000;
+
     /** Connection manager. */
     private final ConnectionManager connMgr;
 
@@ -45,6 +51,9 @@ public class LongRunningQueryManager {
 
     /** Query timeout milliseconds. */
     private volatile long longQryWarnTimeout;
+
+    /** Query result set size threshold. */
+    private volatile long rsSizeThreshold = DFLT_FETCHED_SIZE_THRESHOLD;
 
     /**
      * @param ctx Kernal context.
@@ -113,5 +122,24 @@ public class LongRunningQueryManager {
      */
     public void setLongQueryWarningTimeout(long timeout) {
         longQryWarnTimeout = timeout;
+    }
+
+    /**
+     * @return Threshold result's row count, when count of fetched rows is bigger than the threshold
+     *      warning will be printed.
+     */
+    public long getResultSetSizeThreshold() {
+        return rsSizeThreshold;
+    }
+
+    /**
+     * Sets threshold result's row count, when count of fetched rows is bigger than the threshold
+     *      warning will be printed.
+     *
+     * @param rsSizeThreshold Threshold result's row count, when count of fetched rows is bigger than the threshold
+     *      warning will be printed.
+     */
+    public void setResultSetSizeThreshold(long rsSizeThreshold) {
+        this.rsSizeThreshold = rsSizeThreshold;
     }
 }

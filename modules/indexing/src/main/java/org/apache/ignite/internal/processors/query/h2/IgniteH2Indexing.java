@@ -806,7 +806,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 try {
                     ResultSet rs = executeSqlQueryWithTimer(stmt, conn, qry, params, timeout, cancel);
 
-                    return new H2FieldsIterator(rs, detachedConn);
+                    return new H2FieldsIterator(rs, detachedConn,
+                        log, IgniteH2Indexing.this, IgniteH2QueryInfo.collectInfo(stmt, qry, params));
                 }
                 catch (IgniteCheckedException | RuntimeException | Error e) {
                     detachedConn.recycle();
@@ -2755,5 +2756,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void setLongQueryWarningTimeout(long timeout) {
         longRunningQryMgr.setLongQueryWarningTimeout(timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getResultSetSizeThreshold() {
+        return longRunningQryMgr.getResultSetSizeThreshold();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setResultSetSizeThreshold(long size) {
+        longRunningQryMgr.setResultSetSizeThreshold(size);
     }
 }

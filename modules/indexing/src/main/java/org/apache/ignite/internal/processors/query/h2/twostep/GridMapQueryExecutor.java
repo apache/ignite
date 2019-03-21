@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -790,10 +792,12 @@ public class GridMapQueryExecutor {
                 for (GridCacheSqlQuery qry : qrys) {
                     ResultSet rs = null;
 
+                    Collection<Object> params0 = F.asList(qry.parameters(params));
+
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
                         rs = h2.executeSqlQueryWithTimer(conn, qry.query(),
-                            F.asList(qry.parameters(params)), true,
+                            params0, true,
                             timeout,
                             qr.queryCancel(qryIdx));
 
@@ -816,7 +820,13 @@ public class GridMapQueryExecutor {
                         assert rs instanceof JdbcResultSet : rs.getClass();
                     }
 
-                    qr.addResult(qryIdx, qry, node.id(), rs, params);
+                    IgniteH2QueryInfo qryInfo = IgniteH2QueryInfo.collectInfo(
+                        (PreparedStatement)rs.getStatement(),
+                        qry.query(),
+                        params0);
+
+                    qr.addResult(qryIdx, qry, node.id(), rs, params,
+                        log, qryInfo);
 
                     if (qr.cancelled()) {
                         qr.result(qryIdx).close();

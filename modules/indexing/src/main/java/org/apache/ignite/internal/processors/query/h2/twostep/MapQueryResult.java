@@ -22,12 +22,14 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -99,16 +101,32 @@ class MapQueryResult {
     /** Lazy worker. */
     private final MapQueryLazyWorker lazyWorker;
 
+    /** Query info. */
+    private final IgniteH2QueryInfo qryInfo;
+
+    /** Logger. */
+    private final IgniteLogger log;
+
+    /** Result set size threshold. */
+    private final long threshold;
+
+    /** Fetched count of rows. */
+    private long fetchedSize;
+
     /**
+     * @param h2 Indexing SPI.
      * @param rs Result set.
      * @param cctx Cache context.
      * @param qrySrcNodeId Query source node.
      * @param qry Query.
      * @param params Query params.
      * @param lazyWorker Lazy worker.
+     * @param log Logger.
+     * @param qryInfo Query info.
      */
     MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
-        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker) {
+        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker,
+        IgniteLogger log, IgniteH2QueryInfo qryInfo) {
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;
@@ -129,12 +147,19 @@ class MapQueryResult {
 
             rowCnt = (res instanceof LazyResult) ? -1 : res.getRowCount();
             cols = res.getVisibleColumnCount();
+
+            this.log = log;
+            this.qryInfo = qryInfo;
+            this.threshold = h2.longRunningQueries().getResultSetSizeThreshold();
         }
         else {
             this.rs = null;
             this.res = null;
             this.cols = -1;
             this.rowCnt = -1;
+            this.qryInfo = null;
+            this.threshold = -1;
+            this.log = null;
 
             closed = true;
         }
@@ -237,6 +262,11 @@ class MapQueryResult {
             }
 
             rows.add(res.currentRow());
+
+            ++fetchedSize;
+
+            if (fetchedSize % threshold == 0)
+                qryInfo.printLogMessage(log, h2.connections());
         }
 
         return !res.hasNext();

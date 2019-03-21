@@ -383,5 +383,15 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         @Override public void setLongQueryWarningTimeout(long longQueryWarningTimeout) {
             // No-op.
         }
+
+        /** {@inheritDoc} */
+        @Override public long getResultSetSizeThreshold() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setResultSetSizeThreshold(long resultSetSizeThreshold) {
+            // No-op.
+        }
     }
 }

@@ -331,4 +331,19 @@ public interface GridQueryIndexing {
      * @param longQueryWarningTimeout Timeout in milliseconds after which long query warning will be printed.
      */
     public void setLongQueryWarningTimeout(long longQueryWarningTimeout);
+
+    /**
+     * @return Threshold result's row count, when count of fetched rows is bigger than the threshold
+     *      warning will be printed.
+     */
+    long getResultSetSizeThreshold();
+
+    /**
+     * Sets threshold result's row count, when count of fetched rows is bigger than the threshold
+     *      warning will be printed.
+     *
+     * @param resultSetSizeThreshold Threshold result's row count, when count of fetched rows is bigger than the threshold
+     *      warning will be printed.
+     */
+    void setResultSetSizeThreshold(long resultSetSizeThreshold);
 }
