@@ -620,7 +620,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert firstDiscoEvt0 != null;
 
-        if (centralizedAff && isLocalAffinityRecalculation)
+        if (isLocalAffinityRecalculation)
             return false;
 
         return firstDiscoEvt0.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
@@ -987,8 +987,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (!cctx.affinity().isLastAffinityIdeal(crd != null && crd.isLocal()))
                 return false;
 
-            return firstEvtDiscoCache.baselineNodes().stream()
-                .anyMatch(node -> node.consistentId().equals(firstDiscoEvt.eventNode().consistentId()));
+            return firstEvtDiscoCache.baselineNode(firstDiscoEvt.eventNode());
         }
 
         return false;
@@ -3314,16 +3313,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code true} true if in-memory caches configured.
      */
     private boolean isInMemoryCachesConfigured() {
-        try {
-            return !U.doInParallel(
-                cctx.kernalContext().getSystemExecutorService(),
-                nonLocalCacheGroupDescriptors(),
-                grpDesc -> CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration())
-            ).stream().allMatch(Boolean::valueOf);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to check caches configuration", e);
-        }
+        return !nonLocalCacheGroupDescriptors().stream().allMatch(
+            grpDesc -> CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()));
     }
 
     /**
