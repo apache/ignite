@@ -265,8 +265,10 @@ class MapQueryResult {
 
             ++fetchedSize;
 
-            if (fetchedSize % threshold == 0)
-                qryInfo.printLogMessage(log, h2.connections());
+            if (fetchedSize % threshold == 0) {
+                qryInfo.printLogMessage(log, h2.connections(), "Query produces too big result set. " +
+                    "[fetched=" + fetchedSize + ']');
+            }
         }
 
         return !res.hasNext();

@@ -159,7 +159,8 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
             fetchedSize++;
 
             if (fetchedSize % threshold == 0)
-                qryInfo.printLogMessage(log, connectionMgr);
+                qryInfo.printLogMessage(log, connectionMgr, "Query produces too big result set. " +
+                    "[fetched=" + fetchedSize + ']');
 
             return true;
         }
