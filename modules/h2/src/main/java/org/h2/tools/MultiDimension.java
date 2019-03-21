@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -11,7 +11,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import org.h2.util.New;
 import org.h2.util.StringUtils;
 
 /**
@@ -65,7 +64,7 @@ public class MultiDimension implements Comparator<long[]> {
      */
     public int getMaxValue(int dimensions) {
         if (dimensions < 2 || dimensions > 32) {
-            throw new IllegalArgumentException("" + dimensions);
+            throw new IllegalArgumentException(Integer.toString(dimensions));
         }
         int bitsPerValue = getBitsPerValue(dimensions);
         return (int) ((1L << bitsPerValue) - 1);
@@ -157,12 +156,13 @@ public class MultiDimension implements Comparator<long[]> {
     public String generatePreparedQuery(String table, String scalarColumn,
             String[] columns) {
         StringBuilder buff = new StringBuilder("SELECT D.* FROM ");
-        buff.append(StringUtils.quoteIdentifier(table)).
-            append(" D, TABLE(_FROM_ BIGINT=?, _TO_ BIGINT=?) WHERE ").
-            append(StringUtils.quoteIdentifier(scalarColumn)).
+        StringUtils.quoteIdentifier(buff, table).
+            append(" D, TABLE(_FROM_ BIGINT=?, _TO_ BIGINT=?) WHERE ");
+        StringUtils.quoteIdentifier(buff, scalarColumn).
             append(" BETWEEN _FROM_ AND _TO_");
         for (String col : columns) {
-            buff.append(" AND ").append(StringUtils.quoteIdentifier(col)).
+            buff.append(" AND ");
+            StringUtils.quoteIdentifier(buff, col).
                 append("+1 BETWEEN ?+1 AND ?+1");
         }
         return buff.toString();
@@ -219,7 +219,7 @@ public class MultiDimension implements Comparator<long[]> {
             }
         }
         int total = getSize(min, max, len);
-        ArrayList<long[]> list = New.arrayList();
+        ArrayList<long[]> list = new ArrayList<>();
         addMortonRanges(list, min, max, len, 0);
         combineEntries(list, total);
         return list.toArray(new long[0][]);
@@ -270,18 +270,18 @@ public class MultiDimension implements Comparator<long[]> {
     private void addMortonRanges(ArrayList<long[]> list, int[] min, int[] max,
             int len, int level) {
         if (level > 100) {
-            throw new IllegalArgumentException("" + level);
+            throw new IllegalArgumentException(Integer.toString(level));
         }
         int largest = 0, largestDiff = 0;
         long size = 1;
         for (int i = 0; i < len; i++) {
             int diff = max[i] - min[i];
             if (diff < 0) {
-                throw new IllegalArgumentException(""+ diff);
+                throw new IllegalArgumentException(Integer.toString(diff));
             }
             size *= diff + 1;
             if (size < 0) {
-                throw new IllegalArgumentException("" + size);
+                throw new IllegalArgumentException(Long.toString(size));
             }
             if (diff > largestDiff) {
                 largestDiff = diff;

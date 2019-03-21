@@ -1,12 +1,13 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.store;
 
+import java.util.BitSet;
+
 import org.h2.engine.Session;
-import org.h2.util.BitField;
 
 /**
  * The list of free pages of a page store. The format of a free list trunk page
@@ -22,18 +23,17 @@ public class PageFreeList extends Page {
     private static final int DATA_START = 3;
 
     private final PageStore store;
-    private final BitField used;
+    private final BitSet used;
     private final int pageCount;
     private boolean full;
     private Data data;
 
-    private PageFreeList(PageStore store, int pageId) {
+    private PageFreeList(PageStore store, int pageId, int pageCount, BitSet used) {
         // kept in cache, and array list in page store
         setPos(pageId);
         this.store = store;
-        pageCount = (store.getPageSize() - DATA_START) * 8;
-        used = new BitField(pageCount);
-        used.set(0);
+        this.pageCount = pageCount;
+        this.used = used;
     }
 
     /**
@@ -45,9 +45,15 @@ public class PageFreeList extends Page {
      * @return the page
      */
     static PageFreeList read(PageStore store, Data data, int pageId) {
-        PageFreeList p = new PageFreeList(store, pageId);
+        data.reset();
+        data.readByte();
+        data.readShortInt();
+        int length = store.getPageSize() - DATA_START;
+        byte[] b = new byte[length];
+        data.read(b, 0, b.length);
+        PageFreeList p = new PageFreeList(store, pageId, length * 8, BitSet.valueOf(b));
         p.data = data;
-        p.read();
+        p.full = false;
         return p;
     }
 
@@ -59,7 +65,10 @@ public class PageFreeList extends Page {
      * @return the page
      */
     static PageFreeList create(PageStore store, int pageId) {
-        return new PageFreeList(store, pageId);
+        int pageCount = (store.getPageSize() - DATA_START) * 8;
+        BitSet used = new BitSet(pageCount);
+        used.set(0);
+        return new PageFreeList(store, pageId, pageCount, used);
     }
 
     /**
@@ -69,7 +78,7 @@ public class PageFreeList extends Page {
      * @param first the first page to look for
      * @return the page, or -1 if all pages are used
      */
-    int allocate(BitField exclude, int first) {
+    int allocate(BitSet exclude, int first) {
         if (full) {
             return -1;
         }
@@ -152,27 +161,17 @@ public class PageFreeList extends Page {
         store.update(this);
     }
 
-    /**
-     * Read the page from the disk.
-     */
-    private void read() {
-        data.reset();
-        data.readByte();
-        data.readShortInt();
-        for (int i = 0; i < pageCount; i += 8) {
-            int x = data.readByte() & 255;
-            used.setByte(i, x);
-        }
-        full = false;
-    }
-
     @Override
     public void write() {
         data = store.createData();
         data.writeByte((byte) Page.TYPE_FREE_LIST);
         data.writeShortInt(0);
-        for (int i = 0; i < pageCount; i += 8) {
-            data.writeByte((byte) used.getByte(i));
+        int cnt = pageCount >>> 3;
+        byte[] b = used.toByteArray();
+        int l = Math.min(b.length, cnt);
+        data.write(b, 0, l);
+        for (int i = cnt - l; i > 0; i--) {
+            data.writeByte((byte) 0);
         }
         store.writePage(getPos(), data);
     }

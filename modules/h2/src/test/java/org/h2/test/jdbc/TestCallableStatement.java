@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -26,6 +26,7 @@ import java.util.Collections;
 
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.SimpleResultSet;
 import org.h2.util.IOUtils;
 import org.h2.util.JdbcUtils;
@@ -35,7 +36,7 @@ import org.h2.util.Utils;
 /**
  * Tests for the CallableStatement class.
  */
-public class TestCallableStatement extends TestBase {
+public class TestCallableStatement extends TestDb {
 
     /**
      * Run just this test.
@@ -90,8 +91,6 @@ public class TestCallableStatement extends TestBase {
                 getRef(1);
         assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, call).
                 getRowId(1);
-        assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, call).
-                getSQLXML(1);
 
         assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, call).
                 getURL("a");
@@ -101,8 +100,6 @@ public class TestCallableStatement extends TestBase {
                 getRef("a");
         assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, call).
                 getRowId("a");
-        assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, call).
-                getSQLXML("a");
 
         assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, call).
                 setURL(1, (URL) null);
@@ -110,16 +107,11 @@ public class TestCallableStatement extends TestBase {
                 setRef(1, (Ref) null);
         assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, call).
                 setRowId(1, (RowId) null);
-        assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, call).
-                setSQLXML(1, (SQLXML) null);
 
         assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, call).
                 setURL("a", (URL) null);
         assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, call).
                 setRowId("a", (RowId) null);
-        assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, call).
-                setSQLXML("a", (SQLXML) null);
-
     }
 
     private void testCallWithResultSet(Connection conn) throws SQLException {
@@ -333,6 +325,8 @@ public class TestCallableStatement extends TestBase {
         assertEquals("ABC", call.getClob("B").getSubString(1, 3));
         assertEquals("ABC", call.getNClob(2).getSubString(1, 3));
         assertEquals("ABC", call.getNClob("B").getSubString(1, 3));
+        assertEquals("ABC", call.getSQLXML(2).getString());
+        assertEquals("ABC", call.getSQLXML("B").getString());
 
         try {
             call.getString(100);
@@ -398,6 +392,11 @@ public class TestCallableStatement extends TestBase {
         call.setNString("B", "xyz");
         call.executeUpdate();
         assertEquals("XYZ", call.getString("B"));
+        SQLXML xml = conn.createSQLXML();
+        xml.setString("<x>xyz</x>");
+        call.setSQLXML("B", xml);
+        call.executeUpdate();
+        assertEquals("<X>XYZ</X>", call.getString("B"));
 
         // test for exceptions after closing
         call.close();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -16,8 +16,6 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-import org.h2.util.New;
-
 /**
  * Tool to instrument java files with profiler calls. The tool can be used for
  * profiling an application and for coverage testing. This class is not used at
@@ -26,8 +24,8 @@ import org.h2.util.New;
 public class Coverage {
     private static final String IMPORT = "import " +
             Coverage.class.getPackage().getName() + ".Profile";
-    private final ArrayList<String> files = New.arrayList();
-    private final ArrayList<String> exclude = New.arrayList();
+    private final ArrayList<String> files = new ArrayList<>();
+    private final ArrayList<String> exclude = new ArrayList<>();
     private Tokenizer tokenizer;
     private Writer writer;
     private Writer data;

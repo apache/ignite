@@ -55,7 +55,6 @@
     <properties>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
-        <derby.version>10.10.1.1</derby.version>
         <osgi.version>4.2.0</osgi.version>
         <slf4j.version>1.6.0</slf4j.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -72,7 +71,17 @@
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
-            <version>3.6.2</version>
+            <version>5.5.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-analyzers-common</artifactId>
+            <version>5.5.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-queryparser</artifactId>
+            <version>5.5.5</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -105,39 +114,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.hsqldb</groupId>
-            <artifactId>hsqldb</artifactId>
-            <version>2.3.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derby</artifactId>
-            <version>${derby.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derbyclient</artifactId>
-            <version>${derby.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derbynet</artifactId>
-            <version>${derby.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>9.4.1209.jre6</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.6</version>
+            <version>42.2.5.jre7</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -146,21 +125,25 @@
             <version>4.12</version>
             <scope>test</scope>
         </dependency>
-        <!-- END TEST DEPENDENCIES !-->
-
-        <!--  JDK dependencies  -->
         <dependency>
-            <groupId>com.sun</groupId>
-            <artifactId>tools</artifactId>
-            <version>1.7</version>
-            <scope>system</scope>
-            <systemPath>${tools.jar}</systemPath>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>7.0</version>
+            <scope>test</scope>
         </dependency>
+        <!-- END TEST DEPENDENCIES !-->
     </dependencies>
 
     <!-- The test code creates proxy files using javac or tools.jar. Through maven we need to tell it
          where to possibly find tools.jar and annoyingly its called classes.jar on OSX -->
     <profiles>
+        <profile>
+            <id>jigsaw-jdk</id>
+            <activation>
+                <jdk>[1.9,)</jdk>
+            </activation>
+            <dependencies/>
+        </profile>
         <profile>
             <id>default-tools.jar</id>
             <activation>
@@ -168,9 +151,15 @@
                     <exists>${java.home}/../lib/tools.jar</exists>
                 </file>
             </activation>
-            <properties>
-                <tools.jar>${java.home}/../lib/tools.jar</tools.jar>
-            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>com.sun</groupId>
+                    <artifactId>tools</artifactId>
+                    <scope>system</scope>
+                    <version>1.7</version>
+                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
+                </dependency>
+            </dependencies>
         </profile>
         <profile>
             <id>default-tools.jar-mac</id>
@@ -179,9 +168,15 @@
                     <exists>${java.home}/../Classes/classes.jar</exists>
                 </file>
             </activation>
-            <properties>
-                <tools.jar>${java.home}/../Classes/classes.jar</tools.jar>
-            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>com.sun</groupId>
+                    <artifactId>tools</artifactId>
+                    <scope>system</scope>
+                    <version>1.7</version>
+                    <systemPath>${java.home}/../Classes/classes.jar</systemPath>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 
@@ -203,21 +198,43 @@
                     <include>org/h2/res/help.csv</include>
                     <include>org/h2/res/javadoc.properties</include>
                     <include>org/h2/server/pg/pg_catalog.sql</include>
+                    <include>META-INF/**</include>
                 </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources/precompiled</directory>
+                <targetPath>META-INF/versions/9</targetPath>
             </resource>
         </resources>
         <testResources>
             <testResource>
                 <directory>src/test/java</directory>
                 <includes>
-                    <include>org/h2/test/scripts/testSimple.in.txt</include>
-                    <include>org/h2/test/scripts/testScript.sql</include>
+                    <include>org/h2/test/scripts/**/*.sql</include>
                     <include>org/h2/samples/newsfeed.sql</include>
                     <include>org/h2/samples/optimizations.sql</include>
                 </includes>
             </testResource>
         </testResources>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <mainClass>org.h2.tools.Console</mainClass>
+                        </manifest>
+                        <manifestEntries>
+                            <Automatic-Module-Name>com.h2database</Automatic-Module-Name>
+                            <Multi-Release>true</Multi-Release>
+                            <Premain-Class>org.h2.util.Profiler</Premain-Class>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
             <!-- Add tools folder to test sources but consider moving them to src/test -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -283,7 +300,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.20.1</version>
+                <version>2.22.0</version>
                 <configuration>
                     <includes>
                         <include>TestAllJunit.java</include>

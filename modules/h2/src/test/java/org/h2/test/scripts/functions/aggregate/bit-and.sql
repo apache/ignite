@@ -1,4 +1,4 @@
--- Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (http://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -21,6 +21,7 @@ select bit_and(v), bit_and(v) filter (where v <= 0xffffffff0fff) from test where
 > rows: 1
 
 create index test_idx on test(v);
+> ok
 
 select bit_and(v), bit_and(v) filter (where v <= 0xffffffff0fff) from test where v >= 0xff0fffffffff;
 > BIT_AND(V)      BIT_AND(V) FILTER (WHERE (V <= 281474976649215))

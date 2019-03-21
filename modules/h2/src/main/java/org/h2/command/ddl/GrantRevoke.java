@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -18,7 +18,7 @@ import org.h2.engine.Session;
 import org.h2.message.DbException;
 import org.h2.schema.Schema;
 import org.h2.table.Table;
-import org.h2.util.New;
+import org.h2.util.Utils;
 
 /**
  * This class represents the statements
@@ -32,7 +32,7 @@ public class GrantRevoke extends DefineCommand {
     private ArrayList<String> roleNames;
     private int operationType;
     private int rightMask;
-    private final ArrayList<Table> tables = New.arrayList();
+    private final ArrayList<Table> tables = Utils.newSmallArrayList();
     private Schema schema;
     private RightOwner grantee;
 
@@ -60,7 +60,7 @@ public class GrantRevoke extends DefineCommand {
      */
     public void addRoleName(String roleName) {
         if (roleNames == null) {
-            roleNames = New.arrayList();
+            roleNames = Utils.newSmallArrayList();
         }
         roleNames.add(roleName);
     }
@@ -138,7 +138,7 @@ public class GrantRevoke extends DefineCommand {
             Role granteeRole = (Role) grantee;
             if (grantedRole.isRoleGranted(granteeRole)) {
                 // cyclic role grants are not allowed
-                throw DbException.get(ErrorCode.ROLE_ALREADY_GRANTED_1, grantedRole.getSQL());
+                throw DbException.get(ErrorCode.ROLE_ALREADY_GRANTED_1, grantedRole.getSQL(false));
             }
         }
         Database db = session.getDatabase();

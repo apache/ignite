@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -15,12 +15,13 @@ import org.h2.api.ErrorCode;
 import org.h2.engine.Constants;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.Restore;
 
 /**
  * Test the page store.
  */
-public class TestPageStoreCoverage extends TestBase {
+public class TestPageStoreCoverage extends TestDb {
 
     private static final String URL = "pageStoreCoverage;" +
             "PAGE_SIZE=64;CACHE_SIZE=16;MAX_LOG_SIZE=1";
@@ -35,11 +36,16 @@ public class TestPageStoreCoverage extends TestBase {
     }
 
     @Override
+    public boolean isEnabled() {
+        if (config.memory) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
     public void test() throws Exception {
         // TODO mvcc, 2-phase commit
-        if (config.memory) {
-            return;
-        }
         deleteDb("pageStoreCoverage");
         testMoveRoot();
         testBasic();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -30,14 +30,13 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.UUID;
-
 import org.h2.api.ErrorCode;
 import org.h2.jdbc.JdbcResultSetBackwardsCompat;
 import org.h2.message.DbException;
 import org.h2.util.Bits;
 import org.h2.util.JdbcUtils;
 import org.h2.util.MathUtils;
-import org.h2.util.New;
+import org.h2.util.SimpleColumnInfo;
 import org.h2.util.Utils;
 import org.h2.value.DataType;
 
@@ -67,7 +66,7 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
     private int rowId = -1;
     private boolean wasNull;
     private SimpleRowSource source;
-    private ArrayList<Column> columns = New.arrayList();
+    private ArrayList<SimpleColumnInfo> columns = Utils.newSmallArrayList();
     private boolean autoClose = true;
 
     /**
@@ -75,7 +74,7 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
      * addRow.
      */
     public SimpleResultSet() {
-        rows = New.arrayList();
+        rows = Utils.newSmallArrayList();
     }
 
     /**
@@ -123,13 +122,7 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
         if (name == null) {
             name = "C" + (columns.size() + 1);
         }
-        Column column = new Column();
-        column.name = name;
-        column.sqlType = sqlType;
-        column.precision = precision;
-        column.scale = scale;
-        column.sqlTypeName = sqlTypeName;
-        columns.add(column);
+        columns.add(new SimpleColumnInfo(name, sqlType, sqlTypeName, precision, scale));
     }
 
     /**
@@ -249,7 +242,7 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
     @Override
     public void beforeFirst() throws SQLException {
         if (autoClose) {
-            throw DbException.get(ErrorCode.RESULT_SET_NOT_SCROLLABLE);
+            throw DbException.getJdbcSQLException(ErrorCode.RESULT_SET_NOT_SCROLLABLE);
         }
         rowId = -1;
         if (source != null) {
@@ -285,8 +278,7 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
                 }
             }
         }
-        throw DbException.get(ErrorCode.COLUMN_NOT_FOUND_1, columnLabel)
-                .getSQLException();
+        throw DbException.getJdbcSQLException(ErrorCode.COLUMN_NOT_FOUND_1, columnLabel);
     }
 
     /**
@@ -613,8 +605,7 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
      */
     @Override
     public Clob getClob(int columnIndex) throws SQLException {
-        Clob c = (Clob) get(columnIndex);
-        return c == null ? null : c;
+        return (Clob) get(columnIndex);
     }
 
     /**
@@ -1012,7 +1003,7 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
         if (o == null) {
             return null;
         }
-        switch (columns.get(columnIndex - 1).sqlType) {
+        switch (columns.get(columnIndex - 1).type) {
         case Types.CLOB:
             Clob c = (Clob) o;
             return c.getSubString(1, MathUtils.convertLongToInt(c.length()));
@@ -1868,7 +1859,7 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
      */
     @Override
     public int getColumnType(int columnIndex) throws SQLException {
-        return getColumn(columnIndex - 1).sqlType;
+        return getColumn(columnIndex - 1).type;
     }
 
     /**
@@ -1993,14 +1984,14 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
     }
 
     /**
-     * Returns null.
+     * Returns empty string.
      *
      * @param columnIndex (1,2,...)
-     * @return null
+     * @return empty string
      */
     @Override
     public String getCatalogName(int columnIndex) {
-        return null;
+        return "";
     }
 
     /**
@@ -2012,7 +2003,7 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
     @Override
     public String getColumnClassName(int columnIndex) throws SQLException {
         int type = DataType.getValueTypeFromResultSet(this, columnIndex);
-        return DataType.getTypeClassName(type);
+        return DataType.getTypeClassName(type, true);
     }
 
     /**
@@ -2045,29 +2036,29 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
      */
     @Override
     public String getColumnTypeName(int columnIndex) throws SQLException {
-        return getColumn(columnIndex - 1).sqlTypeName;
+        return getColumn(columnIndex - 1).typeName;
     }
 
     /**
-     * Returns null.
+     * Returns empty string.
      *
      * @param columnIndex (1,2,...)
-     * @return null
+     * @return empty string
      */
     @Override
     public String getSchemaName(int columnIndex) {
-        return null;
+        return "";
     }
 
     /**
-     * Returns null.
+     * Returns empty string.
      *
      * @param columnIndex (1,2,...)
-     * @return null
+     * @return empty string
      */
     @Override
     public String getTableName(int columnIndex) {
-        return null;
+        return "";
     }
 
     // ---- unsupported / result set -----------------------------------
@@ -2259,6 +2250,7 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
     // --- private -----------------------------
 
     private void update(int columnIndex, Object obj) throws SQLException {
+        checkClosed();
         checkColumnIndex(columnIndex);
         this.currentRow[columnIndex - 1] = obj;
     }
@@ -2271,8 +2263,13 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
      * INTERNAL
      */
     static SQLException getUnsupportedException() {
-        return DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1).
-                getSQLException();
+        return DbException.getJdbcSQLException(ErrorCode.FEATURE_NOT_SUPPORTED_1);
+    }
+
+    private void checkClosed() throws SQLException {
+        if (columns == null) {
+            throw DbException.getJdbcSQLException(ErrorCode.OBJECT_CLOSED);
+        }
     }
 
     private void checkColumnIndex(int columnIndex) throws SQLException {
@@ -2284,8 +2281,7 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
 
     private Object get(int columnIndex) throws SQLException {
         if (currentRow == null) {
-            throw DbException.get(ErrorCode.NO_DATA_AVAILABLE).
-                    getSQLException();
+            throw DbException.getJdbcSQLException(ErrorCode.NO_DATA_AVAILABLE);
         }
         checkColumnIndex(columnIndex);
         columnIndex--;
@@ -2295,7 +2291,7 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
         return o;
     }
 
-    private Column getColumn(int i) throws SQLException {
+    private SimpleColumnInfo getColumn(int i) throws SQLException {
         checkColumnIndex(i + 1);
         return columns.get(i);
     }
@@ -2353,37 +2349,6 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData,
      */
     public boolean getAutoClose() {
         return autoClose;
-    }
-
-    /**
-     * This class holds the data of a result column.
-     */
-    static class Column {
-
-        /**
-         * The column label.
-         */
-        String name;
-
-        /**
-         * The column type Name
-         */
-        String sqlTypeName;
-
-        /**
-         * The SQL type.
-         */
-        int sqlType;
-
-        /**
-         * The precision.
-         */
-        int precision;
-
-        /**
-         * The scale.
-         */
-        int scale;
     }
 
     /**

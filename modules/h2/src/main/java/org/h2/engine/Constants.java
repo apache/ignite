@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -15,22 +15,22 @@ public class Constants {
     /**
      * The build date is updated for each public release.
      */
-    public static final String BUILD_DATE = "2018-03-18";
+    public static final String BUILD_DATE = "2019-03-13";
 
     /**
      * The build date of the last stable release.
      */
-    public static final String BUILD_DATE_STABLE = "2017-06-10";
+    public static final String BUILD_DATE_STABLE = "2018-03-18";
 
     /**
      * The build id is incremented for each public release.
      */
-    public static final int BUILD_ID = 197;
+    public static final int BUILD_ID = 199;
 
     /**
      * The build id of the last stable release.
      */
-    public static final int BUILD_ID_STABLE = 196;
+    public static final int BUILD_ID_STABLE = 197;
 
     /**
      * Whether this is a snapshot version.
@@ -44,12 +44,6 @@ public class Constants {
      * Example: ACME_SVN1651_BUILD3
      */
     public static final String BUILD_VENDOR_AND_VERSION = null;
-
-    /**
-     * The TCP protocol version number 8.
-     * @since 1.2.143 (2010-09-18)
-     */
-    public static final int TCP_PROTOCOL_VERSION_8 = 8;
 
     /**
      * The TCP protocol version number 9.
@@ -101,19 +95,25 @@ public class Constants {
 
     /**
      * The TCP protocol version number 17.
-     * @since 1.4.197 (TODO)
+     * @since 1.4.197 (2018-03-18)
      */
     public static final int TCP_PROTOCOL_VERSION_17 = 17;
 
     /**
+     * The TCP protocol version number 18.
+     * @since 1.4.198 (2019-02-22)
+     */
+    public static final int TCP_PROTOCOL_VERSION_18 = 18;
+
+    /**
      * Minimum supported version of TCP protocol.
      */
-    public static final int TCP_PROTOCOL_VERSION_MIN_SUPPORTED = TCP_PROTOCOL_VERSION_8;
+    public static final int TCP_PROTOCOL_VERSION_MIN_SUPPORTED = TCP_PROTOCOL_VERSION_9;
 
     /**
      * Maximum supported version of TCP protocol.
      */
-    public static final int TCP_PROTOCOL_VERSION_MAX_SUPPORTED = TCP_PROTOCOL_VERSION_17;
+    public static final int TCP_PROTOCOL_VERSION_MAX_SUPPORTED = TCP_PROTOCOL_VERSION_18;
 
     /**
      * The major version of this database.
@@ -332,6 +332,11 @@ public class Constants {
     public static final int MEMORY_OBJECT = 24;
 
     /**
+     * The memory needed by an array.
+     */
+    public static final int MEMORY_ARRAY = 24;
+
+    /**
      * The memory needed by an object of class PageBtree.
      */
     public static final int MEMORY_PAGE_BTREE =
@@ -382,6 +387,11 @@ public class Constants {
     public static final String PREFIX_PRIMARY_KEY = "PRIMARY_KEY_";
 
     /**
+     * The name prefix used for query aliases that are not explicitly named.
+     */
+    public static final String PREFIX_QUERY_ALIAS = "QUERY_ALIAS_";
+
+    /**
      * Every user belongs to this role.
      */
     public static final String PUBLIC_ROLE_NAME = "PUBLIC";
@@ -390,6 +400,16 @@ public class Constants {
      * The number of bytes in random salt that is used to hash passwords.
      */
     public static final int SALT_LEN = 8;
+
+    /**
+     * The identity of INFORMATION_SCHEMA.
+     */
+    public static final int INFORMATION_SCHEMA_ID = -1;
+
+    /**
+     * The identity of PUBLIC schema.
+     */
+    public static final int MAIN_SCHEMA_ID = 0;
 
     /**
      * The name of the default schema.

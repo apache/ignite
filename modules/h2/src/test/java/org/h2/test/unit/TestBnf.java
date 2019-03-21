@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -15,12 +15,13 @@ import org.h2.bnf.context.DbContextRule;
 import org.h2.bnf.context.DbProcedure;
 import org.h2.bnf.context.DbSchema;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Test Bnf Sql parser
  * @author Nicolas Fortin
  */
-public class TestBnf extends TestBase {
+public class TestBnf extends TestDb {
 
     /**
      * Run just this test.
@@ -38,7 +39,8 @@ public class TestBnf extends TestBase {
             testModes(conn);
             testProcedures(conn, false);
         }
-        try (Connection conn = getConnection("bnf;mode=mysql")) {
+        deleteDb("bnf");
+        try (Connection conn = getConnection("bnf;mode=mysql;database_to_lower=true")) {
             testProcedures(conn, true);
         }
     }
@@ -92,12 +94,10 @@ public class TestBnf extends TestBase {
         assertFalse(dbContents.isFirebird());
         assertEquals(null, dbContents.quoteIdentifier(null));
         if (isMySQLMode) {
-            assertTrue(dbContents.isH2ModeMySQL());
-            assertEquals("TEST", dbContents.quoteIdentifier("TEST"));
-            assertEquals("TEST", dbContents.quoteIdentifier("Test"));
-            assertEquals("TEST", dbContents.quoteIdentifier("test"));
+            assertEquals("\"TEST\"", dbContents.quoteIdentifier("TEST"));
+            assertEquals("\"Test\"", dbContents.quoteIdentifier("Test"));
+            assertEquals("test", dbContents.quoteIdentifier("test"));
         } else {
-            assertFalse(dbContents.isH2ModeMySQL());
             assertEquals("TEST", dbContents.quoteIdentifier("TEST"));
             assertEquals("\"Test\"", dbContents.quoteIdentifier("Test"));
             assertEquals("\"test\"", dbContents.quoteIdentifier("test"));

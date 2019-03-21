@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -14,6 +14,7 @@ import org.h2.api.ErrorCode;
 import org.h2.api.Trigger;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.ChangeFileEncryption;
 import org.h2.tools.Recover;
 import org.h2.util.Task;
@@ -21,7 +22,7 @@ import org.h2.util.Task;
 /**
  * Tests the RUNSCRIPT SQL statement.
  */
-public class TestRunscript extends TestBase implements Trigger {
+public class TestRunscript extends TestDb implements Trigger {
 
     /**
      * Run just this test.
@@ -350,7 +351,7 @@ public class TestRunscript extends TestBase implements Trigger {
         Thread.sleep(200);
         stat.cancel();
         SQLException e = (SQLException) task.getException();
-        assertTrue(e != null);
+        assertNotNull(e);
         assertEquals(ErrorCode.STATEMENT_WAS_CANCELED, e.getErrorCode());
 
         stat.execute("set throttle 1000");
@@ -367,7 +368,7 @@ public class TestRunscript extends TestBase implements Trigger {
         Thread.sleep(200);
         stat.cancel();
         e = (SQLException) task.getException();
-        assertTrue(e != null);
+        assertNotNull(e);
         assertEquals(ErrorCode.STATEMENT_WAS_CANCELED, e.getErrorCode());
 
         conn.close();

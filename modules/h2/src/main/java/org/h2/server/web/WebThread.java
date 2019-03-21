@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -78,6 +78,9 @@ class WebThread extends WebApp implements Runnable {
         if (requestedFile.length() == 0) {
             return "index.do";
         }
+        if (requestedFile.charAt(0) == '?') {
+            return "index.do" + requestedFile;
+        }
         return requestedFile;
     }
 
@@ -115,17 +118,19 @@ class WebThread extends WebApp implements Runnable {
             if (begin < 0 || end < begin) {
                 file = "";
             } else {
-                file = head.substring(begin + 1, end).trim();
+                file = StringUtils.trimSubstring(head, begin + 1, end);
             }
             trace(head + ": " + file);
             file = getAllowedFile(file);
             attributes = new Properties();
             int paramIndex = file.indexOf('?');
             session = null;
+            String key = null;
             if (paramIndex >= 0) {
                 String attrib = file.substring(paramIndex + 1);
                 parseAttributes(attrib);
                 String sessionId = attributes.getProperty("jsessionid");
+                key = attributes.getProperty("key");
                 file = file.substring(0, paramIndex);
                 session = server.getSession(sessionId);
             }
@@ -150,6 +155,9 @@ class WebThread extends WebApp implements Runnable {
                     message += "Content-Length: " + bytes.length + "\r\n";
                 } else {
                     if (session != null && file.endsWith(".jsp")) {
+                        if (key != null) {
+                            session.put("key", key);
+                        }
                         String page = new String(bytes, StandardCharsets.UTF_8);
                         if (SysProperties.CONSOLE_STREAM) {
                             Iterator<String> it = (Iterator<String>) session.map.remove("chunks");
@@ -310,7 +318,7 @@ class WebThread extends WebApp implements Runnable {
                         }
                     }
                 }
-            } else if (line.trim().length() == 0) {
+            } else if (StringUtils.isWhitespaceOrEmpty(line)) {
                 break;
             }
         }
@@ -328,7 +336,7 @@ class WebThread extends WebApp implements Runnable {
     }
 
     private static String getHeaderLineValue(String line) {
-        return line.substring(line.indexOf(':') + 1).trim();
+        return StringUtils.trimSubstring(line, line.indexOf(':') + 1);
     }
 
     @Override

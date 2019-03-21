@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -20,8 +20,8 @@ public class CompareModeIcu4J extends CompareMode {
 
     private final Comparator<String> collator;
 
-    protected CompareModeIcu4J(String name, int strength, boolean binaryUnsigned) {
-        super(name, strength, binaryUnsigned);
+    protected CompareModeIcu4J(String name, int strength, boolean binaryUnsigned, boolean uuidUnsigned) {
+        super(name, strength, binaryUnsigned, uuidUnsigned);
         collator = getIcu4jCollator(name, strength);
     }
 
@@ -49,12 +49,13 @@ public class CompareModeIcu4J extends CompareMode {
                     "com.ibm.icu.text.Collator");
             Method getInstanceMethod = collatorClass.getMethod(
                     "getInstance", Locale.class);
-            if (name.length() == 2) {
+            int length = name.length();
+            if (length == 2) {
                 Locale locale = new Locale(StringUtils.toLowerEnglish(name), "");
                 if (compareLocaleNames(locale, name)) {
                     result = (Comparator<String>) getInstanceMethod.invoke(null, locale);
                 }
-            } else if (name.length() == 5) {
+            } else if (length == 5) {
                 // LL_CC (language_country)
                 int idx = name.indexOf('_');
                 if (idx >= 0) {

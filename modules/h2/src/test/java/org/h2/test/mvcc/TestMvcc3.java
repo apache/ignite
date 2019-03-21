@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -13,11 +13,12 @@ import java.sql.Statement;
 
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Additional MVCC (multi version concurrency) test cases.
  */
-public class TestMvcc3 extends TestBase {
+public class TestMvcc3 extends TestDb {
 
     /**
      * Run just this test.
@@ -26,7 +27,6 @@ public class TestMvcc3 extends TestBase {
      */
     public static void main(String... a) throws Exception {
         TestBase test = TestBase.createCaller().init();
-        test.config.mvcc = true;
         test.test();
     }
 
@@ -63,7 +63,7 @@ public class TestMvcc3 extends TestBase {
     }
 
     private void testConcurrentUpdate() throws SQLException {
-        if (!config.mvcc) {
+        if (!config.mvStore) {
             return;
         }
         deleteDb("mvcc3");
@@ -102,7 +102,7 @@ public class TestMvcc3 extends TestBase {
     }
 
     private void testInsertUpdateRollback() throws SQLException {
-        if (!config.mvcc) {
+        if (!config.mvStore) {
             return;
         }
 
@@ -147,7 +147,7 @@ public class TestMvcc3 extends TestBase {
     }
 
     private void testCreateTableAsSelect() throws SQLException {
-        if (!config.mvcc) {
+        if (!config.mvStore) {
             return;
         }
         deleteDb("mvcc3");
@@ -165,7 +165,7 @@ public class TestMvcc3 extends TestBase {
     }
 
     private void testRollback() throws SQLException {
-        if (!config.mvcc) {
+        if (!config.mvStore) {
             return;
         }
 
@@ -218,7 +218,7 @@ public class TestMvcc3 extends TestBase {
     }
 
     private void testDisableAutoCommit() throws SQLException {
-        if (!config.mvcc) {
+        if (!config.mvStore) {
             return;
         }
         deleteDb("mvcc3");

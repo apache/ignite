@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -55,18 +55,18 @@ public class ParameterRemote implements ParameterInterface {
     }
 
     @Override
-    public int getType() {
-        return value == null ? dataType : value.getType();
+    public int getValueType() {
+        return value == null ? dataType : value.getValueType();
     }
 
     @Override
     public long getPrecision() {
-        return value == null ? precision : value.getPrecision();
+        return value == null ? precision : value.getType().getPrecision();
     }
 
     @Override
     public int getScale() {
-        return value == null ? scale : value.getScale();
+        return value == null ? scale : value.getType().getScale();
     }
 
     @Override
@@ -94,7 +94,7 @@ public class ParameterRemote implements ParameterInterface {
      */
     public static void writeMetaData(Transfer transfer, ParameterInterface p)
             throws IOException {
-        transfer.writeInt(p.getType());
+        transfer.writeInt(p.getValueType());
         transfer.writeLong(p.getPrecision());
         transfer.writeInt(p.getScale());
         transfer.writeInt(p.getNullable());

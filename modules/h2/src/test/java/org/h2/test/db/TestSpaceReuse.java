@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -8,15 +8,15 @@ package org.h2.test.db;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-
 import org.h2.engine.Constants;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Tests if disk space is reused after deleting many rows.
  */
-public class TestSpaceReuse extends TestBase {
+public class TestSpaceReuse extends TestDb {
 
     /**
      * Run just this test.
@@ -28,10 +28,15 @@ public class TestSpaceReuse extends TestBase {
     }
 
     @Override
-    public void test() throws SQLException {
+    public boolean isEnabled() {
         if (config.memory) {
-            return;
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws SQLException {
         deleteDb("spaceReuse");
         long max = 0, now = 0, min = Long.MAX_VALUE;
         for (int i = 0; i < 20; i++) {
@@ -45,7 +50,7 @@ public class TestSpaceReuse extends TestBase {
             conn.createStatement().execute("delete from t");
             conn.close();
             String fileName = getBaseDir() + "/spaceReuse";
-            if (Constants.VERSION_MINOR >= 4) {
+            if (config.mvStore) {
                 fileName += Constants.SUFFIX_MV_FILE;
             } else {
                 fileName += Constants.SUFFIX_PAGE_FILE;

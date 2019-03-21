@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -7,12 +7,12 @@ package org.h2.test.synth;
 
 import java.util.ArrayList;
 import java.util.Random;
+
 import org.h2.bnf.Bnf;
 import org.h2.bnf.BnfVisitor;
 import org.h2.bnf.Rule;
 import org.h2.bnf.RuleFixed;
 import org.h2.bnf.RuleHead;
-import org.h2.util.New;
 
 /**
  * A BNF visitor that generates a random SQL statement.
@@ -22,7 +22,7 @@ public class BnfRandom implements BnfVisitor {
     private static final boolean SHOW_SYNTAX = false;
 
     private final Random random = new Random();
-    private final ArrayList<RuleHead> statements = New.arrayList();
+    private final ArrayList<RuleHead> statements = new ArrayList<>();
 
     private int level;
     private String sql;

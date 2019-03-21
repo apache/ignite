@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -28,9 +28,9 @@ import org.h2.api.ErrorCode;
 import org.h2.engine.SysProperties;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.Csv;
 import org.h2.util.IOUtils;
-import org.h2.util.New;
 import org.h2.util.StringUtils;
 
 /**
@@ -39,7 +39,7 @@ import org.h2.util.StringUtils;
  * @author Thomas Mueller
  * @author Sylvain Cuaz (testNull)
  */
-public class TestCsv extends TestBase {
+public class TestCsv extends TestDb {
 
     /**
      * Run just this test.
@@ -353,7 +353,7 @@ public class TestCsv extends TestBase {
         int len = getSize(1000, 10000);
         PreparedStatement prep = conn.prepareStatement(
                 "insert into test(a, b) values(?, ?)");
-        ArrayList<String[]> list = New.arrayList();
+        ArrayList<String[]> list = new ArrayList<>(len);
         Random random = new Random(1);
         for (int i = 0; i < len; i++) {
             String a = randomData(random), b = randomData(random);

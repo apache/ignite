@@ -1,10 +1,11 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.engine;
 
+import java.sql.Types;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Set;
@@ -187,6 +188,28 @@ public class Mode {
     public boolean allowDB2TimestampFormat;
 
     /**
+     * Discard SQLServer table hints (e.g. "SELECT * FROM table WITH (NOLOCK)")
+     */
+    public boolean discardWithTableHints;
+
+    /**
+     * Use "IDENTITY" as an alias for "auto_increment" (SQLServer style)
+     */
+    public boolean useIdentityAsAutoIncrement;
+
+    /**
+     * Convert (VAR)CHAR to VAR(BINARY) and vice versa with UTF-8 encoding instead of HEX.
+     */
+    public boolean charToBinaryInUtf8;
+
+    /**
+     * If {@code true}, datetime value function return the same value within a
+     * transaction, if {@code false} datetime value functions return the same
+     * value within a command.
+     */
+    public boolean dateTimeValueWithinTransaction;
+
+    /**
      * An optional Set of hidden/disallowed column types.
      * Certain DBMSs don't support all column types provided by H2, such as
      * "NUMBER" when using PostgreSQL mode.
@@ -200,14 +223,15 @@ public class Mode {
 
     private final String name;
 
-    private ModeEnum modeEnum;
+    private final ModeEnum modeEnum;
 
     static {
-        Mode mode = new Mode(ModeEnum.REGULAR.name());
+        Mode mode = new Mode(ModeEnum.REGULAR);
         mode.nullConcatIsNull = true;
+        mode.dateTimeValueWithinTransaction = true;
         add(mode);
 
-        mode = new Mode(ModeEnum.DB2.name());
+        mode = new Mode(ModeEnum.DB2);
         mode.aliasColumnName = true;
         mode.sysDummy1 = true;
         mode.isolationLevelInSelectOrInsertStatement = true;
@@ -221,7 +245,7 @@ public class Mode {
         mode.allowDB2TimestampFormat = true;
         add(mode);
 
-        mode = new Mode(ModeEnum.Derby.name());
+        mode = new Mode(ModeEnum.Derby);
         mode.aliasColumnName = true;
         mode.uniqueIndexNullsHandling = UniqueIndexNullsHandling.FORBID_ANY_DUPLICATES;
         mode.sysDummy1 = true;
@@ -230,7 +254,7 @@ public class Mode {
         mode.supportedClientInfoPropertiesRegEx = null;
         add(mode);
 
-        mode = new Mode(ModeEnum.HSQLDB.name());
+        mode = new Mode(ModeEnum.HSQLDB);
         mode.aliasColumnName = true;
         mode.convertOnlyToSmallerScale = true;
         mode.nullConcatIsNull = true;
@@ -243,19 +267,31 @@ public class Mode {
         mode.supportedClientInfoPropertiesRegEx = null;
         add(mode);
 
-        mode = new Mode(ModeEnum.MSSQLServer.name());
+        mode = new Mode(ModeEnum.MSSQLServer);
         mode.aliasColumnName = true;
         mode.squareBracketQuotedNames = true;
         mode.uniqueIndexNullsHandling = UniqueIndexNullsHandling.FORBID_ANY_DUPLICATES;
         mode.allowPlusForStringConcat = true;
         mode.swapConvertFunctionParameters = true;
         mode.supportPoundSymbolForColumnNames = true;
+        mode.discardWithTableHints = true;
+        mode.useIdentityAsAutoIncrement = true;
         // MS SQL Server does not support client info properties. See
         // https://msdn.microsoft.com/en-Us/library/dd571296%28v=sql.110%29.aspx
         mode.supportedClientInfoPropertiesRegEx = null;
+        DataType dt = DataType.createNumeric(19, 4, false);
+        dt.type = Value.DECIMAL;
+        dt.sqlType = Types.NUMERIC;
+        dt.name = "MONEY";
+        mode.typeByNameMap.put("MONEY", dt);
+        dt = DataType.createNumeric(10, 4, false);
+        dt.type = Value.DECIMAL;
+        dt.sqlType = Types.NUMERIC;
+        dt.name = "SMALLMONEY";
+        mode.typeByNameMap.put("SMALLMONEY", dt);
         add(mode);
 
-        mode = new Mode(ModeEnum.MySQL.name());
+        mode = new Mode(ModeEnum.MySQL);
         mode.convertInsertNullToZero = true;
         mode.indexDefinitionInCreateTable = true;
         mode.lowerCaseIdentifiers = true;
@@ -269,9 +305,10 @@ public class Mode {
         mode.supportedClientInfoPropertiesRegEx =
                 Pattern.compile(".*");
         mode.prohibitEmptyInPredicate = true;
+        mode.charToBinaryInUtf8 = true;
         add(mode);
 
-        mode = new Mode(ModeEnum.Oracle.name());
+        mode = new Mode(ModeEnum.Oracle);
         mode.aliasColumnName = true;
         mode.convertOnlyToSmallerScale = true;
         mode.uniqueIndexNullsHandling = UniqueIndexNullsHandling.ALLOW_DUPLICATES_WITH_ALL_NULLS;
@@ -283,10 +320,14 @@ public class Mode {
         mode.supportedClientInfoPropertiesRegEx =
                 Pattern.compile(".*\\..*");
         mode.prohibitEmptyInPredicate = true;
-        mode.typeByNameMap.put("DATE", DataType.getDataType(Value.TIMESTAMP));
+        dt = DataType.createDate(/* 2001-01-01 23:59:59 */ 19, 19, "DATE", false, 0, 0);
+        dt.type = Value.TIMESTAMP;
+        dt.sqlType = Types.TIMESTAMP;
+        dt.name = "DATE";
+        mode.typeByNameMap.put("DATE", dt);
         add(mode);
 
-        mode = new Mode(ModeEnum.PostgreSQL.name());
+        mode = new Mode(ModeEnum.PostgreSQL);
         mode.aliasColumnName = true;
         mode.nullConcatIsNull = true;
         mode.systemColumns = true;
@@ -307,18 +348,25 @@ public class Mode {
         disallowedTypes.add("TINYINT");
         disallowedTypes.add("BLOB");
         mode.disallowedTypes = disallowedTypes;
+        dt = DataType.createNumeric(19, 2, false);
+        dt.type = Value.DECIMAL;
+        dt.sqlType = Types.NUMERIC;
+        dt.name = "MONEY";
+        mode.typeByNameMap.put("MONEY", dt);
+        mode.dateTimeValueWithinTransaction = true;
         add(mode);
 
-        mode = new Mode(ModeEnum.Ignite.name());
+        mode = new Mode(ModeEnum.Ignite);
         mode.nullConcatIsNull = true;
         mode.allowAffinityKey = true;
         mode.indexDefinitionInCreateTable = true;
+        mode.dateTimeValueWithinTransaction = true;
         add(mode);
     }
 
-    private Mode(String name) {
-        this.name = name;
-        this.modeEnum = ModeEnum.valueOf(name);
+    private Mode(ModeEnum modeEnum) {
+        this.name = modeEnum.name();
+        this.modeEnum = modeEnum;
     }
 
     private static void add(Mode mode) {
@@ -345,6 +393,11 @@ public class Mode {
 
     public ModeEnum getEnum() {
         return this.modeEnum;
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 
 }

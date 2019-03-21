@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -27,31 +27,30 @@ public class DbColumn {
             throws SQLException {
         name = rs.getString("COLUMN_NAME");
         quotedName = contents.quoteIdentifier(name);
+        position = rs.getInt("ORDINAL_POSITION");
+        if (contents.isH2() && !procedureColumn) {
+            dataType = rs.getString("COLUMN_TYPE");
+            return;
+        }
         String type = rs.getString("TYPE_NAME");
         // a procedures column size is identified by PRECISION, for table this
         // is COLUMN_SIZE
-        String precisionColumnName;
+        String precisionColumnName, scaleColumnName;
         if (procedureColumn) {
             precisionColumnName = "PRECISION";
+            scaleColumnName = "SCALE";
         } else {
             precisionColumnName = "COLUMN_SIZE";
+            scaleColumnName = "DECIMAL_DIGITS";
         }
         int precision = rs.getInt(precisionColumnName);
-        position = rs.getInt("ORDINAL_POSITION");
-        boolean isSQLite = contents.isSQLite();
-        if (precision > 0 && !isSQLite) {
-            type += "(" + precision;
-            String scaleColumnName;
-            if (procedureColumn) {
-                scaleColumnName = "SCALE";
+        if (precision > 0 && !contents.isSQLite()) {
+            int scale = rs.getInt(scaleColumnName);
+            if (scale > 0) {
+                type = type + '(' + precision + ", " + scale + ')';
             } else {
-                scaleColumnName = "DECIMAL_DIGITS";
+                type = type + '(' + precision + ')';
             }
-            int prec = rs.getInt(scaleColumnName);
-            if (prec > 0) {
-                type += ", " + prec;
-            }
-            type += ")";
         }
         if (rs.getInt("NULLABLE") == DatabaseMetaData.columnNoNulls) {
             type += " NOT NULL";

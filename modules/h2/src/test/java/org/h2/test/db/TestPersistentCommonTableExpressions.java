@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -42,7 +42,7 @@ public class TestPersistentCommonTableExpressions extends AbstractBaseForCommonT
         String[] expectedRowData = new String[]{"|meat|null", "|fruit|3", "|veg|2"};
         String[] expectedColumnTypes = new String[]{"VARCHAR", numericName};
         String[] expectedColumnNames = new String[]{"VAL",
-                "SUM(SELECT\n" +
+                "SUM((SELECT\n" +
                 "    X\n" +
                 "FROM PUBLIC.\"\" BB\n" +
                 "    /* SELECT\n" +
@@ -61,7 +61,7 @@ public class TestPersistentCommonTableExpressions extends AbstractBaseForCommonT
                 "    GROUP BY A: A IS A.VAL\n" +
                 "     */\n" +
                 "    /* scanCount: 1 */\n" +
-                "WHERE BB.A IS A.VAL)"};
+                "WHERE BB.A IS A.VAL))"};
 
         String setupSQL =
                 "DROP TABLE IF EXISTS A;                           "
@@ -92,13 +92,13 @@ public class TestPersistentCommonTableExpressions extends AbstractBaseForCommonT
                 "GROUP BY a)                              \n" +
                 "SELECT                                   \n" +
                 "A.val,                                   \n" +
-                "sum(SELECT X FROM BB WHERE BB.a IS A.val)\n" +
+                "sum((SELECT X FROM BB WHERE BB.a IS A.val))\n" +
                 "FROM A                                   \n" + "GROUP BY A.val";
         int maxRetries = 3;
         int expectedNumberOfRows = expectedRowData.length;
 
         testRepeatedQueryWithSetup(maxRetries, expectedRowData, expectedColumnNames, expectedNumberOfRows, setupSQL,
-                withQuery, maxRetries - 1, expectedColumnTypes);
+                withQuery, maxRetries - 1, expectedColumnTypes, true);
 
     }
 
@@ -147,7 +147,7 @@ public class TestPersistentCommonTableExpressions extends AbstractBaseForCommonT
         String[] expectedColumnTypes = new String[]{"INTEGER", "INTEGER", "INTEGER", "INTEGER"};
         int expectedNumberOfRows = 11;
         testRepeatedQueryWithSetup(maxRetries, expectedRowData, expectedColumnNames, expectedNumberOfRows, setupSQL,
-                withQuery, maxRetries - 1, expectedColumnTypes);
+                withQuery, maxRetries - 1, expectedColumnTypes, false);
     }
 
     private void testPersistentNonRecursiveTableInCreateView() throws Exception {
@@ -186,7 +186,7 @@ public class TestPersistentCommonTableExpressions extends AbstractBaseForCommonT
         String[] expectedColumnTypes = new String[]{"INTEGER", "INTEGER", "INTEGER", "INTEGER"};
         int expectedNumberOfRows = 5;
         testRepeatedQueryWithSetup(maxRetries, expectedRowData, expectedColumnNames, expectedNumberOfRows, setupSQL,
-                withQuery, maxRetries - 1, expectedColumnTypes);
+                withQuery, maxRetries - 1, expectedColumnTypes, false);
     }
 
     private void testPersistentNonRecursiveTableInCreateViewDropAllObjects() throws Exception {
@@ -224,7 +224,7 @@ public class TestPersistentCommonTableExpressions extends AbstractBaseForCommonT
         String[] expectedColumnTypes = new String[]{"INTEGER", "INTEGER", "INTEGER", "INTEGER"};
         int expectedNumberOfRows = 5;
         testRepeatedQueryWithSetup(maxRetries, expectedRowData, expectedColumnNames, expectedNumberOfRows, setupSQL,
-                withQuery, maxRetries - 1, expectedColumnTypes);
+                withQuery, maxRetries - 1, expectedColumnTypes, false);
     }
 
     private void testPersistentRecursiveTableInCreateViewDropAllObjects() throws Exception {
@@ -271,6 +271,6 @@ public class TestPersistentCommonTableExpressions extends AbstractBaseForCommonT
         String[] expectedColumnTypes = new String[]{"INTEGER", "INTEGER", "INTEGER", "INTEGER"};
         int expectedNumberOfRows = 11;
         testRepeatedQueryWithSetup(maxRetries, expectedRowData, expectedColumnNames, expectedNumberOfRows, setupSQL,
-                withQuery, maxRetries - 1, expectedColumnTypes);
+                withQuery, maxRetries - 1, expectedColumnTypes, false);
     }
 }

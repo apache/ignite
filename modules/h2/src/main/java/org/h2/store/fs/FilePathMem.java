@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.NonWritableChannelException;
@@ -19,12 +20,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.h2.api.ErrorCode;
 import org.h2.compress.CompressLZF;
 import org.h2.message.DbException;
 import org.h2.util.MathUtils;
-import org.h2.util.New;
 
 /**
  * This file system keeps files fully in memory. There is an option to compress
@@ -98,7 +97,7 @@ public class FilePathMem extends FilePath {
 
     @Override
     public List<FilePath> newDirectoryStream() {
-        ArrayList<FilePath> list = New.arrayList();
+        ArrayList<FilePath> list = new ArrayList<>();
         synchronized (MEMORY_FILES) {
             for (String n : MEMORY_FILES.tailMap(name).keySet()) {
                 if (n.startsWith(name)) {
@@ -269,7 +268,7 @@ class FileMem extends FileBase {
     /**
      * The file data.
      */
-    final FileMemData data;
+    FileMemData data;
 
     private final boolean readOnly;
     private long pos;
@@ -290,6 +289,9 @@ class FileMem extends FileBase {
         if (readOnly) {
             throw new NonWritableChannelException();
         }
+        if (data == null) {
+            throw new ClosedChannelException();
+        }
         if (newLength < size()) {
             data.touch(readOnly);
             pos = Math.min(pos, newLength);
@@ -306,6 +308,9 @@ class FileMem extends FileBase {
 
     @Override
     public int write(ByteBuffer src, long position) throws IOException {
+        if (data == null) {
+            throw new ClosedChannelException();
+        }
         int len = src.remaining();
         if (len == 0) {
             return 0;
@@ -319,6 +324,9 @@ class FileMem extends FileBase {
 
     @Override
     public int write(ByteBuffer src) throws IOException {
+        if (data == null) {
+            throw new ClosedChannelException();
+        }
         int len = src.remaining();
         if (len == 0) {
             return 0;
@@ -332,6 +340,9 @@ class FileMem extends FileBase {
 
     @Override
     public int read(ByteBuffer dst, long position) throws IOException {
+        if (data == null) {
+            throw new ClosedChannelException();
+        }
         int len = dst.remaining();
         if (len == 0) {
             return 0;
@@ -348,6 +359,9 @@ class FileMem extends FileBase {
 
     @Override
     public int read(ByteBuffer dst) throws IOException {
+        if (data == null) {
+            throw new ClosedChannelException();
+        }
         int len = dst.remaining();
         if (len == 0) {
             return 0;
@@ -371,6 +385,7 @@ class FileMem extends FileBase {
     @Override
     public void implCloseChannel() throws IOException {
         pos = 0;
+        data = null;
     }
 
     @Override
@@ -381,6 +396,9 @@ class FileMem extends FileBase {
     @Override
     public synchronized FileLock tryLock(long position, long size,
             boolean shared) throws IOException {
+        if (data == null) {
+            throw new ClosedChannelException();
+        }
         if (shared) {
             if (!data.lockShared()) {
                 return null;
@@ -391,7 +409,7 @@ class FileMem extends FileBase {
             }
         }
 
-        return new FileLock(new FakeFileChannel(), position, size, shared) {
+        return new FileLock(FakeFileChannel.INSTANCE, position, size, shared) {
 
             @Override
             public boolean isValid() {
@@ -407,7 +425,7 @@ class FileMem extends FileBase {
 
     @Override
     public String toString() {
-        return data.getName();
+        return data == null ? "<closed>" : data.getName();
     }
 
 }
@@ -522,11 +540,13 @@ class FileMemData {
     /**
      * Unlock the file.
      */
-    synchronized void unlock() {
+    synchronized void unlock() throws IOException {
         if (isLockedExclusive) {
             isLockedExclusive = false;
+        } else if (sharedLockCount > 0) {
+            sharedLockCount--;
         } else {
-            sharedLockCount = Math.max(0, sharedLockCount - 1);
+            throw new IOException("not locked");
         }
     }
 

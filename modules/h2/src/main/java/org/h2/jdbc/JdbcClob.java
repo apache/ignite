@@ -1,15 +1,12 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.jdbc;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -17,31 +14,24 @@ import java.io.Writer;
 import java.sql.Clob;
 import java.sql.NClob;
 import java.sql.SQLException;
-import org.h2.api.ErrorCode;
+
 import org.h2.engine.Constants;
 import org.h2.message.DbException;
 import org.h2.message.TraceObject;
 import org.h2.store.RangeReader;
 import org.h2.util.IOUtils;
-import org.h2.util.Task;
 import org.h2.value.Value;
 
 /**
  * Represents a CLOB value.
  */
-public class JdbcClob extends TraceObject implements NClob
-{
-
-    Value value;
-    private final JdbcConnection conn;
+public class JdbcClob extends JdbcLob implements NClob {
 
     /**
      * INTERNAL
      */
-    public JdbcClob(JdbcConnection conn, Value value, int id) {
-        setTrace(conn.getSession().getTrace(), TraceObject.CLOB, id);
-        this.conn = conn;
-        this.value = value;
+    public JdbcClob(JdbcConnection conn, Value value, State state, int id) {
+        super(conn, value, state, TraceObject.CLOB, id);
     }
 
     /**
@@ -53,9 +43,9 @@ public class JdbcClob extends TraceObject implements NClob
     public long length() throws SQLException {
         try {
             debugCodeCall("length");
-            checkClosed();
-            if (value.getType() == Value.CLOB) {
-                long precision = value.getPrecision();
+            checkReadable();
+            if (value.getValueType() == Value.CLOB) {
+                long precision = value.getType().getPrecision();
                 if (precision > 0) {
                     return precision;
                 }
@@ -83,7 +73,7 @@ public class JdbcClob extends TraceObject implements NClob
     public InputStream getAsciiStream() throws SQLException {
         try {
             debugCodeCall("getAsciiStream");
-            checkClosed();
+            checkReadable();
             String s = value.getString();
             return IOUtils.getInputStreamFromString(s);
         } catch (Exception e) {
@@ -99,20 +89,9 @@ public class JdbcClob extends TraceObject implements NClob
         throw unsupported("LOB update");
     }
 
-    /**
-     * Returns the reader.
-     *
-     * @return the reader
-     */
     @Override
     public Reader getCharacterStream() throws SQLException {
-        try {
-            debugCodeCall("getCharacterStream");
-            checkClosed();
-            return value.getReader();
-        } catch (Exception e) {
-            throw logAndConvert(e);
-        }
+        return super.getCharacterStream();
     }
 
     /**
@@ -129,39 +108,14 @@ public class JdbcClob extends TraceObject implements NClob
     public Writer setCharacterStream(long pos) throws SQLException {
         try {
             if (isDebugEnabled()) {
-                debugCodeCall("setCharacterStream(" + pos + ");");
+                debugCode("setCharacterStream(" + pos + ");");
             }
-            checkClosed();
+            checkEditable();
             if (pos != 1) {
                 throw DbException.getInvalidValueException("pos", pos);
             }
-            if (value.getPrecision() != 0) {
-                throw DbException.getInvalidValueException("length", value.getPrecision());
-            }
-            final JdbcConnection c = conn; // required to avoid synthetic method creation
-            // PipedReader / PipedWriter are a lot slower
-            // than PipedInputStream / PipedOutputStream
-            // (Sun/Oracle Java 1.6.0_20)
-            final PipedInputStream in = new PipedInputStream();
-            final Task task = new Task() {
-                @Override
-                public void call() {
-                    value = c.createClob(IOUtils.getReader(in), -1);
-                }
-            };
-            PipedOutputStream out = new PipedOutputStream(in) {
-                @Override
-                public void close() throws IOException {
-                    super.close();
-                    try {
-                        task.get();
-                    } catch (Exception e) {
-                        throw DbException.convertToIOException(e);
-                    }
-                }
-            };
-            task.execute();
-            return IOUtils.getBufferedWriter(out);
+            state = State.SET_CALLED;
+            return setCharacterStreamImpl();
         } catch (Exception e) {
             throw logAndConvert(e);
         }
@@ -180,7 +134,7 @@ public class JdbcClob extends TraceObject implements NClob
             if (isDebugEnabled()) {
                 debugCode("getSubString(" + pos + ", " + length + ");");
             }
-            checkClosed();
+            checkReadable();
             if (pos < 1) {
                 throw DbException.getInvalidValueException("pos", pos);
             }
@@ -214,13 +168,13 @@ public class JdbcClob extends TraceObject implements NClob
             if (isDebugEnabled()) {
                 debugCode("setString(" + pos + ", " + quote(str) + ");");
             }
-            checkClosed();
+            checkEditable();
             if (pos != 1) {
                 throw DbException.getInvalidValueException("pos", pos);
             } else if (str == null) {
                 throw DbException.getInvalidValueException("str", str);
             }
-            value = conn.createClob(new StringReader(str), -1);
+            completeWrite(conn.createClob(new StringReader(str), -1));
             return str.length();
         } catch (Exception e) {
             throw logAndConvert(e);
@@ -245,14 +199,14 @@ public class JdbcClob extends TraceObject implements NClob
             if (isDebugEnabled()) {
                 debugCode("setString(" + pos + ", " + quote(str) + ", " + offset + ", " + len + ");");
             }
-            checkClosed();
+            checkEditable();
             if (pos != 1) {
                 throw DbException.getInvalidValueException("pos", pos);
             } else if (str == null) {
                 throw DbException.getInvalidValueException("str", str);
             }
-            value = conn.createClob(new RangeReader(new StringReader(str), offset, len), -1);
-            return (int) value.getPrecision();
+            completeWrite(conn.createClob(new RangeReader(new StringReader(str), offset, len), -1));
+            return (int) value.getType().getPrecision();
         } catch (Exception e) {
             throw logAndConvert(e);
         }
@@ -275,15 +229,6 @@ public class JdbcClob extends TraceObject implements NClob
     }
 
     /**
-     * Release all resources of this object.
-     */
-    @Override
-    public void free() {
-        debugCodeCall("free");
-        value = null;
-    }
-
-    /**
      * Returns the reader, starting from an offset.
      *
      * @param pos 1-based offset
@@ -293,28 +238,22 @@ public class JdbcClob extends TraceObject implements NClob
     @Override
     public Reader getCharacterStream(long pos, long length) throws SQLException {
         try {
-            debugCodeCall("getCharacterStream(pos, length)");
-            checkClosed();
+            if (isDebugEnabled()) {
+                debugCode("getCharacterStream(" + pos + ", " + length + ");");
+            }
+            checkReadable();
+            if (state == State.NEW) {
+                if (pos != 1) {
+                    throw DbException.getInvalidValueException("pos", pos);
+                }
+                if (length != 0) {
+                    throw DbException.getInvalidValueException("length", pos);
+                }
+            }
             return value.getReader(pos, length);
         } catch (Exception e) {
             throw logAndConvert(e);
         }
-    }
-
-    private void checkClosed() {
-        conn.checkClosed();
-        if (value == null) {
-            throw DbException.get(ErrorCode.OBJECT_CLOSED);
-        }
-    }
-
-    /**
-     * INTERNAL
-     */
-    @Override
-    public String toString() {
-        return getTraceObjectName() + ": " + (value == null ?
-                "null" : value.getTraceSQL());
     }
 
 }

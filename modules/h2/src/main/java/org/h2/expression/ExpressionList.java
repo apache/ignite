@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -9,20 +9,23 @@ import org.h2.engine.Session;
 import org.h2.table.Column;
 import org.h2.table.ColumnResolver;
 import org.h2.table.TableFilter;
-import org.h2.util.StatementBuilder;
+import org.h2.value.TypeInfo;
 import org.h2.value.Value;
 import org.h2.value.ValueArray;
+import org.h2.value.ValueRow;
 
 /**
  * A list of expressions, as in (ID, NAME).
- * The result of this expression is an array.
+ * The result of this expression is a row or an array.
  */
 public class ExpressionList extends Expression {
 
     private final Expression[] list;
+    private final boolean isArray;
 
-    public ExpressionList(Expression[] list) {
+    public ExpressionList(Expression[] list, boolean isArray) {
         this.list = list;
+        this.isArray = isArray;
     }
 
     @Override
@@ -31,18 +34,18 @@ public class ExpressionList extends Expression {
         for (int i = 0; i < list.length; i++) {
             v[i] = list[i].getValue(session);
         }
-        return ValueArray.get(v);
+        return isArray ? ValueArray.get(v) : ValueRow.get(v);
     }
 
     @Override
-    public int getType() {
-        return Value.ARRAY;
+    public TypeInfo getType() {
+        return isArray ? TypeInfo.TYPE_ARRAY : TypeInfo.TYPE_ROW;
     }
 
     @Override
-    public void mapColumns(ColumnResolver resolver, int level) {
+    public void mapColumns(ColumnResolver resolver, int level, int state) {
         for (Expression e : list) {
-            e.mapColumns(resolver, level);
+            e.mapColumns(resolver, level, state);
         }
     }
 
@@ -70,37 +73,16 @@ public class ExpressionList extends Expression {
     }
 
     @Override
-    public int getScale() {
-        return 0;
+    public StringBuilder getSQL(StringBuilder builder, boolean alwaysQuote) {
+        builder.append(isArray ? "ARRAY [" : "ROW (");
+        writeExpressions(builder, list, alwaysQuote);
+        return builder.append(isArray ? ']' : ')');
     }
 
     @Override
-    public long getPrecision() {
-        return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public int getDisplaySize() {
-        return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public String getSQL() {
-        StatementBuilder buff = new StatementBuilder("(");
-        for (Expression e: list) {
-            buff.appendExceptFirst(", ");
-            buff.append(e.getSQL());
-        }
-        if (list.length == 1) {
-            buff.append(',');
-        }
-        return buff.append(')').toString();
-    }
-
-    @Override
-    public void updateAggregate(Session session) {
+    public void updateAggregate(Session session, int stage) {
         for (Expression e : list) {
-            e.updateAggregate(session);
+            e.updateAggregate(session, stage);
         }
     }
 
@@ -128,12 +110,30 @@ public class ExpressionList extends Expression {
         ExpressionColumn[] expr = new ExpressionColumn[list.length];
         for (int i = 0; i < list.length; i++) {
             Expression e = list[i];
-            Column col = new Column("C" + (i + 1),
-                    e.getType(), e.getPrecision(), e.getScale(),
-                    e.getDisplaySize());
+            Column col = new Column("C" + (i + 1), e.getType());
             expr[i] = new ExpressionColumn(session.getDatabase(), col);
         }
         return expr;
+    }
+
+    @Override
+    public boolean isConstant() {
+        for (Expression e : list) {
+            if (!e.isConstant()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int getSubexpressionCount() {
+        return list.length;
+    }
+
+    @Override
+    public Expression getSubexpression(int index) {
+        return list[index];
     }
 
 }

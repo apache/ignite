@@ -8,6 +8,7 @@
 22004=Numeric value out of range: {0} in column {1}
 22007=Cannot parse {0} constant {1}
 22012=Division by zero: {0}
+22013=Invalid PRECEDING or FOLLOWING size in window function: {0}
 22018=Data conversion error converting {0}
 22025=Error in LIKE ESCAPE: {0}
 22030=Value not permitted for column {0}: {1}
@@ -31,7 +32,7 @@
 42S12=Index {0} not found
 42S21=Duplicate column name {0}
 42S22=Column {0} not found
-42S32=Setting {0} not found
+42S31=Identical expressions should be used; expected {0}, found {1}
 57014=Statement was canceled or the session timed out
 90000=Function {0} must return a result set
 90001=Method is not allowed for a query. Use execute or executeQuery instead of executeUpdate
@@ -140,6 +141,7 @@
 90107=Cannot drop {0} because {1} depends on it
 90108=Out of memory.
 90109=View {0} is invalid: {1}
+90110=Comparing ARRAY to scalar value
 90111=Error accessing linked table with SQL statement {0}, cause: {1}
 90112=Row not found when trying to delete from index {0}
 90113=Unsupported connection setting {0}
@@ -148,10 +150,10 @@
 90116=Literals of this kind are not allowed
 90117=Remote connections to this server are not allowed, see -tcpAllowOthers
 90118=Cannot drop table {0}
-90119=User data type {0} already exists
-90120=User data type {0} not found
+90119=Domain {0} already exists
+90120=Domain {0} not found
 90121=Database is already closed (to disable automatic closing at VM shutdown, add ";DB_CLOSE_ON_EXIT=FALSE" to the db URL)
-90122=Operation not supported for table {0} when there are views on the table: {1}
+90122=The WITH TIES clause is not allowed without a corresponding ORDER BY clause.
 90123=Cannot mix indexed and non-indexed parameters
 90124=File not found: {0}
 90125=Invalid class, expected {0} but got {1}
@@ -165,7 +167,7 @@
 90133=Cannot change the setting {0} when the database is already open
 90134=Access to the class {0} is denied
 90135=The database is open in exclusive mode; can not open additional connections
-90136=Unsupported outer join condition: {0}
+90136=Window not found: {0}
 90137=Can only assign to a variable, not to: {0}
 90138=Invalid database name: {0}
 90139=The public static Java method was not found: {0}
@@ -173,6 +175,9 @@
 90141=Serializer cannot be changed because there is a data table: {0}
 90142=Step size must not be zero
 90143=Row {1} not found in primary index {0}
+90144=Authenticator not enabled on database {0}
+90145=FOR UPDATE is not allowed in DISTINCT or grouped select
+90146=Database {0} not found, and IFEXISTS=true, so we can't auto-create it
 HY000=General error: {0}
 HY004=Unknown data type: {0}
 HYC00=Feature not supported: {0}

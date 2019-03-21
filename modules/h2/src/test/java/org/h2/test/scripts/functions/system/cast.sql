@@ -1,4 +1,4 @@
--- Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (http://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -8,7 +8,6 @@ create memory table test(id int primary key, name varchar(255));
 
 insert into test values(1, 'Hello');
 > update count: 1
-
 
 select cast(null as varchar(255)) xn, cast(' 10' as int) x10, cast(' 20 ' as int) x20 from test;
 > XN   X10 X20
@@ -89,7 +88,7 @@ select cast(cast('01020304-0506-0708-090a-0b0c0d0e0f00' as uuid) as binary);
 >> 0102030405060708090a0b0c0d0e0f00
 
 call cast('null' as uuid);
-> exception
+> exception DATA_CONVERSION_ERROR_1
 
 select cast('12345678123456781234567812345678' as uuid);
 >> 12345678-1234-5678-1234-567812345678
@@ -99,3 +98,30 @@ select cast('000102030405060708090a0b0c0d0e0f' as uuid);
 
 select -cast(0 as double);
 >> 0.0
+
+SELECT * FROM (SELECT CAST('11:11:11.123456789' AS TIME));
+>> 11:11:11
+
+SELECT * FROM (SELECT CAST('11:11:11.123456789' AS TIME(0)));
+>> 11:11:11
+
+SELECT * FROM (SELECT CAST('11:11:11.123456789' AS TIME(9)));
+>> 11:11:11.123456789
+
+SELECT * FROM (SELECT CAST('2000-01-01 11:11:11.123456789' AS TIMESTAMP));
+>> 2000-01-01 11:11:11.123457
+
+SELECT * FROM (SELECT CAST('2000-01-01 11:11:11.123456789' AS TIMESTAMP(0)));
+>> 2000-01-01 11:11:11
+
+SELECT * FROM (SELECT CAST('2000-01-01 11:11:11.123456789' AS TIMESTAMP(9)));
+>> 2000-01-01 11:11:11.123456789
+
+SELECT * FROM (SELECT CAST('2000-01-01 11:11:11.123456789Z' AS TIMESTAMP WITH TIME ZONE));
+>> 2000-01-01 11:11:11.123457+00
+
+SELECT * FROM (SELECT CAST('2000-01-01 11:11:11.123456789Z' AS TIMESTAMP(0) WITH TIME ZONE));
+>> 2000-01-01 11:11:11+00
+
+SELECT * FROM (SELECT CAST('2000-01-01 11:11:11.123456789Z' AS TIMESTAMP(9) WITH TIME ZONE));
+>> 2000-01-01 11:11:11.123456789+00

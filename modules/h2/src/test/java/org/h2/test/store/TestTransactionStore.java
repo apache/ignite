@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -13,19 +13,20 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
-import org.h2.mvstore.db.TransactionStore;
-import org.h2.mvstore.db.TransactionStore.Change;
-import org.h2.mvstore.db.TransactionStore.Transaction;
-import org.h2.mvstore.db.TransactionStore.TransactionMap;
+import org.h2.mvstore.tx.Transaction;
+import org.h2.mvstore.tx.TransactionMap;
+import org.h2.mvstore.tx.TransactionStore;
+import org.h2.mvstore.tx.TransactionStore.Change;
 import org.h2.mvstore.type.ObjectDataType;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
-import org.h2.util.New;
 import org.h2.util.Task;
 
 /**
@@ -55,7 +56,6 @@ public class TestTransactionStore extends TestBase {
         testStopWhileCommitting();
         testGetModifiedMaps();
         testKeyIterator();
-        testMultiStatement();
         testTwoPhaseCommit();
         testSavepoint();
         testConcurrentTransactionsReadCommitted();
@@ -205,6 +205,7 @@ public class TestTransactionStore extends TestBase {
                 break;
             }
         }
+        task.get();
         // we expect at least 10% the operations were successful
         assertTrue(failCount.toString() + " >= " + (count * 0.9),
                 failCount.get() < count * 0.9);
@@ -235,6 +236,7 @@ public class TestTransactionStore extends TestBase {
 
         Random r = new Random(1);
         for (int i = 0; i < size * 3; i++) {
+            assertEquals("op: " + i, size, map1.size());
             assertEquals("op: " + i, size, (int) map1.sizeAsLong());
             // keep the first 10%, and add 10%
             int k = size / 10 + r.nextInt(size);
@@ -326,7 +328,7 @@ public class TestTransactionStore extends TestBase {
         ts = new TransactionStore(s);
         ts.init();
         ts.setMaxTransactionId(16);
-        ArrayList<Transaction> fifo = New.arrayList();
+        ArrayList<Transaction> fifo = new ArrayList<>();
         int open = 0;
         for (int i = 0; i < 64; i++) {
             Transaction t = null;
@@ -396,24 +398,22 @@ public class TestTransactionStore extends TestBase {
             store.close();
             s = MVStore.open(fileName);
             // roll back a bit, until we have some undo log entries
-            assertTrue(s.hasMap("undoLog"));
             for (int back = 0; back < 100; back++) {
                 int minus = r.nextInt(10);
                 s.rollbackTo(Math.max(0, s.getCurrentVersion() - minus));
-                MVMap<?, ?> undo = s.openMap("undoLog");
-                if (undo.size() > 0) {
+                if (hasDataUndoLog(s)) {
                     break;
                 }
             }
-            // re-open the store, because we have opened
-            // the undoLog map with the wrong data type
+            // re-open TransactionStore, because we rolled back
+            // underlying MVStore without rolling back TransactionStore
             s.close();
             s = MVStore.open(fileName);
             ts = new TransactionStore(s);
             List<Transaction> list = ts.getOpenTransactions();
             if (list.size() != 0) {
                 tx = list.get(0);
-                if (tx.getStatus() == Transaction.STATUS_COMMITTING) {
+                if (tx.getStatus() == Transaction.STATUS_COMMITTED) {
                     i++;
                 }
             }
@@ -421,6 +421,15 @@ public class TestTransactionStore extends TestBase {
             FileUtils.delete(fileName);
             assertFalse(FileUtils.exists(fileName));
         }
+    }
+
+    private static boolean hasDataUndoLog(MVStore s) {
+        for (int i = 0; i < 255; i++) {
+            if (s.hasData(TransactionStore.getUndoLogName(true, 1))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void testGetModifiedMaps() {
@@ -500,6 +509,7 @@ public class TestTransactionStore extends TestBase {
         Transaction tx, tx2;
         TransactionMap<String, String> m, m2;
         Iterator<String> it, it2;
+        Iterator<Entry<String, String>> entryIt;
 
         tx = ts.begin();
         m = tx.openMap("test");
@@ -525,6 +535,15 @@ public class TestTransactionStore extends TestBase {
         assertEquals("3", it.next());
         assertFalse(it.hasNext());
 
+        entryIt = m.entrySet().iterator();
+        assertTrue(entryIt.hasNext());
+        assertEquals("1", entryIt.next().getKey());
+        assertTrue(entryIt.hasNext());
+        assertEquals("2", entryIt.next().getKey());
+        assertTrue(entryIt.hasNext());
+        assertEquals("3", entryIt.next().getKey());
+        assertFalse(entryIt.hasNext());
+
         it2 = m2.keyIterator(null);
         assertTrue(it2.hasNext());
         assertEquals("1", it2.next());
@@ -534,96 +553,6 @@ public class TestTransactionStore extends TestBase {
         assertEquals("4", it2.next());
         assertFalse(it2.hasNext());
 
-        s.close();
-    }
-
-    /**
-     * Tests behavior when used for a sequence of SQL statements. Each statement
-     * uses a savepoint. Within a statement, changes by the statement itself are
-     * not seen; the change is only seen when the statement finished.
-     * <p>
-     * Update statements that change the key of multiple rows may use delete/add
-     * pairs to do so (they don't need to first delete all entries and then
-     * re-add them). Trying to add multiple values for the same key is not
-     * allowed (an update statement that would result in a duplicate key).
-     */
-    private void testMultiStatement() {
-        MVStore s = MVStore.open(null);
-        TransactionStore ts = new TransactionStore(s);
-        ts.init();
-
-        Transaction tx;
-        TransactionMap<String, String> m;
-        long startUpdate;
-
-        tx = ts.begin();
-
-        // start of statement
-        // create table test
-        startUpdate = tx.setSavepoint();
-        m = tx.openMap("test");
-        m.setSavepoint(startUpdate);
-
-        // start of statement
-        // insert into test(id, name) values(1, 'Hello'), (2, 'World')
-        startUpdate = tx.setSavepoint();
-        m.setSavepoint(startUpdate);
-        assertTrue(m.trySet("1", "Hello", true));
-        assertTrue(m.trySet("2", "World", true));
-        // not seen yet (within the same statement)
-        assertNull(m.get("1"));
-        assertNull(m.get("2"));
-
-        // start of statement
-        startUpdate = tx.setSavepoint();
-        // now we see the newest version
-        m.setSavepoint(startUpdate);
-        assertEquals("Hello", m.get("1"));
-        assertEquals("World", m.get("2"));
-        // update test set primaryKey = primaryKey + 1
-        // (this is usually a tricky case)
-        assertEquals("Hello", m.get("1"));
-        assertTrue(m.trySet("1", null, true));
-        assertTrue(m.trySet("2", "Hello", true));
-        assertEquals("World", m.get("2"));
-        // already updated by this statement, so it has no effect
-        // but still returns true because it was changed by this transaction
-        assertTrue(m.trySet("2", null, true));
-
-        assertTrue(m.trySet("3", "World", true));
-        // not seen within this statement
-        assertEquals("Hello", m.get("1"));
-        assertEquals("World", m.get("2"));
-        assertNull(m.get("3"));
-
-        // start of statement
-        startUpdate = tx.setSavepoint();
-        m.setSavepoint(startUpdate);
-        // select * from test
-        assertNull(m.get("1"));
-        assertEquals("Hello", m.get("2"));
-        assertEquals("World", m.get("3"));
-
-        // start of statement
-        startUpdate = tx.setSavepoint();
-        m.setSavepoint(startUpdate);
-        // update test set id = 1
-        // should fail: duplicate key
-        assertTrue(m.trySet("2", null, true));
-        assertTrue(m.trySet("1", "Hello", true));
-        assertTrue(m.trySet("3", null, true));
-        assertFalse(m.trySet("1", "World", true));
-        tx.rollbackToSavepoint(startUpdate);
-
-        startUpdate = tx.setSavepoint();
-        m.setSavepoint(startUpdate);
-        assertNull(m.get("1"));
-        assertEquals("Hello", m.get("2"));
-        assertEquals("World", m.get("3"));
-
-        tx.commit();
-
-        ts.close();
         s.close();
     }
 
@@ -739,9 +668,9 @@ public class TestTransactionStore extends TestBase {
     }
 
     private void testCompareWithPostgreSQL() throws Exception {
-        ArrayList<Statement> statements = New.arrayList();
-        ArrayList<Transaction> transactions = New.arrayList();
-        ArrayList<TransactionMap<Integer, String>> maps = New.arrayList();
+        ArrayList<Statement> statements = new ArrayList<>();
+        ArrayList<Transaction> transactions = new ArrayList<>();
+        ArrayList<TransactionMap<Integer, String>> maps = new ArrayList<>();
         int connectionCount = 3, opCount = 1000, rowCount = 10;
         try {
             Class.forName("org.postgresql.Driver");
@@ -860,7 +789,7 @@ public class TestTransactionStore extends TestBase {
                             assertNull(map.get(x));
                         }
                     } catch (SQLException e) {
-                        assertTrue(map.get(x) != null);
+                        assertNotNull(map.get(x));
                         assertFalse(map.tryRemove(x));
                         // PostgreSQL needs to rollback
                         buff.append(" -> rollback");

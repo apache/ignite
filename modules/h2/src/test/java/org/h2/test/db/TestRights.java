@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -15,11 +15,12 @@ import java.sql.Statement;
 import org.h2.api.ErrorCode;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Access rights tests.
  */
-public class TestRights extends TestBase {
+public class TestRights extends TestDb {
 
     private Statement stat;
 
@@ -48,6 +49,9 @@ public class TestRights extends TestBase {
         testSchemaRenameUser();
         testAccessRights();
         testSchemaAdminRole();
+        testTableRename();
+        testSchemaRename();
+        testSchemaDrop();
         deleteDb("rights");
     }
 
@@ -488,6 +492,61 @@ public class TestRights extends TestBase {
         execute("UPDATE SCHEMA_RIGHT_TEST_EXISTS.TEST_EXISTS Set NAME = 'Douglas'");
         assertThrows(ErrorCode.NOT_ENOUGH_RIGHTS_FOR_1, stat).
         execute("DELETE FROM SCHEMA_RIGHT_TEST_EXISTS.TEST_EXISTS");
+        conn.close();
+    }
+
+    private void testTableRename() throws SQLException {
+        if (config.memory) {
+            return;
+        }
+        deleteDb("rights");
+        Connection conn = getConnection("rights");
+        stat = conn.createStatement();
+        stat.execute("create user test password '' admin");
+        stat.execute("create schema b");
+        stat.execute("create table b.t1(id int)");
+        stat.execute("grant select on b.t1 to test");
+        stat.execute("alter table b.t1 rename to b.t2");
+        conn.close();
+        conn = getConnection("rights");
+        stat = conn.createStatement();
+        stat.execute("drop user test");
+        conn.close();
+    }
+
+    private void testSchemaRename() throws SQLException {
+        if (config.memory) {
+            return;
+        }
+        deleteDb("rights");
+        Connection conn = getConnection("rights");
+        stat = conn.createStatement();
+        stat.execute("create user test password '' admin");
+        stat.execute("create schema b");
+        stat.execute("grant select on schema b to test");
+        stat.execute("alter schema b rename to c");
+        conn.close();
+        conn = getConnection("rights");
+        stat = conn.createStatement();
+        stat.execute("drop user test");
+        conn.close();
+    }
+
+    private void testSchemaDrop() throws SQLException {
+        if (config.memory) {
+            return;
+        }
+        deleteDb("rights");
+        Connection conn = getConnection("rights");
+        stat = conn.createStatement();
+        stat.execute("create user test password '' admin");
+        stat.execute("create schema b");
+        stat.execute("grant select on schema b to test");
+        stat.execute("drop schema b cascade");
+        conn.close();
+        conn = getConnection("rights");
+        stat = conn.createStatement();
+        stat.execute("drop user test");
         conn.close();
     }
 

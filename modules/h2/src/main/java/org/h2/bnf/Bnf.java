@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -17,7 +17,6 @@ import java.util.StringTokenizer;
 
 import org.h2.bnf.context.DbContextRule;
 import org.h2.tools.Csv;
-import org.h2.util.New;
 import org.h2.util.StringUtils;
 import org.h2.util.Utils;
 
@@ -85,7 +84,7 @@ public class Bnf {
 
     private void parse(Reader reader) throws SQLException, IOException {
         Rule functions = null;
-        statements = New.arrayList();
+        statements = new ArrayList<>();
         Csv csv = new Csv();
         csv.setLineCommentCharacter('#');
         ResultSet rs = csv.read(reader, null);
@@ -256,9 +255,11 @@ public class Bnf {
     }
 
     private String[] tokenize() {
-        ArrayList<String> list = New.arrayList();
+        ArrayList<String> list = new ArrayList<>();
         syntax = StringUtils.replaceAll(syntax, "yyyy-MM-dd", "@ymd@");
         syntax = StringUtils.replaceAll(syntax, "hh:mm:ss", "@hms@");
+        syntax = StringUtils.replaceAll(syntax, "hh:mm", "@hms@");
+        syntax = StringUtils.replaceAll(syntax, "mm:ss", "@hms@");
         syntax = StringUtils.replaceAll(syntax, "nnnnnnnnn", "@nanos@");
         syntax = StringUtils.replaceAll(syntax, "function", "@func@");
         syntax = StringUtils.replaceAll(syntax, "0x", "@hexStart@");

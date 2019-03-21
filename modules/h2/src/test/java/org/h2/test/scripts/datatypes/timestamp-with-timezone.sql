@@ -1,4 +1,4 @@
--- Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (http://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -10,9 +10,7 @@ INSERT INTO tab_with_timezone(x) VALUES ('2017-01-01');
 > update count: 1
 
 SELECT "Query".* FROM (select * from tab_with_timezone where x > '2016-01-01') AS "Query";
-> X
-> ----------------------
-> 2017-01-01 00:00:00+00
+>> 2017-01-01 00:00:00+00
 
 DELETE FROM tab_with_timezone;
 > update count: 1
@@ -39,17 +37,17 @@ SELECT TIMESTAMP WITH TIME ZONE '2000-01-10 00:00:00 -02' AS A,
 CREATE TABLE TEST(T1 TIMESTAMP WITH TIME ZONE, T2 TIMESTAMP(0) WITH TIME ZONE, T3 TIMESTAMP(9) WITH TIME ZONE);
 > ok
 
-SELECT COLUMN_NAME, DATA_TYPE, TYPE_NAME, COLUMN_TYPE, NUMERIC_SCALE FROM INFORMATION_SCHEMA.COLUMNS
+SELECT COLUMN_NAME, DATA_TYPE, TYPE_NAME, COLUMN_TYPE, NUMERIC_SCALE, DATETIME_PRECISION FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_NAME = 'TEST' ORDER BY ORDINAL_POSITION;
-> COLUMN_NAME DATA_TYPE TYPE_NAME                COLUMN_TYPE                 NUMERIC_SCALE
-> ----------- --------- ------------------------ --------------------------- -------------
-> T1          2014      TIMESTAMP WITH TIME ZONE TIMESTAMP WITH TIME ZONE    6
-> T2          2014      TIMESTAMP WITH TIME ZONE TIMESTAMP(0) WITH TIME ZONE 0
-> T3          2014      TIMESTAMP WITH TIME ZONE TIMESTAMP(9) WITH TIME ZONE 9
+> COLUMN_NAME DATA_TYPE TYPE_NAME                COLUMN_TYPE                 NUMERIC_SCALE DATETIME_PRECISION
+> ----------- --------- ------------------------ --------------------------- ------------- ------------------
+> T1          2014      TIMESTAMP WITH TIME ZONE TIMESTAMP WITH TIME ZONE    6             6
+> T2          2014      TIMESTAMP WITH TIME ZONE TIMESTAMP(0) WITH TIME ZONE 0             0
+> T3          2014      TIMESTAMP WITH TIME ZONE TIMESTAMP(9) WITH TIME ZONE 9             9
 > rows (ordered): 3
 
 ALTER TABLE TEST ADD T4 TIMESTAMP (10) WITH TIME ZONE;
-> exception
+> exception INVALID_VALUE_SCALE_PRECISION
 
 DROP TABLE TEST;
 > ok
@@ -95,3 +93,22 @@ SELECT T0 FROM TEST;
 
 DROP TABLE TEST;
 > ok
+
+SELECT (LOCALTIMESTAMP + 1) = (CURRENT_TIMESTAMP + 1);
+>> TRUE
+
+SELECT (TIMESTAMP WITH TIME ZONE '2010-01-01 10:00:00+01' + 1) A,
+    (1 + TIMESTAMP WITH TIME ZONE '2010-01-01 10:00:00+01') B;
+> A                      B
+> ---------------------- ----------------------
+> 2010-01-02 10:00:00+01 2010-01-02 10:00:00+01
+> rows: 1
+
+SELECT (LOCALTIMESTAMP - 1) = (CURRENT_TIMESTAMP - 1);
+>> TRUE
+
+SELECT (TIMESTAMP WITH TIME ZONE '2010-01-01 10:00:00+01' - 1) A;
+> A
+> ----------------------
+> 2009-12-31 10:00:00+01
+> rows: 1

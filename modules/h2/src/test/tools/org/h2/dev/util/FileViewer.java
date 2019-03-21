@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -57,13 +57,13 @@ public class FileViewer extends Tool {
             } else if (arg.equals("-find")) {
                 find = args[++i];
             } else if (arg.equals("-start")) {
-                start = Long.decode(args[++i]).longValue();
+                start = Long.decode(args[++i]);
             } else if (arg.equals("-head")) {
                 head = true;
             } else if (arg.equals("-tail")) {
                 tail = true;
             } else if (arg.equals("-lines")) {
-                lines = Integer.decode(args[++i]).intValue();
+                lines = Integer.decode(args[++i]);
             } else if (arg.equals("-quiet")) {
                 quiet = true;
             } else if (arg.equals("-help") || arg.equals("-?")) {

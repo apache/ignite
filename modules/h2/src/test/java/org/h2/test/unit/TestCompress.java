@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -24,15 +24,15 @@ import org.h2.compress.Compressor;
 import org.h2.engine.Constants;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.CompressTool;
 import org.h2.util.IOUtils;
-import org.h2.util.New;
 import org.h2.util.Task;
 
 /**
  * Data compression tests.
  */
-public class TestCompress extends TestBase {
+public class TestCompress extends TestDb {
 
     private boolean testPerformance;
     private final byte[] buff = new byte[10];
@@ -179,7 +179,7 @@ public class TestCompress extends TestBase {
         }
 
         for (int j = 0; j < 4; j++) {
-            ArrayList<byte[]> comp = New.arrayList();
+            ArrayList<byte[]> comp = new ArrayList<>();
             InputStream in = FileUtils.newInputStream("memFS:compress.h2.db");
             while (true) {
                 int len = in.read(buff2);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -14,20 +14,17 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Timestamp;
 import org.h2.api.ErrorCode;
+import org.h2.api.IntervalQualifier;
 import org.h2.engine.Constants;
 import org.h2.engine.SessionInterface;
 import org.h2.message.DbException;
+import org.h2.result.ResultInterface;
+import org.h2.result.SimpleResult;
 import org.h2.security.SHA256;
 import org.h2.store.Data;
 import org.h2.store.DataReader;
-import org.h2.tools.SimpleResultSet;
 import org.h2.util.Bits;
-import org.h2.util.DateTimeUtils;
 import org.h2.util.IOUtils;
 import org.h2.util.JdbcUtils;
 import org.h2.util.MathUtils;
@@ -44,6 +41,34 @@ public class Transfer {
     private static final int BUFFER_SIZE = 64 * 1024;
     private static final int LOB_MAGIC = 0x1234;
     private static final int LOB_MAC_SALT_LENGTH = 16;
+
+    private static final int NULL = 0;
+    private static final int BOOLEAN = 1;
+    private static final int BYTE = 2;
+    private static final int SHORT = 3;
+    private static final int INT = 4;
+    private static final int LONG = 5;
+    private static final int DECIMAL = 6;
+    private static final int DOUBLE = 7;
+    private static final int FLOAT = 8;
+    private static final int TIME = 9;
+    private static final int DATE = 10;
+    private static final int TIMESTAMP = 11;
+    private static final int BYTES = 12;
+    private static final int STRING = 13;
+    private static final int STRING_IGNORECASE = 14;
+    private static final int BLOB = 15;
+    private static final int CLOB = 16;
+    private static final int ARRAY = 17;
+    private static final int RESULT_SET = 18;
+    private static final int JAVA_OBJECT = 19;
+    private static final int UUID = 20;
+    private static final int STRING_FIXED = 21;
+    private static final int GEOMETRY = 22;
+    private static final int TIMESTAMP_TZ = 24;
+    private static final int ENUM = 25;
+    private static final int INTERVAL = 26;
+    private static final int ROW = 27;
 
     private Socket socket;
     private DataInputStream in;
@@ -103,7 +128,7 @@ public class Transfer {
      * @return the value
      */
     public boolean readBoolean() throws IOException {
-        return in.readByte() == 1;
+        return in.readByte() != 0;
     }
 
     /**
@@ -216,11 +241,8 @@ public class Transfer {
         if (s == null) {
             out.writeInt(-1);
         } else {
-            int len = s.length();
-            out.writeInt(len);
-            for (int i = 0; i < len; i++) {
-                out.writeChar(s.charAt(i));
-            }
+            out.writeInt(s.length());
+            out.writeChars(s);
         }
         return this;
     }
@@ -325,54 +347,51 @@ public class Transfer {
      * @param v the value
      */
     public void writeValue(Value v) throws IOException {
-        int type = v.getType();
-        writeInt(type);
+        int type = v.getValueType();
         switch (type) {
         case Value.NULL:
+            writeInt(NULL);
             break;
         case Value.BYTES:
+            writeInt(BYTES);
+            writeBytes(v.getBytesNoCopy());
+            break;
         case Value.JAVA_OBJECT:
+            writeInt(JAVA_OBJECT);
             writeBytes(v.getBytesNoCopy());
             break;
         case Value.UUID: {
+            writeInt(UUID);
             ValueUuid uuid = (ValueUuid) v;
             writeLong(uuid.getHigh());
             writeLong(uuid.getLow());
             break;
         }
         case Value.BOOLEAN:
+            writeInt(BOOLEAN);
             writeBoolean(v.getBoolean());
             break;
         case Value.BYTE:
+            writeInt(BYTE);
             writeByte(v.getByte());
             break;
         case Value.TIME:
-            if (version >= Constants.TCP_PROTOCOL_VERSION_9) {
-                writeLong(((ValueTime) v).getNanos());
-            } else {
-                writeLong(DateTimeUtils.getTimeLocalWithoutDst(v.getTime()));
-            }
+            writeInt(TIME);
+            writeLong(((ValueTime) v).getNanos());
             break;
         case Value.DATE:
-            if (version >= Constants.TCP_PROTOCOL_VERSION_9) {
-                writeLong(((ValueDate) v).getDateValue());
-            } else {
-                writeLong(DateTimeUtils.getTimeLocalWithoutDst(v.getDate()));
-            }
+            writeInt(DATE);
+            writeLong(((ValueDate) v).getDateValue());
             break;
         case Value.TIMESTAMP: {
-            if (version >= Constants.TCP_PROTOCOL_VERSION_9) {
-                ValueTimestamp ts = (ValueTimestamp) v;
-                writeLong(ts.getDateValue());
-                writeLong(ts.getTimeNanos());
-            } else {
-                Timestamp ts = v.getTimestamp();
-                writeLong(DateTimeUtils.getTimeLocalWithoutDst(ts));
-                writeInt(ts.getNanos() % 1_000_000);
-            }
+            writeInt(TIMESTAMP);
+            ValueTimestamp ts = (ValueTimestamp) v;
+            writeLong(ts.getDateValue());
+            writeLong(ts.getTimeNanos());
             break;
         }
         case Value.TIMESTAMP_TZ: {
+            writeInt(TIMESTAMP_TZ);
             ValueTimestampTimeZone ts = (ValueTimestampTimeZone) v;
             writeLong(ts.getDateValue());
             writeLong(ts.getTimeNanos());
@@ -380,29 +399,43 @@ public class Transfer {
             break;
         }
         case Value.DECIMAL:
+            writeInt(DECIMAL);
             writeString(v.getString());
             break;
         case Value.DOUBLE:
+            writeInt(DOUBLE);
             writeDouble(v.getDouble());
             break;
         case Value.FLOAT:
+            writeInt(FLOAT);
             writeFloat(v.getFloat());
             break;
         case Value.INT:
+            writeInt(INT);
             writeInt(v.getInt());
             break;
         case Value.LONG:
+            writeInt(LONG);
             writeLong(v.getLong());
             break;
         case Value.SHORT:
+            writeInt(SHORT);
             writeInt(v.getShort());
             break;
         case Value.STRING:
+            writeInt(STRING);
+            writeString(v.getString());
+            break;
         case Value.STRING_IGNORECASE:
+            writeInt(STRING_IGNORECASE);
+            writeString(v.getString());
+            break;
         case Value.STRING_FIXED:
+            writeInt(STRING_FIXED);
             writeString(v.getString());
             break;
         case Value.BLOB: {
+            writeInt(BLOB);
             if (version >= Constants.TCP_PROTOCOL_VERSION_11) {
                 if (v instanceof ValueLobDb) {
                     ValueLobDb lob = (ValueLobDb) v;
@@ -413,12 +446,12 @@ public class Transfer {
                         if (version >= Constants.TCP_PROTOCOL_VERSION_12) {
                             writeBytes(calculateLobMac(lob.getLobId()));
                         }
-                        writeLong(lob.getPrecision());
+                        writeLong(lob.getType().getPrecision());
                         break;
                     }
                 }
             }
-            long length = v.getPrecision();
+            long length = v.getType().getPrecision();
             if (length < 0) {
                 throw DbException.get(
                         ErrorCode.CONNECTION_BROKEN_1, "length=" + length);
@@ -433,6 +466,7 @@ public class Transfer {
             break;
         }
         case Value.CLOB: {
+            writeInt(CLOB);
             if (version >= Constants.TCP_PROTOCOL_VERSION_11) {
                 if (v instanceof ValueLobDb) {
                     ValueLobDb lob = (ValueLobDb) v;
@@ -443,12 +477,12 @@ public class Transfer {
                         if (version >= Constants.TCP_PROTOCOL_VERSION_12) {
                             writeBytes(calculateLobMac(lob.getLobId()));
                         }
-                        writeLong(lob.getPrecision());
+                        writeLong(lob.getType().getPrecision());
                         break;
                     }
                 }
             }
-            long length = v.getPrecision();
+            long length = v.getType().getPrecision();
             if (length < 0) {
                 throw DbException.get(
                         ErrorCode.CONNECTION_BROKEN_1, "length=" + length);
@@ -460,6 +494,7 @@ public class Transfer {
             break;
         }
         case Value.ARRAY: {
+            writeInt(ARRAY);
             ValueArray va = (ValueArray) v;
             Value[] list = va.getList();
             int len = list.length;
@@ -475,48 +510,105 @@ public class Transfer {
             }
             break;
         }
+        case Value.ROW: {
+            writeInt(version >= Constants.TCP_PROTOCOL_VERSION_18 ? ROW : ARRAY);
+            ValueRow va = (ValueRow) v;
+            Value[] list = va.getList();
+            int len = list.length;
+            writeInt(len);
+            for (Value value : list) {
+                writeValue(value);
+            }
+            break;
+        }
         case Value.ENUM: {
+            writeInt(ENUM);
             writeInt(v.getInt());
             writeString(v.getString());
             break;
         }
         case Value.RESULT_SET: {
-            try {
-                ResultSet rs = ((ValueResultSet) v).getResultSet();
-                rs.beforeFirst();
-                ResultSetMetaData meta = rs.getMetaData();
-                int columnCount = meta.getColumnCount();
-                writeInt(columnCount);
-                for (int i = 0; i < columnCount; i++) {
-                    writeString(meta.getColumnName(i + 1));
-                    writeInt(meta.getColumnType(i + 1));
-                    writeInt(meta.getPrecision(i + 1));
-                    writeInt(meta.getScale(i + 1));
+            writeInt(RESULT_SET);
+            ResultInterface result = ((ValueResultSet) v).getResult();
+            int columnCount = result.getVisibleColumnCount();
+            writeInt(columnCount);
+            for (int i = 0; i < columnCount; i++) {
+                TypeInfo columnType = result.getColumnType(i);
+                if (version >= Constants.TCP_PROTOCOL_VERSION_18) {
+                    writeString(result.getAlias(i));
+                    writeString(result.getColumnName(i));
+                    writeInt(columnType.getValueType());
+                    writeLong(columnType.getPrecision());
+                } else {
+                    writeString(result.getColumnName(i));
+                    writeInt(DataType.getDataType(columnType.getValueType()).sqlType);
+                    writeInt(MathUtils.convertLongToInt(columnType.getPrecision()));
                 }
-                while (rs.next()) {
-                    writeBoolean(true);
-                    for (int i = 0; i < columnCount; i++) {
-                        int t = DataType.getValueTypeFromResultSet(meta, i + 1);
-                        Value val = DataType.readValue(session, rs, i + 1, t);
-                        writeValue(val);
-                    }
-                }
-                writeBoolean(false);
-                rs.beforeFirst();
-            } catch (SQLException e) {
-                throw DbException.convertToIOException(e);
+                writeInt(columnType.getScale());
             }
+            while (result.next()) {
+                writeBoolean(true);
+                Value[] row = result.currentRow();
+                for (int i = 0; i < columnCount; i++) {
+                    writeValue(row[i]);
+                }
+            }
+            writeBoolean(false);
             break;
         }
         case Value.GEOMETRY:
+            writeInt(GEOMETRY);
             if (version >= Constants.TCP_PROTOCOL_VERSION_14) {
                 writeBytes(v.getBytesNoCopy());
             } else {
                 writeString(v.getString());
             }
             break;
+        case Value.INTERVAL_YEAR:
+        case Value.INTERVAL_MONTH:
+        case Value.INTERVAL_DAY:
+        case Value.INTERVAL_HOUR:
+        case Value.INTERVAL_MINUTE:
+            if (version >= Constants.TCP_PROTOCOL_VERSION_18) {
+                ValueInterval interval = (ValueInterval) v;
+                int ordinal = type - Value.INTERVAL_YEAR;
+                if (interval.isNegative()) {
+                    ordinal = ~ordinal;
+                }
+                writeInt(INTERVAL);
+                writeByte((byte) ordinal);
+                writeLong(interval.getLeading());
+            } else {
+                writeInt(STRING);
+                writeString(v.getString());
+            }
+            break;
+        case Value.INTERVAL_SECOND:
+        case Value.INTERVAL_YEAR_TO_MONTH:
+        case Value.INTERVAL_DAY_TO_HOUR:
+        case Value.INTERVAL_DAY_TO_MINUTE:
+        case Value.INTERVAL_DAY_TO_SECOND:
+        case Value.INTERVAL_HOUR_TO_MINUTE:
+        case Value.INTERVAL_HOUR_TO_SECOND:
+        case Value.INTERVAL_MINUTE_TO_SECOND:
+            if (version >= Constants.TCP_PROTOCOL_VERSION_18) {
+                ValueInterval interval = (ValueInterval) v;
+                int ordinal = type - Value.INTERVAL_YEAR;
+                if (interval.isNegative()) {
+                    ordinal = ~ordinal;
+                }
+                writeInt(INTERVAL);
+                writeByte((byte) ordinal);
+                writeLong(interval.getLeading());
+                writeLong(interval.getRemaining());
+            } else {
+                writeInt(STRING);
+                writeString(v.getString());
+            }
+            break;
         default:
             if (JdbcUtils.customDataTypesHandler != null) {
+                writeInt(type);
                 writeBytes(v.getBytesNoCopy());
                 break;
             }
@@ -532,68 +624,51 @@ public class Transfer {
     public Value readValue() throws IOException {
         int type = readInt();
         switch (type) {
-        case Value.NULL:
+        case NULL:
             return ValueNull.INSTANCE;
-        case Value.BYTES:
+        case BYTES:
             return ValueBytes.getNoCopy(readBytes());
-        case Value.UUID:
+        case UUID:
             return ValueUuid.get(readLong(), readLong());
-        case Value.JAVA_OBJECT:
+        case JAVA_OBJECT:
             return ValueJavaObject.getNoCopy(null, readBytes(), session.getDataHandler());
-        case Value.BOOLEAN:
+        case BOOLEAN:
             return ValueBoolean.get(readBoolean());
-        case Value.BYTE:
+        case BYTE:
             return ValueByte.get(readByte());
-        case Value.DATE:
-            if (version >= Constants.TCP_PROTOCOL_VERSION_9) {
-                return ValueDate.fromDateValue(readLong());
-            } else {
-                return ValueDate.fromMillis(DateTimeUtils.getTimeUTCWithoutDst(readLong()));
-            }
-        case Value.TIME:
-            if (version >= Constants.TCP_PROTOCOL_VERSION_9) {
-                return ValueTime.fromNanos(readLong());
-            } else {
-                return ValueTime.fromMillis(DateTimeUtils.getTimeUTCWithoutDst(readLong()));
-            }
-        case Value.TIMESTAMP: {
-            if (version >= Constants.TCP_PROTOCOL_VERSION_9) {
-                return ValueTimestamp.fromDateValueAndNanos(
-                        readLong(), readLong());
-            } else {
-                return ValueTimestamp.fromMillisNanos(
-                        DateTimeUtils.getTimeUTCWithoutDst(readLong()),
-                        readInt() % 1_000_000);
-            }
+        case DATE:
+            return ValueDate.fromDateValue(readLong());
+        case TIME:
+            return ValueTime.fromNanos(readLong());
+        case TIMESTAMP:
+            return ValueTimestamp.fromDateValueAndNanos(readLong(), readLong());
+        case TIMESTAMP_TZ: {
+            return ValueTimestampTimeZone.fromDateValueAndNanos(readLong(), readLong(), (short) readInt());
         }
-        case Value.TIMESTAMP_TZ: {
-            return ValueTimestampTimeZone.fromDateValueAndNanos(readLong(),
-                    readLong(), (short) readInt());
-        }
-        case Value.DECIMAL:
+        case DECIMAL:
             return ValueDecimal.get(new BigDecimal(readString()));
-        case Value.DOUBLE:
+        case DOUBLE:
             return ValueDouble.get(readDouble());
-        case Value.FLOAT:
+        case FLOAT:
             return ValueFloat.get(readFloat());
-        case Value.ENUM: {
+        case ENUM: {
             final int ordinal = readInt();
             final String label = readString();
             return ValueEnumBase.get(label, ordinal);
         }
-        case Value.INT:
+        case INT:
             return ValueInt.get(readInt());
-        case Value.LONG:
+        case LONG:
             return ValueLong.get(readLong());
-        case Value.SHORT:
+        case SHORT:
             return ValueShort.get((short) readInt());
-        case Value.STRING:
+        case STRING:
             return ValueString.get(readString());
-        case Value.STRING_IGNORECASE:
+        case STRING_IGNORECASE:
             return ValueStringIgnoreCase.get(readString());
-        case Value.STRING_FIXED:
-            return ValueStringFixed.get(readString(), ValueStringFixed.PRECISION_DO_NOT_TRIM, null);
-        case Value.BLOB: {
+        case STRING_FIXED:
+            return ValueStringFixed.get(readString());
+        case BLOB: {
             long length = readLong();
             if (version >= Constants.TCP_PROTOCOL_VERSION_11) {
                 if (length == -1) {
@@ -618,7 +693,7 @@ public class Transfer {
             }
             return v;
         }
-        case Value.CLOB: {
+        case CLOB: {
             long length = readLong();
             if (version >= Constants.TCP_PROTOCOL_VERSION_11) {
                 if (length == -1) {
@@ -648,7 +723,7 @@ public class Transfer {
             }
             return v;
         }
-        case Value.ARRAY: {
+        case ARRAY: {
             int len = readInt();
             Class<?> componentType = Object.class;
             if (len < 0) {
@@ -661,27 +736,48 @@ public class Transfer {
             }
             return ValueArray.get(componentType, list);
         }
-        case Value.RESULT_SET: {
-            SimpleResultSet rs = new SimpleResultSet();
-            rs.setAutoClose(false);
+        case ROW: {
+            int len = readInt();
+            Value[] list = new Value[len];
+            for (int i = 0; i < len; i++) {
+                list[i] = readValue();
+            }
+            return ValueRow.get(list);
+        }
+        case RESULT_SET: {
+            SimpleResult rs = new SimpleResult();
             int columns = readInt();
             for (int i = 0; i < columns; i++) {
-                rs.addColumn(readString(), readInt(), readInt(), readInt());
+                if (version >= Constants.TCP_PROTOCOL_VERSION_18) {
+                    rs.addColumn(readString(), readString(), readInt(), readLong(), readInt());
+                } else {
+                    String name = readString();
+                    rs.addColumn(name, name, DataType.convertSQLTypeToValueType(readInt()), readInt(), readInt());
+                }
             }
             while (readBoolean()) {
-                Object[] o = new Object[columns];
+                Value[] o = new Value[columns];
                 for (int i = 0; i < columns; i++) {
-                    o[i] = readValue().getObject();
+                    o[i] = readValue();
                 }
                 rs.addRow(o);
             }
             return ValueResultSet.get(rs);
         }
-        case Value.GEOMETRY:
+        case GEOMETRY:
             if (version >= Constants.TCP_PROTOCOL_VERSION_14) {
                 return ValueGeometry.get(readBytes());
             }
             return ValueGeometry.get(readString());
+        case INTERVAL: {
+            int ordinal = readByte();
+            boolean negative = ordinal < 0;
+            if (negative) {
+                ordinal = ~ordinal;
+            }
+            return ValueInterval.from(IntervalQualifier.valueOf(ordinal), negative, readLong(),
+                    ordinal < 5 ? 0 : readLong());
+        }
         default:
             if (JdbcUtils.customDataTypesHandler != null) {
                 return JdbcUtils.customDataTypesHandler.convert(
@@ -719,7 +815,7 @@ public class Transfer {
     }
 
     /**
-     * Open a new new connection to the same address and port as this one.
+     * Open a new connection to the same address and port as this one.
      *
      * @return the new transfer object
      */

@@ -8,6 +8,7 @@
 22004=Numerischer Wert ausserhalb des Bereichs: {0} in Feld {1}
 22007=Kann {0} {1} nicht umwandeln
 22012=Division durch 0: {0}
+22013=#Invalid PRECEDING or FOLLOWING size in window function: {0}
 22018=Datenumwandlungsfehler beim Umwandeln von {0}
 22025=Fehler in LIKE ESCAPE: {0}
 22030=Wert nicht erlaubt für Feld {0}: {1}
@@ -31,11 +32,11 @@
 42S12=Index {0} nicht gefunden
 42S21=Doppelter Feldname {0}
 42S22=Feld {0} nicht gefunden
-42S32=Einstellung {0} nicht gefunden
+42S31=#Identical expressions should be used; expected {0}, found {1}
 57014=Befehl wurde abgebrochen oder das Session-Timeout ist abgelaufen
 90000=Funktion {0} muss Zeilen zurückgeben
 90001=Methode nicht zulässig für eine Abfrage. Erlaubt sind execute oder executeQuery, nicht jedoch executeUpdate
-90002=Methode nur zulässig for eine Abfrage. Erlaubt sind execute oder executeUpdate, nicht jedoch executeQuery
+90002=Methode nur zulässig für eine Abfrage. Erlaubt sind execute oder executeUpdate, nicht jedoch executeQuery
 90003=Hexadezimal Zahl mit einer ungeraden Anzahl Zeichen: {0}
 90004=Hexadezimal Zahl enthält unerlaubtes Zeichen: {0}
 90006=Die Sequenz {0} hat keine freien Nummern mehr
@@ -140,6 +141,7 @@
 90107=Kann {0} nicht löschen weil {1} davon abhängt
 90108=Nicht genug Hauptspeicher.
 90109=View {0} ist ungültig: {1}
+90110=#Comparing ARRAY to scalar value
 90111=Fehler beim Zugriff auf eine verknüpfte Tabelle mit SQL Befehl {0}, Grund: {1}
 90112=Zeile nicht gefunden beim Löschen von Index {0}
 90113=Datenbank-Verbindungs Option {0} nicht unterstützt
@@ -148,10 +150,10 @@
 90116=Literal dieser Art nicht zugelassen
 90117=Verbindungen von anderen Rechnern sind nicht freigegeben, siehe -tcpAllowOthers
 90118=Kann Tabelle nicht löschen {0}
-90119=Benutzer-Datentyp {0} besteht bereits
-90120=Benutzer-Datentyp {0} nicht gefunden
+90119=Domäne {0} besteht bereits
+90120=Domäne {0} nicht gefunden
 90121=Die Datenbank wurde bereits geschlossen (um das automatische Schliessen beim Stopp der VM zu deaktivieren, die Datenbank URL mit ";DB_CLOSE_ON_EXIT=FALSE" ergänzen)
-90122=Funktion nicht unterstützt für Tabelle {0} wenn Views auf die Tabelle vorhanden sind: {1}
+90122=#The WITH TIES clause is not allowed without a corresponding ORDER BY clause.
 90123=Kann nicht indizierte und nicht indizierte Parameter mischen
 90124=Datei nicht gefunden: {0}
 90125=Ungültig Klasse, erwartet {0} erhalten {1}
@@ -165,7 +167,7 @@
 90133=Kann das Setting {0} nicht ändern wenn die Datenbank bereits geöffnet ist
 90134=Der Zugriff auf die Klasse {0} ist nicht erlaubt
 90135=Die Datenbank befindet sich im Exclusiv Modus; es können keine zusätzlichen Verbindungen geöffnet werden
-90136=Diese Outer Join Bedingung wird nicht unterstützt: {0}
+90136=#Window not found: {0}
 90137=Werte können nur einer Variablen zugewiesen werden, nicht an: {0}
 90138=Ungültiger Datenbank Name: {0}
 90139=Die (public static) Java Funktion wurde nicht gefunden: {0}
@@ -173,6 +175,9 @@
 90141=Serialisierer kann nicht geändert werden wenn eine Daten-Tabelle existiert: {0}
 90142=Schrittgrösse darf nicht 0 sein
 90143=#Row {1} not found in primary index {0}
+90144=#Authenticator not enabled on database {0}
+90145=#FOR UPDATE is not allowed in DISTINCT or grouped select
+90146=#Database {0} not found, and IFEXISTS=true, so we can't auto-create it
 HY000=Allgemeiner Fehler: {0}
 HY004=Unbekannter Datentyp: {0}
 HYC00=Dieses Feature wird nicht unterstützt: {0}

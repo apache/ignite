@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-import org.h2.table.RegularTable;
+import org.h2.table.PageStoreTable;
 
 /**
  * Cursor implementation for non-unique hash index
@@ -20,11 +20,11 @@ public class NonUniqueHashCursor implements Cursor {
 
     private final Session session;
     private final ArrayList<Long> positions;
-    private final RegularTable tableData;
+    private final PageStoreTable tableData;
 
     private int index = -1;
 
-    public NonUniqueHashCursor(Session session, RegularTable tableData,
+    public NonUniqueHashCursor(Session session, PageStoreTable tableData,
             ArrayList<Long> positions) {
         this.session = session;
         this.tableData = tableData;

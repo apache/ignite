@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -12,12 +12,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashSet;
-
 import org.h2.api.ErrorCode;
 import org.h2.api.Trigger;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.TriggerAdapter;
 import org.h2.util.Task;
 import org.h2.value.ValueLong;
@@ -25,7 +25,7 @@ import org.h2.value.ValueLong;
 /**
  * Tests for trigger and constraints.
  */
-public class TestTriggersConstraints extends TestBase implements Trigger {
+public class TestTriggersConstraints extends TestDb implements Trigger {
 
     private static boolean mustNotCallTrigger;
     private String triggerName;
@@ -97,7 +97,11 @@ public class TestTriggersConstraints extends TestBase implements Trigger {
             stat.execute("update test2 set id = 3");
             task.get();
         } catch (SQLException e) {
-            assertEquals(ErrorCode.LOCK_TIMEOUT_1, e.getErrorCode());
+            int errorCode = e.getErrorCode();
+            assertTrue(String.valueOf(errorCode),
+                        ErrorCode.LOCK_TIMEOUT_1 == errorCode ||
+                        ErrorCode.DEADLOCK_1 == errorCode ||
+                        ErrorCode.COMMIT_ROLLBACK_NOT_ALLOWED == errorCode);
         }
         conn2.rollback();
         conn.rollback();
@@ -108,7 +112,7 @@ public class TestTriggersConstraints extends TestBase implements Trigger {
     }
 
     private void testDeleteInTrigger() throws SQLException {
-        if (config.mvcc || config.mvStore) {
+        if (config.mvStore) {
             return;
         }
         Connection conn;
@@ -118,9 +122,8 @@ public class TestTriggersConstraints extends TestBase implements Trigger {
         stat.execute("create table test(id int) as select 1");
         stat.execute("create trigger test_u before update on test " +
                 "for each row call \"" + DeleteTrigger.class.getName() + "\"");
-        // this threw a NullPointerException
-        assertThrows(ErrorCode.ROW_NOT_FOUND_WHEN_DELETING_1, stat).
-                execute("update test set id = 2");
+        // this used to throw a NullPointerException before we fixed it
+        stat.execute("update test set id = 2");
         stat.execute("drop table test");
         conn.close();
     }
@@ -621,17 +624,17 @@ public class TestTriggersConstraints extends TestBase implements Trigger {
         ResultSet rs;
         rs = stat.executeQuery("SCRIPT");
         checkRows(rs, new String[] {
-                "CREATE FORCE TRIGGER PUBLIC.INS_BEFORE " +
-                    "BEFORE INSERT ON PUBLIC.TEST " +
+                "CREATE FORCE TRIGGER \"PUBLIC\".\"INS_BEFORE\" " +
+                    "BEFORE INSERT ON \"PUBLIC\".\"TEST\" " +
                     "FOR EACH ROW NOWAIT CALL \"" + getClass().getName() + "\";",
-                "CREATE FORCE TRIGGER PUBLIC.INS_AFTER " +
-                    "AFTER INSERT ON PUBLIC.TEST " +
+                "CREATE FORCE TRIGGER \"PUBLIC\".\"INS_AFTER\" " +
+                    "AFTER INSERT ON \"PUBLIC\".\"TEST\" " +
                     "FOR EACH ROW NOWAIT CALL \"" + getClass().getName() + "\";",
-                "CREATE FORCE TRIGGER PUBLIC.UPD_BEFORE " +
-                    "BEFORE UPDATE ON PUBLIC.TEST " +
+                "CREATE FORCE TRIGGER \"PUBLIC\".\"UPD_BEFORE\" " +
+                    "BEFORE UPDATE ON \"PUBLIC\".\"TEST\" " +
                     "FOR EACH ROW NOWAIT CALL \"" + getClass().getName() + "\";",
-                "CREATE FORCE TRIGGER PUBLIC.INS_AFTER_ROLLBACK " +
-                    "AFTER INSERT, ROLLBACK ON PUBLIC.TEST " +
+                "CREATE FORCE TRIGGER \"PUBLIC\".\"INS_AFTER_ROLLBACK\" " +
+                    "AFTER INSERT, ROLLBACK ON \"PUBLIC\".\"TEST\" " +
                     "FOR EACH ROW NOWAIT CALL \"" + getClass().getName() + "\";",
                         });
         while (rs.next()) {

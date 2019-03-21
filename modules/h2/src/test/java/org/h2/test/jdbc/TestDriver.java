@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -13,11 +13,12 @@ import java.util.Properties;
 
 import org.h2.Driver;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Tests the database driver.
  */
-public class TestDriver extends TestBase {
+public class TestDriver extends TestDb {
 
     /**
      * Run just this test.
@@ -40,7 +41,7 @@ public class TestDriver extends TestBase {
         prop.put("password", getPassword());
         prop.put("max_compact_time", "1234");
         prop.put("unknown", "1234");
-        String url = getURL("driver", true);
+        String url = getURL("jdbc:h2:mem:driver", true);
         Connection conn = DriverManager.getConnection(url, prop);
         ResultSet rs;
         rs = conn.createStatement().executeQuery(

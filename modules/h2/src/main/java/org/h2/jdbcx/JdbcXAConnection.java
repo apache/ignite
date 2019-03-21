@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+
 import javax.sql.ConnectionEvent;
 import javax.sql.ConnectionEventListener;
 import javax.sql.StatementEventListener;
@@ -17,11 +18,12 @@ import javax.sql.XAConnection;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+
 import org.h2.api.ErrorCode;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.message.DbException;
 import org.h2.message.TraceObject;
-import org.h2.util.New;
+import org.h2.util.Utils;
 
 
 /**
@@ -39,7 +41,7 @@ public class JdbcXAConnection extends TraceObject implements XAConnection,
 
     // this connection is replaced whenever getConnection is called
     private volatile Connection handleConn;
-    private final ArrayList<ConnectionEventListener> listeners = New.arrayList();
+    private final ArrayList<ConnectionEventListener> listeners = Utils.newSmallArrayList();
     private Xid currentTransaction;
     private boolean prepared;
 
@@ -193,7 +195,7 @@ public class JdbcXAConnection extends TraceObject implements XAConnection,
         try (Statement stat = physicalConn.createStatement()) {
             ResultSet rs = stat.executeQuery("SELECT * FROM " +
                     "INFORMATION_SCHEMA.IN_DOUBT ORDER BY TRANSACTION");
-            ArrayList<Xid> list = New.arrayList();
+            ArrayList<Xid> list = Utils.newSmallArrayList();
             while (rs.next()) {
                 String tid = rs.getString("TRANSACTION");
                 int id = getNextId(XID);

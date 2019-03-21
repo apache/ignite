@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -171,8 +171,7 @@ public class PageBtreeNode extends PageBtree {
             }
             last = entryCount == 0 ? pageSize : offsets[entryCount - 1];
             rowLength = index.getRowSize(data, row, true);
-            if (SysProperties.CHECK && last - rowLength <
-                    start + CHILD_OFFSET_PAIR_LENGTH) {
+            if (last - rowLength < start + CHILD_OFFSET_PAIR_LENGTH) {
                 throw DbException.throwInternalError();
             }
         }
@@ -474,7 +473,7 @@ public class PageBtreeNode extends PageBtree {
         written = false;
         changeCount = index.getPageStore().getChangeCount();
         if (entryCount < 0) {
-            DbException.throwInternalError("" + entryCount);
+            DbException.throwInternalError(Integer.toString(entryCount));
         }
         if (entryCount > i) {
             int startNext = i > 0 ? offsets[i - 1] : index.getPageStore().getPageSize();

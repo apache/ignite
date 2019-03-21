@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -10,10 +10,10 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Date;
 import java.util.Random;
+import org.h2.expression.function.DateTimeFunctions;
 import org.h2.message.DbException;
 import org.h2.test.TestBase;
 import org.h2.test.utils.AssertThrows;
-import org.h2.util.DateTimeFunctions;
 import org.h2.util.StringUtils;
 
 /**
@@ -32,6 +32,7 @@ public class TestStringUtils extends TestBase {
 
     @Override
     public void test() throws Exception {
+        testParseUInt31();
         testHex();
         testXML();
         testSplit();
@@ -40,6 +41,33 @@ public class TestStringUtils extends TestBase {
         testPad();
         testReplaceAll();
         testTrim();
+        testTrimSubstring();
+    }
+
+    private void testParseUInt31() {
+        assertEquals(0, StringUtils.parseUInt31("101", 1, 2));
+        assertEquals(11, StringUtils.parseUInt31("11", 0, 2));
+        assertEquals(0, StringUtils.parseUInt31("000", 0, 3));
+        assertEquals(1, StringUtils.parseUInt31("01", 0, 2));
+        assertEquals(999999999, StringUtils.parseUInt31("X999999999", 1, 10));
+        assertEquals(2147483647, StringUtils.parseUInt31("2147483647", 0, 10));
+        testParseUInt31Bad(null, 0, 1);
+        testParseUInt31Bad("1", -1, 1);
+        testParseUInt31Bad("1", 0, 0);
+        testParseUInt31Bad("12", 1, 0);
+        testParseUInt31Bad("-0", 0, 2);
+        testParseUInt31Bad("+0", 0, 2);
+        testParseUInt31Bad("2147483648", 0, 10);
+        testParseUInt31Bad("21474836470", 0, 11);
+    }
+
+    private void testParseUInt31Bad(String s, int start, int end) {
+        try {
+            StringUtils.parseUInt31(s, start, end);
+        } catch (NullPointerException | IndexOutOfBoundsException | NumberFormatException e) {
+            return;
+        }
+        fail();
     }
 
     private void testHex() {
@@ -252,5 +280,23 @@ public class TestStringUtils extends TestBase {
                 StringUtils.trim("zzbbzz", true, true, "z"));
     }
 
+    private void testTrimSubstring() {
+        testTrimSubstringImpl("", "", 0, 0);
+        testTrimSubstringImpl("", "    ", 0, 0);
+        testTrimSubstringImpl("", "    ", 4, 4);
+        testTrimSubstringImpl("select", " select  from", 1, 7);
+        testTrimSubstringImpl("a b", " a b ", 1, 4);
+        testTrimSubstringImpl("a b", " a b ", 1, 5);
+        testTrimSubstringImpl("b", " a b ", 2, 5);
+        new AssertThrows(StringIndexOutOfBoundsException.class) { @Override
+            public void test() { StringUtils.trimSubstring(" with (", 1, 8); }
+        };
+    }
+
+    private void testTrimSubstringImpl(String expected, String string, int startIndex, int endIndex) {
+        assertEquals(expected, StringUtils.trimSubstring(string, startIndex, endIndex));
+        assertEquals(expected, StringUtils
+                .trimSubstring(new StringBuilder(endIndex - startIndex), string, startIndex, endIndex).toString());
+    }
 
 }

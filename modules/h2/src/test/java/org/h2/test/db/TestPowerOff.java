@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -16,12 +16,13 @@ import org.h2.api.ErrorCode;
 import org.h2.engine.Database;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.JdbcUtils;
 
 /**
  * Tests simulated power off conditions.
  */
-public class TestPowerOff extends TestBase {
+public class TestPowerOff extends TestDb {
 
     private static final String DB_NAME = "powerOff";
     private String dir, url;
@@ -38,10 +39,15 @@ public class TestPowerOff extends TestBase {
     }
 
     @Override
-    public void test() throws SQLException {
+    public boolean isEnabled() {
         if (config.memory) {
-            return;
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws SQLException {
         if (config.big || config.googleAppEngine) {
             dir = getBaseDir();
             url = DB_NAME;

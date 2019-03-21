@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -14,12 +14,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.Task;
 
 /**
  * Test for deadlocks in the code, and test the deadlock detection mechanism.
  */
-public class TestDeadlock extends TestBase {
+public class TestDeadlock extends TestDb {
 
     /**
      * The first connection.
@@ -235,7 +236,7 @@ public class TestDeadlock extends TestBase {
     }
 
     private void testThreePhilosophers() throws Exception {
-        if (config.mvcc || config.mvStore) {
+        if (config.mvStore) {
             return;
         }
         initTest();
@@ -281,7 +282,7 @@ public class TestDeadlock extends TestBase {
     // test case for issue # 61
     // http://code.google.com/p/h2database/issues/detail?id=61)
     private void testThreeSome() throws Exception {
-        if (config.mvcc || config.mvStore) {
+        if (config.mvStore) {
             return;
         }
         initTest();
@@ -326,7 +327,7 @@ public class TestDeadlock extends TestBase {
     }
 
     private void testLockUpgrade() throws Exception {
-        if (config.mvcc || config.mvStore) {
+        if (config.mvStore) {
             return;
         }
         initTest();
@@ -360,7 +361,7 @@ public class TestDeadlock extends TestBase {
     }
 
     private void testDiningPhilosophers() throws Exception {
-        if (config.mvcc || config.mvStore) {
+        if (config.mvStore) {
             return;
         }
         initTest();
@@ -390,7 +391,7 @@ public class TestDeadlock extends TestBase {
     }
 
     private void checkDeadlock() throws SQLException {
-        assertTrue(lastException != null);
+        assertNotNull(lastException);
         assertKnownException(lastException);
         assertEquals(ErrorCode.DEADLOCK_1, lastException.getErrorCode());
         SQLException e2 = lastException.getNextException();

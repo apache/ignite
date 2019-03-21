@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -16,11 +16,12 @@ import java.sql.Statement;
 
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Test for batch updates.
  */
-public class TestBatchUpdates extends TestBase {
+public class TestBatchUpdates extends TestDb {
 
     private static final String COFFEE_UPDATE =
             "UPDATE TEST SET PRICE=PRICE*20 WHERE TYPE_ID=?";
@@ -79,13 +80,13 @@ public class TestBatchUpdates extends TestBase {
         } catch (SQLException e) {
             assertContains(e.toString(), "TEST_Y");
             e = e.getNextException();
-            assertTrue(e != null);
+            assertNotNull(e);
             assertContains(e.toString(), "TEST_Y");
             e = e.getNextException();
-            assertTrue(e != null);
+            assertNotNull(e);
             assertContains(e.toString(), "TEST_X");
             e = e.getNextException();
-            assertTrue(e == null);
+            assertNull(e);
         }
         stat.execute("create table test(id int)");
         PreparedStatement prep = conn.prepareStatement("insert into test values(?)");
@@ -98,13 +99,13 @@ public class TestBatchUpdates extends TestBase {
         } catch (SQLException e) {
             assertContains(e.toString(), "TEST_Y");
             e = e.getNextException();
-            assertTrue(e != null);
+            assertNotNull(e);
             assertContains(e.toString(), "TEST_Y");
             e = e.getNextException();
-            assertTrue(e != null);
+            assertNotNull(e);
             assertContains(e.toString(), "TEST_X");
             e = e.getNextException();
-            assertTrue(e == null);
+            assertNull(e);
         }
         stat.execute("drop table test");
         conn.close();
@@ -542,7 +543,7 @@ public class TestBatchUpdates extends TestBase {
             trace("Count val is: " + count);
             // make sure that we have the correct error code for
             // the failed update.
-            if (!(batchUpdates[1] == -3 && count == 1)) {
+            if (batchUpdates[1] != -3 || count != 1) {
                 fail("insert failed");
             }
         }

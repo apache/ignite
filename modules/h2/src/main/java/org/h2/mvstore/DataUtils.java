@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.h2.engine.Constants;
+import org.h2.util.StringUtils;
 
 /**
  * Utility methods
@@ -97,6 +98,16 @@ public final class DataUtils {
     public static final int ERROR_TRANSACTION_ILLEGAL_STATE = 103;
 
     /**
+     * The transaction contains too many changes.
+     */
+    public static final int ERROR_TRANSACTION_TOO_BIG = 104;
+
+    /**
+     * Deadlock discovered and one of transactions involved chosen as victim and rolled back.
+     */
+    public static final int ERROR_TRANSACTIONS_DEADLOCK = 105;
+
+    /**
      * The type for leaf page.
      */
     public static final int PAGE_TYPE_LEAF = 0;
@@ -137,16 +148,6 @@ public final class DataUtils {
      * encoding (only 7 bytes instead of 8).
      */
     public static final long COMPRESSED_VAR_LONG_MAX = 0x1ffffffffffffL;
-
-    /**
-     * The estimated number of bytes used per page object.
-     */
-    public static final int PAGE_MEMORY = 128;
-
-    /**
-     * The estimated number of bytes used per child entry.
-     */
-    public static final int PAGE_MEMORY_CHILD = 16;
 
     /**
      * The marker size of a very large page.
@@ -251,10 +252,11 @@ public final class DataUtils {
      *
      * @param out the output stream
      * @param x the value
+     * @throws IOException if some data could not be written
      */
     public static void writeVarInt(OutputStream out, int x) throws IOException {
         while ((x & ~0x7f) != 0) {
-            out.write((byte) (0x80 | (x & 0x7f)));
+            out.write((byte) (x | 0x80));
             x >>>= 7;
         }
         out.write((byte) x);
@@ -268,7 +270,7 @@ public final class DataUtils {
      */
     public static void writeVarInt(ByteBuffer buff, int x) {
         while ((x & ~0x7f) != 0) {
-            buff.put((byte) (0x80 | (x & 0x7f)));
+            buff.put((byte) (x | 0x80));
             x >>>= 7;
         }
         buff.put((byte) x);
@@ -329,7 +331,7 @@ public final class DataUtils {
      */
     public static void writeVarLong(ByteBuffer buff, long x) {
         while ((x & ~0x7f) != 0) {
-            buff.put((byte) (0x80 | (x & 0x7f)));
+            buff.put((byte) (x | 0x80));
             x >>>= 7;
         }
         buff.put((byte) x);
@@ -340,11 +342,12 @@ public final class DataUtils {
      *
      * @param out the output stream
      * @param x the value
+     * @throws IOException if some data could not be written
      */
     public static void writeVarLong(OutputStream out, long x)
             throws IOException {
         while ((x & ~0x7f) != 0) {
-            out.write((byte) (0x80 | (x & 0x7f)));
+            out.write((byte) (x | 0x80));
             x >>>= 7;
         }
         out.write((byte) x);
@@ -520,6 +523,16 @@ public final class DataUtils {
      */
     public static int getPageType(long pos) {
         return ((int) pos) & 1;
+    }
+
+    /**
+     * Find out if page was saved.
+     *
+     * @param pos the position
+     * @return true if page has been saved
+     */
+    public static boolean isPageSaved(long pos) {
+        return pos != 0;
     }
 
     /**
@@ -921,9 +934,8 @@ public final class DataUtils {
         if (m != null && m.endsWith("]")) {
             int dash = m.lastIndexOf('/');
             if (dash >= 0) {
-                String s = m.substring(dash + 1, m.length() - 1);
                 try {
-                    return Integer.parseInt(s);
+                    return StringUtils.parseUInt31(m, dash + 1, m.length() - 1);
                 } catch (NumberFormatException e) {
                     // no error code
                 }
@@ -1005,7 +1017,7 @@ public final class DataUtils {
      * @return the parsed value
      * @throws IllegalStateException if parsing fails
      */
-    public static int readHexInt(HashMap<String, ?> map, String key, int defaultValue) {
+    public static int readHexInt(Map<String, ?> map, String key, int defaultValue) {
         Object v = map.get(key);
         if (v == null) {
             return defaultValue;
@@ -1019,39 +1031,6 @@ public final class DataUtils {
             throw newIllegalStateException(ERROR_FILE_CORRUPT,
                     "Error parsing the value {0}", v, e);
         }
-    }
-
-    /**
-     * An entry of a map.
-     *
-     * @param <K> the key type
-     * @param <V> the value type
-     */
-    public static final class MapEntry<K, V> implements Map.Entry<K, V> {
-
-        private final K key;
-        private final V value;
-
-        public MapEntry(K key, V value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        @Override
-        public K getKey() {
-            return key;
-        }
-
-        @Override
-        public V getValue() {
-            return value;
-        }
-
-        @Override
-        public V setValue(V value) {
-            throw newUnsupportedOperationException("Updating the value is not supported");
-        }
-
     }
 
     /**

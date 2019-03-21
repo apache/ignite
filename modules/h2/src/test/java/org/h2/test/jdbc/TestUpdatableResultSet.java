@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -22,12 +22,14 @@ import java.sql.Timestamp;
 import java.sql.Types;
 
 import org.h2.api.ErrorCode;
+import org.h2.engine.SysProperties;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Updatable result set tests.
  */
-public class TestUpdatableResultSet extends TestBase {
+public class TestUpdatableResultSet extends TestDb {
 
     /**
      * Run just this test.
@@ -304,7 +306,8 @@ public class TestUpdatableResultSet extends TestBase {
         assertEquals("java.lang.String", meta.getColumnClassName(2));
         assertEquals("java.math.BigDecimal", meta.getColumnClassName(3));
         assertEquals("java.lang.Boolean", meta.getColumnClassName(4));
-        assertEquals("java.lang.Byte", meta.getColumnClassName(5));
+        assertEquals(SysProperties.OLD_RESULT_SET_GET_OBJECT ? "java.lang.Byte" : "java.lang.Integer",
+                meta.getColumnClassName(5));
         assertEquals("[B", meta.getColumnClassName(6));
         assertEquals("java.sql.Date", meta.getColumnClassName(7));
         assertEquals("java.sql.Time", meta.getColumnClassName(8));
@@ -313,7 +316,8 @@ public class TestUpdatableResultSet extends TestBase {
         assertEquals("java.lang.Float", meta.getColumnClassName(11));
         assertEquals("java.lang.Long", meta.getColumnClassName(12));
         assertEquals("java.lang.Integer", meta.getColumnClassName(13));
-        assertEquals("java.lang.Short", meta.getColumnClassName(14));
+        assertEquals(SysProperties.OLD_RESULT_SET_GET_OBJECT ? "java.lang.Short" : "java.lang.Integer",
+                meta.getColumnClassName(14));
         assertEquals("java.sql.Clob", meta.getColumnClassName(15));
         assertEquals("java.sql.Blob", meta.getColumnClassName(16));
         rs.moveToInsertRow();

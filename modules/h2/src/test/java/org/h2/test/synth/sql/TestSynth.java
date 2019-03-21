@@ -1,21 +1,22 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.test.synth.sql;
 
 import java.util.ArrayList;
+
 import org.h2.test.TestAll;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.MathUtils;
-import org.h2.util.New;
 
 /**
  * A test that generates random SQL statements against a number of databases
  * and compares the results.
  */
-public class TestSynth extends TestBase {
+public class TestSynth extends TestDb {
 
     //  TODO hsqldb: call 1||null should return 1 but returns null
     //  TODO hsqldb: call mod(1) should return invalid parameter count
@@ -144,7 +145,7 @@ public class TestSynth extends TestBase {
 
     private void testRun(int seed) throws Exception {
         random.setSeed(seed);
-        commands = New.arrayList();
+        commands = new ArrayList<>();
         add(Command.getConnect(this));
         add(Command.getReset(this));
 
@@ -201,8 +202,7 @@ public class TestSynth extends TestBase {
 
     private boolean process(int seed, int id, Command command) throws Exception {
         try {
-
-            ArrayList<Result> results = New.arrayList();
+            ArrayList<Result> results = new ArrayList<>();
             for (int i = 0; i < databases.size(); i++) {
                 DbInterface db = databases.get(i);
                 Result result = command.run(db);
@@ -278,7 +278,7 @@ public class TestSynth extends TestBase {
     public TestBase init(TestAll conf) throws Exception {
         super.init(conf);
         deleteDb("synth/synth");
-        databases = New.arrayList();
+        databases = new ArrayList<>();
 
         // mode = HSQLDB;
         // addDatabase("org.hsqldb.jdbcDriver", "jdbc:hsqldb:test", "sa", "" );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -16,31 +16,36 @@ import java.sql.Statement;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.test.utils.SelfDestructor;
 
 /**
  * Standalone recovery test. A new process is started and then killed while it
  * executes random statements.
  */
-public class TestKillRestart extends TestBase {
+public class TestKillRestart extends TestDb {
+
+    @Override
+    public boolean isEnabled() {
+        if (config.networked) {
+            return false;
+        }
+        if (getBaseDir().indexOf(':') > 0) {
+            return false;
+        }
+        return true;
+    }
 
     @Override
     public void test() throws Exception {
-        if (config.networked) {
-            return;
-        }
-        if (getBaseDir().indexOf(':') > 0) {
-            return;
-        }
         deleteDb("killRestart");
         String url = getURL("killRestart", true);
         // String url = getURL(
         //        "killRestart;CACHE_SIZE=2048;WRITE_DELAY=0", true);
         String user = getUser(), password = getPassword();
         String selfDestruct = SelfDestructor.getPropertyString(60);
-        String[] procDef = { "java", selfDestruct,
-                "-cp", getClassPath(),
+        String[] procDef = { getJVM(), selfDestruct,
+                "-cp", getClassPath(), "-ea",
                 getClass().getName(), "-url", url, "-user", user,
                 "-password", password };
 

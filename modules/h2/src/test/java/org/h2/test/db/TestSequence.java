@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -15,12 +15,13 @@ import java.util.Collections;
 import java.util.List;
 import org.h2.api.Trigger;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.Task;
 
 /**
  * Tests the sequence feature of this database.
  */
-public class TestSequence extends TestBase {
+public class TestSequence extends TestDb {
 
     /**
      * Run just this test.
@@ -318,16 +319,16 @@ public class TestSequence extends TestBase {
             script.add(rs.getString(1));
         }
         Collections.sort(script);
-        assertEquals("CREATE SEQUENCE PUBLIC.A START WITH 1;", script.get(0));
-        assertEquals("CREATE SEQUENCE PUBLIC.B START " +
+        assertEquals("CREATE SEQUENCE \"PUBLIC\".\"A\" START WITH 1;", script.get(0));
+        assertEquals("CREATE SEQUENCE \"PUBLIC\".\"B\" START " +
                 "WITH 5 INCREMENT BY 2 " +
                 "MINVALUE 3 MAXVALUE 7 CYCLE CACHE 1;", script.get(1));
-        assertEquals("CREATE SEQUENCE PUBLIC.C START " +
+        assertEquals("CREATE SEQUENCE \"PUBLIC\".\"C\" START " +
                 "WITH 3 MINVALUE 2 MAXVALUE 9 CACHE 2;",
                 script.get(2));
-        assertEquals("CREATE SEQUENCE PUBLIC.D START " +
+        assertEquals("CREATE SEQUENCE \"PUBLIC\".\"D\" START " +
                 "WITH 1 CACHE 1;", script.get(3));
-        assertEquals("CREATE SEQUENCE PUBLIC.E START " +
+        assertEquals("CREATE SEQUENCE \"PUBLIC\".\"E\" START " +
                 "WITH 1 CACHE 1;", script.get(4));
         conn.close();
     }

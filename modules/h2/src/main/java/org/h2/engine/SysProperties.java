@@ -1,9 +1,11 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.engine;
+
+import java.io.File;
 
 import org.h2.util.MathUtils;
 import org.h2.util.Utils;
@@ -42,26 +44,16 @@ public class SysProperties {
     public static final String H2_BROWSER = "h2.browser";
 
     /**
-     * System property <code>file.encoding</code> (default: Cp1252).<br />
-     * It is usually set by the system and is the default encoding used for the
-     * RunScript and CSV tool.
+     * System property <code>file.separator</code>.<br />
+     * It is set by the system, and used to build absolute file names.
      */
-    public static final String FILE_ENCODING =
-            Utils.getProperty("file.encoding", "Cp1252");
+    public static final String FILE_SEPARATOR = File.separator;
 
     /**
-     * System property <code>file.separator</code> (default: /).<br />
-     * It is usually set by the system, and used to build absolute file names.
+     * System property <code>line.separator</code>.<br />
+     * It is set by the system, and used by the script and trace tools.
      */
-    public static final String FILE_SEPARATOR =
-            Utils.getProperty("file.separator", "/");
-
-    /**
-     * System property <code>line.separator</code> (default: \n).<br />
-     * It is usually set by the system, and used by the script and trace tools.
-     */
-    public static final String LINE_SEPARATOR =
-            Utils.getProperty("line.separator", "\n");
+    public static final String LINE_SEPARATOR = System.lineSeparator();
 
     /**
      * System property <code>user.home</code> (empty string if not set).<br />
@@ -70,6 +62,16 @@ public class SysProperties {
      */
     public static final String USER_HOME =
             Utils.getProperty("user.home", "");
+
+    /**
+     * System property {@code h2.preview} (default: false).
+     * <p>
+     * Controls default values of other properties. If {@code true} default
+     * values of other properties are changed to planned defaults for the 1.5.x
+     * versions of H2. Some other functionality may be also enabled or disabled.
+     * </p>
+     */
+    public static final boolean PREVIEW = Utils.getProperty("h2.preview", false);
 
     /**
      * System property <code>h2.allowedClasses</code> (default: *).<br />
@@ -93,26 +95,12 @@ public class SysProperties {
             Utils.getProperty("h2.bindAddress", null);
 
     /**
-     * System property <code>h2.check</code> (default: true).<br />
-     * Assertions in the database engine.
+     * System property <code>h2.check</code>
+     * (default: true for JDK/JRE, false for Android).<br />
+     * Optional additional checks in the database engine.
      */
-    //## CHECK ##
     public static final boolean CHECK =
-            Utils.getProperty("h2.check", true);
-    /*/
-    public static final boolean CHECK = false;
-    //*/
-
-    /**
-     * System property <code>h2.check2</code> (default: false).<br />
-     * Additional assertions in the database engine.
-     */
-    //## CHECK ##
-    public static final boolean CHECK2 =
-            Utils.getProperty("h2.check2", false);
-    /*/
-    public static final boolean CHECK2 = false;
-    //*/
+            Utils.getProperty("h2.check", !"0.9".equals(Utils.getProperty("java.specification.version", null)));
 
     /**
      * System property <code>h2.clientTraceDirectory</code> (default:
@@ -331,64 +319,53 @@ public class SysProperties {
     }
 
     /**
-     * System property <code>h2.oldStyleOuterJoin</code>
-     * (default: true for version 1.3, false for version 1.4).<br />
-     * Limited support for the old-style Oracle outer join with "(+)".
-     */
-    public static final boolean OLD_STYLE_OUTER_JOIN =
-            Utils.getProperty("h2.oldStyleOuterJoin",
-                    Constants.VERSION_MINOR < 4);
-
-    /**
-     * System property {@code h2.oldResultSetGetObject}, {@code true} by default.
-     * Return {@code Byte} and {@code Short} instead of {@code Integer} from
-     * {@code ResultSet#getObject(...)} for {@code TINYINT} and {@code SMALLINT}
-     * values.
-     */
-    public static final boolean OLD_RESULT_SET_GET_OBJECT =
-            Utils.getProperty("h2.oldResultSetGetObject", true);
-
-    /**
-     * System property {@code h2.bigDecimalIsDecimal}, {@code true} by default. If
-     * {@code true} map {@code BigDecimal} to {@code DECIMAL} type, if {@code false}
-     * map it to {@code NUMERIC} as specified in JDBC specification (see Mapping
-     * from Java Object Types to JDBC Types).
-     */
-    public static final boolean BIG_DECIMAL_IS_DECIMAL =
-            Utils.getProperty("h2.bigDecimalIsDecimal", true);
-
-
-    /**
-     * System property {@code h2.unlimitedTimeRange}, {@code false} by default.
-     *
+     * System property {@code h2.oldResultSetGetObject}, {@code true} by default
+     * unless {@code h2.preview} is enabled.
      * <p>
-     * Controls limits of TIME data type.
+     * If {@code true} return {@code Byte} and {@code Short} from
+     * {@code ResultSet#getObject(int)} and {@code ResultSet#getObject(String)}
+     * for {@code TINYINT} and {@code SMALLINT} values.
      * </p>
-     *
-     * <table>
-     * <thead>
-     * <tr>
-     * <th>h2.unlimitedTimeRange</th>
-     * <th>Minimum TIME value</th>
-     * <th>Maximum TIME value</th>
-     * </tr>
-     * </thead>
-     * <tbody>
-     * <tr>
-     * <td>false</td>
-     * <td>00:00:00.000000000</td>
-     * <td>23:59:59.999999999</td>
-     * </tr>
-     * <tr>
-     * <td>true</td>
-     * <td>-2562047:47:16.854775808</td>
-     * <td>2562047:47:16.854775807</td>
-     * </tr>
-     * </tbody>
-     * </table>
+     * <p>
+     * If {@code false} return {@code Integer} for them as specified in JDBC
+     * specification (see Mapping from JDBC Types to Java Object Types).
+     * </p>
      */
-    public static final boolean UNLIMITED_TIME_RANGE =
-            Utils.getProperty("h2.unlimitedTimeRange", false);
+    public static final boolean OLD_RESULT_SET_GET_OBJECT = Utils.getProperty("h2.oldResultSetGetObject", !PREVIEW);
+
+    /**
+     * System property {@code h2.bigDecimalIsDecimal}, {@code true} by default
+     * unless {@code h2.preview} is enabled.
+     * <p>
+     * If {@code true} map {@code BigDecimal} to {@code DECIMAL} type.
+     * </p>
+     * <p>
+     * If {@code false} map {@code BigDecimal} to {@code NUMERIC} as specified
+     * in JDBC specification (see Mapping from Java Object Types to JDBC Types).
+     * </p>
+     */
+    public static final boolean BIG_DECIMAL_IS_DECIMAL = Utils.getProperty("h2.bigDecimalIsDecimal", !PREVIEW);
+
+    /**
+     * System property {@code h2.returnOffsetDateTime}, {@code false} by default
+     * unless {@code h2.preview} is enabled.
+     * <p>
+     * If {@code true} {@link java.sql.ResultSet#getObject(int)} and
+     * {@link java.sql.ResultSet#getObject(String)} return
+     * {@code TIMESTAMP WITH TIME ZONE} values as
+     * {@code java.time.OffsetDateTime}.
+     * </p>
+     * <p>
+     * If {@code false} return them as {@code org.h2.api.TimestampWithTimeZone}
+     * instead.
+     * </p>
+     * <p>
+     * This property has effect only on Java 8 / Android API 26 and later
+     * versions. Without JSR-310 {@code org.h2.api.TimestampWithTimeZone} is
+     * used unconditionally.
+     * </p>
+     */
+    public static final boolean RETURN_OFFSET_DATE_TIME = Utils.getProperty("h2.returnOffsetDateTime", PREVIEW);
 
     /**
      * System property <code>h2.pgClientEncoding</code> (default: UTF-8).<br />
@@ -439,13 +416,22 @@ public class SysProperties {
 
     /**
      * System property <code>h2.sortBinaryUnsigned</code>
-     * (default: false with version 1.3, true with version 1.4).<br />
+     * (default: true).<br />
      * Whether binary data should be sorted in unsigned mode
-     * (0xff is larger than 0x00).
+     * (0xff is larger than 0x00) by default in new databases.
      */
     public static final boolean SORT_BINARY_UNSIGNED =
-            Utils.getProperty("h2.sortBinaryUnsigned",
-                    Constants.VERSION_MINOR >= 4);
+            Utils.getProperty("h2.sortBinaryUnsigned", true);
+
+    /**
+     * System property {@code h2.sortUuidUnsigned}, {@code false} by default
+     * unless {@code h2.preview} is enabled.
+     * Whether UUID data should be sorted in unsigned mode
+     * ('ffffffff-ffff-ffff-ffff-ffffffffffff' is larger than
+     * '00000000-0000-0000-0000-000000000000') by default in new databases.
+     */
+    public static final boolean SORT_UUID_UNSIGNED =
+            Utils.getProperty("h2.sortUuidUnsigned", PREVIEW);
 
     /**
      * System property <code>h2.sortNullsHigh</code> (default: false).<br />
@@ -493,13 +479,12 @@ public class SysProperties {
 
     /**
      * System property <code>h2.implicitRelativePath</code>
-     * (default: true for version 1.3, false for version 1.4).<br />
+     * (default: false).<br />
      * If disabled, relative paths in database URLs need to be written as
      * jdbc:h2:./test instead of jdbc:h2:test.
      */
     public static final boolean IMPLICIT_RELATIVE_PATH =
-            Utils.getProperty("h2.implicitRelativePath",
-                    Constants.VERSION_MINOR < 4);
+            Utils.getProperty("h2.implicitRelativePath", false);
 
     /**
      * System property <code>h2.urlMap</code> (default: null).<br />
@@ -572,6 +557,16 @@ public class SysProperties {
     public static final String CUSTOM_DATA_TYPES_HANDLER =
             Utils.getProperty("h2.customDataTypesHandler", null);
 
+    /**
+     * System property <code>h2.authConfigFile</code>
+     * (default: null).<br />
+     * authConfigFile define the URL of configuration file
+     * of {@link org.h2.security.auth.DefaultAuthenticator}
+     *
+     */
+    public static final String AUTH_CONFIG_FILE =
+            Utils.getProperty("h2.authConfigFile", null);
+
     private static final String H2_BASE_DIR = "h2.baseDir";
 
     private SysProperties() {
@@ -617,7 +612,7 @@ public class SysProperties {
         String s = Utils.getProperty(key, null);
         if (s != null) {
             try {
-                return Integer.decode(s).intValue();
+                return Integer.decode(s);
             } catch (NumberFormatException e) {
                 // ignore
             }

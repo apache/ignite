@@ -1,10 +1,11 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.mvstore.cache;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,7 +25,7 @@ import org.h2.mvstore.DataUtils;
  * at most the specified amount of memory. The memory unit is not relevant,
  * however it is suggested to use bytes as the unit.
  * <p>
- * This class implements an approximation of the the LIRS replacement algorithm
+ * This class implements an approximation of the LIRS replacement algorithm
  * invented by Xiaodong Zhang and Song Jiang as described in
  * http://www.cse.ohio-state.edu/~zhang/lirs-sigmetrics-02.html with a few
  * smaller changes: An additional queue for non-resident entries is used, to
@@ -56,6 +57,7 @@ public class CacheLongKeyLIRS<V> {
     private final int segmentMask;
     private final int stackMoveDistance;
     private final int nonResidentQueueSize;
+    private final int nonResidentQueueSizeHigh;
 
     /**
      * Create a new cache with the given memory size.
@@ -66,6 +68,7 @@ public class CacheLongKeyLIRS<V> {
     public CacheLongKeyLIRS(Config config) {
         setMaxMemory(config.maxMemory);
         this.nonResidentQueueSize = config.nonResidentQueueSize;
+        this.nonResidentQueueSizeHigh = config.nonResidentQueueSizeHigh;
         DataUtils.checkArgument(
                 Integer.bitCount(config.segmentCount) == 1,
                 "The segment count must be a power of 2, is {0}", config.segmentCount);
@@ -84,8 +87,8 @@ public class CacheLongKeyLIRS<V> {
     public void clear() {
         long max = getMaxItemSize();
         for (int i = 0; i < segmentCount; i++) {
-            segments[i] = new Segment<>(
-                    max, stackMoveDistance, 8, nonResidentQueueSize);
+            segments[i] = new Segment<>(max, stackMoveDistance, 8, nonResidentQueueSize,
+                                        nonResidentQueueSizeHigh);
         }
     }
 
@@ -110,8 +113,8 @@ public class CacheLongKeyLIRS<V> {
      * @return true if there is a resident entry
      */
     public boolean containsKey(long key) {
-        int hash = getHash(key);
-        return getSegment(hash).containsKey(key, hash);
+        Entry<V> e = find(key);
+        return e != null && e.value != null;
     }
 
     /**
@@ -123,7 +126,7 @@ public class CacheLongKeyLIRS<V> {
      */
     public V peek(long key) {
         Entry<V> e = find(key);
-        return e == null ? null : e.value;
+        return e == null ? null : e.getValue();
     }
 
     /**
@@ -148,6 +151,10 @@ public class CacheLongKeyLIRS<V> {
      * @return the old value, or null if there was no resident entry
      */
     public V put(long key, V value, int memory) {
+        if (value == null) {
+            throw DataUtils.newIllegalArgumentException(
+                    "The value may not be null");
+        }
         int hash = getHash(key);
         int segmentIndex = getSegmentIndex(hash);
         Segment<V> s = segments[segmentIndex];
@@ -214,8 +221,8 @@ public class CacheLongKeyLIRS<V> {
      * @return the memory, or 0 if there is no resident entry
      */
     public int getMemory(long key) {
-        int hash = getHash(key);
-        return getSegment(hash).getMemory(key, hash);
+        Entry<V> e = find(key);
+        return e == null ? 0 : e.getMemory();
     }
 
     /**
@@ -228,7 +235,9 @@ public class CacheLongKeyLIRS<V> {
      */
     public V get(long key) {
         int hash = getHash(key);
-        return getSegment(hash).get(key, hash);
+        Segment<V> s = getSegment(hash);
+        Entry<V> e = s.find(key, hash);
+        return s.get(e);
     }
 
     private Segment<V> getSegment(int hash) {
@@ -306,7 +315,10 @@ public class CacheLongKeyLIRS<V> {
     public synchronized Set<Map.Entry<Long, V>> entrySet() {
         HashMap<Long, V> map = new HashMap<>();
         for (long k : keySet()) {
-            map.put(k,  find(k).value);
+            V value = peek(k);
+            if (value != null) {
+                map.put(k, value);
+            }
         }
         return map.entrySet();
     }
@@ -426,7 +438,7 @@ public class CacheLongKeyLIRS<V> {
     public List<V> values() {
         ArrayList<V> list = new ArrayList<>();
         for (long k : keySet()) {
-            V value = find(k).value;
+            V value = peek(k);
             if (value != null) {
                 list.add(value);
             }
@@ -449,7 +461,7 @@ public class CacheLongKeyLIRS<V> {
      * @param value the value
      * @return true if it is stored
      */
-    public boolean containsValue(Object value) {
+    public boolean containsValue(V value) {
         return getMap().containsValue(value);
     }
 
@@ -461,7 +473,7 @@ public class CacheLongKeyLIRS<V> {
     public Map<Long, V> getMap() {
         HashMap<Long, V> map = new HashMap<>();
         for (long k : keySet()) {
-            V x = find(k).value;
+            V x = peek(k);
             if (x != null) {
                 map.put(k, x);
             }
@@ -478,6 +490,17 @@ public class CacheLongKeyLIRS<V> {
         for (Map.Entry<Long, ? extends V> e : m.entrySet()) {
             // copy only non-null entries
             put(e.getKey(), e.getValue());
+        }
+    }
+
+    /**
+     * Loop through segments, trimming the non resident queue.
+     */
+    public void trimNonResidentQueue() {
+        for (Segment<V> s : segments) {
+            synchronized (s) {
+                s.trimNonResidentQueue();
+            }
         }
     }
 
@@ -541,10 +564,16 @@ public class CacheLongKeyLIRS<V> {
         private final int mask;
 
         /**
-         * The number of entries in the non-resident queue, as a factor of the
-         * number of entries in the map.
+         * Low watermark for the number of entries in the non-resident queue,
+         * as a factor of the number of entries in the map.
          */
         private final int nonResidentQueueSize;
+
+        /**
+         * High watermark for the number of entries in the non-resident queue,
+         * as a factor of the number of entries in the map.
+         */
+        private final int nonResidentQueueSizeHigh;
 
         /**
          * The stack of recently referenced elements. This includes all hot
@@ -582,18 +611,19 @@ public class CacheLongKeyLIRS<V> {
 
         /**
          * Create a new cache segment.
-         *
-         * @param maxMemory the maximum memory to use
+         *  @param maxMemory the maximum memory to use
          * @param stackMoveDistance the number of other entries to be moved to
          *        the top of the stack before moving an entry to the top
          * @param len the number of hash table buckets (must be a power of 2)
-         * @param nonResidentQueueSize the non-resident queue size factor
+         * @param nonResidentQueueSize the non-resident queue size low watermark factor
+         * @param nonResidentQueueSizeHigh  the non-resident queue size high watermark factor
          */
         Segment(long maxMemory, int stackMoveDistance, int len,
-                int nonResidentQueueSize) {
+                int nonResidentQueueSize, int nonResidentQueueSizeHigh) {
             setMaxMemory(maxMemory);
             this.stackMoveDistance = stackMoveDistance;
             this.nonResidentQueueSize = nonResidentQueueSize;
+            this.nonResidentQueueSizeHigh = nonResidentQueueSizeHigh;
 
             // the bit mask has all bits set
             mask = len - 1;
@@ -620,12 +650,13 @@ public class CacheLongKeyLIRS<V> {
          * @param len the number of hash table buckets (must be a power of 2)
          */
         Segment(Segment<V> old, int len) {
-            this(old.maxMemory, old.stackMoveDistance, len, old.nonResidentQueueSize);
+            this(old.maxMemory, old.stackMoveDistance, len,
+                    old.nonResidentQueueSize, old.nonResidentQueueSizeHigh);
             hits = old.hits;
             misses = old.misses;
             Entry<V> s = old.stack.stackPrev;
             while (s != old.stack) {
-                Entry<V> e = copy(s);
+                Entry<V> e = new Entry<>(s);
                 addToMap(e);
                 addToStack(e);
                 s = s.stackPrev;
@@ -634,7 +665,7 @@ public class CacheLongKeyLIRS<V> {
             while (s != old.queue) {
                 Entry<V> e = find(s.key, getHash(s.key));
                 if (e == null) {
-                    e = copy(s);
+                    e = new Entry<>(s);
                     addToMap(e);
                 }
                 addToQueue(queue, e);
@@ -644,7 +675,7 @@ public class CacheLongKeyLIRS<V> {
             while (s != old.queue2) {
                 Entry<V> e = find(s.key, getHash(s.key));
                 if (e == null) {
-                    e = copy(s);
+                    e = new Entry<>(s);
                     addToMap(e);
                 }
                 addToQueue(queue2, e);
@@ -674,64 +705,28 @@ public class CacheLongKeyLIRS<V> {
             int index = getHash(e.key) & mask;
             e.mapNext = entries[index];
             entries[index] = e;
-            usedMemory += e.memory;
+            usedMemory += e.getMemory();
             mapSize++;
         }
 
-        private static <V> Entry<V> copy(Entry<V> old) {
-            Entry<V> e = new Entry<>();
-            e.key = old.key;
-            e.value = old.value;
-            e.memory = old.memory;
-            e.topMove = old.topMove;
-            return e;
-        }
-
         /**
-         * Get the memory used for the given key.
+         * Get the value from the given entry.
+         * This method adjusts the internal state of the cache sometimes,
+         * to ensure commonly used entries stay in the cache.
          *
-         * @param key the key (may not be null)
-         * @param hash the hash
-         * @return the memory, or 0 if there is no resident entry
-         */
-        int getMemory(long key, int hash) {
-            Entry<V> e = find(key, hash);
-            return e == null ? 0 : e.memory;
-        }
-
-        /**
-         * Get the value for the given key if the entry is cached. This method
-         * adjusts the internal state of the cache sometimes, to ensure commonly
-         * used entries stay in the cache.
-         *
-         * @param key the key (may not be null)
-         * @param hash the hash
+         * @param e the entry
          * @return the value, or null if there is no resident entry
          */
-        V get(long key, int hash) {
-            Entry<V> e = find(key, hash);
-            if (e == null) {
-                // the entry was not found
-                misses++;
-                return null;
-            }
-            V value = e.value;
+        synchronized V get(Entry<V> e) {
+            V value = e == null ? null : e.getValue();
             if (value == null) {
-                // it was a non-resident entry
+                // the entry was not found
+                // or it was a non-resident entry
                 misses++;
-                return null;
-            }
-            if (e.isHot()) {
-                if (e != stack.stackNext) {
-                    if (stackMoveDistance == 0 ||
-                            stackMoveCounter - e.topMove > stackMoveDistance) {
-                        access(key, hash);
-                    }
-                }
             } else {
-                access(key, hash);
+                access(e);
+                hits++;
             }
-            hits++;
             return value;
         }
 
@@ -739,17 +734,12 @@ public class CacheLongKeyLIRS<V> {
          * Access an item, moving the entry to the top of the stack or front of
          * the queue if found.
          *
-         * @param key the key
+         * @param e entry to record access for
          */
-        private synchronized void access(long key, int hash) {
-            Entry<V> e = find(key, hash);
-            if (e == null || e.value == null) {
-                return;
-            }
+        private void access(Entry<V> e) {
             if (e.isHot()) {
-                if (e != stack.stackNext) {
-                    if (stackMoveDistance == 0 ||
-                            stackMoveCounter - e.topMove > stackMoveDistance) {
+                if (e != stack.stackNext && e.stackNext != null) {
+                    if (stackMoveCounter - e.topMove > stackMoveDistance) {
                         // move a hot entry to the top of the stack
                         // unless it is already there
                         boolean wasEnd = e == stack.stackPrev;
@@ -763,22 +753,33 @@ public class CacheLongKeyLIRS<V> {
                     }
                 }
             } else {
-                removeFromQueue(e);
-                if (e.stackNext != null) {
-                    // resident cold entries become hot
-                    // if they are on the stack
-                    removeFromStack(e);
-                    // which means a hot entry needs to become cold
-                    // (this entry is cold, that means there is at least one
-                    // more entry in the stack, which must be hot)
-                    convertOldestHotToCold();
-                } else {
-                    // cold entries that are not on the stack
-                    // move to the front of the queue
-                    addToQueue(queue, e);
+                V v = e.getValue();
+                if (v != null) {
+                    removeFromQueue(e);
+                    if (e.reference != null) {
+                        e.value = v;
+                        e.reference = null;
+                        usedMemory += e.memory;
+                    }
+                    if (e.stackNext != null) {
+                        // resident, or even non-resident (weak value reference),
+                        // cold entries become hot if they are on the stack
+                        removeFromStack(e);
+                        // which means a hot entry needs to become cold
+                        // (this entry is cold, that means there is at least one
+                        // more entry in the stack, which must be hot)
+                        convertOldestHotToCold();
+                    } else {
+                        // cold entries that are not on the stack
+                        // move to the front of the queue
+                        addToQueue(queue, e);
+                    }
+                    // in any case, the cold entry is moved to the top of the stack
+                    addToStack(e);
+                    // but if newly promoted cold/non-resident is the only entry on a stack now
+                    // that means last one is cold, need to prune
+                    pruneStack();
                 }
-                // in any case, the cold entry is moved to the top of the stack
-                addToStack(e);
             }
         }
 
@@ -794,29 +795,18 @@ public class CacheLongKeyLIRS<V> {
          * @return the old value, or null if there was no resident entry
          */
         synchronized V put(long key, int hash, V value, int memory) {
-            if (value == null) {
-                throw DataUtils.newIllegalArgumentException(
-                        "The value may not be null");
-            }
-            V old;
             Entry<V> e = find(key, hash);
-            boolean existed;
-            if (e == null) {
-                existed = false;
-                old = null;
-            } else {
-                existed = true;
-                old = e.value;
+            boolean existed = e != null;
+            V old = null;
+            if (existed) {
+                old = e.getValue();
                 remove(key, hash);
             }
             if (memory > maxMemory) {
                 // the new entry is too big to fit
                 return old;
             }
-            e = new Entry<>();
-            e.key = key;
-            e.value = value;
-            e.memory = memory;
+            e = new Entry<>(key, value, memory);
             int index = hash & mask;
             e.mapNext = entries[index];
             entries[index] = e;
@@ -836,7 +826,7 @@ public class CacheLongKeyLIRS<V> {
             addToStack(e);
             if (existed) {
                 // if it was there before (even non-resident), it becomes hot
-                access(key, hash);
+                access(e);
             }
             return old;
         }
@@ -855,9 +845,7 @@ public class CacheLongKeyLIRS<V> {
             if (e == null) {
                 return null;
             }
-            V old;
             if (e.key == key) {
-                old = e.value;
                 entries[index] = e.mapNext;
             } else {
                 Entry<V> last;
@@ -868,11 +856,11 @@ public class CacheLongKeyLIRS<V> {
                         return null;
                     }
                 } while (e.key != key);
-                old = e.value;
                 last.mapNext = e.mapNext;
             }
+            V old = e.getValue();
             mapSize--;
-            usedMemory -= e.memory;
+            usedMemory -= e.getMemory();
             if (e.stackNext != null) {
                 removeFromStack(e);
             }
@@ -886,10 +874,10 @@ public class CacheLongKeyLIRS<V> {
                         addToStackBottom(e);
                     }
                 }
+                pruneStack();
             } else {
                 removeFromQueue(e);
             }
-            pruneStack();
             return old;
         }
 
@@ -908,7 +896,7 @@ public class CacheLongKeyLIRS<V> {
             // ensure there are not too many hot entries: right shift of 5 is
             // division by 32, that means if there are only 1/32 (3.125%) or
             // less cold entries, a hot entry needs to become cold
-            while (queueSize <= (mapSize >>> 5) && stackSize > 0) {
+            while (queueSize <= ((mapSize - queue2Size) >>> 5) && stackSize > 0) {
                 convertOldestHotToCold();
             }
             // the oldest resident cold entries become non-resident
@@ -916,18 +904,28 @@ public class CacheLongKeyLIRS<V> {
                 Entry<V> e = queue.queuePrev;
                 usedMemory -= e.memory;
                 removeFromQueue(e);
+                e.reference = new WeakReference<>(e.value);
                 e.value = null;
-                e.memory = 0;
                 addToQueue(queue2, e);
                 // the size of the non-resident-cold entries needs to be limited
-                int maxQueue2Size = nonResidentQueueSize * (mapSize - queue2Size);
-                if (maxQueue2Size >= 0) {
-                    while (queue2Size > maxQueue2Size) {
-                        e = queue2.queuePrev;
-                        int hash = getHash(e.key);
-                        remove(e.key, hash);
+                trimNonResidentQueue();
+            }
+        }
+
+        void trimNonResidentQueue() {
+            int residentCount = mapSize - queue2Size;
+            int maxQueue2SizeHigh = nonResidentQueueSizeHigh * residentCount;
+            int maxQueue2Size = nonResidentQueueSize * residentCount;
+            while (queue2Size > maxQueue2Size) {
+                Entry<V> e = queue2.queuePrev;
+                if (queue2Size <= maxQueue2SizeHigh) {
+                    WeakReference<V> reference = e.reference;
+                    if (reference != null && reference.get() != null) {
+                        break;  // stop trimming if entry holds a value
                     }
                 }
+                int hash = getHash(e.key);
+                remove(e.key, hash);
             }
         }
 
@@ -1058,19 +1056,6 @@ public class CacheLongKeyLIRS<V> {
         }
 
         /**
-         * Check whether there is a resident entry for the given key. This
-         * method does not adjust the internal state of the cache.
-         *
-         * @param key the key (may not be null)
-         * @param hash the hash
-         * @return true if there is a resident entry
-         */
-        boolean containsKey(long key, int hash) {
-            Entry<V> e = find(key, hash);
-            return e != null && e.value != null;
-        }
-
-        /**
          * Get the set of keys for resident entries.
          *
          * @return the set of keys
@@ -1113,7 +1098,7 @@ public class CacheLongKeyLIRS<V> {
         /**
          * The key.
          */
-        long key;
+        final long key;
 
         /**
          * The value. Set to null for non-resident-cold entries.
@@ -1121,9 +1106,14 @@ public class CacheLongKeyLIRS<V> {
         V value;
 
         /**
+         * Weak reference to the value. Set to null for resident entries.
+         */
+        WeakReference<V> reference;
+
+        /**
          * The estimated memory used.
          */
-        int memory;
+        final int memory;
 
         /**
          * When the item was last moved to the top of the stack.
@@ -1156,6 +1146,23 @@ public class CacheLongKeyLIRS<V> {
          */
         Entry<V> mapNext;
 
+
+        Entry() {
+            this(0L, null, 0);
+        }
+
+        Entry(long key, V value, int memory) {
+            this.key = key;
+            this.memory = memory;
+            this.value = value;
+        }
+
+        Entry(Entry<V> old) {
+            this(old.key, old.value, old.memory);
+            this.reference = old.reference;
+            this.topMove = old.topMove;
+        }
+
         /**
          * Whether this entry is hot. Cold entries are in one of the two queues.
          *
@@ -1165,6 +1172,13 @@ public class CacheLongKeyLIRS<V> {
             return queueNext == null;
         }
 
+        V getValue() {
+            return value == null ? reference.get() : value;
+        }
+
+        int getMemory() {
+            return value == null ? 0 : memory;
+        }
     }
 
     /**
@@ -1189,11 +1203,15 @@ public class CacheLongKeyLIRS<V> {
         public int stackMoveDistance = 32;
 
         /**
-         * The number of entries in the non-resident queue, as a factor of the
-         * number of all other entries in the map.
+         * Low water mark for the number of entries in the non-resident queue,
+         * as a factor of the number of all other entries in the map.
          */
         public final int nonResidentQueueSize = 3;
 
+        /**
+         * High watermark for the number of entries in the non-resident queue,
+         * as a factor of the number of all other entries in the map
+         */
+        public final int nonResidentQueueSizeHigh = 12;
     }
-
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -12,12 +12,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.Task;
 
 /**
  * Test for the exclusive mode.
  */
-public class TestExclusive extends TestBase {
+public class TestExclusive extends TestDb {
 
     /**
      * Run just this test.
@@ -41,7 +42,7 @@ public class TestExclusive extends TestBase {
         Connection conn2 = getConnection("exclusive");
         final Statement stat2 = conn2.createStatement();
         stat.execute("set exclusive true");
-        final AtomicInteger state = new AtomicInteger(0);
+        final AtomicInteger state = new AtomicInteger();
         Task task = new Task() {
             @Override
             public void call() throws SQLException {

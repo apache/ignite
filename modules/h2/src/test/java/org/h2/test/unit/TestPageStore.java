@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -26,14 +26,14 @@ import org.h2.result.RowImpl;
 import org.h2.store.Page;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.IOUtils;
 import org.h2.util.JdbcUtils;
-import org.h2.util.New;
 
 /**
  * Test the page store.
  */
-public class TestPageStore extends TestBase {
+public class TestPageStore extends TestDb {
 
     /**
      * The events log.
@@ -46,15 +46,19 @@ public class TestPageStore extends TestBase {
      * @param a ignored
      */
     public static void main(String... a) throws Exception {
-        System.setProperty("h2.check2", "true");
         TestBase.createCaller().init().test();
     }
 
     @Override
-    public void test() throws Exception {
+    public boolean isEnabled() {
         if (config.memory) {
-            return;
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws Exception {
         deleteDb(null);
         testDropTempTable();
         testLogLimitFalsePositive();
@@ -155,7 +159,7 @@ public class TestPageStore extends TestBase {
         Statement stat = conn.createStatement();
         stat.execute("set max_log_size 1");
         stat.execute("create table test(x varchar)");
-        for (int i = 0; i < 1000; ++i) {
+        for (int i = 0; i < 300; ++i) {
             stat.execute("insert into test values (space(2000))");
         }
         stat.execute("checkpoint");
@@ -169,7 +173,7 @@ public class TestPageStore extends TestBase {
     private void testRecoverLobInDatabase() throws SQLException {
         deleteDb("pageStoreRecoverLobInDatabase");
         String url = getURL("pageStoreRecoverLobInDatabase;" +
-                "MVCC=TRUE;CACHE_SIZE=1", true);
+                "CACHE_SIZE=1", true);
         Connection conn;
         Statement stat;
         conn = getConnection(url, getUser(), getPassword());
@@ -179,12 +183,12 @@ public class TestPageStore extends TestBase {
         stat.execute("insert into test " +
                 "select x, space(1100+x) from system_range(1, 100)");
         Random r = new Random(1);
-        ArrayList<Connection> list = New.arrayList();
+        ArrayList<Connection> list = new ArrayList<>(10);
         for (int i = 0; i < 10; i++) {
             Connection conn2 = getConnection(url, getUser(), getPassword());
             list.add(conn2);
             Statement stat2 = conn2.createStatement();
-            conn2.setAutoCommit(false);
+            // conn2.setAutoCommit(false);
             if (r.nextBoolean()) {
                 stat2.execute("update test set id = id where id = " + r.nextInt(100));
             } else {

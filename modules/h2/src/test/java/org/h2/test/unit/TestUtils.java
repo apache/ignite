@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -47,6 +47,7 @@ public class TestUtils extends TestBase {
         testIOUtils();
         testSortTopN();
         testSortTopNRandom();
+        testWriteReadInt();
         testWriteReadLong();
         testGetNonPrimitiveClass();
         testGetNonPrimitiveClass();
@@ -94,21 +95,60 @@ public class TestUtils extends TestBase {
         }
     }
 
+    private void testWriteReadInt() {
+        byte[] buff = new byte[4];
+        for (int x : new int[]{Integer.MIN_VALUE, Integer.MAX_VALUE, 0, 1, -1,
+                Short.MIN_VALUE, Short.MAX_VALUE}) {
+            testIntImpl1(buff, x);
+        }
+        Random r = new Random(1);
+        for (int i = 0; i < 1000; i++) {
+            testIntImpl1(buff, r.nextInt());
+        }
+    }
+
+    private void testIntImpl1(byte[] buff, int x) {
+        int r = Integer.reverseBytes(x);
+        Bits.writeInt(buff, 0, x);
+        testIntImpl2(buff, x, r);
+        Bits.writeIntLE(buff, 0, x);
+        testIntImpl2(buff, r, x);
+    }
+
+    private void testIntImpl2(byte[] buff, int x, int r) {
+        assertEquals(x, Bits.readInt(buff, 0));
+        assertEquals(r, Bits.readIntLE(buff, 0));
+    }
+
     private void testWriteReadLong() {
         byte[] buff = new byte[8];
         for (long x : new long[]{Long.MIN_VALUE, Long.MAX_VALUE, 0, 1, -1,
                 Integer.MIN_VALUE, Integer.MAX_VALUE}) {
-            Bits.writeLong(buff, 0, x);
-            long y = Bits.readLong(buff, 0);
-            assertEquals(x, y);
+            testLongImpl1(buff, x);
         }
         Random r = new Random(1);
         for (int i = 0; i < 1000; i++) {
-            long x = r.nextLong();
-            Bits.writeLong(buff, 0, x);
-            long y = Bits.readLong(buff, 0);
-            assertEquals(x, y);
+            testLongImpl1(buff, r.nextLong());
         }
+    }
+
+    private void testLongImpl1(byte[] buff, long x) {
+        long r = Long.reverseBytes(x);
+        Bits.writeLong(buff, 0, x);
+        testLongImpl2(buff, x, r);
+        Bits.writeLongLE(buff, 0, x);
+        testLongImpl2(buff, r, x);
+        Bits.writeDouble(buff, 0, Double.longBitsToDouble(x));
+        testLongImpl2(buff, x, r);
+        Bits.writeDoubleLE(buff, 0, Double.longBitsToDouble(x));
+        testLongImpl2(buff, r, x);
+    }
+
+    private void testLongImpl2(byte[] buff, long x, long r) {
+        assertEquals(x, Bits.readLong(buff, 0));
+        assertEquals(r, Bits.readLongLE(buff, 0));
+        assertEquals(Double.longBitsToDouble(x), Bits.readDouble(buff, 0));
+        assertEquals(Double.longBitsToDouble(r), Bits.readDoubleLE(buff, 0));
     }
 
     private void testSortTopN() {

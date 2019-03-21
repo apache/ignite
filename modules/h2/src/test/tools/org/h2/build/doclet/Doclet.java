@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
-import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.ConstructorDoc;
@@ -311,31 +310,34 @@ public class Doclet {
             return;
         }
         Parameter[] params = method.parameters();
-        StatementBuilder buff = new StatementBuilder();
-        buff.append('(');
-        int i = 0;
-        for (Parameter p : params) {
-            boolean isVarArgs = method.isVarArgs() && i++ == params.length - 1;
-            buff.appendExceptFirst(", ");
-            buff.append(getTypeName(false, isVarArgs, p.type()));
-            buff.append(' ');
-            buff.append(p.name());
+        StringBuilder builder = new StringBuilder();
+        builder.append('(');
+        for (int i = 0, l = params.length; i < l; i++) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+            boolean isVarArgs = method.isVarArgs() && i == params.length - 1;
+            Parameter p = params[i];
+            builder.append(getTypeName(false, isVarArgs, p.type()));
+            builder.append(' ');
+            builder.append(p.name());
         }
-        buff.append(')');
+        builder.append(')');
         ClassDoc[] exceptions = method.thrownExceptions();
         if (exceptions.length > 0) {
-            buff.append(" throws ");
-            buff.resetCount();
-            for (ClassDoc ex : exceptions) {
-                buff.appendExceptFirst(", ");
-                buff.append(ex.typeName());
+            builder.append(" throws ");
+            for (int i = 0, l = exceptions.length; i < l; i++) {
+                if (i > 0) {
+                    builder.append(", ");
+                }
+                builder.append(exceptions[i].typeName());
             }
         }
         if (isDeprecated(method)) {
             name = "<span class=\"deprecated\">" + name + "</span>";
         }
         writer.println("<a id=\"" + signature + "\" href=\"#" + signature + "\">" +
-                name + "</a>" + buff.toString());
+                name + "</a>" + builder.toString());
         boolean hasComment = method.commentText() != null &&
                 method.commentText().trim().length() != 0;
         writer.println("<div class=\"methodText\">" +

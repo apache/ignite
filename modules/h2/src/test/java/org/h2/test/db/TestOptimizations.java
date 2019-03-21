@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -18,6 +18,7 @@ import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.SimpleResultSet;
 import org.h2.util.StringUtils;
 import org.h2.util.Task;
@@ -26,7 +27,7 @@ import org.h2.util.Task;
  * Test various optimizations (query cache, optimization for MIN(..), and
  * MAX(..)).
  */
-public class TestOptimizations extends TestBase {
+public class TestOptimizations extends TestDb {
 
     /**
      * Run just this test.
@@ -83,6 +84,7 @@ public class TestOptimizations extends TestBase {
         testOrderedIndexes();
         testIndexUseDespiteNullsFirst();
         testConvertOrToIn();
+        testConditionAndOrDistributiveLaw();
         deleteDb("optimizations");
     }
 
@@ -113,7 +115,7 @@ public class TestOptimizations extends TestBase {
     private void testExplainRoundTrip() throws Exception {
         Connection conn = getConnection("optimizations");
         assertExplainRoundTrip(conn,
-                "select x from dual where x > any(select x from dual)");
+                "SELECT \"X\" FROM DUAL WHERE \"X\" > ANY(SELECT \"X\" FROM DUAL)");
         conn.close();
     }
 
@@ -122,14 +124,14 @@ public class TestOptimizations extends TestBase {
         Statement stat = conn.createStatement();
         ResultSet rs = stat.executeQuery("explain " + sql);
         rs.next();
-        String plan = rs.getString(1).toLowerCase();
+        String plan = rs.getString(1);
         plan = plan.replaceAll("\\s+", " ");
         plan = plan.replaceAll("/\\*[^\\*]*\\*/", "");
         plan = plan.replaceAll("\\s+", " ");
-        plan = StringUtils.replaceAll(plan, "system_range(1, 1)", "dual");
+        plan = StringUtils.replaceAll(plan, "SYSTEM_RANGE(1, 1)", "DUAL");
         plan = plan.replaceAll("\\( ", "\\(");
         plan = plan.replaceAll(" \\)", "\\)");
-        assertEquals(plan, sql);
+        assertEquals(sql, plan);
     }
 
     private void testOrderByExpression() throws Exception {
@@ -215,7 +217,7 @@ public class TestOptimizations extends TestBase {
                 "where exists(select 1 from test, test, test) and id = 10");
         rs.next();
         // ensure the ID = 10 part is evaluated first
-        assertContains(rs.getString(1), "WHERE (ID = 10)");
+        assertContains(rs.getString(1), "WHERE (\"ID\" = 10)");
         stat.execute("drop table test");
         conn.close();
     }
@@ -296,7 +298,7 @@ public class TestOptimizations extends TestBase {
         assertEquals(11, rs.getInt(1));
         assertEquals("World", rs.getString(2));
         rs.next();
-        assertEquals(21, rs.getInt(1));
+        assertEquals(20, rs.getInt(1));
         assertEquals("Hallo", rs.getString(2));
         assertFalse(rs.next());
         stat.execute("drop table test");
@@ -482,7 +484,7 @@ public class TestOptimizations extends TestBase {
         assertTrue(resultSet.next());
         // String constant '5' has been converted to int constant 5 on
         // optimization
-        assertTrue(resultSet.getString(1).endsWith("X = 5"));
+        assertTrue(resultSet.getString(1).endsWith("\"X\" = 5"));
 
         stat.execute("drop table test");
 
@@ -659,7 +661,7 @@ public class TestOptimizations extends TestBase {
             ResultSet rs = stat.executeQuery(
                     "explain select min(x), max(x) from test");
             rs.next();
-            if (!config.mvcc) {
+            if (!config.mvStore) {
                 String plan = rs.getString(1);
                 assertContains(plan, "direct");
             }
@@ -1133,7 +1135,7 @@ public class TestOptimizations extends TestBase {
         ResultSet rs = stat.executeQuery("EXPLAIN PLAN FOR SELECT * " +
                 "FROM test WHERE ID=1 OR ID=2 OR ID=3 OR ID=4 OR ID=5");
         rs.next();
-        assertContains(rs.getString(1), "ID IN(1, 2, 3, 4, 5)");
+        assertContains(rs.getString(1), "\"ID\" IN(1, 2, 3, 4, 5)");
 
         rs = stat.executeQuery("SELECT COUNT(*) FROM test " +
                 "WHERE ID=1 OR ID=2 OR ID=3 OR ID=4 OR ID=5");
@@ -1156,11 +1158,12 @@ public class TestOptimizations extends TestBase {
                 "FOREIGN KEY (table_a_id) REFERENCES TABLE_A(id) )");
         stat.execute("INSERT INTO TABLE_A (name)  SELECT 'package_' || CAST(X as VARCHAR) " +
                 "FROM SYSTEM_RANGE(1, 100)  WHERE X <= 100");
+        int count = config.memory ? 30_000 : 50_000;
         stat.execute("INSERT INTO TABLE_B (table_a_id, createDate)  SELECT " +
                 "CASE WHEN table_a_id = 0 THEN 1 ELSE table_a_id END, createDate " +
                 "FROM ( SELECT ROUND((RAND() * 100)) AS table_a_id, " +
-                "DATEADD('SECOND', X, NOW()) as createDate FROM SYSTEM_RANGE(1, 50000) " +
-                "WHERE X < 50000  )");
+                "DATEADD('SECOND', X, NOW()) as createDate FROM SYSTEM_RANGE(1, " + count + ") " +
+                "WHERE X < " + count + "  )");
         stat.execute("CREATE INDEX table_b_idx ON table_b(table_a_id, id)");
         stat.execute("ANALYZE");
 
@@ -1173,6 +1176,32 @@ public class TestOptimizations extends TestBase {
         rs = stat.executeQuery("EXPLAIN ANALYZE SELECT MAX(id) FROM table_b GROUP BY table_a_id");
         rs.next();
         assertContains(rs.getString(1), "/* PUBLIC.TABLE_B_IDX");
+        conn.close();
+    }
+
+    private void testConditionAndOrDistributiveLaw() throws SQLException {
+        deleteDb("optimizations");
+        Connection conn = getConnection("optimizations");
+        Statement stat = conn.createStatement();
+        stat.execute("CREATE TABLE IF NOT EXISTS TABLE_A (" +
+                "id int(10) NOT NULL AUTO_INCREMENT, " +
+                "name VARCHAR(30) NOT NULL," +
+                "occupation VARCHAR(20)," +
+                "age int(10)," +
+                "salary int(10)," +
+                "PRIMARY KEY(id))");
+        stat.execute("INSERT INTO TABLE_A (name,occupation,age,salary) VALUES" +
+                "('mark', 'doctor',25,5000)," +
+                "('kevin', 'artist',20,4000)," +
+                "('isuru', 'engineer',25,5000)," +
+                "('josaph', 'businessman',30,7000)," +
+                "('sajeewa', 'analyst',24,5000)," +
+                "('randil', 'engineer',25,5000)," +
+                "('ashan', 'developer',24,5000)");
+        ResultSet rs = stat.executeQuery("SELECT * FROM TABLE_A WHERE (salary = 5000 AND name = 'isuru') OR" +
+                "(age = 25 AND name = 'isuru') ");
+        rs.next();
+        assertTrue("engineer".equals(rs.getString("occupation")));
         conn.close();
     }
 }

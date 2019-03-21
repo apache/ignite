@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -102,7 +102,7 @@ public class JdbcResultSetMetaData extends TraceObject implements
         try {
             debugCodeCall("getColumnType", column);
             checkColumnIndex(column);
-            int type = result.getColumnType(--column);
+            int type = result.getColumnType(--column).getValueType();
             return DataType.convertTypeToSQLType(type);
         } catch (Exception e) {
             throw logAndConvert(e);
@@ -121,7 +121,7 @@ public class JdbcResultSetMetaData extends TraceObject implements
         try {
             debugCodeCall("getColumnTypeName", column);
             checkColumnIndex(column);
-            int type = result.getColumnType(--column);
+            int type = result.getColumnType(--column).getValueType();
             return DataType.getDataType(type).name;
         } catch (Exception e) {
             throw logAndConvert(e);
@@ -370,8 +370,8 @@ public class JdbcResultSetMetaData extends TraceObject implements
         try {
             debugCodeCall("getColumnClassName", column);
             checkColumnIndex(column);
-            int type = result.getColumnType(--column);
-            return DataType.getTypeClassName(type);
+            int type = result.getColumnType(--column).getValueType();
+            return DataType.getTypeClassName(type, true);
         } catch (Exception e) {
             throw logAndConvert(e);
         }
@@ -389,7 +389,7 @@ public class JdbcResultSetMetaData extends TraceObject implements
         try {
             debugCodeCall("getPrecision", column);
             checkColumnIndex(column);
-            long prec = result.getColumnPrecision(--column);
+            long prec = result.getColumnType(--column).getPrecision();
             return MathUtils.convertLongToInt(prec);
         } catch (Exception e) {
             throw logAndConvert(e);
@@ -408,7 +408,7 @@ public class JdbcResultSetMetaData extends TraceObject implements
         try {
             debugCodeCall("getScale", column);
             checkColumnIndex(column);
-            return result.getColumnScale(--column);
+            return result.getColumnType(--column).getScale();
         } catch (Exception e) {
             throw logAndConvert(e);
         }
@@ -426,7 +426,7 @@ public class JdbcResultSetMetaData extends TraceObject implements
         try {
             debugCodeCall("getColumnDisplaySize", column);
             checkColumnIndex(column);
-            return result.getDisplaySize(--column);
+            return result.getColumnType(--column).getDisplaySize();
         } catch (Exception e) {
             throw logAndConvert(e);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -222,8 +222,7 @@ public class MVStoreTool {
                     if (mapId == 0 && details) {
                         ByteBuffer data;
                         if (compressed) {
-                            boolean fast = !((type & DataUtils.PAGE_COMPRESSED_HIGH) ==
-                                    DataUtils.PAGE_COMPRESSED_HIGH);
+                            boolean fast = (type & DataUtils.PAGE_COMPRESSED_HIGH) != DataUtils.PAGE_COMPRESSED_HIGH;
                             Compressor compressor = getCompressor(fast);
                             int lenAdd = DataUtils.readVarInt(chunk);
                             int compLen = pageSize + start - chunk.position();
@@ -482,20 +481,23 @@ public class MVStoreTool {
      * @param compress whether to compress the data
      */
     public static void compact(String sourceFileName, String targetFileName, boolean compress) {
-        MVStore source = new MVStore.Builder().
-                fileName(sourceFileName).
-                readOnly().
-                open();
-        FileUtils.delete(targetFileName);
-        MVStore.Builder b = new MVStore.Builder().
+        try (MVStore source = new MVStore.Builder().
+                fileName(sourceFileName).readOnly().open()) {
+            // Bugfix - Add double "try-finally" statements to close source and target stores for
+            //releasing lock and file resources in these stores even if OOM occurs.
+            // Fix issues such as "Cannot delete file "/h2/data/test.mv.db.tempFile" [90025-197]"
+            //when client connects to this server and reopens this store database in this process.
+            // @since 2018-09-13 little-pan
+            FileUtils.delete(targetFileName);
+            MVStore.Builder b = new MVStore.Builder().
                 fileName(targetFileName);
-        if (compress) {
-            b.compress();
+            if (compress) {
+                b.compress();
+            }
+            try (MVStore target = b.open()) {
+                compact(source, target);
+            }
         }
-        MVStore target = b.open();
-        compact(source, target);
-        target.close();
-        source.close();
     }
 
     /**
@@ -505,6 +507,10 @@ public class MVStoreTool {
      * @param target the target store
      */
     public static void compact(MVStore source, MVStore target) {
+        int autoCommitDelay = target.getAutoCommitDelay();
+        int retentionTime = target.getRetentionTime();
+        target.setAutoCommitDelay(0);
+        target.setRetentionTime(Integer.MAX_VALUE); // disable unused chunks collection
         MVMap<String, String> sourceMeta = source.getMetaMap();
         MVMap<String, String> targetMeta = target.getMetaMap();
         for (Entry<String, String> m : sourceMeta.entrySet()) {
@@ -530,6 +536,8 @@ public class MVStoreTool {
             MVMap<Object, Object> targetMap = target.openMap(mapName, mp);
             targetMap.copyFrom(sourceMap);
         }
+        target.setRetentionTime(retentionTime);
+        target.setAutoCommitDelay(autoCommitDelay);
     }
 
     /**
@@ -570,7 +578,7 @@ public class MVStoreTool {
     }
 
     /**
-     * Roll back to a given revision into a a file called *.temp.
+     * Roll back to a given revision into a file called *.temp.
      *
      * @param fileName the file name
      * @param targetVersion the version to roll back to (Long.MAX_VALUE for the
@@ -691,8 +699,8 @@ public class MVStoreTool {
 
         @Override
         public void write(WriteBuffer buff, Object[] obj, int len, boolean key) {
-            for (Object o : obj) {
-                write(buff, o);
+            for (int i = 0; i < len; i++) {
+                write(buff, obj[i]);
             }
         }
 
@@ -709,12 +717,9 @@ public class MVStoreTool {
 
         @Override
         public void read(ByteBuffer buff, Object[] obj, int len, boolean key) {
-            for (int i = 0; i < obj.length; i++) {
+            for (int i = 0; i < len; i++) {
                 obj[i] = read(buff);
             }
         }
-
     }
-
-
 }

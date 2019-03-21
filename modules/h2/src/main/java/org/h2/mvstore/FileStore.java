@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -27,22 +27,22 @@ public class FileStore {
     /**
      * The number of read operations.
      */
-    protected final AtomicLong readCount = new AtomicLong(0);
+    protected final AtomicLong readCount = new AtomicLong();
 
     /**
      * The number of read bytes.
      */
-    protected final AtomicLong readBytes = new AtomicLong(0);
+    protected final AtomicLong readBytes = new AtomicLong();
 
     /**
      * The number of write operations.
      */
-    protected final AtomicLong writeCount = new AtomicLong(0);
+    protected final AtomicLong writeCount = new AtomicLong();
 
     /**
      * The number of written bytes.
      */
-    protected final AtomicLong writeBytes = new AtomicLong(0);
+    protected final AtomicLong writeBytes = new AtomicLong();
 
     /**
      * The free spaces between the chunks. The first block to use is block 2
@@ -54,12 +54,12 @@ public class FileStore {
     /**
      * The file name.
      */
-    protected String fileName;
+    private String fileName;
 
     /**
      * Whether this store is read-only.
      */
-    protected boolean readOnly;
+    private boolean readOnly;
 
     /**
      * The file size (cached).
@@ -69,17 +69,17 @@ public class FileStore {
     /**
      * The file.
      */
-    protected FileChannel file;
+    private FileChannel file;
 
     /**
      * The encrypted file (if encryption is used).
      */
-    protected FileChannel encryptedFile;
+    private FileChannel encryptedFile;
 
     /**
      * The file lock.
      */
-    protected FileLock fileLock;
+    private FileLock fileLock;
 
     @Override
     public String toString() {
@@ -128,17 +128,15 @@ public class FileStore {
         if (file != null) {
             return;
         }
-        if (fileName != null) {
-            // ensure the Cache file system is registered
-            FilePathCache.INSTANCE.getScheme();
-            FilePath p = FilePath.get(fileName);
-            // if no explicit scheme was specified, NIO is used
-            if (p instanceof FilePathDisk &&
-                    !fileName.startsWith(p.getScheme() + ":")) {
-                // ensure the NIO file system is registered
-                FilePathNio.class.getName();
-                fileName = "nio:" + fileName;
-            }
+        // ensure the Cache file system is registered
+        FilePathCache.INSTANCE.getScheme();
+        FilePath p = FilePath.get(fileName);
+        // if no explicit scheme was specified, NIO is used
+        if (p instanceof FilePathDisk &&
+                !fileName.startsWith(p.getScheme() + ":")) {
+            // ensure the NIO file system is registered
+            FilePathNio.class.getName();
+            fileName = "nio:" + fileName;
         }
         this.fileName = fileName;
         FilePath f = FilePath.get(fileName);
@@ -170,12 +168,14 @@ public class FileStore {
                         "The file is locked: {0}", fileName, e);
             }
             if (fileLock == null) {
+                try { close(); } catch (Exception ignore) {}
                 throw DataUtils.newIllegalStateException(
                         DataUtils.ERROR_FILE_LOCKED,
                         "The file is locked: {0}", fileName);
             }
             fileSize = file.size();
         } catch (IOException e) {
+            try { close(); } catch (Exception ignore) {}
             throw DataUtils.newIllegalStateException(
                     DataUtils.ERROR_READING_FAILED,
                     "Could not open file {0}", fileName, e);
@@ -187,17 +187,18 @@ public class FileStore {
      */
     public void close() {
         try {
-            if (fileLock != null) {
-                fileLock.release();
-                fileLock = null;
+            if(file != null && file.isOpen()) {
+                if (fileLock != null) {
+                    fileLock.release();
+                }
+                file.close();
             }
-            file.close();
-            freeSpace.clear();
         } catch (Exception e) {
             throw DataUtils.newIllegalStateException(
                     DataUtils.ERROR_WRITING_FAILED,
                     "Closing failed for file {0}", fileName, e);
         } finally {
+            fileLock = null;
             file = null;
         }
     }
@@ -206,12 +207,14 @@ public class FileStore {
      * Flush all changes.
      */
     public void sync() {
-        try {
-            file.force(true);
-        } catch (IOException e) {
-            throw DataUtils.newIllegalStateException(
-                    DataUtils.ERROR_WRITING_FAILED,
-                    "Could not sync file {0}", fileName, e);
+        if (file != null) {
+            try {
+                file.force(true);
+            } catch (IOException e) {
+                throw DataUtils.newIllegalStateException(
+                        DataUtils.ERROR_WRITING_FAILED,
+                        "Could not sync file {0}", fileName, e);
+            }
         }
     }
 
@@ -230,15 +233,23 @@ public class FileStore {
      * @param size the new file size
      */
     public void truncate(long size) {
-        try {
-            writeCount.incrementAndGet();
-            file.truncate(size);
-            fileSize = Math.min(fileSize, size);
-        } catch (IOException e) {
-            throw DataUtils.newIllegalStateException(
-                    DataUtils.ERROR_WRITING_FAILED,
-                    "Could not truncate file {0} to size {1}",
-                    fileName, size, e);
+        int attemptCount = 0;
+        while (true) {
+            try {
+                writeCount.incrementAndGet();
+                file.truncate(size);
+                fileSize = Math.min(fileSize, size);
+                return;
+            } catch (IOException e) {
+                if (++attemptCount == 10) {
+                    throw DataUtils.newIllegalStateException(
+                            DataUtils.ERROR_WRITING_FAILED,
+                            "Could not truncate file {0} to size {1}",
+                            fileName, size, e);
+                }
+                System.gc();
+                Thread.yield();
+            }
         }
     }
 
@@ -335,6 +346,16 @@ public class FileStore {
      */
     public long allocate(int length) {
         return freeSpace.allocate(length);
+    }
+
+    /**
+     * Calculate starting position of the prospective allocation.
+     *
+     * @param length the number of bytes to allocate
+     * @return the start position in bytes
+     */
+    public long predictAllocation(int length) {
+        return freeSpace.predictAllocation(length);
     }
 
     /**

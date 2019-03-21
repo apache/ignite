@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -143,7 +143,7 @@ public class InPlaceStableQuicksort<T> {
      * @param pivot the pivot
      * @param from the index of the first element
      * @param to the index of the last element
-     * @return the the first element of the second partition
+     * @return the first element of the second partition
      */
     private int partition(T pivot, int from, int to) {
         if (to - from < temp.length) {
@@ -163,7 +163,7 @@ public class InPlaceStableQuicksort<T> {
      * @param pivot the pivot
      * @param from the index of the first element
      * @param to the index of the last element
-     * @return the the first element of the second partition
+     * @return the first element of the second partition
      */
     private int partitionSmall(T pivot, int from, int to) {
         int tempIndex = 0, dataIndex = from;

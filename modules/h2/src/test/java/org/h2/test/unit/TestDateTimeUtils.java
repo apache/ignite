@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -12,12 +12,15 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
+import org.h2.api.IntervalQualifier;
 import org.h2.test.TestBase;
 import org.h2.util.DateTimeUtils;
+import org.h2.util.IntervalUtils;
+import org.h2.value.ValueInterval;
 import org.h2.value.ValueTimestamp;
 
 /**
- * Unit tests for the DateTimeUtils class
+ * Unit tests for the DateTimeUtils and IntervalUtils classes.
  */
 public class TestDateTimeUtils extends TestBase {
 
@@ -47,14 +50,15 @@ public class TestDateTimeUtils extends TestBase {
         testDateValueFromDenormalizedDate();
         testUTC2Value(false);
         testConvertScale();
+        testParseInterval();
     }
 
     private void testParseTimeNanosDB2Format() {
-        assertEquals(3723004000000L, DateTimeUtils.parseTimeNanos("01:02:03.004", 0, 12, true));
-        assertEquals(3723004000000L, DateTimeUtils.parseTimeNanos("01.02.03.004", 0, 12, true));
+        assertEquals(3723004000000L, DateTimeUtils.parseTimeNanos("01:02:03.004", 0, 12));
+        assertEquals(3723004000000L, DateTimeUtils.parseTimeNanos("01.02.03.004", 0, 12));
 
-        assertEquals(3723000000000L, DateTimeUtils.parseTimeNanos("01:02:03", 0, 8, true));
-        assertEquals(3723000000000L, DateTimeUtils.parseTimeNanos("01.02.03", 0, 8, true));
+        assertEquals(3723000000000L, DateTimeUtils.parseTimeNanos("01:02:03", 0, 8));
+        assertEquals(3723000000000L, DateTimeUtils.parseTimeNanos("01.02.03", 0, 8));
     }
 
     /**
@@ -155,8 +159,9 @@ public class TestDateTimeUtils extends TestBase {
                 gc.set(year, month - 1, day, j / 2, (j & 1) * 30, 0);
                 long timeMillis = gc.getTimeInMillis();
                 ValueTimestamp ts = DateTimeUtils.convertTimestamp(new Timestamp(timeMillis), gc);
-                assertEquals(ts.getDateValue(), DateTimeUtils.dateValueFromDate(timeMillis));
-                assertEquals(ts.getTimeNanos(), DateTimeUtils.nanosFromDate(timeMillis));
+                timeMillis += DateTimeUtils.getTimeZoneOffset(timeMillis);
+                assertEquals(ts.getDateValue(), DateTimeUtils.dateValueFromLocalMillis(timeMillis));
+                assertEquals(ts.getTimeNanos(), DateTimeUtils.nanosFromLocalMillis(timeMillis));
             }
         }
     }
@@ -192,6 +197,76 @@ public class TestDateTimeUtils extends TestBase {
         assertEquals(101_000_000_000L, DateTimeUtils.convertScale(100_999_999_999L, 2));
         assertEquals(101_000_000_000L, DateTimeUtils.convertScale(100_999_999_999L, 1));
         assertEquals(101_000_000_000L, DateTimeUtils.convertScale(100_999_999_999L, 0));
+    }
+
+    private void testParseInterval() {
+        testParseIntervalSimple(IntervalQualifier.YEAR);
+        testParseIntervalSimple(IntervalQualifier.MONTH);
+        testParseIntervalSimple(IntervalQualifier.DAY);
+        testParseIntervalSimple(IntervalQualifier.HOUR);
+        testParseIntervalSimple(IntervalQualifier.MINUTE);
+        testParseIntervalSimple(IntervalQualifier.SECOND);
+
+        testParseInterval(IntervalQualifier.YEAR_TO_MONTH, 10, 0, "10", "10-0");
+        testParseInterval(IntervalQualifier.YEAR_TO_MONTH, 10, 11, "10-11");
+
+        testParseInterval(IntervalQualifier.DAY_TO_HOUR, 10, 0, "10", "10 00");
+        testParseInterval(IntervalQualifier.DAY_TO_HOUR, 10, 11, "10 11");
+
+        testParseInterval(IntervalQualifier.DAY_TO_MINUTE, 10, 0, "10", "10 00:00");
+        testParseInterval(IntervalQualifier.DAY_TO_MINUTE, 10, 11 * 60, "10 11", "10 11:00");
+        testParseInterval(IntervalQualifier.DAY_TO_MINUTE, 10, 11 * 60 + 12, "10 11:12");
+
+        testParseInterval(IntervalQualifier.DAY_TO_SECOND, 10, 0, "10 00:00:00");
+        testParseInterval(IntervalQualifier.DAY_TO_SECOND, 10, 11 * 3_600_000_000_000L, "10 11", "10 11:00:00");
+        testParseInterval(IntervalQualifier.DAY_TO_SECOND, 10, 11 * 3_600_000_000_000L + 12 * 60_000_000_000L,
+                "10 11:12", "10 11:12:00");
+        testParseInterval(IntervalQualifier.DAY_TO_SECOND,
+                10, 11 * 3_600_000_000_000L + 12 * 60_000_000_000L + 13_000_000_000L,
+                "10 11:12:13");
+        testParseInterval(IntervalQualifier.DAY_TO_SECOND,
+                10, 11 * 3_600_000_000_000L + 12 * 60_000_000_000L + 13_123_456_789L,
+                "10 11:12:13.123456789");
+
+        testParseInterval(IntervalQualifier.HOUR_TO_MINUTE, 10, 0, "10", "10:00");
+        testParseInterval(IntervalQualifier.HOUR_TO_MINUTE, 10, 11, "10:11");
+
+        testParseInterval(IntervalQualifier.HOUR_TO_SECOND, 10, 0, "10", "10:00:00");
+        testParseInterval(IntervalQualifier.HOUR_TO_SECOND, 10, 11 * 60_000_000_000L, "10:11", "10:11:00");
+        testParseInterval(IntervalQualifier.HOUR_TO_SECOND, 10, 11 * 60_000_000_000L + 12_000_000_000L,
+                "10:11:12");
+        testParseInterval(IntervalQualifier.HOUR_TO_SECOND, 10, 11 * 60_000_000_000L + 12_123_456_789L,
+                "10:11:12.123456789");
+
+        testParseInterval(IntervalQualifier.MINUTE_TO_SECOND, 10, 0, "10", "10:00");
+        testParseInterval(IntervalQualifier.MINUTE_TO_SECOND, 10, 11_000_000_000L, "10:11", "10:11");
+        testParseInterval(IntervalQualifier.MINUTE_TO_SECOND, 10, 11_123_456_789L, "10:11.123456789");
+    }
+
+    private void testParseIntervalSimple(IntervalQualifier qualifier) {
+        testParseInterval(qualifier, 10, 0, "10");
+    }
+
+    private void testParseInterval(IntervalQualifier qualifier, long leading, long remaining, String s) {
+        testParseInterval(qualifier, leading, remaining, s, s);
+    }
+
+    private void testParseInterval(IntervalQualifier qualifier, long leading, long remaining, String s, String full) {
+        testParseIntervalImpl(qualifier, false, leading, remaining, s, full);
+        testParseIntervalImpl(qualifier, true, leading, remaining, s, full);
+    }
+
+    private void testParseIntervalImpl(IntervalQualifier qualifier, boolean negative, long leading, long remaining,
+            String s, String full) {
+        ValueInterval expected = ValueInterval.from(qualifier, negative, leading, remaining);
+        assertEquals(expected, IntervalUtils.parseInterval(qualifier, negative, s));
+        StringBuilder b = new StringBuilder();
+        b.append("INTERVAL ").append('\'');
+        if (negative) {
+            b.append('-');
+        }
+        b.append(full).append("' ").append(qualifier);
+        assertEquals(b.toString(), expected.getString());
     }
 
 }

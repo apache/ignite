@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -10,13 +10,16 @@ import java.util.Map;
 import java.util.Objects;
 import org.h2.api.ErrorCode;
 import org.h2.command.CommandInterface;
-import org.h2.command.Parser;
 import org.h2.command.dml.SetTypes;
 import org.h2.message.DbException;
 import org.h2.message.Trace;
+import org.h2.security.auth.AuthenticationException;
+import org.h2.security.auth.AuthenticationInfo;
+import org.h2.security.auth.Authenticator;
 import org.h2.store.FileLock;
 import org.h2.store.FileLockMethod;
 import org.h2.util.MathUtils;
+import org.h2.util.ParserUtil;
 import org.h2.util.ThreadDeadlockDetector;
 import org.h2.util.Utils;
 
@@ -61,7 +64,7 @@ public class Engine implements SessionFactory {
             }
             if (database == null) {
                 if (ifExists && !Database.exists(name)) {
-                    throw DbException.get(ErrorCode.DATABASE_NOT_FOUND_1, name);
+                    throw DbException.get(ErrorCode.DATABASE_NOT_FOUND_2, name);
                 }
                 database = new Database(ci, cipher);
                 opened = true;
@@ -90,10 +93,26 @@ public class Engine implements SessionFactory {
         }
         if (user == null) {
             if (database.validateFilePasswordHash(cipher, ci.getFilePasswordHash())) {
-                user = database.findUser(ci.getUserName());
-                if (user != null) {
-                    if (!user.validateUserPasswordHash(ci.getUserPasswordHash())) {
-                        user = null;
+                if (ci.getProperty("AUTHREALM")== null) {
+                    user = database.findUser(ci.getUserName());
+                    if (user != null) {
+                        if (!user.validateUserPasswordHash(ci.getUserPasswordHash())) {
+                            user = null;
+                        }
+                    }
+                } else {
+                    Authenticator authenticator = database.getAuthenticator();
+                    if (authenticator==null) {
+                        throw DbException.get(ErrorCode.AUTHENTICATOR_NOT_AVAILABLE, name);
+                    } else {
+                        try {
+                            AuthenticationInfo authenticationInfo=new AuthenticationInfo(ci);
+                            user = database.getAuthenticator().authenticate(authenticationInfo, database);
+                        } catch (AuthenticationException authenticationError) {
+                            database.getTrace(Trace.DATABASE).error(authenticationError,
+                                "an error occurred during authentication; user: \"" +
+                                ci.getUserName() + "\"");
+                        }
                     }
                 }
             }
@@ -110,6 +129,8 @@ public class Engine implements SessionFactory {
             database.removeSession(null);
             throw er;
         }
+        //Prevent to set _PASSWORD
+        ci.cleanAuthenticationInfo();
         checkClustering(ci, database);
         Session session = database.createSession(user);
         if (session == null) {
@@ -175,14 +196,15 @@ public class Engine implements SessionFactory {
         String cipher = ci.removeProperty("CIPHER", null);
         String init = ci.removeProperty("INIT", null);
         Session session;
-        for (int i = 0;; i++) {
+        long start = System.nanoTime();
+        for (;;) {
             session = openSession(ci, ifExists, cipher);
             if (session != null) {
                 break;
             }
             // we found a database that is currently closing
             // wait a bit to avoid a busy loop (the method is synchronized)
-            if (i > 60 * 1000) {
+            if (System.nanoTime() - start > 60_000_000_000L) {
                 // retry at most 1 minute
                 throw DbException.get(ErrorCode.DATABASE_ALREADY_OPEN_1,
                         "Waited for database closing longer than 1 minute");
@@ -190,7 +212,7 @@ public class Engine implements SessionFactory {
             try {
                 Thread.sleep(1);
             } catch (InterruptedException e) {
-                // ignore
+                throw DbException.get(ErrorCode.DATABASE_CALLED_AT_SHUTDOWN);
             }
         }
         synchronized (session) {
@@ -202,9 +224,12 @@ public class Engine implements SessionFactory {
                     continue;
                 }
                 String value = ci.getProperty(setting);
+                if (!ParserUtil.isSimpleIdentifier(setting, false, false)) {
+                    throw DbException.get(ErrorCode.UNSUPPORTED_SETTING_1, setting);
+                }
                 try {
                     CommandInterface command = session.prepareCommand(
-                            "SET " + Parser.quoteIdentifier(setting) + " " + value,
+                            "SET " + setting + ' ' + value,
                             Integer.MAX_VALUE);
                     command.executeUpdate(false);
                 } catch (DbException e) {

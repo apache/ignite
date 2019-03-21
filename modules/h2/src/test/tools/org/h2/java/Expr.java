@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -294,7 +294,7 @@ class OpExpr extends ExprBase {
             return "(((u" + left.getType() + ") " + left + ") >> " + right + ")";
         } else if (op.equals("+")) {
             if (left.getType().isObject() || right.getType().isObject()) {
-                // TODO convert primitive to to String, call toString
+                // TODO convert primitive to String, call toString
                 StringBuilder buff = new StringBuilder();
                 if (type.refCount) {
                     buff.append("ptr<java_lang_StringBuilder>(new java_lang_StringBuilder(");

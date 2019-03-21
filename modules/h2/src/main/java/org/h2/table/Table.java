@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -11,8 +11,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.h2.api.ErrorCode;
 import org.h2.command.Prepared;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.constraint.Constraint;
 import org.h2.engine.Constants;
 import org.h2.engine.DbObject;
@@ -35,7 +37,7 @@ import org.h2.schema.Schema;
 import org.h2.schema.SchemaObjectBase;
 import org.h2.schema.Sequence;
 import org.h2.schema.TriggerObject;
-import org.h2.util.New;
+import org.h2.util.Utils;
 import org.h2.value.CompareMode;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
@@ -83,6 +85,7 @@ public abstract class Table extends SchemaObjectBase {
      */
     private final CopyOnWriteArrayList<TableView> dependentViews = new CopyOnWriteArrayList<>();
     private ArrayList<TableSynonym> synonyms;
+    /** Is foreign key constraint checking enabled for this table. */
     private boolean checkForeignKeyConstraints = true;
     private boolean onCommitDrop, onCommitTruncate;
     private volatile Row nullRow;
@@ -90,8 +93,8 @@ public abstract class Table extends SchemaObjectBase {
 
     public Table(Schema schema, int id, String name, boolean persistIndexes,
             boolean persistData) {
+        super(schema, id, name, Trace.TABLE);
         columnMap = schema.getDatabase().newStringMap();
-        initSchemaObjectBase(schema, id, name, Trace.TABLE);
         this.persistIndexes = persistIndexes;
         this.persistData = persistData;
         compareMode = schema.getDatabase().getCompareMode();
@@ -174,6 +177,17 @@ public abstract class Table extends SchemaObjectBase {
     public abstract void removeRow(Session session, Row row);
 
     /**
+     * Locks row, preventing any updated to it, except from the session specified.
+     *
+     * @param session the session
+     * @param row to lock
+     * @return locked row, or null if row does not exist anymore
+     */
+    public Row lockRow(Session session, Row row) {
+        throw DbException.getUnsupportedException("lockRow()");
+    }
+
+    /**
      * Remove all rows from the table and indexes.
      *
      * @param session the session
@@ -190,14 +204,17 @@ public abstract class Table extends SchemaObjectBase {
     public abstract void addRow(Session session, Row row);
 
     /**
-     * Commit an operation (when using multi-version concurrency).
+     * Update a row to the table and all indexes.
      *
-     * @param operation the operation
-     * @param row the row
+     * @param session the session
+     * @param oldRow the row to update
+     * @param newRow the row with updated values (_rowid_ suppose to be the same)
+     * @throws DbException if a constraint was violated
      */
-    @SuppressWarnings("unused")
-    public void commit(short operation, Row row) {
-        // nothing to do
+    public void updateRow(Session session, Row oldRow, Row newRow) {
+        newRow.setKey(oldRow.getKey());
+        removeRow(session, oldRow);
+        addRow(session, newRow);
     }
 
     /**
@@ -236,7 +253,7 @@ public abstract class Table extends SchemaObjectBase {
     @SuppressWarnings("unused")
     public Index getScanIndex(Session session, int[] masks,
             TableFilter[] filters, int filter, SortOrder sortOrder,
-            HashSet<Column> allColumnsSet) {
+            AllColumnsForPlan allColumnsSet) {
         return getScanIndex(session);
     }
 
@@ -386,7 +403,7 @@ public abstract class Table extends SchemaObjectBase {
 
     @Override
     public ArrayList<DbObject> getChildren() {
-        ArrayList<DbObject> children = New.arrayList();
+        ArrayList<DbObject> children = Utils.newSmallArrayList();
         ArrayList<Index> indexes = getIndexes();
         if (indexes != null) {
             children.addAll(indexes);
@@ -420,10 +437,9 @@ public abstract class Table extends SchemaObjectBase {
         }
         for (int i = 0; i < columns.length; i++) {
             Column col = columns[i];
-            int dataType = col.getType();
+            int dataType = col.getType().getValueType();
             if (dataType == Value.UNKNOWN) {
-                throw DbException.get(
-                        ErrorCode.UNKNOWN_DATA_TYPE_1, col.getSQL());
+                throw DbException.get(ErrorCode.UNKNOWN_DATA_TYPE_1, col.getSQL(false));
             }
             col.setTable(this, i);
             String columnName = col.getName();
@@ -489,8 +505,9 @@ public abstract class Table extends SchemaObjectBase {
             try {
                 removeRow(session, o);
             } catch (DbException e) {
-                if (e.getErrorCode() == ErrorCode.CONCURRENT_UPDATE_1) {
-                    session.rollbackTo(rollback, false);
+                if (e.getErrorCode() == ErrorCode.CONCURRENT_UPDATE_1
+                        || e.getErrorCode() == ErrorCode.ROW_NOT_FOUND_WHEN_DELETING_1) {
+                    session.rollbackTo(rollback);
                     session.startStatementWithinTransaction();
                     rollback = session.setSavepoint();
                 }
@@ -509,7 +526,7 @@ public abstract class Table extends SchemaObjectBase {
                 addRow(session, n);
             } catch (DbException e) {
                 if (e.getErrorCode() == ErrorCode.CONCURRENT_UPDATE_1) {
-                    session.rollbackTo(rollback, false);
+                    session.rollbackTo(rollback);
                     session.startStatementWithinTransaction();
                     rollback = session.setSavepoint();
                 }
@@ -583,8 +600,7 @@ public abstract class Table extends SchemaObjectBase {
                     if (columns.size() == 1) {
                         constraintsToDrop.add(constraint);
                     } else {
-                        throw DbException.get(
-                                ErrorCode.COLUMN_IS_REFERENCED_1, constraint.getSQL());
+                        throw DbException.get(ErrorCode.COLUMN_IS_REFERENCED_1, constraint.getSQL(false));
                     }
                 }
             }
@@ -603,8 +619,7 @@ public abstract class Table extends SchemaObjectBase {
                     if (index.getColumns().length == 1) {
                         indexesToDrop.add(index);
                     } else {
-                        throw DbException.get(
-                                ErrorCode.COLUMN_IS_REFERENCED_1, index.getSQL());
+                        throw DbException.get(ErrorCode.COLUMN_IS_REFERENCED_1, index.getSQL(false));
                     }
                 }
             }
@@ -621,8 +636,19 @@ public abstract class Table extends SchemaObjectBase {
         }
     }
 
+    /**
+     * Create a new row for a table.
+     *
+     * @param data the values.
+     * @param memory whether the row is in memory.
+     * @return the created row.
+     */
+    public Row createRow(Value[] data, int memory) {
+        return database.createRow(data, memory);
+    }
+
     public Row getTemplateRow() {
-        return database.createRow(new Value[columns.length], Row.MEMORY_CALCULATE);
+        return createRow(new Value[columns.length], Row.MEMORY_CALCULATE);
     }
 
     /**
@@ -708,7 +734,7 @@ public abstract class Table extends SchemaObjectBase {
      */
     public PlanItem getBestPlanItem(Session session, int[] masks,
             TableFilter[] filters, int filter, SortOrder sortOrder,
-            HashSet<Column> allColumnsSet) {
+            AllColumnsForPlan allColumnsSet) {
         PlanItem item = new PlanItem();
         item.setIndex(getScanIndex(session));
         item.cost = item.getIndex().getCost(session, null, filters, filter, null, allColumnsSet);
@@ -923,7 +949,7 @@ public abstract class Table extends SchemaObjectBase {
 
     private static <T> ArrayList<T> add(ArrayList<T> list, T obj) {
         if (list == null) {
-            list = New.arrayList();
+            list = Utils.newSmallArrayList();
         }
         // self constraints are two entries in the list
         list.add(obj);
@@ -989,7 +1015,6 @@ public abstract class Table extends SchemaObjectBase {
     private void fireConstraints(Session session, Row oldRow, Row newRow,
             boolean before) {
         if (constraints != null) {
-            // don't use enhanced for loop to avoid creating objects
             for (Constraint constraint : constraints) {
                 if (constraint.isBefore() == before) {
                     constraint.checkRow(session, this, oldRow, newRow);
@@ -1060,6 +1085,9 @@ public abstract class Table extends SchemaObjectBase {
         checkForeignKeyConstraints = enabled;
     }
 
+    /**
+     * @return is foreign key constraint checking enabled for this table.
+     */
     public boolean getCheckForeignKeyConstraints() {
         return checkForeignKeyConstraints;
     }
@@ -1178,14 +1206,8 @@ public abstract class Table extends SchemaObjectBase {
      * @return 0 if both values are equal, -1 if the first value is smaller, and
      *         1 otherwise
      */
-    public int compareTypeSafe(Value a, Value b) {
-        if (a == b) {
-            return 0;
-        }
-        int dataType = Value.getHigherOrder(a.getType(), b.getType());
-        a = a.convertTo(dataType);
-        b = b.convertTo(dataType);
-        return a.compareTypeSafe(b, compareMode);
+    public int compareValues(Value a, Value b) {
+        return a.compareTo(b, database.getMode(), compareMode);
     }
 
     public CompareMode getCompareMode() {

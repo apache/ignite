@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -12,12 +12,13 @@ import java.sql.Statement;
 
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.Task;
 
 /**
  * Row level locking tests.
  */
-public class TestRowLocks extends TestBase {
+public class TestRowLocks extends TestDb {
 
     /**
      * The statements used in this test.
@@ -38,7 +39,9 @@ public class TestRowLocks extends TestBase {
     @Override
     public void test() throws Exception {
         testSetMode();
-        testCases();
+        if (config.mvStore) {
+            testCases();
+        }
         deleteDb(getTestName());
     }
 
@@ -55,7 +58,7 @@ public class TestRowLocks extends TestBase {
 
     private void testCases() throws Exception {
         deleteDb(getTestName());
-        c1 = getConnection(getTestName() + ";MVCC=TRUE");
+        c1 = getConnection(getTestName());
         s1 = c1.createStatement();
         s1.execute("SET LOCK_TIMEOUT 10000");
         s1.execute("CREATE TABLE TEST AS " +

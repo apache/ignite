@@ -1,22 +1,23 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.index;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
+
 import org.h2.api.ErrorCode;
 import org.h2.command.Parser;
 import org.h2.command.Prepared;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.SelectUnion;
 import org.h2.engine.Constants;
 import org.h2.engine.Session;
-import org.h2.expression.Comparison;
 import org.h2.expression.Parameter;
+import org.h2.expression.condition.Comparison;
 import org.h2.message.DbException;
 import org.h2.result.LocalResult;
 import org.h2.result.ResultInterface;
@@ -29,7 +30,6 @@ import org.h2.table.JoinBatch;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
 import org.h2.util.IntArray;
-import org.h2.util.New;
 import org.h2.value.Value;
 
 /**
@@ -64,7 +64,7 @@ public class ViewIndex extends BaseIndex implements SpatialIndex {
      */
     public ViewIndex(TableView view, String querySQL,
             ArrayList<Parameter> originalParameters, boolean recursive) {
-        initBaseIndex(view, 0, null, null, IndexType.createNonUnique(false));
+        super(view, 0, null, null, IndexType.createNonUnique(false));
         this.view = view;
         this.querySQL = querySQL;
         this.originalParameters = originalParameters;
@@ -91,7 +91,7 @@ public class ViewIndex extends BaseIndex implements SpatialIndex {
      */
     public ViewIndex(TableView view, ViewIndex index, Session session,
             int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
-        initBaseIndex(view, 0, null, null, IndexType.createNonUnique(false));
+        super(view, 0, null, null, IndexType.createNonUnique(false));
         this.view = view;
         this.querySQL = index.querySQL;
         this.originalParameters = index.originalParameters;
@@ -130,7 +130,7 @@ public class ViewIndex extends BaseIndex implements SpatialIndex {
 
     @Override
     public String getPlanSQL() {
-        return query == null ? null : query.getPlanSQL();
+        return query == null ? null : query.getPlanSQL(false);
     }
 
     @Override
@@ -151,7 +151,7 @@ public class ViewIndex extends BaseIndex implements SpatialIndex {
     @Override
     public double getCost(Session session, int[] masks,
             TableFilter[] filters, int filter, SortOrder sortOrder,
-            HashSet<Column> allColumnsSet) {
+            AllColumnsForPlan allColumnsSet) {
         return recursive ? 1000 : query.getCost();
     }
 
@@ -334,7 +334,7 @@ public class ViewIndex extends BaseIndex implements SpatialIndex {
             }
         }
         int len = paramColumnIndex.size();
-        ArrayList<Column> columnList = New.arrayList();
+        ArrayList<Column> columnList = new ArrayList<>(len);
         for (int i = 0; i < len;) {
             int idx = paramColumnIndex.get(i);
             columnList.add(table.getColumn(idx));
@@ -390,7 +390,7 @@ public class ViewIndex extends BaseIndex implements SpatialIndex {
             }
         }
 
-        String sql = q.getPlanSQL();
+        String sql = q.getPlanSQL(true);
         q = prepareSubQuery(sql, session, masks, filters, filter, sortOrder);
         return q;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -12,11 +12,12 @@ import java.sql.Statement;
 
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Test using an encrypted database.
  */
-public class TestEncryptedDb extends TestBase {
+public class TestEncryptedDb extends TestDb {
 
     /**
      * Run just this test.
@@ -28,10 +29,15 @@ public class TestEncryptedDb extends TestBase {
     }
 
     @Override
-    public void test() throws SQLException {
+    public boolean isEnabled() {
         if (config.memory || config.cipher != null) {
-            return;
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws SQLException {
         deleteDb("encrypted");
         Connection conn = getConnection("encrypted;CIPHER=AES", "sa", "123 123");
         Statement stat = conn.createStatement();

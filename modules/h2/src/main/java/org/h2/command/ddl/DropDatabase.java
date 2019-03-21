@@ -1,11 +1,12 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.command.ddl;
 
 import java.util.ArrayList;
+
 import org.h2.command.CommandInterface;
 import org.h2.engine.Database;
 import org.h2.engine.DbObject;
@@ -17,7 +18,6 @@ import org.h2.schema.SchemaObject;
 import org.h2.schema.Sequence;
 import org.h2.table.Table;
 import org.h2.table.TableType;
-import org.h2.util.New;
 
 /**
  * This class represents the statement
@@ -54,7 +54,7 @@ public class DropDatabase extends DefineCommand {
         boolean runLoopAgain;
         do {
             ArrayList<Table> tables = db.getAllTablesAndViews(false);
-            ArrayList<Table> toRemove = New.arrayList();
+            ArrayList<Table> toRemove = new ArrayList<>(tables.size());
             for (Table t : tables) {
                 if (t.getName() != null &&
                         TableType.VIEW == t.getTableType()) {
@@ -99,7 +99,7 @@ public class DropDatabase extends DefineCommand {
                 db.removeDatabaseObject(session, schema);
             }
         }
-        ArrayList<SchemaObject> list = New.arrayList();
+        ArrayList<SchemaObject> list = new ArrayList<>();
         for (SchemaObject obj : db.getAllSchemaObjects(DbObject.SEQUENCE))  {
             // ignore these. the ones we want to drop will get dropped when we
             // drop their associated tables, and we will ignore the problematic
@@ -132,10 +132,10 @@ public class DropDatabase extends DefineCommand {
                 db.removeDatabaseObject(session, role);
             }
         }
-        ArrayList<DbObject> dbObjects = New.arrayList();
+        ArrayList<DbObject> dbObjects = new ArrayList<>();
         dbObjects.addAll(db.getAllRights());
         dbObjects.addAll(db.getAllAggregates());
-        dbObjects.addAll(db.getAllUserDataTypes());
+        dbObjects.addAll(db.getAllDomains());
         for (DbObject obj : dbObjects) {
             String sql = obj.getCreateSQL();
             // the role PUBLIC must not be dropped

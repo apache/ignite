@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -17,6 +17,7 @@ import java.util.UUID;
 
 import org.h2.engine.SysProperties;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Tests java object values when SysProperties.SERIALIZE_JAVA_OBJECT property is
@@ -24,7 +25,7 @@ import org.h2.test.TestBase;
  *
  * @author Sergi Vladykin
  */
-public class TestJavaObject extends TestBase {
+public class TestJavaObject extends TestDb {
 
     /**
      * Run just this test.

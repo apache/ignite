@@ -1,11 +1,12 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.expression;
 
 import java.util.HashSet;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.DbObject;
 import org.h2.table.Column;
 import org.h2.table.ColumnResolver;
@@ -32,10 +33,10 @@ public class ExpressionVisitor {
             new ExpressionVisitor(INDEPENDENT);
 
     /**
-     * Are all aggregates MIN(column), MAX(column), or COUNT(*) for the given
-     * table (getTable)?
+     * Are all aggregates MIN(column), MAX(column), COUNT(*), MEDIAN(column),
+     * ENVELOPE(count) for the given table (getTable)?
      */
-    public static final int OPTIMIZABLE_MIN_MAX_COUNT_ALL = 1;
+    public static final int OPTIMIZABLE_AGGREGATE = 1;
 
     /**
      * Does the expression return the same results for the same parameters?
@@ -59,6 +60,37 @@ public class ExpressionVisitor {
      */
     public static final ExpressionVisitor EVALUATABLE_VISITOR =
             new ExpressionVisitor(EVALUATABLE);
+
+    /**
+     * Count of cached INDEPENDENT and EVALUATABLE visitors with different query
+     * level.
+     */
+    private static final int CACHED = 8;
+
+    /**
+     * INDEPENDENT listeners with query level 0, 1, ...
+     */
+    private static final ExpressionVisitor[] INDEPENDENT_VISITORS;
+
+    /**
+     * EVALUATABLE listeners with query level 0, 1, ...
+     */
+    private static final ExpressionVisitor[] EVALUATABLE_VISITORS;
+
+    static {
+        ExpressionVisitor[] a = new ExpressionVisitor[CACHED];
+        a[0] = INDEPENDENT_VISITOR;
+        for (int i = 1; i < CACHED; i++) {
+            a[i] = new ExpressionVisitor(INDEPENDENT, i);
+        }
+        INDEPENDENT_VISITORS = a;
+        a = new ExpressionVisitor[CACHED];
+        a[0] = EVALUATABLE_VISITOR;
+        for (int i = 1; i < CACHED; i++) {
+            a[i] = new ExpressionVisitor(EVALUATABLE, i);
+        }
+        EVALUATABLE_VISITORS = a;
+    }
 
     /**
      * Request to set the latest modification id (addDataModificationId).
@@ -96,9 +128,14 @@ public class ExpressionVisitor {
     public static final int QUERY_COMPARABLE = 8;
 
     /**
+     * Get all referenced columns for the optimiser.
+     */
+    public static final int GET_COLUMNS1 = 9;
+
+    /**
      * Get all referenced columns.
      */
-    public static final int GET_COLUMNS = 9;
+    public static final int GET_COLUMNS2 = 10;
 
     /**
      * The visitor singleton for the type QUERY_COMPARABLE.
@@ -109,30 +146,45 @@ public class ExpressionVisitor {
     private final int type;
     private final int queryLevel;
     private final HashSet<DbObject> dependencies;
-    private final HashSet<Column> columns;
+    private final AllColumnsForPlan columns1;
     private final Table table;
     private final long[] maxDataModificationId;
     private final ColumnResolver resolver;
+    private final HashSet<Column> columns2;
 
     private ExpressionVisitor(int type,
             int queryLevel,
             HashSet<DbObject> dependencies,
-            HashSet<Column> columns, Table table, ColumnResolver resolver,
-            long[] maxDataModificationId) {
+            AllColumnsForPlan columns1, Table table, ColumnResolver resolver,
+            long[] maxDataModificationId,
+            HashSet<Column> columns2) {
         this.type = type;
         this.queryLevel = queryLevel;
         this.dependencies = dependencies;
-        this.columns = columns;
+        this.columns1 = columns1;
         this.table = table;
         this.resolver = resolver;
         this.maxDataModificationId = maxDataModificationId;
+        this.columns2 = columns2;
     }
 
     private ExpressionVisitor(int type) {
         this.type = type;
         this.queryLevel = 0;
         this.dependencies = null;
-        this.columns = null;
+        this.columns1 = null;
+        this.columns2 = null;
+        this.table = null;
+        this.resolver = null;
+        this.maxDataModificationId = null;
+    }
+
+    private ExpressionVisitor(int type, int queryLevel) {
+        this.type = type;
+        this.queryLevel = queryLevel;
+        this.dependencies = null;
+        this.columns1 = null;
+        this.columns2 = null;
         this.table = null;
         this.resolver = null;
         this.maxDataModificationId = null;
@@ -147,7 +199,7 @@ public class ExpressionVisitor {
     public static ExpressionVisitor getDependenciesVisitor(
             HashSet<DbObject> dependencies) {
         return new ExpressionVisitor(GET_DEPENDENCIES, 0, dependencies, null,
-                null, null, null);
+                null, null, null, null);
     }
 
     /**
@@ -157,8 +209,8 @@ public class ExpressionVisitor {
      * @return the new visitor
      */
     public static ExpressionVisitor getOptimizableVisitor(Table table) {
-        return new ExpressionVisitor(OPTIMIZABLE_MIN_MAX_COUNT_ALL, 0, null,
-                null, table, null, null);
+        return new ExpressionVisitor(OPTIMIZABLE_AGGREGATE, 0, null,
+                null, table, null, null, null);
     }
 
     /**
@@ -168,9 +220,9 @@ public class ExpressionVisitor {
      * @param resolver the resolver
      * @return the new visitor
      */
-    static ExpressionVisitor getNotFromResolverVisitor(ColumnResolver resolver) {
+    public static ExpressionVisitor getNotFromResolverVisitor(ColumnResolver resolver) {
         return new ExpressionVisitor(NOT_FROM_RESOLVER, 0, null, null, null,
-                resolver, null);
+                resolver, null, null);
     }
 
     /**
@@ -179,13 +231,24 @@ public class ExpressionVisitor {
      * @param columns the columns map
      * @return the new visitor
      */
-    public static ExpressionVisitor getColumnsVisitor(HashSet<Column> columns) {
-        return new ExpressionVisitor(GET_COLUMNS, 0, null, columns, null, null, null);
+    public static ExpressionVisitor getColumnsVisitor(AllColumnsForPlan columns) {
+        return new ExpressionVisitor(GET_COLUMNS1, 0, null, columns, null, null, null, null);
+    }
+
+    /**
+     * Create a new visitor to get all referenced columns.
+     *
+     * @param columns the columns map
+     * @param table table to gather columns from, or {@code null} to gather all columns
+     * @return the new visitor
+     */
+    public static ExpressionVisitor getColumnsVisitor(HashSet<Column> columns, Table table) {
+        return new ExpressionVisitor(GET_COLUMNS2, 0, null, null, table, null, null, columns);
     }
 
     public static ExpressionVisitor getMaxModificationIdVisitor() {
         return new ExpressionVisitor(SET_MAX_DATA_MODIFICATION_ID, 0, null,
-                null, null, null, new long[1]);
+                null, null, null, new long[1], null);
     }
 
     /**
@@ -204,8 +267,20 @@ public class ExpressionVisitor {
      *
      * @param column the additional column.
      */
-    void addColumn(Column column) {
-        columns.add(column);
+    void addColumn1(Column column) {
+        columns1.add(column);
+    }
+
+    /**
+     * Add a new column to the set of columns.
+     * This is used for GET_COLUMNS2 visitors.
+     *
+     * @param column the additional column.
+     */
+    void addColumn2(Column column) {
+        if (table == null || table == column.getTable()) {
+            columns2.add(column);
+        }
     }
 
     /**
@@ -222,11 +297,18 @@ public class ExpressionVisitor {
      * Increment or decrement the query level.
      *
      * @param offset 1 to increment, -1 to decrement
-     * @return a clone of this expression visitor, with the changed query level
+     * @return this visitor or its clone with the changed query level
      */
     public ExpressionVisitor incrementQueryLevel(int offset) {
-        return new ExpressionVisitor(type, queryLevel + offset, dependencies,
-                columns, table, resolver, maxDataModificationId);
+        if (type == INDEPENDENT) {
+            offset += queryLevel;
+            return offset < CACHED ? INDEPENDENT_VISITORS[offset] : new ExpressionVisitor(INDEPENDENT, offset);
+        } else if (type == EVALUATABLE) {
+            offset += queryLevel;
+            return offset < CACHED ? EVALUATABLE_VISITORS[offset] : new ExpressionVisitor(EVALUATABLE, offset);
+        } else {
+            return this;
+        }
     }
 
     /**
@@ -264,6 +346,7 @@ public class ExpressionVisitor {
     }
 
     int getQueryLevel() {
+        assert type == INDEPENDENT || type == EVALUATABLE;
         return queryLevel;
     }
 
@@ -290,16 +373,14 @@ public class ExpressionVisitor {
      * Get the set of columns of all tables.
      *
      * @param filters the filters
-     * @return the set of columns
+     * @param allColumnsSet the on-demand all-columns set
      */
-    public static HashSet<Column> allColumnsForTableFilters(TableFilter[] filters) {
-        HashSet<Column> allColumnsSet = new HashSet<>();
+    public static void allColumnsForTableFilters(TableFilter[] filters, AllColumnsForPlan allColumnsSet) {
         for (TableFilter filter : filters) {
             if (filter.getSelect() != null) {
                 filter.getSelect().isEverything(ExpressionVisitor.getColumnsVisitor(allColumnsSet));
             }
         }
-        return allColumnsSet;
     }
 
 }

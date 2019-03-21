@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -155,7 +155,7 @@ public class NetUtils {
      */
     private static InetAddress getBindAddress() throws UnknownHostException {
         String host = SysProperties.BIND_ADDRESS;
-        if (host == null || host.length() == 0) {
+        if (host == null || host.isEmpty()) {
             return null;
         }
         synchronized (NetUtils.class) {
@@ -178,7 +178,7 @@ public class NetUtils {
             return new ServerSocket(port, 0, bindAddress);
         } catch (BindException be) {
             throw DbException.get(ErrorCode.EXCEPTION_OPENING_PORT_2,
-                    be, "" + port, be.toString());
+                    be, Integer.toString(port), be.toString());
         } catch (IOException e) {
             throw DbException.convertIOException(e, "port: " + port + " ssl: " + ssl);
         }
@@ -197,7 +197,7 @@ public class NetUtils {
             return true;
         }
         InetAddress localhost = InetAddress.getLocalHost();
-        // localhost.getCanonicalHostName() is very very slow
+        // localhost.getCanonicalHostName() is very slow
         String host = localhost.getHostAddress();
         for (InetAddress addr : InetAddress.getAllByName(host)) {
             if (test.equals(addr)) {

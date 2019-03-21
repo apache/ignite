@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -41,16 +41,6 @@ public class ValueTimestamp extends Value {
     public static final int MAXIMUM_SCALE = 9;
 
     /**
-     * Get display size for the specified scale.
-     *
-     * @param scale scale
-     * @return display size
-     */
-    public static int getDisplaySize(int scale) {
-        return scale == 0 ? 19 : 20 + scale;
-    }
-
-    /**
      * A bit field with bits for the year, month, and day (see DateTimeUtils for
      * encoding)
      */
@@ -89,8 +79,9 @@ public class ValueTimestamp extends Value {
     public static ValueTimestamp get(Timestamp timestamp) {
         long ms = timestamp.getTime();
         long nanos = timestamp.getNanos() % 1_000_000;
-        long dateValue = DateTimeUtils.dateValueFromDate(ms);
-        nanos += DateTimeUtils.nanosFromDate(ms);
+        ms += DateTimeUtils.getTimeZoneOffset(ms);
+        long dateValue = DateTimeUtils.dateValueFromLocalMillis(ms);
+        nanos += DateTimeUtils.nanosFromLocalMillis(ms);
         return fromDateValueAndNanos(dateValue, nanos);
     }
 
@@ -102,8 +93,9 @@ public class ValueTimestamp extends Value {
      * @return the value
      */
     public static ValueTimestamp fromMillisNanos(long ms, int nanos) {
-        long dateValue = DateTimeUtils.dateValueFromDate(ms);
-        long timeNanos = nanos + DateTimeUtils.nanosFromDate(ms);
+        ms += DateTimeUtils.getTimeZoneOffset(ms);
+        long dateValue = DateTimeUtils.dateValueFromLocalMillis(ms);
+        long timeNanos = nanos + DateTimeUtils.nanosFromLocalMillis(ms);
         return fromDateValueAndNanos(dateValue, timeNanos);
     }
 
@@ -114,8 +106,9 @@ public class ValueTimestamp extends Value {
      * @return the value
      */
     public static ValueTimestamp fromMillis(long ms) {
-        long dateValue = DateTimeUtils.dateValueFromDate(ms);
-        long nanos = DateTimeUtils.nanosFromDate(ms);
+        ms += DateTimeUtils.getTimeZoneOffset(ms);
+        long dateValue = DateTimeUtils.dateValueFromLocalMillis(ms);
+        long nanos = DateTimeUtils.nanosFromLocalMillis(ms);
         return fromDateValueAndNanos(dateValue, nanos);
     }
 
@@ -174,8 +167,18 @@ public class ValueTimestamp extends Value {
     }
 
     @Override
-    public int getType() {
-        return Value.TIMESTAMP;
+    public TypeInfo getType() {
+        return TypeInfo.TYPE_TIMESTAMP;
+    }
+
+    @Override
+    public int getValueType() {
+        return TIMESTAMP;
+    }
+
+    @Override
+    public int getMemory() {
+        return 32;
     }
 
     @Override
@@ -188,23 +191,12 @@ public class ValueTimestamp extends Value {
     }
 
     @Override
-    public String getSQL() {
-        return "TIMESTAMP '" + getString() + "'";
-    }
-
-    @Override
-    public long getPrecision() {
-        return MAXIMUM_PRECISION;
-    }
-
-    @Override
-    public int getScale() {
-        return MAXIMUM_SCALE;
-    }
-
-    @Override
-    public int getDisplaySize() {
-        return MAXIMUM_PRECISION;
+    public StringBuilder getSQL(StringBuilder builder) {
+        builder.append("TIMESTAMP '");
+        DateTimeUtils.appendDate(builder, dateValue);
+        builder.append(' ');
+        DateTimeUtils.appendTime(builder, timeNanos);
+        return builder.append('\'');
     }
 
     @Override
@@ -235,7 +227,7 @@ public class ValueTimestamp extends Value {
     }
 
     @Override
-    protected int compareSecure(Value o, CompareMode mode) {
+    public int compareTypeSafe(Value o, CompareMode mode) {
         ValueTimestamp t = (ValueTimestamp) o;
         int c = Long.compare(dateValue, t.dateValue);
         if (c != 0) {

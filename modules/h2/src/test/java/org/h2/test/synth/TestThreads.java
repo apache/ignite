@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -13,12 +13,13 @@ import java.sql.Statement;
 import java.util.Random;
 
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * This test starts multiple threads and executes random operations in each
  * thread.
  */
-public class TestThreads extends TestBase implements Runnable {
+public class TestThreads extends TestDb implements Runnable {
 
     private static final int INSERT = 0, UPDATE = 1, DELETE = 2;
     private static final int SELECT_ONE = 3, SELECT_ALL = 4;

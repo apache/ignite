@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -10,6 +10,7 @@ import org.h2.engine.Session;
 import org.h2.message.DbException;
 import org.h2.table.ColumnResolver;
 import org.h2.table.TableFilter;
+import org.h2.value.TypeInfo;
 import org.h2.value.Value;
 
 /**
@@ -31,27 +32,13 @@ public class Variable extends Expression {
     }
 
     @Override
-    public int getDisplaySize() {
-        return lastValue.getDisplaySize();
+    public StringBuilder getSQL(StringBuilder builder, boolean alwaysQuote) {
+        builder.append('@');
+        return Parser.quoteIdentifier(builder, name, alwaysQuote);
     }
 
     @Override
-    public long getPrecision() {
-        return lastValue.getPrecision();
-    }
-
-    @Override
-    public String getSQL() {
-        return "@" + Parser.quoteIdentifier(name);
-    }
-
-    @Override
-    public int getScale() {
-        return lastValue.getScale();
-    }
-
-    @Override
-    public int getType() {
+    public TypeInfo getType() {
         return lastValue.getType();
     }
 
@@ -69,13 +56,14 @@ public class Variable extends Expression {
         case ExpressionVisitor.SET_MAX_DATA_MODIFICATION_ID:
             // it is checked independently if the value is the same as the last
             // time
-        case ExpressionVisitor.OPTIMIZABLE_MIN_MAX_COUNT_ALL:
+        case ExpressionVisitor.OPTIMIZABLE_AGGREGATE:
         case ExpressionVisitor.READONLY:
         case ExpressionVisitor.INDEPENDENT:
         case ExpressionVisitor.NOT_FROM_RESOLVER:
         case ExpressionVisitor.QUERY_COMPARABLE:
         case ExpressionVisitor.GET_DEPENDENCIES:
-        case ExpressionVisitor.GET_COLUMNS:
+        case ExpressionVisitor.GET_COLUMNS1:
+        case ExpressionVisitor.GET_COLUMNS2:
             return true;
         case ExpressionVisitor.DETERMINISTIC:
             return false;
@@ -85,7 +73,7 @@ public class Variable extends Expression {
     }
 
     @Override
-    public void mapColumns(ColumnResolver resolver, int level) {
+    public void mapColumns(ColumnResolver resolver, int level, int state) {
         // nothing to do
     }
 
@@ -100,7 +88,7 @@ public class Variable extends Expression {
     }
 
     @Override
-    public void updateAggregate(Session session) {
+    public void updateAggregate(Session session, int stage) {
         // nothing to do
     }
 

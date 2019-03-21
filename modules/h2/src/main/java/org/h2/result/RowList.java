@@ -1,27 +1,29 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.result;
 
 import java.util.ArrayList;
+
 import org.h2.engine.Constants;
 import org.h2.engine.Database;
 import org.h2.engine.Session;
 import org.h2.store.Data;
 import org.h2.store.FileStore;
-import org.h2.util.New;
+import org.h2.util.Utils;
+import org.h2.value.DataType;
 import org.h2.value.Value;
 
 /**
  * A list of rows. If the list grows too large, it is buffered to disk
  * automatically.
  */
-public class RowList {
+public class RowList implements AutoCloseable {
 
     private final Session session;
-    private final ArrayList<Row> list = New.arrayList();
+    private final ArrayList<Row> list = Utils.newSmallArrayList();
     private int size;
     private int index, listIndex;
     private FileStore file;
@@ -30,7 +32,6 @@ public class RowList {
     private final int maxMemory;
     private int memory;
     private boolean written;
-    private boolean readUncached;
 
     /**
      * Construct a new row list for this session.
@@ -47,15 +48,13 @@ public class RowList {
     }
 
     private void writeRow(Data buff, Row r) {
-        buff.checkCapacity(1 + Data.LENGTH_INT * 8);
+        buff.checkCapacity(2 + Data.LENGTH_INT * 3 + Data.LENGTH_LONG);
         buff.writeByte((byte) 1);
         buff.writeInt(r.getMemory());
         int columnCount = r.getColumnCount();
         buff.writeInt(columnCount);
         buff.writeLong(r.getKey());
-        buff.writeInt(r.getVersion());
-        buff.writeInt(r.isDeleted() ? 1 : 0);
-        buff.writeInt(r.getSessionId());
+        buff.writeByte(r.isDeleted() ? (byte) 1 : (byte) 0);
         for (int i = 0; i < columnCount; i++) {
             Value v = r.getValue(i);
             buff.checkCapacity(1);
@@ -63,12 +62,12 @@ public class RowList {
                 buff.writeByte((byte) 0);
             } else {
                 buff.writeByte((byte) 1);
-                if (v.getType() == Value.CLOB || v.getType() == Value.BLOB) {
+                if (DataType.isLargeObject(v.getValueType())) {
                     // need to keep a reference to temporary lobs,
                     // otherwise the temp file is deleted
                     if (v.getSmall() == null && v.getTableId() == 0) {
                         if (lobs == null) {
-                            lobs = New.arrayList();
+                            lobs = Utils.newSmallArrayList();
                         }
                         // need to create a copy, otherwise,
                         // if stored multiple times, it may be renamed
@@ -90,7 +89,7 @@ public class RowList {
             file = db.openFile(fileName, "rw", false);
             file.setCheckedWriting(false);
             file.seek(FileStore.HEADER_LENGTH);
-            rowBuff = Data.create(db, Constants.DEFAULT_PAGE_SIZE);
+            rowBuff = Data.create(db, Constants.DEFAULT_PAGE_SIZE, true);
             file.seek(FileStore.HEADER_LENGTH);
         }
         Data buff = rowBuff;
@@ -104,7 +103,6 @@ public class RowList {
             writeRow(buff, r);
         }
         flushBuffer(buff);
-        file.autoDelete();
         list.clear();
         memory = 0;
     }
@@ -168,12 +166,7 @@ public class RowList {
         int mem = buff.readInt();
         int columnCount = buff.readInt();
         long key = buff.readLong();
-        int version = buff.readInt();
-        if (readUncached) {
-            key = 0;
-        }
-        boolean deleted = buff.readInt() == 1;
-        int sessionId = buff.readInt();
+        boolean deleted = buff.readByte() != 0;
         Value[] values = new Value[columnCount];
         for (int i = 0; i < columnCount; i++) {
             Value v;
@@ -193,9 +186,7 @@ public class RowList {
         }
         Row row = session.createRow(values, mem);
         row.setKey(key);
-        row.setVersion(version);
         row.setDeleted(deleted);
-        row.setSessionId(sessionId);
         return row;
     }
 
@@ -245,18 +236,11 @@ public class RowList {
     }
 
     /**
-     * Do not use the cache.
-     */
-    public void invalidateCache() {
-        readUncached = true;
-    }
-
-    /**
      * Close the result list and delete the temporary file.
      */
+    @Override
     public void close() {
         if (file != null) {
-            file.autoDelete();
             file.closeAndDeleteSilently();
             file = null;
             rowBuff = null;

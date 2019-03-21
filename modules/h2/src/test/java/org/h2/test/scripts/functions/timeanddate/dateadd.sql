@@ -1,4 +1,4 @@
--- Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (http://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -88,7 +88,7 @@ SELECT DATEADD('MINUTE', 30, TIME '12:30:55');
 >> 13:00:55
 
 SELECT DATEADD('DAY', 1, TIME '12:30:55');
-> exception
+> exception INVALID_VALUE_2
 
 SELECT DATEADD('QUARTER', 1, DATE '2010-11-16');
 >> 2011-02-16
@@ -107,4 +107,6 @@ SELECT TIMESTAMPADD('TIMEZONE_MINUTE', -45, TIMESTAMP WITH TIME ZONE '2010-01-01
 
 SELECT DATEADD(HOUR, 1, TIME '23:00:00');
 >> 00:00:00
-> rows: 1
+
+SELECT D FROM (SELECT '2010-01-01' D) WHERE D IN (SELECT D1 - 1 FROM (SELECT DATE '2010-01-02' D1));
+>> 2010-01-01

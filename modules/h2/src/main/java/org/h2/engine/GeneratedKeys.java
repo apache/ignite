@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -16,8 +16,8 @@ import org.h2.result.LocalResult;
 import org.h2.result.Row;
 import org.h2.table.Column;
 import org.h2.table.Table;
-import org.h2.util.New;
 import org.h2.util.StringUtils;
+import org.h2.util.Utils;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 
@@ -28,17 +28,17 @@ public final class GeneratedKeys {
     /**
      * Data for result set with generated keys.
      */
-    private final ArrayList<Map<Column, Value>> data = New.arrayList();
+    private final ArrayList<Map<Column, Value>> data = Utils.newSmallArrayList();
 
     /**
      * Columns with generated keys in the current row.
      */
-    private final ArrayList<Column> row = New.arrayList();
+    private final ArrayList<Column> row = Utils.newSmallArrayList();
 
     /**
      * All columns with generated keys.
      */
-    private final ArrayList<Column> allColumns = New.arrayList();
+    private final ArrayList<Column> allColumns = Utils.newSmallArrayList();
 
     /**
      * Request for keys gathering. {@code false} if generated keys are not needed,
@@ -125,10 +125,10 @@ public final class GeneratedKeys {
      * @return local result with generated keys
      */
     public LocalResult getKeys(Session session) {
-        Database db = session == null ? null : session.getDatabase();
+        Database db = session.getDatabase();
         if (Boolean.FALSE.equals(generatedKeysRequest)) {
             clear(null);
-            return new LocalResult();
+            return db.getResultFactory().create();
         }
         ArrayList<ExpressionColumn> expressionColumns;
         if (Boolean.TRUE.equals(generatedKeysRequest)) {
@@ -152,7 +152,7 @@ public final class GeneratedKeys {
                 }
             } else {
                 clear(null);
-                return new LocalResult();
+                return db.getResultFactory().create();
             }
         } else if (generatedKeysRequest instanceof String[]) {
             if (table != null) {
@@ -182,18 +182,19 @@ public final class GeneratedKeys {
                 }
             } else {
                 clear(null);
-                return new LocalResult();
+                return db.getResultFactory().create();
             }
         } else {
             clear(null);
-            return new LocalResult();
+            return db.getResultFactory().create();
         }
         int columnCount = expressionColumns.size();
         if (columnCount == 0) {
             clear(null);
-            return new LocalResult();
+            return db.getResultFactory().create();
         }
-        LocalResult result = new LocalResult(session, expressionColumns.toArray(new Expression[0]), columnCount);
+        LocalResult result = db.getResultFactory().create(session,
+            expressionColumns.toArray(new Expression[0]), columnCount);
         for (Map<Column, Value> map : data) {
             Value[] row = new Value[columnCount];
             for (Map.Entry<Column, Value> entry : map.entrySet()) {

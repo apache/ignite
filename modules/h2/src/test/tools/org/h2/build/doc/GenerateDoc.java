@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -71,33 +71,39 @@ public class GenerateDoc {
         String help = "SELECT ROWNUM ID, * FROM CSVREAD('" +
                 IN_HELP + "', NULL, 'lineComment=#') WHERE SECTION ";
         map("commandsDML",
-                help + "= 'Commands (DML)' ORDER BY ID", true);
+                help + "= 'Commands (DML)' ORDER BY ID", true, false);
         map("commandsDDL",
-                help + "= 'Commands (DDL)' ORDER BY ID", true);
+                help + "= 'Commands (DDL)' ORDER BY ID", true, false);
         map("commandsOther",
-                help + "= 'Commands (Other)' ORDER BY ID", true);
+                help + "= 'Commands (Other)' ORDER BY ID", true, false);
+        map("literals",
+                help + "= 'Literals' ORDER BY ID", true, false);
         map("datetimeFields",
-                help + "= 'Datetime fields' ORDER BY ID", true);
+                help + "= 'Datetime fields' ORDER BY ID", true, false);
         map("otherGrammar",
-                help + "= 'Other Grammar' ORDER BY ID", true);
+                help + "= 'Other Grammar' ORDER BY ID", true, false);
         map("functionsAggregate",
-                help + "= 'Functions (Aggregate)' ORDER BY ID", true);
+                help + "= 'Functions (Aggregate)' ORDER BY ID", true, false);
         map("functionsNumeric",
-                help + "= 'Functions (Numeric)' ORDER BY ID", true);
+                help + "= 'Functions (Numeric)' ORDER BY ID", true, false);
         map("functionsString",
-                help + "= 'Functions (String)' ORDER BY ID", true);
+                help + "= 'Functions (String)' ORDER BY ID", true, false);
         map("functionsTimeDate",
-                help + "= 'Functions (Time and Date)' ORDER BY ID", true);
+                help + "= 'Functions (Time and Date)' ORDER BY ID", true, false);
         map("functionsSystem",
-                help + "= 'Functions (System)' ORDER BY ID", true);
+                help + "= 'Functions (System)' ORDER BY ID", true, false);
+        map("functionsWindow",
+                help + "= 'Functions (Window)' ORDER BY ID", true, false);
         map("dataTypes",
-                help + "LIKE 'Data Types%' ORDER BY SECTION, ID", true);
+                help + "LIKE 'Data Types%' ORDER BY SECTION, ID", true, true);
+        map("intervalDataTypes",
+                help + "LIKE 'Interval Data Types%' ORDER BY SECTION, ID", true, true);
         map("informationSchema", "SELECT TABLE_NAME TOPIC, " +
                 "GROUP_CONCAT(COLUMN_NAME " +
                 "ORDER BY ORDINAL_POSITION SEPARATOR ', ') SYNTAX " +
                 "FROM INFORMATION_SCHEMA.COLUMNS " +
                 "WHERE TABLE_SCHEMA='INFORMATION_SCHEMA' " +
-                "GROUP BY TABLE_NAME ORDER BY TABLE_NAME", false);
+                "GROUP BY TABLE_NAME ORDER BY TABLE_NAME", false, false);
         processAll("");
         conn.close();
     }
@@ -132,7 +138,7 @@ public class GenerateDoc {
         out.close();
     }
 
-    private void map(String key, String sql, boolean railroads)
+    private void map(String key, String sql, boolean railroads, boolean forDataTypes)
             throws Exception {
         ResultSet rs = null;
         Statement stat = null;
@@ -144,13 +150,17 @@ public class GenerateDoc {
             while (rs.next()) {
                 HashMap<String, String> map = new HashMap<>();
                 ResultSetMetaData meta = rs.getMetaData();
-                for (int i = 0; i < meta.getColumnCount(); i++) {
-                    String k = StringUtils.toLowerEnglish(meta.getColumnLabel(i + 1));
-                    String value = rs.getString(i + 1);
+                for (int i = 1; i <= meta.getColumnCount(); i++) {
+                    String k = StringUtils.toLowerEnglish(meta.getColumnLabel(i));
+                    String value = rs.getString(i);
                     value = value.trim();
                     map.put(k, PageParser.escapeHtml(value));
                 }
                 String topic = rs.getString("TOPIC");
+                // Convert "INT Type" to "INT" etc.
+                if (forDataTypes && topic.endsWith(" Type")) {
+                    map.put("topic", topic.substring(0, topic.length() - 5));
+                }
                 String syntax = rs.getString("SYNTAX").trim();
                 if (railroads) {
                     BnfRailroad r = new BnfRailroad();
@@ -170,6 +180,7 @@ public class GenerateDoc {
                     text = StringUtils.replaceAll(text,
                             "<br />", " ");
                     text = addCode(text);
+                    text = addLinks(text);
                     map.put("text", text);
                 }
 
@@ -246,4 +257,42 @@ public class GenerateDoc {
         s = StringUtils.replaceAll(s, "<code>GB</code>", "GB");
         return s;
     }
+
+    private static String addLinks(String text) {
+        int start = nextLink(text, 0);
+        if (start < 0) {
+            return text;
+        }
+        StringBuilder buff = new StringBuilder(text.length());
+        int len = text.length();
+        int offset = 0;
+        do {
+            int end = start + 7;
+            for (; end < len && !Character.isWhitespace(text.charAt(end)); end++) {
+                // Nothing to do
+            }
+            buff.append(text, offset, start) //
+                    .append("<a href=\"").append(text, start, end).append("\">") //
+                    .append(text, start, end) //
+                    .append("</a>");
+            offset = end;
+        } while ((start = nextLink(text, offset)) >= 0);
+        return buff.append(text, offset, len).toString();
+    }
+
+    private static int nextLink(String text, int i) {
+        int found = -1;
+        found = findLink(text, i, "http://", found);
+        found = findLink(text, i, "https://", found);
+        return found;
+    }
+
+    private static int findLink(String text, int offset, String prefix, int found) {
+        int idx = text.indexOf(prefix, offset);
+        if (idx >= 0 && (found < 0 || idx < found)) {
+            found = idx;
+        }
+        return found;
+    }
+
 }

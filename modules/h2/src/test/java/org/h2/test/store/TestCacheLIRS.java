@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -275,7 +275,7 @@ public class TestCacheLIRS extends TestBase {
         verify(test, "mem: 4 stack: 2 3 4 6 cold: non-resident: 5 0");
         test.put(0,  0);
         test.put(1,  10);
-        // the the stack was not pruned, the following will fail
+        // the stack was not pruned, the following will fail
         verify(test, "mem: 5 stack: 1 0 2 3 4 cold: 1 non-resident: 6 5");
     }
 
@@ -449,8 +449,8 @@ public class TestCacheLIRS extends TestBase {
             Integer x = test.get(i);
             Integer y = test.peek(i);
             if (i < size / 2) {
-                assertTrue("i: " + i, x != null);
-                assertTrue("i: " + i, y != null);
+                assertNotNull("i: " + i, x);
+                assertNotNull("i: " + i, y);
                 assertEquals(i * 10, x.intValue());
                 assertEquals(i * 10, y.intValue());
             } else {
@@ -469,7 +469,7 @@ public class TestCacheLIRS extends TestBase {
         for (int i = 0; i < size; i++) {
             Integer x = test.get(i);
             if (i < size / 2 || i == size - 1) {
-                assertTrue("i: " + i, x != null);
+                assertNotNull("i: " + i, x);
                 assertEquals(i * 10, x.intValue());
             } else {
                 assertNull(x);

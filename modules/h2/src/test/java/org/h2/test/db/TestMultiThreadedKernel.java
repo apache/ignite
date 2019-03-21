@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -12,15 +12,16 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Random;
+
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.JdbcUtils;
-import org.h2.util.New;
 import org.h2.util.Task;
 
 /**
  * A multi-threaded test case.
  */
-public class TestMultiThreadedKernel extends TestBase {
+public class TestMultiThreadedKernel extends TestDb {
 
     /**
      * Stop the current thread.
@@ -43,18 +44,11 @@ public class TestMultiThreadedKernel extends TestBase {
 
     @Override
     public void test() throws Exception {
-        if (config.mvcc) {
-            return;
-        }
-        if (config.mvStore) { // FIXME can't see why test should not work in MVStore mode
-            return;
-        }
         deleteDb("multiThreadedKernel");
         testConcurrentRead();
         testCache();
         deleteDb("multiThreadedKernel");
-        final String url = getURL("multiThreadedKernel;" +
-                "DB_CLOSE_DELAY=-1;MULTI_THREADED=1", true);
+        final String url = getURL("multiThreadedKernel;DB_CLOSE_DELAY=-1", true);
         final String user = getUser(), password = getPassword();
         int len = 3;
         Thread[] threads = new Thread[len];
@@ -103,12 +97,11 @@ public class TestMultiThreadedKernel extends TestBase {
     }
 
     private void testConcurrentRead() throws Exception {
-        ArrayList<Task> list = New.arrayList();
         int size = 2;
         final int count = 1000;
+        ArrayList<Task> list = new ArrayList<>(size);
         final Connection[] connections = new Connection[count];
-        String url = getURL("multiThreadedKernel;" +
-                "MULTI_THREADED=TRUE;CACHE_SIZE=16", true);
+        String url = getURL("multiThreadedKernel;CACHE_SIZE=16", true);
         for (int i = 0; i < size; i++) {
             final Connection conn = DriverManager.getConnection(
                     url, getUser(), getPassword());
@@ -144,12 +137,11 @@ public class TestMultiThreadedKernel extends TestBase {
     }
 
     private void testCache() throws Exception {
-        ArrayList<Task> list = New.arrayList();
         int size = 3;
         final int count = 100;
+        ArrayList<Task> list = new ArrayList<>(size);
         final Connection[] connections = new Connection[count];
-        String url = getURL("multiThreadedKernel;" +
-                "MULTI_THREADED=TRUE;CACHE_SIZE=1", true);
+        String url = getURL("multiThreadedKernel;CACHE_SIZE=1", true);
         for (int i = 0; i < size; i++) {
             final Connection conn = DriverManager.getConnection(
                     url, getUser(), getPassword());
@@ -184,4 +176,8 @@ public class TestMultiThreadedKernel extends TestBase {
         }
     }
 
+    @Override
+    protected String getURL(String name, boolean admin) {
+        return super.getURL(name + ";MULTI_THREADED=1;LOCK_TIMEOUT=2000", admin);
+    }
 }

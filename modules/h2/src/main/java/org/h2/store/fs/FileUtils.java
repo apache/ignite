@@ -1,11 +1,12 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.store.fs;
 
 import java.io.EOFException;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -101,6 +102,8 @@ public class FileUtils {
         return FilePath.get(fileName).isAbsolute()
                 // Allows Windows to recognize "/path" as absolute.
                 // Makes the same configuration work on all platforms.
+                || fileName.startsWith(File.pathSeparator)
+                // Just in case of non-normalized path on Windows
                 || fileName.startsWith("/");
     }
 
@@ -335,15 +338,12 @@ public class FileUtils {
      * @param prefix the prefix of the file name (including directory name if
      *            required)
      * @param suffix the suffix
-     * @param deleteOnExit if the file should be deleted when the virtual
-     *            machine exists
      * @param inTempDir if the file should be stored in the temporary directory
      * @return the name of the created file
      */
     public static String createTempFile(String prefix, String suffix,
-            boolean deleteOnExit, boolean inTempDir) throws IOException {
-        return FilePath.get(prefix).createTempFile(
-                suffix, deleteOnExit, inTempDir).toString();
+            boolean inTempDir) throws IOException {
+        return FilePath.get(prefix).createTempFile(suffix, inTempDir).toString();
     }
 
     /**

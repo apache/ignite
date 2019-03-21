@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -13,12 +13,13 @@ import java.sql.Statement;
 import org.h2.api.DatabaseEventListener;
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.Server;
 
 /**
  * Tests automatic embedded/server mode.
  */
-public class TestAutoReconnect extends TestBase {
+public class TestAutoReconnect extends TestDb {
 
     private String url;
     private boolean autoServer;
@@ -74,8 +75,8 @@ public class TestAutoReconnect extends TestBase {
                             "/" + getTestName() + ";OPEN_NEW=TRUE");
             conn.close();
 
-            conn = getConnection("jdbc:h2:tcp://localhost/" + getBaseDir() +
-                    "/" + getTestName());
+            conn = getConnection("jdbc:h2:tcp://localhost:" + tcp.getPort() +
+                                        "/" + getBaseDir() + "/" + getTestName());
             assertThrows(ErrorCode.DATABASE_ALREADY_OPEN_1, this).
                     getConnection("jdbc:h2:" + getBaseDir() +
                             "/" + getTestName() + ";AUTO_SERVER=TRUE;OPEN_NEW=TRUE");
@@ -93,7 +94,7 @@ public class TestAutoReconnect extends TestBase {
                 "AUTO_SERVER=TRUE;OPEN_NEW=TRUE";
             restart();
         } else {
-            server = Server.createTcpServer().start();
+            server = Server.createTcpServer("-ifNotExists").start();
             int port = server.getPort();
             url = "jdbc:h2:tcp://localhost:" + port + "/" + getBaseDir() + "/" + getTestName() + ";" +
                 "FILE_LOCK=SOCKET;AUTO_RECONNECT=TRUE";

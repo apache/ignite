@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -13,11 +13,12 @@ import java.util.Random;
 
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Tests the Connection.nativeSQL method.
  */
-public class TestNativeSQL extends TestBase {
+public class TestNativeSQL extends TestDb {
 
     private static final String[] PAIRS = {
             "CREATE TABLE TEST(ID INT PRIMARY KEY)",

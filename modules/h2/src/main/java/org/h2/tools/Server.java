@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -70,6 +70,8 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      * <td>The port (default: 8082)</td></tr>
      * <tr><td>[-webSSL]</td>
      * <td>Use encrypted (HTTPS) connections</td></tr>
+     * <tr><td>[-webAdminPassword]</td>
+     * <td>Password of DB Console administrator</td></tr>
      * <tr><td>[-browser]</td>
      * <td>Start a browser connecting to the web server</td></tr>
      * <tr><td>[-tcp]</td>
@@ -102,6 +104,8 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      * <td>The base directory for H2 databases (all servers)</td></tr>
      * <tr><td>[-ifExists]</td>
      * <td>Only existing databases may be opened (all servers)</td></tr>
+     * <tr><td>[-ifNotExists]</td>
+     * <td>Databases are created when accessed</td></tr>
      * <tr><td>[-trace]</td>
      * <td>Print additional trace information (all servers)</td></tr>
      * <tr><td>[-key &lt;from&gt; &lt;to&gt;]</td>
@@ -135,6 +139,8 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
                     // no parameters
                 } else if ("-webPort".equals(arg)) {
                     i++;
+                } else if ("-webAdminPassword".equals(arg)) {
+                    i += 2;
                 } else {
                     throwUnsupportedOption(arg);
                 }
@@ -194,6 +200,8 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
                 // no parameters
             } else if ("-ifExists".equals(arg)) {
                 // no parameters
+            } else if ("-ifNotExists".equals(arg)) {
+                // no parameters
             } else if ("-baseDir".equals(arg)) {
                 i++;
             } else if ("-key".equals(arg)) {
@@ -232,6 +240,8 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
                     // no parameters
                 } else if ("-webPort".equals(arg)) {
                     i++;
+                } else if ("-webAdminPassword".equals(arg)) {
+                    i += 2;
                 } else {
                     showUsageAndThrowUnsupportedOption(arg);
                 }
@@ -279,6 +289,8 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
             } else if ("-trace".equals(arg)) {
                 // no parameters
             } else if ("-ifExists".equals(arg)) {
+                // no parameters
+            } else if ("-ifNotExists".equals(arg)) {
                 // no parameters
             } else if ("-baseDir".equals(arg)) {
                 i++;
@@ -407,14 +419,31 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      * </pre>
      * Supported options are:
      * -webPort, -webSSL, -webAllowOthers, -webDaemon,
-     * -trace, -ifExists, -baseDir, -properties.
+     * -trace, -ifExists, -ifNotExists, -baseDir, -properties.
      * See the main method for details.
      *
      * @param args the argument list
      * @return the server
      */
     public static Server createWebServer(String... args) throws SQLException {
+        return createWebServer(args, null, false);
+    }
+
+    /**
+     * Create a new web server, but does not start it yet.
+     *
+     * @param args
+     *            the argument list
+     * @param key
+     *            key, or null
+     * @param allowSecureCreation
+     *            whether creation of databases using the key should be allowed
+     * @return the server
+     */
+    static Server createWebServer(String[] args, String key, boolean allowSecureCreation) throws SQLException {
         WebServer service = new WebServer();
+        service.setKey(key);
+        service.setAllowSecureCreation(allowSecureCreation);
         Server server = new Server(service, args);
         service.setShutdownHandler(server);
         return server;
@@ -429,7 +458,7 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      * </pre>
      * Supported options are:
      * -tcpPort, -tcpSSL, -tcpPassword, -tcpAllowOthers, -tcpDaemon,
-     * -trace, -ifExists, -baseDir, -key.
+     * -trace, -ifExists, -ifNotExists, -baseDir, -key.
      * See the main method for details.
      * <p>
      * If no port is specified, the default port is used if possible,
@@ -456,7 +485,7 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      * </pre>
      * Supported options are:
      * -pgPort, -pgAllowOthers, -pgDaemon,
-     * -trace, -ifExists, -baseDir, -key.
+     * -trace, -ifExists, -ifNotExists, -baseDir, -key.
      * See the main method for details.
      * <p>
      * If no port is specified, the default port is used if possible,
@@ -480,7 +509,12 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
         try {
             started = true;
             service.start();
-            String name = service.getName() + " (" + service.getURL() + ")";
+            String url = service.getURL();
+            int idx = url.indexOf('?');
+            if (idx >= 0) {
+                url = url.substring(0, idx);
+            }
+            String name = service.getName() + " (" + url + ')';
             Thread t = new Thread(this, name);
             t.setDaemon(service.isDaemon());
             t.start();
@@ -684,8 +718,8 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
                 if (!ok) {
                     // No success in detection.
                     throw new Exception(
-                            "Browser detection failed and system property " +
-                            SysProperties.H2_BROWSER + " not set");
+                            "Browser detection failed, and java property 'h2.browser' " +
+                            "and environment variable BROWSER are not set to a browser executable.");
                 }
             }
         } catch (Exception e) {

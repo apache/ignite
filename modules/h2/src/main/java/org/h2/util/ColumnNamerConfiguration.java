@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  */
 package org.h2.util;
@@ -40,8 +40,7 @@ public class ColumnNamerConfiguration {
         this.defaultColumnNamePattern = defaultColumnNamePattern;
         this.generateUniqueColumnNames = generateUniqueColumnNames;
 
-        compiledRegularExpressionMatchAllowed = Pattern.compile(regularExpressionMatchAllowed);
-        compiledRegularExpressionMatchDisallowed = Pattern.compile(regularExpressionMatchDisallowed);
+        recompilePatterns();
     }
 
     public int getMaxIdentiferLength() {
@@ -80,6 +79,11 @@ public class ColumnNamerConfiguration {
         this.defaultColumnNamePattern = defaultColumnNamePattern;
     }
 
+    /**
+     * Returns compiled pattern for allowed names.
+     *
+     * @return compiled pattern, or null for default
+     */
     public Pattern getCompiledRegularExpressionMatchAllowed() {
         return compiledRegularExpressionMatchAllowed;
     }
@@ -88,6 +92,11 @@ public class ColumnNamerConfiguration {
         this.compiledRegularExpressionMatchAllowed = compiledRegularExpressionMatchAllowed;
     }
 
+    /**
+     * Returns compiled pattern for disallowed names.
+     *
+     * @return compiled pattern, or null for default
+     */
     public Pattern getCompiledRegularExpressionMatchDisallowed() {
         return compiledRegularExpressionMatchDisallowed;
     }
@@ -138,8 +147,11 @@ public class ColumnNamerConfiguration {
     private void recompilePatterns() {
         try {
             // recompile RE patterns
-            setCompiledRegularExpressionMatchAllowed(Pattern.compile(getRegularExpressionMatchAllowed()));
-            setCompiledRegularExpressionMatchDisallowed(Pattern.compile(getRegularExpressionMatchDisallowed()));
+            setCompiledRegularExpressionMatchAllowed(
+                    regularExpressionMatchAllowed != null ? Pattern.compile(regularExpressionMatchAllowed) : null);
+            setCompiledRegularExpressionMatchDisallowed(
+                    regularExpressionMatchDisallowed != null ? Pattern.compile(regularExpressionMatchDisallowed)
+                            : null);
         } catch (Exception e) {
             configure(REGULAR);
             throw e;
@@ -147,7 +159,7 @@ public class ColumnNamerConfiguration {
     }
 
     public static ColumnNamerConfiguration getDefault() {
-        return new ColumnNamerConfiguration(Integer.MAX_VALUE, "(?m)(?s).+", "(?m)(?s)[\\x00]", "_UNNAMED_$$", false);
+        return new ColumnNamerConfiguration(Integer.MAX_VALUE, null, null, "_UNNAMED_$$", false);
     }
 
     private static String unquoteString(String s) {
@@ -195,7 +207,7 @@ public class ColumnNamerConfiguration {
             break;
 
         case PostgreSQL:
-            // this default can be changed to 128 by postgres config
+            // https://www.postgresql.org/docs/current/static/sql-syntax-lexical.html
             setMaxIdentiferLength(63);
             setRegularExpressionMatchAllowed("(?m)(?s)[A-Za-z0-9_\\$]+");
             setRegularExpressionMatchDisallowed("(?m)(?s)[^A-Za-z0-9_\\$]");
@@ -204,7 +216,8 @@ public class ColumnNamerConfiguration {
             break;
 
         case MySQL:
-            // https://dev.mysql.com/doc/refman/5.7/en/identifiers.html
+            // https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
+            // https://mariadb.com/kb/en/library/identifier-names/
             setMaxIdentiferLength(64);
             setRegularExpressionMatchAllowed("(?m)(?s)`?[A-Za-z0-9_`\\$]+`?");
             setRegularExpressionMatchDisallowed("(?m)(?s)[^A-Za-z0-9_`\\$]");
@@ -219,8 +232,8 @@ public class ColumnNamerConfiguration {
         case Ignite:
             default:
             setMaxIdentiferLength(Integer.MAX_VALUE);
-            setRegularExpressionMatchAllowed("(?m)(?s).+");
-            setRegularExpressionMatchDisallowed("(?m)(?s)[\\x00]");
+            setRegularExpressionMatchAllowed(null);
+            setRegularExpressionMatchDisallowed(null);
             setDefaultColumnNamePattern("_UNNAMED_$$");
             setGenerateUniqueColumnNames(false);
             break;

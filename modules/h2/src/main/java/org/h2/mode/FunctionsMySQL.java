@@ -1,18 +1,29 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: Jason Brittain (jason.brittain at gmail.com)
  */
 package org.h2.mode;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 
+import org.h2.api.ErrorCode;
+import org.h2.engine.Database;
+import org.h2.engine.Session;
+import org.h2.expression.Expression;
+import org.h2.expression.ValueExpression;
+import org.h2.expression.function.Function;
+import org.h2.expression.function.FunctionInfo;
+import org.h2.message.DbException;
 import org.h2.util.StringUtils;
+import org.h2.value.TypeInfo;
+import org.h2.value.Value;
+import org.h2.value.ValueInt;
+import org.h2.value.ValueNull;
+import org.h2.value.ValueString;
 
 /**
  * This class implements some MySQL-specific functions.
@@ -20,7 +31,20 @@ import org.h2.util.StringUtils;
  * @author Jason Brittain
  * @author Thomas Mueller
  */
-public class FunctionsMySQL {
+public class FunctionsMySQL extends FunctionsBase {
+
+    private static final int UNIX_TIMESTAMP = 1001, FROM_UNIXTIME = 1002, DATE = 1003;
+
+    private static final HashMap<String, FunctionInfo> FUNCTIONS = new HashMap<>();
+
+    static {
+        FUNCTIONS.put("UNIX_TIMESTAMP", new FunctionInfo("UNIX_TIMESTAMP", UNIX_TIMESTAMP,
+                VAR_ARGS, Value.INT, false, false, false, true));
+        FUNCTIONS.put("FROM_UNIXTIME", new FunctionInfo("FROM_UNIXTIME", FROM_UNIXTIME,
+                VAR_ARGS, Value.STRING, false, true, false, true));
+        FUNCTIONS.put("DATE", new FunctionInfo("DATE", DATE,
+                1, Value.DATE, false, true, false, true));
+    }
 
     /**
      * The date format of a MySQL formatted date/time.
@@ -59,27 +83,6 @@ public class FunctionsMySQL {
             "%y", "yy",
             "%%", "%",
     };
-
-    /**
-     * Register the functionality in the database.
-     * Nothing happens if the functions are already registered.
-     *
-     * @param conn the connection
-     */
-    public static void register(Connection conn) throws SQLException {
-        String[] init = {
-            "UNIX_TIMESTAMP", "unixTimestamp",
-            "FROM_UNIXTIME", "fromUnixTime",
-            "DATE", "date",
-        };
-        Statement stat = conn.createStatement();
-        for (int i = 0; i < init.length; i += 2) {
-            String alias = init[i], method = init[i + 1];
-            stat.execute(
-                    "CREATE ALIAS IF NOT EXISTS " + alias +
-                    " FOR \"" + FunctionsMySQL.class.getName() + "." + method + "\"");
-        }
-    }
 
     /**
      * Get the seconds since 1970-01-01 00:00:00 UTC.
@@ -140,24 +143,104 @@ public class FunctionsMySQL {
     }
 
     /**
-     * See
-     * http://dev.mysql.com/doc/refman/5.1/en/date-and-time-functions.html#function_date
-     * This function is dependent on the exact formatting of the MySQL date/time
-     * string.
+     * Returns mode-specific function for a given name, or {@code null}.
      *
-     * @param dateTime The date/time String from which to extract just the date
-     *            part.
-     * @return the date part of the given date/time String argument.
+     * @param database
+     *            the database
+     * @param upperName
+     *            the upper-case name of a function
+     * @return the function with specified name or {@code null}
      */
-    public static String date(String dateTime) {
-        if (dateTime == null) {
-            return null;
+    public static Function getFunction(Database database, String upperName) {
+        FunctionInfo info = FUNCTIONS.get(upperName);
+        return info != null ? new FunctionsMySQL(database, info) : null;
+    }
+
+    FunctionsMySQL(Database database, FunctionInfo info) {
+        super(database, info);
+    }
+
+    @Override
+    protected void checkParameterCount(int len) {
+        int min, max;
+        switch (info.type) {
+        case UNIX_TIMESTAMP:
+            min = 0;
+            max = 2;
+            break;
+        case FROM_UNIXTIME:
+            min = 1;
+            max = 2;
+            break;
+        case DATE:
+            min = 1;
+            max = 1;
+            break;
+        default:
+            DbException.throwInternalError("type=" + info.type);
+            return;
         }
-        int index = dateTime.indexOf(' ');
-        if (index != -1) {
-            return dateTime.substring(0, index);
+        if (len < min || len > max) {
+            throw DbException.get(ErrorCode.INVALID_PARAMETER_COUNT_2, info.name, min + ".." + max);
         }
-        return dateTime;
+    }
+
+    @Override
+    public Expression optimize(Session session) {
+        boolean allConst = info.deterministic;
+        for (int i = 0; i < args.length; i++) {
+            Expression e = args[i];
+            if (e == null) {
+                continue;
+            }
+            e = e.optimize(session);
+            args[i] = e;
+            if (!e.isConstant()) {
+                allConst = false;
+            }
+        }
+        if (allConst) {
+            return ValueExpression.get(getValue(session));
+        }
+        type = TypeInfo.getTypeInfo(info.returnDataType);
+        return this;
+    }
+
+    @Override
+    protected Value getValueWithArgs(Session session, Expression[] args) {
+        Value[] values = new Value[args.length];
+        Value v0 = getNullOrValue(session, args, values, 0);
+        Value v1 = getNullOrValue(session, args, values, 1);
+        Value result;
+        switch (info.type) {
+        case UNIX_TIMESTAMP:
+            result = ValueInt.get(v0 == null ? unixTimestamp() : unixTimestamp(v0.getTimestamp()));
+            break;
+        case FROM_UNIXTIME:
+            result = ValueString.get(
+                    v1 == null ? fromUnixTime(v0.getInt()) : fromUnixTime(v0.getInt(), v1.getString()));
+            break;
+        case DATE:
+            switch (v0.getValueType()) {
+            case Value.DATE:
+                result = v0;
+                break;
+            default:
+                try {
+                    v0 = v0.convertTo(Value.TIMESTAMP);
+                } catch (DbException ex) {
+                    v0 = ValueNull.INSTANCE;
+                }
+                //$FALL-THROUGH$
+            case Value.TIMESTAMP:
+            case Value.TIMESTAMP_TZ:
+                result = v0.convertTo(Value.DATE);
+            }
+            break;
+        default:
+            throw DbException.throwInternalError("type=" + info.type);
+        }
+        return result;
     }
 
 }

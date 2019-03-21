@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -13,12 +13,13 @@ import java.sql.SQLException;
 
 import org.h2.api.DatabaseEventListener;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.test.utils.SelfDestructor;
 
 /**
  * Tests the flag db_close_on_exit. A new process is started.
  */
-public class TestExit extends TestBase {
+public class TestExit extends TestDb {
 
     private static Connection conn;
 
@@ -26,17 +27,22 @@ public class TestExit extends TestBase {
             OPEN_WITHOUT_CLOSE_ON_EXIT = 2;
 
     @Override
-    public void test() throws Exception {
+    public boolean isEnabled() {
         if (config.codeCoverage || config.networked) {
-            return;
+            return false;
         }
         if (getBaseDir().indexOf(':') > 0) {
-            return;
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws Exception {
         deleteDb("exit");
         String url = getURL(OPEN_WITH_CLOSE_ON_EXIT);
         String selfDestruct = SelfDestructor.getPropertyString(60);
-        String[] procDef = { "java", selfDestruct, "-cp", getClassPath(),
+        String[] procDef = { getJVM(), selfDestruct, "-cp", getClassPath(),
                 getClass().getName(), url };
         Process proc = Runtime.getRuntime().exec(procDef);
         while (true) {
@@ -59,7 +65,7 @@ public class TestExit extends TestBase {
             fail("did not close database");
         }
         url = getURL(OPEN_WITHOUT_CLOSE_ON_EXIT);
-        procDef = new String[] { "java", "-cp", getClassPath(),
+        procDef = new String[] { getJVM(), "-cp", getClassPath(),
                 getClass().getName(), url };
         proc = Runtime.getRuntime().exec(procDef);
         proc.waitFor();

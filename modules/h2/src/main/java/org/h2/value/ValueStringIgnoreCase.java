@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -22,14 +22,13 @@ public class ValueStringIgnoreCase extends ValueString {
     }
 
     @Override
-    public int getType() {
-        return Value.STRING_IGNORECASE;
+    public int getValueType() {
+        return STRING_IGNORECASE;
     }
 
     @Override
-    protected int compareSecure(Value o, CompareMode mode) {
-        ValueStringIgnoreCase v = (ValueStringIgnoreCase) o;
-        return mode.compareString(value, v.value, true);
+    public int compareTypeSafe(Value o, CompareMode mode) {
+        return mode.compareString(value, ((ValueStringIgnoreCase) o).value, true);
     }
 
     @Override
@@ -48,8 +47,9 @@ public class ValueStringIgnoreCase extends ValueString {
     }
 
     @Override
-    public String getSQL() {
-        return "CAST(" + StringUtils.quoteStringSQL(value) + " AS VARCHAR_IGNORECASE)";
+    public StringBuilder getSQL(StringBuilder builder) {
+        builder.append("CAST(");
+        return StringUtils.quoteStringSQL(builder, value).append(" AS VARCHAR_IGNORECASE)");
     }
 
     /**
@@ -60,11 +60,12 @@ public class ValueStringIgnoreCase extends ValueString {
      * @return the value
      */
     public static ValueStringIgnoreCase get(String s) {
-        if (s.length() == 0) {
+        int length = s.length();
+        if (length == 0) {
             return EMPTY;
         }
         ValueStringIgnoreCase obj = new ValueStringIgnoreCase(StringUtils.cache(s));
-        if (s.length() > SysProperties.OBJECT_CACHE_MAX_PER_ELEMENT_SIZE) {
+        if (length > SysProperties.OBJECT_CACHE_MAX_PER_ELEMENT_SIZE) {
             return obj;
         }
         ValueStringIgnoreCase cache = (ValueStringIgnoreCase) Value.cache(obj);

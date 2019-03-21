@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -12,6 +12,7 @@ import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
+
 import org.h2.Driver;
 import org.h2.api.ErrorCode;
 import org.h2.command.Parser;
@@ -22,9 +23,7 @@ import org.h2.schema.Schema;
 import org.h2.schema.SchemaObjectBase;
 import org.h2.table.Table;
 import org.h2.util.JdbcUtils;
-import org.h2.util.New;
 import org.h2.util.SourceCompiler;
-import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
@@ -47,7 +46,7 @@ public class FunctionAlias extends SchemaObjectBase {
     private boolean bufferResultSetToLocalTemp = true;
 
     private FunctionAlias(Schema schema, int id, String name) {
-        initSchemaObjectBase(schema, id, name, Trace.FUNCTION);
+        super(schema, id, name, Trace.FUNCTION);
     }
 
     /**
@@ -144,7 +143,7 @@ public class FunctionAlias extends SchemaObjectBase {
     private void loadClass() {
         Class<?> javaClass = JdbcUtils.loadUserClass(className);
         Method[] methods = javaClass.getMethods();
-        ArrayList<JavaMethod> list = New.arrayList();
+        ArrayList<JavaMethod> list = new ArrayList<>(1);
         for (int i = 0, len = methods.length; i < len; i++) {
             Method m = methods[i];
             if (!Modifier.isStatic(m.getModifiers())) {
@@ -177,12 +176,16 @@ public class FunctionAlias extends SchemaObjectBase {
     }
 
     private static String getMethodSignature(Method m) {
-        StatementBuilder buff = new StatementBuilder(m.getName());
+        StringBuilder buff = new StringBuilder(m.getName());
         buff.append('(');
-        for (Class<?> p : m.getParameterTypes()) {
-            // do not use a space here, because spaces are removed
-            // in CreateFunctionAlias.setJavaClassMethod()
-            buff.appendExceptFirst(",");
+        Class<?>[] parameterTypes = m.getParameterTypes();
+        for (int i = 0, length = parameterTypes.length; i < length; i++) {
+            if (i > 0) {
+                // do not use a space here, because spaces are removed
+                // in CreateFunctionAlias.setJavaClassMethod()
+                buff.append(',');
+            }
+            Class<?> p = parameterTypes[i];
             if (p.isArray()) {
                 buff.append(p.getComponentType().getName()).append("[]");
             } else {
@@ -199,23 +202,22 @@ public class FunctionAlias extends SchemaObjectBase {
 
     @Override
     public String getDropSQL() {
-        return "DROP ALIAS IF EXISTS " + getSQL();
+        return "DROP ALIAS IF EXISTS " + getSQL(true);
     }
 
     @Override
-    public String getSQL() {
+    public StringBuilder getSQL(StringBuilder builder, boolean alwaysQuote) {
         // TODO can remove this method once FUNCTIONS_IN_SCHEMA is enabled
-        if (database.getSettings().functionsInSchema ||
-                !getSchema().getName().equals(Constants.SCHEMA_MAIN)) {
-            return super.getSQL();
+        if (database.getSettings().functionsInSchema || getSchema().getId() != Constants.MAIN_SCHEMA_ID) {
+            return super.getSQL(builder, alwaysQuote);
         }
-        return Parser.quoteIdentifier(getName());
+        return Parser.quoteIdentifier(builder, getName(), alwaysQuote);
     }
 
     @Override
     public String getCreateSQL() {
         StringBuilder buff = new StringBuilder("CREATE FORCE ALIAS ");
-        buff.append(getSQL());
+        buff.append(getSQL(true));
         if (deterministic) {
             buff.append(" DETERMINISTIC");
         }
@@ -223,10 +225,11 @@ public class FunctionAlias extends SchemaObjectBase {
             buff.append(" NOBUFFER");
         }
         if (source != null) {
-            buff.append(" AS ").append(StringUtils.quoteStringSQL(source));
+            buff.append(" AS ");
+            StringUtils.quoteStringSQL(buff, source);
         } else {
-            buff.append(" FOR ").append(Parser.quoteIdentifier(
-                    className + "." + methodName));
+            buff.append(" FOR ");
+            Parser.quoteIdentifier(buff, className + "." + methodName, true);
         }
         return buff.toString();
     }
@@ -402,7 +405,7 @@ public class FunctionAlias extends SchemaObjectBase {
                 Object o;
                 if (Value.class.isAssignableFrom(paramClass)) {
                     o = v;
-                } else if (v.getType() == Value.ARRAY &&
+                } else if (v.getValueType() == Value.ARRAY &&
                         paramClass.isArray() &&
                         paramClass.getComponentType() != Object.class) {
                     Value[] array = ((ValueArray) v).getList();
@@ -410,12 +413,13 @@ public class FunctionAlias extends SchemaObjectBase {
                             paramClass.getComponentType(), array.length);
                     int componentType = DataType.getTypeFromClass(
                             paramClass.getComponentType());
+                    Mode mode = session.getDatabase().getMode();
                     for (int i = 0; i < objArray.length; i++) {
-                        objArray[i] = array[i].convertTo(componentType).getObject();
+                        objArray[i] = array[i].convertTo(componentType, mode).getObject();
                     }
                     o = objArray;
                 } else {
-                    v = v.convertTo(type, -1, session.getDatabase().getMode());
+                    v = v.convertTo(type, session.getDatabase().getMode());
                     o = v.getObject();
                 }
                 if (o == null) {
@@ -458,14 +462,15 @@ public class FunctionAlias extends SchemaObjectBase {
                         return ValueNull.INSTANCE;
                     }
                 } catch (InvocationTargetException e) {
-                    StatementBuilder buff = new StatementBuilder(method.getName());
-                    buff.append('(');
-                    for (Object o : params) {
-                        buff.appendExceptFirst(", ");
-                        buff.append(o == null ? "null" : o.toString());
+                    StringBuilder builder = new StringBuilder(method.getName()).append('(');
+                    for (int i = 0, length = params.length; i < length; i++) {
+                        if (i > 0) {
+                            builder.append(", ");
+                        }
+                        builder.append(params[i]);
                     }
-                    buff.append(')');
-                    throw DbException.convertInvocation(e, buff.toString());
+                    builder.append(')');
+                    throw DbException.convertInvocation(e, builder.toString());
                 } catch (Exception e) {
                     throw DbException.convert(e);
                 }

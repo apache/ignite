@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -476,9 +476,7 @@ public class ArchiveTool {
                     if (last == null) {
                         last = c;
                     } else if (last.compareTo(c) == 0) {
-                        for (long x : c.idList) {
-                            last.idList.add(x);
-                        }
+                        last.idList.addAll(c.idList);
                     } else {
                         outPos += last.write(tempOut2, true);
                         last = c;
@@ -520,9 +518,7 @@ public class ArchiveTool {
             if (last == null) {
                 last = c;
             } else if (last.compareTo(c) == 0) {
-                for (long x : c.idList) {
-                    last.idList.add(x);
-                }
+                last.idList.addAll(c.idList);
             } else {
                 last.write(dataOut, false);
                 last = c;

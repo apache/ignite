@@ -1,4 +1,4 @@
--- Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (http://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -34,16 +34,16 @@ SELECT A AS A1, B AS B1 FROM (VALUES(1, 2)) AS T(A, B) WHERE A <> B;
 > rows: 1
 
 SELECT A AS A1, B AS B1 FROM (VALUES(1, 2)) AS T(A, B) WHERE A1 <> B1;
-> exception
+> exception COLUMN_NOT_FOUND_1
 
 SELECT * FROM (VALUES(1, 2)) AS T(A);
-> exception
+> exception COLUMN_COUNT_DOES_NOT_MATCH
 
 SELECT * FROM (VALUES(1, 2)) AS T(A, a);
-> exception
+> exception DUPLICATE_COLUMN_NAME_1
 
 SELECT * FROM (VALUES(1, 2)) AS T(A, B, C);
-> exception
+> exception COLUMN_COUNT_DOES_NOT_MATCH
 
 SELECT V AS V1, A AS A1, B AS B1 FROM (VALUES (1)) T1(V) INNER JOIN (VALUES(1, 2)) T2(A, B) ON V = A;
 > V1 A1 B1

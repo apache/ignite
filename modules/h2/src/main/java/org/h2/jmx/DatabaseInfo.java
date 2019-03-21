@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -114,9 +114,10 @@ public class DatabaseInfo implements DatabaseInfoMBean {
         return database.isMultiThreaded();
     }
 
+    @Deprecated
     @Override
     public boolean isMvcc() {
-        return database.isMultiVersion();
+        return database.isMVStore();
     }
 
     @Override
@@ -162,7 +163,7 @@ public class DatabaseInfo implements DatabaseInfoMBean {
         if (p != null) {
             return p.getWriteCount();
         }
-        return database.getMvStore().getStore().getFileStore().getReadCount();
+        return database.getStore().getMvStore().getFileStore().getReadCount();
     }
 
     @Override
@@ -174,7 +175,7 @@ public class DatabaseInfo implements DatabaseInfoMBean {
         if (p != null) {
             return p.getReadCount();
         }
-        return database.getMvStore().getStore().getFileStore().getReadCount();
+        return database.getStore().getMvStore().getFileStore().getReadCount();
     }
 
     @Override
@@ -186,7 +187,7 @@ public class DatabaseInfo implements DatabaseInfoMBean {
         if (p != null) {
             return p.getPageCount() * p.getPageSize() / 1024;
         }
-        return database.getMvStore().getStore().getFileStore().size();
+        return database.getStore().getMvStore().getFileStore().size();
     }
 
     @Override
@@ -198,7 +199,7 @@ public class DatabaseInfo implements DatabaseInfoMBean {
         if (p != null) {
             return p.getCache().getMaxMemory();
         }
-        return database.getMvStore().getStore().getCacheSize() * 1024;
+        return database.getStore().getMvStore().getCacheSize() * 1024;
     }
 
     @Override
@@ -217,7 +218,7 @@ public class DatabaseInfo implements DatabaseInfoMBean {
         if (p != null) {
             return p.getCache().getMemory();
         }
-        return database.getMvStore().getStore().getCacheSizeUsed() * 1024;
+        return database.getStore().getMvStore().getCacheSizeUsed() * 1024;
     }
 
     @Override
@@ -249,15 +250,12 @@ public class DatabaseInfo implements DatabaseInfoMBean {
                     append('\n');
             Command command = session.getCurrentCommand();
             if (command != null) {
-                buff.append("statement: ").
-                        append(session.getCurrentCommand()).
-                        append('\n');
-                long commandStart = session.getCurrentCommandStart();
-                if (commandStart != 0) {
-                    buff.append("started: ").append(
-                            new Timestamp(commandStart)).
-                            append('\n');
-                }
+                buff.append("statement: ")
+                        .append(command)
+                        .append('\n')
+                        .append("started: ")
+                        .append(session.getCurrentCommandStart().getString())
+                        .append('\n');
             }
             Table[] t = session.getLocks();
             if (t.length > 0) {

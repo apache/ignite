@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -19,26 +19,22 @@ public class CaseInsensitiveMap<V> extends HashMap<String, V> {
 
     @Override
     public V get(Object key) {
-        return super.get(toUpper(key));
+        return super.get(StringUtils.toUpperEnglish((String) key));
     }
 
     @Override
     public V put(String key, V value) {
-        return super.put(toUpper(key), value);
+        return super.put(StringUtils.toUpperEnglish(key), value);
     }
 
     @Override
     public boolean containsKey(Object key) {
-        return super.containsKey(toUpper(key));
+        return super.containsKey(StringUtils.toUpperEnglish((String) key));
     }
 
     @Override
     public V remove(Object key) {
-        return super.remove(toUpper(key));
-    }
-
-    private static String toUpper(Object key) {
-        return key == null ? null : StringUtils.toUpperEnglish(key.toString());
+        return super.remove(StringUtils.toUpperEnglish((String) key));
     }
 
 }

@@ -1,12 +1,11 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.test.synth.sql;
 
 import java.util.ArrayList;
-import org.h2.util.New;
 
 /**
  * Represents a connection to a simulated database.
@@ -16,8 +15,8 @@ public class DbState implements DbInterface {
     private boolean connected;
     private boolean autoCommit;
     private final TestSynth config;
-    private ArrayList<Table> tables = New.arrayList();
-    private ArrayList<Index> indexes = New.arrayList();
+    private ArrayList<Table> tables = new ArrayList<>();
+    private ArrayList<Index> indexes = new ArrayList<>();
 
     DbState(TestSynth config) {
         this.config = config;
@@ -25,8 +24,8 @@ public class DbState implements DbInterface {
 
     @Override
     public void reset() {
-        tables = New.arrayList();
-        indexes = New.arrayList();
+        tables = new ArrayList<>();
+        indexes = new ArrayList<>();
     }
 
     @Override

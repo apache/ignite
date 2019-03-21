@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: Christian d'Heureuse, www.source-code.biz
  *
@@ -22,16 +22,20 @@ package org.h2.jdbcx;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
+
 import javax.sql.ConnectionEvent;
 import javax.sql.ConnectionEventListener;
 import javax.sql.ConnectionPoolDataSource;
 import javax.sql.DataSource;
 import javax.sql.PooledConnection;
+
 import org.h2.message.DbException;
-import org.h2.util.New;
 
 /**
  * A simple standalone JDBC connection pool.
@@ -67,12 +71,12 @@ public class JdbcConnectionPool implements DataSource, ConnectionEventListener,
     private static final int DEFAULT_MAX_CONNECTIONS = 10;
 
     private final ConnectionPoolDataSource dataSource;
-    private final ArrayList<PooledConnection> recycledConnections = New.arrayList();
+    private final Queue<PooledConnection> recycledConnections = new ConcurrentLinkedQueue<>();
     private PrintWriter logWriter;
-    private int maxConnections = DEFAULT_MAX_CONNECTIONS;
-    private int timeout = DEFAULT_TIMEOUT;
-    private int activeConnections;
-    private boolean isDisposed;
+    private volatile int maxConnections = DEFAULT_MAX_CONNECTIONS;
+    private volatile int timeout = DEFAULT_TIMEOUT;
+    private AtomicInteger activeConnections = new AtomicInteger();
+    private AtomicBoolean isDisposed = new AtomicBoolean();
 
     protected JdbcConnectionPool(ConnectionPoolDataSource dataSource) {
         this.dataSource = dataSource;
@@ -118,13 +122,11 @@ public class JdbcConnectionPool implements DataSource, ConnectionEventListener,
      *
      * @param max the maximum number of connections
      */
-    public synchronized void setMaxConnections(int max) {
+    public void setMaxConnections(int max) {
         if (max < 1) {
             throw new IllegalArgumentException("Invalid maxConnections value: " + max);
         }
         this.maxConnections = max;
-        // notify waiting threads if the value was increased
-        notifyAll();
     }
 
     /**
@@ -132,7 +134,7 @@ public class JdbcConnectionPool implements DataSource, ConnectionEventListener,
      *
      * @return the max the maximum number of connections
      */
-    public synchronized int getMaxConnections() {
+    public int getMaxConnections() {
         return maxConnections;
     }
 
@@ -142,7 +144,7 @@ public class JdbcConnectionPool implements DataSource, ConnectionEventListener,
      * @return the timeout in seconds
      */
     @Override
-    public synchronized int getLoginTimeout() {
+    public int getLoginTimeout() {
         return timeout;
     }
 
@@ -154,7 +156,7 @@ public class JdbcConnectionPool implements DataSource, ConnectionEventListener,
      * @param seconds the timeout, 0 meaning the default
      */
     @Override
-    public synchronized void setLoginTimeout(int seconds) {
+    public void setLoginTimeout(int seconds) {
         if (seconds == 0) {
             seconds = DEFAULT_TIMEOUT;
         }
@@ -165,13 +167,12 @@ public class JdbcConnectionPool implements DataSource, ConnectionEventListener,
      * Closes all unused pooled connections.
      * Exceptions while closing are written to the log stream (if set).
      */
-    public synchronized void dispose() {
-        if (isDisposed) {
-            return;
-        }
-        isDisposed = true;
-        for (PooledConnection aList : recycledConnections) {
-            closeConnection(aList);
+    public void dispose() {
+        isDisposed.set(true);
+
+        PooledConnection pc;
+        while ((pc = recycledConnections.poll()) != null) {
+            closeConnection(pc);
         }
     }
 
@@ -191,18 +192,28 @@ public class JdbcConnectionPool implements DataSource, ConnectionEventListener,
     @Override
     public Connection getConnection() throws SQLException {
         long max = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeout);
+        int spin = 0;
         do {
-            synchronized (this) {
-                if (activeConnections < maxConnections) {
-                    return getConnectionNow();
-                }
+            if (activeConnections.incrementAndGet() <= maxConnections) {
                 try {
-                    wait(1000);
-                } catch (InterruptedException e) {
-                    // ignore
+                    return getConnectionNow();
+                } catch (Throwable t) {
+                    activeConnections.decrementAndGet();
+                    throw t;
                 }
+            } else {
+                activeConnections.decrementAndGet();
             }
-        } while (System.nanoTime() <= max);
+            if (--spin >= 0) {
+                continue;
+            }
+            try {
+                spin = 3;
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        } while (System.nanoTime() - max <= 0);
         throw new SQLException("Login timeout", "08001", 8001);
     }
 
@@ -215,17 +226,14 @@ public class JdbcConnectionPool implements DataSource, ConnectionEventListener,
     }
 
     private Connection getConnectionNow() throws SQLException {
-        if (isDisposed) {
+        if (isDisposed.get()) {
             throw new IllegalStateException("Connection pool has been disposed.");
         }
-        PooledConnection pc;
-        if (!recycledConnections.isEmpty()) {
-            pc = recycledConnections.remove(recycledConnections.size() - 1);
-        } else {
+        PooledConnection pc = recycledConnections.poll();
+        if (pc == null) {
             pc = dataSource.getPooledConnection();
         }
         Connection conn = pc.getConnection();
-        activeConnections++;
         pc.addConnectionEventListener(this);
         return conn;
     }
@@ -237,18 +245,19 @@ public class JdbcConnectionPool implements DataSource, ConnectionEventListener,
      *
      * @param pc the pooled connection
      */
-    synchronized void recycleConnection(PooledConnection pc) {
-        if (activeConnections <= 0) {
+    private void recycleConnection(PooledConnection pc) {
+        int active = activeConnections.decrementAndGet();
+        if (active < 0) {
+            activeConnections.incrementAndGet();
             throw new AssertionError();
         }
-        activeConnections--;
-        if (!isDisposed && activeConnections < maxConnections) {
+        if (!isDisposed.get() && active < maxConnections) {
             recycledConnections.add(pc);
+            if (isDisposed.get()) {
+                dispose();
+            }
         } else {
             closeConnection(pc);
-        }
-        if (activeConnections >= maxConnections - 1) {
-            notifyAll();
         }
     }
 
@@ -288,8 +297,8 @@ public class JdbcConnectionPool implements DataSource, ConnectionEventListener,
      *
      * @return the number of active connections.
      */
-    public synchronized int getActiveConnections() {
-        return activeConnections;
+    public int getActiveConnections() {
+        return activeConnections.get();
     }
 
     /**

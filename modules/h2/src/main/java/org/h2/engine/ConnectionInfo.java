@@ -1,12 +1,11 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.engine;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -75,9 +74,9 @@ public class ConnectionInfo implements Cloneable {
         readProperties(info);
         readSettingsFromURL();
         setUserName(removeProperty("USER", ""));
-        convertPasswords();
         name = url.substring(Constants.START_URL.length());
         parseName();
+        convertPasswords();
         String recoverTest = removeProperty("RECOVER_TEST", null);
         if (recoverTest != null) {
             FilePathRec.register();
@@ -91,17 +90,16 @@ public class ConnectionInfo implements Cloneable {
     }
 
     static {
-        ArrayList<String> list = SetTypes.getTypes();
         String[] connectionTime = { "ACCESS_MODE_DATA", "AUTOCOMMIT", "CIPHER",
                 "CREATE", "CACHE_TYPE", "FILE_LOCK", "IGNORE_UNKNOWN_SETTINGS",
-                "IFEXISTS", "INIT", "PASSWORD", "RECOVER", "RECOVER_TEST",
+                "IFEXISTS", "INIT", "MVCC", "PASSWORD", "RECOVER", "RECOVER_TEST",
                 "USER", "AUTO_SERVER", "AUTO_SERVER_PORT", "NO_UPGRADE",
                 "AUTO_RECONNECT", "OPEN_NEW", "PAGE_SIZE", "PASSWORD_HASH", "JMX",
-                "SCOPE_GENERATED_KEYS" };
-        HashSet<String> set = new HashSet<>(list.size() + connectionTime.length);
-        set.addAll(list);
+                "SCOPE_GENERATED_KEYS", "AUTHREALM", "AUTHZPWD" };
+        HashSet<String> set = new HashSet<>(128);
+        set.addAll(SetTypes.getTypes());
         for (String key : connectionTime) {
-            if (!set.add(key) && SysProperties.CHECK) {
+            if (!set.add(key)) {
                 DbException.throwInternalError(key);
             }
         }
@@ -254,7 +252,7 @@ public class ConnectionInfo implements Cloneable {
             url = url.substring(0, idx);
             String[] list = StringUtils.arraySplit(settings, ';', false);
             for (String setting : list) {
-                if (setting.length() == 0) {
+                if (setting.isEmpty()) {
                     continue;
                 }
                 int equal = setting.indexOf('=');
@@ -276,8 +274,15 @@ public class ConnectionInfo implements Cloneable {
         }
     }
 
+    private void preservePasswordForAuthentication(Object password) {
+        if ((!isRemote() || isSSL()) &&  prop.containsKey("AUTHREALM") && password!=null) {
+            prop.put("AUTHZPWD",password instanceof char[] ? new String((char[])password) : password);
+        }
+    }
+
     private char[] removePassword() {
         Object p = prop.remove("PASSWORD");
+        preservePasswordForAuthentication(p);
         if (p == null) {
             return new char[0];
         } else if (p instanceof char[]) {
@@ -321,7 +326,7 @@ public class ConnectionInfo implements Cloneable {
         if (passwordHash) {
             return StringUtils.convertHexToBytes(new String(password));
         }
-        if (userName.length() == 0 && password.length == 0) {
+        if (userName.isEmpty() && password.length == 0) {
             return new byte[0];
         }
         return SHA256.getKeyPasswordHash(userName, password);
@@ -638,7 +643,7 @@ public class ConnectionInfo implements Cloneable {
 
     private static String remapURL(String url) {
         String urlMap = SysProperties.URL_MAP;
-        if (urlMap != null && urlMap.length() > 0) {
+        if (urlMap != null && !urlMap.isEmpty()) {
             try {
                 SortedProperties prop;
                 prop = SortedProperties.loadProperties(urlMap);
@@ -648,7 +653,7 @@ public class ConnectionInfo implements Cloneable {
                     prop.store(urlMap);
                 } else {
                     url2 = url2.trim();
-                    if (url2.length() > 0) {
+                    if (!url2.isEmpty()) {
                         return url2;
                     }
                 }
@@ -659,4 +664,11 @@ public class ConnectionInfo implements Cloneable {
         return url;
     }
 
+    /**
+     * Clear authentication properties.
+     */
+    public void cleanAuthenticationInfo() {
+        removeProperty("AUTHREALM", false);
+        removeProperty("AUTHZPWD", false);
+    }
 }

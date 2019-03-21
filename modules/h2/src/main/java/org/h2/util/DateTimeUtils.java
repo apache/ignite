@@ -1,8 +1,9 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0, and the
- * EPL 1.0 (http://h2database.com/html/license.html). Initial Developer: H2
- * Group Iso8601: Initial Developer: Robert Rathsack (firstName dot lastName at
- * gmx dot de)
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0, and the
+ * EPL 1.0 (http://h2database.com/html/license.html).
+ * Initial Developer: H2 Group
+ * Iso8601: Initial Developer: Robert Rathsack (firstName dot lastName at gmx
+ * dot de)
  */
 package org.h2.util;
 
@@ -13,7 +14,6 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import org.h2.engine.Mode;
-import org.h2.message.DbException;
 import org.h2.value.Value;
 import org.h2.value.ValueDate;
 import org.h2.value.ValueNull;
@@ -43,6 +43,21 @@ public class DateTimeUtils {
      * UTC time zone.
      */
     public static final TimeZone UTC = TimeZone.getTimeZone("UTC");
+
+    /**
+     * The number of nanoseconds per second.
+     */
+    public static final long NANOS_PER_SECOND = 1_000_000_000;
+
+    /**
+     * The number of nanoseconds per minute.
+     */
+    public static final long NANOS_PER_MINUTE = 60 * NANOS_PER_SECOND;
+
+    /**
+     * The number of nanoseconds per hour.
+     */
+    public static final long NANOS_PER_HOUR = 60 * NANOS_PER_MINUTE;
 
     /**
      * The number of nanoseconds per day.
@@ -94,12 +109,12 @@ public class DateTimeUtils {
     private static volatile TimeZone timeZone;
 
     /**
-     * Observed JVM behaviour is that if the timezone of the host computer is
-     * changed while the JVM is running, the zone offset does not change but
-     * keeps the initial value. So it is correct to measure this once and use
-     * this value throughout the JVM's lifecycle. In any case, it is safer to
-     * use a fixed value throughout the duration of the JVM's life, rather than
-     * have this offset change, possibly midway through a long-running query.
+     * Raw offset doesn't change during DST transitions, but changes during
+     * other transitions that some time zones have. H2 1.4.193 and later
+     * versions use zone offset that is valid for startup time for performance
+     * reasons. This code is now used only by old PageStore engine and its
+     * datetime storage code has issues with all time zone transitions, so this
+     * buggy logic is preserved as is too.
      */
     private static int zoneOffsetMillis = createGregorianCalendar().get(Calendar.ZONE_OFFSET);
 
@@ -108,16 +123,17 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns local time zone.
+     * Returns local time zone offset for a specified timestamp.
      *
-     * @return local time zone
+     * @param ms milliseconds since Epoch in UTC
+     * @return local time zone offset
      */
-    private static TimeZone getTimeZone() {
+    public static int getTimeZoneOffset(long ms) {
         TimeZone tz = timeZone;
         if (tz == null) {
             timeZone = tz = TimeZone.getDefault();
         }
-        return tz;
+        return tz.getOffset(ms);
     }
 
     /**
@@ -278,9 +294,6 @@ public class DateTimeUtils {
      * @return the date
      */
     public static ValueDate convertDate(Date x, Calendar calendar) {
-        if (calendar == null) {
-            throw DbException.getInvalidValueException("calendar", null);
-        }
         Calendar cal = (Calendar) calendar.clone();
         cal.setTimeInMillis(x.getTime());
         long dateValue = dateValueFromCalendar(cal);
@@ -295,9 +308,6 @@ public class DateTimeUtils {
      * @return the time
      */
     public static ValueTime convertTime(Time x, Calendar calendar) {
-        if (calendar == null) {
-            throw DbException.getInvalidValueException("calendar", null);
-        }
         Calendar cal = (Calendar) calendar.clone();
         cal.setTimeInMillis(x.getTime());
         long nanos = nanosFromCalendar(cal);
@@ -313,9 +323,6 @@ public class DateTimeUtils {
      */
     public static ValueTimestamp convertTimestamp(Timestamp x,
             Calendar calendar) {
-        if (calendar == null) {
-            throw DbException.getInvalidValueException("calendar", null);
-        }
         Calendar cal = (Calendar) calendar.clone();
         cal.setTimeInMillis(x.getTime());
         long dateValue = dateValueFromCalendar(cal);
@@ -326,6 +333,7 @@ public class DateTimeUtils {
 
     /**
      * Parse a date string. The format is: [+|-]year-month-day
+     * or [+|-]yyyyMMdd.
      *
      * @param s the string to parse
      * @param start the parse index start
@@ -339,14 +347,28 @@ public class DateTimeUtils {
             start++;
         }
         // start at position 1 to support "-year"
-        int s1 = s.indexOf('-', start + 1);
-        int s2 = s.indexOf('-', s1 + 1);
-        if (s1 <= 0 || s2 <= s1) {
-            throw new IllegalArgumentException(s);
+        int yEnd = s.indexOf('-', start + 1);
+        int mStart, mEnd, dStart;
+        if (yEnd > 0) {
+            // Standard [+|-]year-month-day format
+            mStart = yEnd + 1;
+            mEnd = s.indexOf('-', mStart);
+            if (mEnd <= mStart) {
+                throw new IllegalArgumentException(s);
+            }
+            dStart = mEnd + 1;
+        } else {
+            // Additional [+|-]yyyyMMdd format for compatibility
+            mEnd = dStart = end - 2;
+            yEnd = mStart = mEnd - 2;
+            // Accept only 3 or more digits in year for now
+            if (yEnd < start + 3) {
+                throw new IllegalArgumentException(s);
+            }
         }
-        int year = Integer.parseInt(s.substring(start, s1));
-        int month = Integer.parseInt(s.substring(s1 + 1, s2));
-        int day = Integer.parseInt(s.substring(s2 + 1, end));
+        int year = Integer.parseInt(s.substring(start, yEnd));
+        int month = StringUtils.parseUInt31(s, mStart, mEnd);
+        int day = StringUtils.parseUInt31(s, dStart, end);
         if (!isValidDate(year, month, day)) {
             throw new IllegalArgumentException(year + "-" + month + "-" + day);
         }
@@ -354,66 +376,112 @@ public class DateTimeUtils {
     }
 
     /**
-     * Parse a time string. The format is: [-]hour:minute:second[.nanos] or
-     * alternatively [-]hour.minute.second[.nanos].
+     * Parse a time string. The format is: hour:minute[:second[.nanos]],
+     * hhmm[ss[.nanos]], or hour.minute.second[.nanos].
      *
      * @param s the string to parse
      * @param start the parse index start
      * @param end the parse index end
-     * @param timeOfDay whether the result need to be within 0 (inclusive) and 1
-     *            day (exclusive)
      * @return the time in nanoseconds
      * @throws IllegalArgumentException if there is a problem
      */
-    public static long parseTimeNanos(String s, int start, int end,
-            boolean timeOfDay) {
-        int hour = 0, minute = 0, second = 0;
-        long nanos = 0;
-        int s1 = s.indexOf(':', start);
-        int s2 = s.indexOf(':', s1 + 1);
-        int s3 = s.indexOf('.', s2 + 1);
-        if (s1 <= 0 || s2 <= s1) {
-            // if first try fails try to use IBM DB2 time format
-            // [-]hour.minute.second[.nanos]
-            s1 = s.indexOf('.', start);
-            s2 = s.indexOf('.', s1 + 1);
-            s3 = s.indexOf('.', s2 + 1);
+    public static long parseTimeNanos(String s, int start, int end) {
+        int hour, minute, second, nanos;
+        int hEnd = s.indexOf(':', start);
+        int mStart, mEnd, sStart, sEnd;
+        if (hEnd > 0) {
+            mStart = hEnd + 1;
+            mEnd = s.indexOf(':', mStart);
+            if (mEnd >= mStart) {
+                // Standard hour:minute:second[.nanos] format
+                sStart = mEnd + 1;
+                sEnd = s.indexOf('.', sStart);
+            } else {
+                // Additional hour:minute format for compatibility
+                mEnd = end;
+                sStart = sEnd = -1;
+            }
+        } else {
+            int t = s.indexOf('.', start);
+            if (t < 0) {
+                // Additional hhmm[ss] format for compatibility
+                hEnd = mStart = start + 2;
+                mEnd = mStart + 2;
+                int len = end - start;
+                if (len == 6) {
+                    sStart = mEnd;
+                    sEnd = -1;
+                } else if (len == 4) {
+                    sStart = sEnd = -1;
+                } else {
+                    throw new IllegalArgumentException(s);
+                }
+            } else if (t >= start + 6) {
+                // Additional hhmmss.nanos format for compatibility
+                if (t - start != 6) {
+                    throw new IllegalArgumentException(s);
+                }
+                hEnd = mStart = start + 2;
+                mEnd = sStart = mStart + 2;
+                sEnd = t;
+            } else {
+                // Additional hour.minute.second[.nanos] IBM DB2 time format
+                hEnd = t;
+                mStart = hEnd + 1;
+                mEnd = s.indexOf('.', mStart);
+                if (mEnd <= mStart) {
+                    throw new IllegalArgumentException(s);
+                }
+                sStart = mEnd + 1;
+                sEnd = s.indexOf('.', sStart);
+            }
+        }
+        hour = StringUtils.parseUInt31(s, start, hEnd);
+        if (hour >= 24) {
+            throw new IllegalArgumentException(s);
+        }
+        minute = StringUtils.parseUInt31(s, mStart, mEnd);
+        if (sStart > 0) {
+            if (sEnd < 0) {
+                second = StringUtils.parseUInt31(s, sStart, end);
+                nanos = 0;
+            } else {
+                second = StringUtils.parseUInt31(s, sStart, sEnd);
+                nanos = parseNanos(s, sEnd + 1, end);
+            }
+        } else {
+            second = nanos = 0;
+        }
+        if (minute >= 60 || second >= 60) {
+            throw new IllegalArgumentException(s);
+        }
+        return ((((hour * 60L) + minute) * 60) + second) * NANOS_PER_SECOND + nanos;
+    }
 
-            if (s1 <= 0 || s2 <= s1) {
-                throw new IllegalArgumentException(s);
-            }
-        }
-        boolean negative;
-        hour = Integer.parseInt(s.substring(start, s1));
-        if (hour < 0 || hour == 0 && s.charAt(0) == '-') {
-            if (timeOfDay) {
-                /*
-                 * This also forbids -00:00:00 and similar values.
-                 */
-                throw new IllegalArgumentException(s);
-            }
-            negative = true;
-            hour = -hour;
-        } else {
-            negative = false;
-        }
-        minute = Integer.parseInt(s.substring(s1 + 1, s2));
-        if (s3 < 0) {
-            second = Integer.parseInt(s.substring(s2 + 1, end));
-        } else {
-            second = Integer.parseInt(s.substring(s2 + 1, s3));
-            String n = (s.substring(s3 + 1, end) + "000000000").substring(0, 9);
-            nanos = Integer.parseInt(n);
-        }
-        if (hour >= 2_000_000 || minute < 0 || minute >= 60 || second < 0
-                || second >= 60) {
+    /**
+     * Parse nanoseconds.
+     *
+     * @param s String to parse.
+     * @param start Begin position at the string to read.
+     * @param end End position at the string to read.
+     * @return Parsed nanoseconds.
+     */
+    static int parseNanos(String s, int start, int end) {
+        if (start >= end) {
             throw new IllegalArgumentException(s);
         }
-        if (timeOfDay && hour >= 24) {
-            throw new IllegalArgumentException(s);
-        }
-        nanos += ((((hour * 60L) + minute) * 60) + second) * 1_000_000_000;
-        return negative ? -nanos : nanos;
+        int nanos = 0, mul = 100_000_000;
+        do {
+            char c = s.charAt(start);
+            if (c < '0' || c > '9') {
+                throw new IllegalArgumentException(s);
+            }
+            nanos += mul * (c - '0');
+            // mul can become 0, but continue loop anyway to ensure that all
+            // remaining digits are valid
+            mul /= 10;
+        } while (++start < end);
+        return nanos;
     }
 
     /**
@@ -501,17 +569,18 @@ public class DateTimeUtils {
                     }
                 }
             }
-            nanos = parseTimeNanos(s, dateEnd + 1, timeEnd, true);
+            nanos = parseTimeNanos(s, dateEnd + 1, timeEnd);
             if (tz != null) {
                 if (withTimeZone) {
                     if (tz != UTC) {
                         long millis = convertDateTimeValueToMillis(tz, dateValue, nanos / 1_000_000);
-                        tzMinutes = (short) (tz.getOffset(millis) / 1000 / 60);
+                        tzMinutes = (short) (tz.getOffset(millis) / 60_000);
                     }
                 } else {
                     long millis = convertDateTimeValueToMillis(tz, dateValue, nanos / 1_000_000);
-                    dateValue = dateValueFromDate(millis);
-                    nanos = nanos % 1_000_000 + nanosFromDate(millis);
+                    millis += getTimeZoneOffset(millis);
+                    dateValue = dateValueFromLocalMillis(millis);
+                    nanos = nanos % 1_000_000 + nanosFromLocalMillis(millis);
                 }
             }
         }
@@ -948,7 +1017,7 @@ public class DateTimeUtils {
             long timeNanos) {
         Timestamp ts = new Timestamp(convertDateTimeValueToMillis(null, dateValue, timeNanos / 1_000_000));
         // This method expects the complete nanoseconds value including milliseconds
-        ts.setNanos((int) (timeNanos % 1_000_000_000));
+        ts.setNanos((int) (timeNanos % NANOS_PER_SECOND));
         return ts;
     }
 
@@ -963,7 +1032,7 @@ public class DateTimeUtils {
      */
     public static Timestamp convertTimestampTimeZoneToTimestamp(long dateValue, long timeNanos, short offsetMins) {
         Timestamp ts = new Timestamp(getMillis(dateValue, timeNanos, offsetMins));
-        ts.setNanos((int) (timeNanos % 1_000_000_000));
+        ts.setNanos((int) (timeNanos % NANOS_PER_SECOND));
         return ts;
     }
 
@@ -1061,14 +1130,12 @@ public class DateTimeUtils {
     }
 
     /**
-     * Convert a UTC datetime in millis to an encoded date in the default
-     * timezone.
+     * Convert a local datetime in millis to an encoded date.
      *
      * @param ms the milliseconds
      * @return the date value
      */
-    public static long dateValueFromDate(long ms) {
-        ms += getTimeZone().getOffset(ms);
+    public static long dateValueFromLocalMillis(long ms) {
         long absoluteDay = ms / MILLIS_PER_DAY;
         // Round toward negative infinity
         if (ms < 0 && (absoluteDay * MILLIS_PER_DAY != ms)) {
@@ -1094,14 +1161,12 @@ public class DateTimeUtils {
     }
 
     /**
-     * Convert a time in milliseconds in UTC to the nanoseconds since midnight
-     * (in the default timezone).
+     * Convert a time in milliseconds in local time to the nanoseconds since midnight.
      *
      * @param ms the milliseconds
      * @return the nanoseconds
      */
-    public static long nanosFromDate(long ms) {
-        ms += getTimeZone().getOffset(ms);
+    public static long nanosFromLocalMillis(long ms) {
         long absoluteDay = ms / MILLIS_PER_DAY;
         // Round toward negative infinity
         if (ms < 0 && (absoluteDay * MILLIS_PER_DAY != ms)) {
@@ -1171,6 +1236,26 @@ public class DateTimeUtils {
             }
         }
         return ValueTimestampTimeZone.fromDateValueAndNanos(dateValue, timeNanos, (short) offsetMins);
+    }
+
+    /**
+     * Creates the instance of the {@link ValueTimestampTimeZone} from milliseconds.
+     *
+     * @param ms milliseconds since 1970-01-01 (UTC)
+     * @return timestamp with time zone with specified value and current time zone
+     */
+    public static ValueTimestampTimeZone timestampTimeZoneFromMillis(long ms) {
+        int offset = getTimeZoneOffset(ms);
+        ms += offset;
+        long absoluteDay = ms / MILLIS_PER_DAY;
+        // Round toward negative infinity
+        if (ms < 0 && (absoluteDay * MILLIS_PER_DAY != ms)) {
+            absoluteDay--;
+        }
+        return ValueTimestampTimeZone.fromDateValueAndNanos(
+                dateValueFromAbsoluteDay(absoluteDay),
+                (ms - absoluteDay * MILLIS_PER_DAY) * 1_000_000,
+                (short) (offset / 60_000));
     }
 
     /**
@@ -1391,17 +1476,26 @@ public class DateTimeUtils {
         StringUtils.appendZeroPadded(buff, 2, s);
         if (ms > 0 || nanos > 0) {
             buff.append('.');
-            int start = buff.length();
             StringUtils.appendZeroPadded(buff, 3, ms);
             if (nanos > 0) {
                 StringUtils.appendZeroPadded(buff, 6, nanos);
             }
-            for (int i = buff.length() - 1; i > start; i--) {
-                if (buff.charAt(i) != '0') {
-                    break;
-                }
-                buff.deleteCharAt(i);
+            stripTrailingZeroes(buff);
+        }
+    }
+
+    /**
+     * Skip trailing zeroes.
+     *
+     * @param buff String buffer.
+     */
+    static void stripTrailingZeroes(StringBuilder buff) {
+        int i = buff.length() - 1;
+        if (buff.charAt(i) == '0') {
+            while (buff.charAt(--i) == '0') {
+                // do nothing
             }
+            buff.setLength(i + 1);
         }
     }
 
@@ -1431,18 +1525,17 @@ public class DateTimeUtils {
     /**
      * Formats timestamp with time zone as string.
      *
+     * @param buff the target string builder
      * @param dateValue the year-month-day bit field
      * @param timeNanos nanoseconds since midnight
      * @param timeZoneOffsetMins the time zone offset in minutes
-     * @return formatted string
      */
-    public static String timestampTimeZoneToString(long dateValue, long timeNanos, short timeZoneOffsetMins) {
-        StringBuilder buff = new StringBuilder(ValueTimestampTimeZone.MAXIMUM_PRECISION);
+    public static void appendTimestampTimeZone(StringBuilder buff, long dateValue, long timeNanos,
+            short timeZoneOffsetMins) {
         appendDate(buff, dateValue);
         buff.append(' ');
         appendTime(buff, timeNanos);
         appendTimeZone(buff, timeZoneOffsetMins);
-        return buff.toString();
     }
 
     /**

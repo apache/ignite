@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
+import org.h2.api.ErrorCode;
 import org.h2.util.StringUtils;
 
 /**
@@ -92,12 +93,19 @@ public class TraceObject {
      */
     protected static final int ARRAY = 16;
 
-    private static final int LAST = ARRAY + 1;
+    /**
+     * The trace type id  for SQLXML objects.
+     */
+    protected static final int SQLXML = 17;
+
+    private static final int LAST = SQLXML + 1;
     private static final AtomicIntegerArray ID = new AtomicIntegerArray(LAST);
 
     private static final String[] PREFIX = { "call", "conn", "dbMeta", "prep",
             "rs", "rsMeta", "sp", "ex", "stat", "blob", "clob", "pMeta", "ds",
-            "xads", "xares", "xid", "ar" };
+            "xads", "xares", "xid", "ar", "sqlxml" };
+
+    private static final SQLException SQL_OOME = DbException.SQL_OOME;
 
     /**
      * The trace module used by this object.
@@ -304,8 +312,9 @@ public class TraceObject {
         if (x == null) {
             return "null";
         }
-        return "org.h2.util.StringUtils.convertHexToBytes(\"" +
-                StringUtils.convertBytesToHex(x) + "\")";
+        StringBuilder builder = new StringBuilder(x.length * 2 + 45)
+                .append("org.h2.util.StringUtils.convertHexToBytes(\"");
+        return StringUtils.convertBytesToHex(builder, x).append("\")").toString();
     }
 
     /**
@@ -365,11 +374,15 @@ public class TraceObject {
                     trace.error(e, "exception");
                 }
             }
-        } catch(Throwable ignore) {
+        } catch(Throwable another) {
             if (e == null) {
-                e = new SQLException("", "HY000", ex);
+                try {
+                    e = new SQLException("GeneralError", "HY000", ErrorCode.GENERAL_ERROR_1, ex);
+                } catch (OutOfMemoryError | NoClassDefFoundError ignored) {
+                    return SQL_OOME;
+                }
             }
-            e.addSuppressed(ignore);
+            e.addSuppressed(another);
         }
         return e;
     }

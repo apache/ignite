@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -111,7 +111,7 @@ public class TestPerformance implements Database.DatabaseTest {
         for (int i = 0; i < 100; i++) {
             String testString = prop.getProperty("test" + i);
             if (testString != null) {
-                Bench bench = (Bench) Class.forName(testString).newInstance();
+                Bench bench = (Bench) Class.forName(testString).getDeclaredConstructor().newInstance();
                 tests.add(bench);
             }
         }

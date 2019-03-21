@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -7,17 +7,13 @@ package org.h2.mvstore.db;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.h2.api.DatabaseEventListener;
 import org.h2.api.ErrorCode;
 import org.h2.command.ddl.CreateTableData;
-import org.h2.constraint.Constraint;
-import org.h2.constraint.ConstraintReferential;
 import org.h2.engine.Constants;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
@@ -25,30 +21,26 @@ import org.h2.engine.SysProperties;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
 import org.h2.index.IndexType;
-import org.h2.index.MultiVersionIndex;
 import org.h2.message.DbException;
 import org.h2.message.Trace;
 import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.db.MVTableEngine.Store;
-import org.h2.mvstore.db.TransactionStore.Transaction;
+import org.h2.mvstore.tx.Transaction;
+import org.h2.mvstore.tx.TransactionStore;
 import org.h2.result.Row;
-import org.h2.result.SortOrder;
+import org.h2.result.SearchRow;
 import org.h2.schema.SchemaObject;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
-import org.h2.table.Table;
-import org.h2.table.TableBase;
-import org.h2.table.TableType;
+import org.h2.table.RegularTable;
 import org.h2.util.DebuggingThreadLocal;
 import org.h2.util.MathUtils;
-import org.h2.util.New;
-import org.h2.value.DataType;
-import org.h2.value.Value;
+import org.h2.util.Utils;
 
 /**
  * A table stored in a MVStore.
  */
-public class MVTable extends TableBase {
+public class MVTable extends RegularTable {
     /**
      * The table name this thread is waiting to lock.
      */
@@ -102,13 +94,8 @@ public class MVTable extends TableBase {
     }
 
     private MVPrimaryIndex primaryIndex;
-    private final ArrayList<Index> indexes = New.arrayList();
-    private volatile long lastModificationId;
-    private volatile Session lockExclusiveSession;
-
-    // using a ConcurrentHashMap as a set
-    private final ConcurrentHashMap<Session, Session> lockSharedSessions =
-            new ConcurrentHashMap<>();
+    private final ArrayList<Index> indexes = Utils.newSmallArrayList();
+    private final AtomicLong lastModificationId = new AtomicLong();
 
     /**
      * The queue of sessions waiting to lock the table. It is a FIFO queue to
@@ -116,10 +103,8 @@ public class MVTable extends TableBase {
      */
     private final ArrayDeque<Session> waitingSessions = new ArrayDeque<>();
     private final Trace traceLock;
-    private int changesSinceAnalyze;
+    private final AtomicInteger changesUntilAnalyze;
     private int nextAnalyze;
-    private final boolean containsLargeObject;
-    private Column rowIdColumn;
 
     private final MVTableEngine.Store store;
     private final TransactionStore transactionStore;
@@ -127,27 +112,12 @@ public class MVTable extends TableBase {
     public MVTable(CreateTableData data, MVTableEngine.Store store) {
         super(data);
         nextAnalyze = database.getSettings().analyzeAuto;
+        changesUntilAnalyze = nextAnalyze <= 0 ? null : new AtomicInteger(nextAnalyze);
         this.store = store;
         this.transactionStore = store.getTransactionStore();
-        this.isHidden = data.isHidden;
-        boolean b = false;
-        for (Column col : getColumns()) {
-            if (DataType.isLargeObject(col.getType())) {
-                b = true;
-                break;
-            }
-        }
-        containsLargeObject = b;
         traceLock = database.getTrace(Trace.LOCK);
-    }
 
-    /**
-     * Initialize the table.
-     *
-     * @param session the session
-     */
-    void init(Session session) {
-        primaryIndex = new MVPrimaryIndex(session.getDatabase(), this, getId(),
+        primaryIndex = new MVPrimaryIndex(database, this, getId(),
                 IndexColumn.wrap(getColumns()), IndexType.createScan(true));
         indexes.add(primaryIndex);
     }
@@ -163,7 +133,7 @@ public class MVTable extends TableBase {
         if (lockMode == Constants.LOCK_MODE_OFF) {
             return false;
         }
-        if (!forceLockEvenInMvcc && database.isMultiVersion()) {
+        if (!forceLockEvenInMvcc) {
             // MVCC: update, delete, and insert use a shared lock.
             // Select doesn't lock except when using FOR UPDATE and
             // the system property h2.selectForUpdateMvcc
@@ -276,8 +246,8 @@ public class MVTable extends TableBase {
     }
 
     private boolean doLock2(Session session, int lockMode, boolean exclusive) {
-        if (exclusive) {
-            if (lockExclusiveSession == null) {
+        if (lockExclusiveSession == null) {
+            if (exclusive) {
                 if (lockSharedSessions.isEmpty()) {
                     traceLock(session, exclusive, TraceLockEvent.TRACE_LOCK_ADDED_FOR, NO_EXTRA_INFO);
                     session.addLock(this);
@@ -301,118 +271,23 @@ public class MVTable extends TableBase {
                     }
                     return true;
                 }
-            }
-        } else {
-            if (lockExclusiveSession == null) {
-                if (lockMode == Constants.LOCK_MODE_READ_COMMITTED) {
-                    if (!database.isMultiThreaded() &&
-                            !database.isMultiVersion()) {
-                        // READ_COMMITTED: a read lock is acquired,
-                        // but released immediately after the operation
-                        // is complete.
-                        // When allowing only one thread, no lock is
-                        // required.
-                        // Row level locks work like read committed.
-                        return true;
-                    }
-                }
-                if (!lockSharedSessions.containsKey(session)) {
+            } else {
+                if (lockSharedSessions.putIfAbsent(session, session) == null) {
                     traceLock(session, exclusive, TraceLockEvent.TRACE_LOCK_OK, NO_EXTRA_INFO);
                     session.addLock(this);
-                    lockSharedSessions.put(session, session);
                     if (SysProperties.THREAD_DEADLOCK_DETECTOR) {
-                        if (SHARED_LOCKS.get() == null) {
-                            SHARED_LOCKS.set(new ArrayList<String>());
+                        ArrayList<String> list = SHARED_LOCKS.get();
+                        if (list == null) {
+                            list = new ArrayList<>();
+                            SHARED_LOCKS.set(list);
                         }
-                        SHARED_LOCKS.get().add(getName());
+                        list.add(getName());
                     }
                 }
                 return true;
             }
         }
         return false;
-    }
-
-    private static String getDeadlockDetails(ArrayList<Session> sessions, boolean exclusive) {
-        // We add the thread details here to make it easier for customers to
-        // match up these error messages with their own logs.
-        StringBuilder buff = new StringBuilder();
-        for (Session s : sessions) {
-            Table lock = s.getWaitForLock();
-            Thread thread = s.getWaitForLockThread();
-            buff.append("\nSession ").append(s.toString())
-                    .append(" on thread ").append(thread.getName())
-                    .append(" is waiting to lock ").append(lock.toString())
-                    .append(exclusive ? " (exclusive)" : " (shared)")
-                    .append(" while locking ");
-            int i = 0;
-            for (Table t : s.getLocks()) {
-                if (i++ > 0) {
-                    buff.append(", ");
-                }
-                buff.append(t.toString());
-                if (t instanceof MVTable) {
-                    if (((MVTable) t).lockExclusiveSession == s) {
-                        buff.append(" (exclusive)");
-                    } else {
-                        buff.append(" (shared)");
-                    }
-                }
-            }
-            buff.append('.');
-        }
-        return buff.toString();
-    }
-
-    @Override
-    public ArrayList<Session> checkDeadlock(Session session, Session clash,
-            Set<Session> visited) {
-        // only one deadlock check at any given time
-        synchronized (MVTable.class) {
-            if (clash == null) {
-                // verification is started
-                clash = session;
-                visited = new HashSet<>();
-            } else if (clash == session) {
-                // we found a circle where this session is involved
-                return New.arrayList();
-            } else if (visited.contains(session)) {
-                // we have already checked this session.
-                // there is a circle, but the sessions in the circle need to
-                // find it out themselves
-                return null;
-            }
-            visited.add(session);
-            ArrayList<Session> error = null;
-            for (Session s : lockSharedSessions.keySet()) {
-                if (s == session) {
-                    // it doesn't matter if we have locked the object already
-                    continue;
-                }
-                Table t = s.getWaitForLock();
-                if (t != null) {
-                    error = t.checkDeadlock(s, clash, visited);
-                    if (error != null) {
-                        error.add(session);
-                        break;
-                    }
-                }
-            }
-            // take a local copy so we don't see inconsistent data, since we are
-            // not locked while checking the lockExclusiveSession value
-            Session copyOfLockExclusiveSession = lockExclusiveSession;
-            if (error == null && copyOfLockExclusiveSession != null) {
-                Table t = copyOfLockExclusiveSession.getWaitForLock();
-                if (t != null) {
-                    error = t.checkDeadlock(copyOfLockExclusiveSession, clash,
-                            visited);
-                    if (error != null) {
-                        error.add(session);
-                    }
-                }
-            }
-            return error;
-        }
     }
 
     private void traceLock(Session session, boolean exclusive, TraceLockEvent eventEnum, String extraInfo) {
@@ -424,20 +299,11 @@ public class MVTable extends TableBase {
     }
 
     @Override
-    public boolean isLockedExclusively() {
-        return lockExclusiveSession != null;
-    }
-
-    @Override
-    public boolean isLockedExclusivelyBy(Session session) {
-        return lockExclusiveSession == session;
-    }
-
-    @Override
     public void unlock(Session s) {
         if (database != null) {
-            traceLock(s, lockExclusiveSession == s, TraceLockEvent.TRACE_LOCK_UNLOCK, NO_EXTRA_INFO);
-            if (lockExclusiveSession == s) {
+            boolean wasLocked = lockExclusiveSession == s;
+            traceLock(s, wasLocked, TraceLockEvent.TRACE_LOCK_UNLOCK, NO_EXTRA_INFO);
+            if (wasLocked) {
                 lockSharedSessions.remove(s);
                 lockExclusiveSession = null;
                 if (SysProperties.THREAD_DEADLOCK_DETECTOR) {
@@ -445,41 +311,21 @@ public class MVTable extends TableBase {
                         EXCLUSIVE_LOCKS.get().remove(getName());
                     }
                 }
-            }
-            synchronized (getLockSyncObject()) {
-                if (lockSharedSessions.size() > 0) {
-                    lockSharedSessions.remove(s);
-                    if (SysProperties.THREAD_DEADLOCK_DETECTOR) {
-                        if (SHARED_LOCKS.get() != null) {
-                            SHARED_LOCKS.get().remove(getName());
-                        }
+            } else {
+                wasLocked = lockSharedSessions.remove(s) != null;
+                if (SysProperties.THREAD_DEADLOCK_DETECTOR) {
+                    if (SHARED_LOCKS.get() != null) {
+                        SHARED_LOCKS.get().remove(getName());
                     }
                 }
-                if (!waitingSessions.isEmpty()) {
-                    getLockSyncObject().notifyAll();
-                }
             }
-        }
-    }
-
-    @Override
-    public boolean canTruncate() {
-        if (getCheckForeignKeyConstraints() &&
-                database.getReferentialIntegrity()) {
-            ArrayList<Constraint> constraints = getConstraints();
-            if (constraints != null) {
-                for (Constraint c : constraints) {
-                    if (c.getConstraintType() != Constraint.Type.REFERENTIAL) {
-                        continue;
-                    }
-                    ConstraintReferential ref = (ConstraintReferential) c;
-                    if (ref.getRefTable() == this) {
-                        return false;
-                    }
+            if (wasLocked && !waitingSessions.isEmpty()) {
+                Object lockSyncObject = getLockSyncObject();
+                synchronized (lockSyncObject) {
+                    lockSyncObject.notifyAll();
                 }
             }
         }
-        return true;
     }
 
     @Override
@@ -512,16 +358,19 @@ public class MVTable extends TableBase {
             database.lockMeta(session);
         }
         MVIndex index;
-        int mainIndexColumn;
-        mainIndexColumn = getMainIndexColumn(indexType, cols);
+        int mainIndexColumn = primaryIndex.getMainIndexColumn() != SearchRow.ROWID_INDEX
+                ? SearchRow.ROWID_INDEX : getMainIndexColumn(indexType, cols);
         if (database.isStarting()) {
-            if (transactionStore.store.hasMap("index." + indexId)) {
-                mainIndexColumn = -1;
+            // if index does exists as a separate map it can't be a delegate
+            if (transactionStore.hasMap("index." + indexId)) {
+                // we can not reuse primary index
+                mainIndexColumn = SearchRow.ROWID_INDEX;
             }
         } else if (primaryIndex.getRowCountMax() != 0) {
-            mainIndexColumn = -1;
+            mainIndexColumn = SearchRow.ROWID_INDEX;
         }
-        if (mainIndexColumn != -1) {
+
+        if (mainIndexColumn != SearchRow.ROWID_INDEX) {
             primaryIndex.setMainIndexColumn(mainIndexColumn);
             index = new MVDelegateIndex(this, indexId, indexName, primaryIndex,
                     indexType);
@@ -551,7 +400,7 @@ public class MVTable extends TableBase {
 
     private void rebuildIndex(Session session, MVIndex index, String indexName) {
         try {
-            if (session.getDatabase().getMvStore() == null ||
+            if (session.getDatabase().getStore() == null ||
                     index instanceof MVSpatialIndex) {
                 // in-memory
                 rebuildIndexBuffered(session, index);
@@ -590,13 +439,13 @@ public class MVTable extends TableBase {
         long total = remaining;
         Cursor cursor = scan.find(session, null, null);
         long i = 0;
-        Store store = session.getDatabase().getMvStore();
+        Store store = session.getDatabase().getStore();
 
         int bufferSize = database.getMaxMemoryRows() / 2;
         ArrayList<Row> buffer = new ArrayList<>(bufferSize);
         String n = getName() + ":" + index.getName();
         int t = MathUtils.convertLongToInt(total);
-        ArrayList<String> bufferNames = New.arrayList();
+        ArrayList<String> bufferNames = Utils.newSmallArrayList();
         while (cursor.next()) {
             Row row = cursor.get();
             buffer.add(row);
@@ -621,7 +470,7 @@ public class MVTable extends TableBase {
         } else {
             addRowsToIndex(session, buffer, index);
         }
-        if (SysProperties.CHECK && remaining != 0) {
+        if (remaining != 0) {
             DbException.throwInternalError("rowcount remaining=" + remaining +
                     " " + getName());
         }
@@ -648,56 +497,15 @@ public class MVTable extends TableBase {
             remaining--;
         }
         addRowsToIndex(session, buffer, index);
-        if (SysProperties.CHECK && remaining != 0) {
+        if (remaining != 0) {
             DbException.throwInternalError("rowcount remaining=" + remaining +
                     " " + getName());
         }
     }
 
-    private int getMainIndexColumn(IndexType indexType, IndexColumn[] cols) {
-        if (primaryIndex.getMainIndexColumn() != -1) {
-            return -1;
-        }
-        if (!indexType.isPrimaryKey() || cols.length != 1) {
-            return -1;
-        }
-        IndexColumn first = cols[0];
-        if (first.sortType != SortOrder.ASCENDING) {
-            return -1;
-        }
-        switch (first.column.getType()) {
-        case Value.BYTE:
-        case Value.SHORT:
-        case Value.INT:
-        case Value.LONG:
-            break;
-        default:
-            return -1;
-        }
-        return first.column.getColumnId();
-    }
-
-    private static void addRowsToIndex(Session session, ArrayList<Row> list,
-            Index index) {
-        sortRows(list, index);
-        for (Row row : list) {
-            index.add(session, row);
-        }
-        list.clear();
-    }
-
-    private static void sortRows(ArrayList<Row> list, final Index index) {
-        Collections.sort(list, new Comparator<Row>() {
-            @Override
-            public int compare(Row r1, Row r2) {
-                return index.compareRows(r1, r2);
-            }
-        });
-    }
-
     @Override
     public void removeRow(Session session, Row row) {
-        lastModificationId = database.getNextModificationDataId();
+        syncLastModificationIdWithDatabase();
         Transaction t = session.getTransaction();
         long savepoint = t.setSavepoint();
         try {
@@ -706,7 +514,11 @@ public class MVTable extends TableBase {
                 index.remove(session, row);
             }
         } catch (Throwable e) {
-            t.rollbackToSavepoint(savepoint);
+            try {
+                t.rollbackToSavepoint(savepoint);
+            } catch (Throwable nested) {
+                e.addSuppressed(nested);
+            }
             throw DbException.convert(e);
         }
         analyzeIfRequired(session);
@@ -714,17 +526,19 @@ public class MVTable extends TableBase {
 
     @Override
     public void truncate(Session session) {
-        lastModificationId = database.getNextModificationDataId();
+        syncLastModificationIdWithDatabase();
         for (int i = indexes.size() - 1; i >= 0; i--) {
             Index index = indexes.get(i);
             index.truncate(session);
         }
-        changesSinceAnalyze = 0;
+        if (changesUntilAnalyze != null) {
+            changesUntilAnalyze.set(nextAnalyze);
+        }
     }
 
     @Override
     public void addRow(Session session, Row row) {
-        lastModificationId = database.getNextModificationDataId();
+        syncLastModificationIdWithDatabase();
         Transaction t = session.getTransaction();
         long savepoint = t.setSavepoint();
         try {
@@ -732,48 +546,52 @@ public class MVTable extends TableBase {
                 index.add(session, row);
             }
         } catch (Throwable e) {
-            t.rollbackToSavepoint(savepoint);
-            DbException de = DbException.convert(e);
-            if (de.getErrorCode() == ErrorCode.DUPLICATE_KEY_1) {
-                for (Index index : indexes) {
-                    if (index.getIndexType().isUnique() &&
-                            index instanceof MultiVersionIndex) {
-                        MultiVersionIndex mv = (MultiVersionIndex) index;
-                        if (mv.isUncommittedFromOtherSession(session, row)) {
-                            throw DbException.get(
-                                    ErrorCode.CONCURRENT_UPDATE_1,
-                                    index.getName());
-                        }
-                    }
-                }
+            try {
+                t.rollbackToSavepoint(savepoint);
+            } catch (Throwable nested) {
+                e.addSuppressed(nested);
             }
-            throw de;
+            throw DbException.convert(e);
         }
         analyzeIfRequired(session);
     }
 
-    private void analyzeIfRequired(Session session) {
-        synchronized (this) {
-            if (nextAnalyze == 0 || nextAnalyze > changesSinceAnalyze++) {
-                return;
+    @Override
+    public void updateRow(Session session, Row oldRow, Row newRow) {
+        newRow.setKey(oldRow.getKey());
+        syncLastModificationIdWithDatabase();
+        Transaction t = session.getTransaction();
+        long savepoint = t.setSavepoint();
+        try {
+            for (Index index : indexes) {
+                index.update(session, oldRow, newRow);
             }
-            changesSinceAnalyze = 0;
-            int n = 2 * nextAnalyze;
-            if (n > 0) {
-                nextAnalyze = n;
+        } catch (Throwable e) {
+            try {
+                t.rollbackToSavepoint(savepoint);
+            } catch (Throwable nested) {
+                e.addSuppressed(nested);
+            }
+            throw DbException.convert(e);
+        }
+        analyzeIfRequired(session);
+    }
+
+    @Override
+    public Row lockRow(Session session, Row row) {
+        return primaryIndex.lockRow(session, row);
+    }
+
+    private void analyzeIfRequired(Session session) {
+        if (changesUntilAnalyze != null) {
+            if (changesUntilAnalyze.decrementAndGet() == 0) {
+                if (nextAnalyze <= Integer.MAX_VALUE / 2) {
+                    nextAnalyze *= 2;
+                }
+                changesUntilAnalyze.set(nextAnalyze);
+                session.markTableForAnalyze(this);
             }
         }
-        session.markTableForAnalyze(this);
-    }
-
-    @Override
-    public void checkSupportAlter() {
-        // ok
-    }
-
-    @Override
-    public TableType getTableType() {
-        return TableType.TABLE;
     }
 
     @Override
@@ -793,26 +611,7 @@ public class MVTable extends TableBase {
 
     @Override
     public long getMaxDataModificationId() {
-        return lastModificationId;
-    }
-
-    public boolean getContainsLargeObject() {
-        return containsLargeObject;
-    }
-
-    @Override
-    public boolean isDeterministic() {
-        return true;
-    }
-
-    @Override
-    public boolean canGetRowCount() {
-        return true;
-    }
-
-    @Override
-    public boolean canDrop() {
-        return true;
+        return lastModificationId.get();
     }
 
     @Override
@@ -823,18 +622,20 @@ public class MVTable extends TableBase {
             database.getLobStorage().removeAllForTable(getId());
             database.lockMeta(session);
         }
-        database.getMvStore().removeTable(this);
+        database.getStore().removeTable(this);
         super.removeChildrenAndResources(session);
-        // go backwards because database.removeIndex will
-        // call table.removeIndex
+        // remove scan index (at position 0 on the list) last
         while (indexes.size() > 1) {
             Index index = indexes.get(1);
+            index.remove(session);
             if (index.getName() != null) {
                 database.removeSchemaObject(session, index);
             }
             // needed for session temporary indexes
             indexes.remove(index);
         }
+        primaryIndex.remove(session);
+        indexes.clear();
         if (SysProperties.CHECK) {
             for (SchemaObject obj : database
                     .getAllSchemaObjects(DbObject.INDEX)) {
@@ -845,8 +646,6 @@ public class MVTable extends TableBase {
                 }
             }
         }
-        primaryIndex.remove(session);
-        database.removeMeta(session, getId());
         close(session);
         invalidate();
     }
@@ -866,11 +665,6 @@ public class MVTable extends TableBase {
         return primaryIndex.getDiskSpaceUsed();
     }
 
-    @Override
-    public void checkRename() {
-        // ok
-    }
-
     /**
      * Get a new transaction.
      *
@@ -879,20 +673,6 @@ public class MVTable extends TableBase {
     Transaction getTransactionBegin() {
         // TODO need to commit/rollback the transaction
         return transactionStore.begin();
-    }
-
-    @Override
-    public Column getRowIdColumn() {
-        if (rowIdColumn == null) {
-            rowIdColumn = new Column(Column.ROWID, Value.LONG);
-            rowIdColumn.setTable(this, -1);
-        }
-        return rowIdColumn;
-    }
-
-    @Override
-    public String toString() {
-        return getSQL();
     }
 
     @Override
@@ -906,8 +686,24 @@ public class MVTable extends TableBase {
      */
     public void commit() {
         if (database != null) {
-            lastModificationId = database.getNextModificationDataId();
+            syncLastModificationIdWithDatabase();
         }
+    }
+
+    // Field lastModificationId can not be just a volatile, because window of opportunity
+    // between reading database's modification id and storing this value in the field
+    // could be exploited by another thread.
+    // Second thread may do the same with possibly bigger (already advanced)
+    // modification id, and when first thread finally updates the field, it will
+    // result in lastModificationId jumping back.
+    // This is, of course, unacceptable.
+    private void syncLastModificationIdWithDatabase() {
+        long nextModificationDataId = database.getNextModificationDataId();
+        long currentId;
+        do {
+            currentId = lastModificationId.get();
+        } while (nextModificationDataId > currentId &&
+                !lastModificationId.compareAndSet(currentId, nextModificationDataId));
     }
 
     /**
@@ -917,12 +713,15 @@ public class MVTable extends TableBase {
      * @return the database exception
      */
     DbException convertException(IllegalStateException e) {
-        if (DataUtils.getErrorCode(e.getMessage()) ==
-                DataUtils.ERROR_TRANSACTION_LOCKED) {
+        int errorCode = DataUtils.getErrorCode(e.getMessage());
+        if (errorCode == DataUtils.ERROR_TRANSACTION_LOCKED) {
             throw DbException.get(ErrorCode.CONCURRENT_UPDATE_1,
+                    e, getName());
+        }
+        if (errorCode == DataUtils.ERROR_TRANSACTIONS_DEADLOCK) {
+            throw DbException.get(ErrorCode.DEADLOCK_1,
                     e, getName());
         }
         return store.convertIllegalStateException(e);
     }
-
 }

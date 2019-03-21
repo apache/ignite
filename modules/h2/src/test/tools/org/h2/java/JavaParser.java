@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import org.h2.util.New;
 
 /**
  * Converts Java to C.
@@ -44,7 +43,7 @@ public class JavaParser {
     private static final HashSet<String> RESERVED = new HashSet<>();
     private static final HashMap<String, String> JAVA_IMPORT_MAP = new HashMap<>();
 
-    private final ArrayList<ClassObj> allClasses = New.arrayList();
+    private final ArrayList<ClassObj> allClasses = new ArrayList<>();
 
     private String source;
 
@@ -60,7 +59,7 @@ public class JavaParser {
     private final LinkedHashMap<String, FieldObj> localVars =
             new LinkedHashMap<>();
     private final HashMap<String, MethodObj> allMethodsMap = new HashMap<>();
-    private final ArrayList<Statement> nativeHeaders = New.arrayList();
+    private final ArrayList<Statement> nativeHeaders = new ArrayList<>();
     private final HashMap<String, String> stringToStringConstantMap = new HashMap<>();
     private final HashMap<String, String> stringConstantToStringMap = new HashMap<>();
 

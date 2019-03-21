@@ -8,6 +8,7 @@
 22004=#Numeric value out of range: {0} in column {1}
 22007=不能解析字段 {0} 的数值 :{1}
 22012=除数为零: {0}
+22013=#Invalid PRECEDING or FOLLOWING size in window function: {0}
 22018=转换数据{0}期间出现转换错误
 22025=LIKE ESCAPE(转义符)存在错误: {0}
 22030=#Value not permitted for column {0}: {1}
@@ -31,7 +32,7 @@
 42S12=找不到索引 {0}
 42S21=重复的字段： {0}
 42S22=找不到字段 {0}
-42S32=找不到设置 {0}
+42S31=#Identical expressions should be used; expected {0}, found {1}
 57014=语句已取消执行或会话已过期
 90000={0} 函数必须返回一个结果集
 90001=不允许在查询内使用的方法，使用execute 或 executeQuery 代替 executeUpdate
@@ -140,6 +141,7 @@
 90107=不能删除 {0} ，因为 {1} 依赖着它
 90108=内存不足.
 90109=视图 {0} 无效: {1}
+90110=#Comparing ARRAY to scalar value
 90111=SQL语句访问表连接错误 {0}, 原因: {1}
 90112=尝试从索引中删除 {0}的时候找不到行
 90113=不支持的连接设置 {0}
@@ -148,10 +150,10 @@
 90116=不允许此类型的字面值
 90117=不允许远程连接到本服务器, 参见 -tcpAllowOthers
 90118=不能删除表 {0}
-90119=用户数据类型 {0} 已存在
-90120=找不到用户数据类型 {0}
+90119=域 {0} 已存在
+90120=找不到域 {0}
 90121=数据库已关闭 (若需要禁用在虚拟机关闭的时候同时关闭数据库，请加上 ";DB_CLOSE_ON_EXIT=FALSE" 到数据库连接的 URL)
-90122={0}表不支持本操作，因为在表上存在视图: {1}
+90122=#The WITH TIES clause is not allowed without a corresponding ORDER BY clause.
 90123=不能混合已索引和未索引的参数
 90124=文件 找不到: {0}
 90125=无效的类, 取代找到 {0} 但得到 {1}
@@ -165,7 +167,7 @@
 90133=数据库有已启动的时候不允许更改设置{0}
 90134=访问 {0}类时被拒绝
 90135=数据库运行在独占模式(exclusive mode); 不能打开额外的连接
-90136=不支持的外连接条件: {0}
+90136=#Window not found: {0}
 90137=只能赋值到一个变量,而不是: {0}
 90138=无效数据库名称: {0}
 90139=找不到公用Java静态方法: {0}
@@ -173,6 +175,9 @@
 90141=#Serializer cannot be changed because there is a data table: {0}
 90142=#Step size must not be zero
 90143=#Row {1} not found in primary index {0}
+90144=#Authenticator not enabled on database {0}
+90145=#FOR UPDATE is not allowed in DISTINCT or grouped select
+90146=#Database {0} not found, and IFEXISTS=true, so we can't auto-create it
 HY000=常规错误: {0}
 HY004=位置数据类型: {0}
 HYC00=不支持的特性: {0}

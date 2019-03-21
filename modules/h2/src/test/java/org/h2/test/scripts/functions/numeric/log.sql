@@ -1,4 +1,4 @@
--- Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (http://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -26,9 +26,3 @@ select log(null) vn, log(1) v1, log(1.1) v2, log(-1.1) v3, log(1.9) v4, log(-1.9
 > ---- --- ------------------- --- ------------------ ---
 > null 0.0 0.09531017980432493 NaN 0.6418538861723947 NaN
 > rows: 1
-
-
-
-
-
-

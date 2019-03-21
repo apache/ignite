@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -9,13 +9,14 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.DeleteDbFiles;
 import org.h2.tools.Recover;
 
 /**
  * Tests BLOB/CLOB recovery.
  */
-public class RecoverLobTest extends TestBase {
+public class RecoverLobTest extends TestDb {
 
     /**
      * Run just this test.
@@ -27,17 +28,15 @@ public class RecoverLobTest extends TestBase {
     }
 
     @Override
-    public TestBase init() throws Exception {
-        TestBase tb = super.init();
-        config.mvStore = false;
-        return tb;
+    public boolean isEnabled() {
+        if (config.memory) {
+            return false;
+        }
+        return true;
     }
 
     @Override
     public void test() throws Exception {
-        if (config.mvStore || config.memory) {
-            return;
-        }
         testRecoverClob();
     }
 
@@ -69,7 +68,7 @@ public class RecoverLobTest extends TestBase {
             int id = rs.getInt(1);
             String data = rs.getString(2);
 
-            assertTrue(data != null);
+            assertNotNull(data);
             assertTrue(data.length() == 10000 * id);
 
         }

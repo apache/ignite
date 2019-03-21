@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -102,7 +102,7 @@ public class Function {
      * @return true if it is a prime number
      */
     public static boolean isPrime(int value) {
-        return new BigInteger(String.valueOf(value)).isProbablePrime(100);
+        return BigInteger.valueOf(value).isProbablePrime(100);
     }
 
     /**
@@ -145,7 +145,7 @@ public class Function {
         if (url.equals("jdbc:columnlist:connection")) {
             return rs;
         }
-        for (int s = size.intValue(), x = 0; x < s; x++) {
+        for (int s = size, x = 0; x < s; x++) {
             for (int y = 0; y < s; y++) {
                 rs.addRow(x, y);
             }

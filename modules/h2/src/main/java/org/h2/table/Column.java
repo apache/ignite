@@ -1,40 +1,39 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.table;
 
 import java.sql.ResultSetMetaData;
-import java.util.Arrays;
+import java.util.Objects;
+
 import org.h2.api.ErrorCode;
 import org.h2.command.Parser;
+import org.h2.command.ddl.SequenceOptions;
 import org.h2.engine.Constants;
+import org.h2.engine.Domain;
 import org.h2.engine.Mode;
 import org.h2.engine.Session;
-import org.h2.expression.ConditionAndOr;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionVisitor;
 import org.h2.expression.SequenceValue;
 import org.h2.expression.ValueExpression;
+import org.h2.expression.condition.ConditionAndOr;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.schema.Schema;
 import org.h2.schema.Sequence;
-import org.h2.util.DateTimeUtils;
 import org.h2.util.MathUtils;
 import org.h2.util.StringUtils;
 import org.h2.value.DataType;
+import org.h2.value.TypeInfo;
 import org.h2.value.Value;
-import org.h2.value.ValueDate;
-import org.h2.value.ValueEnum;
 import org.h2.value.ValueInt;
 import org.h2.value.ValueLong;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
-import org.h2.value.ValueTimestamp;
-import org.h2.value.ValueTimestampTimeZone;
 import org.h2.value.ValueUuid;
 
 /**
@@ -65,11 +64,7 @@ public class Column {
     public static final int NULLABLE_UNKNOWN =
             ResultSetMetaData.columnNullableUnknown;
 
-    private final int type;
-    private long precision;
-    private int scale;
-    private String[] enumerators;
-    private int displaySize;
+    private final TypeInfo type;
     private Table table;
     private String name;
     private int columnId;
@@ -79,9 +74,7 @@ public class Column {
     private Expression checkConstraint;
     private String checkConstraintSQL;
     private String originalSQL;
-    private boolean autoIncrement;
-    private long start;
-    private long increment;
+    private SequenceOptions autoIncrementOptions;
     private boolean convertNullToDefault;
     private Sequence sequence;
     private boolean isComputed;
@@ -91,30 +84,63 @@ public class Column {
     private String comment;
     private boolean primaryKey;
     private boolean visible = true;
+    private boolean rowId;
+    private Domain domain;
 
-    public Column(String name, int type) {
-        this(name, type, -1, -1, -1, null);
+    /**
+     * Appends the specified columns to the specified builder.
+     *
+     * @param builder
+     *            string builder
+     * @param columns
+     *            columns
+     * @param alwaysQuote
+     *            quote all identifiers
+     * @return the specified string builder
+     */
+    public static StringBuilder writeColumns(StringBuilder builder, Column[] columns, boolean alwaysQuote) {
+        for (int i = 0, l = columns.length; i < l; i++) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+            columns[i].getSQL(builder, alwaysQuote);
+        }
+        return builder;
     }
 
-    public Column(String name, int type, long precision, int scale,
-            int displaySize) {
-        this(name, type, precision, scale, displaySize, null);
+    /**
+     * Appends the specified columns to the specified builder.
+     *
+     * @param builder
+     *            string builder
+     * @param columns
+     *            columns
+     * @param separator
+     *            separator
+     * @param suffix
+     *            additional SQL to append after each column
+     * @param alwaysQuote
+     *            quote all identifiers
+     * @return the specified string builder
+     */
+    public static StringBuilder writeColumns(StringBuilder builder, Column[] columns, String separator,
+            String suffix, boolean alwaysQuote) {
+        for (int i = 0, l = columns.length; i < l; i++) {
+            if (i > 0) {
+                builder.append(separator);
+            }
+            columns[i].getSQL(builder, alwaysQuote).append(suffix);
+        }
+        return builder;
     }
 
-    public Column(String name, int type, long precision, int scale,
-            int displaySize, String[] enumerators) {
+    public Column(String name, int valueType) {
+        this(name, TypeInfo.getTypeInfo(valueType));
+    }
+
+    public Column(String name, TypeInfo type) {
         this.name = name;
         this.type = type;
-        if (precision == -1 && scale == -1 && displaySize == -1 && type != Value.UNKNOWN) {
-            DataType dt = DataType.getDataType(type);
-            precision = dt.defaultPrecision;
-            scale = dt.defaultScale;
-            displaySize = dt.defaultDisplaySize;
-        }
-        this.precision = precision;
-        this.scale = scale;
-        this.displaySize = displaySize;
-        this.enumerators = enumerators;
     }
 
     @Override
@@ -143,12 +169,8 @@ public class Column {
         return table.getId() ^ name.hashCode();
     }
 
-    public boolean isEnumerated() {
-        return type == Value.ENUM;
-    }
-
     public Column getClone() {
-        Column newColumn = new Column(name, type, precision, scale, displaySize, enumerators);
+        Column newColumn = new Column(name, type);
         newColumn.copy(this);
         return newColumn;
     }
@@ -174,14 +196,14 @@ public class Column {
      */
     public Value convert(Value v, Mode mode) {
         try {
-            return v.convertTo(type, MathUtils.convertLongToInt(precision), mode, this, getEnumerators());
+            return v.convertTo(type, mode, this);
         } catch (DbException e) {
             if (e.getErrorCode() == ErrorCode.DATA_CONVERSION_ERROR_1) {
                 String target = (table == null ? "" : table.getName() + ": ") +
                         getCreateSQL();
                 throw DbException.get(
                         ErrorCode.DATA_CONVERSION_ERROR_1, e,
-                        v.getSQL() + " (" + target + ")");
+                        v.getTraceSQL() + " (" + target + ")");
             }
             throw e;
         }
@@ -270,44 +292,38 @@ public class Column {
         return columnId;
     }
 
-    public String getSQL() {
-        return Parser.quoteIdentifier(name);
+    /**
+     * Get the SQL representation of the column.
+     *
+     * @param alwaysQuote whether to always quote the name
+     * @return the SQL representation
+     */
+    public String getSQL(boolean alwaysQuote) {
+        return rowId ? name : Parser.quoteIdentifier(name, alwaysQuote);
+    }
+
+    /**
+     * Appends the column name to the specified builder.
+     * The name is quoted, unless if this is a row id column.
+     *
+     * @param builder the string builder
+     * @param alwaysQuote quote all identifiers
+     * @return the specified string builder
+     */
+    public StringBuilder getSQL(StringBuilder builder, boolean alwaysQuote) {
+        return rowId ? builder.append(name) : Parser.quoteIdentifier(builder, name, alwaysQuote);
     }
 
     public String getName() {
         return name;
     }
 
-    public int getType() {
+    public TypeInfo getType() {
         return type;
-    }
-
-    public long getPrecision() {
-        return precision;
-    }
-
-    public void setPrecision(long p) {
-        precision = p;
-    }
-
-    public int getDisplaySize() {
-        return displaySize;
-    }
-
-    public int getScale() {
-        return scale;
     }
 
     public void setNullable(boolean b) {
         nullable = b;
-    }
-
-    public String[] getEnumerators() {
-        return enumerators;
-    }
-
-    public void setEnumerators(String[] enumerators) {
-        this.enumerators = enumerators;
     }
 
     public boolean getVisible() {
@@ -316,6 +332,32 @@ public class Column {
 
     public void setVisible(boolean b) {
         visible = b;
+    }
+
+    public Domain getDomain() {
+        return domain;
+    }
+
+    public void setDomain(Domain domain) {
+        this.domain = domain;
+    }
+
+    /**
+     * Returns whether this column is a row identity column.
+     *
+     * @return true for _ROWID_ column, false otherwise
+     */
+    public boolean isRowId() {
+        return rowId;
+    }
+
+    /**
+     * Set row identity flag.
+     *
+     * @param rowId true _ROWID_ column, false otherwise
+     */
+    public void setRowId(boolean rowId) {
+        this.rowId = rowId;
     }
 
     /**
@@ -334,41 +376,43 @@ public class Column {
         synchronized (this) {
             localDefaultExpression = defaultExpression;
         }
+        Mode mode = session.getDatabase().getMode();
         if (value == null) {
             if (localDefaultExpression == null) {
                 value = ValueNull.INSTANCE;
             } else {
-                value = localDefaultExpression.getValue(session).convertTo(type);
-                session.getGeneratedKeys().add(this);
+                value = convert(localDefaultExpression.getValue(session), mode);
+                if (!localDefaultExpression.isConstant()) {
+                    session.getGeneratedKeys().add(this);
+                }
                 if (primaryKey) {
                     session.setLastIdentity(value);
                 }
             }
         }
-        Mode mode = session.getDatabase().getMode();
         if (value == ValueNull.INSTANCE) {
             if (convertNullToDefault) {
-                value = localDefaultExpression.getValue(session).convertTo(type);
-                session.getGeneratedKeys().add(this);
+                value = convert(localDefaultExpression.getValue(session), mode);
+                if (!localDefaultExpression.isConstant()) {
+                    session.getGeneratedKeys().add(this);
+                }
             }
             if (value == ValueNull.INSTANCE && !nullable) {
                 if (mode.convertInsertNullToZero) {
-                    DataType dt = DataType.getDataType(type);
+                    int t = type.getValueType();
+                    DataType dt = DataType.getDataType(t);
                     if (dt.decimal) {
-                        value = ValueInt.get(0).convertTo(type);
+                        value = ValueInt.get(0).convertTo(t);
                     } else if (dt.type == Value.TIMESTAMP) {
-                        value = ValueTimestamp.fromMillis(session.getTransactionStart());
+                        value = session.getCurrentCommandStart().convertTo(Value.TIMESTAMP);
                     } else if (dt.type == Value.TIMESTAMP_TZ) {
-                        long ms = session.getTransactionStart();
-                        value = ValueTimestampTimeZone.fromDateValueAndNanos(
-                                DateTimeUtils.dateValueFromDate(ms),
-                                DateTimeUtils.nanosFromDate(ms), (short) 0);
+                        value = session.getCurrentCommandStart();
                     } else if (dt.type == Value.TIME) {
                         value = ValueTime.fromNanos(0);
                     } else if (dt.type == Value.DATE) {
-                        value = ValueDate.fromMillis(session.getTransactionStart());
+                        value = session.getCurrentCommandStart().convertTo(Value.DATE);
                     } else {
-                        value = ValueString.get("").convertTo(type);
+                        value = ValueString.get("").convertTo(t);
                     }
                 } else {
                     throw DbException.get(ErrorCode.NULL_NOT_ALLOWED, name);
@@ -383,33 +427,24 @@ public class Column {
             }
             // Both TRUE and NULL are ok
             if (v != ValueNull.INSTANCE && !v.getBoolean()) {
-                throw DbException.get(
-                        ErrorCode.CHECK_CONSTRAINT_VIOLATED_1,
-                        checkConstraint.getSQL());
+                throw DbException.get(ErrorCode.CHECK_CONSTRAINT_VIOLATED_1, checkConstraint.getSQL(false));
             }
         }
-        value = value.convertScale(mode.convertOnlyToSmallerScale, scale);
+        value = value.convertScale(mode.convertOnlyToSmallerScale, type.getScale());
+        long precision = type.getPrecision();
         if (precision > 0) {
             if (!value.checkPrecision(precision)) {
                 String s = value.getTraceSQL();
                 if (s.length() > 127) {
                     s = s.substring(0, 128) + "...";
                 }
-                throw DbException.get(ErrorCode.VALUE_TOO_LONG_2,
-                        getCreateSQL(), s + " (" + value.getPrecision() + ")");
+                throw DbException.get(ErrorCode.VALUE_TOO_LONG_2, getCreateSQL(),
+                        s + " (" + value.getType().getPrecision() + ')');
             }
         }
-        if (isEnumerated() && value != ValueNull.INSTANCE) {
-            if (!ValueEnum.isValid(enumerators, value)) {
-                String s = value.getTraceSQL();
-                if (s.length() > 127) {
-                    s = s.substring(0, 128) + "...";
-                }
-                throw DbException.get(ErrorCode.ENUM_VALUE_NOT_PERMITTED,
-                        getCreateSQL(), s);
-            }
-
-            value = ValueEnum.get(enumerators, value.getInt());
+        if (value != ValueNull.INSTANCE && DataType.isExtInfoType(type.getValueType())
+                && type.getExtTypeInfo() != null) {
+            value = type.getExtTypeInfo().cast(value);
         }
         updateSequenceIfRequired(session, value);
         return value;
@@ -446,7 +481,7 @@ public class Column {
      */
     public void convertAutoIncrementToSequence(Session session, Schema schema,
             int id, boolean temporary) {
-        if (!autoIncrement) {
+        if (autoIncrementOptions == null) {
             DbException.throwInternalError();
         }
         if ("IDENTITY".equals(originalSQL)) {
@@ -461,10 +496,13 @@ public class Column {
             s = StringUtils.toUpperEnglish(s.replace('-', '_'));
             sequenceName = "SYSTEM_SEQUENCE_" + s;
         } while (schema.findSequence(sequenceName) != null);
-        Sequence seq = new Sequence(schema, id, sequenceName, start, increment);
+        Sequence seq = new Sequence(schema, id, sequenceName, autoIncrementOptions.getStartValue(session),
+                autoIncrementOptions.getIncrement(session), autoIncrementOptions.getCacheSize(session),
+                autoIncrementOptions.getMinValue(null, session), autoIncrementOptions.getMaxValue(null, session),
+                Boolean.TRUE.equals(autoIncrementOptions.getCycle()), true);
         seq.setTemporary(temporary);
         session.getDatabase().addSchemaObject(session, seq);
-        setAutoIncrement(false, 0, 0);
+        setAutoIncrementOptions(null);
         SequenceValue seqValue = new SequenceValue(seq);
         setDefaultExpression(session, seqValue);
         setSequence(seq);
@@ -479,11 +517,11 @@ public class Column {
         if (defaultExpression != null || onUpdateExpression != null) {
             computeTableFilter = new TableFilter(session, table, null, false, null, 0, null);
             if (defaultExpression != null) {
-                defaultExpression.mapColumns(computeTableFilter, 0);
+                defaultExpression.mapColumns(computeTableFilter, 0, Expression.MAP_INITIAL);
                 defaultExpression = defaultExpression.optimize(session);
             }
             if (onUpdateExpression != null) {
-                onUpdateExpression.mapColumns(computeTableFilter, 0);
+                onUpdateExpression.mapColumns(computeTableFilter, 0, Expression.MAP_INITIAL);
                 onUpdateExpression = onUpdateExpression.optimize(session);
             }
         }
@@ -500,36 +538,12 @@ public class Column {
     private String getCreateSQL(boolean includeName) {
         StringBuilder buff = new StringBuilder();
         if (includeName && name != null) {
-            buff.append(Parser.quoteIdentifier(name)).append(' ');
+            Parser.quoteIdentifier(buff, name, true).append(' ');
         }
         if (originalSQL != null) {
             buff.append(originalSQL);
         } else {
-            buff.append(DataType.getDataType(type).name);
-            switch (type) {
-            case Value.DECIMAL:
-                buff.append('(').append(precision).append(", ").append(scale).append(')');
-                break;
-            case Value.ENUM:
-                buff.append('(');
-                for (int i = 0; i < enumerators.length; i++) {
-                    buff.append('\'').append(enumerators[i]).append('\'');
-                    if(i < enumerators.length - 1) {
-                        buff.append(',');
-                    }
-                }
-                buff.append(')');
-                break;
-            case Value.BYTES:
-            case Value.STRING:
-            case Value.STRING_IGNORECASE:
-            case Value.STRING_FIXED:
-                if (precision < Integer.MAX_VALUE) {
-                    buff.append('(').append(precision).append(')');
-                }
-                break;
-            default:
-            }
+            type.getSQL(buff);
         }
 
         if (!visible) {
@@ -537,35 +551,36 @@ public class Column {
         }
 
         if (defaultExpression != null) {
-            String sql = defaultExpression.getSQL();
-            if (sql != null) {
-                if (isComputed) {
-                    buff.append(" AS ").append(sql);
-                } else if (defaultExpression != null) {
-                    buff.append(" DEFAULT ").append(sql);
-                }
+            if (isComputed) {
+                buff.append(" AS ");
+                defaultExpression.getSQL(buff, true);
+            } else if (defaultExpression != null) {
+                buff.append(" DEFAULT ");
+                defaultExpression.getSQL(buff, true);
             }
         }
         if (onUpdateExpression != null) {
-            String sql = onUpdateExpression.getSQL();
-            if (sql != null) {
-                buff.append(" ON UPDATE ").append(sql);
-            }
+            buff.append(" ON UPDATE ");
+            onUpdateExpression.getSQL(buff, true);
         }
         if (!nullable) {
             buff.append(" NOT NULL");
+        } else if (domain != null && !domain.getColumn().isNullable()) {
+            buff.append(" NULL");
         }
         if (convertNullToDefault) {
             buff.append(" NULL_TO_DEFAULT");
         }
         if (sequence != null) {
-            buff.append(" SEQUENCE ").append(sequence.getSQL());
+            buff.append(" SEQUENCE ");
+            sequence.getSQL(buff, true);
         }
         if (selectivity != 0) {
             buff.append(" SELECTIVITY ").append(selectivity);
         }
         if (comment != null) {
-            buff.append(" COMMENT ").append(StringUtils.quoteStringSQL(comment));
+            buff.append(" COMMENT ");
+            StringUtils.quoteStringSQL(buff, comment);
         }
         if (checkConstraint != null) {
             buff.append(" CHECK ").append(checkConstraintSQL);
@@ -594,22 +609,19 @@ public class Column {
     }
 
     public boolean isAutoIncrement() {
-        return autoIncrement;
+        return autoIncrementOptions != null;
     }
 
     /**
-     * Set the autoincrement flag and related properties of this column.
+     * Set the autoincrement flag and related options of this column.
      *
-     * @param autoInc the new autoincrement flag
-     * @param start the sequence start value
-     * @param increment the sequence increment
+     * @param sequenceOptions
+     *            sequence options, or {@code null} to reset the flag
      */
-    public void setAutoIncrement(boolean autoInc, long start, long increment) {
-        this.autoIncrement = autoInc;
-        this.start = start;
-        this.increment = increment;
+    public void setAutoIncrementOptions(SequenceOptions sequenceOptions) {
+        this.autoIncrementOptions = sequenceOptions;
         this.nullable = false;
-        if (autoInc) {
+        if (sequenceOptions != null) {
             convertNullToDefault = true;
         }
     }
@@ -658,7 +670,7 @@ public class Column {
 
     /**
      * Add a check constraint expression to this column. An existing check
-     * constraint constraint is added using AND.
+     * constraint is added using AND.
      *
      * @param session the session
      * @param expr the (additional) constraint
@@ -667,13 +679,15 @@ public class Column {
         if (expr == null) {
             return;
         }
-        resolver = new SingleColumnResolver(this);
+        if (resolver == null) {
+            resolver = new SingleColumnResolver(this);
+        }
         synchronized (this) {
             String oldName = name;
             if (name == null) {
                 name = "VALUE";
             }
-            expr.mapColumns(resolver, 0);
+            expr.mapColumns(resolver, 0, Expression.MAP_INITIAL);
             name = oldName;
         }
         expr = expr.optimize(session);
@@ -684,7 +698,7 @@ public class Column {
         }
         if (checkConstraint == null) {
             checkConstraint = expr;
-        } else {
+        } else if (!expr.getSQL(true).equals(checkConstraintSQL)) {
             checkConstraint = new ConditionAndOr(ConditionAndOr.AND, checkConstraint, expr);
         }
         checkConstraintSQL = getCheckConstraintSQL(session, name);
@@ -714,26 +728,26 @@ public class Column {
         synchronized (this) {
             String oldName = name;
             name = asColumnName;
-            sql = checkConstraint.getSQL();
+            sql = checkConstraint.getSQL(true);
             name = oldName;
         }
         return parser.parseExpression(sql);
     }
 
     String getDefaultSQL() {
-        return defaultExpression == null ? null : defaultExpression.getSQL();
+        return defaultExpression == null ? null : defaultExpression.getSQL(true);
     }
 
     String getOnUpdateSQL() {
-        return onUpdateExpression == null ? null : onUpdateExpression.getSQL();
+        return onUpdateExpression == null ? null : onUpdateExpression.getSQL(true);
     }
 
     int getPrecisionAsInt() {
-        return MathUtils.convertLongToInt(precision);
+        return MathUtils.convertLongToInt(type.getPrecision());
     }
 
     DataType getDataType() {
-        return DataType.getDataType(type);
+        return DataType.getDataType(type.getValueType());
     }
 
     /**
@@ -745,7 +759,7 @@ public class Column {
      */
     String getCheckConstraintSQL(Session session, String asColumnName) {
         Expression constraint = getCheckConstraint(session, asColumnName);
-        return constraint == null ? "" : constraint.getSQL();
+        return constraint == null ? "" : constraint.getSQL(true);
     }
 
     public void setComment(String comment) {
@@ -803,10 +817,10 @@ public class Column {
         if (type != newColumn.type) {
             return false;
         }
-        if (precision > newColumn.precision) {
+        if (type.getPrecision() > newColumn.type.getPrecision()) {
             return false;
         }
-        if (scale != newColumn.scale) {
+        if (type.getScale() != newColumn.type.getScale()) {
             return false;
         }
         if (nullable && !newColumn.nullable) {
@@ -818,7 +832,7 @@ public class Column {
         if (primaryKey != newColumn.primaryKey) {
             return false;
         }
-        if (autoIncrement || newColumn.autoIncrement) {
+        if (autoIncrementOptions != null || newColumn.autoIncrementOptions != null) {
             return false;
         }
         if (checkConstraint != null || newColumn.checkConstraint != null) {
@@ -836,6 +850,9 @@ public class Column {
         if (onUpdateExpression != null || newColumn.onUpdateExpression != null) {
             return false;
         }
+        if (!Objects.equals(type.getExtTypeInfo(), newColumn.type.getExtTypeInfo())) {
+            return false;
+        }
         return true;
     }
 
@@ -847,12 +864,7 @@ public class Column {
     public void copy(Column source) {
         checkConstraint = source.checkConstraint;
         checkConstraintSQL = source.checkConstraintSQL;
-        displaySize = source.displaySize;
         name = source.name;
-        precision = source.precision;
-        enumerators = source.enumerators == null ? null :
-            Arrays.copyOf(source.enumerators, source.enumerators.length);
-        scale = source.scale;
         // table is not set
         // columnId is not set
         nullable = source.nullable;

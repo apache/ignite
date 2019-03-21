@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Future;
+
 import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
@@ -26,7 +27,7 @@ import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.util.DoneFuture;
 import org.h2.util.LazyFuture;
-import org.h2.util.New;
+import org.h2.util.Utils;
 import org.h2.value.Value;
 import org.h2.value.ValueLong;
 
@@ -772,7 +773,7 @@ public final class JoinBatch {
     private abstract static class ViewIndexLookupBatchBase<R extends QueryRunnerBase>
             implements IndexLookupBatch {
         protected final ViewIndex viewIndex;
-        private final ArrayList<Future<Cursor>> result = New.arrayList();
+        private final ArrayList<Future<Cursor>> result = Utils.newSmallArrayList();
         private int resultSize;
         private boolean findCalled;
 
@@ -1014,8 +1015,8 @@ public final class JoinBatch {
                 assert !jb.batchedSubQuery;
                 jb.batchedSubQuery = true;
                 if (joinBatches == null) {
-                    joinBatches = New.arrayList();
-                    filters = New.arrayList();
+                    joinBatches = Utils.newSmallArrayList();
+                    filters = Utils.newSmallArrayList();
                 }
                 filters.add(jb.filters[0]);
                 joinBatches.add(jb);
@@ -1073,8 +1074,8 @@ public final class JoinBatch {
      * Query runner for UNION.
      */
     private static class QueryRunnerUnion extends QueryRunnerBase {
-        Future<Cursor>[] topFutureCursors;
-        private ViewIndexLookupBatchUnion batchUnion;
+        final Future<Cursor>[] topFutureCursors;
+        private final ViewIndexLookupBatchUnion batchUnion;
 
         @SuppressWarnings("unchecked")
         QueryRunnerUnion(ViewIndexLookupBatchUnion batchUnion) {

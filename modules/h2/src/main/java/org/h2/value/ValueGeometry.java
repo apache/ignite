@@ -1,27 +1,27 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.value;
 
+import static org.h2.util.geometry.EWKBUtils.EWKB_SRID;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
+import org.h2.api.ErrorCode;
 import org.h2.engine.Mode;
 import org.h2.message.DbException;
+import org.h2.util.Bits;
 import org.h2.util.StringUtils;
-import org.locationtech.jts.geom.CoordinateSequence;
-import org.locationtech.jts.geom.CoordinateSequenceFilter;
-import org.locationtech.jts.geom.Envelope;
+import org.h2.util.Utils;
+import org.h2.util.geometry.EWKBUtils;
+import org.h2.util.geometry.EWKTUtils;
+import org.h2.util.geometry.GeometryUtils;
+import org.h2.util.geometry.GeometryUtils.EnvelopeAndDimensionSystemTarget;
+import org.h2.util.geometry.GeometryUtils.EnvelopeTarget;
+import org.h2.util.geometry.JTSUtils;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.PrecisionModel;
-import org.locationtech.jts.io.ParseException;
-import org.locationtech.jts.io.WKBReader;
-import org.locationtech.jts.io.WKBWriter;
-import org.locationtech.jts.io.WKTReader;
-import org.locationtech.jts.io.WKTWriter;
 
 /**
  * Implementation of the GEOMETRY data type.
@@ -31,6 +31,8 @@ import org.locationtech.jts.io.WKTWriter;
  * @author Nicolas Fortin, Atelier SIG, IRSTV FR CNRS 24888
  */
 public class ValueGeometry extends Value {
+
+    private static final double[] UNKNOWN_ENVELOPE = new double[0];
 
     /**
      * As conversion from/to WKB cost a significant amount of CPU cycles, WKB
@@ -45,21 +47,43 @@ public class ValueGeometry extends Value {
     private final int hashCode;
 
     /**
+     * Geometry type and dimension system in OGC geometry code format (type +
+     * dimensionSystem * 1000).
+     */
+    private final int typeAndDimensionSystem;
+
+    /**
+     * Spatial reference system identifier.
+     */
+    private final int srid;
+
+    /**
+     * The envelope of the value. Calculated only on request.
+     */
+    private double[] envelope;
+
+    /**
      * The value. Converted from WKB only on request as conversion from/to WKB
      * cost a significant amount of CPU cycles.
      */
-    private Geometry geometry;
+    private Object geometry;
 
     /**
-     * Create a new geometry objects.
+     * Create a new geometry object.
      *
-     * @param bytes the bytes (always known)
-     * @param geometry the geometry object (may be null)
+     * @param bytes the EWKB bytes
+     * @param envelope the envelope
      */
-    private ValueGeometry(byte[] bytes, Geometry geometry) {
+    private ValueGeometry(byte[] bytes, double[] envelope) {
+        if (bytes.length < 9 || bytes[0] != 0) {
+            throw DbException.get(ErrorCode.DATA_CONVERSION_ERROR_1, StringUtils.convertBytesToHex(bytes));
+        }
         this.bytes = bytes;
-        this.geometry = geometry;
-        this.hashCode = Arrays.hashCode(bytes);
+        this.envelope = envelope;
+        int t = Bits.readInt(bytes, 1);
+        srid = (t & EWKB_SRID) != 0 ? Bits.readInt(bytes, 5) : 0;
+        typeAndDimensionSystem = (t & 0xffff) % 1_000 + EWKBUtils.type2dimensionSystem(t) * 1_000;
+        hashCode = Arrays.hashCode(bytes);
     }
 
     /**
@@ -70,39 +94,31 @@ public class ValueGeometry extends Value {
      * @return the value
      */
     public static ValueGeometry getFromGeometry(Object o) {
-        return get((Geometry) o);
-    }
-
-    private static ValueGeometry get(Geometry g) {
-        byte[] bytes = convertToWKB(g);
-        return (ValueGeometry) Value.cache(new ValueGeometry(bytes, g));
-    }
-
-    private static byte[] convertToWKB(Geometry g) {
-        boolean includeSRID = g.getSRID() != 0;
-        int dimensionCount = getDimensionCount(g);
-        WKBWriter writer = new WKBWriter(dimensionCount, includeSRID);
-        return writer.write(g);
-    }
-
-    private static int getDimensionCount(Geometry geometry) {
-        ZVisitor finder = new ZVisitor();
-        geometry.apply(finder);
-        return finder.isFoundZ() ? 3 : 2;
+        try {
+            EnvelopeAndDimensionSystemTarget target = new EnvelopeAndDimensionSystemTarget();
+            Geometry g = (Geometry) o;
+            JTSUtils.parseGeometry(g, target);
+            return (ValueGeometry) Value.cache(new ValueGeometry( //
+                    JTSUtils.geometry2ewkb(g, target.getDimensionSystem()), target.getEnvelope()));
+        } catch (RuntimeException ex) {
+            throw DbException.get(ErrorCode.DATA_CONVERSION_ERROR_1, String.valueOf(o));
+        }
     }
 
     /**
      * Get or create a geometry value for the given geometry.
      *
-     * @param s the WKT representation of the geometry
+     * @param s the WKT or EWKT representation of the geometry
      * @return the value
      */
     public static ValueGeometry get(String s) {
         try {
-            Geometry g = new WKTReader().read(s);
-            return get(g);
-        } catch (ParseException ex) {
-            throw DbException.convert(ex);
+            EnvelopeAndDimensionSystemTarget target = new EnvelopeAndDimensionSystemTarget();
+            EWKTUtils.parseEWKT(s, target);
+            return (ValueGeometry) Value.cache(new ValueGeometry( //
+                    EWKTUtils.ewkt2ewkb(s, target.getDimensionSystem()), target.getEnvelope()));
+        } catch (RuntimeException ex) {
+            throw DbException.get(ErrorCode.DATA_CONVERSION_ERROR_1, s);
         }
     }
 
@@ -114,23 +130,47 @@ public class ValueGeometry extends Value {
      * @return the value
      */
     public static ValueGeometry get(String s, int srid) {
-        try {
-            GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), srid);
-            Geometry g = new WKTReader(geometryFactory).read(s);
-            return get(g);
-        } catch (ParseException ex) {
-            throw DbException.convert(ex);
-        }
+        // This method is not used in H2, but preserved for H2GIS
+        return get(srid == 0 ? s : "SRID=" + srid + ';' + s);
     }
 
     /**
-     * Get or create a geometry value for the given geometry.
+     * Get or create a geometry value for the given internal EWKB representation.
+     *
+     * @param bytes the WKB representation of the geometry. May not be modified.
+     * @return the value
+     */
+    public static ValueGeometry get(byte[] bytes) {
+        return (ValueGeometry) Value.cache(new ValueGeometry(bytes, UNKNOWN_ENVELOPE));
+    }
+
+    /**
+     * Get or create a geometry value for the given EWKB value.
      *
      * @param bytes the WKB representation of the geometry
      * @return the value
      */
-    public static ValueGeometry get(byte[] bytes) {
-        return (ValueGeometry) Value.cache(new ValueGeometry(bytes, null));
+    public static ValueGeometry getFromEWKB(byte[] bytes) {
+        try {
+            EnvelopeAndDimensionSystemTarget target = new EnvelopeAndDimensionSystemTarget();
+            EWKBUtils.parseEWKB(bytes, target);
+            return (ValueGeometry) Value.cache(new ValueGeometry( //
+                    EWKBUtils.ewkb2ewkb(bytes, target.getDimensionSystem()), target.getEnvelope()));
+        } catch (RuntimeException ex) {
+            throw DbException.get(ErrorCode.DATA_CONVERSION_ERROR_1, StringUtils.convertBytesToHex(bytes));
+        }
+    }
+
+    /**
+     * Creates a geometry value for the given envelope.
+     *
+     * @param envelope envelope. May not be modified.
+     * @return the value
+     */
+    public static Value fromEnvelope(double[] envelope) {
+        return envelope != null
+                ? Value.cache(new ValueGeometry(EWKBUtils.envelope2wkb(envelope), envelope))
+                : ValueNull.INSTANCE;
     }
 
     /**
@@ -140,18 +180,65 @@ public class ValueGeometry extends Value {
      * @return a copy of the geometry object
      */
     public Geometry getGeometry() {
-        return getGeometryNoCopy().copy();
-    }
-
-    public Geometry getGeometryNoCopy() {
         if (geometry == null) {
             try {
-                geometry = new WKBReader().read(bytes);
-            } catch (ParseException ex) {
+                geometry = JTSUtils.ewkb2geometry(bytes, getDimensionSystem());
+            } catch (RuntimeException ex) {
                 throw DbException.convert(ex);
             }
         }
-        return geometry;
+        return ((Geometry) geometry).copy();
+    }
+
+    /**
+     * Returns geometry type and dimension system in OGC geometry code format
+     * (type + dimensionSystem * 1000).
+     *
+     * @return geometry type and dimension system
+     */
+    public int getTypeAndDimensionSystem() {
+        return typeAndDimensionSystem;
+    }
+
+    /**
+     * Returns geometry type.
+     *
+     * @return geometry type and dimension system
+     */
+    public int getGeometryType() {
+        return typeAndDimensionSystem % 1_000;
+    }
+
+    /**
+     * Return a minimal dimension system that can be used for this geometry.
+     *
+     * @return dimension system
+     */
+    public int getDimensionSystem() {
+        return typeAndDimensionSystem / 1_000;
+    }
+
+    /**
+     * Return a spatial reference system identifier.
+     *
+     * @return spatial reference system identifier
+     */
+    public int getSRID() {
+        return srid;
+    }
+
+    /**
+     * Return an envelope of this geometry. Do not modify the returned value.
+     *
+     * @return envelope of this geometry
+     */
+    public double[] getEnvelopeNoCopy() {
+        if (envelope == UNKNOWN_ENVELOPE) {
+            EnvelopeTarget target = new EnvelopeTarget();
+            EWKBUtils.parseEWKB(bytes, target);
+            envelope = target.getEnvelope();
+        }
+        return envelope;
     }
 
     /**
@@ -162,9 +249,7 @@ public class ValueGeometry extends Value {
      * @return true if the two overlap
      */
     public boolean intersectsBoundingBox(ValueGeometry r) {
-        // the Geometry object caches the envelope
-        return getGeometryNoCopy().getEnvelopeInternal().intersects(
-                r.getGeometryNoCopy().getEnvelopeInternal());
+        return GeometryUtils.intersects(getEnvelopeNoCopy(), r.getEnvelopeNoCopy());
     }
 
     /**
@@ -174,39 +259,34 @@ public class ValueGeometry extends Value {
      * @return the union of this geometry envelope and another geometry envelope
      */
     public Value getEnvelopeUnion(ValueGeometry r) {
-        GeometryFactory gf = new GeometryFactory();
-        Envelope mergedEnvelope = new Envelope(getGeometryNoCopy().getEnvelopeInternal());
-        mergedEnvelope.expandToInclude(r.getGeometryNoCopy().getEnvelopeInternal());
-        return get(gf.toGeometry(mergedEnvelope));
+        return fromEnvelope(GeometryUtils.union(getEnvelopeNoCopy(), r.getEnvelopeNoCopy()));
     }
 
     @Override
-    public int getType() {
-        return Value.GEOMETRY;
+    public TypeInfo getType() {
+        return TypeInfo.TYPE_GEOMETRY;
     }
 
     @Override
-    public String getSQL() {
-        // WKT does not hold Z or SRID with JTS 1.13. As getSQL is used to
-        // export database, it should contains all object attributes. Moreover
-        // using bytes is faster than converting WKB to Geometry then to WKT.
-        return "X'" + StringUtils.convertBytesToHex(getBytesNoCopy()) + "'::Geometry";
+    public int getValueType() {
+        return GEOMETRY;
     }
 
     @Override
-    protected int compareSecure(Value v, CompareMode mode) {
-        Geometry g = ((ValueGeometry) v).getGeometryNoCopy();
-        return getGeometryNoCopy().compareTo(g);
+    public StringBuilder getSQL(StringBuilder builder) {
+        // Using bytes is faster than converting to EWKT.
+        builder.append("X'");
+        return StringUtils.convertBytesToHex(builder, getBytesNoCopy()).append("'::Geometry");
+    }
+
+    @Override
+    public int compareTypeSafe(Value v, CompareMode mode) {
+        return Bits.compareNotNullUnsigned(bytes, ((ValueGeometry) v).bytes);
     }
 
     @Override
     public String getString() {
-        return getWKT();
-    }
-
-    @Override
-    public long getPrecision() {
-        return 0;
+        return getEWKT();
     }
 
     @Override
@@ -216,103 +296,63 @@ public class ValueGeometry extends Value {
 
     @Override
     public Object getObject() {
-        return getGeometry();
+        if (DataType.GEOMETRY_CLASS != null) {
+            return getGeometry();
+        }
+        return getEWKT();
     }
 
     @Override
     public byte[] getBytes() {
-        return getWKB();
+        return Utils.cloneByteArray(bytes);
     }
 
     @Override
     public byte[] getBytesNoCopy() {
-        return getWKB();
-    }
-
-    @Override
-    public void set(PreparedStatement prep, int parameterIndex)
-            throws SQLException {
-        prep.setObject(parameterIndex, getGeometryNoCopy());
-    }
-
-    @Override
-    public int getDisplaySize() {
-        return getWKT().length();
-    }
-
-    @Override
-    public int getMemory() {
-        return getWKB().length * 20 + 24;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        // The JTS library only does half-way support for 3D coordinates, so
-        // their equals method only checks the first two coordinates.
-        return other instanceof ValueGeometry &&
-                Arrays.equals(getWKB(), ((ValueGeometry) other).getWKB());
-    }
-
-    /**
-     * Get the value in Well-Known-Text format.
-     *
-     * @return the well-known-text
-     */
-    public String getWKT() {
-        return new WKTWriter(3).write(getGeometryNoCopy());
-    }
-
-    /**
-     * Get the value in Well-Known-Binary format.
-     *
-     * @return the well-known-binary
-     */
-    public byte[] getWKB() {
         return bytes;
     }
 
     @Override
-    public Value convertTo(int targetType, int precision, Mode mode, Object column, String[] enumerators) {
-        if (targetType == Value.JAVA_OBJECT) {
-            return this;
-        }
-        return super.convertTo(targetType, precision, mode, column, null);
+    public void set(PreparedStatement prep, int parameterIndex) throws SQLException {
+        prep.setBytes(parameterIndex, bytes);
+    }
+
+    @Override
+    public int getMemory() {
+        return bytes.length * 20 + 24;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof ValueGeometry && Arrays.equals(bytes, ((ValueGeometry) other).bytes);
     }
 
     /**
-     * A visitor that checks if there is a Z coordinate.
+     * Get the value in Extended Well-Known Text format.
+     *
+     * @return the extended well-known text
      */
-    static class ZVisitor implements CoordinateSequenceFilter {
+    public String getEWKT() {
+        return EWKTUtils.ewkb2ewkt(bytes, getDimensionSystem());
+    }
 
-        private boolean foundZ;
+    /**
+     * Get the value in extended Well-Known Binary format.
+     *
+     * @return the extended well-known binary
+     */
+    public byte[] getEWKB() {
+        return bytes;
+    }
 
-        public boolean isFoundZ() {
-            return foundZ;
+    @Override
+    protected Value convertTo(int targetType, Mode mode, Object column, ExtTypeInfo extTypeInfo) {
+        if (targetType == Value.GEOMETRY) {
+            return extTypeInfo != null ? extTypeInfo.cast(this) : this;
+        } else if (targetType == Value.JAVA_OBJECT) {
+            return this;
         }
-
-        /**
-         * Performs an operation on a coordinate in a CoordinateSequence.
-         *
-         * @param coordinateSequence the object to which the filter is applied
-         * @param i the index of the coordinate to apply the filter to
-         */
-        @Override
-        public void filter(CoordinateSequence coordinateSequence, int i) {
-            if (!Double.isNaN(coordinateSequence.getOrdinate(i, 2))) {
-                foundZ = true;
-            }
-        }
-
-        @Override
-        public boolean isDone() {
-            return foundZ;
-        }
-
-        @Override
-        public boolean isGeometryChanged() {
-            return false;
-        }
-
+        return super.convertTo(targetType, mode, column, null);
     }
 
 }

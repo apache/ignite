@@ -1,11 +1,10 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.value;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -34,11 +33,6 @@ public class ValueLong extends Value {
     public static final BigInteger MAX_BI = BigInteger.valueOf(Long.MAX_VALUE);
 
     /**
-     * The smallest Long value, as a BigDecimal.
-     */
-    public static final BigDecimal MIN_BD = BigDecimal.valueOf(Long.MIN_VALUE);
-
-    /**
      * The precision in digits.
      */
     public static final int PRECISION = 19;
@@ -49,7 +43,6 @@ public class ValueLong extends Value {
      */
     public static final int DISPLAY_SIZE = 20;
 
-    private static final BigInteger MIN_BI = BigInteger.valueOf(Long.MIN_VALUE);
     private static final int STATIC_SIZE = 100;
     private static final ValueLong[] STATIC_CACHE;
 
@@ -68,19 +61,17 @@ public class ValueLong extends Value {
 
     @Override
     public Value add(Value v) {
-        ValueLong other = (ValueLong) v;
-        long result = value + other.value;
-        int sv = Long.signum(value);
-        int so = Long.signum(other.value);
-        int sr = Long.signum(result);
-        // if the operands have different signs overflow can not occur
-        // if the operands have the same sign,
-        // and the result has a different sign, then it is an overflow
-        // it can not be an overflow when one of the operands is 0
-        if (sv != so || sr == so || sv == 0 || so == 0) {
-            return ValueLong.get(result);
+        long x = value;
+        long y = ((ValueLong) v).value;
+        long result = x + y;
+        /*
+         * If signs of both summands are different from the sign of the sum there is an
+         * overflow.
+         */
+        if (((x ^ result) & (y ^ result)) < 0) {
+            throw getOverflow();
         }
-        throw getOverflow();
+        return ValueLong.get(result);
     }
 
     @Override
@@ -103,54 +94,46 @@ public class ValueLong extends Value {
 
     @Override
     public Value subtract(Value v) {
-        ValueLong other = (ValueLong) v;
-        int sv = Long.signum(value);
-        int so = Long.signum(other.value);
-        // if the operands have the same sign, then overflow can not occur
-        // if the second operand is 0, then overflow can not occur
-        if (sv == so || so == 0) {
-            return ValueLong.get(value - other.value);
+        long x = value;
+        long y = ((ValueLong) v).value;
+        long result = x - y;
+        /*
+         * If minuend and subtrahend have different signs and minuend and difference
+         * have different signs there is an overflow.
+         */
+        if (((x ^ y) & (x ^ result)) < 0) {
+            throw getOverflow();
         }
-        // now, if the other value is Long.MIN_VALUE, it must be an overflow
-        // x - Long.MIN_VALUE overflows for x>=0
-        return add(other.negate());
-    }
-
-    private static boolean isInteger(long a) {
-        return a >= Integer.MIN_VALUE && a <= Integer.MAX_VALUE;
+        return ValueLong.get(result);
     }
 
     @Override
     public Value multiply(Value v) {
-        ValueLong other = (ValueLong) v;
-        long result = value * other.value;
-        if (value == 0 || value == 1 || other.value == 0 || other.value == 1) {
-            return ValueLong.get(result);
-        }
-        if (isInteger(value) && isInteger(other.value)) {
-            return ValueLong.get(result);
-        }
-        // just checking one case is not enough: Long.MIN_VALUE * -1
-        // probably this is correct but I'm not sure
-        // if (result / value == other.value && result / other.value == value) {
-        //    return ValueLong.get(result);
-        //}
-        BigInteger bv = BigInteger.valueOf(value);
-        BigInteger bo = BigInteger.valueOf(other.value);
-        BigInteger br = bv.multiply(bo);
-        if (br.compareTo(MIN_BI) < 0 || br.compareTo(MAX_BI) > 0) {
+        long x = value;
+        long y = ((ValueLong) v).value;
+        long result = x * y;
+        // Check whether numbers are large enough to overflow and second value != 0
+        if ((Math.abs(x) | Math.abs(y)) >>> 31 != 0 && y != 0
+                // Check with division
+                && (result / y != x
+                // Also check the special condition that is not handled above
+                || x == Long.MIN_VALUE && y == -1)) {
             throw getOverflow();
         }
-        return ValueLong.get(br.longValue());
+        return ValueLong.get(result);
     }
 
     @Override
     public Value divide(Value v) {
-        ValueLong other = (ValueLong) v;
-        if (other.value == 0) {
+        long y = ((ValueLong) v).value;
+        if (y == 0) {
             throw DbException.get(ErrorCode.DIVISION_BY_ZERO_1, getSQL());
         }
-        return ValueLong.get(value / other.value);
+        long x = value;
+        if (x == Long.MIN_VALUE && y == -1) {
+            throw getOverflow();
+        }
+        return ValueLong.get(x / y);
     }
 
     @Override
@@ -163,13 +146,18 @@ public class ValueLong extends Value {
     }
 
     @Override
-    public String getSQL() {
-        return getString();
+    public StringBuilder getSQL(StringBuilder builder) {
+        return builder.append(value);
     }
 
     @Override
-    public int getType() {
-        return Value.LONG;
+    public TypeInfo getType() {
+        return TypeInfo.TYPE_LONG;
+    }
+
+    @Override
+    public int getValueType() {
+        return LONG;
     }
 
     @Override
@@ -178,19 +166,13 @@ public class ValueLong extends Value {
     }
 
     @Override
-    protected int compareSecure(Value o, CompareMode mode) {
-        ValueLong v = (ValueLong) o;
-        return Long.compare(value, v.value);
+    public int compareTypeSafe(Value o, CompareMode mode) {
+        return Long.compare(value, ((ValueLong) o).value);
     }
 
     @Override
     public String getString() {
-        return String.valueOf(value);
-    }
-
-    @Override
-    public long getPrecision() {
-        return PRECISION;
+        return Long.toString(value);
     }
 
     @Override
@@ -220,11 +202,6 @@ public class ValueLong extends Value {
             return STATIC_CACHE[(int) i];
         }
         return (ValueLong) Value.cache(new ValueLong(i));
-    }
-
-    @Override
-    public int getDisplaySize() {
-        return DISPLAY_SIZE;
     }
 
     @Override

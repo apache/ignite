@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -14,11 +14,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.h2.api.DatabaseEventListener;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Tests the DatabaseEventListener.
  */
-public class TestListener extends TestBase implements DatabaseEventListener {
+public class TestListener extends TestDb implements DatabaseEventListener {
 
     private long last;
     private int lastState = -1;
@@ -38,10 +39,15 @@ public class TestListener extends TestBase implements DatabaseEventListener {
     }
 
     @Override
-    public void test() throws SQLException {
+    public boolean isEnabled() {
         if (config.networked || config.cipher != null) {
-            return;
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws SQLException {
         deleteDb("listener");
         Connection conn;
         conn = getConnection("listener");

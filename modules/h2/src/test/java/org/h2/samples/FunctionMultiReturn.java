@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -71,8 +71,8 @@ public class FunctionMultiReturn {
             double a = rs.getDouble(2);
             Object o = rs.getObject(3);
             Object[] xy = (Object[]) o;
-            double x = ((Double) xy[0]).doubleValue();
-            double y = ((Double) xy[1]).doubleValue();
+            double x = (Double) xy[0];
+            double y = (Double) xy[1];
             System.out.println("(r=" + r + " a=" + a + ") :" +
                     " (x=" + x + ", y=" + y + ")");
         }
@@ -108,8 +108,8 @@ public class FunctionMultiReturn {
         rs.addColumn("X", Types.DOUBLE, 0, 0);
         rs.addColumn("Y", Types.DOUBLE, 0, 0);
         if (r != null && alpha != null) {
-            double x = r.doubleValue() * Math.cos(alpha.doubleValue());
-            double y = r.doubleValue() * Math.sin(alpha.doubleValue());
+            double x = r * Math.cos(alpha);
+            double y = r * Math.sin(alpha);
             rs.addRow(x, y);
         }
         return rs;
@@ -125,8 +125,8 @@ public class FunctionMultiReturn {
      * @return an array two values: x and y
      */
     public static Object[] polar2CartesianArray(Double r, Double alpha) {
-        double x = r.doubleValue() * Math.cos(alpha.doubleValue());
-        double y = r.doubleValue() * Math.sin(alpha.doubleValue());
+        double x = r * Math.cos(alpha);
+        double y = r * Math.sin(alpha);
         return new Object[]{x, y};
     }
 

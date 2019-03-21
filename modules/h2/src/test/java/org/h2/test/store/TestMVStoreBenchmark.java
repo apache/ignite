@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -7,14 +7,14 @@ package org.h2.test.store;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
+
 import org.h2.mvstore.MVStore;
 import org.h2.test.TestBase;
-import org.h2.util.New;
 
 /**
  * Tests the performance and memory usage claims in the documentation.
@@ -34,17 +34,21 @@ public class TestMVStoreBenchmark extends TestBase {
     }
 
     @Override
-    public void test() throws Exception {
+    public boolean isEnabled() {
         if (!config.big) {
-            return;
+            return false;
         }
         if (config.codeCoverage) {
             // run only when _not_ using a code coverage tool,
             // because the tool might instrument our code but not
             // java.util.*
-            return;
+            return false;
         }
+        return true;
+    }
 
+    @Override
+    public void test() throws Exception {
         testPerformanceComparison();
         testMemoryUsageComparison();
     }
@@ -77,25 +81,25 @@ public class TestMVStoreBenchmark extends TestBase {
         ArrayList<Map<Integer, String>> mapList;
         long mem;
 
-        mapList = New.arrayList();
+        mapList = new ArrayList<>(count);
         mem = getMemory();
         for (int i = 0; i < count; i++) {
-            mapList.add(new HashMap<Integer, String>(size));
+            mapList.add(new ConcurrentHashMap<Integer, String>(size));
         }
         addEntries(mapList, size);
         hash = getMemory() - mem;
         mapList.size();
 
-        mapList = New.arrayList();
+        mapList.clear();
         mem = getMemory();
         for (int i = 0; i < count; i++) {
-            mapList.add(new TreeMap<Integer, String>());
+            mapList.add(new ConcurrentSkipListMap<Integer, String>());
         }
         addEntries(mapList, size);
         tree = getMemory() - mem;
         mapList.size();
 
-        mapList = New.arrayList();
+        mapList.clear();
         mem = getMemory();
         MVStore store = MVStore.open(null);
         for (int i = 0; i < count; i++) {
@@ -146,11 +150,10 @@ public class TestMVStoreBenchmark extends TestBase {
             MVStore store = MVStore.open(null);
             map = store.openMap("test");
             mv = testPerformance(map, size);
-            map = new HashMap<>(size);
-            // map = new ConcurrentHashMap<Integer, String>(size);
+            store.close();
+            map = new ConcurrentHashMap<>(size);
             hash = testPerformance(map, size);
-            map = new TreeMap<>();
-            // map = new ConcurrentSkipListMap<Integer, String>();
+            map = new ConcurrentSkipListMap<>();
             tree = testPerformance(map, size);
             if (hash < tree && mv < tree * 1.5) {
                 break;
@@ -174,7 +177,7 @@ public class TestMVStoreBenchmark extends TestBase {
                 for (int a = 0; a < 5; a++) {
                     for (int i = 0; i < size; i++) {
                         String x = map.get(i);
-                        assertTrue(x != null);
+                        assertNotNull(x);
                     }
                 }
                 for (int i = 0; i < size; i++) {

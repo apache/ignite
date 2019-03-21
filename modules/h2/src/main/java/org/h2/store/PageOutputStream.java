@@ -1,13 +1,14 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.store;
 
+import java.util.BitSet;
+
 import org.h2.message.DbException;
 import org.h2.message.Trace;
-import org.h2.util.BitField;
 import org.h2.util.IntArray;
 
 /**
@@ -17,7 +18,7 @@ public class PageOutputStream {
 
     private PageStore store;
     private final Trace trace;
-    private final BitField exclude;
+    private final BitSet exclude;
     private final boolean atEnd;
     private final int minPageId;
 
@@ -42,7 +43,7 @@ public class PageOutputStream {
      * @param logKey the log key of the first trunk page
      * @param atEnd whether only pages at the end of the file should be used
      */
-    public PageOutputStream(PageStore store, int trunkPage, BitField exclude,
+    public PageOutputStream(PageStore store, int trunkPage, BitSet exclude,
             int logKey, boolean atEnd) {
         this.trace = store.getTrace();
         this.store = store;

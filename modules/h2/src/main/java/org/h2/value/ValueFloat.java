@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -17,11 +17,6 @@ import org.h2.message.DbException;
 public class ValueFloat extends Value {
 
     /**
-     * Float.floatToIntBits(0.0F).
-     */
-    public static final int ZERO_BITS = Float.floatToIntBits(0.0F);
-
-    /**
      * The precision in digits.
      */
     static final int PRECISION = 7;
@@ -32,8 +27,22 @@ public class ValueFloat extends Value {
      */
     static final int DISPLAY_SIZE = 15;
 
-    private static final ValueFloat ZERO = new ValueFloat(0.0F);
-    private static final ValueFloat ONE = new ValueFloat(1.0F);
+    /**
+     * Float.floatToIntBits(0f).
+     */
+    public static final int ZERO_BITS = 0;
+
+    /**
+     * The value 0.
+     */
+    public static final ValueFloat ZERO = new ValueFloat(0f);
+
+    /**
+     * The value 1.
+     */
+    public static final ValueFloat ONE = new ValueFloat(1f);
+
+    private static final ValueFloat NAN = new ValueFloat(Float.NaN);
 
     private final float value;
 
@@ -44,24 +53,24 @@ public class ValueFloat extends Value {
     @Override
     public Value add(Value v) {
         ValueFloat v2 = (ValueFloat) v;
-        return ValueFloat.get(value + v2.value);
+        return get(value + v2.value);
     }
 
     @Override
     public Value subtract(Value v) {
         ValueFloat v2 = (ValueFloat) v;
-        return ValueFloat.get(value - v2.value);
+        return get(value - v2.value);
     }
 
     @Override
     public Value negate() {
-        return ValueFloat.get(-value);
+        return get(-value);
     }
 
     @Override
     public Value multiply(Value v) {
         ValueFloat v2 = (ValueFloat) v;
-        return ValueFloat.get(value * v2.value);
+        return get(value * v2.value);
     }
 
     @Override
@@ -70,7 +79,7 @@ public class ValueFloat extends Value {
         if (v2.value == 0.0) {
             throw DbException.get(ErrorCode.DIVISION_BY_ZERO_1, getSQL());
         }
-        return ValueFloat.get(value / v2.value);
+        return get(value / v2.value);
     }
 
     @Override
@@ -79,31 +88,36 @@ public class ValueFloat extends Value {
         if (other.value == 0) {
             throw DbException.get(ErrorCode.DIVISION_BY_ZERO_1, getSQL());
         }
-        return ValueFloat.get(value % other.value);
+        return get(value % other.value);
     }
 
     @Override
-    public String getSQL() {
+    public StringBuilder getSQL(StringBuilder builder) {
         if (value == Float.POSITIVE_INFINITY) {
-            return "POWER(0, -1)";
+            builder.append("POWER(0, -1)");
         } else if (value == Float.NEGATIVE_INFINITY) {
-            return "(-POWER(0, -1))";
-        } else if (Double.isNaN(value)) {
-            // NaN
-            return "SQRT(-1)";
+            builder.append("(-POWER(0, -1))");
+        } else if (Float.isNaN(value)) {
+            builder.append("SQRT(-1)");
+        } else {
+            builder.append(value);
         }
-        return getString();
+        return builder;
     }
 
     @Override
-    public int getType() {
-        return Value.FLOAT;
+    public TypeInfo getType() {
+        return TypeInfo.TYPE_FLOAT;
     }
 
     @Override
-    protected int compareSecure(Value o, CompareMode mode) {
-        ValueFloat v = (ValueFloat) o;
-        return Float.compare(value, v.value);
+    public int getValueType() {
+        return FLOAT;
+    }
+
+    @Override
+    public int compareTypeSafe(Value o, CompareMode mode) {
+        return Float.compare(value, ((ValueFloat) o).value);
     }
 
     @Override
@@ -117,24 +131,22 @@ public class ValueFloat extends Value {
     }
 
     @Override
+    public double getDouble() {
+        return value;
+    }
+
+    @Override
     public String getString() {
-        return String.valueOf(value);
-    }
-
-    @Override
-    public long getPrecision() {
-        return PRECISION;
-    }
-
-    @Override
-    public int getScale() {
-        return 0;
+        return Float.toString(value);
     }
 
     @Override
     public int hashCode() {
-        long hash = Float.floatToIntBits(value);
-        return (int) (hash ^ (hash >> 32));
+        /*
+         * NaNs are normalized in get() method, so it's safe to use
+         * floatToRawIntBits() instead of floatToIntBits() here.
+         */
+        return Float.floatToRawIntBits(value);
     }
 
     @Override
@@ -160,13 +172,10 @@ public class ValueFloat extends Value {
         } else if (d == 0.0F) {
             // -0.0 == 0.0, and we want to return 0.0 for both
             return ZERO;
+        } else if (Float.isNaN(d)) {
+            return NAN;
         }
         return (ValueFloat) Value.cache(new ValueFloat(d));
-    }
-
-    @Override
-    public int getDisplaySize() {
-        return DISPLAY_SIZE;
     }
 
     @Override
@@ -174,7 +183,7 @@ public class ValueFloat extends Value {
         if (!(other instanceof ValueFloat)) {
             return false;
         }
-        return compareSecure((ValueFloat) other, null) == 0;
+        return compareTypeSafe((ValueFloat) other, null) == 0;
     }
 
 }

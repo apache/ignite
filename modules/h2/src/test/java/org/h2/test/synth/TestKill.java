@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -13,6 +13,7 @@ import java.sql.Statement;
 import java.util.Random;
 
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.test.utils.SelfDestructor;
 
 /**
@@ -20,7 +21,7 @@ import org.h2.test.utils.SelfDestructor;
  * operations against a database, then kills this process. Afterwards recovery
  * is tested.
  */
-public class TestKill extends TestBase {
+public class TestKill extends TestDb {
 
     private static final String DIR = TestBase.getTestDir("kill");
 
@@ -49,7 +50,7 @@ public class TestKill extends TestBase {
         String password = getPassword();
         String selfDestruct = SelfDestructor.getPropertyString(60);
         String[] procDef = {
-                "java", selfDestruct,
+                getJVM(), selfDestruct,
                 "-cp", getClassPath(),
                 "org.h2.test.synth.TestKillProcess", url, user,
                 password, getBaseDir(), "" + ACCOUNTS };

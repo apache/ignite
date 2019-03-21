@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -16,7 +16,7 @@ import org.h2.result.ResultInterface;
 import org.h2.table.Column;
 import org.h2.table.Table;
 import org.h2.table.TableType;
-import org.h2.util.StatementBuilder;
+import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.h2.value.ValueInt;
 import org.h2.value.ValueNull;
@@ -101,28 +101,31 @@ public class Analyze extends DefineCommand {
             return;
         }
         Database db = session.getDatabase();
-        StatementBuilder buff = new StatementBuilder("SELECT ");
-        for (Column col : columns) {
-            buff.appendExceptFirst(", ");
-            int type = col.getType();
-            if (type == Value.BLOB || type == Value.CLOB) {
+        StringBuilder buff = new StringBuilder("SELECT ");
+        for (int i = 0, l = columns.length; i < l; i++) {
+            if (i > 0) {
+                buff.append(", ");
+            }
+            Column col = columns[i];
+            if (DataType.isLargeObject(col.getType().getValueType())) {
                 // can not index LOB columns, so calculating
                 // the selectivity is not required
                 buff.append("MAX(NULL)");
             } else {
-                buff.append("SELECTIVITY(").append(col.getSQL()).append(')');
+                buff.append("SELECTIVITY(");
+                col.getSQL(buff, true).append(')');
             }
         }
-        buff.append(" FROM ").append(table.getSQL());
+        buff.append(" FROM ");
+        table.getSQL(buff, true);
         if (sample > 0) {
-            buff.append(" LIMIT ? SAMPLE_SIZE ? ");
+            buff.append(" FETCH FIRST ROW ONLY SAMPLE_SIZE ? ");
         }
         String sql = buff.toString();
         Prepared command = session.prepare(sql);
         if (sample > 0) {
             ArrayList<Parameter> params = command.getParameters();
-            params.get(0).setValue(ValueInt.get(1));
-            params.get(1).setValue(ValueInt.get(sample));
+            params.get(0).setValue(ValueInt.get(sample));
         }
         ResultInterface result = command.query(0);
         result.next();

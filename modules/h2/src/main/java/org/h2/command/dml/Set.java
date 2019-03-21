@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -18,9 +18,12 @@ import org.h2.engine.Setting;
 import org.h2.expression.Expression;
 import org.h2.expression.ValueExpression;
 import org.h2.message.DbException;
+import org.h2.message.Trace;
+import org.h2.result.LocalResultFactory;
 import org.h2.result.ResultInterface;
 import org.h2.result.RowFactory;
 import org.h2.schema.Schema;
+import org.h2.security.auth.AuthenticatorFactory;
 import org.h2.table.Table;
 import org.h2.tools.CompressTool;
 import org.h2.util.JdbcUtils;
@@ -120,12 +123,13 @@ public class Set extends Prepared {
         }
         case SetTypes.COLLATION: {
             session.getUser().checkAdmin();
-            final boolean binaryUnsigned = database.
-                    getCompareMode().isBinaryUnsigned();
+            CompareMode currentMode = database.getCompareMode();
+            final boolean binaryUnsigned = currentMode.isBinaryUnsigned();
+            final boolean uuidUnsigned = currentMode.isUuidUnsigned();
             CompareMode compareMode;
             StringBuilder buff = new StringBuilder(stringValue);
             if (stringValue.equals(CompareMode.OFF)) {
-                compareMode = CompareMode.getInstance(null, 0, binaryUnsigned);
+                compareMode = CompareMode.getInstance(null, 0, binaryUnsigned, uuidUnsigned);
             } else {
                 int strength = getIntValue();
                 buff.append(" STRENGTH ");
@@ -138,8 +142,7 @@ public class Set extends Prepared {
                 } else if (strength == Collator.TERTIARY) {
                     buff.append("TERTIARY");
                 }
-                compareMode = CompareMode.getInstance(stringValue, strength,
-                        binaryUnsigned);
+                compareMode = CompareMode.getInstance(stringValue, strength, binaryUnsigned, uuidUnsigned);
             }
             CompareMode old = database.getCompareMode();
             if (old.equals(compareMode)) {
@@ -147,9 +150,7 @@ public class Set extends Prepared {
             }
             Table table = database.getFirstUserTable();
             if (table != null) {
-                throw DbException.get(
-                        ErrorCode.COLLATION_CHANGE_WITH_DATA_TABLE_1,
-                        table.getSQL());
+                throw DbException.get(ErrorCode.COLLATION_CHANGE_WITH_DATA_TABLE_1, table.getSQL(false));
             }
             addOrUpdateSetting(name, buff.toString(), 0);
             database.setCompareMode(compareMode);
@@ -157,24 +158,46 @@ public class Set extends Prepared {
         }
         case SetTypes.BINARY_COLLATION: {
             session.getUser().checkAdmin();
-            Table table = database.getFirstUserTable();
-            if (table != null) {
-                throw DbException.get(
-                        ErrorCode.COLLATION_CHANGE_WITH_DATA_TABLE_1,
-                        table.getSQL());
+            boolean unsigned;
+            if (stringValue.equals(CompareMode.SIGNED)) {
+                unsigned = false;
+            } else if (stringValue.equals(CompareMode.UNSIGNED)) {
+                unsigned = true;
+            } else {
+                throw DbException.getInvalidValueException("BINARY_COLLATION", stringValue);
             }
             CompareMode currentMode = database.getCompareMode();
-            CompareMode newMode;
-            if (stringValue.equals(CompareMode.SIGNED)) {
-                newMode = CompareMode.getInstance(currentMode.getName(),
-                        currentMode.getStrength(), false);
-            } else if (stringValue.equals(CompareMode.UNSIGNED)) {
-                newMode = CompareMode.getInstance(currentMode.getName(),
-                        currentMode.getStrength(), true);
-            } else {
-                throw DbException.getInvalidValueException("BINARY_COLLATION",
-                        stringValue);
+            if (currentMode.isBinaryUnsigned() != unsigned) {
+                Table table = database.getFirstUserTable();
+                if (table != null) {
+                    throw DbException.get(ErrorCode.COLLATION_CHANGE_WITH_DATA_TABLE_1, table.getSQL(false));
+                }
             }
+            CompareMode newMode = CompareMode.getInstance(currentMode.getName(),
+                    currentMode.getStrength(), unsigned, currentMode.isUuidUnsigned());
+            addOrUpdateSetting(name, stringValue, 0);
+            database.setCompareMode(newMode);
+            break;
+        }
+        case SetTypes.UUID_COLLATION: {
+            session.getUser().checkAdmin();
+            boolean unsigned;
+            if (stringValue.equals(CompareMode.SIGNED)) {
+                unsigned = false;
+            } else if (stringValue.equals(CompareMode.UNSIGNED)) {
+                unsigned = true;
+            } else {
+                throw DbException.getInvalidValueException("UUID_COLLATION", stringValue);
+            }
+            CompareMode currentMode = database.getCompareMode();
+            if (currentMode.isUuidUnsigned() != unsigned) {
+                Table table = database.getFirstUserTable();
+                if (table != null) {
+                    throw DbException.get(ErrorCode.COLLATION_CHANGE_WITH_DATA_TABLE_1, table.getSQL(false));
+                }
+            }
+            CompareMode newMode = CompareMode.getInstance(currentMode.getName(),
+                    currentMode.getStrength(), currentMode.isBinaryUnsigned(), unsigned);
             addOrUpdateSetting(name, stringValue, 0);
             database.setCompareMode(newMode);
             break;
@@ -251,9 +274,7 @@ public class Set extends Prepared {
             session.getUser().checkAdmin();
             Table table = database.getFirstUserTable();
             if (table != null) {
-                throw DbException.get(ErrorCode.
-                        JAVA_OBJECT_SERIALIZER_CHANGE_WITH_DATA_TABLE,
-                        table.getSQL());
+                throw DbException.get(ErrorCode.JAVA_OBJECT_SERIALIZER_CHANGE_WITH_DATA_TABLE, table.getSQL(false));
             }
             database.setJavaObjectSerializerName(stringValue);
             addOrUpdateSetting(name, stringValue, 0);
@@ -345,14 +366,10 @@ public class Set extends Prepared {
             }
             break;
         case SetTypes.MULTI_THREADED: {
-            session.getUser().checkAdmin();
-            database.setMultiThreaded(getIntValue() == 1);
-            break;
-        }
-        case SetTypes.MVCC: {
-            if (database.isMultiVersion() != (getIntValue() == 1)) {
-                throw DbException.get(
-                        ErrorCode.CANNOT_CHANGE_SETTING_WHEN_OPEN_1, "MVCC");
+            boolean v = getIntValue() == 1;
+            if (database.isMultiThreaded() != v) {
+                session.getUser().checkAdmin();
+                database.setMultiThreaded(v);
             }
             break;
         }
@@ -416,7 +433,7 @@ public class Set extends Prepared {
         }
         case SetTypes.TRACE_LEVEL_FILE:
             session.getUser().checkAdmin();
-            if (getCurrentObjectId() == 0) {
+            if (getPersistedObjectId() == 0) {
                 // don't set the property when opening the database
                 // this is for compatibility with older versions, because
                 // this setting was persistent
@@ -425,7 +442,7 @@ public class Set extends Prepared {
             break;
         case SetTypes.TRACE_LEVEL_SYSTEM_OUT:
             session.getUser().checkAdmin();
-            if (getCurrentObjectId() == 0) {
+            if (getPersistedObjectId() == 0) {
                 // don't set the property when opening the database
                 // this is for compatibility with older versions, because
                 // this setting was persistent
@@ -491,7 +508,7 @@ public class Set extends Prepared {
             Class<RowFactory> rowFactoryClass = JdbcUtils.loadUserClass(rowFactoryName);
             RowFactory rowFactory;
             try {
-                rowFactory = rowFactoryClass.newInstance();
+                rowFactory = rowFactoryClass.getDeclaredConstructor().newInstance();
             } catch (Exception e) {
                 throw DbException.convert(e);
             }
@@ -538,6 +555,39 @@ public class Set extends Prepared {
         case SetTypes.COLUMN_NAME_RULES: {
             session.getUser().checkAdmin();
             session.getColumnNamerConfiguration().configure(expression.getColumnName());
+            break;
+        }
+        case SetTypes.AUTHENTICATOR: {
+            session.getUser().checkAdmin();
+            try {
+                if (expression.getBooleanValue(session)) {
+                database.setAuthenticator(AuthenticatorFactory.createAuthenticator());
+                } else {
+                    database.setAuthenticator(null);
+                }
+                addOrUpdateSetting(name,expression.getValue(session).getString(),0);
+            } catch (Exception e) {
+                // Errors during start are ignored to allow to open the database
+                if (database.isStarting()) {
+                    database.getTrace(Trace.DATABASE).error(e,
+                            "{0}: failed to set authenticator during database start ", expression.toString());
+                } else {
+                    throw DbException.convert(e);
+                }
+            }
+            break;
+        }
+        case SetTypes.LOCAL_RESULT_FACTORY: {
+            session.getUser().checkAdmin();
+            String localResultFactoryName = expression.getColumnName();
+            Class<LocalResultFactory> localResultFactoryClass = JdbcUtils.loadUserClass(localResultFactoryName);
+            LocalResultFactory localResultFactory;
+            try {
+                localResultFactory = localResultFactoryClass.getDeclaredConstructor().newInstance();
+                database.setResultFactory(localResultFactory);
+            } catch (Exception e) {
+                throw DbException.convert(e);
+            }
             break;
         }
         default:

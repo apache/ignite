@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: James Devenish
  */
@@ -16,12 +16,13 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 import org.h2.jdbcx.JdbcDataSource;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.JdbcUtils;
 
 /**
  * Basic XA tests.
  */
-public class TestXA extends TestBase {
+public class TestXA extends TestDb {
 
     private static final String DB_NAME1 = "xadb1";
     private static final String DB_NAME2 = "xadb2";
@@ -148,13 +149,13 @@ public class TestXA extends TestBase {
         XAResource res = xa.getXAResource();
 
         res.start(xid, XAResource.TMNOFLAGS);
-        assertTrue(!c.getAutoCommit());
+        assertFalse(c.getAutoCommit());
         res.end(xid, XAResource.TMSUCCESS);
         res.commit(xid, true);
         assertTrue(c.getAutoCommit());
 
         res.start(xid, XAResource.TMNOFLAGS);
-        assertTrue(!c.getAutoCommit());
+        assertFalse(c.getAutoCommit());
         res.end(xid, XAResource.TMFAIL);
         res.rollback(xid);
         assertTrue(c.getAutoCommit());
@@ -193,7 +194,7 @@ public class TestXA extends TestBase {
         xa.getXAResource().start(xid,
                 XAResource.TMNOFLAGS);
         Connection c = xa.getConnection();
-        assertTrue(!c.getAutoCommit());
+        assertFalse(c.getAutoCommit());
         c.close();
         xa.close();
     }

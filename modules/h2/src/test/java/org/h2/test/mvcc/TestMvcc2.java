@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -9,15 +9,15 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.Task;
 
 /**
  * Additional MVCC (multi version concurrency) test cases.
  */
-public class TestMvcc2 extends TestBase {
+public class TestMvcc2 extends TestDb {
 
     private static final String DROP_TABLE =
             "DROP TABLE IF EXISTS EMPLOYEE";
@@ -35,15 +35,19 @@ public class TestMvcc2 extends TestBase {
      */
     public static void main(String... a) throws Exception {
         TestBase test = TestBase.createCaller().init();
-        test.config.mvcc = true;
         test.test();
     }
 
     @Override
-    public void test() throws Exception {
-        if (!config.mvcc) {
-            return;
+    public boolean isEnabled() {
+        if (!config.mvStore) {
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws Exception {
         deleteDb("mvcc2");
         testConcurrentInsert();
         testConcurrentUpdate();
@@ -65,33 +69,26 @@ public class TestMvcc2 extends TestBase {
         stat2.execute("set lock_timeout 1000");
         stat.execute("create table test(id int primary key, name varchar)");
         conn.setAutoCommit(false);
-        final AtomicBoolean committed = new AtomicBoolean(false);
         Task t = new Task() {
             @Override
-            public void call() throws SQLException {
+            public void call() {
                 try {
-//System.out.println("insert2 hallo");
                     stat2.execute("insert into test values(0, 'Hallo')");
-//System.out.println("insert2 hallo done");
+                    fail();
                 } catch (SQLException e) {
-//System.out.println("insert2 hallo e " + e);
-                    if (!committed.get()) {
-                        throw e;
-                    }
+                    assertTrue(e.toString(),
+                            e.getErrorCode() == ErrorCode.DUPLICATE_KEY_1 ||
+                            e.getErrorCode() == ErrorCode.CONCURRENT_UPDATE_1);
                 }
             }
         };
-//System.out.println("insert hello");
         stat.execute("insert into test values(0, 'Hello')");
         t.execute();
-        Thread.sleep(500);
-//System.out.println("insert hello commit");
-        committed.set(true);
         conn.commit();
         t.get();
         ResultSet rs;
         rs = stat.executeQuery("select name from test");
-        rs.next();
+        assertTrue(rs.next());
         assertEquals("Hello", rs.getString(1));
         stat.execute("drop table test");
         conn2.close();
@@ -111,16 +108,17 @@ public class TestMvcc2 extends TestBase {
             @Override
             public void call() throws SQLException {
                 stat2.execute("update test set name = 'Hallo'");
+                assertEquals(1, stat2.getUpdateCount());
             }
         };
         stat.execute("update test set name = 'Hi'");
+        assertEquals(1, stat.getUpdateCount());
         t.execute();
-        Thread.sleep(500);
         conn.commit();
         t.get();
         ResultSet rs;
         rs = stat.executeQuery("select name from test");
-        rs.next();
+        assertTrue(rs.next());
         assertEquals("Hallo", rs.getString(1));
         stat.execute("drop table test");
         conn2.close();
@@ -128,22 +126,14 @@ public class TestMvcc2 extends TestBase {
     }
 
     private void testSelectForUpdate() throws SQLException {
-        Connection conn = getConnection("mvcc2;SELECT_FOR_UPDATE_MVCC=true");
-        Connection conn2 = getConnection("mvcc2;SELECT_FOR_UPDATE_MVCC=true");
+        Connection conn = getConnection("mvcc2");
+        Connection conn2 = getConnection("mvcc2");
         Statement stat = conn.createStatement();
         stat.execute("create table test(id int primary key, name varchar)");
         conn.setAutoCommit(false);
         stat.execute("insert into test select x, 'Hello' from system_range(1, 10)");
         stat.execute("select * from test where id = 3 for update");
         conn.commit();
-        assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, stat).
-                execute("select sum(id) from test for update");
-        assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, stat).
-                execute("select distinct id from test for update");
-        assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, stat).
-                execute("select id from test group by id for update");
-        assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, stat).
-                execute("select t1.id from test t1, test t2 for update");
         stat.execute("select * from test where id = 3 for update");
         conn2.setAutoCommit(false);
         conn2.createStatement().execute("select * from test where id = 4 for update");

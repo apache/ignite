@@ -8,6 +8,7 @@
 22004=#Numeric value out of range: {0} in column {1}
 22007=Nie można odczytać {0} jako {1}
 22012=Dzielenie przez zero: {0}
+22013=#Invalid PRECEDING or FOLLOWING size in window function: {0}
 22018=Błąd konwersji danych {0}
 22025=Błąd w LIKE ESCAPE: {0}
 22030=#Value not permitted for column {0}: {1}
@@ -31,7 +32,7 @@
 42S12=Indeks {0} nie istnieje
 42S21=Zduplikowana nazwa kolumny {0}
 42S22=Kolumna {0} nie istnieje
-42S32=Ustawienie {0} nie istnieje
+42S31=#Identical expressions should be used; expected {0}, found {1}
 57014=Kwerenda została anulowana albo sesja wygasła
 90000=Funkcja {0} musi zwrócić dane
 90001=Metoda nie jest dozwolona w kwerendzie
@@ -140,6 +141,7 @@
 90107=Nie można skasować {0} ponieważ zależy od {1}
 90108=Brak pamięci.
 90109=Widok {0} jest nieprawidłowy
+90110=#Comparing ARRAY to scalar value
 90111=Błąd dostępu do tabeli skrzyżowań przy pomocy zapytania SQL {0}, błąd: {1}
 90112=Rekord nie znaleziony przy probie kasowania z indeksu {0}
 90113=Nie wspierana opcja połączenia {0}
@@ -148,10 +150,10 @@
 90116=Literał tego typu nie jest dozwolony
 90117=Zdalne połączenia do tego serwera nie są dozwolone, zobacz -tcpAllowOthers
 90118=Nie można skasować tabeli {0}
-90119=Typ danych użytkownika {0} już istnieje
-90120=Typ danych użytkownika {0} nie istnieje
+90119=Domena {0} już istnieje
+90120=Domena {0} nie istnieje
 90121=Baza danych jest już zamknięta (aby zablokować samoczynne zamykanie podczas zamknięcia VM dodaj ";DB_CLOSE_ON_EXIT=FALSE" do URL bazy danych)
-90122=Operacja nie jest dozwolona dla tabeli {0} gdy istnieją widoki oparte na tabeli: {1}
+90122=#The WITH TIES clause is not allowed without a corresponding ORDER BY clause.
 90123=Nie można mieszać parametrów indeksowych z nieindeksowymi
 90124=Plik nie istnieje: {0}
 90125=Nieprawidłowa klasa, oczekiwano {0}, a jest {1}
@@ -165,7 +167,7 @@
 90133=Nie można zmienić ustawienia {0} gdy baza danych jest otwarta
 90134=Dostęp do klasy {0} jest zabroniony
 90135=Baza danych jest otwarta w trybie wyłączności, nie można otworzyć dodatkowych połączeń
-90136=Nieobsługiwany warunek złączenia zewnętrznego: {0}
+90136=#Window not found: {0}
 90137=Można przypisywać tylko do zmiennych, nie do: {0}
 90138=Nieprawidłowa nazwa bazy danych: {0}
 90139=Publiczna, statyczna metoda Java nie znaleziona: {0}
@@ -173,6 +175,9 @@
 90141=Serializator nie może być zmieniony ponieważ istnieje tabela z danymi: {0}
 90142=#Step size must not be zero
 90143=#Row {1} not found in primary index {0}
+90144=#Authenticator not enabled on database {0}
+90145=#FOR UPDATE is not allowed in DISTINCT or grouped select
+90146=#Database {0} not found, and IFEXISTS=true, so we can't auto-create it
 HY000=Błąd ogólny: {0}
 HY004=Nieznany typ danych: {0}
 HYC00=Cecha nie jest wspierana: {0}

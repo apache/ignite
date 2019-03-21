@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -24,7 +24,7 @@ import java.util.Set;
  * at most the specified amount of memory. The memory unit is not relevant,
  * however it is suggested to use bytes as the unit.
  * <p>
- * This class implements an approximation of the the LIRS replacement algorithm
+ * This class implements an approximation of the LIRS replacement algorithm
  * invented by Xiaodong Zhang and Song Jiang as described in
  * http://www.cse.ohio-state.edu/~zhang/lirs-sigmetrics-02.html with a few
  * smaller changes: An additional queue for non-resident entries is used, to

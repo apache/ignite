@@ -8,6 +8,7 @@
 22004=#Numeric value out of range: {0} in column {1}
 22007=Nelze zpracovat konstantu {0} {1}
 22012=Dělení nulou: {0}
+22013=#Invalid PRECEDING or FOLLOWING size in window function: {0}
 22018=Chyba při převodu dat {0}
 22025=Chyba v LIKE escapování: {0}
 22030=#Value not permitted for column {0}: {1}
@@ -31,7 +32,7 @@
 42S12=Index {0} nenalezen
 42S21=Duplicitní název sloupce {0}
 42S22=Sloupec {0} nenalezen
-42S32=Nastavení {0} nenalezeno
+42S31=#Identical expressions should be used; expected {0}, found {1}
 57014=Příkaz byl zrušen nebo připojení vypršelo
 90000=Funkce {0} musí vracet výsledek
 90001=Metoda neumožňuje dotazování. Použijte execute nebo executeQuery namísto executeUpdate
@@ -140,6 +141,7 @@
 90107=Nelze odstranit {0}, protože {1} na něm závisí
 90108=Nedostatek paměti.
 90109=Pohled {0} je neplatný: {1}
+90110=#Comparing ARRAY to scalar value
 90111=Chyba přístupu propojené tabulky s SQL příkazem {0}, příčina: {1}
 90112=Řádek nebyl nalezen při pokusu o smazání z indexu {0}
 90113=Nepodporované nastavení připojení {0}
@@ -148,10 +150,10 @@
 90116=Definice tohoto druhu nejsou povoleny
 90117=Vzdálené připojení není na tomto serveru povoleno, zkontrolujte volbu -tcpAllowOthers
 90118=Nelze odstranit tabulku {0}
-90119=Uživatelský datový typ {0} již existuje
-90120=Uživatelský datový typ {0} nenalezen
+90119=Doména {0} již existuje
+90120=Doména {0} nenalezen
 90121=Databáze byla již ukončena (pro deaktivaci automatického ukončení při zastavení virtuálního stroje přidejte parametr ";DB_CLOSE_ON_EXIT=FALSE" do URL databáze)
-90122=Operace není podporována pro tabulku {0}, pokud na tabulku existují pohledy: {1}
+90122=#The WITH TIES clause is not allowed without a corresponding ORDER BY clause.
 90123=Nelze vzájemně míchat indexované a neindexované parametry
 90124=Soubor nenalezen: {0}
 90125=Neplatná třída, očekáváno {0}, ale obdrženo {1}
@@ -165,7 +167,7 @@
 90133=Nelze změnit nastavení {0}, pokud je již databáze otevřena
 90134=Přístup ke třídě {0} byl odepřen
 90135=Databáze je spuštěna ve vyhrazeném režimu; nelze otevřít další spojení
-90136=Nepodporovaná podmínka vnějšího spojení: {0}
+90136=#Window not found: {0}
 90137=Lze přiřadit pouze proměnné, nikoli: {0}
 90138=Neplatný název databáze: {0}
 90139=Nenalezena veřejná statická Java metoda: {0}
@@ -173,6 +175,9 @@
 90141=#Serializer cannot be changed because there is a data table: {0}
 90142=#Step size must not be zero
 90143=#Row {1} not found in primary index {0}
+90144=#Authenticator not enabled on database {0}
+90145=#FOR UPDATE is not allowed in DISTINCT or grouped select
+90146=#Database {0} not found, and IFEXISTS=true, so we can't auto-create it
 HY000=Obecná chyba: {0}
 HY004=Neznámý datový typ: {0}
 HYC00=Vlastnost není podporována: {0}

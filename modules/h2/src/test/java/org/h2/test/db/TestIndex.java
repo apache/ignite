@@ -1,11 +1,12 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.test.db;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -19,13 +20,14 @@ import org.h2.api.ErrorCode;
 import org.h2.command.dml.Select;
 import org.h2.result.SortOrder;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.SimpleResultSet;
 import org.h2.value.ValueInt;
 
 /**
  * Index tests.
  */
-public class TestIndex extends TestBase {
+public class TestIndex extends TestDb {
 
     private static int testFunctionIndexCounter;
 
@@ -50,7 +52,13 @@ public class TestIndex extends TestBase {
         testHashIndexOnMemoryTable();
         testErrorMessage();
         testDuplicateKeyException();
-        testConcurrentUpdate();
+        int to = config.lockTimeout;
+        config.lockTimeout = 50000;
+        try {
+            testConcurrentUpdate();
+        } finally {
+            config.lockTimeout = to;
+        }
         testNonUniqueHashIndex();
         testRenamePrimaryKey();
         testRandomized();
@@ -99,6 +107,9 @@ public class TestIndex extends TestBase {
 
         conn.close();
         deleteDb("index");
+
+        // This test uses own connection
+        testEnumIndex();
     }
 
     private void testOrderIndex() throws SQLException {
@@ -167,7 +178,7 @@ public class TestIndex extends TestBase {
             fail();
         } catch (SQLException e) {
             String m = e.getMessage();
-            int start = m.indexOf('\"'), end = m.indexOf('\"', start + 1);
+            int start = m.indexOf('"'), end = m.lastIndexOf('"');
             String s = m.substring(start + 1, end);
             for (String t : expected) {
                 assertContains(s, t);
@@ -748,6 +759,29 @@ public class TestIndex extends TestBase {
             stat.execute("DROP ALIAS TEST_INDEX");
         }
         assertEquals(1, testFunctionIndexCounter);
+    }
+
+    private void testEnumIndex() throws SQLException {
+        if (config.memory || config.networked) {
+            return;
+        }
+        deleteDb("index");
+        String url = "jdbc:h2:" + getBaseDir() + "/index;DB_CLOSE_DELAY=0";
+        Connection conn = DriverManager.getConnection(url);
+        Statement stat = conn.createStatement();
+
+        stat.execute("CREATE TABLE TEST(ID INT, V ENUM('A', 'B'), CONSTRAINT PK PRIMARY KEY(ID, V))");
+        stat.execute("INSERT INTO TEST VALUES (1, 'A'), (2, 'B')");
+
+        conn.close();
+        conn = DriverManager.getConnection(url);
+        stat = conn.createStatement();
+
+        stat.execute("DELETE FROM TEST WHERE V = 'A'");
+        stat.execute("DROP TABLE TEST");
+
+        conn.close();
+        deleteDb("index");
     }
 
 }

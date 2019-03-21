@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -10,14 +10,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.h2.api.ErrorCode;
 import org.h2.engine.Constants;
-import org.h2.jdbc.JdbcSQLException;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Tests for table synonyms.
  */
-public class TestSynonymForTable extends TestBase {
+public class TestSynonymForTable extends TestDb {
 
     /**
      * Run just this test.
@@ -70,7 +71,7 @@ public class TestSynonymForTable extends TestBase {
         stat.execute("CREATE OR REPLACE SYNONYM testsynonym FOR s1.backingtable");
         stat.execute("DROP SCHEMA s1 CASCADE");
 
-        assertThrows(JdbcSQLException.class, stat).execute("SELECT id FROM testsynonym");
+        assertThrows(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, stat).execute("SELECT id FROM testsynonym");
         conn.close();
     }
 
@@ -81,7 +82,7 @@ public class TestSynonymForTable extends TestBase {
         stat.execute("DROP TABLE backingtable");
 
         // Backing table does not exist anymore.
-        assertThrows(JdbcSQLException.class, stat).execute("SELECT id FROM testsynonym");
+        assertThrows(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, stat).execute("SELECT id FROM testsynonym");
 
         // Synonym should be dropped as well
         ResultSet synonyms = conn.createStatement().executeQuery(
@@ -91,7 +92,7 @@ public class TestSynonymForTable extends TestBase {
 
         // Reopening should work with dropped synonym
         Connection conn2 = getConnection("synonym");
-        assertThrows(JdbcSQLException.class, stat).execute("SELECT id FROM testsynonym");
+        assertThrows(ErrorCode.OBJECT_CLOSED, stat).execute("SELECT id FROM testsynonym");
         conn2.close();
     }
 
@@ -103,13 +104,13 @@ public class TestSynonymForTable extends TestBase {
         stat.execute("DROP SYNONYM testsynonym");
 
         // Synonym does not exist anymore.
-        assertThrows(JdbcSQLException.class, stat).execute("SELECT id FROM testsynonym");
+        assertThrows(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, stat).execute("SELECT id FROM testsynonym");
 
         // Dropping with "if exists" should succeed even if the synonym does not exist anymore.
         stat.execute("DROP SYNONYM IF EXISTS testsynonym");
 
         // Without "if exists" the command should fail if the synonym does not exist.
-        assertThrows(JdbcSQLException.class, stat).execute("DROP SYNONYM testsynonym");
+        assertThrows(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, stat).execute("DROP SYNONYM testsynonym");
         conn.close();
     }
 
@@ -131,7 +132,8 @@ public class TestSynonymForTable extends TestBase {
         Statement stat = conn.createStatement();
         stat.execute("CREATE TABLE IF NOT EXISTS backingtable(id INT PRIMARY KEY)");
 
-        assertThrows(JdbcSQLException.class, stat).execute("CREATE OR REPLACE SYNONYM backingtable FOR backingtable");
+        assertThrows(ErrorCode.TABLE_OR_VIEW_ALREADY_EXISTS_1, stat)
+                .execute("CREATE OR REPLACE SYNONYM backingtable FOR backingtable");
         conn.close();
     }
 
@@ -184,7 +186,7 @@ public class TestSynonymForTable extends TestBase {
         assertEquals("BACKINGTABLE", synonyms.getString("SYNONYM_FOR"));
         assertEquals("VALID", synonyms.getString("STATUS"));
         assertEquals("", synonyms.getString("REMARKS"));
-        assertTrue(synonyms.getString("ID") != null);
+        assertNotNull(synonyms.getString("ID"));
         assertFalse(synonyms.next());
         conn.close();
     }
@@ -193,7 +195,8 @@ public class TestSynonymForTable extends TestBase {
         Connection conn = getConnection("synonym");
         Statement stat = conn.createStatement();
 
-        assertThrows(JdbcSQLException.class, stat).execute("CREATE SYNONYM someSynonym FOR nonexistingTable");
+        assertThrows(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, stat)
+                .execute("CREATE SYNONYM someSynonym FOR nonexistingTable");
         conn.close();
     }
 
@@ -202,7 +205,8 @@ public class TestSynonymForTable extends TestBase {
         Statement stat = conn.createStatement();
         stat.execute("CREATE TABLE IF NOT EXISTS backingtable(id INT PRIMARY KEY)");
 
-        assertThrows(JdbcSQLException.class, stat).execute("CREATE SYNONYM backingtable FOR backingtable");
+        assertThrows(ErrorCode.TABLE_OR_VIEW_ALREADY_EXISTS_1, stat)
+                .execute("CREATE SYNONYM backingtable FOR backingtable");
         conn.close();
     }
 

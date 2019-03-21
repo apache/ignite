@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -12,13 +12,14 @@ import java.sql.Statement;
 import org.h2.engine.SysProperties;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.IOUtils;
 import org.h2.util.Utils;
 
 /**
  * Test that the database file is only modified when writing to the database.
  */
-public class TestModifyOnWrite extends TestBase {
+public class TestModifyOnWrite extends TestDb {
 
     /**
      * Run just this test.
@@ -31,10 +32,15 @@ public class TestModifyOnWrite extends TestBase {
     }
 
     @Override
-    public void test() throws Exception {
+    public boolean isEnabled() {
         if (!SysProperties.MODIFY_ON_WRITE) {
-            return;
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws Exception {
         deleteDb("modifyOnWrite");
         String dbFile = getBaseDir() + "/modifyOnWrite.h2.db";
         assertFalse(FileUtils.exists(dbFile));

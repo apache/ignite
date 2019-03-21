@@ -1,12 +1,10 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.index;
 
-import java.util.Iterator;
-import org.h2.engine.Session;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -20,20 +18,11 @@ class PageDataCursor implements Cursor {
     private int idx;
     private final long maxKey;
     private Row row;
-    private final boolean multiVersion;
-    private final Session session;
-    private Iterator<Row> delta;
 
-    PageDataCursor(Session session, PageDataLeaf current, int idx, long maxKey,
-            boolean multiVersion) {
+    PageDataCursor(PageDataLeaf current, int idx, long maxKey) {
         this.current = current;
         this.idx = idx;
         this.maxKey = maxKey;
-        this.multiVersion = multiVersion;
-        this.session = session;
-        if (multiVersion) {
-            delta = current.index.getDelta();
-        }
     }
 
     @Override
@@ -48,30 +37,7 @@ class PageDataCursor implements Cursor {
 
     @Override
     public boolean next() {
-        if (!multiVersion) {
-            nextRow();
-            return checkMax();
-        }
-        while (true) {
-            if (delta != null) {
-                if (!delta.hasNext()) {
-                    delta = null;
-                    row = null;
-                    continue;
-                }
-                row = delta.next();
-                if (!row.isDeleted() || row.getSessionId() == session.getId()) {
-                    continue;
-                }
-            } else {
-                nextRow();
-                if (row != null && row.getSessionId() != 0 &&
-                        row.getSessionId() != session.getId()) {
-                    continue;
-                }
-            }
-            break;
-        }
+        nextRow();
         return checkMax();
     }
 

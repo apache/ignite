@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map.Entry;
+
 import org.h2.api.ErrorCode;
 import org.h2.engine.Database;
 import org.h2.message.DbException;
@@ -20,7 +21,6 @@ import org.h2.mvstore.MVStore;
 import org.h2.mvstore.StreamStore;
 import org.h2.mvstore.db.MVTableEngine.Store;
 import org.h2.util.IOUtils;
-import org.h2.util.New;
 import org.h2.util.StringUtils;
 import org.h2.value.Value;
 import org.h2.value.ValueLobDb;
@@ -60,14 +60,6 @@ public class LobStorageMap implements LobStorageInterface {
      */
     private MVMap<Object[], Boolean> refMap;
 
-    /**
-     * The stream store data map.
-     *
-     * Key: stream store block id (long).
-     * Value: data (byte[]).
-     */
-    private MVMap<Long, byte[]> dataMap;
-
     private StreamStore streamStore;
 
     public LobStorageMap(Database database) {
@@ -80,17 +72,23 @@ public class LobStorageMap implements LobStorageInterface {
             return;
         }
         init = true;
-        Store s = database.getMvStore();
+        Store s = database.getStore();
         MVStore mvStore;
         if (s == null) {
             // in-memory database
             mvStore = MVStore.open(null);
         } else {
-            mvStore = s.getStore();
+            mvStore = s.getMvStore();
         }
         lobMap = mvStore.openMap("lobMap");
         refMap = mvStore.openMap("lobRef");
-        dataMap = mvStore.openMap("lobData");
+
+        /* The stream store data map.
+         *
+         * Key: stream store block id (long).
+         * Value: data (byte[]).
+         */
+        MVMap<Long, byte[]> dataMap = mvStore.openMap("lobData");
         streamStore = new StreamStore(dataMap);
         // garbage collection of the last blocks
         if (database.isReadOnly()) {
@@ -247,9 +245,9 @@ public class LobStorageMap implements LobStorageInterface {
     @Override
     public ValueLobDb copyLob(ValueLobDb old, int tableId, long length) {
         init();
-        int type = old.getType();
+        int type = old.getValueType();
         long oldLobId = old.getLobId();
-        long oldLength = old.getPrecision();
+        long oldLength = old.getType().getPrecision();
         if (oldLength != length) {
             throw DbException.throwInternalError("Length is different");
         }
@@ -279,8 +277,7 @@ public class LobStorageMap implements LobStorageInterface {
             if (lob.getTableId() == LobStorageFrontend.TABLE_RESULT ||
                     lob.getTableId() == LobStorageFrontend.TABLE_ID_SESSION_VARIABLE) {
                 throw DbException.get(
-                        ErrorCode.LOB_CLOSED_ON_TIMEOUT_1, "" +
-                                lob.getLobId() + "/" + lob.getTableId());
+                        ErrorCode.LOB_CLOSED_ON_TIMEOUT_1, lob.getLobId() + "/" + lob.getTableId());
             }
             throw DbException.throwInternalError("Lob not found: " +
                     lob.getLobId() + "/" + lob.getTableId());
@@ -292,12 +289,12 @@ public class LobStorageMap implements LobStorageInterface {
     @Override
     public void removeAllForTable(int tableId) {
         init();
-        if (database.getMvStore().getStore().isClosed()) {
+        if (database.getStore().getMvStore().isClosed()) {
             return;
         }
         // this might not be very efficient -
         // to speed it up, we would need yet another map
-        ArrayList<Long> list = New.arrayList();
+        ArrayList<Long> list = new ArrayList<>();
         for (Entry<Long, Object[]> e : lobMap.entrySet()) {
             Object[] value = e.getValue();
             int t = (Integer) value[1];

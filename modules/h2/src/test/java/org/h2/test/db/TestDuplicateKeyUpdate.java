@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -10,12 +10,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Tests for the ON DUPLICATE KEY UPDATE in the Insert class.
  */
-public class TestDuplicateKeyUpdate extends TestBase {
+public class TestDuplicateKeyUpdate extends TestDb {
 
     /**
      * Run just this test.
@@ -37,6 +40,8 @@ public class TestDuplicateKeyUpdate extends TestBase {
         testOnDuplicateKeyInsertBatch(conn);
         testOnDuplicateKeyInsertMultiValue(conn);
         testPrimaryKeyAndUniqueKey(conn);
+        testUpdateCountAndQualifiedNames(conn);
+        testEnum(conn);
         conn.close();
         deleteDb("duplicateKeyUpdate");
     }
@@ -262,4 +267,49 @@ public class TestDuplicateKeyUpdate extends TestBase {
 
         stat.execute("drop table test");
     }
+
+    private void testUpdateCountAndQualifiedNames(Connection conn) throws SQLException {
+        Statement stat = conn.createStatement();
+        stat.execute("set mode mysql");
+        stat.execute("create schema s2");
+        stat.execute("create table s2.test(id int primary key, name varchar(255))");
+        stat.execute("insert into s2.test(id, name) values(1, 'a')");
+        assertEquals(2, stat.executeUpdate("insert into s2.test(id, name) values(1, 'b') " +
+                "on duplicate key update name = values(name)"));
+        assertEquals(0, stat.executeUpdate("insert into s2.test(id, name) values(1, 'b') " +
+                "on duplicate key update name = values(name)"));
+        assertEquals(1, stat.executeUpdate("insert into s2.test(id, name) values(2, 'c') " +
+                "on duplicate key update name = values(name)"));
+        ResultSet rs = stat.executeQuery("select id, name from s2.test order by id");
+        assertTrue(rs.next());
+        assertEquals(1, rs.getInt(1));
+        assertEquals("b", rs.getString(2));
+        assertTrue(rs.next());
+        assertEquals(2, rs.getInt(1));
+        assertEquals("c", rs.getString(2));
+        assertFalse(rs.next());
+        // Check qualified names in ON UPDATE case
+        assertEquals(2, stat.executeUpdate("insert into s2.test(id, name) values(2, 'd') " +
+                "on duplicate key update test.name = values(name)"));
+        assertThrows(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, stat)
+                .executeUpdate("insert into s2.test(id, name) values(2, 'd') " +
+                        "on duplicate key update test2.name = values(name)");
+        assertEquals(2, stat.executeUpdate("insert into s2.test(id, name) values(2, 'e') " +
+                "on duplicate key update s2.test.name = values(name)"));
+        assertThrows(ErrorCode.SCHEMA_NAME_MUST_MATCH, stat)
+                .executeUpdate("insert into s2.test(id, name) values(2, 'd') " +
+                        "on duplicate key update s3.test.name = values(name)");
+        stat.execute("drop schema s2 cascade");
+    }
+
+    private void testEnum(Connection conn) throws SQLException {
+        Statement stat = conn.createStatement();
+        stat.execute("create table test(e enum('a', 'b') unique)");
+        PreparedStatement ps = conn.prepareStatement("insert into test(e) values (?) on duplicate key update e = e");
+        ps.setString(1, "a");
+        assertEquals(1, ps.executeUpdate());
+        assertEquals(0, ps.executeUpdate());
+        stat.execute("drop table test");
+    }
+
 }

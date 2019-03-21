@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -33,6 +33,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
+
 import org.h2.api.ErrorCode;
 import org.h2.bnf.Bnf;
 import org.h2.bnf.context.DbColumn;
@@ -41,7 +42,7 @@ import org.h2.bnf.context.DbSchema;
 import org.h2.bnf.context.DbTableOrView;
 import org.h2.engine.Constants;
 import org.h2.engine.SysProperties;
-import org.h2.jdbc.JdbcSQLException;
+import org.h2.jdbc.JdbcException;
 import org.h2.message.DbException;
 import org.h2.security.SHA256;
 import org.h2.tools.Backup;
@@ -55,11 +56,9 @@ import org.h2.tools.RunScript;
 import org.h2.tools.Script;
 import org.h2.tools.SimpleResultSet;
 import org.h2.util.JdbcUtils;
-import org.h2.util.New;
 import org.h2.util.Profiler;
 import org.h2.util.ScriptReader;
 import org.h2.util.SortedProperties;
-import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 import org.h2.util.Tool;
 import org.h2.util.Utils;
@@ -168,6 +167,14 @@ public class WebApp {
         trace(file);
         if (file.endsWith(".do")) {
             file = process(file);
+        } else if (file.endsWith(".jsp")) {
+            switch (file) {
+            case "admin.jsp":
+            case "tools.jsp":
+                if (!checkAdmin(file)) {
+                    file = process("adminLogin.do");
+                }
+            }
         }
         return file;
     }
@@ -207,51 +214,95 @@ public class WebApp {
     private String process(String file) {
         trace("process " + file);
         while (file.endsWith(".do")) {
-            if ("login.do".equals(file)) {
+            switch (file) {
+            case "login.do":
                 file = login();
-            } else if ("index.do".equals(file)) {
+                break;
+            case "index.do":
                 file = index();
-            } else if ("logout.do".equals(file)) {
+                break;
+            case "logout.do":
                 file = logout();
-            } else if ("settingRemove.do".equals(file)) {
+                break;
+            case "settingRemove.do":
                 file = settingRemove();
-            } else if ("settingSave.do".equals(file)) {
+                break;
+            case "settingSave.do":
                 file = settingSave();
-            } else if ("test.do".equals(file)) {
+                break;
+            case "test.do":
                 file = test();
-            } else if ("query.do".equals(file)) {
+                break;
+            case "query.do":
                 file = query();
-            } else if ("tables.do".equals(file)) {
+                break;
+            case "tables.do":
                 file = tables();
-            } else if ("editResult.do".equals(file)) {
+                break;
+            case "editResult.do":
                 file = editResult();
-            } else if ("getHistory.do".equals(file)) {
+                break;
+            case "getHistory.do":
                 file = getHistory();
-            } else if ("admin.do".equals(file)) {
-                file = admin();
-            } else if ("adminSave.do".equals(file)) {
-                file = adminSave();
-            } else if ("adminStartTranslate.do".equals(file)) {
-                file = adminStartTranslate();
-            } else if ("adminShutdown.do".equals(file)) {
-                file = adminShutdown();
-            } else if ("autoCompleteList.do".equals(file)) {
+                break;
+            case "admin.do":
+                file = checkAdmin(file) ? admin() : "adminLogin.do";
+                break;
+            case "adminSave.do":
+                file = checkAdmin(file) ? adminSave() : "adminLogin.do";
+                break;
+            case "adminStartTranslate.do":
+                file = checkAdmin(file) ? adminStartTranslate() : "adminLogin.do";
+                break;
+            case "adminShutdown.do":
+                file = checkAdmin(file) ? adminShutdown() : "adminLogin.do";
+                break;
+            case "autoCompleteList.do":
                 file = autoCompleteList();
-            } else if ("tools.do".equals(file)) {
-                file = tools();
-            } else {
+                break;
+            case "tools.do":
+                file = checkAdmin(file) ? tools() : "adminLogin.do";
+                break;
+            case "adminLogin.do":
+                file = adminLogin();
+                break;
+            default:
                 file = "error.jsp";
+                break;
             }
         }
         trace("return " + file);
         return file;
     }
 
+    private boolean checkAdmin(String file) {
+        Boolean b = (Boolean) session.get("admin");
+        if (b != null && b) {
+            return true;
+        }
+        String key = server.getKey();
+        if (key != null && key.equals(session.get("key"))) {
+            return true;
+        }
+        session.put("adminBack", file);
+        return false;
+    }
+
+    private String adminLogin() {
+        String password = attributes.getProperty("password");
+        if (password == null || password.isEmpty() || !server.checkAdminPassword(password)) {
+            return "adminLogin.jsp";
+        }
+        String back = (String) session.remove("adminBack");
+        session.put("admin", true);
+        return back != null ? back : "admin.do";
+    }
+
     private String autoCompleteList() {
         String query = (String) attributes.get("query");
         boolean lowercase = false;
-        if (query.trim().length() > 0 &&
-                Character.isLowerCase(query.trim().charAt(0))) {
+        String tQuery = query.trim();
+        if (!tQuery.isEmpty() && Character.isLowerCase(tQuery.charAt(0))) {
             lowercase = true;
         }
         try {
@@ -281,7 +332,8 @@ public class WebApp {
                 while (sql.length() > 0 && sql.charAt(0) <= ' ') {
                     sql = sql.substring(1);
                 }
-                if (sql.trim().length() > 0 && Character.isLowerCase(sql.trim().charAt(0))) {
+                String tSql = sql.trim();
+                if (!tSql.isEmpty() && Character.isLowerCase(tSql.charAt(0))) {
                     lowercase = true;
                 }
                 Bnf bnf = session.getBnf();
@@ -301,7 +353,7 @@ public class WebApp {
                 for (Map.Entry<String, String> entry : map.entrySet()) {
                     String key = entry.getKey();
                     String value = entry.getValue();
-                    String type = "" + key.charAt(0);
+                    String type = String.valueOf(key.charAt(0));
                     if (Integer.parseInt(type) > 2) {
                         continue;
                     }
@@ -320,15 +372,10 @@ public class WebApp {
                     list.add(type + "#" + key + "#" + value);
                 }
                 Collections.sort(list);
-                if (query.endsWith("\n") || query.trim().endsWith(";")) {
+                if (query.endsWith("\n") || tQuery.endsWith(";")) {
                     list.add(0, "1#(Newline)#\n");
                 }
-                StatementBuilder buff = new StatementBuilder();
-                for (String s : list) {
-                    buff.appendExceptFirst("|");
-                    buff.append(s);
-                }
-                result = buff.toString();
+                result = StringUtils.join(new StringBuilder(), list, "|").toString();
             }
             session.put("autoCompleteList", result);
         } catch (Throwable e) {
@@ -338,8 +385,8 @@ public class WebApp {
     }
 
     private String admin() {
-        session.put("port", "" + server.getPort());
-        session.put("allowOthers", "" + server.getAllowOthers());
+        session.put("port", Integer.toString(server.getPort()));
+        session.put("allowOthers", Boolean.toString(server.getAllowOthers()));
         session.put("ssl", String.valueOf(server.getSSL()));
         session.put("sessions", server.getSessions());
         return "admin.jsp";
@@ -349,7 +396,7 @@ public class WebApp {
         try {
             Properties prop = new SortedProperties();
             int port = Integer.decode((String) attributes.get("port"));
-            prop.setProperty("webPort", String.valueOf(port));
+            prop.setProperty("webPort", Integer.toString(port));
             server.setPort(port);
             boolean allowOthers = Utils.parseBoolean((String) attributes.get("allowOthers"), false, false);
             prop.setProperty("webAllowOthers", String.valueOf(allowOthers));
@@ -357,6 +404,10 @@ public class WebApp {
             boolean ssl = Utils.parseBoolean((String) attributes.get("ssl"), false, false);
             prop.setProperty("webSSL", String.valueOf(ssl));
             server.setSSL(ssl);
+            byte[] adminPassword = server.getAdminPassword();
+            if (adminPassword != null) {
+                prop.setProperty("webAdminPassword", StringUtils.convertBytesToHex(adminPassword));
+            }
             server.saveProperties(prop);
         } catch (Exception e) {
             trace(e.toString());
@@ -889,7 +940,7 @@ public class WebApp {
             prof.startCollecting();
             Connection conn;
             try {
-                conn = server.getConnection(driver, url, user, password);
+                conn = server.getConnection(driver, url, user, password, null);
             } finally {
                 prof.stopCollecting();
                 profOpen = prof.getTop(3);
@@ -934,8 +985,7 @@ public class WebApp {
      * @return the formatted error message
      */
     private String getLoginError(Exception e, boolean isH2) {
-        if (e instanceof JdbcSQLException &&
-                ((JdbcSQLException) e).getErrorCode() == ErrorCode.CLASS_NOT_FOUND_1) {
+        if (e instanceof JdbcException && ((JdbcException) e).getErrorCode() == ErrorCode.CLASS_NOT_FOUND_1) {
             return "${text.login.driverNotFound}<br />" + getStackTrace(0, e, isH2);
         }
         return getStackTrace(0, e, isH2);
@@ -951,7 +1001,7 @@ public class WebApp {
         session.put("maxrows", "1000");
         boolean isH2 = url.startsWith("jdbc:h2:");
         try {
-            Connection conn = server.getConnection(driver, url, user, password);
+            Connection conn = server.getConnection(driver, url, user, password, (String) session.get("key"));
             session.setConnection(conn);
             session.put("url", url);
             session.put("user", user);
@@ -983,6 +1033,7 @@ public class WebApp {
         } catch (Exception e) {
             trace(e.toString());
         }
+        session.remove("admin");
         return "index.do";
     }
 
@@ -990,7 +1041,7 @@ public class WebApp {
         String sql = attributes.getProperty("sql").trim();
         try {
             ScriptReader r = new ScriptReader(new StringReader(sql));
-            final ArrayList<String> list = New.arrayList();
+            final ArrayList<String> list = new ArrayList<>();
             while (true) {
                 String s = r.readStatement();
                 if (s == null) {
@@ -1172,26 +1223,26 @@ public class WebApp {
             SimpleResultSet rs = new SimpleResultSet();
             rs.addColumn("Type", Types.VARCHAR, 0, 0);
             rs.addColumn("KB", Types.VARCHAR, 0, 0);
-            rs.addRow("Used Memory", "" + Utils.getMemoryUsed());
-            rs.addRow("Free Memory", "" + Utils.getMemoryFree());
+            rs.addRow("Used Memory", Integer.toString(Utils.getMemoryUsed()));
+            rs.addRow("Free Memory", Integer.toString(Utils.getMemoryFree()));
             return rs;
         } else if (isBuiltIn(sql, "@info")) {
             SimpleResultSet rs = new SimpleResultSet();
             rs.addColumn("KEY", Types.VARCHAR, 0, 0);
             rs.addColumn("VALUE", Types.VARCHAR, 0, 0);
             rs.addRow("conn.getCatalog", conn.getCatalog());
-            rs.addRow("conn.getAutoCommit", "" + conn.getAutoCommit());
-            rs.addRow("conn.getTransactionIsolation", "" + conn.getTransactionIsolation());
-            rs.addRow("conn.getWarnings", "" + conn.getWarnings());
+            rs.addRow("conn.getAutoCommit", Boolean.toString(conn.getAutoCommit()));
+            rs.addRow("conn.getTransactionIsolation", Integer.toString(conn.getTransactionIsolation()));
+            rs.addRow("conn.getWarnings", String.valueOf(conn.getWarnings()));
             String map;
             try {
-                map = "" + conn.getTypeMap();
+                map = String.valueOf(conn.getTypeMap());
             } catch (SQLException e) {
                 map = e.toString();
             }
-            rs.addRow("conn.getTypeMap", "" + map);
-            rs.addRow("conn.isReadOnly", "" + conn.isReadOnly());
-            rs.addRow("conn.getHoldability", "" + conn.getHoldability());
+            rs.addRow("conn.getTypeMap", map);
+            rs.addRow("conn.isReadOnly", Boolean.toString(conn.isReadOnly()));
+            rs.addRow("conn.getHoldability", Integer.toString(conn.getHoldability()));
             addDatabaseMetaData(rs, meta);
             return rs;
         } else if (isBuiltIn(sql, "@attributes")) {
@@ -1229,7 +1280,7 @@ public class WebApp {
             if (m.getParameterTypes().length == 0) {
                 try {
                     Object o = m.invoke(meta);
-                    rs.addRow("meta." + m.getName(), "" + o);
+                    rs.addRow("meta." + m.getName(), String.valueOf(o));
                 } catch (InvocationTargetException e) {
                     rs.addRow("meta." + m.getName(), e.getTargetException().toString());
                 } catch (Exception e) {
@@ -1302,41 +1353,40 @@ public class WebApp {
                 return buff.toString();
             } else if (isBuiltIn(sql, "@edit")) {
                 edit = true;
-                sql = sql.substring("@edit".length()).trim();
+                sql = StringUtils.trimSubstring(sql, "@edit".length());
                 session.put("resultSetSQL", sql);
             }
             if (isBuiltIn(sql, "@list")) {
                 list = true;
-                sql = sql.substring("@list".length()).trim();
+                sql = StringUtils.trimSubstring(sql, "@list".length());
             }
             if (isBuiltIn(sql, "@meta")) {
                 metadata = true;
-                sql = sql.substring("@meta".length()).trim();
+                sql = StringUtils.trimSubstring(sql, "@meta".length());
             }
             if (isBuiltIn(sql, "@generated")) {
                 generatedKeys = Statement.RETURN_GENERATED_KEYS;
-                sql = sql.substring("@generated".length()).trim();
+                sql = StringUtils.trimSubstring(sql, "@generated".length());
             } else if (isBuiltIn(sql, "@history")) {
                 buff.append(getCommandHistoryString());
                 return buff.toString();
             } else if (isBuiltIn(sql, "@loop")) {
-                sql = sql.substring("@loop".length()).trim();
+                sql = StringUtils.trimSubstring(sql, "@loop".length());
                 int idx = sql.indexOf(' ');
                 int count = Integer.decode(sql.substring(0, idx));
-                sql = sql.substring(idx).trim();
+                sql = StringUtils.trimSubstring(sql, idx);
                 return executeLoop(conn, count, sql);
             } else if (isBuiltIn(sql, "@maxrows")) {
-                int maxrows = (int) Double.parseDouble(
-                        sql.substring("@maxrows".length()).trim());
-                session.put("maxrows", "" + maxrows);
+                int maxrows = (int) Double.parseDouble(StringUtils.trimSubstring(sql, "@maxrows".length()));
+                session.put("maxrows", Integer.toString(maxrows));
                 return "${text.result.maxrowsSet}";
             } else if (isBuiltIn(sql, "@parameter_meta")) {
-                sql = sql.substring("@parameter_meta".length()).trim();
+                sql = StringUtils.trimSubstring(sql, "@parameter_meta".length());
                 PreparedStatement prep = conn.prepareStatement(sql);
                 buff.append(getParameterResultSet(prep.getParameterMetaData()));
                 return buff.toString();
             } else if (isBuiltIn(sql, "@password_hash")) {
-                sql = sql.substring("@password_hash".length()).trim();
+                sql = StringUtils.trimSubstring(sql, "@password_hash".length());
                 String[] p = split(sql);
                 return StringUtils.convertBytesToHex(
                         SHA256.getKeyPasswordHash(p[0], p[1].toCharArray()));
@@ -1348,7 +1398,7 @@ public class WebApp {
                 profiler.startCollecting();
                 return "Ok";
             } else if (isBuiltIn(sql, "@sleep")) {
-                String s = sql.substring("@sleep".length()).trim();
+                String s = StringUtils.trimSubstring(sql, "@sleep".length());
                 int sleep = 1;
                 if (s.length() > 0) {
                     sleep = Integer.parseInt(s);
@@ -1356,7 +1406,7 @@ public class WebApp {
                 Thread.sleep(sleep * 1000);
                 return "Ok";
             } else if (isBuiltIn(sql, "@transaction_isolation")) {
-                String s = sql.substring("@transaction_isolation".length()).trim();
+                String s = StringUtils.trimSubstring(sql, "@transaction_isolation".length());
                 if (s.length() > 0) {
                     int level = Integer.parseInt(s);
                     conn.setTransactionIsolation(level);
@@ -1420,12 +1470,13 @@ public class WebApp {
     }
 
     private static boolean isBuiltIn(String sql, String builtIn) {
-        return StringUtils.startsWithIgnoreCase(sql, builtIn);
+        int len = builtIn.length();
+        return sql.length() >= len && sql.regionMatches(true, 0, builtIn, 0, len);
     }
 
     private String executeLoop(Connection conn, int count, String sql)
             throws SQLException {
-        ArrayList<Integer> params = New.arrayList();
+        ArrayList<Integer> params = new ArrayList<>();
         int idx = 0;
         while (!stop) {
             idx = sql.indexOf('?', idx);
@@ -1444,14 +1495,14 @@ public class WebApp {
         Random random = new Random(1);
         long time = System.currentTimeMillis();
         if (isBuiltIn(sql, "@statement")) {
-            sql = sql.substring("@statement".length()).trim();
+            sql = StringUtils.trimSubstring(sql, "@statement".length());
             prepared = false;
             Statement stat = conn.createStatement();
             for (int i = 0; !stop && i < count; i++) {
                 String s = sql;
                 for (Integer type : params) {
                     idx = s.indexOf('?');
-                    if (type.intValue() == 1) {
+                    if (type == 1) {
                         s = s.substring(0, idx) + random.nextInt(count) + s.substring(idx + 1);
                     } else {
                         s = s.substring(0, idx) + i + s.substring(idx + 1);
@@ -1471,7 +1522,7 @@ public class WebApp {
             for (int i = 0; !stop && i < count; i++) {
                 for (int j = 0; j < params.size(); j++) {
                     Integer type = params.get(j);
-                    if (type.intValue() == 1) {
+                    if (type == 1) {
                         prep.setInt(j + 1, random.nextInt(count));
                     } else {
                         prep.setInt(j + 1, i);
@@ -1492,19 +1543,15 @@ public class WebApp {
             }
         }
         time = System.currentTimeMillis() - time;
-        StatementBuilder buff = new StatementBuilder();
-        buff.append(time).append(" ms: ").append(count).append(" * ");
-        if (prepared) {
-            buff.append("(Prepared) ");
-        } else {
-            buff.append("(Statement) ");
+        StringBuilder builder = new StringBuilder().append(time).append(" ms: ").append(count).append(" * ")
+                .append(prepared ? "(Prepared) " : "(Statement) ").append('(');
+        for (int i = 0, size = params.size(); i < size; i++) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+            builder.append(params.get(i) == 0 ? "i" : "rnd");
         }
-        buff.append('(');
-        for (int p : params) {
-            buff.appendExceptFirst(", ");
-            buff.append(p == 0 ? "i" : "rnd");
-        }
-        return buff.append(") ").append(sql).toString();
+        return builder.append(") ").append(sql).toString();
     }
 
     private String getCommandHistoryString() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -24,23 +24,25 @@ public class MetaRecord implements Comparable<MetaRecord> {
     private final int objectType;
     private final String sql;
 
+    /**
+     * Copy metadata from the specified object into specified search row.
+     *
+     * @param obj
+     *            database object
+     * @param r
+     *            search row
+     */
+    public static void populateRowFromDBObject(DbObject obj, SearchRow r) {
+        r.setValue(0, ValueInt.get(obj.getId()));
+        r.setValue(1, ValueInt.get(0));
+        r.setValue(2, ValueInt.get(obj.getType()));
+        r.setValue(3, ValueString.get(obj.getCreateSQL()));
+    }
+
     public MetaRecord(SearchRow r) {
         id = r.getValue(0).getInt();
         objectType = r.getValue(2).getInt();
         sql = r.getValue(3).getString();
-    }
-
-    MetaRecord(DbObject obj) {
-        id = obj.getId();
-        objectType = obj.getType();
-        sql = obj.getCreateSQL();
-    }
-
-    void setRecord(SearchRow r) {
-        r.setValue(0, ValueInt.get(id));
-        r.setValue(1, ValueInt.get(0));
-        r.setValue(2, ValueInt.get(objectType));
-        r.setValue(3, ValueString.get(sql));
     }
 
     /**
@@ -54,7 +56,7 @@ public class MetaRecord implements Comparable<MetaRecord> {
             DatabaseEventListener listener) {
         try {
             Prepared command = systemSession.prepare(sql);
-            command.setObjectId(id);
+            command.setPersistedObjectId(id);
             command.update();
         } catch (DbException e) {
             e = e.addSQL(sql);
@@ -113,7 +115,7 @@ public class MetaRecord implements Comparable<MetaRecord> {
             return 2;
         case DbObject.FUNCTION_ALIAS:
             return 3;
-        case DbObject.USER_DATATYPE:
+        case DbObject.DOMAIN:
             return 4;
         case DbObject.SEQUENCE:
             return 5;

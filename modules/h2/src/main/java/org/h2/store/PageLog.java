@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -8,19 +8,19 @@ package org.h2.store;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.HashMap;
+
 import org.h2.api.ErrorCode;
 import org.h2.compress.CompressLZF;
 import org.h2.engine.Session;
-import org.h2.engine.SysProperties;
 import org.h2.message.DbException;
 import org.h2.message.Trace;
 import org.h2.result.Row;
 import org.h2.result.RowFactory;
-import org.h2.util.BitField;
 import org.h2.util.IntArray;
 import org.h2.util.IntIntHashMap;
-import org.h2.util.New;
+import org.h2.util.Utils;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 
@@ -132,13 +132,13 @@ public class PageLog {
      * If the bit is set, the given page was written to the current log section.
      * The undo entry of these pages doesn't need to be written again.
      */
-    private BitField undo = new BitField();
+    private BitSet undo = new BitSet();
 
     /**
      * The undo entry of those pages was written in any log section.
      * These pages may not be used in the transaction log.
      */
-    private final BitField undoAll = new BitField();
+    private final BitSet undoAll = new BitSet();
 
     /**
      * The map of section ids (key) and data page where the section starts
@@ -156,7 +156,7 @@ public class PageLog {
      * The map of pages used by the transaction log.
      * Only used during recovery.
      */
-    private BitField usedLogPages;
+    private BitSet usedLogPages;
 
     /**
      * This flag is set while freeing up pages.
@@ -422,7 +422,7 @@ public class PageLog {
         } catch (IOException e) {
             trace.debug("log recovery completed");
         }
-        undo = new BitField();
+        undo = new BitSet();
         if (stage == RECOVERY_STAGE_REDO) {
             usedLogPages = null;
         }
@@ -497,10 +497,8 @@ public class PageLog {
         if (trace.isDebugEnabled()) {
             trace.debug("log undo " + pageId);
         }
-        if (SysProperties.CHECK) {
-            if (page == null) {
-                DbException.throwInternalError("Undo entry not written");
-            }
+        if (page == null) {
+            DbException.throwInternalError("Undo entry not written");
         }
         undo.set(pageId);
         undoAll.set(pageId);
@@ -636,7 +634,7 @@ public class PageLog {
         } else {
             for (int i = 0; i < columns; i++) {
                 Value v = row.getValue(i);
-                if (v.getType() == Value.BYTES) {
+                if (v.getValueType() == Value.BYTES) {
                     data.writeValue(ValueNull.INSTANCE);
                 } else {
                     data.writeValue(v);
@@ -691,7 +689,7 @@ public class PageLog {
         Data buffer = getBuffer();
         buffer.writeByte((byte) CHECKPOINT);
         write(buffer);
-        undo = new BitField();
+        undo = new BitSet();
         logSectionId++;
         logPos = 0;
         pageOut.flush();
@@ -835,7 +833,7 @@ public class PageLog {
     }
 
     ArrayList<InDoubtTransaction> getInDoubtTransactions() {
-        ArrayList<InDoubtTransaction> list = New.arrayList();
+        ArrayList<InDoubtTransaction> list = Utils.newSmallArrayList();
         for (SessionState state : sessionStates.values()) {
             PageStoreInDoubtTransaction in = state.inDoubtTransaction;
             if (in != null) {

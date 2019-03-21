@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -9,7 +9,6 @@ import java.util.Arrays;
 import org.h2.api.ErrorCode;
 import org.h2.engine.Constants;
 import org.h2.engine.Session;
-import org.h2.engine.SysProperties;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.store.Data;
@@ -132,7 +131,7 @@ public class PageBtreeLeaf extends PageBtree {
             }
             last = entryCount == 0 ? pageSize : offsets[entryCount - 1];
             rowLength = index.getRowSize(data, row, true);
-            if (SysProperties.CHECK && last - rowLength < start + OFFSET_LENGTH) {
+            if (last - rowLength < start + OFFSET_LENGTH) {
                 throw DbException.throwInternalError();
             }
         }
@@ -176,7 +175,7 @@ public class PageBtreeLeaf extends PageBtree {
         written = false;
         changeCount = index.getPageStore().getChangeCount();
         if (entryCount <= 0) {
-            DbException.throwInternalError("" + entryCount);
+            DbException.throwInternalError(Integer.toString(entryCount));
         }
         int startNext = at > 0 ? offsets[at - 1] : index.getPageStore().getPageSize();
         int rowLength = startNext - offsets[at];
@@ -230,7 +229,7 @@ public class PageBtreeLeaf extends PageBtree {
         SearchRow delete = getRow(at);
         if (index.compareRows(row, delete) != 0 || delete.getKey() != row.getKey()) {
             throw DbException.get(ErrorCode.ROW_NOT_FOUND_WHEN_DELETING_1,
-                    index.getSQL() + ": " + row);
+                    index.getSQL(new StringBuilder(), false).append(": ").append(row).toString());
         }
         index.getPageStore().logUndo(this, data);
         if (entryCount == 1) {

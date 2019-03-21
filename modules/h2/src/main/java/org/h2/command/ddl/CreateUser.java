@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -74,7 +74,7 @@ public class CreateUser extends DefineCommand {
         char[] passwordChars = pwd == null ? new char[0] : pwd.toCharArray();
         byte[] userPasswordHash;
         String userName = user.getName();
-        if (userName.length() == 0 && passwordChars.length == 0) {
+        if (userName.isEmpty() && passwordChars.length == 0) {
             userPasswordHash = new byte[0];
         } else {
             userPasswordHash = SHA256.getKeyPasswordHash(userName, passwordChars);

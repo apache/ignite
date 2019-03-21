@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -79,7 +79,7 @@ public class PgServer implements Service {
     private String baseDir;
     private boolean allowOthers;
     private boolean isDaemon;
-    private boolean ifExists;
+    private boolean ifExists = true;
     private String key, keyDatabase;
 
     @Override
@@ -100,6 +100,8 @@ public class PgServer implements Service {
                 isDaemon = true;
             } else if (Tool.isOption(a, "-ifExists")) {
                 ifExists = true;
+            } else if (Tool.isOption(a, "-ifNotExists")) {
+                ifExists = false;
             } else if (Tool.isOption(a, "-key")) {
                 key = args[++i];
                 keyDatabase = args[++i];
@@ -308,7 +310,7 @@ public class PgServer implements Service {
     @SuppressWarnings("unused")
     public static String getIndexColumn(Connection conn, int indexId,
             Integer ordinalPosition, Boolean pretty) throws SQLException {
-        if (ordinalPosition == null || ordinalPosition.intValue() == 0) {
+        if (ordinalPosition == null || ordinalPosition == 0) {
             PreparedStatement prep = conn.prepareStatement(
                     "select sql from information_schema.indexes where id=?");
             prep.setInt(1, indexId);
@@ -322,7 +324,7 @@ public class PgServer implements Service {
                 "select column_name from information_schema.indexes " +
                 "where id=? and ordinal_position=?");
         prep.setInt(1, indexId);
-        prep.setInt(2, ordinalPosition.intValue());
+        prep.setInt(2, ordinalPosition);
         ResultSet rs = prep.executeQuery();
         if (rs.next()) {
             return rs.getString(1);

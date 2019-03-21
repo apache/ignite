@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -7,6 +7,7 @@ package org.h2.command.dml;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Objects;
 
 import org.h2.api.ErrorCode;
@@ -16,7 +17,6 @@ import org.h2.command.Prepared;
 import org.h2.engine.Right;
 import org.h2.engine.Session;
 import org.h2.expression.Expression;
-import org.h2.expression.ExpressionVisitor;
 import org.h2.expression.Parameter;
 import org.h2.expression.ValueExpression;
 import org.h2.message.DbException;
@@ -27,9 +27,7 @@ import org.h2.table.Column;
 import org.h2.table.PlanItem;
 import org.h2.table.Table;
 import org.h2.table.TableFilter;
-import org.h2.util.New;
-import org.h2.util.StatementBuilder;
-import org.h2.util.StringUtils;
+import org.h2.util.Utils;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 
@@ -49,8 +47,12 @@ public class Update extends Prepared {
     /** The limit expression as specified in the LIMIT clause. */
     private Expression limitExpr;
 
-    private final ArrayList<Column> columns = New.arrayList();
+    private boolean updateToCurrentValuesReturnsZero;
+
+    private final ArrayList<Column> columns = Utils.newSmallArrayList();
     private final HashMap<Column, Expression> expressionMap  = new HashMap<>();
+
+    private HashSet<Long> updatedKeysCollector;
 
     public Update(Session session) {
         super(session);
@@ -87,12 +89,20 @@ public class Update extends Prepared {
         }
     }
 
+    /**
+     * Sets the collector of updated keys.
+     *
+     * @param updatedKeysCollector the collector of updated keys
+     */
+    public void setUpdatedKeysCollector(HashSet<Long> updatedKeysCollector) {
+        this.updatedKeysCollector = updatedKeysCollector;
+    }
+
     @Override
     public int update() {
         targetTableFilter.startQuery(session);
         targetTableFilter.reset();
-        RowList rows = new RowList(session);
-        try {
+        try (RowList rows = new RowList(session)) {
             Table table = targetTableFilter.getTable();
             session.getUser().checkRight(table, Right.UPDATE);
             table.fire(session, Trigger.UPDATE, true);
@@ -116,6 +126,19 @@ public class Update extends Prepared {
                 }
                 if (condition == null || condition.getBooleanValue(session)) {
                     Row oldRow = targetTableFilter.get();
+                    if (table.isMVStore()) {
+                        Row lockedRow = table.lockRow(session, oldRow);
+                        if (lockedRow == null) {
+                            continue;
+                        }
+                        if (!oldRow.hasSharedData(lockedRow)) {
+                            oldRow = lockedRow;
+                            targetTableFilter.set(oldRow);
+                            if (condition != null && !condition.getBooleanValue(session)) {
+                                continue;
+                            }
+                        }
+                    }
                     Row newRow = table.getTemplateRow();
                     boolean setOnUpdate = false;
                     for (int i = 0; i < columnCount; i++) {
@@ -130,11 +153,13 @@ public class Update extends Prepared {
                         } else if (newExpr == ValueExpression.getDefault()) {
                             newValue = table.getDefaultValue(session, column);
                         } else {
-                            newValue = column.convert(newExpr.getValue(session));
+                            newValue = column.convert(newExpr.getValue(session), session.getDatabase().getMode());
                         }
                         newRow.setValue(i, newValue);
                     }
-                    if (setOnUpdate) {
+                    long key = oldRow.getKey();
+                    newRow.setKey(key);
+                    if (setOnUpdate || updateToCurrentValuesReturnsZero) {
                         setOnUpdate = false;
                         for (int i = 0; i < columnCount; i++) {
                             // Use equals here to detect changes from numeric 0 to 0.0 and similar
@@ -152,16 +177,17 @@ public class Update extends Prepared {
                                     }
                                 }
                             }
+                        } else if (updateToCurrentValuesReturnsZero) {
+                            count--;
                         }
                     }
                     table.validateConvertUpdateSequence(session, newRow);
-                    boolean done = false;
-                    if (table.fireRow()) {
-                        done = table.fireBeforeRow(session, oldRow, newRow);
-                    }
-                    if (!done) {
+                    if (!table.fireRow() || !table.fireBeforeRow(session, oldRow, newRow)) {
                         rows.add(oldRow);
                         rows.add(newRow);
+                        if (updatedKeysCollector != null) {
+                            updatedKeysCollector.add(key);
+                        }
                     }
                     count++;
                 }
@@ -176,7 +202,6 @@ public class Update extends Prepared {
             // the cached row is already updated - we need the old values
             table.updateRows(this, session, rows);
             if (table.fireRow()) {
-                rows.invalidateCache();
                 for (rows.reset(); rows.hasNext();) {
                     Row o = rows.next();
                     Row n = rows.next();
@@ -185,42 +210,44 @@ public class Update extends Prepared {
             }
             table.fire(session, Trigger.UPDATE, false);
             return count;
-        } finally {
-            rows.close();
         }
     }
 
     @Override
-    public String getPlanSQL() {
-        StatementBuilder buff = new StatementBuilder("UPDATE ");
-        buff.append(targetTableFilter.getPlanSQL(false)).append("\nSET\n    ");
-        for (Column c : columns) {
-            Expression e = expressionMap.get(c);
-            buff.appendExceptFirst(",\n    ");
-            buff.append(c.getName()).append(" = ").append(e.getSQL());
+    public String getPlanSQL(boolean alwaysQuote) {
+        StringBuilder builder = new StringBuilder("UPDATE ");
+        targetTableFilter.getPlanSQL(builder, false, alwaysQuote).append("\nSET\n    ");
+        for (int i = 0, size = columns.size(); i < size; i++) {
+            if (i > 0) {
+                builder.append(",\n    ");
+            }
+            Column c = columns.get(i);
+            c.getSQL(builder, alwaysQuote).append(" = ");
+            expressionMap.get(c).getSQL(builder, alwaysQuote);
         }
         if (condition != null) {
-            buff.append("\nWHERE ").append(StringUtils.unEnclose(condition.getSQL()));
+            builder.append("\nWHERE ");
+            condition.getUnenclosedSQL(builder, alwaysQuote);
         }
         if (limitExpr != null) {
-            buff.append("\nLIMIT ").append(
-                    StringUtils.unEnclose(limitExpr.getSQL()));
+            builder.append("\nLIMIT ");
+            limitExpr.getUnenclosedSQL(builder, alwaysQuote);
         }
-        return buff.toString();
+        return builder.toString();
     }
 
     @Override
     public void prepare() {
         if (condition != null) {
-            condition.mapColumns(targetTableFilter, 0);
+            condition.mapColumns(targetTableFilter, 0, Expression.MAP_INITIAL);
             condition = condition.optimize(session);
             condition.createIndexConditions(session, targetTableFilter);
         }
         for (Column c : columns) {
             Expression e = expressionMap.get(c);
-            e.mapColumns(targetTableFilter, 0);
+            e.mapColumns(targetTableFilter, 0, Expression.MAP_INITIAL);
             if (sourceTableFilter!=null){
-                e.mapColumns(sourceTableFilter, 0);
+                e.mapColumns(sourceTableFilter, 0, Expression.MAP_INITIAL);
             }
             expressionMap.put(c, e.optimize(session));
         }
@@ -232,7 +259,7 @@ public class Update extends Prepared {
             filters = new TableFilter[] { targetTableFilter, sourceTableFilter };
         }
         PlanItem item = targetTableFilter.getBestPlanItem(session, filters, 0,
-                ExpressionVisitor.allColumnsForTableFilters(filters));
+                new AllColumnsForPlan(filters));
         targetTableFilter.setPlanItem(item);
         targetTableFilter.prepare();
     }
@@ -267,5 +294,15 @@ public class Update extends Prepared {
 
     public void setSourceTableFilter(TableFilter sourceTableFilter) {
         this.sourceTableFilter = sourceTableFilter;
+    }
+
+    /**
+     * Sets expected update count for update to current values case.
+     *
+     * @param updateToCurrentValuesReturnsZero if zero should be returned as update
+     *        count if update set row to current values
+     */
+    public void setUpdateToCurrentValuesReturnsZero(boolean updateToCurrentValuesReturnsZero) {
+        this.updateToCurrentValuesReturnsZero = updateToCurrentValuesReturnsZero;
     }
 }

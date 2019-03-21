@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -16,12 +16,13 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Locale;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.SimpleResultSet;
 
 /**
  * Test Oracle compatibility mode.
  */
-public class TestCompatibilityOracle extends TestBase {
+public class TestCompatibilityOracle extends TestDb {
 
     /**
      * Run just this test.
@@ -262,12 +263,12 @@ public class TestCompatibilityOracle extends TestBase {
         Timestamp t4 = Timestamp.valueOf("2018-01-10 22:10:01");
 
         stat.execute("CREATE TABLE TEST (ID INT PRIMARY KEY, D DATE)");
-        stat.executeUpdate("INSERT INTO TEST VALUES(1, TIMESTAMP '2011-02-03 12:11:10')");
-        stat.executeUpdate("INSERT INTO TEST VALUES(2, CAST ('1999-10-15 13:14:15' AS DATE))");
-        stat.executeUpdate("INSERT INTO TEST VALUES(3, '2030-11-22 11:22:33')");
+        stat.executeUpdate("INSERT INTO TEST VALUES(1, TIMESTAMP '2011-02-03 12:11:10.1')");
+        stat.executeUpdate("INSERT INTO TEST VALUES(2, CAST ('1999-10-15 13:14:15.1' AS DATE))");
+        stat.executeUpdate("INSERT INTO TEST VALUES(3, '2030-11-22 11:22:33.1')");
         PreparedStatement ps = conn.prepareStatement("INSERT INTO TEST VALUES (?, ?)");
         ps.setInt(1, 4);
-        ps.setTimestamp(2, t4);
+        ps.setTimestamp(2, Timestamp.valueOf("2018-01-10 22:10:01.1"));
         ps.executeUpdate();
         ResultSet rs = stat.executeQuery("SELECT D FROM TEST ORDER BY ID");
         rs.next();

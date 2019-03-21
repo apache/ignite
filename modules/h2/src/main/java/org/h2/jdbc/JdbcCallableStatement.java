@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.BitSet;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +30,6 @@ import org.h2.api.ErrorCode;
 import org.h2.expression.ParameterInterface;
 import org.h2.message.DbException;
 import org.h2.message.TraceObject;
-import org.h2.util.BitField;
 import org.h2.value.ValueNull;
 
 /**
@@ -41,7 +41,7 @@ import org.h2.value.ValueNull;
 public class JdbcCallableStatement extends JdbcPreparedStatement implements
         CallableStatement, JdbcCallableStatementBackwardsCompat {
 
-    private BitField outParameters;
+    private BitSet outParameters;
     private int maxOutParameters;
     private HashMap<String, Integer> namedParameters;
 
@@ -872,21 +872,30 @@ public class JdbcCallableStatement extends JdbcPreparedStatement implements
     }
 
     /**
-     * [Not supported] Returns the value of the specified column as a SQLXML
-     * object.
+     * Returns the value of the specified column as a SQLXML object.
+     *
+     * @param parameterIndex the parameter index (1, 2, ...)
+     * @return the value
+     * @throws SQLException if the column is not found or if this object is
+     *             closed
      */
     @Override
     public SQLXML getSQLXML(int parameterIndex) throws SQLException {
-        throw unsupported("SQLXML");
+        checkRegistered(parameterIndex);
+        return getOpenResultSet().getSQLXML(parameterIndex);
     }
 
     /**
-     * [Not supported] Returns the value of the specified column as a SQLXML
-     * object.
+     * Returns the value of the specified column as a SQLXML object.
+     *
+     * @param parameterName the parameter name
+     * @return the value
+     * @throws SQLException if the column is not found or if this object is
+     *             closed
      */
     @Override
     public SQLXML getSQLXML(String parameterName) throws SQLException {
-        throw unsupported("SQLXML");
+        return getSQLXML(getIndexForName(parameterName));
     }
 
     /**
@@ -1584,12 +1593,16 @@ public class JdbcCallableStatement extends JdbcPreparedStatement implements
     }
 
     /**
-     * [Not supported] Sets the value of a parameter as a SQLXML object.
+     * Sets the value of a parameter as a SQLXML object.
+     *
+     * @param parameterName the parameter name
+     * @param x the value
+     * @throws SQLException if this object is closed
      */
     @Override
     public void setSQLXML(String parameterName, SQLXML x)
             throws SQLException {
-        throw unsupported("SQLXML");
+        setSQLXML(getIndexForName(parameterName), x);
     }
 
     /**
@@ -1637,7 +1650,7 @@ public class JdbcCallableStatement extends JdbcPreparedStatement implements
                 maxOutParameters = Math.min(
                         getParameterMetaData().getParameterCount(),
                         getCheckedMetaData().getColumnCount());
-                outParameters = new BitField();
+                outParameters = new BitSet();
             }
             checkIndexBounds(parameterIndex);
             ParameterInterface param = command.getParameters().get(--parameterIndex);
@@ -1667,7 +1680,7 @@ public class JdbcCallableStatement extends JdbcPreparedStatement implements
             if (namedParameters == null) {
                 ResultSetMetaData meta = getCheckedMetaData();
                 int columnCount = meta.getColumnCount();
-                HashMap<String, Integer> map = new HashMap<>(columnCount);
+                HashMap<String, Integer> map = new HashMap<>();
                 for (int i = 1; i <= columnCount; i++) {
                     map.put(meta.getColumnLabel(i), i);
                 }

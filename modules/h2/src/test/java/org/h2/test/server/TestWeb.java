@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -46,6 +46,7 @@ import org.h2.engine.SysProperties;
 import org.h2.server.web.WebServlet;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.test.utils.AssertThrows;
 import org.h2.tools.Server;
 import org.h2.util.StringUtils;
@@ -54,7 +55,7 @@ import org.h2.util.Task;
 /**
  * Tests the H2 Console application.
  */
-public class TestWeb extends TestBase {
+public class TestWeb extends TestDb {
 
     private static volatile String lastUrl;
 
@@ -171,7 +172,7 @@ public class TestWeb extends TestBase {
         Server server = new Server();
         server.setOut(new PrintStream(new ByteArrayOutputStream()));
         server.runTool("-web", "-webPort", "8182",
-                "-properties", "null", "-tcp", "-tcpPort", "9101");
+                "-properties", "null", "-tcp", "-tcpPort", "9101", "-webAdminPassword", "123");
         try {
             String url = "http://localhost:8182";
             WebClient client;
@@ -179,6 +180,7 @@ public class TestWeb extends TestBase {
             client = new WebClient();
             result = client.get(url);
             client.readSessionId(result);
+            result = client.get(url, "adminLogin.do?password=123");
             result = client.get(url, "tools.jsp");
             FileUtils.delete(getBaseDir() + "/backup.zip");
             result = client.get(url, "tools.do?tool=Backup&args=-dir," +
@@ -263,7 +265,8 @@ public class TestWeb extends TestBase {
                 getUser(), getPassword());
         Server server = new Server();
         server.setOut(new PrintStream(new ByteArrayOutputStream()));
-        server.runTool("-ifExists", "-web", "-webPort", "8182",
+        // -ifExists is the default
+        server.runTool("-web", "-webPort", "8182",
                 "-properties", "null", "-tcp", "-tcpPort", "9101");
         try {
             String url = "http://localhost:8182";
@@ -287,12 +290,13 @@ public class TestWeb extends TestBase {
             server.shutdown();
             conn.close();
         }
+
     }
 
     private void testWebApp() throws Exception {
         Server server = new Server();
         server.setOut(new PrintStream(new ByteArrayOutputStream()));
-        server.runTool("-web", "-webPort", "8182",
+        server.runTool("-ifNotExists", "-web", "-webPort", "8182",
                 "-properties", "null", "-tcp", "-tcpPort", "9101");
         try {
             String url = "http://localhost:8182";

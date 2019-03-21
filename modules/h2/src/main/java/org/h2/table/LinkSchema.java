@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -49,8 +49,8 @@ public class LinkSchema {
         try {
             c2 = JdbcUtils.getConnection(driver, url, user, password);
             stat = conn.createStatement();
-            stat.execute("CREATE SCHEMA IF NOT EXISTS " +
-                        StringUtils.quoteIdentifier(targetSchema));
+            stat.execute(StringUtils.quoteIdentifier(new StringBuilder("CREATE SCHEMA IF NOT EXISTS "), targetSchema)
+                    .toString());
             //Workaround for PostgreSQL to avoid index names
             if (url.startsWith("jdbc:postgresql:")) {
                 rs = c2.getMetaData().getTables(null, sourceSchema, null,
@@ -61,29 +61,23 @@ public class LinkSchema {
             while (rs.next()) {
                 String table = rs.getString("TABLE_NAME");
                 StringBuilder buff = new StringBuilder();
-                buff.append("DROP TABLE IF EXISTS ").
-                    append(StringUtils.quoteIdentifier(targetSchema)).
-                    append('.').
-                    append(StringUtils.quoteIdentifier(table));
+                buff.append("DROP TABLE IF EXISTS ");
+                StringUtils.quoteIdentifier(buff, targetSchema).
+                    append('.');
+                StringUtils.quoteIdentifier(buff, table);
                 stat.execute(buff.toString());
-                buff = new StringBuilder();
-                buff.append("CREATE LINKED TABLE ").
-                    append(StringUtils.quoteIdentifier(targetSchema)).
-                    append('.').
-                    append(StringUtils.quoteIdentifier(table)).
-                    append('(').
-                    append(StringUtils.quoteStringSQL(driver)).
-                    append(", ").
-                    append(StringUtils.quoteStringSQL(url)).
-                    append(", ").
-                    append(StringUtils.quoteStringSQL(user)).
-                    append(", ").
-                    append(StringUtils.quoteStringSQL(password)).
-                    append(", ").
-                    append(StringUtils.quoteStringSQL(sourceSchema)).
-                    append(", ").
-                    append(StringUtils.quoteStringSQL(table)).
-                    append(')');
+                buff.setLength(0);
+                buff.append("CREATE LINKED TABLE ");
+                StringUtils.quoteIdentifier(buff, targetSchema).
+                    append('.');
+                StringUtils.quoteIdentifier(buff, table).
+                    append('(');
+                StringUtils.quoteStringSQL(buff, driver).append(", ");
+                StringUtils.quoteStringSQL(buff, url).append(", ");
+                StringUtils.quoteStringSQL(buff, user).append(", ");
+                StringUtils.quoteStringSQL(buff, password).append(", ");
+                StringUtils.quoteStringSQL(buff, sourceSchema).append(", ");
+                StringUtils.quoteStringSQL(buff, table).append(')');
                 stat.execute(buff.toString());
                 result.addRow(table);
             }

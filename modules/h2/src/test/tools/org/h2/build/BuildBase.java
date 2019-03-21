@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -274,9 +274,7 @@ public class BuildBase {
             } catch (InvocationTargetException e) {
                 throw e.getCause();
             }
-        } catch (Error e) {
-            throw e;
-        } catch (RuntimeException e) {
+        } catch (Error | RuntimeException e) {
             throw e;
         } catch (Throwable e) {
             throw new RuntimeException(e);
@@ -925,6 +923,25 @@ public class BuildBase {
         return System.getProperty("java.specification.version");
     }
 
+    /**
+     * Get the current Java version as integer value.
+     *
+     * @return the Java version (7, 8, 9, 10, 11, etc)
+     */
+    public static int getJavaVersion() {
+        int version = 7;
+        String v = getJavaSpecVersion();
+        if (v != null) {
+            int idx = v.indexOf('.');
+            if (idx >= 0) {
+                // 1.7, 1.8
+                v = v.substring(idx + 1);
+            }
+            version = Integer.parseInt(v);
+        }
+        return version;
+    }
+
     private static List<String> getPaths(FileList files) {
         StringList list = new StringList();
         for (File f : files) {
@@ -955,7 +972,7 @@ public class BuildBase {
                 }));
             }
             Method compile = clazz.getMethod("compile", new Class<?>[] { String[].class });
-            Object instance = clazz.newInstance();
+            Object instance = clazz.getDeclaredConstructor().newInstance();
             result = (Integer) invoke(compile, instance, new Object[] { array });
         } catch (Exception e) {
             e.printStackTrace();

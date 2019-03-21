@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -19,8 +19,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.h2.util.New;
-
 /**
  * This servlet lets the H2 Console be used in a standard servlet container
  * such as Tomcat or Jetty.
@@ -34,7 +32,7 @@ public class WebServlet extends HttpServlet {
     public void init() {
         ServletConfig config = getServletConfig();
         Enumeration<?> en = config.getInitParameterNames();
-        ArrayList<String> list = New.arrayList();
+        ArrayList<String> list = new ArrayList<>();
         while (en.hasMoreElements()) {
             String name = en.nextElement().toString();
             String value = config.getInitParameter(name);
@@ -65,12 +63,11 @@ public class WebServlet extends HttpServlet {
         try {
             InetAddress address = InetAddress.getByName(addr);
             return address.isLoopbackAddress();
-        } catch (UnknownHostException e) {
-            return false;
-        } catch (NoClassDefFoundError e) {
+        } catch (UnknownHostException | NoClassDefFoundError e) {
             // Google App Engine does not allow java.net.InetAddress
             return false;
         }
+
     }
 
     private String getAllowedFile(HttpServletRequest req, String requestedFile) {

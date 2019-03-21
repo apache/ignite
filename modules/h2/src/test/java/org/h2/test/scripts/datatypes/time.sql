@@ -1,4 +1,4 @@
--- Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (http://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -26,18 +26,18 @@ SELECT COLUMN_NAME, DATA_TYPE, TYPE_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.CO
 ALTER TABLE TEST ADD (T3 TIME(0), T4 TIME(9) WITHOUT TIME ZONE);
 > ok
 
-SELECT COLUMN_NAME, DATA_TYPE, TYPE_NAME, COLUMN_TYPE, NUMERIC_SCALE FROM INFORMATION_SCHEMA.COLUMNS
+SELECT COLUMN_NAME, DATA_TYPE, TYPE_NAME, COLUMN_TYPE, NUMERIC_SCALE, DATETIME_PRECISION FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_NAME = 'TEST' ORDER BY ORDINAL_POSITION;
-> COLUMN_NAME DATA_TYPE TYPE_NAME COLUMN_TYPE               NUMERIC_SCALE
-> ----------- --------- --------- ------------------------- -------------
-> T1          92        TIME      TIME                      0
-> T2          92        TIME      TIME WITHOUT TIME ZONE    0
-> T3          92        TIME      TIME(0)                   0
-> T4          92        TIME      TIME(9) WITHOUT TIME ZONE 9
+> COLUMN_NAME DATA_TYPE TYPE_NAME COLUMN_TYPE               NUMERIC_SCALE DATETIME_PRECISION
+> ----------- --------- --------- ------------------------- ------------- ------------------
+> T1          92        TIME      TIME                      0             0
+> T2          92        TIME      TIME WITHOUT TIME ZONE    0             0
+> T3          92        TIME      TIME(0)                   0             0
+> T4          92        TIME      TIME(9) WITHOUT TIME ZONE 9             9
 > rows (ordered): 4
 
 ALTER TABLE TEST ADD T5 TIME(10);
-> exception
+> exception INVALID_VALUE_SCALE_PRECISION
 
 DROP TABLE TEST;
 > ok
@@ -50,10 +50,7 @@ INSERT INTO TEST VALUES (TIME '08:00:00');
 > update count: 1
 
 SELECT TIME FROM TEST;
-> TIME
-> --------
-> 08:00:00
-> rows: 1
+>> 08:00:00
 
 DROP TABLE TEST;
 > ok
@@ -84,3 +81,33 @@ SELECT T0 FROM TEST;
 
 DROP TABLE TEST;
 > ok
+
+SELECT TIME '11:22:33';
+>> 11:22:33
+
+SELECT TIME '11:22';
+>> 11:22:00
+
+SELECT TIME '112233';
+>> 11:22:33
+
+SELECT TIME '1122';
+>> 11:22:00
+
+SELECT TIME '12233';
+> exception INVALID_DATETIME_CONSTANT_2
+
+SELECT TIME '122';
+> exception INVALID_DATETIME_CONSTANT_2
+
+SELECT TIME '11:22:33.1';
+>> 11:22:33.1
+
+SELECT TIME '112233.1';
+>> 11:22:33.1
+
+SELECT TIME '12233.1';
+> exception INVALID_DATETIME_CONSTANT_2
+
+SELECT TIME '1122.1';
+> exception INVALID_DATETIME_CONSTANT_2

@@ -1,12 +1,12 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  */
 package org.h2.util;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.h2.engine.Session;
 import org.h2.expression.Expression;
 
@@ -18,14 +18,12 @@ public class ColumnNamer {
     private static final String DEFAULT_COLUMN_NAME = "DEFAULT";
 
     private final ColumnNamerConfiguration configuration;
-    private final Session session;
     private final Set<String> existingColumnNames = new HashSet<>();
 
     public ColumnNamer(Session session) {
-        this.session = session;
-        if (this.session != null && this.session.getColumnNamerConfiguration() != null) {
+        if (session != null && session.getColumnNamerConfiguration() != null) {
             // use original from session
-            this.configuration = this.session.getColumnNamerConfiguration();
+            this.configuration = session.getColumnNamerConfiguration();
         } else {
             // detached namer, create new
             this.configuration = ColumnNamerConfiguration.getDefault();
@@ -59,55 +57,43 @@ public class ColumnNamer {
      */
     public String getColumnName(Expression columnExp, int indexOfColumn, String columnNameOverride) {
         // try a name from the column name override
-        String columnName = null;
-        if (columnNameOverride != null) {
-            columnName = columnNameOverride;
-            if (!isAllowableColumnName(columnName)) {
-                columnName = fixColumnName(columnName);
-            }
-            if (!isAllowableColumnName(columnName)) {
-                columnName = null;
-            }
-        }
-        // try a name from the column alias
-        if (columnName == null && columnExp.getAlias() != null && !DEFAULT_COLUMN_NAME.equals(columnExp.getAlias())) {
-            columnName = columnExp.getAlias();
-            if (!isAllowableColumnName(columnName)) {
-                columnName = fixColumnName(columnName);
-            }
-            if (!isAllowableColumnName(columnName)) {
-                columnName = null;
-            }
-        }
-        // try a name derived from the column expression SQL
-        if (columnName == null && columnExp.getColumnName() != null
-                && !DEFAULT_COLUMN_NAME.equals(columnExp.getColumnName())) {
-            columnName = columnExp.getColumnName();
-            if (!isAllowableColumnName(columnName)) {
-                columnName = fixColumnName(columnName);
-            }
-            if (!isAllowableColumnName(columnName)) {
-                columnName = null;
-            }
-        }
-        // try a name derived from the column expression plan SQL
-        if (columnName == null && columnExp.getSQL() != null && !DEFAULT_COLUMN_NAME.equals(columnExp.getSQL())) {
-            columnName = columnExp.getSQL();
-            if (!isAllowableColumnName(columnName)) {
-                columnName = fixColumnName(columnName);
-            }
-            if (!isAllowableColumnName(columnName)) {
-                columnName = null;
-            }
-        }
-        // go with a innocuous default name pattern
+        String columnName = getColumnName(columnNameOverride, null);
         if (columnName == null) {
-            columnName = configuration.getDefaultColumnNamePattern().replace("$$", "" + (indexOfColumn + 1));
+            // try a name from the column alias
+            columnName = getColumnName(columnExp.getAlias(), DEFAULT_COLUMN_NAME);
+            if (columnName == null) {
+                // try a name derived from the column expression SQL
+                columnName = getColumnName(columnExp.getColumnName(), DEFAULT_COLUMN_NAME);
+                if (columnName == null) {
+                    // try a name derived from the column expression plan SQL
+                    columnName = getColumnName(columnExp.getSQL(false), DEFAULT_COLUMN_NAME);
+                    // go with a innocuous default name pattern
+                    if (columnName == null) {
+                        columnName = configuration.getDefaultColumnNamePattern()
+                                .replace("$$", Integer.toString(indexOfColumn + 1));
+                    }
+                }
+            }
         }
         if (existingColumnNames.contains(columnName) && configuration.isGenerateUniqueColumnNames()) {
             columnName = generateUniqueName(columnName);
         }
         existingColumnNames.add(columnName);
+        return columnName;
+    }
+
+    private String getColumnName(String proposedName, String disallowedName) {
+        String columnName = null;
+        if (proposedName != null && !proposedName.equals(disallowedName)) {
+            if (isAllowableColumnName(proposedName)) {
+                columnName = proposedName;
+            } else {
+                proposedName = fixColumnName(proposedName);
+                if (isAllowableColumnName(proposedName)) {
+                    columnName = proposedName;
+                }
+            }
+        }
         return columnName;
     }
 
@@ -125,26 +111,31 @@ public class ColumnNamer {
     }
 
     private boolean isAllowableColumnName(String proposedName) {
-
         // check null
         if (proposedName == null) {
             return false;
         }
         // check size limits
-        if (proposedName.length() > configuration.getMaxIdentiferLength() || proposedName.length() == 0) {
+        int length = proposedName.length();
+        if (length > configuration.getMaxIdentiferLength() || length == 0) {
             return false;
         }
-        Matcher match = configuration.getCompiledRegularExpressionMatchAllowed().matcher(proposedName);
-        return match.matches();
+        Pattern allowed = configuration.getCompiledRegularExpressionMatchAllowed();
+        return allowed == null || allowed.matcher(proposedName).matches();
     }
 
     private String fixColumnName(String proposedName) {
-        Matcher match = configuration.getCompiledRegularExpressionMatchDisallowed().matcher(proposedName);
-        proposedName = match.replaceAll("");
+        Pattern disallowed = configuration.getCompiledRegularExpressionMatchDisallowed();
+        if (disallowed == null) {
+            proposedName = StringUtils.replaceAll(proposedName, "\u0000", "");
+        } else {
+            proposedName = disallowed.matcher(proposedName).replaceAll("");
+        }
 
         // check size limits - then truncate
-        if (proposedName.length() > configuration.getMaxIdentiferLength()) {
-            proposedName = proposedName.substring(0, configuration.getMaxIdentiferLength());
+        int length = proposedName.length(), maxLength = configuration.getMaxIdentiferLength();
+        if (length > maxLength) {
+            proposedName = proposedName.substring(0, maxLength);
         }
 
         return proposedName;

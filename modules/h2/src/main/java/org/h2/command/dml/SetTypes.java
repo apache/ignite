@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -163,96 +163,106 @@ public class SetTypes {
     public static final int REFERENTIAL_INTEGRITY = 30;
 
     /**
-     * The type of a SET MVCC statement.
-     */
-    public static final int MVCC = 31;
-
-    /**
      * The type of a SET MAX_OPERATION_MEMORY statement.
      */
-    public static final int MAX_OPERATION_MEMORY = 32;
+    public static final int MAX_OPERATION_MEMORY = 31;
 
     /**
      * The type of a SET EXCLUSIVE statement.
      */
-    public static final int EXCLUSIVE = 33;
+    public static final int EXCLUSIVE = 32;
 
     /**
      * The type of a SET CREATE_BUILD statement.
      */
-    public static final int CREATE_BUILD = 34;
+    public static final int CREATE_BUILD = 33;
 
     /**
      * The type of a SET \@VARIABLE statement.
      */
-    public static final int VARIABLE = 35;
+    public static final int VARIABLE = 34;
 
     /**
      * The type of a SET QUERY_TIMEOUT statement.
      */
-    public static final int QUERY_TIMEOUT = 36;
+    public static final int QUERY_TIMEOUT = 35;
 
     /**
      * The type of a SET REDO_LOG_BINARY statement.
      */
-    public static final int REDO_LOG_BINARY = 37;
+    public static final int REDO_LOG_BINARY = 36;
 
     /**
      * The type of a SET BINARY_COLLATION statement.
      */
-    public static final int BINARY_COLLATION = 38;
+    public static final int BINARY_COLLATION = 37;
 
     /**
      * The type of a SET JAVA_OBJECT_SERIALIZER statement.
      */
-    public static final int JAVA_OBJECT_SERIALIZER = 39;
+    public static final int JAVA_OBJECT_SERIALIZER = 38;
 
     /**
      * The type of a SET RETENTION_TIME statement.
      */
-    public static final int RETENTION_TIME = 40;
+    public static final int RETENTION_TIME = 39;
 
     /**
      * The type of a SET QUERY_STATISTICS statement.
      */
-    public static final int QUERY_STATISTICS = 41;
+    public static final int QUERY_STATISTICS = 40;
 
     /**
      * The type of a SET QUERY_STATISTICS_MAX_ENTRIES statement.
      */
-    public static final int QUERY_STATISTICS_MAX_ENTRIES = 42;
+    public static final int QUERY_STATISTICS_MAX_ENTRIES = 41;
 
     /**
      * The type of a SET ROW_FACTORY statement.
      */
-    public static final int ROW_FACTORY = 43;
+    public static final int ROW_FACTORY = 42;
 
     /**
      * The type of SET BATCH_JOINS statement.
      */
-    public static final int BATCH_JOINS = 44;
+    public static final int BATCH_JOINS = 43;
 
     /**
      * The type of SET FORCE_JOIN_ORDER statement.
      */
-    public static final int FORCE_JOIN_ORDER = 45;
+    public static final int FORCE_JOIN_ORDER = 44;
 
     /**
      * The type of SET LAZY_QUERY_EXECUTION statement.
      */
-    public static final int LAZY_QUERY_EXECUTION = 46;
+    public static final int LAZY_QUERY_EXECUTION = 45;
 
     /**
      * The type of SET BUILTIN_ALIAS_OVERRIDE statement.
      */
-    public static final int BUILTIN_ALIAS_OVERRIDE = 47;
+    public static final int BUILTIN_ALIAS_OVERRIDE = 46;
 
     /**
      * The type of a SET COLUMN_NAME_RULES statement.
      */
-    public static final int COLUMN_NAME_RULES = 48;
+    public static final int COLUMN_NAME_RULES = 47;
 
-    private static final int COUNT = COLUMN_NAME_RULES + 1;
+    /**
+     * The type of a SET AUTHENTICATOR statement.
+     */
+    public static final int AUTHENTICATOR = 48;
+
+    /**
+     * The type of a SET LOCAL_RESULT_FACTORY statement.
+     */
+    public static final int LOCAL_RESULT_FACTORY = 49;
+
+    /**
+     * The type of a SET UUID_COLLATION statement.
+     */
+    public static final int UUID_COLLATION = 50;
+
+    private static final int COUNT = UUID_COLLATION + 1;
 
     private static final ArrayList<String> TYPES;
 
@@ -293,7 +303,6 @@ public class SetTypes {
         list.add(SCHEMA_SEARCH_PATH, "SCHEMA_SEARCH_PATH");
         list.add(UNDO_LOG, "UNDO_LOG");
         list.add(REFERENTIAL_INTEGRITY, "REFERENTIAL_INTEGRITY");
-        list.add(MVCC, "MVCC");
         list.add(MAX_OPERATION_MEMORY, "MAX_OPERATION_MEMORY");
         list.add(EXCLUSIVE, "EXCLUSIVE");
         list.add(CREATE_BUILD, "CREATE_BUILD");
@@ -311,6 +320,9 @@ public class SetTypes {
         list.add(LAZY_QUERY_EXECUTION, "LAZY_QUERY_EXECUTION");
         list.add(BUILTIN_ALIAS_OVERRIDE, "BUILTIN_ALIAS_OVERRIDE");
         list.add(COLUMN_NAME_RULES, "COLUMN_NAME_RULES");
+        list.add(AUTHENTICATOR, "AUTHENTICATOR");
+        list.add(LOCAL_RESULT_FACTORY, "LOCAL_RESULT_FACTORY");
+        list.add(UUID_COLLATION, "UUID_COLLATION");
         TYPES = list;
     }
 

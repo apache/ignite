@@ -1,12 +1,11 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.test.synth.sql;
 
 import java.util.ArrayList;
-import org.h2.util.New;
 
 /**
  * Represents a table.
@@ -18,7 +17,7 @@ class Table {
     private boolean globalTemporary;
     private Column[] columns;
     private Column[] primaryKeys;
-    private final ArrayList<Index> indexes = New.arrayList();
+    private final ArrayList<Index> indexes = new ArrayList<>();
 
     Table(TestSynth config) {
         this.config = config;
@@ -178,7 +177,7 @@ class Table {
      * @return the column
      */
     Column getRandomConditionColumn() {
-        ArrayList<Column> list = New.arrayList();
+        ArrayList<Column> list = new ArrayList<>();
         for (Column col : columns) {
             if (Column.isConditionType(config, col.getType())) {
                 list.add(col);
@@ -205,7 +204,7 @@ class Table {
      * @return the column or null if no such column was found
      */
     Column getRandomColumnOfType(int type) {
-        ArrayList<Column> list = New.arrayList();
+        ArrayList<Column> list = new ArrayList<>();
         for (Column col : columns) {
             if (col.getType() == type) {
                 list.add(col);

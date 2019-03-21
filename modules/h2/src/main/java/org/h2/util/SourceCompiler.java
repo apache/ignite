@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -339,12 +339,13 @@ public class SourceCompiler {
             ArrayList<JavaFileObject> compilationUnits = new ArrayList<>();
             compilationUnits.add(new StringJavaFileObject(fullClassName, source));
             // cannot concurrently compile
+            final boolean ok;
             synchronized (JAVA_COMPILER) {
-                JAVA_COMPILER.getTask(writer, fileManager, null, null,
+                ok = JAVA_COMPILER.getTask(writer, fileManager, null, null,
                         null, compilationUnits).call();
             }
             String output = writer.toString();
-            handleSyntaxError(output);
+            handleSyntaxError(output, (ok? 0: 1));
             return fileManager.getClassLoader(null).loadClass(fullClassName);
         } catch (ClassNotFoundException | IOException e) {
             throw DbException.convert(e);
@@ -375,7 +376,7 @@ public class SourceCompiler {
             copyInThread(p.getErrorStream(), buff);
             p.waitFor();
             String output = new String(buff.toByteArray(), StandardCharsets.UTF_8);
-            handleSyntaxError(output);
+            handleSyntaxError(output, p.exitValue());
             return p.exitValue();
         } catch (Exception e) {
             throw DbException.convert(e);
@@ -399,15 +400,18 @@ public class SourceCompiler {
             System.setErr(temp);
             Method compile;
             compile = JAVAC_SUN.getMethod("compile", String[].class);
-            Object javac = JAVAC_SUN.newInstance();
-            compile.invoke(javac, (Object) new String[] {
+            Object javac = JAVAC_SUN.getDeclaredConstructor().newInstance();
+            // Bugfix: Here we should check exit status value instead of parsing javac output text.
+            // Because of the output text is different in different locale environment.
+            // @since 2018-07-20 little-pan
+            final Integer status = (Integer)compile.invoke(javac, (Object) new String[] {
                     "-sourcepath", COMPILE_DIR,
                     // "-Xlint:unchecked",
                     "-d", COMPILE_DIR,
                     "-encoding", "UTF-8",
                     javaFile.getAbsolutePath() });
             String output = new String(buff.toByteArray(), StandardCharsets.UTF_8);
-            handleSyntaxError(output);
+            handleSyntaxError(output, status);
         } catch (Exception e) {
             throw DbException.convert(e);
         } finally {
@@ -415,12 +419,15 @@ public class SourceCompiler {
         }
     }
 
-    private static void handleSyntaxError(String output) {
+    private static void handleSyntaxError(String output, int exitStatus) {
+        if(0 == exitStatus){
+            return;
+        }
         boolean syntaxError = false;
         final BufferedReader reader = new BufferedReader(new StringReader(output));
         try {
             for (String line; (line = reader.readLine()) != null;) {
-                if (line.endsWith("warning")) {
+                if (line.endsWith("warning") || line.endsWith("warnings")) {
                     // ignore summary line
                 } else if (line.startsWith("Note:")
                         || line.startsWith("warning:")) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -9,7 +9,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 import org.h2.api.ErrorCode;
-import org.h2.engine.SysProperties;
 import org.h2.message.DbException;
 import org.h2.util.DateTimeUtils;
 
@@ -41,16 +40,6 @@ public class ValueTime extends Value {
     public static final int MAXIMUM_SCALE = 9;
 
     /**
-     * Get display size for the specified scale.
-     *
-     * @param scale scale
-     * @return display size
-     */
-    public static int getDisplaySize(int scale) {
-        return scale == 0 ? 8 : 9 + scale;
-    }
-
-    /**
      * Nanoseconds since midnight
      */
     private final long nanos;
@@ -69,13 +58,11 @@ public class ValueTime extends Value {
      * @return the value
      */
     public static ValueTime fromNanos(long nanos) {
-        if (!SysProperties.UNLIMITED_TIME_RANGE) {
-            if (nanos < 0L || nanos >= DateTimeUtils.NANOS_PER_DAY) {
-                StringBuilder builder = new StringBuilder();
-                DateTimeUtils.appendTime(builder, nanos);
-                throw DbException.get(ErrorCode.INVALID_DATETIME_CONSTANT_2,
-                        "TIME", builder.toString());
-            }
+        if (nanos < 0L || nanos >= DateTimeUtils.NANOS_PER_DAY) {
+            StringBuilder builder = new StringBuilder();
+            DateTimeUtils.appendTime(builder, nanos);
+            throw DbException.get(ErrorCode.INVALID_DATETIME_CONSTANT_2,
+                    "TIME", builder.toString());
         }
         return (ValueTime) Value.cache(new ValueTime(nanos));
     }
@@ -87,7 +74,8 @@ public class ValueTime extends Value {
      * @return the value
      */
     public static ValueTime get(Time time) {
-        return fromNanos(DateTimeUtils.nanosFromDate(time.getTime()));
+        long ms = time.getTime();
+        return fromNanos(DateTimeUtils.nanosFromLocalMillis(ms + DateTimeUtils.getTimeZoneOffset(ms)));
     }
 
     /**
@@ -98,7 +86,7 @@ public class ValueTime extends Value {
      * @return the value
      */
     public static ValueTime fromMillis(long ms) {
-        return fromNanos(DateTimeUtils.nanosFromDate(ms));
+        return fromNanos(DateTimeUtils.nanosFromLocalMillis(ms + DateTimeUtils.getTimeZoneOffset(ms)));
     }
 
     /**
@@ -109,7 +97,7 @@ public class ValueTime extends Value {
      */
     public static ValueTime parse(String s) {
         try {
-            return fromNanos(DateTimeUtils.parseTimeNanos(s, 0, s.length(), false));
+            return fromNanos(DateTimeUtils.parseTimeNanos(s, 0, s.length()));
         } catch (Exception e) {
             throw DbException.get(ErrorCode.INVALID_DATETIME_CONSTANT_2,
                     e, "TIME", s);
@@ -129,8 +117,13 @@ public class ValueTime extends Value {
     }
 
     @Override
-    public int getType() {
-        return Value.TIME;
+    public TypeInfo getType() {
+        return TypeInfo.TYPE_TIME;
+    }
+
+    @Override
+    public int getValueType() {
+        return TIME;
     }
 
     @Override
@@ -141,18 +134,10 @@ public class ValueTime extends Value {
     }
 
     @Override
-    public String getSQL() {
-        return "TIME '" + getString() + "'";
-    }
-
-    @Override
-    public long getPrecision() {
-        return MAXIMUM_PRECISION;
-    }
-
-    @Override
-    public int getDisplaySize() {
-        return MAXIMUM_PRECISION;
+    public StringBuilder getSQL(StringBuilder builder) {
+        builder.append("TIME '");
+        DateTimeUtils.appendTime(builder, nanos);
+        return builder.append('\'');
     }
 
     @Override
@@ -181,7 +166,7 @@ public class ValueTime extends Value {
     }
 
     @Override
-    protected int compareSecure(Value o, CompareMode mode) {
+    public int compareTypeSafe(Value o, CompareMode mode) {
         return Long.compare(nanos, ((ValueTime) o).nanos);
     }
 
@@ -229,16 +214,6 @@ public class ValueTime extends Value {
     @Override
     public Value divide(Value v) {
         return ValueTime.fromNanos((long) (nanos / v.getDouble()));
-    }
-
-    @Override
-    public int getSignum() {
-        return Long.signum(nanos);
-    }
-
-    @Override
-    public Value negate() {
-        return ValueTime.fromNanos(-nanos);
     }
 
 }

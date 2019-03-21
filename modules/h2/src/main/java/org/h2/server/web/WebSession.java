@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -98,9 +98,10 @@ class WebSession {
      * Remove a session attribute from the map.
      *
      * @param key the key
+     * @return value that was associated with the key, or null
      */
-    void remove(String key) {
-        map.remove(key);
+    Object remove(String key) {
+        return map.remove(key);
     }
 
     /**
@@ -167,7 +168,7 @@ class WebSession {
             return;
         }
         sql = sql.trim();
-        if (sql.length() == 0) {
+        if (sql.isEmpty()) {
             return;
         }
         if (commandHistory.size() > MAX_HISTORY) {
@@ -198,7 +199,7 @@ class WebSession {
      * @return a map containing the session meta data
      */
     HashMap<String, Object> getInfo() {
-        HashMap<String, Object> m = new HashMap<>(map.size() + 5);
+        HashMap<String, Object> m = new HashMap<>();
         m.putAll(map);
         m.put("lastAccess", new Timestamp(lastAccess).toString());
         try {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -74,7 +74,7 @@ public class TestScalability implements Database.DatabaseTest {
         ArrayList<Database> dbs = new ArrayList<>();
         int id = 1;
         final String h2Url = "jdbc:h2:./data/test;" +
-                "LOCK_TIMEOUT=10000;MV_STORE=FALSE;LOCK_MODE=3";
+                "LOCK_TIMEOUT=10000;MV_STORE=FALSE";
         dbs.add(createDbEntry(id++, "H2", 1, h2Url));
         dbs.add(createDbEntry(id++, "H2", 2, h2Url));
         dbs.add(createDbEntry(id++, "H2", 4, h2Url));
@@ -84,7 +84,7 @@ public class TestScalability implements Database.DatabaseTest {
         dbs.add(createDbEntry(id++, "H2", 64, h2Url));
 
         final String mvUrl = "jdbc:h2:./data/mvTest;" +
-                "LOCK_TIMEOUT=10000;MULTI_THREADED=1";
+                "MULTI_THREADED=1;LOCK_MODE=0";
         dbs.add(createDbEntry(id++, "MV", 1, mvUrl));
         dbs.add(createDbEntry(id++, "MV", 2, mvUrl));
         dbs.add(createDbEntry(id++, "MV", 4, mvUrl));

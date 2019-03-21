@@ -1,12 +1,12 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.index;
 
-import java.util.HashSet;
 import org.h2.api.ErrorCode;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Constants;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
@@ -19,7 +19,7 @@ import org.h2.store.Page;
 import org.h2.store.PageStore;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
-import org.h2.table.RegularTable;
+import org.h2.table.PageStoreTable;
 import org.h2.table.TableFilter;
 import org.h2.util.MathUtils;
 import org.h2.value.Value;
@@ -34,16 +34,16 @@ public class PageBtreeIndex extends PageIndex {
     private static int memoryChangeRequired;
 
     private final PageStore store;
-    private final RegularTable tableData;
+    private final PageStoreTable tableData;
     private final boolean needRebuild;
     private long rowCount;
     private int memoryPerPage;
     private int memoryCount;
 
-    public PageBtreeIndex(RegularTable table, int id, String indexName,
+    public PageBtreeIndex(PageStoreTable table, int id, String indexName,
             IndexColumn[] columns,
             IndexType indexType, boolean create, Session session) {
-        initBaseIndex(table, id, indexName, columns, indexType);
+        super(table, id, indexName, columns, indexType);
         if (!database.isStarting() && create) {
             checkIndexColumnTypes(columns);
         }
@@ -51,7 +51,7 @@ public class PageBtreeIndex extends PageIndex {
         // trace.setLevel(TraceSystem.DEBUG);
         tableData = table;
         if (!database.isPersistent() || id < 0) {
-            throw DbException.throwInternalError("" + indexName);
+            throw DbException.throwInternalError(indexName);
         }
         this.store = database.getPageStore();
         store.addIndex(this);
@@ -131,7 +131,7 @@ public class PageBtreeIndex extends PageIndex {
      */
     private SearchRow getSearchRow(Row row) {
         SearchRow r = table.getTemplateSimpleRow(columns.length == 1);
-        r.setKeyAndVersion(row);
+        r.setKey(row);
         for (Column c : columns) {
             int idx = c.getColumnId();
             r.setValue(idx, row.getValue(idx));
@@ -154,7 +154,7 @@ public class PageBtreeIndex extends PageIndex {
             store.update(empty);
             return empty;
         } else if (!(p instanceof PageBtree)) {
-            throw DbException.get(ErrorCode.FILE_CORRUPTED_1, "" + p);
+            throw DbException.get(ErrorCode.FILE_CORRUPTED_1, String.valueOf(p));
         }
         return (PageBtree) p;
     }
@@ -176,7 +176,7 @@ public class PageBtreeIndex extends PageIndex {
 
     private Cursor find(Session session, SearchRow first, boolean bigger,
             SearchRow last) {
-        if (SysProperties.CHECK && store == null) {
+        if (store == null) {
             throw DbException.get(ErrorCode.OBJECT_CLOSED);
         }
         PageBtree root = getPage(rootPageId);
@@ -220,7 +220,7 @@ public class PageBtreeIndex extends PageIndex {
     @Override
     public double getCost(Session session, int[] masks,
             TableFilter[] filters, int filter, SortOrder sortOrder,
-            HashSet<Column> allColumnsSet) {
+            AllColumnsForPlan allColumnsSet) {
         return 10 * getCostRangeIndex(masks, tableData.getRowCount(session),
                 filters, filter, sortOrder, false, allColumnsSet);
     }

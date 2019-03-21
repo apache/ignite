@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -63,12 +63,13 @@ public interface CommandInterface {
     int ALTER_TABLE_ALTER_COLUMN_NOT_NULL = 8;
 
     /**
-     * The type of a ALTER TABLE ALTER COLUMN SET NULL statement.
+     * The type of a ALTER TABLE ALTER COLUMN DROP NOT NULL statement.
      */
-    int ALTER_TABLE_ALTER_COLUMN_NULL = 9;
+    int ALTER_TABLE_ALTER_COLUMN_DROP_NOT_NULL = 9;
 
     /**
-     * The type of a ALTER TABLE ALTER COLUMN SET DEFAULT statement.
+     * The type of a ALTER TABLE ALTER COLUMN SET DEFAULT and ALTER TABLE ALTER
+     * COLUMN DROP DEFAULT statements.
      */
     int ALTER_TABLE_ALTER_COLUMN_DEFAULT = 10;
 

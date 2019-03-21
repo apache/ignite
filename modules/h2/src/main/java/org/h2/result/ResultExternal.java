@@ -1,11 +1,11 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.result;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import org.h2.value.Value;
 
 /**
@@ -40,12 +40,7 @@ public interface ResultExternal {
      * @param rows the list of rows to add
      * @return the new number of rows in this object
      */
-    int addRows(ArrayList<Value[]> rows);
-
-    /**
-     * This method is called after all rows have been added.
-     */
-    void done();
+    int addRows(Collection<Value[]> rows);
 
     /**
      * Close this object and delete the temporary file.

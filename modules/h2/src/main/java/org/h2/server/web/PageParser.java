@@ -1,15 +1,17 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.server.web;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.h2.util.New;
+
+import org.h2.util.StringUtils;
 
 /**
  * A page parser can parse an HTML page and replace the tags there.
@@ -96,7 +98,7 @@ public class PageParser {
                         List<Object> list = (List<Object>) get(items);
                         if (list == null) {
                             result.append("?items?");
-                            list = New.arrayList();
+                            list = new ArrayList<>();
                         }
                         if (list.isEmpty()) {
                             parseBlockUntil("</c:forEach>");
@@ -141,7 +143,7 @@ public class PageParser {
                         setError(i);
                         return;
                     }
-                    String item = p.substring(i, j).trim();
+                    String item = StringUtils.trimSubstring(p, i, j);
                     i = j;
                     String s = (String) get(item);
                     replaceTags(s);
@@ -238,14 +240,15 @@ public class PageParser {
         if (s == null) {
             return null;
         }
+        int length = s.length();
         if (convertBreakAndSpace) {
-            if (s.length() == 0) {
+            if (length == 0) {
                 return "&nbsp;";
             }
         }
-        StringBuilder buff = new StringBuilder(s.length());
+        StringBuilder buff = new StringBuilder(length);
         boolean convertSpace = true;
-        for (int i = 0; i < s.length(); i++) {
+        for (int i = 0; i < length; i++) {
             char c = s.charAt(i);
             if (c == ' ' || c == '\t') {
                 // convert tabs into spaces
@@ -310,11 +313,12 @@ public class PageParser {
         if (s == null) {
             return null;
         }
-        if (s.length() == 0) {
+        int length = s.length();
+        if (length == 0) {
             return "";
         }
-        StringBuilder buff = new StringBuilder(s.length());
-        for (int i = 0; i < s.length(); i++) {
+        StringBuilder buff = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
             char c = s.charAt(i);
             switch (c) {
             case '"':

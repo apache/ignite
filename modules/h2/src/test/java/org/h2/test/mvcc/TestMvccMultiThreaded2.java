@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -11,21 +11,21 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import org.h2.jdbc.JdbcSQLException;
 import org.h2.message.DbException;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.IOUtils;
 
 /**
  * Additional MVCC (multi version concurrency) test cases.
  */
-public class TestMvccMultiThreaded2 extends TestBase {
+public class TestMvccMultiThreaded2 extends TestDb {
 
     private static final int TEST_THREAD_COUNT = 100;
     private static final int TEST_TIME_SECONDS = 60;
     private static final boolean DISPLAY_STATS = false;
 
-    private static final String URL = ";MVCC=TRUE;LOCK_TIMEOUT=120000;MULTI_THREADED=TRUE";
+    private static final String URL = ";LOCK_TIMEOUT=120000;MULTI_THREADED=TRUE";
 
     /**
      * Run just this test.
@@ -34,11 +34,23 @@ public class TestMvccMultiThreaded2 extends TestBase {
      */
     public static void main(String... a) throws Exception {
         TestBase test = TestBase.createCaller().init();
-        test.config.mvcc = true;
         test.config.lockTimeout = 120000;
         test.config.memory = true;
         test.config.multiThreaded = true;
         test.test();
+    }
+
+    int getTestDuration() {
+        // to save some testing time
+        return config.big ? TEST_TIME_SECONDS : TEST_TIME_SECONDS / 10;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        if (!config.mvStore) {
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -99,11 +111,11 @@ public class TestMvccMultiThreaded2 extends TestBase {
         }
 
         if (DISPLAY_STATS) {
-            System.out.println(String.format(
+            println(String.format(
                     "+ INFO: TestMvccMultiThreaded2 RUN STATS threads=%d, minProcessed=%d, maxProcessed=%d, "
                             + "totalProcessed=%d, averagePerThread=%d, averagePerThreadPerSecond=%d\n",
                     TEST_THREAD_COUNT, minProcessed, maxProcessed, totalProcessed, totalProcessed / TEST_THREAD_COUNT,
-                    totalProcessed / (TEST_THREAD_COUNT * TEST_TIME_SECONDS)));
+                    totalProcessed / (TEST_THREAD_COUNT * getTestDuration())));
         }
 
         IOUtils.closeSilently(conn);
@@ -136,34 +148,30 @@ public class TestMvccMultiThreaded2 extends TestBase {
                 // give the other threads a chance to start up before going into our work loop
                 Thread.yield();
 
+                PreparedStatement ps = conn.prepareStatement(
+                        "SELECT * FROM test WHERE entity_id = ? FOR UPDATE");
                 while (!done) {
-                    try {
-                        PreparedStatement ps = conn.prepareStatement(
-                                "SELECT * FROM test WHERE entity_id = ? FOR UPDATE");
-                        String id;
-                        int value;
-                        if ((iterationsProcessed & 1) == 0) {
-                            id = "1";
-                            value = 100;
-                        } else {
-                            id = "2";
-                            value = 200;
-                        }
-                        ps.setString(1, id);
-                        ResultSet rs = ps.executeQuery();
+                    String id;
+                    int value;
+                    if ((iterationsProcessed & 1) == 0) {
+                        id = "1";
+                        value = 100;
+                    } else {
+                        id = "2";
+                        value = 200;
+                    }
+                    ps.setString(1, id);
+                    ResultSet rs = ps.executeQuery();
 
-                        assertTrue(rs.next());
-                        assertTrue(rs.getInt(2) == value);
+                    assertTrue(rs.next());
+                    assertTrue(rs.getInt(2) == value);
 
-                        conn.commit();
-                        iterationsProcessed++;
+                    conn.commit();
+                    iterationsProcessed++;
 
-                        long now = System.currentTimeMillis();
-                        if (now - start > 1000 * TEST_TIME_SECONDS) {
-                            done = true;
-                        }
-                    } catch (JdbcSQLException e1) {
-                        throw e1;
+                    long now = System.currentTimeMillis();
+                    if (now - start > 1000 * getTestDuration()) {
+                        done = true;
                     }
                 }
             } catch (SQLException e) {

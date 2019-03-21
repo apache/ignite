@@ -1,4 +1,4 @@
--- Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (http://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -372,7 +372,6 @@ SELECT DATE_TRUNC('second', '2015-05-29 00:00:00');
 SELECT DATE_TRUNC('SECOND', '2015-05-29 00:00:00');
 >> 2015-05-29 00:00:00
 
-
 --
 -- Test time unit 'MINUTE'
 --
@@ -598,7 +597,6 @@ select DATE_TRUNC('day', '2015-05-29 15:14:13');
 select DATE_TRUNC('DAY', '2015-05-29 15:14:13');
 >> 2015-05-29 00:00:00
 
-
 --
 -- Test time unit 'WEEK'
 --
@@ -817,7 +815,6 @@ SELECT DATE_TRUNC('quarter', '2015-12-29 15:14:13');
 
 SELECT DATE_TRUNC('QUARTER', '2015-12-29 15:14:13');
 >> 2015-10-01 00:00:00
-
 
 --
 -- Test time unit 'YEAR'
@@ -1063,14 +1060,13 @@ SELECT DATE_TRUNC('MILLENNIUM', '2000-05-29 15:14:13');
 -- Test unhandled time unit and bad date
 --
 SELECT DATE_TRUNC('---', '2015-05-29 15:14:13');
-> exception
+> exception INVALID_VALUE_2
 
 SELECT DATE_TRUNC('', '2015-05-29 15:14:13');
-> exception
+> exception INVALID_VALUE_2
 
 SELECT DATE_TRUNC('', '');
-> exception
+> exception INVALID_VALUE_2
 
 SELECT DATE_TRUNC('YEAR', '');
-> exception
-
+> exception INVALID_DATETIME_CONSTANT_2

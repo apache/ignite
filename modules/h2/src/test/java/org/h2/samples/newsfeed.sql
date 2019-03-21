@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -7,8 +7,10 @@
 CREATE TABLE VERSION(ID INT PRIMARY KEY, VERSION VARCHAR, CREATED VARCHAR);
 INSERT INTO VERSION VALUES
 
-(147, '1.4.198', '2018-03-18'),
-(146, '1.4.197', '2017-06-10'),
+(149, '1.4.199', '2019-03-13'),
+(148, '1.4.198', '2019-02-22'),
+(147, '1.4.197', '2018-03-18'),
+(146, '1.4.196', '2017-06-10'),
 (145, '1.4.195', '2017-04-23'),
 (144, '1.4.194', '2017-03-10'),
 (143, '1.4.193', '2016-10-31'),
@@ -21,10 +23,7 @@ INSERT INTO VERSION VALUES
 (136, '1.4.186', '2015-03-02'),
 (135, '1.4.185', '2015-01-16'),
 (134, '1.4.184', '2014-12-19'),
-(133, '1.4.183', '2014-12-13'),
-(132, '1.4.182', '2014-10-17'),
-(131, '1.4.181', '2014-08-06'),
-;
+(133, '1.4.183', '2014-12-13');
 
 CREATE TABLE CHANNEL(TITLE VARCHAR, LINK VARCHAR, DESC VARCHAR,
     LANGUAGE VARCHAR, PUB TIMESTAMP, LAST TIMESTAMP, AUTHOR VARCHAR);

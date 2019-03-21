@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -38,12 +38,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-
 import org.h2.api.ErrorCode;
 import org.h2.engine.SysProperties;
 import org.h2.store.FileLister;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.test.trace.Player;
 import org.h2.test.utils.AssertThrows;
 import org.h2.tools.Backup;
@@ -51,6 +51,7 @@ import org.h2.tools.ChangeFileEncryption;
 import org.h2.tools.Console;
 import org.h2.tools.ConvertTraceFile;
 import org.h2.tools.DeleteDbFiles;
+import org.h2.tools.GUIConsole;
 import org.h2.tools.Recover;
 import org.h2.tools.Restore;
 import org.h2.tools.RunScript;
@@ -65,7 +66,7 @@ import org.h2.value.ValueUuid;
 /**
  * Tests the database tools.
  */
-public class TestTools extends TestBase {
+public class TestTools extends TestDb {
 
     private static String lastUrl;
     private Server server;
@@ -81,10 +82,15 @@ public class TestTools extends TestBase {
     }
 
     @Override
-    public void test() throws Exception {
+    public boolean isEnabled() {
         if (config.networked) {
-            return;
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws Exception {
         DeleteDbFiles.execute(getBaseDir(), null, true);
         org.h2.Driver.load();
         testSimpleResultSet();
@@ -128,7 +134,7 @@ public class TestTools extends TestBase {
 
     private void testConsole() throws Exception {
         String old = System.getProperty(SysProperties.H2_BROWSER);
-        Console c = new Console();
+        GUIConsole c = new GUIConsole();
         c.setOut(new PrintStream(new ByteArrayOutputStream()));
         try {
 
@@ -238,11 +244,11 @@ public class TestTools extends TestBase {
         assertTrue(rs.getMetaData().isSearchable(1));
         assertTrue(rs.getMetaData().isSigned(1));
         assertFalse(rs.getMetaData().isWritable(1));
-        assertEquals(null, rs.getMetaData().getCatalogName(1));
+        assertEquals("", rs.getMetaData().getCatalogName(1));
         assertEquals(null, rs.getMetaData().getColumnClassName(1));
         assertEquals("NULL", rs.getMetaData().getColumnTypeName(1));
-        assertEquals(null, rs.getMetaData().getSchemaName(1));
-        assertEquals(null, rs.getMetaData().getTableName(1));
+        assertEquals("", rs.getMetaData().getSchemaName(1));
+        assertEquals("", rs.getMetaData().getTableName(1));
         assertEquals(ResultSet.HOLD_CURSORS_OVER_COMMIT, rs.getHoldability());
         assertEquals(1, rs.getColumnCount());
 
@@ -476,7 +482,7 @@ public class TestTools extends TestBase {
         assertEquals(ResultSet.FETCH_FORWARD, rs.getFetchDirection());
         assertEquals(0, rs.getFetchSize());
         assertEquals(ResultSet.TYPE_SCROLL_INSENSITIVE, rs.getType());
-        assertTrue(rs.getStatement() == null);
+        assertNull(rs.getStatement());
         assertFalse(rs.isClosed());
 
         rs.beforeFirst();
@@ -504,12 +510,15 @@ public class TestTools extends TestBase {
     }
 
     private void testJdbcDriverUtils() {
-        assertEquals("org.h2.Driver",
-                JdbcUtils.getDriver("jdbc:h2:~/test"));
-        assertEquals("org.postgresql.Driver",
-                JdbcUtils.getDriver("jdbc:postgresql:test"));
-        assertEquals(null,
-                JdbcUtils.getDriver("jdbc:unknown:test"));
+        assertEquals("org.h2.Driver", JdbcUtils.getDriver("jdbc:h2:~/test"));
+        assertEquals("org.postgresql.Driver", JdbcUtils.getDriver("jdbc:postgresql:test"));
+        assertEquals(null, JdbcUtils.getDriver("jdbc:unknown:test"));
+        try {
+            JdbcUtils.getConnection("org.h2.Driver", "jdbc:h2x:test", "sa", "");
+            fail("Expected SQLException: 08001");
+        } catch (SQLException e) {
+            assertEquals("08001", e.getSQLState());
+        }
     }
 
     private void testWrongServer() throws Exception {
@@ -586,7 +595,7 @@ public class TestTools extends TestBase {
             result = runServer(1, new String[]{"-xy"});
             assertContains(result, "Starts the H2 Console");
             assertContains(result, "Feature not supported");
-            result = runServer(0, new String[]{"-tcp",
+            result = runServer(0, new String[]{"-ifNotExists", "-tcp",
                     "-tcpPort", "9001", "-tcpPassword", "abc"});
             assertContains(result, "tcp://");
             assertContains(result, ":9001");
@@ -607,7 +616,7 @@ public class TestTools extends TestBase {
         Connection conn;
 
         try {
-            result = runServer(0, new String[]{"-tcp",
+            result = runServer(0, new String[]{"-ifNotExists", "-tcp",
                     "-tcpAllowOthers", "-tcpPort", "9001", "-tcpPassword", "abcdef", "-tcpSSL"});
             assertContains(result, "ssl://");
             assertContains(result, ":9001");
@@ -623,7 +632,7 @@ public class TestTools extends TestBase {
             getConnection("jdbc:h2:ssl://localhost:9001/mem:", "sa", "sa");
 
             result = runServer(0, new String[]{
-                    "-web", "-webPort", "9002", "-webAllowOthers", "-webSSL",
+                    "-ifNotExists", "-web", "-webPort", "9002", "-webAllowOthers", "-webSSL",
                     "-pg", "-pgAllowOthers", "-pgPort", "9003",
                     "-tcp", "-tcpAllowOthers", "-tcpPort", "9006", "-tcpPassword", "abc"});
             Server stop = server;
@@ -760,7 +769,7 @@ public class TestTools extends TestBase {
         assertEquals(Double.MIN_VALUE, rs.getDouble("b"));
         assertEquals(Long.MIN_VALUE, rs.getLong("c"));
         assertEquals(Short.MIN_VALUE, rs.getShort("d"));
-        assertTrue(!rs.getBoolean("e"));
+        assertFalse(rs.getBoolean("e"));
         assertEquals(new byte[] { (byte) 10, (byte) 20 }, rs.getBytes("f"));
         assertEquals("2007-12-31", rs.getString("g"));
         assertEquals("23:59:59", rs.getString("h"));
@@ -902,8 +911,8 @@ public class TestTools extends TestBase {
                     "SELECT * FROM TEST ORDER BY ID");
             rs.next();
             assertEquals(1, rs.getInt(1));
-            assertTrue(rs.getString(2) == null);
-            assertTrue(rs.getString(3) == null);
+            assertNull(rs.getString(2));
+            assertNull(rs.getString(3));
             rs.next();
             assertEquals(2, rs.getInt(1));
             assertEquals("face", rs.getString(2));
@@ -1033,18 +1042,18 @@ public class TestTools extends TestBase {
         conn.close();
         String[] args = { "-dir", dir, "-db", "testChangeFileEncryption",
                 "-cipher", "AES", "-decrypt", "abc", "-quiet" };
-        ChangeFileEncryption.main(args);
+        new ChangeFileEncryption().runTool(args);
         args = new String[] { "-dir", dir, "-db", "testChangeFileEncryption",
                 "-cipher", "AES", "-encrypt", "def", "-quiet" };
-        ChangeFileEncryption.main(args);
+        new ChangeFileEncryption().runTool(args);
         conn = getConnection(url, "sa", "def 123");
         stat = conn.createStatement();
         stat.execute("SELECT * FROM TEST");
         new AssertThrows(ErrorCode.CANNOT_CHANGE_SETTING_WHEN_OPEN_1) {
             @Override
             public void test() throws SQLException {
-                ChangeFileEncryption.main(new String[] { "-dir", dir, "-db",
-                        "testChangeFileEncryption", "-cipher", "AES",
+                new ChangeFileEncryption().runTool(new String[] { "-dir", dir,
+                        "-db", "testChangeFileEncryption", "-cipher", "AES",
                         "-decrypt", "def", "-quiet" });
             }
         };
@@ -1055,14 +1064,8 @@ public class TestTools extends TestBase {
     }
 
     private void testChangeFileEncryptionWithWrongPassword() throws SQLException {
-        if (config.mvStore) {
-            // the file system encryption abstraction used by the MVStore
-            // doesn't detect wrong passwords
-            return;
-        }
         org.h2.Driver.load();
         final String dir = getBaseDir();
-        // TODO: this doesn't seem to work in MVSTORE mode yet
         String url = "jdbc:h2:" + dir + "/testChangeFileEncryption;CIPHER=AES";
         DeleteDbFiles.execute(dir, "testChangeFileEncryption", true);
         Connection conn = getConnection(url, "sa", "abc 123");
@@ -1096,7 +1099,7 @@ public class TestTools extends TestBase {
         Connection conn;
         try {
             deleteDb("test");
-            Server tcpServer = Server.createTcpServer(
+            Server tcpServer = Server.createTcpServer("-ifNotExists",
                             "-baseDir", getBaseDir(),
                             "-tcpAllowOthers").start();
             remainingServers.add(tcpServer);
@@ -1122,12 +1125,12 @@ public class TestTools extends TestBase {
             final int prt = tcpServerWithPassword.getPort();
             remainingServers.add(tcpServerWithPassword);
             // must not be able to create new db
-            new AssertThrows(ErrorCode.DATABASE_NOT_FOUND_1) {
+            new AssertThrows(ErrorCode.DATABASE_NOT_FOUND_2) {
                 @Override
                 public void test() throws SQLException {
                     getConnection("jdbc:h2:tcp://localhost:"+prt+"/test2", "sa", "");
             }};
-            new AssertThrows(ErrorCode.DATABASE_NOT_FOUND_1) {
+            new AssertThrows(ErrorCode.DATABASE_NOT_FOUND_2) {
                 @Override
                 public void test() throws SQLException {
                     getConnection("jdbc:h2:tcp://localhost:"+prt+"/test2;ifexists=false", "sa", "");
@@ -1150,7 +1153,7 @@ public class TestTools extends TestBase {
             JdbcUtils.closeSilently(conn);
             // Test filesystem prefix and escape from baseDir
             deleteDb("testSplit");
-            server = Server.createTcpServer(
+            server = Server.createTcpServer("-ifNotExists",
                             "-baseDir", getBaseDir(),
                             "-tcpAllowOthers").start();
             final int p = server.getPort();

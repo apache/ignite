@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.h2.api.DatabaseEventListener;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.Backup;
 import org.h2.tools.Restore;
 import org.h2.util.Task;
@@ -22,7 +23,7 @@ import org.h2.util.Task;
 /**
  * Test for the BACKUP SQL statement.
  */
-public class TestBackup extends TestBase {
+public class TestBackup extends TestDb {
 
     /**
      * Run just this test.
@@ -34,10 +35,15 @@ public class TestBackup extends TestBase {
     }
 
     @Override
-    public void test() throws SQLException {
+    public boolean isEnabled() {
         if (config.memory) {
-            return;
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws SQLException {
         testConcurrentBackup();
         testBackupRestoreLobStatement();
         testBackupRestoreLob();
@@ -51,7 +57,7 @@ public class TestBackup extends TestBase {
             return;
         }
         deleteDb("backup");
-        String url = getURL("backup;multi_threaded=true", true);
+        String url = getURL("backup;MULTI_THREADED=TRUE", true);
         Connection conn = getConnection(url);
         final Statement stat = conn.createStatement();
         stat.execute("create table test(id int primary key, name varchar)");

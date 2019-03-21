@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -16,12 +16,15 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import org.h2.engine.Constants;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
+import org.h2.util.Utils;
 
 /**
  * Tests the JMX feature.
  */
-public class TestJmx extends TestBase {
+public class TestJmx extends TestDb {
 
     /**
      * Run just this test.
@@ -29,7 +32,9 @@ public class TestJmx extends TestBase {
      * @param a ignored
      */
     public static void main(String... a) throws Exception {
-        TestBase.createCaller().init().test();
+        TestBase base = TestBase.createCaller().init();
+        base.config.mvStore = false;
+        base.test();
     }
 
     @Override
@@ -109,7 +114,7 @@ public class TestJmx extends TestBase {
 
         result = mbeanServer.invoke(name, "listSessions", null, null).toString();
         assertContains(result, "session id");
-        if (config.mvcc || config.mvStore) {
+        if (config.mvStore) {
             assertContains(result, "read lock");
         } else {
             assertContains(result, "write lock");
@@ -143,8 +148,13 @@ public class TestJmx extends TestBase {
         if (config.memory) {
             assertEquals("0", mbeanServer.
                     getAttribute(name, "CacheSizeMax").toString());
-        } else {
+        } else if (config.mvStore) {
             assertEquals("16384", mbeanServer.
+                    getAttribute(name, "CacheSizeMax").toString());
+        } else {
+            int cacheSize = Utils.scaleForAvailableMemory(
+                    Constants.CACHE_SIZE_DEFAULT);
+            assertEquals("" + cacheSize, mbeanServer.
                     getAttribute(name, "CacheSizeMax").toString());
         }
         mbeanServer.setAttribute(name, new Attribute("CacheSizeMax", 1));

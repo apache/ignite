@@ -1,12 +1,11 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.constraint;
 
 import java.util.HashSet;
-import org.h2.command.Parser;
 import org.h2.engine.Session;
 import org.h2.index.Index;
 import org.h2.result.Row;
@@ -14,7 +13,6 @@ import org.h2.schema.Schema;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.Table;
-import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
 /**
@@ -43,37 +41,40 @@ public class ConstraintUnique extends Constraint {
         return getCreateSQLForCopy(forTable, quotedName, true);
     }
 
-    private String getCreateSQLForCopy(Table forTable, String quotedName,
-            boolean internalIndex) {
-        StatementBuilder buff = new StatementBuilder("ALTER TABLE ");
-        buff.append(forTable.getSQL()).append(" ADD CONSTRAINT ");
+    private String getCreateSQLForCopy(Table forTable, String quotedName, boolean internalIndex) {
+        StringBuilder builder = new StringBuilder("ALTER TABLE ");
+        forTable.getSQL(builder, true).append(" ADD CONSTRAINT ");
         if (forTable.isHidden()) {
-            buff.append("IF NOT EXISTS ");
+            builder.append("IF NOT EXISTS ");
         }
-        buff.append(quotedName);
+        builder.append(quotedName);
         if (comment != null) {
-            buff.append(" COMMENT ").append(StringUtils.quoteStringSQL(comment));
+            builder.append(" COMMENT ");
+            StringUtils.quoteStringSQL(builder, comment);
         }
-        buff.append(' ').append(getConstraintType().getSqlName()).append('(');
-        for (IndexColumn c : columns) {
-            buff.appendExceptFirst(", ");
-            buff.append(Parser.quoteIdentifier(c.column.getName()));
+        builder.append(' ').append(getConstraintType().getSqlName()).append('(');
+        for (int i = 0, l = columns.length; i < l; i++) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+            columns[i].column.getSQL(builder, true);
         }
-        buff.append(')');
+        builder.append(')');
         if (internalIndex && indexOwner && forTable == this.table) {
-            buff.append(" INDEX ").append(index.getSQL());
+            builder.append(" INDEX ");
+            index.getSQL(builder, true);
         }
-        return buff.toString();
+        return builder.toString();
     }
 
     @Override
     public String getCreateSQLWithoutIndexes() {
-        return getCreateSQLForCopy(table, getSQL(), false);
+        return getCreateSQLForCopy(table, getSQL(true), false);
     }
 
     @Override
     public String getCreateSQL() {
-        return getCreateSQLForCopy(table, getSQL());
+        return getCreateSQLForCopy(table, getSQL(true));
     }
 
     public void setColumns(IndexColumn[] columns) {

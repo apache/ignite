@@ -1,11 +1,11 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.index;
 
-import java.util.HashSet;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -50,6 +50,15 @@ public interface Index extends SchemaObject {
      * @param row the row
      */
     void remove(Session session, Row row);
+
+    /**
+     * Update index after row change.
+     *
+     * @param session the session
+     * @param oldRow row before the update
+     * @param newRow row after the update
+     */
+    void update(Session session, Row oldRow, Row newRow);
 
     /**
      * Returns {@code true} if {@code find()} implementation performs scan over all
@@ -98,7 +107,7 @@ public interface Index extends SchemaObject {
      * @return the estimated cost
      */
     double getCost(Session session, int[] masks, TableFilter[] filters, int filter,
-            SortOrder sortOrder, HashSet<Column> allColumnsSet);
+            SortOrder sortOrder, AllColumnsForPlan allColumnsSet);
 
     /**
      * Remove the index.
@@ -234,15 +243,6 @@ public interface Index extends SchemaObject {
      * @return the table
      */
     Table getTable();
-
-    /**
-     * Commit the operation for a row. This is only important for multi-version
-     * indexes. The method is only called if multi-version is enabled.
-     *
-     * @param operation the operation type
-     * @param row the row
-     */
-    void commit(int operation, Row row);
 
     /**
      * Get the row with the given key.

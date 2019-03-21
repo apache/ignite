@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -7,6 +7,7 @@ package org.h2.value;
 
 import java.nio.charset.Charset;
 import java.text.Collator;
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -17,7 +18,7 @@ import org.h2.util.StringUtils;
  * Instances of this class can compare strings. Case sensitive and case
  * insensitive comparison is supported, and comparison using a collator.
  */
-public class CompareMode {
+public class CompareMode implements Comparator<Value> {
 
     /**
      * This constant means there is no collator set, and the default string
@@ -44,14 +45,14 @@ public class CompareMode {
     public static final String CHARSET = "CHARSET_";
 
     /**
-     * This constant means that the BINARY columns are sorted as if the bytes
-     * were signed.
+     * This constant means that the BINARY or UUID columns are sorted as if the
+     * bytes were signed.
      */
     public static final String SIGNED = "SIGNED";
 
     /**
-     * This constant means that the BINARY columns are sorted as if the bytes
-     * were unsigned.
+     * This constant means that the BINARY or UUID columns are sorted as if the
+     * bytes were unsigned.
      */
     public static final String UNSIGNED = "UNSIGNED";
 
@@ -78,10 +79,17 @@ public class CompareMode {
      */
     private final boolean binaryUnsigned;
 
-    protected CompareMode(String name, int strength, boolean binaryUnsigned) {
+    /**
+     * If true, sort UUID columns as if they contain unsigned bytes instead of
+     * Java-compatible sorting.
+     */
+    private final boolean uuidUnsigned;
+
+    protected CompareMode(String name, int strength, boolean binaryUnsigned, boolean uuidUnsigned) {
         this.name = name;
         this.strength = strength;
         this.binaryUnsigned = binaryUnsigned;
+        this.uuidUnsigned = uuidUnsigned;
     }
 
     /**
@@ -95,7 +103,7 @@ public class CompareMode {
      * @return the compare mode
      */
     public static CompareMode getInstance(String name, int strength) {
-        return getInstance(name, strength, SysProperties.SORT_BINARY_UNSIGNED);
+        return getInstance(name, strength, SysProperties.SORT_BINARY_UNSIGNED, SysProperties.SORT_UUID_UNSIGNED);
     }
 
     /**
@@ -107,19 +115,21 @@ public class CompareMode {
      * @param name the collation name or null
      * @param strength the collation strength
      * @param binaryUnsigned whether to compare binaries as unsigned
+     * @param uuidUnsigned whether to compare UUIDs as unsigned
      * @return the compare mode
      */
-    public static CompareMode getInstance(String name, int strength, boolean binaryUnsigned) {
+    public static CompareMode getInstance(String name, int strength, boolean binaryUnsigned, boolean uuidUnsigned) {
         CompareMode last = lastUsed;
         if (last != null) {
             if (Objects.equals(last.name, name) &&
                     last.strength == strength &&
-                    last.binaryUnsigned == binaryUnsigned) {
+                    last.binaryUnsigned == binaryUnsigned &&
+                    last.uuidUnsigned == uuidUnsigned) {
                 return last;
             }
         }
         if (name == null || name.equals(OFF)) {
-            last = new CompareMode(name, strength, binaryUnsigned);
+            last = new CompareMode(name, strength, binaryUnsigned, uuidUnsigned);
         } else {
             boolean useICU4J;
             if (name.startsWith(ICU4J)) {
@@ -132,9 +142,9 @@ public class CompareMode {
                 useICU4J = CAN_USE_ICU4J;
             }
             if (useICU4J) {
-                last = new CompareModeIcu4J(name, strength, binaryUnsigned);
+                last = new CompareModeIcu4J(name, strength, binaryUnsigned, uuidUnsigned);
             } else {
-                last = new CompareModeDefault(name, strength, binaryUnsigned);
+                last = new CompareModeDefault(name, strength, binaryUnsigned, uuidUnsigned);
             }
         }
         lastUsed = last;
@@ -193,7 +203,7 @@ public class CompareMode {
     }
 
     /**
-     * Compare name name of the locale with the given name. The case of the name
+     * Compare name of the locale with the given name. The case of the name
      * is ignored.
      *
      * @param locale the locale
@@ -221,12 +231,13 @@ public class CompareMode {
         } else if (name.startsWith(CHARSET)) {
             return new CharsetCollator(Charset.forName(name.substring(CHARSET.length())));
         }
-        if (name.length() == 2) {
+        int length = name.length();
+        if (length == 2) {
             Locale locale = new Locale(StringUtils.toLowerEnglish(name), "");
             if (compareLocaleNames(locale, name)) {
                 result = Collator.getInstance(locale);
             }
-        } else if (name.length() == 5) {
+        } else if (length == 5) {
             // LL_CC (language_country)
             int idx = name.indexOf('_');
             if (idx >= 0) {
@@ -261,6 +272,10 @@ public class CompareMode {
         return binaryUnsigned;
     }
 
+    public boolean isUuidUnsigned() {
+        return uuidUnsigned;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
@@ -278,12 +293,25 @@ public class CompareMode {
         if (binaryUnsigned != o.binaryUnsigned) {
             return false;
         }
+        if (uuidUnsigned != o.uuidUnsigned) {
+            return false;
+        }
         return true;
     }
 
     @Override
     public int hashCode() {
-        return getName().hashCode() ^ strength ^ (binaryUnsigned ? -1 : 0);
+        int result = 1;
+        result = 31 * result + getName().hashCode();
+        result = 31 * result + strength;
+        result = 31 * result + (binaryUnsigned ? 1231 : 1237);
+        result = 31 * result + (uuidUnsigned ? 1231 : 1237);
+        return result;
+    }
+
+    @Override
+    public int compare(Value o1, Value o2) {
+        return o1.compareTo(o2, null, this);
     }
 
 }

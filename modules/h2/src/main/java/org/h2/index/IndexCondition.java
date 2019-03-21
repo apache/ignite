@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -7,21 +7,18 @@ package org.h2.index;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
+import java.util.TreeSet;
 import org.h2.command.dml.Query;
 import org.h2.engine.Session;
-import org.h2.expression.Comparison;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionColumn;
 import org.h2.expression.ExpressionVisitor;
+import org.h2.expression.condition.Comparison;
 import org.h2.message.DbException;
 import org.h2.result.ResultInterface;
 import org.h2.table.Column;
 import org.h2.table.TableType;
-import org.h2.util.StatementBuilder;
-import org.h2.value.CompareMode;
 import org.h2.value.Value;
 
 /**
@@ -125,8 +122,8 @@ public class IndexCondition {
      * @return the index condition
      */
     public static IndexCondition getInQuery(ExpressionColumn column, Query query) {
-        IndexCondition cond = new IndexCondition(Comparison.IN_QUERY, column,
-                null);
+        assert query.isRandomAccessResult();
+        IndexCondition cond = new IndexCondition(Comparison.IN_QUERY, column, null);
         cond.expressionQuery = query;
         return cond;
     }
@@ -149,20 +146,14 @@ public class IndexCondition {
      * @return the value list
      */
     public Value[] getCurrentValueList(Session session) {
-        HashSet<Value> valueSet = new HashSet<>();
+        TreeSet<Value> valueSet = new TreeSet<>(session.getDatabase().getCompareMode());
         for (Expression e : expressionList) {
             Value v = e.getValue(session);
             v = column.convert(v);
             valueSet.add(v);
         }
         Value[] array = valueSet.toArray(new Value[valueSet.size()]);
-        final CompareMode mode = session.getDatabase().getCompareMode();
-        Arrays.sort(array, new Comparator<Value>() {
-            @Override
-            public int compare(Value o1, Value o2) {
-                return o1.compareTo(o2, mode);
-            }
-        });
+        Arrays.sort(array, session.getDatabase().getCompareMode());
         return array;
     }
 
@@ -179,56 +170,54 @@ public class IndexCondition {
     /**
      * Get the SQL snippet of this comparison.
      *
+     * @param alwaysQuote quote all identifiers
      * @return the SQL snippet
      */
-    public String getSQL() {
+    public String getSQL(boolean alwaysQuote) {
         if (compareType == Comparison.FALSE) {
             return "FALSE";
         }
-        StatementBuilder buff = new StatementBuilder();
-        buff.append(column.getSQL());
+        StringBuilder builder = new StringBuilder();
+        column.getSQL(builder, alwaysQuote);
         switch (compareType) {
         case Comparison.EQUAL:
-            buff.append(" = ");
+            builder.append(" = ");
             break;
         case Comparison.EQUAL_NULL_SAFE:
-            buff.append(" IS ");
+            builder.append(" IS ");
             break;
         case Comparison.BIGGER_EQUAL:
-            buff.append(" >= ");
+            builder.append(" >= ");
             break;
         case Comparison.BIGGER:
-            buff.append(" > ");
+            builder.append(" > ");
             break;
         case Comparison.SMALLER_EQUAL:
-            buff.append(" <= ");
+            builder.append(" <= ");
             break;
         case Comparison.SMALLER:
-            buff.append(" < ");
+            builder.append(" < ");
             break;
         case Comparison.IN_LIST:
-            buff.append(" IN(");
-            for (Expression e : expressionList) {
-                buff.appendExceptFirst(", ");
-                buff.append(e.getSQL());
-            }
-            buff.append(')');
+            builder.append(" IN(");
+            Expression.writeExpressions(builder, expressionList, alwaysQuote);
+            builder.append(')');
             break;
         case Comparison.IN_QUERY:
-            buff.append(" IN(");
-            buff.append(expressionQuery.getPlanSQL());
-            buff.append(')');
+            builder.append(" IN(");
+            builder.append(expressionQuery.getPlanSQL(alwaysQuote));
+            builder.append(')');
             break;
         case Comparison.SPATIAL_INTERSECTS:
-            buff.append(" && ");
+            builder.append(" && ");
             break;
         default:
             DbException.throwInternalError("type=" + compareType);
         }
         if (expression != null) {
-            buff.append(expression.getSQL());
+            expression.getSQL(builder, alwaysQuote);
         }
-        return buff.toString();
+        return builder.toString();
     }
 
     /**
@@ -397,36 +386,47 @@ public class IndexCondition {
 
     @Override
     public String toString() {
-        return "column=" + column +
-                ", compareType=" + compareTypeToString(compareType) +
-                ", expression=" + expression +
-                ", expressionList=" + expressionList +
-                ", expressionQuery=" + expressionQuery;
+        StringBuilder builder = new StringBuilder("column=").append(column).append(", compareType=");
+        return compareTypeToString(builder, compareType)
+            .append(", expression=").append(expression)
+            .append(", expressionList=").append(expressionList)
+            .append(", expressionQuery=").append(expressionQuery).toString();
     }
 
-    private static String compareTypeToString(int i) {
-        StatementBuilder s = new StatementBuilder();
+    private static StringBuilder compareTypeToString(StringBuilder builder, int i) {
+        boolean f = false;
         if ((i & EQUALITY) == EQUALITY) {
-            s.appendExceptFirst("&");
-            s.append("EQUALITY");
+            f = true;
+            builder.append("EQUALITY");
         }
         if ((i & START) == START) {
-            s.appendExceptFirst("&");
-            s.append("START");
+            if (f) {
+                builder.append(", ");
+            }
+            f = true;
+            builder.append("START");
         }
         if ((i & END) == END) {
-            s.appendExceptFirst("&");
-            s.append("END");
+            if (f) {
+                builder.append(", ");
+            }
+            f = true;
+            builder.append("END");
         }
         if ((i & ALWAYS_FALSE) == ALWAYS_FALSE) {
-            s.appendExceptFirst("&");
-            s.append("ALWAYS_FALSE");
+            if (f) {
+                builder.append(", ");
+            }
+            f = true;
+            builder.append("ALWAYS_FALSE");
         }
         if ((i & SPATIAL_INTERSECTS) == SPATIAL_INTERSECTS) {
-            s.appendExceptFirst("&");
-            s.append("SPATIAL_INTERSECTS");
+            if (f) {
+                builder.append(", ");
+            }
+            builder.append("SPATIAL_INTERSECTS");
         }
-        return s.toString();
+        return builder;
     }
 
 }

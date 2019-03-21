@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -22,18 +22,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.h2.api.ErrorCode;
-import org.h2.jdbc.JdbcSQLException;
 import org.h2.test.TestAll;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.IOUtils;
-import org.h2.util.SmallLRUCache;
-import org.h2.util.SynchronizedVerifier;
 import org.h2.util.Task;
 
 /**
  * Multi-threaded tests.
  */
-public class TestMultiThread extends TestBase implements Runnable {
+public class TestMultiThread extends TestDb implements Runnable {
 
     private boolean stop;
     private TestMultiThread parent;
@@ -59,6 +57,15 @@ public class TestMultiThread extends TestBase implements Runnable {
     }
 
     @Override
+    public boolean isEnabled() {
+        // pagestore and multithreaded was always experimental, we're not going to fix that
+        if (!config.mvStore) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
     public void test() throws Exception {
         testConcurrentSchemaChange();
         testConcurrentLobAdd();
@@ -70,6 +77,7 @@ public class TestMultiThread extends TestBase implements Runnable {
         testViews();
         testConcurrentInsert();
         testConcurrentUpdate();
+        testConcurrentUpdate2();
     }
 
     private void testConcurrentSchemaChange() throws Exception {
@@ -137,7 +145,7 @@ public class TestMultiThread extends TestBase implements Runnable {
     }
 
     private void testConcurrentView() throws Exception {
-        if (config.mvcc || config.mvStore) {
+        if (config.mvStore) {
             return;
         }
         String db = getTestName();
@@ -168,13 +176,11 @@ public class TestMultiThread extends TestBase implements Runnable {
                 }
             };
             t.execute();
-            SynchronizedVerifier.setDetect(SmallLRUCache.class, true);
             for (int i = 0; i < 1000; i++) {
                 conn.prepareStatement("select * from test_view where x" +
                         r.nextInt(len) + "=1");
             }
             t.get();
-            SynchronizedVerifier.setDetect(SmallLRUCache.class, false);
         }
     }
 
@@ -201,7 +207,7 @@ public class TestMultiThread extends TestBase implements Runnable {
     }
 
     private void testConcurrentAnalyze() throws Exception {
-        if (config.mvcc) {
+        if (config.mvStore) {
             return;
         }
         deleteDb(getTestName());
@@ -282,13 +288,12 @@ public class TestMultiThread extends TestBase implements Runnable {
     }
 
     private void testLockModeWithMultiThreaded() throws Exception {
-        // currently the combination of LOCK_MODE=0 and MULTI_THREADED
-        // is not supported
         deleteDb("lockMode");
         final String url = getURL("lockMode;MULTI_THREADED=1", true);
         try (Connection conn = getConnection(url)) {
             DatabaseMetaData meta = conn.getMetaData();
-            assertFalse(meta.supportsTransactionIsolationLevel(
+            // LOCK_MODE=0 with MULTI_THREADED=TRUE is supported only by MVStore
+            assertEquals(config.mvStore, meta.supportsTransactionIsolationLevel(
                     Connection.TRANSACTION_READ_UNCOMMITTED));
         }
         deleteDb("lockMode");
@@ -362,9 +367,8 @@ public class TestMultiThread extends TestBase implements Runnable {
                     // ignore timeout exceptions, happens periodically when the
                     // machine is really busy and it's not the thing we are
                     // trying to test
-                    if (!(ex.getCause() instanceof JdbcSQLException)
-                            || ((JdbcSQLException) ex.getCause())
-                                    .getErrorCode() != ErrorCode.LOCK_TIMEOUT_1) {
+                    if (!(ex.getCause() instanceof SQLException)
+                            || ((SQLException) ex.getCause()).getErrorCode() != ErrorCode.LOCK_TIMEOUT_1) {
                         throw ex;
                     }
                 }
@@ -485,5 +489,66 @@ public class TestMultiThread extends TestBase implements Runnable {
         }
 
         deleteDb("lockMode");
+    }
+
+    private final class ConcurrentUpdate2 extends Thread {
+        private final String column;
+
+        Throwable exception;
+
+        ConcurrentUpdate2(String column) {
+            this.column = column;
+        }
+
+        @Override
+        public void run() {
+            try (Connection c = getConnection("concurrentUpdate2;LOCK_TIMEOUT=10000")) {
+                PreparedStatement ps = c.prepareStatement("UPDATE TEST SET V = ? WHERE " + column + " = ?");
+                for (int test = 0; test < 1000; test++) {
+                    for (int i = 0; i < 16; i++) {
+                        ps.setInt(1, test);
+                        ps.setInt(2, i);
+                        assertEquals(16, ps.executeUpdate());
+                    }
+                }
+            } catch (Throwable e) {
+                exception = e;
+            }
+        }
+    }
+
+    private void testConcurrentUpdate2() throws Exception {
+        deleteDb("concurrentUpdate2");
+        try (Connection c = getConnection("concurrentUpdate2")) {
+            Statement s = c.createStatement();
+            s.execute("CREATE TABLE TEST(A INT, B INT, V INT, PRIMARY KEY(A, B))");
+            PreparedStatement ps = c.prepareStatement("INSERT INTO TEST VALUES (?, ?, ?)");
+            for (int i = 0; i < 16; i++) {
+                for (int j = 0; j < 16; j++) {
+                    ps.setInt(1, i);
+                    ps.setInt(2, j);
+                    ps.setInt(3, 0);
+                    ps.executeUpdate();
+                }
+            }
+            ConcurrentUpdate2 a = new ConcurrentUpdate2("A");
+            ConcurrentUpdate2 b = new ConcurrentUpdate2("B");
+            a.start();
+            b.start();
+            a.join();
+            b.join();
+            Throwable e = a.exception;
+            if (e == null) {
+                e = b.exception;
+            }
+            if (e != null) {
+                if (e instanceof Exception) {
+                    throw (Exception) e;
+                }
+                throw (Error) e;
+            }
+        } finally {
+            deleteDb("concurrentUpdate2");
+        }
     }
 }

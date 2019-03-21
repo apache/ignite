@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -7,6 +7,7 @@ package org.h2.engine;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+
 import org.h2.api.ErrorCode;
 import org.h2.message.DbException;
 import org.h2.message.Trace;
@@ -18,7 +19,6 @@ import org.h2.table.Table;
 import org.h2.table.TableType;
 import org.h2.table.TableView;
 import org.h2.util.MathUtils;
-import org.h2.util.New;
 import org.h2.util.StringUtils;
 import org.h2.util.Utils;
 
@@ -98,7 +98,7 @@ public class User extends RightOwner {
      */
     public void checkRight(Table table, int rightMask) {
         if (!hasRight(table, rightMask)) {
-            throw DbException.get(ErrorCode.NOT_ENOUGH_RIGHTS_FOR_1, table.getSQL());
+            throw DbException.get(ErrorCode.NOT_ENOUGH_RIGHTS_FOR_1, table.getSQL(false));
         }
     }
 
@@ -157,15 +157,16 @@ public class User extends RightOwner {
      */
     public String getCreateSQL(boolean password) {
         StringBuilder buff = new StringBuilder("CREATE USER IF NOT EXISTS ");
-        buff.append(getSQL());
+        getSQL(buff, true);
         if (comment != null) {
-            buff.append(" COMMENT ").append(StringUtils.quoteStringSQL(comment));
+            buff.append(" COMMENT ");
+            StringUtils.quoteStringSQL(buff, comment);
         }
         if (password) {
-            buff.append(" SALT '").
-                append(StringUtils.convertBytesToHex(salt)).
-                append("' HASH '").
-                append(StringUtils.convertBytesToHex(passwordHash)).
+            buff.append(" SALT '");
+            StringUtils.convertBytesToHex(buff, salt).
+                append("' HASH '");
+            StringUtils.convertBytesToHex(buff, passwordHash).
                 append('\'');
         } else {
             buff.append(" PASSWORD ''");
@@ -224,7 +225,7 @@ public class User extends RightOwner {
 
     @Override
     public ArrayList<DbObject> getChildren() {
-        ArrayList<DbObject> children = New.arrayList();
+        ArrayList<DbObject> children = new ArrayList<>();
         for (Right right : database.getAllRights()) {
             if (right.getGrantee() == this) {
                 children.add(right);

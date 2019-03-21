@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -9,7 +9,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Method;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -19,6 +18,7 @@ import java.nio.channels.NonWritableChannelException;
 import java.util.concurrent.TimeUnit;
 
 import org.h2.engine.SysProperties;
+import org.h2.util.MemoryUnmapper;
 
 /**
  * This file system stores files on disk and uses java.nio to access the files.
@@ -78,36 +78,22 @@ class FileNioMapped extends FileBase {
         // need to dispose old direct buffer, see bug
         // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4724038
 
-        boolean useSystemGc = true;
         if (SysProperties.NIO_CLEANER_HACK) {
-            try {
-                Method cleanerMethod = mapped.getClass().getMethod("cleaner");
-                cleanerMethod.setAccessible(true);
-                Object cleaner = cleanerMethod.invoke(mapped);
-                if (cleaner != null) {
-                    Method clearMethod = cleaner.getClass().getMethod("clean");
-                    clearMethod.invoke(cleaner);
-                }
-                useSystemGc = false;
-            } catch (Throwable e) {
-                // useSystemGc is already true
-            } finally {
+            if (MemoryUnmapper.unmap(mapped)) {
                 mapped = null;
+                return;
             }
         }
-        if (useSystemGc) {
-            WeakReference<MappedByteBuffer> bufferWeakRef =
-                    new WeakReference<>(mapped);
-            mapped = null;
-            long start = System.nanoTime();
-            while (bufferWeakRef.get() != null) {
-                if (System.nanoTime() - start > TimeUnit.MILLISECONDS.toNanos(GC_TIMEOUT_MS)) {
-                    throw new IOException("Timeout (" + GC_TIMEOUT_MS
-                            + " ms) reached while trying to GC mapped buffer");
-                }
-                System.gc();
-                Thread.yield();
+        WeakReference<MappedByteBuffer> bufferWeakRef = new WeakReference<>(mapped);
+        mapped = null;
+        long start = System.nanoTime();
+        while (bufferWeakRef.get() != null) {
+            if (System.nanoTime() - start > TimeUnit.MILLISECONDS.toNanos(GC_TIMEOUT_MS)) {
+                throw new IOException("Timeout (" + GC_TIMEOUT_MS
+                        + " ms) reached while trying to GC mapped buffer");
             }
+            System.gc();
+            Thread.yield();
         }
     }
 
@@ -184,11 +170,7 @@ class FileNioMapped extends FileBase {
             dst.position(dst.position() + len);
             pos += len;
             return len;
-        } catch (IllegalArgumentException e) {
-            EOFException e2 = new EOFException("EOF");
-            e2.initCause(e);
-            throw e2;
-        } catch (BufferUnderflowException e) {
+        } catch (IllegalArgumentException | BufferUnderflowException e) {
             EOFException e2 = new EOFException("EOF");
             e2.initCause(e);
             throw e2;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -166,7 +166,7 @@ public class Profiler implements Runnable {
                     }
                     continue;
                 }
-                try (Reader reader = new InputStreamReader(new FileInputStream(arg), "CP1252")) {
+                try (Reader reader = new InputStreamReader(new FileInputStream(arg))) {
                     LineNumberReader r = new LineNumberReader(reader);
                     while (true) {
                         String line = r.readLine();
@@ -177,7 +177,7 @@ public class Profiler implements Runnable {
                         }
                     }
                 }
-                try (Reader reader = new InputStreamReader(new FileInputStream(arg), "CP1252")) {
+                try (Reader reader = new InputStreamReader(new FileInputStream(arg))) {
                     LineNumberReader r = new LineNumberReader(reader);
                     processList(readStackTrace(r));
                 }
@@ -207,7 +207,7 @@ public class Profiler implements Runnable {
 
     private static List<Object[]> readRunnableStackTraces(int pid) {
         try {
-            String jstack = exec("jstack", "" + pid);
+            String jstack = exec("jstack", Integer.toString(pid));
             LineNumberReader r = new LineNumberReader(
                     new StringReader(jstack));
             return readStackTrace(r);
@@ -249,7 +249,7 @@ public class Profiler implements Runnable {
                 if (!line.startsWith("at ")) {
                     break;
                 }
-                line = line.substring(3).trim();
+                line = StringUtils.trimSubstring(line, 3);
                 stack.add(line);
             }
             if (!stack.isEmpty()) {
@@ -348,7 +348,7 @@ public class Profiler implements Runnable {
                 return;
             }
             try {
-                Thread.sleep(interval);
+                Thread.sleep(interval, 0);
             } catch (Exception e) {
                 // ignore
             }

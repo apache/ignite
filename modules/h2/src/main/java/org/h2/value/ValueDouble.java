@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -28,12 +28,20 @@ public class ValueDouble extends Value {
     public static final int DISPLAY_SIZE = 24;
 
     /**
-     * Double.doubleToLongBits(0.0)
+     * Double.doubleToLongBits(0d)
      */
-    public static final long ZERO_BITS = Double.doubleToLongBits(0.0);
+    public static final long ZERO_BITS = 0L;
 
-    private static final ValueDouble ZERO = new ValueDouble(0.0);
-    private static final ValueDouble ONE = new ValueDouble(1.0);
+    /**
+     * The value 0.
+     */
+    public static final ValueDouble ZERO = new ValueDouble(0d);
+
+    /**
+     * The value 1.
+     */
+    public static final ValueDouble ONE = new ValueDouble(1d);
+
     private static final ValueDouble NAN = new ValueDouble(Double.NaN);
 
     private final double value;
@@ -45,24 +53,24 @@ public class ValueDouble extends Value {
     @Override
     public Value add(Value v) {
         ValueDouble v2 = (ValueDouble) v;
-        return ValueDouble.get(value + v2.value);
+        return get(value + v2.value);
     }
 
     @Override
     public Value subtract(Value v) {
         ValueDouble v2 = (ValueDouble) v;
-        return ValueDouble.get(value - v2.value);
+        return get(value - v2.value);
     }
 
     @Override
     public Value negate() {
-        return ValueDouble.get(-value);
+        return get(-value);
     }
 
     @Override
     public Value multiply(Value v) {
         ValueDouble v2 = (ValueDouble) v;
-        return ValueDouble.get(value * v2.value);
+        return get(value * v2.value);
     }
 
     @Override
@@ -71,7 +79,7 @@ public class ValueDouble extends Value {
         if (v2.value == 0.0) {
             throw DbException.get(ErrorCode.DIVISION_BY_ZERO_1, getSQL());
         }
-        return ValueDouble.get(value / v2.value);
+        return get(value / v2.value);
     }
 
     @Override
@@ -80,30 +88,36 @@ public class ValueDouble extends Value {
         if (other.value == 0) {
             throw DbException.get(ErrorCode.DIVISION_BY_ZERO_1, getSQL());
         }
-        return ValueDouble.get(value % other.value);
+        return get(value % other.value);
     }
 
     @Override
-    public String getSQL() {
+    public StringBuilder getSQL(StringBuilder builder) {
         if (value == Double.POSITIVE_INFINITY) {
-            return "POWER(0, -1)";
+            builder.append("POWER(0, -1)");
         } else if (value == Double.NEGATIVE_INFINITY) {
-            return "(-POWER(0, -1))";
+            builder.append("(-POWER(0, -1))");
         } else if (Double.isNaN(value)) {
-            return "SQRT(-1)";
+            builder.append("SQRT(-1)");
+        } else {
+            builder.append(value);
         }
-        return getString();
+        return builder;
     }
 
     @Override
-    public int getType() {
-        return Value.DOUBLE;
+    public TypeInfo getType() {
+        return TypeInfo.TYPE_DOUBLE;
     }
 
     @Override
-    protected int compareSecure(Value o, CompareMode mode) {
-        ValueDouble v = (ValueDouble) o;
-        return Double.compare(value, v.value);
+    public int getValueType() {
+        return DOUBLE;
+    }
+
+    @Override
+    public int compareTypeSafe(Value o, CompareMode mode) {
+        return Double.compare(value, ((ValueDouble) o).value);
     }
 
     @Override
@@ -118,23 +132,17 @@ public class ValueDouble extends Value {
 
     @Override
     public String getString() {
-        return String.valueOf(value);
-    }
-
-    @Override
-    public long getPrecision() {
-        return PRECISION;
-    }
-
-    @Override
-    public int getScale() {
-        return 0;
+        return Double.toString(value);
     }
 
     @Override
     public int hashCode() {
-        long hash = Double.doubleToLongBits(value);
-        return (int) (hash ^ (hash >> 32));
+        /*
+         * NaNs are normalized in get() method, so it's safe to use
+         * doubleToRawLongBits() instead of doubleToLongBits() here.
+         */
+        long hash = Double.doubleToRawLongBits(value);
+        return (int) (hash ^ (hash >>> 32));
     }
 
     @Override
@@ -167,16 +175,11 @@ public class ValueDouble extends Value {
     }
 
     @Override
-    public int getDisplaySize() {
-        return DISPLAY_SIZE;
-    }
-
-    @Override
     public boolean equals(Object other) {
         if (!(other instanceof ValueDouble)) {
             return false;
         }
-        return compareSecure((ValueDouble) other, null) == 0;
+        return compareTypeSafe((ValueDouble) other, null) == 0;
     }
 
 }

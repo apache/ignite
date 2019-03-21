@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -24,7 +24,6 @@ import org.h2.store.fs.FilePath;
 import org.h2.store.fs.FilePathDisk;
 import org.h2.store.fs.FileUtils;
 import org.h2.util.IOUtils;
-import org.h2.util.New;
 
 /**
  * This is a read-only file system that allows to access databases stored in a
@@ -62,13 +61,11 @@ public class FilePathZip2 extends FilePath {
     }
 
     @Override
-    public FilePath createTempFile(String suffix, boolean deleteOnExit,
-            boolean inTempDir) throws IOException {
+    public FilePath createTempFile(String suffix, boolean inTempDir) throws IOException {
         if (!inTempDir) {
             throw new IOException("File system is read-only");
         }
-        return new FilePathDisk().getPath(name).createTempFile(suffix,
-                deleteOnExit, true);
+        return new FilePathDisk().getPath(name).createTempFile(suffix, true);
     }
 
     @Override
@@ -217,7 +214,7 @@ public class FilePathZip2 extends FilePath {
             ZipInputStream file = openZip();
             String dirName = getEntryName();
             String prefix = path.substring(0, path.length() - dirName.length());
-            ArrayList<FilePath> list = New.arrayList();
+            ArrayList<FilePath> list = new ArrayList<>();
             while (true) {
                 ZipEntry entry = file.getNextEntry();
                 if (entry == null) {
@@ -427,7 +424,7 @@ class FileZip2 extends FileBase {
     public synchronized FileLock tryLock(long position, long size,
             boolean shared) throws IOException {
         if (shared) {
-            return new FileLock(new FakeFileChannel(), position, size, shared) {
+            return new FileLock(FakeFileChannel.INSTANCE, position, size, shared) {
 
                 @Override
                 public boolean isValid() {

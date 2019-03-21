@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -13,9 +13,9 @@ import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.DeleteDbFiles;
 import org.h2.util.IOUtils;
 import org.h2.util.StringUtils;
@@ -23,7 +23,7 @@ import org.h2.util.StringUtils;
 /**
  * Tests the sample apps.
  */
-public class TestSampleApps extends TestBase {
+public class TestSampleApps extends TestDb {
 
     /**
      * Run just this test.
@@ -35,10 +35,15 @@ public class TestSampleApps extends TestBase {
     }
 
     @Override
-    public void test() throws Exception {
+    public boolean isEnabled() {
         if (!getBaseDir().startsWith(TestBase.BASE_TEST_DIR)) {
-            return;
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws Exception {
         deleteDb(getTestName());
         InputStream in = getClass().getClassLoader().getResourceAsStream(
                 "org/h2/samples/optimizations.sql");
@@ -106,8 +111,6 @@ public class TestSampleApps extends TestBase {
         // tools
         testApp("Allows changing the database file encryption password or algorithm*",
                 org.h2.tools.ChangeFileEncryption.class, "-help");
-        testApp("Allows changing the database file encryption password or algorithm*",
-                org.h2.tools.ChangeFileEncryption.class);
         testApp("Deletes all files belonging to a database.*",
                 org.h2.tools.DeleteDbFiles.class, "-help");
         FileUtils.delete(getBaseDir() + "/optimizations.sql");

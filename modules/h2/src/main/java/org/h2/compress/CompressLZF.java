@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  *
  * This code is based on the LZF algorithm from Marc Lehmann. It is a
@@ -74,7 +74,7 @@ import java.nio.ByteBuffer;
  * </ul>
  *<p>
  * The first byte of the compressed stream is the control byte. For literal
- * runs, the highest three bits of the control byte are not set, the the lower
+ * runs, the highest three bits of the control byte are not set, the lower
  * bits are the literal run length, and the next bytes are data to copy directly
  * into the output. For back-references, the highest three bits of the control
  * byte are the back-reference length. If all three bits are set, then the

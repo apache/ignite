@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -36,7 +36,7 @@ public class BenchSimple implements Bench {
             prep.setInt(1, i);
             prep.setString(2, "Hello World " + i);
             db.update(prep, "insertTest");
-            if (i % commitEvery == 0) {
+            if ((i+1) % commitEvery == 0) {
                 db.commit();
             }
         }
@@ -78,7 +78,7 @@ public class BenchSimple implements Bench {
         db.start(this, "Update (sequential)");
         prep = db.prepare("UPDATE TEST SET NAME=? WHERE ID=?");
         for (int i = 0; i < records; i += 3) {
-            prep.setString(1, "Hallo Welt");
+            prep.setString(1, "Hallo Welt " + i);
             prep.setInt(2, i);
             db.update(prep, "updateTest");
         }

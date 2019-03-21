@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -15,14 +15,12 @@ import org.h2.engine.Database;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
 import org.h2.expression.Expression;
-import org.h2.expression.ExpressionColumn;
 import org.h2.message.DbException;
 import org.h2.schema.Schema;
 import org.h2.schema.Sequence;
 import org.h2.table.Column;
 import org.h2.table.Table;
 import org.h2.util.ColumnNamer;
-import org.h2.value.DataType;
 import org.h2.value.Value;
 
 /**
@@ -38,6 +36,7 @@ public class CreateTable extends CommandWithColumns {
     private Query asQuery;
     private String comment;
     private boolean sortedInsertMode;
+    private boolean withNoData;
 
     public CreateTable(Session session, Schema schema) {
         super(session, schema);
@@ -91,6 +90,14 @@ public class CreateTable extends CommandWithColumns {
                 generateColumnsFromQuery();
             } else if (data.columns.size() != asQuery.getColumnCount()) {
                 throw DbException.get(ErrorCode.COLUMN_COUNT_DOES_NOT_MATCH);
+            } else {
+                ArrayList<Column> columns = data.columns;
+                for (int i = 0; i < columns.size(); i++) {
+                    Column column = columns.get(i);
+                    if (column.getType().getValueType() == Value.UNKNOWN) {
+                        columns.set(i, new Column(column.getName(), asQuery.getExpressions().get(i).getType()));
+                    }
+                }
             }
         }
         changePrimaryKeysToNotNull(data.columns);
@@ -120,7 +127,7 @@ public class CreateTable extends CommandWithColumns {
                 table.addSequence(sequence);
             }
             createConstraints();
-            if (asQuery != null) {
+            if (asQuery != null && !withNoData) {
                 boolean old = session.isUndoLogEnabled();
                 try {
                     session.setUndoLogEnabled(false);
@@ -137,7 +144,6 @@ public class CreateTable extends CommandWithColumns {
                 }
             }
             HashSet<DbObject> set = new HashSet<>();
-            set.clear();
             table.addDependencies(set);
             for (DbObject obj : set) {
                 if (obj == table) {
@@ -159,10 +165,14 @@ public class CreateTable extends CommandWithColumns {
                 }
             }
         } catch (DbException e) {
-            db.checkPowerOff();
-            db.removeSchemaObject(session, table);
-            if (!transactional) {
-                session.commit(true);
+            try {
+                db.checkPowerOff();
+                db.removeSchemaObject(session, table);
+                if (!transactional) {
+                    session.commit(true);
+                }
+            } catch (Throwable ex) {
+                e.addSuppressed(ex);
             }
             throw e;
         }
@@ -175,36 +185,8 @@ public class CreateTable extends CommandWithColumns {
         ColumnNamer columnNamer= new ColumnNamer(session);
         for (int i = 0; i < columnCount; i++) {
             Expression expr = expressions.get(i);
-            int type = expr.getType();
-            String name = columnNamer.getColumnName(expr,i,expr.getAlias());
-            long precision = expr.getPrecision();
-            int displaySize = expr.getDisplaySize();
-            DataType dt = DataType.getDataType(type);
-            if (precision > 0 && (dt.defaultPrecision == 0 ||
-                    (dt.defaultPrecision > precision && dt.defaultPrecision < Byte.MAX_VALUE))) {
-                // dont' set precision to MAX_VALUE if this is the default
-                precision = dt.defaultPrecision;
-            }
-            int scale = expr.getScale();
-            if (scale > 0 && (dt.defaultScale == 0 ||
-                    (dt.defaultScale > scale && dt.defaultScale < precision))) {
-                scale = dt.defaultScale;
-            }
-            if (scale > precision) {
-                precision = scale;
-            }
-            String[] enumerators = null;
-            if (dt.type == Value.ENUM) {
-                /**
-                 * Only columns of tables may be enumerated.
-                 */
-                if(!(expr instanceof ExpressionColumn)) {
-                    throw DbException.get(ErrorCode.GENERAL_ERROR_1,
-                            "Unable to resolve enumerators of expression");
-                }
-                enumerators = ((ExpressionColumn)expr).getColumn().getEnumerators();
-            }
-            Column col = new Column(name, type, precision, scale, displaySize, enumerators);
+            String name = columnNamer.getColumnName(expr, i, expr.getAlias());
+            Column col = new Column(name, expr.getType());
             addColumn(col);
         }
     }
@@ -244,6 +226,10 @@ public class CreateTable extends CommandWithColumns {
 
     public void setSortedInsertMode(boolean sortedInsertMode) {
         this.sortedInsertMode = sortedInsertMode;
+    }
+
+    public void setWithNoData(boolean withNoData) {
+        this.withNoData = withNoData;
     }
 
     public void setTableEngine(String tableEngine) {

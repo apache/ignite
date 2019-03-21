@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -11,11 +11,12 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Tests the multi-threaded kernel feature.
  */
-public class TestMultiThreadedKernel extends TestBase implements Runnable {
+public class TestMultiThreadedKernel extends TestDb implements Runnable {
 
     private String url, user, password;
     private int id;
@@ -32,10 +33,15 @@ public class TestMultiThreadedKernel extends TestBase implements Runnable {
     }
 
     @Override
-    public void test() throws Exception {
-        if (config.networked || config.mvcc) {
-            return;
+    public boolean isEnabled() {
+        if (config.networked) {
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws Exception {
         deleteDb("multiThreadedKernel");
         int count = getSize(2, 5);
         Thread[] list = new Thread[count];

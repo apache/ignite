@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -31,8 +31,8 @@ public class MergeDocs {
         // the order of pages is important here
         String[] pages = { "quickstart.html", "installation.html",
                 "tutorial.html", "features.html", "performance.html",
-                "advanced.html", "grammar.html", "functions.html",
-                "datatypes.html", "systemtables.html",
+                "advanced.html", "commands.html", "functions.html",
+                "datatypes.html", "grammar.html", "systemtables.html",
                 "build.html", "history.html", "faq.html" };
         StringBuilder buff = new StringBuilder();
         for (String fileName : pages) {
@@ -100,7 +100,9 @@ public class MergeDocs {
                 .replaceAll("href=\"build.html\"", "href=\"#build_index\"")
                 .replaceAll("href=\"datatypes.html\"", "href=\"#datatypes_index\"")
                 .replaceAll("href=\"faq.html\"", "href=\"#faq_index\"")
+                .replaceAll("href=\"commands.html\"", "href=\"#commands_index\"")
                 .replaceAll("href=\"grammar.html\"", "href=\"#grammar_index\"")
+                .replaceAll("href=\"functions.html\"", "href=\"#functions_index\"")
                 .replaceAll("href=\"tutorial.html\"", "href=\"#tutorial_index\"");
     }
 

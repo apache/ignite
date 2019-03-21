@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -23,13 +23,14 @@ import java.util.concurrent.TimeUnit;
 import org.h2.fulltext.FullText;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.IOUtils;
 import org.h2.util.Task;
 
 /**
  * Fulltext search tests.
  */
-public class TestFullText extends TestBase {
+public class TestFullText extends TestDb {
 
     /**
      * The words used in this test.
@@ -76,10 +77,7 @@ public class TestFullText extends TestBase {
                 testPerformance(true);
                 testReopen(true);
                 testDropIndex(true);
-            } catch (ClassNotFoundException e) {
-                println("Class not found, not tested: " + LUCENE_FULLTEXT_CLASS_NAME);
-                // ok
-            } catch (NoClassDefFoundError e) {
+            } catch (ClassNotFoundException | NoClassDefFoundError e) {
                 println("Class not found, not tested: " + LUCENE_FULLTEXT_CLASS_NAME);
                 // ok
             }
@@ -159,8 +157,8 @@ public class TestFullText extends TestBase {
         assertEquals("KEYS", rs.getMetaData().getColumnLabel(4));
         assertEquals("PUBLIC", rs.getString(1));
         assertEquals("TEST", rs.getString(2));
-        assertEquals("(ID)", rs.getString(3));
-        assertEquals("(1)", rs.getString(4));
+        assertEquals("[ID]", rs.getString(3));
+        assertEquals("[1]", rs.getString(4));
 
         rs = stat.executeQuery("SELECT * FROM FT_SEARCH('this', 0, 0)");
         assertFalse(rs.next());

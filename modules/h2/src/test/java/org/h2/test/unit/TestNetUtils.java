@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: Sergi Vladykin
  */
@@ -15,6 +15,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
+import org.h2.build.BuildBase;
 import org.h2.engine.SysProperties;
 import org.h2.test.TestBase;
 import org.h2.util.NetUtils;
@@ -57,6 +58,10 @@ public class TestNetUtils extends TestBase {
      * (no SSL certificate is needed).
      */
     private void testAnonymousTlsSession() throws Exception {
+        if (BuildBase.getJavaVersion() >= 11) {
+            // Issue #1303
+            return;
+        }
         assertTrue("Failed assumption: the default value of ENABLE_ANONYMOUS_TLS" +
                 " property should be true", SysProperties.ENABLE_ANONYMOUS_TLS);
         boolean ssl = true;
@@ -125,7 +130,7 @@ public class TestNetUtils extends TestBase {
             closeSilently(socket);
             closeSilently(serverSocket);
             if (task != null) {
-                assertTrue(task.getException() != null);
+                assertNotNull(task.getException());
                 assertEquals(javax.net.ssl.SSLHandshakeException.class.getName(),
                         task.getException().getClass().getName());
                 assertContains(task.getException().getMessage(), "certificate_unknown");

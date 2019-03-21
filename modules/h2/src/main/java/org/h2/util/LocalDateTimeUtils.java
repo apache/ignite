@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  * Iso8601: Initial Developer: Philippe Marschall (firstName dot lastName
@@ -9,12 +9,17 @@ package org.h2.util;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import org.h2.api.ErrorCode;
+import org.h2.api.IntervalQualifier;
 import org.h2.message.DbException;
+import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.h2.value.ValueDate;
+import org.h2.value.ValueInterval;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueTimestampTimeZone;
@@ -66,6 +71,16 @@ public class LocalDateTimeUtils {
     private static final Class<?> ZONE_OFFSET;
 
     /**
+     * {@code Class<java.time.Period>} or {@code null}.
+     */
+    public static final Class<?> PERIOD;
+
+    /**
+     * {@code Class<java.time.Duration>} or {@code null}.
+     */
+    public static final Class<?> DURATION;
+
+    /**
      * {@code java.time.LocalTime#ofNanoOfDay()} or {@code null}.
      */
     private static final Method LOCAL_TIME_OF_NANO;
@@ -79,10 +94,6 @@ public class LocalDateTimeUtils {
      * {@code java.time.LocalDate#of(int, int, int)} or {@code null}.
      */
     private static final Method LOCAL_DATE_OF_YEAR_MONTH_DAY;
-    /**
-     * {@code java.time.LocalDate#parse(CharSequence)} or {@code null}.
-     */
-    private static final Method LOCAL_DATE_PARSE;
     /**
      * {@code java.time.LocalDate#getYear()} or {@code null}.
      */
@@ -114,11 +125,6 @@ public class LocalDateTimeUtils {
     private static final Method TIMESTAMP_TO_INSTANT;
 
     /**
-     * {@code java.time.LocalTime#parse(CharSequence)} or {@code null}.
-     */
-    private static final Method LOCAL_TIME_PARSE;
-
-    /**
      * {@code java.time.LocalDateTime#plusNanos(long)} or {@code null}.
      */
     private static final Method LOCAL_DATE_TIME_PLUS_NANOS;
@@ -130,10 +136,6 @@ public class LocalDateTimeUtils {
      * {@code java.time.LocalDateTime#toLocalTime()} or {@code null}.
      */
     private static final Method LOCAL_DATE_TIME_TO_LOCAL_TIME;
-    /**
-     * {@code java.time.LocalDateTime#parse(CharSequence)} or {@code null}.
-     */
-    private static final Method LOCAL_DATE_TIME_PARSE;
 
     /**
      * {@code java.time.ZoneOffset#ofTotalSeconds(int)} or {@code null}.
@@ -145,10 +147,6 @@ public class LocalDateTimeUtils {
      * {@code null}.
      */
     private static final Method OFFSET_DATE_TIME_OF_LOCAL_DATE_TIME_ZONE_OFFSET;
-    /**
-     * {@code java.time.OffsetDateTime#parse(CharSequence)} or {@code null}.
-     */
-    private static final Method OFFSET_DATE_TIME_PARSE;
     /**
      * {@code java.time.OffsetDateTime#toLocalDateTime()} or {@code null}.
      */
@@ -163,6 +161,41 @@ public class LocalDateTimeUtils {
      */
     private static final Method ZONE_OFFSET_GET_TOTAL_SECONDS;
 
+    /**
+     * {@code java.time.Period#of(int, int, int)} or {@code null}.
+     */
+    private static final Method PERIOD_OF;
+
+    /**
+     * {@code java.time.Period#getYears()} or {@code null}.
+     */
+    private static final Method PERIOD_GET_YEARS;
+
+    /**
+     * {@code java.time.Period#getMonths()} or {@code null}.
+     */
+    private static final Method PERIOD_GET_MONTHS;
+
+    /**
+     * {@code java.time.Period#getDays()} or {@code null}.
+     */
+    private static final Method PERIOD_GET_DAYS;
+
+    /**
+     * {@code java.time.Duration#ofSeconds(long, long)} or {@code null}.
+     */
+    private static final Method DURATION_OF_SECONDS;
+
+    /**
+     * {@code java.time.Duration#getSeconds()} or {@code null}.
+     */
+    private static final Method DURATION_GET_SECONDS;
+
+    /**
+     * {@code java.time.Duration#getNano()} or {@code null}.
+     */
+    private static final Method DURATION_GET_NANO;
+
     private static final boolean IS_JAVA8_DATE_API_PRESENT;
 
     static {
@@ -172,9 +205,11 @@ public class LocalDateTimeUtils {
         INSTANT = tryGetClass("java.time.Instant");
         OFFSET_DATE_TIME = tryGetClass("java.time.OffsetDateTime");
         ZONE_OFFSET = tryGetClass("java.time.ZoneOffset");
+        PERIOD = tryGetClass("java.time.Period");
+        DURATION = tryGetClass("java.time.Duration");
         IS_JAVA8_DATE_API_PRESENT = LOCAL_DATE != null && LOCAL_TIME != null &&
                 LOCAL_DATE_TIME != null && INSTANT != null &&
-                OFFSET_DATE_TIME != null && ZONE_OFFSET != null;
+                OFFSET_DATE_TIME != null && ZONE_OFFSET != null && PERIOD != null && DURATION != null;
 
         if (IS_JAVA8_DATE_API_PRESENT) {
             LOCAL_TIME_OF_NANO = getMethod(LOCAL_TIME, "ofNanoOfDay", long.class);
@@ -183,8 +218,6 @@ public class LocalDateTimeUtils {
 
             LOCAL_DATE_OF_YEAR_MONTH_DAY = getMethod(LOCAL_DATE, "of",
                     int.class, int.class, int.class);
-            LOCAL_DATE_PARSE = getMethod(LOCAL_DATE, "parse",
-                    CharSequence.class);
             LOCAL_DATE_GET_YEAR = getMethod(LOCAL_DATE, "getYear");
             LOCAL_DATE_GET_MONTH_VALUE = getMethod(LOCAL_DATE, "getMonthValue");
             LOCAL_DATE_GET_DAY_OF_MONTH = getMethod(LOCAL_DATE, "getDayOfMonth");
@@ -194,12 +227,9 @@ public class LocalDateTimeUtils {
             INSTANT_GET_NANO = getMethod(INSTANT, "getNano");
             TIMESTAMP_TO_INSTANT = getMethod(Timestamp.class, "toInstant");
 
-            LOCAL_TIME_PARSE = getMethod(LOCAL_TIME, "parse", CharSequence.class);
-
             LOCAL_DATE_TIME_PLUS_NANOS = getMethod(LOCAL_DATE_TIME, "plusNanos", long.class);
             LOCAL_DATE_TIME_TO_LOCAL_DATE = getMethod(LOCAL_DATE_TIME, "toLocalDate");
             LOCAL_DATE_TIME_TO_LOCAL_TIME = getMethod(LOCAL_DATE_TIME, "toLocalTime");
-            LOCAL_DATE_TIME_PARSE = getMethod(LOCAL_DATE_TIME, "parse", CharSequence.class);
 
             ZONE_OFFSET_OF_TOTAL_SECONDS = getMethod(ZONE_OFFSET, "ofTotalSeconds", int.class);
 
@@ -207,14 +237,21 @@ public class LocalDateTimeUtils {
             OFFSET_DATE_TIME_GET_OFFSET = getMethod(OFFSET_DATE_TIME, "getOffset");
             OFFSET_DATE_TIME_OF_LOCAL_DATE_TIME_ZONE_OFFSET = getMethod(
                     OFFSET_DATE_TIME, "of", LOCAL_DATE_TIME, ZONE_OFFSET);
-            OFFSET_DATE_TIME_PARSE = getMethod(OFFSET_DATE_TIME, "parse", CharSequence.class);
 
             ZONE_OFFSET_GET_TOTAL_SECONDS = getMethod(ZONE_OFFSET, "getTotalSeconds");
+
+            PERIOD_OF = getMethod(PERIOD, "of", int.class, int.class, int.class);
+            PERIOD_GET_YEARS = getMethod(PERIOD, "getYears");
+            PERIOD_GET_MONTHS = getMethod(PERIOD, "getMonths");
+            PERIOD_GET_DAYS = getMethod(PERIOD, "getDays");
+
+            DURATION_OF_SECONDS = getMethod(DURATION, "ofSeconds", long.class, long.class);
+            DURATION_GET_SECONDS = getMethod(DURATION, "getSeconds");
+            DURATION_GET_NANO = getMethod(DURATION, "getNano");
         } else {
             LOCAL_TIME_OF_NANO = null;
             LOCAL_TIME_TO_NANO = null;
             LOCAL_DATE_OF_YEAR_MONTH_DAY = null;
-            LOCAL_DATE_PARSE = null;
             LOCAL_DATE_GET_YEAR = null;
             LOCAL_DATE_GET_MONTH_VALUE = null;
             LOCAL_DATE_GET_DAY_OF_MONTH = null;
@@ -222,17 +259,21 @@ public class LocalDateTimeUtils {
             INSTANT_GET_EPOCH_SECOND = null;
             INSTANT_GET_NANO = null;
             TIMESTAMP_TO_INSTANT = null;
-            LOCAL_TIME_PARSE = null;
             LOCAL_DATE_TIME_PLUS_NANOS = null;
             LOCAL_DATE_TIME_TO_LOCAL_DATE = null;
             LOCAL_DATE_TIME_TO_LOCAL_TIME = null;
-            LOCAL_DATE_TIME_PARSE = null;
             ZONE_OFFSET_OF_TOTAL_SECONDS = null;
             OFFSET_DATE_TIME_TO_LOCAL_DATE_TIME = null;
             OFFSET_DATE_TIME_GET_OFFSET = null;
             OFFSET_DATE_TIME_OF_LOCAL_DATE_TIME_ZONE_OFFSET = null;
-            OFFSET_DATE_TIME_PARSE = null;
             ZONE_OFFSET_GET_TOTAL_SECONDS = null;
+            PERIOD_OF = null;
+            PERIOD_GET_YEARS = null;
+            PERIOD_GET_MONTHS = null;
+            PERIOD_GET_DAYS = null;
+            DURATION_OF_SECONDS = null;
+            DURATION_GET_SECONDS = null;
+            DURATION_GET_NANO = null;
         }
     }
 
@@ -250,62 +291,6 @@ public class LocalDateTimeUtils {
      */
     public static boolean isJava8DateApiPresent() {
         return IS_JAVA8_DATE_API_PRESENT;
-    }
-
-    /**
-     * Parses an ISO date string into a java.time.LocalDate.
-     *
-     * @param text the ISO date string
-     * @return the java.time.LocalDate instance
-     */
-    public static Object parseLocalDate(CharSequence text) {
-        try {
-            return LOCAL_DATE_PARSE.invoke(null, text);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalArgumentException("error when parsing text '" + text + "'", e);
-        }
-    }
-
-    /**
-     * Parses an ISO time string into a java.time.LocalTime.
-     *
-     * @param text the ISO time string
-     * @return the java.time.LocalTime instance
-     */
-    public static Object parseLocalTime(CharSequence text) {
-        try {
-            return LOCAL_TIME_PARSE.invoke(null, text);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalArgumentException("error when parsing text '" + text + "'", e);
-        }
-    }
-
-    /**
-     * Parses an ISO date string into a java.time.LocalDateTime.
-     *
-     * @param text the ISO date string
-     * @return the java.time.LocalDateTime instance
-     */
-    public static Object parseLocalDateTime(CharSequence text) {
-        try {
-            return LOCAL_DATE_TIME_PARSE.invoke(null, text);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalArgumentException("error when parsing text '" + text + "'", e);
-        }
-    }
-
-    /**
-     * Parses an ISO date string into a java.time.OffsetDateTime.
-     *
-     * @param text the ISO date string
-     * @return the java.time.OffsetDateTime instance
-     */
-    public static Object parseOffsetDateTime(CharSequence text) {
-        try {
-            return OFFSET_DATE_TIME_PARSE.invoke(null, text);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalArgumentException("error when parsing text '" + text + "'", e);
-        }
     }
 
     private static Class<?> tryGetClass(String className) {
@@ -433,6 +418,63 @@ public class LocalDateTimeUtils {
     }
 
     /**
+     * Converts a value to a Period.
+     *
+     * <p>This method should only called from Java 8 or later.</p>
+     *
+     * @param value the value to convert
+     * @return the Period
+     */
+    public static Object valueToPeriod(Value value) {
+        if (!(value instanceof ValueInterval)) {
+            value = value.convertTo(Value.INTERVAL_YEAR_TO_MONTH);
+        }
+        if (!DataType.isYearMonthIntervalType(value.getValueType())) {
+            throw DbException.get(ErrorCode.DATA_CONVERSION_ERROR_1, (Throwable) null, value.getString());
+        }
+        ValueInterval v = (ValueInterval) value;
+        IntervalQualifier qualifier = v.getQualifier();
+        boolean negative = v.isNegative();
+        long leading = v.getLeading();
+        long remaining = v.getRemaining();
+        int y = Value.convertToInt(IntervalUtils.yearsFromInterval(qualifier, negative, leading, remaining), null);
+        int m = Value.convertToInt(IntervalUtils.monthsFromInterval(qualifier, negative, leading, remaining), null);
+        try {
+            return PERIOD_OF.invoke(null, y, m, 0);
+        } catch (IllegalAccessException e) {
+            throw DbException.convert(e);
+        } catch (InvocationTargetException e) {
+            throw DbException.convertInvocation(e, "timestamp with time zone conversion failed");
+        }
+    }
+
+    /**
+     * Converts a value to a Duration.
+     *
+     * <p>This method should only called from Java 8 or later.</p>
+     *
+     * @param value the value to convert
+     * @return the Duration
+     */
+    public static Object valueToDuration(Value value) {
+        if (!(value instanceof ValueInterval)) {
+            value = value.convertTo(Value.INTERVAL_DAY_TO_SECOND);
+        }
+        if (DataType.isYearMonthIntervalType(value.getValueType())) {
+            throw DbException.get(ErrorCode.DATA_CONVERSION_ERROR_1, (Throwable) null, value.getString());
+        }
+        BigInteger[] dr = IntervalUtils.intervalToAbsolute((ValueInterval) value)
+                .divideAndRemainder(BigInteger.valueOf(1_000_000_000));
+        try {
+            return DURATION_OF_SECONDS.invoke(null, dr[0].longValue(), dr[1].longValue());
+        } catch (IllegalAccessException e) {
+            throw DbException.convert(e);
+        } catch (InvocationTargetException e) {
+            throw DbException.convertInvocation(e, "timestamp with time zone conversion failed");
+        }
+    }
+
+    /**
      * Converts a LocalDate to a Value.
      *
      * @param localDate the LocalDate to convert, not {@code null}
@@ -514,7 +556,7 @@ public class LocalDateTimeUtils {
      * @param offsetDateTime the OffsetDateTime to convert, not {@code null}
      * @return the value
      */
-    public static Value offsetDateTimeToValue(Object offsetDateTime) {
+    public static ValueTimestampTimeZone offsetDateTimeToValue(Object offsetDateTime) {
         try {
             Object localDateTime = OFFSET_DATE_TIME_TO_LOCAL_DATE_TIME.invoke(offsetDateTime);
             Object localDate = LOCAL_DATE_TIME_TO_LOCAL_DATE.invoke(localDateTime);
@@ -574,6 +616,86 @@ public class LocalDateTimeUtils {
         Object localDate = localDateFromDateValue(dateValue);
         Object localDateTime = LOCAL_DATE_AT_START_OF_DAY.invoke(localDate);
         return LOCAL_DATE_TIME_PLUS_NANOS.invoke(localDateTime, timeNanos);
+    }
+
+    /**
+     * Converts a Period to a Value.
+     *
+     * @param period the Period to convert, not {@code null}
+     * @return the value
+     */
+    public static ValueInterval periodToValue(Object period) {
+        try {
+            int days = (int) PERIOD_GET_DAYS.invoke(period);
+            if (days != 0) {
+                throw DbException.getInvalidValueException("Period.days", days);
+            }
+            int years = (int) PERIOD_GET_YEARS.invoke(period);
+            int months = (int) PERIOD_GET_MONTHS.invoke(period);
+            IntervalQualifier qualifier;
+            boolean negative = false;
+            long leading = 0L, remaining = 0L;
+            if (years == 0) {
+                if (months == 0L) {
+                    // Use generic qualifier
+                    qualifier = IntervalQualifier.YEAR_TO_MONTH;
+                } else {
+                    qualifier = IntervalQualifier.MONTH;
+                    leading = months;
+                    if (leading < 0) {
+                        leading = -leading;
+                        negative = true;
+                    }
+                }
+            } else {
+                if (months == 0L) {
+                    qualifier = IntervalQualifier.YEAR;
+                    leading = years;
+                    if (leading < 0) {
+                        leading = -leading;
+                        negative = true;
+                    }
+                } else {
+                    qualifier = IntervalQualifier.YEAR_TO_MONTH;
+                    leading = years * 12 + months;
+                    if (leading < 0) {
+                        leading = -leading;
+                        negative = true;
+                    }
+                    remaining = leading % 12;
+                    leading /= 12;
+                }
+            }
+            return ValueInterval.from(qualifier, negative, leading, remaining);
+        } catch (IllegalAccessException e) {
+            throw DbException.convert(e);
+        } catch (InvocationTargetException e) {
+            throw DbException.convertInvocation(e, "interval conversion failed");
+        }
+    }
+
+    /**
+     * Converts a Duration to a Value.
+     *
+     * @param duration the Duration to convert, not {@code null}
+     * @return the value
+     */
+    public static ValueInterval durationToValue(Object duration) {
+        try {
+            long seconds = (long) DURATION_GET_SECONDS.invoke(duration);
+            int nano = (int) DURATION_GET_NANO.invoke(duration);
+            boolean negative = seconds < 0;
+            seconds = Math.abs(seconds);
+            if (negative && nano != 0) {
+                nano = 1_000_000_000 - nano;
+                seconds--;
+            }
+            return ValueInterval.from(IntervalQualifier.SECOND, negative, seconds, nano);
+        } catch (IllegalAccessException e) {
+            throw DbException.convert(e);
+        } catch (InvocationTargetException e) {
+            throw DbException.convertInvocation(e, "interval conversion failed");
+        }
     }
 
 }

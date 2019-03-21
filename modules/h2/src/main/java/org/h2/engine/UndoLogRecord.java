@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -106,9 +106,6 @@ public class UndoLogRecord {
             try {
                 table.addRow(session, row);
                 table.fireAfterRow(session, null, row, true);
-                // reset session id, otherwise other sessions think
-                // that this row was inserted by this session
-                row.commit();
             } catch (DbException e) {
                 if (session.getDatabase().getLockMode() == Constants.LOCK_MODE_OFF
                         && e.getSQLException().getErrorCode() == ErrorCode.DUPLICATE_KEY_1) {
@@ -137,7 +134,6 @@ public class UndoLogRecord {
         buff.writeByte(row.isDeleted() ? (byte) 1 : (byte) 0);
         buff.writeInt(log.getTableId(table));
         buff.writeLong(row.getKey());
-        buff.writeInt(row.getSessionId());
         int count = row.getColumnCount();
         buff.writeInt(count);
         for (int i = 0; i < count; i++) {
@@ -200,10 +196,8 @@ public class UndoLogRecord {
         }
         int oldOp = operation;
         load(buff, log);
-        if (SysProperties.CHECK) {
-            if (operation != oldOp) {
-                DbException.throwInternalError("operation=" + operation + " op=" + oldOp);
-            }
+        if (operation != oldOp) {
+            DbException.throwInternalError("operation=" + operation + " op=" + oldOp);
         }
     }
 
@@ -212,7 +206,6 @@ public class UndoLogRecord {
         boolean deleted = buff.readByte() == 1;
         table = log.getTable(buff.readInt());
         long key = buff.readLong();
-        int sessionId = buff.readInt();
         int columnCount = buff.readInt();
         Value[] values = new Value[columnCount];
         for (int i = 0; i < columnCount; i++) {
@@ -221,7 +214,6 @@ public class UndoLogRecord {
         row = getTable().getDatabase().createRow(values, Row.MEMORY_CALCULATE);
         row.setKey(key);
         row.setDeleted(deleted);
-        row.setSessionId(sessionId);
         state = IN_MEMORY_INVALID;
     }
 
@@ -241,14 +233,6 @@ public class UndoLogRecord {
      */
     public long getFilePos() {
         return filePos;
-    }
-
-    /**
-     * This method is called after the operation was committed.
-     * It commits the change to the indexes.
-     */
-    void commit() {
-        table.commit(operation, row);
     }
 
     /**

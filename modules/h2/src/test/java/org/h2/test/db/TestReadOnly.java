@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -18,13 +18,14 @@ import org.h2.dev.fs.FilePathZip2;
 import org.h2.store.FileLister;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.Backup;
 import org.h2.tools.Server;
 
 /**
  * Test for the read-only database feature.
  */
-public class TestReadOnly extends TestBase {
+public class TestReadOnly extends TestDb {
 
     /**
      * Run just this test.
@@ -36,10 +37,15 @@ public class TestReadOnly extends TestBase {
     }
 
     @Override
-    public void test() throws Exception {
+    public boolean isEnabled() {
         if (config.memory) {
-            return;
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws Exception {
         testReadOnlyInZip();
         testReadOnlyTempTableResult();
         testReadOnlyConnect();
@@ -130,7 +136,7 @@ public class TestReadOnly extends TestBase {
         File f = File.createTempFile("test", "temp");
         assertTrue(f.canWrite());
         f.setReadOnly();
-        assertTrue(!f.canWrite());
+        assertFalse(f.canWrite());
         f.delete();
 
         f = File.createTempFile("test", "temp");
@@ -138,7 +144,7 @@ public class TestReadOnly extends TestBase {
         r.write(1);
         f.setReadOnly();
         r.close();
-        assertTrue(!f.canWrite());
+        assertFalse(f.canWrite());
         f.delete();
 
         deleteDb("readonlyFiles");
@@ -147,7 +153,7 @@ public class TestReadOnly extends TestBase {
         stat.execute("CREATE TABLE TEST(ID INT PRIMARY KEY, NAME VARCHAR)");
         stat.execute("INSERT INTO TEST VALUES(1, 'Hello')");
         stat.execute("INSERT INTO TEST VALUES(2, 'World')");
-        assertTrue(!conn.isReadOnly());
+        assertFalse(conn.isReadOnly());
         conn.close();
 
         if (setReadOnly) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -25,12 +25,13 @@ import java.util.Random;
 import org.h2.api.ErrorCode;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.IOUtils;
 
 /**
  * Test the Blob, Clob, and NClob implementations.
  */
-public class TestLobApi extends TestBase {
+public class TestLobApi extends TestDb {
 
     private JdbcConnection conn;
     private Statement stat;
@@ -80,7 +81,7 @@ public class TestLobApi extends TestBase {
         assertEquals("x", new String(data, StandardCharsets.UTF_8));
         assertTrue(clob.toString().endsWith("'x'"));
         clob.free();
-        assertTrue(clob.toString().endsWith("null"));
+        assertTrue(clob.toString().endsWith("<closed>"));
 
         assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, clob).
                 truncate(0);
@@ -100,7 +101,7 @@ public class TestLobApi extends TestBase {
                 position((Blob) null, 0);
         assertTrue(blob.toString().endsWith("X'00'"));
         blob.free();
-        assertTrue(blob.toString().endsWith("null"));
+        assertTrue(blob.toString().endsWith("<closed>"));
 
         stat.execute("drop table test");
         conn.close();

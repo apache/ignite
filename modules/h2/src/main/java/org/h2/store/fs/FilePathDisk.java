@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -18,6 +18,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.NonWritableChannelException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +27,6 @@ import org.h2.api.ErrorCode;
 import org.h2.engine.SysProperties;
 import org.h2.message.DbException;
 import org.h2.util.IOUtils;
-import org.h2.util.New;
 
 /**
  * This file system stores files on disk.
@@ -44,6 +45,23 @@ public class FilePathDisk extends FilePath {
 
     @Override
     public long size() {
+        if (name.startsWith(CLASSPATH_PREFIX)) {
+            try {
+                String fileName = name.substring(CLASSPATH_PREFIX.length());
+                // Force absolute resolution in Class.getResource
+                if (!fileName.startsWith("/")) {
+                    fileName = "/" + fileName;
+                }
+                URL resource = this.getClass().getResource(fileName);
+                if (resource != null) {
+                    return Files.size(Paths.get(resource.toURI()));
+                } else {
+                    return 0;
+                }
+            } catch (Exception e) {
+                return 0;
+            }
+        }
         return new File(name).length();
     }
 
@@ -162,7 +180,7 @@ public class FilePathDisk extends FilePath {
 
     @Override
     public List<FilePath> newDirectoryStream() {
-        ArrayList<FilePath> list = New.arrayList();
+        ArrayList<FilePath> list = new ArrayList<>();
         File f = new File(name);
         try {
             String[] files = f.list();
@@ -171,6 +189,7 @@ public class FilePathDisk extends FilePath {
                 if (!base.endsWith(SysProperties.FILE_SEPARATOR)) {
                     base += SysProperties.FILE_SEPARATOR;
                 }
+                list.ensureCapacity(files.length);
                 for (String file : files) {
                     list.add(getPath(base + file));
                 }
@@ -362,8 +381,7 @@ public class FilePathDisk extends FilePath {
     }
 
     @Override
-    public FilePath createTempFile(String suffix, boolean deleteOnExit,
-            boolean inTempDir) throws IOException {
+    public FilePath createTempFile(String suffix, boolean inTempDir) throws IOException {
         String fileName = name + ".";
         String prefix = new File(fileName).getName();
         File dir;
@@ -379,15 +397,6 @@ public class FilePathDisk extends FilePath {
                 // in theory, the random number could collide
                 getNextTempFileNamePart(true);
                 continue;
-            }
-            if (deleteOnExit) {
-                try {
-                    f.deleteOnExit();
-                } catch (Throwable e) {
-                    // sometimes this throws a NullPointerException
-                    // at java.io.DeleteOnExitHook.add(DeleteOnExitHook.java:33)
-                    // we can ignore it
-                }
             }
             return get(f.getCanonicalPath());
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -7,11 +7,11 @@ package org.h2.engine;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import org.h2.message.DbException;
+
 import org.h2.store.Data;
 import org.h2.store.FileStore;
 import org.h2.table.Table;
-import org.h2.util.New;
+import org.h2.util.Utils;
 
 /**
  * Each session keeps a undo log if rollback is required.
@@ -19,23 +19,21 @@ import org.h2.util.New;
 public class UndoLog {
 
     private final Database database;
-    private final ArrayList<Long> storedEntriesPos = New.arrayList();
-    private final ArrayList<UndoLogRecord> records = New.arrayList();
+    private final ArrayList<Long> storedEntriesPos = Utils.newSmallArrayList();
+    private final ArrayList<UndoLogRecord> records = Utils.newSmallArrayList();
     private FileStore file;
     private Data rowBuff;
     private int memoryUndo;
     private int storedEntries;
     private HashMap<Integer, Table> tables;
-    private final boolean largeTransactions;
 
     /**
      * Create a new undo log for the given session.
      *
-     * @param session the session
+     * @param database the database
      */
-    UndoLog(Session session) {
-        this.database = session.getDatabase();
-        largeTransactions = database.getSettings().largeTransactions;
+    UndoLog(Database database) {
+        this.database = database;
     }
 
     /**
@@ -44,13 +42,7 @@ public class UndoLog {
      * @return the number of rows
      */
     int size() {
-        if (largeTransactions) {
-            return storedEntries + records.size();
-        }
-        if (SysProperties.CHECK && memoryUndo > records.size()) {
-            DbException.throwInternalError();
-        }
-        return records.size();
+        return storedEntries + records.size();
     }
 
     /**
@@ -76,26 +68,24 @@ public class UndoLog {
      */
     public UndoLogRecord getLast() {
         int i = records.size() - 1;
-        if (largeTransactions) {
-            if (i < 0 && storedEntries > 0) {
-                int last = storedEntriesPos.size() - 1;
-                long pos = storedEntriesPos.remove(last);
-                long end = file.length();
-                int bufferLength = (int) (end - pos);
-                Data buff = Data.create(database, bufferLength);
-                file.seek(pos);
-                file.readFully(buff.getBytes(), 0, bufferLength);
-                while (buff.length() < bufferLength) {
-                    UndoLogRecord e = UndoLogRecord.loadFromBuffer(buff, this);
-                    records.add(e);
-                    memoryUndo++;
-                }
-                storedEntries -= records.size();
-                file.setLength(pos);
-                file.seek(pos);
+        if (i < 0 && storedEntries > 0) {
+            int last = storedEntriesPos.size() - 1;
+            long pos = storedEntriesPos.remove(last);
+            long end = file.length();
+            int bufferLength = (int) (end - pos);
+            Data buff = Data.create(database, bufferLength, true);
+            file.seek(pos);
+            file.readFully(buff.getBytes(), 0, bufferLength);
+            while (buff.length() < bufferLength) {
+                UndoLogRecord e = UndoLogRecord.loadFromBuffer(buff, this);
+                records.add(e);
+                memoryUndo++;
             }
-            i = records.size() - 1;
+            storedEntries -= records.size();
+            file.setLength(pos);
+            file.seek(pos);
         }
+        i = records.size() - 1;
         UndoLogRecord entry = records.get(i);
         if (entry.isStored()) {
             int start = Math.max(0, i - database.getMaxMemoryUndo() / 2);
@@ -130,17 +120,12 @@ public class UndoLog {
 
     /**
      * Remove the last record from the list of operations.
-     *
-     * @param trimToSize if the undo array should shrink to conserve memory
      */
-    void removeLast(boolean trimToSize) {
+    void removeLast() {
         int i = records.size() - 1;
         UndoLogRecord r = records.remove(i);
         if (!r.isStored()) {
             memoryUndo--;
-        }
-        if (trimToSize && i > 1024 && (i & 1023) == 0) {
-            records.trimToSize();
         }
     }
 
@@ -151,62 +136,31 @@ public class UndoLog {
      */
     void add(UndoLogRecord entry) {
         records.add(entry);
-        if (largeTransactions) {
-            memoryUndo++;
-            if (memoryUndo > database.getMaxMemoryUndo() &&
-                    database.isPersistent() &&
-                    !database.isMultiVersion()) {
-                if (file == null) {
-                    String fileName = database.createTempFile();
-                    file = database.openFile(fileName, "rw", false);
-                    file.setCheckedWriting(false);
-                    file.setLength(FileStore.HEADER_LENGTH);
-                }
-                Data buff = Data.create(database, Constants.DEFAULT_PAGE_SIZE);
-                for (int i = 0; i < records.size(); i++) {
-                    UndoLogRecord r = records.get(i);
-                    buff.checkCapacity(Constants.DEFAULT_PAGE_SIZE);
-                    r.append(buff, this);
-                    if (i == records.size() - 1 || buff.length() > Constants.UNDO_BLOCK_SIZE) {
-                        storedEntriesPos.add(file.getFilePointer());
-                        file.write(buff.getBytes(), 0, buff.length());
-                        buff.reset();
-                    }
-                }
-                storedEntries += records.size();
-                memoryUndo = 0;
-                records.clear();
+        memoryUndo++;
+        if (memoryUndo > database.getMaxMemoryUndo() &&
+                database.isPersistent() &&
+                !database.isMVStore()) {
+            if (file == null) {
+                String fileName = database.createTempFile();
+                file = database.openFile(fileName, "rw", false);
                 file.autoDelete();
+                file.setCheckedWriting(false);
+                file.setLength(FileStore.HEADER_LENGTH);
             }
-        } else {
-            if (!entry.isStored()) {
-                memoryUndo++;
-            }
-            if (memoryUndo > database.getMaxMemoryUndo() &&
-                    database.isPersistent() &&
-                    !database.isMultiVersion()) {
-                if (file == null) {
-                    String fileName = database.createTempFile();
-                    file = database.openFile(fileName, "rw", false);
-                    file.setCheckedWriting(false);
-                    file.seek(FileStore.HEADER_LENGTH);
-                    rowBuff = Data.create(database, Constants.DEFAULT_PAGE_SIZE);
-                    Data buff = rowBuff;
-                    for (UndoLogRecord r : records) {
-                        saveIfPossible(r, buff);
-                    }
-                } else {
-                    saveIfPossible(entry, rowBuff);
+            Data buff = Data.create(database, Constants.DEFAULT_PAGE_SIZE, true);
+            for (int i = 0; i < records.size(); i++) {
+                UndoLogRecord r = records.get(i);
+                buff.checkCapacity(Constants.DEFAULT_PAGE_SIZE);
+                r.append(buff, this);
+                if (i == records.size() - 1 || buff.length() > Constants.UNDO_BLOCK_SIZE) {
+                    storedEntriesPos.add(file.getFilePointer());
+                    file.write(buff.getBytes(), 0, buff.length());
+                    buff.reset();
                 }
-                file.autoDelete();
             }
-        }
-    }
-
-    private void saveIfPossible(UndoLogRecord r, Data buff) {
-        if (!r.isStored() && r.canStore()) {
-            r.save(buff, file, this);
-            memoryUndo--;
+            storedEntries += records.size();
+            memoryUndo = 0;
+            records.clear();
         }
     }
 

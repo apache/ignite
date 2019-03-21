@@ -1,11 +1,12 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.test.bench;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -214,7 +215,7 @@ public class BenchCThread {
             BigDecimal olAmount = new BigDecimal(olQuantity).multiply(
                     price).multiply(ONE.add(wTax).add(tax)).multiply(
                     ONE.subtract(discount));
-            olAmount = olAmount.setScale(2, BigDecimal.ROUND_HALF_UP);
+            olAmount = olAmount.setScale(2, RoundingMode.HALF_UP);
             amt[number - 1] = olAmount;
             total = total.add(olAmount);
             prep = prepare("INSERT INTO ORDER_LINE (OL_O_ID, OL_D_ID, OL_W_ID, OL_NUMBER, "

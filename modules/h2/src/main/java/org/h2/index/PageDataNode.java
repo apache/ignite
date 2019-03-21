@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -160,11 +160,10 @@ public class PageDataNode extends PageData {
     }
 
     @Override
-    Cursor find(Session session, long minKey, long maxKey, boolean multiVersion) {
+    Cursor find(Session session, long minKey, long maxKey) {
         int x = find(minKey);
         int child = childPageIds[x];
-        return index.getPage(child, getPos()).find(session, minKey, maxKey,
-                multiVersion);
+        return index.getPage(child, getPos()).find(session, minKey, maxKey);
     }
 
     @Override
@@ -351,11 +350,7 @@ public class PageDataNode extends PageData {
         data.reset();
         data.writeByte((byte) Page.TYPE_DATA_NODE);
         data.writeShortInt(0);
-        if (SysProperties.CHECK2) {
-            if (data.length() != START_PARENT) {
-                DbException.throwInternalError();
-            }
-        }
+        assert data.length() == START_PARENT;
         data.writeInt(parentPageId);
         data.writeVarInt(index.getId());
         data.writeInt(rowCountStored);
@@ -388,7 +383,7 @@ public class PageDataNode extends PageData {
         entryCount--;
         length -= 4 + Data.getVarLongLen(keys[removedKeyIndex]);
         if (entryCount < 0) {
-            DbException.throwInternalError("" + entryCount);
+            DbException.throwInternalError(Integer.toString(entryCount));
         }
         keys = remove(keys, entryCount + 1, removedKeyIndex);
         childPageIds = remove(childPageIds, entryCount + 2, i);

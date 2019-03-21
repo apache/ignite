@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -154,9 +154,9 @@ public class CreateCluster extends Tool {
     }
 
     private static Future<?> startWriter(final PipedReader pipeReader,
-            final Statement statSource) {
+            final Statement statSource) throws IOException {
         final ExecutorService thread = Executors.newFixedThreadPool(1);
-
+        final PipedWriter pipeWriter = new PipedWriter(pipeReader);
         // Since exceptions cannot be thrown across thread boundaries, return
         // the task's future so we can check manually
         Future<?> threadFuture = thread.submit(new Runnable() {
@@ -167,10 +167,10 @@ public class CreateCluster extends Tool {
                 // - if the pipe is broken, unconnected, closed, or an I/O error
                 // occurs. The reader's IOException will then trigger the
                 // finally{} that releases exclusive mode on the source DB.
-                try (final PipedWriter pipeWriter = new PipedWriter(pipeReader);
+                try (PipedWriter writer = pipeWriter;
                         final ResultSet rs = statSource.executeQuery("SCRIPT")) {
                     while (rs.next()) {
-                        pipeWriter.write(rs.getString(1) + "\n");
+                        writer.write(rs.getString(1) + "\n");
                     }
                 } catch (SQLException | IOException ex) {
                     throw new IllegalStateException("Producing script from the source DB is failing.", ex);

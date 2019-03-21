@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -7,13 +7,14 @@ package org.h2.mvstore.rtree;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Map;
+
 import org.h2.mvstore.CursorPos;
 import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.Page;
+import org.h2.mvstore.RootReference;
 import org.h2.mvstore.type.DataType;
-import org.h2.mvstore.type.ObjectDataType;
-import org.h2.util.New;
 
 /**
  * An r-tree implementation. It supports both the linear and the quadratic split
@@ -21,7 +22,7 @@ import org.h2.util.New;
  *
  * @param <V> the value class
  */
-public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
+public final class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
 
     /**
      * The spatial key type.
@@ -30,27 +31,21 @@ public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
 
     private boolean quadraticSplit;
 
-    public MVRTreeMap(int dimensions, DataType valueType) {
-        super(new SpatialDataType(dimensions), valueType);
-        this.keyType = (SpatialDataType) getKeyType();
+    public MVRTreeMap(Map<String, Object> config) {
+        super(config);
+        keyType = (SpatialDataType) config.get("key");
+        quadraticSplit = Boolean.valueOf(String.valueOf(config.get("quadraticSplit")));
     }
 
-    /**
-     * Create a new map with the given dimensions and value type.
-     *
-     * @param <V> the value type
-     * @param dimensions the number of dimensions
-     * @param valueType the value type
-     * @return the map
-     */
-    public static <V> MVRTreeMap<V> create(int dimensions, DataType valueType) {
-        return new MVRTreeMap<>(dimensions, valueType);
+    private MVRTreeMap(MVRTreeMap<V> source) {
+        super(source);
+        this.keyType = source.keyType;
+        this.quadraticSplit = source.quadraticSplit;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public V get(Object key) {
-        return (V) get(root, key);
+    public MVRTreeMap<V> cloneIt() {
+        return new MVRTreeMap<>(this);
     }
 
     /**
@@ -60,7 +55,7 @@ public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
      * @return the iterator
      */
     public RTreeCursor findIntersectingKeys(SpatialKey x) {
-        return new RTreeCursor(root, x) {
+        return new RTreeCursor(getRootPage(), x) {
             @Override
             protected boolean check(boolean leaf, SpatialKey key,
                     SpatialKey test) {
@@ -77,7 +72,7 @@ public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
      * @return the iterator
      */
     public RTreeCursor findContainedKeys(SpatialKey x) {
-        return new RTreeCursor(root, x) {
+        return new RTreeCursor(getRootPage(), x) {
             @Override
             protected boolean check(boolean leaf, SpatialKey key,
                     SpatialKey test) {
@@ -100,65 +95,189 @@ public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
      * @param key the key
      * @return the value, or null if not found
      */
-    protected Object get(Page p, Object key) {
+    @SuppressWarnings("unchecked")
+    @Override
+    public V get(Page p, Object key) {
+        int keyCount = p.getKeyCount();
         if (!p.isLeaf()) {
-            for (int i = 0; i < p.getKeyCount(); i++) {
+            for (int i = 0; i < keyCount; i++) {
                 if (contains(p, i, key)) {
-                    Object o = get(p.getChildPage(i), key);
+                    V o = get(p.getChildPage(i), key);
                     if (o != null) {
                         return o;
                     }
                 }
             }
         } else {
-            for (int i = 0; i < p.getKeyCount(); i++) {
+            for (int i = 0; i < keyCount; i++) {
                 if (keyType.equals(p.getKey(i), key)) {
-                    return p.getValue(i);
+                    return (V)p.getValue(i);
                 }
             }
         }
         return null;
     }
 
+    /**
+     * Remove a key-value pair, if the key exists.
+     *
+     * @param key the key (may not be null)
+     * @return the old value if the key existed, or null otherwise
+     */
     @Override
-    protected synchronized Object remove(Page p, long writeVersion, Object key) {
-        Object result = null;
-        if (p.isLeaf()) {
-            for (int i = 0; i < p.getKeyCount(); i++) {
-                if (keyType.equals(p.getKey(i), key)) {
-                    result = p.getValue(i);
-                    p.remove(i);
-                    break;
+    public V remove(Object key) {
+        return operate((SpatialKey) key, null, DecisionMaker.REMOVE);
+    }
+
+    @Override
+    public V operate(SpatialKey key, V value, DecisionMaker<? super V> decisionMaker) {
+        beforeWrite();
+        int attempt = 0;
+        while(true) {
+            ++attempt;
+            RootReference rootReference = flushAndGetRoot();
+            Page p = rootReference.root.copy(true);
+            V result = operate(p, key, value, decisionMaker);
+            if (!p.isLeaf() && p.getTotalCount() == 0) {
+                p.removePage();
+                p = createEmptyLeaf();
+            } else if (p.getKeyCount() > store.getKeysPerPage() || p.getMemory() > store.getMaxPageSize()
+                                                                && p.getKeyCount() > 3) {
+                // only possible if this is the root, else we would have
+                // split earlier (this requires pageSplitSize is fixed)
+                long totalCount = p.getTotalCount();
+                Page split = split(p);
+                Object k1 = getBounds(p);
+                Object k2 = getBounds(split);
+                Object[] keys = {k1, k2};
+                Page.PageReference[] children = {
+                        new Page.PageReference(p),
+                        new Page.PageReference(split),
+                        Page.PageReference.EMPTY
+                };
+                p = Page.createNode(this, keys, children, totalCount, 0);
+                if(store.getFileStore() != null) {
+                    store.registerUnsavedPage(p.getMemory());
                 }
+            }
+            if(updateRoot(rootReference, p, attempt)) {
+                return result;
+            }
+            decisionMaker.reset();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private V operate(Page p, Object key, V value, DecisionMaker<? super V> decisionMaker) {
+        V result = null;
+        if (p.isLeaf()) {
+            int index = -1;
+            int keyCount = p.getKeyCount();
+            for (int i = 0; i < keyCount; i++) {
+                if (keyType.equals(p.getKey(i), key)) {
+                    index = i;
+                }
+            }
+            result = index < 0 ? null : (V)p.getValue(index);
+            Decision decision = decisionMaker.decide(result, value);
+            switch (decision) {
+                case REPEAT: break;
+                case ABORT: break;
+                case REMOVE:
+                    if(index >= 0) {
+                        p.remove(index);
+                    }
+                    break;
+                case PUT:
+                    value = decisionMaker.selectValue(result, value);
+                    if(index < 0) {
+                        p.insertLeaf(p.getKeyCount(), key, value);
+                    } else {
+                        p.setKey(index, key);
+                        p.setValue(index, value);
+                    }
+                    break;
             }
             return result;
         }
-        for (int i = 0; i < p.getKeyCount(); i++) {
-            if (contains(p, i, key)) {
-                Page cOld = p.getChildPage(i);
-                // this will mark the old page as deleted
-                // so we need to update the parent in any case
-                // (otherwise the old page might be deleted again)
-                Page c = cOld.copy(writeVersion);
-                long oldSize = c.getTotalCount();
-                result = remove(c, writeVersion, key);
-                p.setChild(i, c);
-                if (oldSize == c.getTotalCount()) {
-                    continue;
-                }
-                if (c.getTotalCount() == 0) {
-                    // this child was deleted
-                    p.remove(i);
-                    if (p.getKeyCount() == 0) {
-                        c.removePage();
+
+        // p is a node
+        if(value == null)
+        {
+            for (int i = 0; i < p.getKeyCount(); i++) {
+                if (contains(p, i, key)) {
+                    Page cOld = p.getChildPage(i);
+                    // this will mark the old page as deleted
+                    // so we need to update the parent in any case
+                    // (otherwise the old page might be deleted again)
+                    Page c = cOld.copy(true);
+                    long oldSize = c.getTotalCount();
+                    result = operate(c, key, value, decisionMaker);
+                    p.setChild(i, c);
+                    if (oldSize == c.getTotalCount()) {
+                        decisionMaker.reset();
+                        continue;
+                    }
+                    if (c.getTotalCount() == 0) {
+                        // this child was deleted
+                        p.remove(i);
+                        if (p.getKeyCount() == 0) {
+                            c.removePage();
+                        }
+                        break;
+                    }
+                    Object oldBounds = p.getKey(i);
+                    if (!keyType.isInside(key, oldBounds)) {
+                        p.setKey(i, getBounds(c));
                     }
                     break;
                 }
-                Object oldBounds = p.getKey(i);
-                if (!keyType.isInside(key, oldBounds)) {
-                    p.setKey(i, getBounds(c));
+            }
+        } else {
+            int index = -1;
+            for (int i = 0; i < p.getKeyCount(); i++) {
+                if (contains(p, i, key)) {
+                    Page c = p.getChildPage(i);
+                    if(get(c, key) != null) {
+                        index = i;
+                        break;
+                    }
+                    if(index < 0) {
+                        index = i;
+                    }
                 }
-                break;
+            }
+            if (index < 0) {
+                // a new entry, we don't know where to add yet
+                float min = Float.MAX_VALUE;
+                for (int i = 0; i < p.getKeyCount(); i++) {
+                    Object k = p.getKey(i);
+                    float areaIncrease = keyType.getAreaIncrease(k, key);
+                    if (areaIncrease < min) {
+                        index = i;
+                        min = areaIncrease;
+                    }
+                }
+            }
+            Page c = p.getChildPage(index).copy(true);
+            if (c.getKeyCount() > store.getKeysPerPage() || c.getMemory() > store.getMaxPageSize()
+                    && c.getKeyCount() > 4) {
+                // split on the way down
+                Page split = split(c);
+                p.setKey(index, getBounds(c));
+                p.setChild(index, c);
+                p.insertNode(index, getBounds(split), split);
+                // now we are not sure where to add
+                result = operate(p, key, value, decisionMaker);
+            } else {
+                result = operate(c, key, value, decisionMaker);
+                Object bounds = p.getKey(index);
+                if (!keyType.contains(bounds, key)) {
+                    bounds = keyType.createBoundingBox(bounds);
+                    keyType.increaseBounds(bounds, key);
+                    p.setKey(index, bounds);
+                }
+                p.setChild(index, c);
             }
         }
         return result;
@@ -166,16 +285,16 @@ public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
 
     private Object getBounds(Page x) {
         Object bounds = keyType.createBoundingBox(x.getKey(0));
-        for (int i = 1; i < x.getKeyCount(); i++) {
+        int keyCount = x.getKeyCount();
+        for (int i = 1; i < keyCount; i++) {
             keyType.increaseBounds(bounds, x.getKey(i));
         }
         return bounds;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public V put(SpatialKey key, V value) {
-        return (V) putOrAdd(key, value, false);
+        return operate(key, value, DecisionMaker.PUT);
     }
 
     /**
@@ -186,138 +305,27 @@ public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
      * @param value the value
      */
     public void add(SpatialKey key, V value) {
-        putOrAdd(key, value, true);
+        operate(key, value, DecisionMaker.PUT);
     }
 
-    private synchronized Object putOrAdd(SpatialKey key, V value, boolean alwaysAdd) {
-        beforeWrite();
-        long v = writeVersion;
-        Page p = root.copy(v);
-        Object result;
-        if (alwaysAdd || get(key) == null) {
-            if (p.getMemory() > store.getPageSplitSize() &&
-                    p.getKeyCount() > 3) {
-                // only possible if this is the root, else we would have
-                // split earlier (this requires pageSplitSize is fixed)
-                long totalCount = p.getTotalCount();
-                Page split = split(p, v);
-                Object k1 = getBounds(p);
-                Object k2 = getBounds(split);
-                Object[] keys = { k1, k2 };
-                Page.PageReference[] children = {
-                        new Page.PageReference(p, p.getPos(), p.getTotalCount()),
-                        new Page.PageReference(split, split.getPos(), split.getTotalCount()),
-                        new Page.PageReference(null, 0, 0)
-                };
-                p = Page.create(this, v,
-                        keys, null,
-                        children,
-                        totalCount, 0);
-                // now p is a node; continues
-            }
-            add(p, v, key, value);
-            result = null;
-        } else {
-            result = set(p, v, key, value);
-        }
-        newRoot(p);
-        return result;
-    }
-
-    /**
-     * Update the value for the given key. The key must exist.
-     *
-     * @param p the page
-     * @param writeVersion the write version
-     * @param key the key
-     * @param value the new value
-     * @return the old value (never null)
-     */
-    private Object set(Page p, long writeVersion, Object key, Object value) {
-        if (p.isLeaf()) {
-            for (int i = 0; i < p.getKeyCount(); i++) {
-                if (keyType.equals(p.getKey(i), key)) {
-                    p.setKey(i, key);
-                    return p.setValue(i, value);
-                }
-            }
-        } else {
-            for (int i = 0; i < p.getKeyCount(); i++) {
-                if (contains(p, i, key)) {
-                    Page c = p.getChildPage(i);
-                    if (get(c, key) != null) {
-                        c = c.copy(writeVersion);
-                        Object result = set(c, writeVersion, key, value);
-                        p.setChild(i, c);
-                        return result;
-                    }
-                }
-            }
-        }
-        throw DataUtils.newIllegalStateException(DataUtils.ERROR_INTERNAL,
-                "Not found: {0}", key);
-    }
-
-    private void add(Page p, long writeVersion, Object key, Object value) {
-        if (p.isLeaf()) {
-            p.insertLeaf(p.getKeyCount(), key, value);
-            return;
-        }
-        // p is a node
-        int index = -1;
-        for (int i = 0; i < p.getKeyCount(); i++) {
-            if (contains(p, i, key)) {
-                index = i;
-                break;
-            }
-        }
-        if (index < 0) {
-            // a new entry, we don't know where to add yet
-            float min = Float.MAX_VALUE;
-            for (int i = 0; i < p.getKeyCount(); i++) {
-                Object k = p.getKey(i);
-                float areaIncrease = keyType.getAreaIncrease(k, key);
-                if (areaIncrease < min) {
-                    index = i;
-                    min = areaIncrease;
-                }
-            }
-        }
-        Page c = p.getChildPage(index).copy(writeVersion);
-        if (c.getMemory() > store.getPageSplitSize() && c.getKeyCount() > 4) {
-            // split on the way down
-            Page split = split(c, writeVersion);
-            p.setKey(index, getBounds(c));
-            p.setChild(index, c);
-            p.insertNode(index, getBounds(split), split);
-            // now we are not sure where to add
-            add(p, writeVersion, key, value);
-            return;
-        }
-        add(c, writeVersion, key, value);
-        Object bounds = p.getKey(index);
-        keyType.increaseBounds(bounds, key);
-        p.setKey(index, bounds);
-        p.setChild(index, c);
-    }
-
-    private Page split(Page p, long writeVersion) {
+    private Page split(Page p) {
         return quadraticSplit ?
-                splitQuadratic(p, writeVersion) :
-                splitLinear(p, writeVersion);
+                splitQuadratic(p) :
+                splitLinear(p);
     }
 
-    private Page splitLinear(Page p, long writeVersion) {
-        ArrayList<Object> keys = New.arrayList();
-        for (int i = 0; i < p.getKeyCount(); i++) {
+    private Page splitLinear(Page p) {
+        int keyCount = p.getKeyCount();
+        ArrayList<Object> keys = new ArrayList<>(keyCount);
+        for (int i = 0; i < keyCount; i++) {
             keys.add(p.getKey(i));
         }
         int[] extremes = keyType.getExtremes(keys);
         if (extremes == null) {
-            return splitQuadratic(p, writeVersion);
+            return splitQuadratic(p);
         }
-        Page splitA = newPage(p.isLeaf(), writeVersion);
-        Page splitB = newPage(p.isLeaf(), writeVersion);
+        Page splitA = newPage(p.isLeaf());
+        Page splitB = newPage(p.isLeaf());
         move(p, splitA, extremes[0]);
         if (extremes[1] > extremes[0]) {
             extremes[1]--;
@@ -343,14 +351,15 @@ public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
         return splitA;
     }
 
-    private Page splitQuadratic(Page p, long writeVersion) {
-        Page splitA = newPage(p.isLeaf(), writeVersion);
-        Page splitB = newPage(p.isLeaf(), writeVersion);
+    private Page splitQuadratic(Page p) {
+        Page splitA = newPage(p.isLeaf());
+        Page splitB = newPage(p.isLeaf());
         float largest = Float.MIN_VALUE;
         int ia = 0, ib = 0;
-        for (int a = 0; a < p.getKeyCount(); a++) {
+        int keyCount = p.getKeyCount();
+        for (int a = 0; a < keyCount; a++) {
             Object objA = p.getKey(a);
-            for (int b = 0; b < p.getKeyCount(); b++) {
+            for (int b = 0; b < keyCount; b++) {
                 if (a == b) {
                     continue;
                 }
@@ -373,7 +382,8 @@ public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
         while (p.getKeyCount() > 0) {
             float diff = 0, bestA = 0, bestB = 0;
             int best = 0;
-            for (int i = 0; i < p.getKeyCount(); i++) {
+            keyCount = p.getKeyCount();
+            for (int i = 0; i < keyCount; i++) {
                 Object o = p.getKey(i);
                 float incA = keyType.getAreaIncrease(boundsA, o);
                 float incB = keyType.getAreaIncrease(boundsB, o);
@@ -399,20 +409,13 @@ public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
         return splitA;
     }
 
-    private Page newPage(boolean leaf, long writeVersion) {
-        Object[] values;
-        Page.PageReference[] refs;
-        if (leaf) {
-            values = Page.EMPTY_OBJECT_ARRAY;
-            refs = null;
-        } else {
-            values = null;
-            refs = new Page.PageReference[] {
-                    new Page.PageReference(null, 0, 0)};
+    private Page newPage(boolean leaf) {
+        Page page = leaf ? createEmptyLeaf() : createEmptyNode();
+        if(store.getFileStore() != null)
+        {
+            store.registerUnsavedPage(page.getMemory());
         }
-        return Page.create(this, writeVersion,
-                Page.EMPTY_OBJECT_ARRAY, values,
-                refs, 0, 0);
+        return page;
     }
 
     private static void move(Page source, Page target, int sourceIndex) {
@@ -436,7 +439,8 @@ public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
      */
     public void addNodeKeys(ArrayList<SpatialKey> list, Page p) {
         if (p != null && !p.isLeaf()) {
-            for (int i = 0; i < p.getKeyCount(); i++) {
+            int keyCount = p.getKeyCount();
+            for (int i = 0; i < keyCount; i++) {
                 list.add((SpatialKey) p.getKey(i));
                 addNodeKeys(list, p.getChildPage(i));
             }
@@ -572,17 +576,15 @@ public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
      *
      * @param <V> the value type
      */
-    public static class Builder<V> implements
-            MVMap.MapBuilder<MVRTreeMap<V>, SpatialKey, V> {
+    public static class Builder<V> extends MVMap.BasicBuilder<MVRTreeMap<V>, SpatialKey, V> {
 
         private int dimensions = 2;
-        private DataType valueType;
 
         /**
          * Create a new builder for maps with 2 dimensions.
          */
         public Builder() {
-            // default
+            setKeyType(new SpatialDataType(dimensions));
         }
 
         /**
@@ -593,6 +595,7 @@ public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
          */
         public Builder<V> dimensions(int dimensions) {
             this.dimensions = dimensions;
+            setKeyType(new SpatialDataType(dimensions));
             return this;
         }
 
@@ -602,19 +605,15 @@ public class MVRTreeMap<V> extends MVMap<SpatialKey, V> {
          * @param valueType the key type
          * @return this
          */
+        @Override
         public Builder<V> valueType(DataType valueType) {
-            this.valueType = valueType;
+            setValueType(valueType);
             return this;
         }
 
         @Override
-        public MVRTreeMap<V> create() {
-            if (valueType == null) {
-                valueType = new ObjectDataType();
-            }
-            return new MVRTreeMap<>(dimensions, valueType);
+        public MVRTreeMap<V> create(Map<String, Object> config) {
+            return new MVRTreeMap<>(config);
         }
-
     }
-
 }

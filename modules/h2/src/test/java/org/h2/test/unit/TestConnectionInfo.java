@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -12,6 +12,7 @@ import org.h2.api.ErrorCode;
 import org.h2.engine.ConnectionInfo;
 import org.h2.engine.SysProperties;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.DeleteDbFiles;
 
 /**
@@ -20,7 +21,7 @@ import org.h2.tools.DeleteDbFiles;
  * @author Kerry Sainsbury
  * @author Thomas Mueller Graf
  */
-public class TestConnectionInfo extends TestBase {
+public class TestConnectionInfo extends TestDb {
 
     /**
      * Run just this test.

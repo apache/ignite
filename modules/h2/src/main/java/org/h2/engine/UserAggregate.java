@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -26,7 +26,7 @@ public class UserAggregate extends DbObjectBase {
 
     public UserAggregate(Database db, int id, String name, String className,
             boolean force) {
-        initDbObjectBase(db, id, name, Trace.FUNCTION);
+        super(db, id, name, Trace.FUNCTION);
         this.className = className;
         if (!force) {
             getInstance();
@@ -39,7 +39,7 @@ public class UserAggregate extends DbObjectBase {
         }
         Object obj;
         try {
-            obj = javaClass.newInstance();
+            obj = javaClass.getDeclaredConstructor().newInstance();
             Aggregate agg;
             if (obj instanceof Aggregate) {
                 agg = (Aggregate) obj;
@@ -59,13 +59,16 @@ public class UserAggregate extends DbObjectBase {
 
     @Override
     public String getDropSQL() {
-        return "DROP AGGREGATE IF EXISTS " + getSQL();
+        StringBuilder builder = new StringBuilder("DROP AGGREGATE IF EXISTS ");
+        return getSQL(builder, true).toString();
     }
 
     @Override
     public String getCreateSQL() {
-        return "CREATE FORCE AGGREGATE " + getSQL() +
-                " FOR " + Parser.quoteIdentifier(className);
+        StringBuilder builder = new StringBuilder("CREATE FORCE AGGREGATE ");
+        getSQL(builder, true).append(" FOR ");
+        Parser.quoteIdentifier(builder, className, true);
+        return builder.toString();
     }
 
     @Override

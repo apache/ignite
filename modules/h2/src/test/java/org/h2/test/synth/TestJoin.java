@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -18,16 +18,16 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import org.h2.test.TestBase;
-import org.h2.util.New;
+import org.h2.test.TestDb;
 import org.h2.util.StringUtils;
 
 /**
  * A test that runs random join statements against two databases and compares
  * the results.
  */
-public class TestJoin extends TestBase {
+public class TestJoin extends TestDb {
 
-    private final ArrayList<Connection> connections = New.arrayList();
+    private final ArrayList<Connection> connections = new ArrayList<>();
     private Random random;
     private int paramCount;
     private StringBuilder buff;
@@ -288,7 +288,7 @@ public class TestJoin extends TestBase {
         }
         b.append(":\n");
         String result = b.toString();
-        ArrayList<String> list = New.arrayList();
+        ArrayList<String> list = new ArrayList<>();
         while (rs.next()) {
             b = new StringBuilder();
             for (int i = 0; i < columnCount; i++) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -17,15 +17,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.Properties;
-
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.tools.Server;
 
 /**
  * Tests the compatibility with older versions
  */
-public class TestOldVersion extends TestBase {
+public class TestOldVersion extends TestDb {
 
     private ClassLoader cl;
     private Driver driver;
@@ -40,10 +40,15 @@ public class TestOldVersion extends TestBase {
     }
 
     @Override
-    public void test() throws Exception {
+    public boolean isEnabled() {
         if (config.mvStore) {
-            return;
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws Exception {
         cl = getClassLoader("file:ext/h2-1.2.127.jar");
         driver = getDriver(cl);
         if (driver == null) {
@@ -141,7 +146,14 @@ public class TestOldVersion extends TestBase {
 
     private static ClassLoader getClassLoader(String jarFile) throws Exception {
         URL[] urls = { new URL(jarFile) };
-        return new URLClassLoader(urls, null);
+        return new URLClassLoader(urls, null) {
+            @Override
+            protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+                if (name.startsWith("org.h2."))
+                    return super.loadClass(name, resolve);
+                return TestOldVersion.class.getClassLoader().loadClass(name);
+            }
+        };
     }
 
     private static Driver getDriver(ClassLoader cl) throws Exception {

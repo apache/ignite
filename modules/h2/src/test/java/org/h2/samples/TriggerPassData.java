@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -10,9 +10,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.h2.api.Trigger;
 
 /**
@@ -21,8 +20,7 @@ import org.h2.api.Trigger;
  */
 public class TriggerPassData implements Trigger {
 
-    private static final Map<String, TriggerPassData> TRIGGERS =
-        Collections.synchronizedMap(new HashMap<String, TriggerPassData>());
+    private static final ConcurrentHashMap<String, TriggerPassData> TRIGGERS = new ConcurrentHashMap<>();
     private String triggerData;
 
     /**

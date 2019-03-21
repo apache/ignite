@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -19,18 +19,18 @@ import javax.sql.DataSource;
 import javax.sql.XAConnection;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-
 import org.h2.api.ErrorCode;
 import org.h2.jdbcx.JdbcDataSource;
 import org.h2.jdbcx.JdbcDataSourceFactory;
 import org.h2.jdbcx.JdbcXAConnection;
 import org.h2.message.TraceSystem;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Tests DataSource and XAConnection.
  */
-public class TestDataSource extends TestBase {
+public class TestDataSource extends TestDb {
 
     /**
      * Run just this test.
@@ -76,6 +76,8 @@ public class TestDataSource extends TestBase {
         testDataSource();
         testUnwrap();
         testXAConnection();
+        // otherwise we sometimes can't delete the trace file when the TestAll cleanup code runs
+        JdbcDataSourceFactory.getTraceSystem().close();
         deleteDb("dataSource");
     }
 

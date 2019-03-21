@@ -1,28 +1,23 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.table;
 
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import org.h2.api.ErrorCode;
 import org.h2.engine.Session;
 import org.h2.expression.Expression;
-import org.h2.expression.FunctionCall;
-import org.h2.expression.TableFunction;
+import org.h2.expression.function.FunctionCall;
+import org.h2.expression.function.TableFunction;
 import org.h2.index.FunctionIndex;
 import org.h2.index.Index;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
-import org.h2.result.LocalResult;
 import org.h2.result.ResultInterface;
 import org.h2.result.Row;
 import org.h2.schema.Schema;
-import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueResultSet;
@@ -36,7 +31,7 @@ public class FunctionTable extends Table {
     private final FunctionCall function;
     private final long rowCount;
     private Expression functionExpr;
-    private LocalResult cachedResult;
+    private ResultInterface cachedResult;
     private Value cachedValue;
 
     public FunctionTable(Schema schema, Session session,
@@ -50,7 +45,7 @@ public class FunctionTable extends Table {
             rowCount = Long.MAX_VALUE;
         }
         function.optimize(session);
-        int type = function.getType();
+        int type = function.getValueType();
         if (type != Value.RESULT_SET) {
             throw DbException.get(
                     ErrorCode.FUNCTION_MUST_RETURN_RESULT_SET_1, function.getName());
@@ -68,21 +63,13 @@ public class FunctionTable extends Table {
             throw DbException.get(
                     ErrorCode.FUNCTION_MUST_RETURN_RESULT_SET_1, function.getName());
         }
-        ResultSet rs = template.getResultSet();
-        try {
-            ResultSetMetaData meta = rs.getMetaData();
-            int columnCount = meta.getColumnCount();
-            Column[] cols = new Column[columnCount];
-            for (int i = 0; i < columnCount; i++) {
-                cols[i] = new Column(meta.getColumnName(i + 1),
-                        DataType.getValueTypeFromResultSet(meta, i + 1),
-                        meta.getPrecision(i + 1),
-                        meta.getScale(i + 1), meta.getColumnDisplaySize(i + 1));
-            }
-            setColumns(cols);
-        } catch (SQLException e) {
-            throw DbException.convert(e);
+        ResultInterface result = template.getResult();
+        int columnCount = result.getVisibleColumnCount();
+        Column[] cols = new Column[columnCount];
+        for (int i = 0; i < columnCount; i++) {
+            cols[i] = new Column(result.getColumnName(i), result.getColumnType(i));
         }
+        setColumns(cols);
     }
 
     @Override
@@ -194,7 +181,7 @@ public class FunctionTable extends Table {
             cachedResult.reset();
             return cachedResult;
         }
-        LocalResult result = LocalResult.read(session,  v.getResultSet(), 0);
+        ResultInterface result = v.getResult();
         if (function.isDeterministic()) {
             cachedResult = result;
             cachedValue = v;
@@ -206,11 +193,11 @@ public class FunctionTable extends Table {
      * Read the result set from the function. This method doesn't cache.
      *
      * @param session the session
-     * @return the result set
+     * @return the result
      */
-    public ResultSet getResultSet(Session session) {
+    public ResultInterface getResultSet(Session session) {
         ValueResultSet v = getValueResultSet(session);
-        return v == null ? null : v.getResultSet();
+        return v == null ? null : v.getResult();
     }
 
     private ValueResultSet getValueResultSet(Session session) {
@@ -239,8 +226,13 @@ public class FunctionTable extends Table {
     }
 
     @Override
-    public String getSQL() {
-        return function.getSQL();
+    public String getSQL(boolean alwaysQuote) {
+        return function.getSQL(alwaysQuote);
+    }
+
+    @Override
+    public StringBuilder getSQL(StringBuilder builder, boolean alwaysQuote) {
+        return builder.append(function.getSQL(alwaysQuote));
     }
 
     @Override

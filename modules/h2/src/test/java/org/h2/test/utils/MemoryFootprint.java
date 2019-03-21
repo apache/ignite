@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -33,7 +33,7 @@ public class MemoryFootprint {
         print("BigDecimal", new BigDecimal("0"));
         print("BigInteger", new BigInteger("0"));
         print("String", new String("Hello"));
-        print("Data", Data.create(null, 10));
+        print("Data", Data.create(null, 10, false));
         print("Row", new RowImpl(new Value[0], 0));
         System.out.println();
         for (int i = 1; i < 128; i += i) {

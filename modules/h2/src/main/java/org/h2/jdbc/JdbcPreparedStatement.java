@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -25,17 +25,18 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+
 import org.h2.api.ErrorCode;
 import org.h2.command.CommandInterface;
 import org.h2.expression.ParameterInterface;
 import org.h2.message.DbException;
 import org.h2.message.TraceObject;
+import org.h2.result.MergedResult;
 import org.h2.result.ResultInterface;
 import org.h2.result.ResultWithGeneratedKeys;
 import org.h2.util.DateTimeUtils;
 import org.h2.util.IOUtils;
-import org.h2.util.MergedResultSet;
-import org.h2.util.New;
+import org.h2.util.Utils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
@@ -62,7 +63,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
     protected CommandInterface command;
     private final String sqlStatement;
     private ArrayList<Value[]> batchParameters;
-    private MergedResultSet batchIdentities;
+    private MergedResult batchIdentities;
     private HashMap<String, Integer> cachedColumnLabelMap;
     private final Object generatedKeysRequest;
 
@@ -561,7 +562,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
                 setParameter(parameterIndex, ValueNull.INSTANCE);
             } else {
                 Value v = DataType.convertToValue(conn.getSession(), x, type);
-                setParameter(parameterIndex, v.convertTo(type));
+                setParameter(parameterIndex, v.convertTo(type, conn.getMode()));
             }
         } catch (Exception e) {
             throw logAndConvert(e);
@@ -733,7 +734,8 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (x == null) {
                 setParameter(parameterIndex, ValueNull.INSTANCE);
             } else {
-                setParameter(parameterIndex, DateTimeUtils.convertDate(x, calendar));
+                setParameter(parameterIndex,
+                        calendar != null ? DateTimeUtils.convertDate(x, calendar) : ValueDate.get(x));
             }
         } catch (Exception e) {
             throw logAndConvert(e);
@@ -759,7 +761,8 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (x == null) {
                 setParameter(parameterIndex, ValueNull.INSTANCE);
             } else {
-                setParameter(parameterIndex, DateTimeUtils.convertTime(x, calendar));
+                setParameter(parameterIndex,
+                        calendar != null ? DateTimeUtils.convertTime(x, calendar) : ValueTime.get(x));
             }
         } catch (Exception e) {
             throw logAndConvert(e);
@@ -786,7 +789,8 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (x == null) {
                 setParameter(parameterIndex, ValueNull.INSTANCE);
             } else {
-                setParameter(parameterIndex, DateTimeUtils.convertTimestamp(x, calendar));
+                setParameter(parameterIndex,
+                        calendar != null ? DateTimeUtils.convertTimestamp(x, calendar) : ValueTimestamp.get(x));
             }
         } catch (Exception e) {
             throw logAndConvert(e);
@@ -1232,6 +1236,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
         try {
             super.close();
             batchParameters = null;
+            batchIdentities = null;
             if (command != null) {
                 command.close();
                 command = null;
@@ -1250,14 +1255,12 @@ public class JdbcPreparedStatement extends JdbcStatement implements
     @Override
     public int[] executeBatch() throws SQLException {
         try {
-            int id = getNextId(TraceObject.PREPARED_STATEMENT);
             debugCodeCall("executeBatch");
             if (batchParameters == null) {
-                // TODO batch: check what other database do if no parameters are
-                // set
-                batchParameters = New.arrayList();
+                // Empty batch is allowed, see JDK-4639504 and other issues
+                batchParameters = Utils.newSmallArrayList();
             }
-            batchIdentities = new MergedResultSet();
+            batchIdentities = new MergedResult();
             int size = batchParameters.size();
             int[] result = new int[size];
             boolean error = false;
@@ -1277,7 +1280,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
                         result[i] = executeUpdateInternal();
                         // Cannot use own implementation, it returns batch identities
                         ResultSet rs = super.getGeneratedKeys();
-                        batchIdentities.add(rs);
+                        batchIdentities.add(((JdbcResultSet) rs).result);
                     } catch (Exception re) {
                         SQLException e = logAndConvert(re);
                         if (next == null) {
@@ -1306,7 +1309,17 @@ public class JdbcPreparedStatement extends JdbcStatement implements
     @Override
     public ResultSet getGeneratedKeys() throws SQLException {
         if (batchIdentities != null) {
-            return batchIdentities.getResult();
+            try {
+                int id = getNextId(TraceObject.RESULT_SET);
+                if (isDebugEnabled()) {
+                    debugCodeAssign("ResultSet", TraceObject.RESULT_SET, id, "getGeneratedKeys()");
+                }
+                checkClosed();
+                generatedKeys = new JdbcResultSet(conn, this, null, batchIdentities.getResult(), id, false, true,
+                        false);
+            } catch (Exception e) {
+                throw logAndConvert(e);
+            }
         }
         return super.getGeneratedKeys();
     }
@@ -1331,7 +1344,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
                     set[i] = value;
                 }
                 if (batchParameters == null) {
-                    batchParameters = New.arrayList();
+                    batchParameters = Utils.newSmallArrayList();
                 }
                 batchParameters.add(set);
             } finally {
@@ -1778,11 +1791,29 @@ public class JdbcPreparedStatement extends JdbcStatement implements
     }
 
     /**
-     * [Not supported] Sets the value of a parameter as a SQLXML object.
+     * Sets the value of a parameter as a SQLXML.
+     *
+     * @param parameterIndex the parameter index (1, 2, ...)
+     * @param x the value
+     * @throws SQLException if this object is closed
      */
     @Override
     public void setSQLXML(int parameterIndex, SQLXML x) throws SQLException {
-        throw unsupported("SQLXML");
+        try {
+            if (isDebugEnabled()) {
+                debugCode("setSQLXML("+parameterIndex+", x);");
+            }
+            checkClosedForWrite();
+            Value v;
+            if (x == null) {
+                v = ValueNull.INSTANCE;
+            } else {
+                v = conn.createClob(x.getCharacterStream(), -1);
+            }
+            setParameter(parameterIndex, v);
+        } catch (Exception e) {
+            throw logAndConvert(e);
+        }
     }
 
     /**

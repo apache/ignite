@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -10,8 +10,9 @@ import org.h2.engine.Session;
 import org.h2.message.DbException;
 import org.h2.table.ColumnResolver;
 import org.h2.table.TableFilter;
+import org.h2.value.TypeInfo;
 import org.h2.value.Value;
-import org.h2.value.ValueInt;
+import org.h2.value.ValueLong;
 
 /**
  * Represents the ROWNUM function.
@@ -29,16 +30,16 @@ public class Rownum extends Expression {
 
     @Override
     public Value getValue(Session session) {
-        return ValueInt.get(prepared.getCurrentRowNumber());
+        return ValueLong.get(prepared.getCurrentRowNumber());
     }
 
     @Override
-    public int getType() {
-        return Value.INT;
+    public TypeInfo getType() {
+        return TypeInfo.TYPE_LONG;
     }
 
     @Override
-    public void mapColumns(ColumnResolver resolver, int level) {
+    public void mapColumns(ColumnResolver resolver, int level, int state) {
         // nothing to do
     }
 
@@ -53,27 +54,17 @@ public class Rownum extends Expression {
     }
 
     @Override
-    public int getScale() {
-        return 0;
-    }
-
-    @Override
-    public long getPrecision() {
-        return ValueInt.PRECISION;
-    }
-
-    @Override
-    public int getDisplaySize() {
-        return ValueInt.DISPLAY_SIZE;
-    }
-
-    @Override
-    public String getSQL() {
+    public String getSQL(boolean alwaysQuote) {
         return "ROWNUM()";
     }
 
     @Override
-    public void updateAggregate(Session session) {
+    public StringBuilder getSQL(StringBuilder builder, boolean alwaysQuote) {
+        return builder.append("ROWNUM()");
+    }
+
+    @Override
+    public void updateAggregate(Session session, int stage) {
         // nothing to do
     }
 
@@ -81,7 +72,7 @@ public class Rownum extends Expression {
     public boolean isEverything(ExpressionVisitor visitor) {
         switch (visitor.getType()) {
         case ExpressionVisitor.QUERY_COMPARABLE:
-        case ExpressionVisitor.OPTIMIZABLE_MIN_MAX_COUNT_ALL:
+        case ExpressionVisitor.OPTIMIZABLE_AGGREGATE:
         case ExpressionVisitor.DETERMINISTIC:
         case ExpressionVisitor.INDEPENDENT:
             return false;
@@ -90,7 +81,8 @@ public class Rownum extends Expression {
         case ExpressionVisitor.NOT_FROM_RESOLVER:
         case ExpressionVisitor.GET_DEPENDENCIES:
         case ExpressionVisitor.SET_MAX_DATA_MODIFICATION_ID:
-        case ExpressionVisitor.GET_COLUMNS:
+        case ExpressionVisitor.GET_COLUMNS1:
+        case ExpressionVisitor.GET_COLUMNS2:
             // if everything else is the same, the rownum is the same
             return true;
         default:

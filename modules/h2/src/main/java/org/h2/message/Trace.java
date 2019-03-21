@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -10,9 +10,7 @@ import java.util.ArrayList;
 
 import org.h2.engine.SysProperties;
 import org.h2.expression.ParameterInterface;
-import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
-import org.h2.value.Value;
 
 /**
  * This class represents a trace module.
@@ -239,29 +237,23 @@ public class Trace {
      * @param parameters the parameter list
      * @return the formatted text
      */
-    public static String formatParams(
-            ArrayList<? extends ParameterInterface> parameters) {
+    public static String formatParams(ArrayList<? extends ParameterInterface> parameters) {
         if (parameters.isEmpty()) {
             return "";
         }
-        StatementBuilder buff = new StatementBuilder();
+        StringBuilder builder = new StringBuilder();
         int i = 0;
-        boolean params = false;
         for (ParameterInterface p : parameters) {
             if (p.isValueSet()) {
-                if (!params) {
-                    buff.append(" {");
-                    params = true;
-                }
-                buff.appendExceptFirst(", ");
-                Value v = p.getParamValue();
-                buff.append(++i).append(": ").append(v.getTraceSQL());
+                builder.append(i == 0 ? " {" : ", ") //
+                        .append(++i).append(": ") //
+                        .append(p.getParamValue().getTraceSQL());
             }
         }
-        if (params) {
-            buff.append('}');
+        if (i != 0) {
+            builder.append('}');
         }
-        return buff.toString();
+        return builder.toString();
     }
 
     /**
@@ -300,10 +292,10 @@ public class Trace {
         if (!space) {
             buff.append(' ');
         }
-        buff.append("*/").
-            append(StringUtils.javaEncode(sql)).
-            append(StringUtils.javaEncode(params)).
-            append(';');
+        buff.append("*/");
+        StringUtils.javaEncode(sql, buff, false);
+        StringUtils.javaEncode(params, buff, false);
+        buff.append(';');
         sql = buff.toString();
         traceWriter.write(TraceSystem.INFO, module, sql, null);
     }

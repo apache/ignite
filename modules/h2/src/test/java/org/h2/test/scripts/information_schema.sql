@@ -1,4 +1,4 @@
--- Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (http://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -39,6 +39,18 @@ SELECT CONSTRAINT_NAME, CONSTRAINT_TYPE, TABLE_NAME, IS_DEFERRABLE, INITIALLY_DE
 > CH_1            CHECK           T2         NO            NO
 > FK_1            FOREIGN KEY     T2         NO            NO
 > FK_2            FOREIGN KEY     T2         NO            NO
+> rows (ordered): 5
+
+SELECT CONSTRAINT_NAME, CONSTRAINT_TYPE, TABLE_NAME, COLUMN_LIST FROM INFORMATION_SCHEMA.CONSTRAINTS
+    WHERE CONSTRAINT_CATALOG = DATABASE() AND CONSTRAINT_SCHEMA = SCHEMA() AND TABLE_CATALOG = DATABASE() AND TABLE_SCHEMA = SCHEMA()
+    ORDER BY TABLE_NAME, CONSTRAINT_NAME;
+> CONSTRAINT_NAME CONSTRAINT_TYPE TABLE_NAME COLUMN_LIST
+> --------------- --------------- ---------- -----------
+> PK_1            PRIMARY KEY     T1         C1,C2
+> U_1             UNIQUE          T1         C3,C4
+> CH_1            CHECK           T2         null
+> FK_1            REFERENTIAL     T2         C3,C4
+> FK_2            REFERENTIAL     T2         C3,C4
 > rows (ordered): 5
 
 SELECT * FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE LIMIT 0;

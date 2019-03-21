@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -12,11 +12,12 @@ import java.sql.Statement;
 import java.util.Random;
 
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Tests the multi-threaded mode.
  */
-public class TestMultiThreaded extends TestBase {
+public class TestMultiThreaded extends TestDb {
 
     /**
      * Run just this test.
@@ -24,7 +25,17 @@ public class TestMultiThreaded extends TestBase {
      * @param a ignored
      */
     public static void main(String... a) throws Exception {
-        TestBase.createCaller().init().test();
+        org.h2.test.TestAll config = new org.h2.test.TestAll();
+        config.memory = true;
+        config.big = true;
+        System.out.println(config);
+        TestBase test = createCaller().init(config);
+        for (int i = 0; i < 100; i++) {
+            System.out.println("Pass #" + i);
+            test.config.beforeTest();
+            test.test();
+            test.config.afterTest();
+        }
     }
 
     /**
@@ -123,15 +134,11 @@ public class TestMultiThreaded extends TestBase {
 
     @Override
     public void test() throws Exception {
-        if (config.mvcc) {
-            return;
-        }
         deleteDb("multiThreaded");
-        int size = getSize(2, 4);
+        int size = getSize(2, 20);
         Connection[] connList = new Connection[size];
         for (int i = 0; i < size; i++) {
-            connList[i] = getConnection("multiThreaded;MULTI_THREADED=1;" +
-                    "TRACE_LEVEL_SYSTEM_OUT=1");
+            connList[i] = getConnection("multiThreaded;MULTI_THREADED=1");
         }
         Connection conn = connList[0];
         Statement stat = conn.createStatement();
@@ -150,32 +157,35 @@ public class TestMultiThreaded extends TestBase {
             trace("started " + i);
             Thread.sleep(100);
         }
-        for (int t = 0; t < 2; t++) {
-            Thread.sleep(1000);
+        try {
+            Thread.sleep(2000);
+        } finally {
+            trace("stopping");
             for (int i = 0; i < size; i++) {
                 Processor p = processors[i];
-                if (p.getException() != null) {
-                    throw new Exception("" + i, p.getException());
-                }
+                p.stopNow();
             }
-        }
-        trace("stopping");
-        for (int i = 0; i < size; i++) {
-            Processor p = processors[i];
-            p.stopNow();
-        }
-        for (int i = 0; i < size; i++) {
-            Processor p = processors[i];
-            p.join(100);
-            if (p.getException() != null) {
-                throw new Exception(p.getException());
+            for (int i = 0; i < size; i++) {
+                Processor p = processors[i];
+                p.join(1000);
             }
+            trace("close");
+            for (int i = 0; i < size; i++) {
+                connList[i].close();
+            }
+            deleteDb("multiThreaded");
         }
-        trace("close");
-        for (int i = 0; i < size; i++) {
-            connList[i].close();
-        }
-        deleteDb("multiThreaded");
-    }
 
+        boolean success = true;
+        for (int i = 0; i < size; i++) {
+            Processor p = processors[i];
+            p.join(10000);
+            Throwable exception = p.getException();
+            if (exception != null) {
+                logError("", exception);
+                success = false;
+            }
+        }
+        assert success;
+    }
 }

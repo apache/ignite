@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -8,6 +8,7 @@ package org.h2.result;
 import org.h2.engine.SessionInterface;
 import org.h2.expression.Expression;
 import org.h2.message.DbException;
+import org.h2.value.TypeInfo;
 import org.h2.value.Value;
 
 /**
@@ -70,6 +71,27 @@ public abstract class LazyResult implements ResultInterface {
         return false;
     }
 
+    /**
+     * Go to the next row and skip it.
+     *
+     * @return true if a row exists
+     */
+    public boolean skip() {
+        if (closed || afterLast) {
+            return false;
+        }
+        currentRow = null;
+        if (nextRow != null) {
+            nextRow = null;
+            return true;
+        }
+        if (skipNextRow()) {
+            return true;
+        }
+        afterLast = true;
+        return false;
+    }
+
     @Override
     public boolean hasNext() {
         if (closed || afterLast) {
@@ -87,6 +109,15 @@ public abstract class LazyResult implements ResultInterface {
      * @return next row or null
      */
     protected abstract Value[] fetchNextRow();
+
+    /**
+     * Skip next row.
+     *
+     * @return true if next row was available
+     */
+    protected boolean skipNextRow() {
+        return fetchNextRow() != null;
+    }
 
     @Override
     public boolean isAfterLast() {
@@ -139,23 +170,8 @@ public abstract class LazyResult implements ResultInterface {
     }
 
     @Override
-    public int getColumnType(int i) {
+    public TypeInfo getColumnType(int i) {
         return expressions[i].getType();
-    }
-
-    @Override
-    public long getColumnPrecision(int i) {
-        return expressions[i].getPrecision();
-    }
-
-    @Override
-    public int getColumnScale(int i) {
-        return expressions[i].getScale();
-    }
-
-    @Override
-    public int getDisplaySize(int i) {
-        return expressions[i].getDisplaySize();
     }
 
     @Override
@@ -185,11 +201,4 @@ public abstract class LazyResult implements ResultInterface {
         return null;
     }
 
-    @Override
-    public boolean containsDistinct(Value[] values) {
-        // We have to make sure that we do not allow lazy
-        // evaluation when this call is needed:
-        // WHERE x IN (SELECT ...).
-        throw DbException.throwInternalError();
-    }
 }

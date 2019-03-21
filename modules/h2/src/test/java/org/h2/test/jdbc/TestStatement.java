@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -21,11 +21,12 @@ import org.h2.jdbc.JdbcStatement;
 import org.h2.jdbc.JdbcStatementBackwardsCompat;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Tests for the Statement implementation.
  */
-public class TestStatement extends TestBase {
+public class TestStatement extends TestDb {
 
     private Connection conn;
 
@@ -52,6 +53,8 @@ public class TestStatement extends TestBase {
         testIdentityMerge();
         testIdentity();
         conn.close();
+        deleteDb("statement");
+        testIdentifiers();
         deleteDb("statement");
     }
 
@@ -204,7 +207,7 @@ public class TestStatement extends TestBase {
         assertEquals(ResultSet.CONCUR_READ_ONLY,
                 stat2.getResultSetConcurrency());
         assertEquals(0, stat.getMaxFieldSize());
-        assertTrue(!((JdbcStatement) stat2).isClosed());
+        assertFalse(((JdbcStatement) stat2).isClosed());
         stat2.close();
         assertTrue(((JdbcStatement) stat2).isClosed());
 
@@ -279,19 +282,19 @@ public class TestStatement extends TestBase {
         trace("execute");
         result = stat.execute(
                 "CREATE TABLE TEST(ID INT PRIMARY KEY,VALUE VARCHAR(255))");
-        assertTrue(!result);
+        assertFalse(result);
         result = stat.execute("INSERT INTO TEST VALUES(1,'Hello')");
-        assertTrue(!result);
+        assertFalse(result);
         result = stat.execute("INSERT INTO TEST(VALUE,ID) VALUES('JDBC',2)");
-        assertTrue(!result);
+        assertFalse(result);
         result = stat.execute("UPDATE TEST SET VALUE='LDBC' WHERE ID=2");
-        assertTrue(!result);
+        assertFalse(result);
         result = stat.execute("DELETE FROM TEST WHERE ID=3");
-        assertTrue(!result);
+        assertFalse(result);
         result = stat.execute("SELECT * FROM TEST");
         assertTrue(result);
         result = stat.execute("DROP TABLE TEST");
-        assertTrue(!result);
+        assertFalse(result);
 
         assertThrows(ErrorCode.METHOD_ONLY_ALLOWED_FOR_QUERY, stat).
                 executeQuery("CREATE TABLE TEST(ID INT PRIMARY KEY,VALUE VARCHAR(255))");
@@ -324,23 +327,10 @@ public class TestStatement extends TestBase {
         stat.execute("DROP TABLE TEST");
         stat.executeUpdate("DROP TABLE IF EXISTS TEST");
 
-        assertTrue(stat.getWarnings() == null);
+        assertNull(stat.getWarnings());
         stat.clearWarnings();
-        assertTrue(stat.getWarnings() == null);
+        assertNull(stat.getWarnings());
         assertTrue(conn == stat.getConnection());
-
-        assertEquals("SOME_ID", statBC.enquoteIdentifier("SOME_ID", false));
-        assertEquals("\"SOME ID\"", statBC.enquoteIdentifier("SOME ID", false));
-        assertEquals("\"SOME_ID\"", statBC.enquoteIdentifier("SOME_ID", true));
-        assertEquals("\"FROM\"", statBC.enquoteIdentifier("FROM", false));
-        assertEquals("\"Test\"", statBC.enquoteIdentifier("Test", false));
-        assertEquals("\"TODAY\"", statBC.enquoteIdentifier("TODAY", false));
-
-        assertTrue(statBC.isSimpleIdentifier("SOME_ID"));
-        assertFalse(statBC.isSimpleIdentifier("SOME ID"));
-        assertFalse(statBC.isSimpleIdentifier("FROM"));
-        assertFalse(statBC.isSimpleIdentifier("Test"));
-        assertFalse(statBC.isSimpleIdentifier("TODAY"));
 
         stat.close();
     }
@@ -482,6 +472,88 @@ public class TestStatement extends TestBase {
         assertEquals(1, ((JdbcPreparedStatementBackwardsCompat) ps).executeLargeUpdate());
         assertEquals(1, ((JdbcStatementBackwardsCompat) ps).getLargeUpdateCount());
         stat.execute("drop table test");
+    }
+
+    private void testIdentifiers() throws SQLException {
+        Connection conn = getConnection("statement");
+
+        JdbcStatement stat = (JdbcStatement) conn.createStatement();
+        assertEquals("SOME_ID", stat.enquoteIdentifier("SOME_ID", false));
+        assertEquals("\"SOME ID\"", stat.enquoteIdentifier("SOME ID", false));
+        assertEquals("\"SOME_ID\"", stat.enquoteIdentifier("SOME_ID", true));
+        assertEquals("\"FROM\"", stat.enquoteIdentifier("FROM", false));
+        assertEquals("\"Test\"", stat.enquoteIdentifier("Test", false));
+        assertEquals("\"test\"", stat.enquoteIdentifier("test", false));
+        assertEquals("\"TODAY\"", stat.enquoteIdentifier("TODAY", false));
+        assertEquals("\"Test\"", stat.enquoteIdentifier("\"Test\"", false));
+        assertEquals("\"Test\"", stat.enquoteIdentifier("\"Test\"", true));
+        assertEquals("\"\"\"Test\"", stat.enquoteIdentifier("\"\"\"Test\"", true));
+        try {
+            stat.enquoteIdentifier("\"Test", true);
+            fail();
+        } catch (SQLException ex) {
+            // OK
+        }
+        // Other lower case characters don't have upper case mappings
+        assertEquals("\u02B0", stat.enquoteIdentifier("\u02B0", false));
+
+        assertTrue(stat.isSimpleIdentifier("SOME_ID"));
+        assertFalse(stat.isSimpleIdentifier("SOME ID"));
+        assertFalse(stat.isSimpleIdentifier("FROM"));
+        assertFalse(stat.isSimpleIdentifier("Test"));
+        assertFalse(stat.isSimpleIdentifier("test"));
+        assertFalse(stat.isSimpleIdentifier("TODAY"));
+        // Other lower case characters don't have upper case mappings
+        assertTrue(stat.isSimpleIdentifier("\u02B0"));
+
+        conn.close();
+        deleteDb("statement");
+        conn = getConnection("statement;DATABASE_TO_LOWER=TRUE");
+
+        stat = (JdbcStatement) conn.createStatement();
+        assertEquals("some_id", stat.enquoteIdentifier("some_id", false));
+        assertEquals("\"some id\"", stat.enquoteIdentifier("some id", false));
+        assertEquals("\"some_id\"", stat.enquoteIdentifier("some_id", true));
+        assertEquals("\"from\"", stat.enquoteIdentifier("from", false));
+        assertEquals("\"Test\"", stat.enquoteIdentifier("Test", false));
+        assertEquals("\"TEST\"", stat.enquoteIdentifier("TEST", false));
+        assertEquals("\"today\"", stat.enquoteIdentifier("today", false));
+
+        assertTrue(stat.isSimpleIdentifier("some_id"));
+        assertFalse(stat.isSimpleIdentifier("some id"));
+        assertFalse(stat.isSimpleIdentifier("from"));
+        assertFalse(stat.isSimpleIdentifier("Test"));
+        assertFalse(stat.isSimpleIdentifier("TEST"));
+        assertFalse(stat.isSimpleIdentifier("today"));
+
+        conn.close();
+        deleteDb("statement");
+        conn = getConnection("statement;DATABASE_TO_UPPER=FALSE");
+
+        stat = (JdbcStatement) conn.createStatement();
+        assertEquals("SOME_ID", stat.enquoteIdentifier("SOME_ID", false));
+        assertEquals("some_id", stat.enquoteIdentifier("some_id", false));
+        assertEquals("\"SOME ID\"", stat.enquoteIdentifier("SOME ID", false));
+        assertEquals("\"some id\"", stat.enquoteIdentifier("some id", false));
+        assertEquals("\"SOME_ID\"", stat.enquoteIdentifier("SOME_ID", true));
+        assertEquals("\"some_id\"", stat.enquoteIdentifier("some_id", true));
+        assertEquals("\"FROM\"", stat.enquoteIdentifier("FROM", false));
+        assertEquals("\"from\"", stat.enquoteIdentifier("from", false));
+        assertEquals("Test", stat.enquoteIdentifier("Test", false));
+        assertEquals("\"TODAY\"", stat.enquoteIdentifier("TODAY", false));
+        assertEquals("\"today\"", stat.enquoteIdentifier("today", false));
+
+        assertTrue(stat.isSimpleIdentifier("SOME_ID"));
+        assertTrue(stat.isSimpleIdentifier("some_id"));
+        assertFalse(stat.isSimpleIdentifier("SOME ID"));
+        assertFalse(stat.isSimpleIdentifier("some id"));
+        assertFalse(stat.isSimpleIdentifier("FROM"));
+        assertFalse(stat.isSimpleIdentifier("from"));
+        assertTrue(stat.isSimpleIdentifier("Test"));
+        assertFalse(stat.isSimpleIdentifier("TODAY"));
+        assertFalse(stat.isSimpleIdentifier("today"));
+
+        conn.close();
     }
 
 }

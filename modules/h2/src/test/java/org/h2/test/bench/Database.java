@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -46,7 +46,7 @@ class Database {
     private final ArrayList<Object[]> results = new ArrayList<>();
     private int totalTime;
     private int totalGCTime;
-    private final AtomicInteger executedStatements = new AtomicInteger(0);
+    private final AtomicInteger executedStatements = new AtomicInteger();
     private int threadCount;
 
     private Server serverH2;
@@ -107,7 +107,7 @@ class Database {
             Thread.sleep(100);
         } else if (url.startsWith("jdbc:derby://")) {
             serverDerby = Class.forName(
-                    "org.apache.derby.drda.NetworkServerControl").newInstance();
+                    "org.apache.derby.drda.NetworkServerControl").getDeclaredConstructor().newInstance();
             Method m = serverDerby.getClass().getMethod("start", PrintWriter.class);
             m.invoke(serverDerby, new Object[] { null });
             // serverDerby = new NetworkServerControl();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -18,20 +18,26 @@ import org.h2.util.StringUtils;
  */
 public class ValueString extends Value {
 
-    private static final ValueString EMPTY = new ValueString("");
+    /**
+     * Empty string. Should not be used in places where empty string can be
+     * treated as {@code NULL} depending on database mode.
+     */
+    public static final ValueString EMPTY = new ValueString("");
 
     /**
      * The string data.
      */
     protected final String value;
 
+    private TypeInfo type;
+
     protected ValueString(String value) {
         this.value = value;
     }
 
     @Override
-    public String getSQL() {
-        return StringUtils.quoteStringSQL(value);
+    public StringBuilder getSQL(StringBuilder builder) {
+        return StringUtils.quoteStringSQL(builder, value);
     }
 
     @Override
@@ -41,20 +47,13 @@ public class ValueString extends Value {
     }
 
     @Override
-    protected int compareSecure(Value o, CompareMode mode) {
-        // compatibility: the other object could be another type
-        ValueString v = (ValueString) o;
-        return mode.compareString(value, v.value, false);
+    public int compareTypeSafe(Value o, CompareMode mode) {
+        return mode.compareString(value, ((ValueString) o).value, false);
     }
 
     @Override
     public String getString() {
         return value;
-    }
-
-    @Override
-    public long getPrecision() {
-        return value.length();
     }
 
     @Override
@@ -69,13 +68,13 @@ public class ValueString extends Value {
     }
 
     @Override
-    public int getDisplaySize() {
-        return value.length();
-    }
-
-    @Override
     public int getMemory() {
-        return value.length() * 2 + 48;
+        /*
+         * Java 11 with -XX:-UseCompressedOops
+         * Empty string: 88 bytes
+         * 1 to 4 UTF-16 chars: 96 bytes
+         */
+        return value.length() * 2 + 94;
     }
 
     @Override
@@ -120,8 +119,18 @@ public class ValueString extends Value {
     }
 
     @Override
-    public int getType() {
-        return Value.STRING;
+    public final TypeInfo getType() {
+        TypeInfo type = this.type;
+        if (type == null) {
+            int length = value.length();
+            this.type = type = new TypeInfo(getValueType(), length, 0, length, null);
+        }
+        return type;
+    }
+
+    @Override
+    public int getValueType() {
+        return STRING;
     }
 
     /**

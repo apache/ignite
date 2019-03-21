@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.Properties;
-
 import org.h2.api.ErrorCode;
 import org.h2.message.DbException;
 import org.h2.store.FileLister;
@@ -65,8 +64,8 @@ public abstract class Tool {
      */
     protected SQLException throwUnsupportedOption(String option)
             throws SQLException {
-        throw DbException.get(
-                ErrorCode.FEATURE_NOT_SUPPORTED_1, option).getSQLException();
+        throw DbException.getJdbcSQLException(
+                ErrorCode.FEATURE_NOT_SUPPORTED_1, option);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -8,15 +8,16 @@ package org.h2.test.unit;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.ArrayList;
+
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.test.utils.SelfDestructor;
-import org.h2.util.New;
 
 /**
  * Tests database file locking.
  * A new process is started.
  */
-public class TestFileLockProcess extends TestBase {
+public class TestFileLockProcess extends TestDb {
 
     /**
      * This method is called when executing this application from the command
@@ -47,13 +48,18 @@ public class TestFileLockProcess extends TestBase {
     }
 
     @Override
-    public void test() throws Exception {
+    public boolean isEnabled() {
         if (config.codeCoverage || config.networked) {
-            return;
+            return false;
         }
         if (getBaseDir().indexOf(':') > 0) {
-            return;
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void test() throws Exception {
         deleteDb("lock");
         String url = "jdbc:h2:"+getBaseDir()+"/lock";
 
@@ -73,10 +79,10 @@ public class TestFileLockProcess extends TestBase {
         url = getURL(url, true);
         Connection conn = getConnection(url);
         String selfDestruct = SelfDestructor.getPropertyString(60);
-        String[] procDef = { "java", selfDestruct,
+        String[] procDef = { getJVM(), selfDestruct,
                 "-cp", getClassPath(),
                 getClass().getName(), url };
-        ArrayList<Process> processes = New.arrayList();
+        ArrayList<Process> processes = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             Thread.sleep(100);
             if (i % 10 == 0) {

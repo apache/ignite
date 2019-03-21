@@ -8,6 +8,7 @@
 22004=#Numeric value out of range: {0} in column {1}
 22007=Nemožem rozobrať {0} konštantu {1}
 22012=Delenie nulou: {0}
+22013=#Invalid PRECEDING or FOLLOWING size in window function: {0}
 22018=Chyba konverzie dát pre {0}
 22025=Chyba v LIKE ESCAPE: {0}
 22030=#Value not permitted for column {0}: {1}
@@ -31,7 +32,7 @@
 42S12=Index {0} nenájdený
 42S21=Duplicitné meno stĺpca {0}
 42S22=Stĺpec {0} nenájdený
-42S32=Nastavenie {0} nenájdené
+42S31=#Identical expressions should be used; expected {0}, found {1}
 57014=Príkaz bol zrušený alebo vypršal časový limit sedenia
 90000=Funkcia {0} musí vracať výsledok (result set)
 90001=Metóda nie je povolená pre dopyt (query). Použite execute alebo executeQuery namiesto executeUpdate
@@ -140,6 +141,7 @@
 90107=Nemôžem zmazať {0} lebo {1} zavisí na {0}
 90108=Nedostatok pamäte.
 90109=Pohľad (view) {0} je nesprávny: {1}
+90110=#Comparing ARRAY to scalar value
 90111=Chyba prístupu k linkovanej tabuľke SQL príkazom {0}, dôvod: {1}
 90112=Riadok nenájdený pri pokuse o vymazanie cez index {0}
 90113=Nepodporované nastavenie spojenia {0}
@@ -148,10 +150,10 @@
 90116=Písmená (literals) tohto druhu nie sú povolené
 90117=Vzdialené pripojenia na tento server nie sú povolené, pozrite -tcpAllowOthers
 90118=Nemôžem zmazať tabuľku {0}
-90119=Používateľský dátový typ {0} už existuje
-90120=Používateľský dátový typ {0} nenájdený
+90119=Doména {0} už existuje
+90120=Doména {0} nenájdený
 90121=Databáza už je zatvorená (na zamedzenie automatického zatvárania pri ukončení VM, pridajte ";DB_CLOSE_ON_EXIT=FALSE" do DB URL)
-90122=Operácia pre tabuľku {0} nie je podporovaná, kedže existujú na tabuľku pohľady (views): {1}
+90122=#The WITH TIES clause is not allowed without a corresponding ORDER BY clause.
 90123=Nemožno miešať indexované a neindexované parametre
 90124=Súbor nenájdený: {0}
 90125=Nesprávna trieda {1}, očakávana je {0}
@@ -165,7 +167,7 @@
 90133=Nemôžem zmeniť nastavenie {0} keď už je databáza otvorená
 90134=Prístup k triede {0} odoprený
 90135=Databáza je otvorená vo výhradnom (exclusive) móde; nemôžem na ňu otvoriť ďalšie pripojenia
-90136=Nepodporovaná "outer join" podmienka: {0}
+90136=#Window not found: {0}
 90137=Môžete priradiť len do premennej, nie do: {0}
 90138=Nesprávne meno databázy: {0}
 90139=Verejná statická Java metóda nebola nájdená: {0}
@@ -173,6 +175,9 @@
 90141=#Serializer cannot be changed because there is a data table: {0}
 90142=#Step size must not be zero
 90143=#Row {1} not found in primary index {0}
+90144=#Authenticator not enabled on database {0}
+90145=#FOR UPDATE is not allowed in DISTINCT or grouped select
+90146=#Database {0} not found, and IFEXISTS=true, so we can't auto-create it
 HY000=Všeobecná chyba: {0}
 HY004=Neznámy dátový typ: {0}
 HYC00=Vlastnosť nie je podporovaná: {0}

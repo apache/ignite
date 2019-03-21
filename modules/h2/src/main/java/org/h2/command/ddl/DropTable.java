@@ -1,10 +1,11 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.command.ddl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.h2.api.ErrorCode;
@@ -18,7 +19,7 @@ import org.h2.message.DbException;
 import org.h2.schema.Schema;
 import org.h2.table.Table;
 import org.h2.table.TableView;
-import org.h2.util.StatementBuilder;
+import org.h2.util.StringUtils;
 
 /**
  * This class represents the statement
@@ -75,12 +76,11 @@ public class DropTable extends SchemaCommand {
                 throw DbException.get(ErrorCode.CANNOT_DROP_TABLE_1, tableName);
             }
             if (dropAction == ConstraintActionType.RESTRICT) {
-                StatementBuilder buff = new StatementBuilder();
+                ArrayList<String> dependencies = new ArrayList<>();
                 CopyOnWriteArrayList<TableView> dependentViews = table.getDependentViews();
                 if (dependentViews != null && !dependentViews.isEmpty()) {
                     for (TableView v : dependentViews) {
-                        buff.appendExceptFirst(", ");
-                        buff.append(v.getName());
+                        dependencies.add(v.getName());
                     }
                 }
                 if (session.getDatabase()
@@ -89,14 +89,14 @@ public class DropTable extends SchemaCommand {
                     if (constraints != null && !constraints.isEmpty()) {
                         for (Constraint c : constraints) {
                             if (c.getTable() != table) {
-                                buff.appendExceptFirst(", ");
-                                buff.append(c.getName());
+                                dependencies.add(c.getName());
                             }
                         }
                     }
                 }
-                if (buff.length() > 0) {
-                    throw DbException.get(ErrorCode.CANNOT_DROP_2, tableName, buff.toString());
+                if (!dependencies.isEmpty()) {
+                    throw DbException.get(ErrorCode.CANNOT_DROP_2, tableName,
+                            StringUtils.join(new StringBuilder(), dependencies, ", ").toString());
                 }
 
             }

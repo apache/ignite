@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -12,8 +12,8 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.util.ArrayList;
+
 import org.h2.test.TestBase;
-import org.h2.util.New;
 
 /**
  * Test that static references within the database engine don't reference the
@@ -50,22 +50,22 @@ public class TestClassLoaderLeak extends TestBase {
             Thread.sleep(10);
         }
         ClassLoader cl = ref.get();
-        assertTrue(cl == null);
+        assertNull(cl);
         // fill the memory, so a heap dump is created
         // using -XX:+HeapDumpOnOutOfMemoryError
         // which can be analyzed using EclipseMAT
         // (check incoming references to TestClassLoader)
         boolean fillMemory = false;
         if (fillMemory) {
-            ArrayList<byte[]> memory = New.arrayList();
+            ArrayList<byte[]> memory = new ArrayList<>();
             for (int i = 0; i < Integer.MAX_VALUE; i++) {
                 memory.add(new byte[1024]);
             }
         }
         DriverManager.registerDriver((Driver)
-                Class.forName("org.h2.Driver").newInstance());
+                Class.forName("org.h2.Driver").getDeclaredConstructor().newInstance());
         DriverManager.registerDriver((Driver)
-                Class.forName("org.h2.upgrade.v1_1.Driver").newInstance());
+                Class.forName("org.h2.upgrade.v1_1.Driver").getDeclaredConstructor().newInstance());
     }
 
     private static WeakReference<ClassLoader> createClassLoader() throws Exception {
@@ -114,9 +114,7 @@ public class TestClassLoaderLeak extends TestBase {
             if (c == null) {
                 try {
                     c = findClass(name);
-                } catch (SecurityException e) {
-                    return super.loadClass(name, resolve);
-                } catch (ClassNotFoundException e) {
+                } catch (SecurityException | ClassNotFoundException e) {
                     return super.loadClass(name, resolve);
                 }
                 if (resolve) {

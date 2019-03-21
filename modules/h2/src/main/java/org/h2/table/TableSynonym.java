@@ -1,10 +1,11 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.table;
 
+import org.h2.command.Parser;
 import org.h2.command.ddl.CreateSynonymData;
 import org.h2.engine.Session;
 import org.h2.message.DbException;
@@ -26,7 +27,7 @@ public class TableSynonym extends SchemaObjectBase {
     private Table synonymFor;
 
     public TableSynonym(CreateSynonymData data) {
-        initSchemaObjectBase(data.schema, data.id, data.synonymName, Trace.TABLE);
+        super(data.schema, data.id, data.synonymName, Trace.TABLE);
         this.data = data;
     }
 
@@ -67,12 +68,17 @@ public class TableSynonym extends SchemaObjectBase {
 
     @Override
     public String getCreateSQL() {
-        return "CREATE SYNONYM " + getName() + " FOR " + data.synonymForSchema.getName() + "." + data.synonymFor;
+        StringBuilder builder = new StringBuilder("CREATE SYNONYM ");
+        getSQL(builder, true).append(" FOR ");
+        Parser.quoteIdentifier(builder, data.synonymForSchema.getName(), true).append('.');
+        Parser.quoteIdentifier(builder, data.synonymFor, true);
+        return builder.toString();
     }
 
     @Override
     public String getDropSQL() {
-        return "DROP SYNONYM " + getName();
+        StringBuilder builder = new StringBuilder("DROP SYNONYM ");
+        return getSQL(builder, true).toString();
     }
 
     @Override

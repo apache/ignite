@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -19,6 +19,7 @@ import java.util.GregorianCalendar;
 import java.util.SimpleTimeZone;
 import java.util.TimeZone;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.test.unit.TestDate;
 import org.h2.util.DateTimeUtils;
 import org.h2.value.ValueTimestamp;
@@ -26,7 +27,7 @@ import org.h2.value.ValueTimestamp;
 /**
  * Tests the date transfer and storage.
  */
-public class TestDateStorage extends TestBase {
+public class TestDateStorage extends TestDb {
 
     /**
      * Run just this test.
@@ -41,7 +42,6 @@ public class TestDateStorage extends TestBase {
     public void test() throws SQLException {
         deleteDb(getTestName());
         testDateTimeTimestampWithCalendar();
-        testMoveDatabaseToAnotherTimezone();
         testAllTimeZones();
         testCurrentTimeZone();
     }
@@ -149,74 +149,6 @@ public class TestDateStorage extends TestBase {
         conn.close();
     }
 
-    private void testMoveDatabaseToAnotherTimezone() throws SQLException {
-        if (config.memory) {
-            return;
-        }
-        if (config.mvStore) {
-            return;
-        }
-        String db = getTestName() + ";LOG=0;FILE_LOCK=NO";
-        Connection conn = getConnection(db);
-        Statement stat;
-        stat = conn.createStatement();
-        stat.execute("create table date_list(tz varchar, t varchar, ts timestamp)");
-        conn.close();
-        TimeZone defaultTimeZone = TimeZone.getDefault();
-        ArrayList<TimeZone> distinct = TestDate.getDistinctTimeZones();
-        try {
-            for (TimeZone tz : distinct) {
-                // println("insert using " + tz.getID());
-                TimeZone.setDefault(tz);
-                DateTimeUtils.resetCalendar();
-                conn = getConnection(db);
-                PreparedStatement prep = conn.prepareStatement(
-                        "insert into date_list values(?, ?, ?)");
-                prep.setString(1, tz.getID());
-                for (int m = 1; m < 10; m++) {
-                    String s = "2000-0" + m + "-01 15:00:00";
-                    prep.setString(2, s);
-                    prep.setTimestamp(3, Timestamp.valueOf(s));
-                    prep.execute();
-                }
-                conn.close();
-            }
-            // printTime("inserted");
-            for (TimeZone target : distinct) {
-                // println("select from " + target.getID());
-                if ("Pacific/Kiritimati".equals(target.getID())) {
-                    // there is a problem with this time zone, but it seems
-                    // unrelated to this database (possibly wrong timezone
-                    // information?)
-                    continue;
-                }
-                TimeZone.setDefault(target);
-                DateTimeUtils.resetCalendar();
-                conn = getConnection(db);
-                stat = conn.createStatement();
-                ResultSet rs = stat.executeQuery("select * from date_list order by t");
-                while (rs.next()) {
-                    String source = rs.getString(1);
-                    String a = rs.getString(2);
-                    String b = rs.getString(3);
-                    b = b.substring(0, a.length());
-                    if (!a.equals(b)) {
-                        assertEquals(source + ">" + target, a, b);
-                    }
-                }
-                conn.close();
-            }
-        } finally {
-            TimeZone.setDefault(defaultTimeZone);
-            DateTimeUtils.resetCalendar();
-        }
-        // printTime("done");
-        conn = getConnection(db);
-        stat = conn.createStatement();
-        stat.execute("drop table date_list");
-        conn.close();
-    }
-
     private static void testCurrentTimeZone() {
         for (int year = 1890; year < 2050; year += 3) {
             for (int month = 1; month <= 12; month++) {
@@ -240,6 +172,15 @@ public class TestDateStorage extends TestBase {
         try {
             ArrayList<TimeZone> distinct = TestDate.getDistinctTimeZones();
             for (TimeZone tz : distinct) {
+                /*
+                 * Some OpenJDKs have unusable timezones with negative DST that
+                 * causes IAE in SimpleTimeZone().
+                 */
+                if (tz.getID().startsWith("SystemV/")) {
+                    if (tz.getDSTSavings() < 0) {
+                        continue;
+                    }
+                }
                 // println(tz.getID());
                 TimeZone.setDefault(tz);
                 DateTimeUtils.resetCalendar();

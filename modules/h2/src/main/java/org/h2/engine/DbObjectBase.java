@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -43,7 +43,7 @@ public abstract class DbObjectBase implements DbObject {
      * @param name the name
      * @param traceModuleId the trace module id
      */
-    protected void initDbObjectBase(Database db, int objectId, String name,
+    protected DbObjectBase(Database db, int objectId, String name,
             int traceModuleId) {
         this.database = db;
         this.trace = db.getTrace(traceModuleId);
@@ -100,8 +100,13 @@ public abstract class DbObjectBase implements DbObject {
     }
 
     @Override
-    public String getSQL() {
-        return Parser.quoteIdentifier(objectName);
+    public String getSQL(boolean alwaysQuote) {
+        return Parser.quoteIdentifier(objectName, alwaysQuote);
+    }
+
+    @Override
+    public StringBuilder getSQL(StringBuilder builder, boolean alwaysQuote) {
+        return Parser.quoteIdentifier(builder, objectName, alwaysQuote);
     }
 
     @Override
@@ -129,7 +134,7 @@ public abstract class DbObjectBase implements DbObject {
      * used.
      */
     protected void invalidate() {
-        if (SysProperties.CHECK && id == -1) {
+        if (id == -1) {
             throw DbException.throwInternalError();
         }
         setModified();

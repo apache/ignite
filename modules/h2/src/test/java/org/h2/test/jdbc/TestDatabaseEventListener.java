@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -15,11 +15,12 @@ import org.h2.Driver;
 import org.h2.api.DatabaseEventListener;
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Tests the DatabaseEventListener interface.
  */
-public class TestDatabaseEventListener extends TestBase {
+public class TestDatabaseEventListener extends TestDb {
 
     /**
      * A flag to mark that the given method was called.
@@ -143,7 +144,7 @@ public class TestDatabaseEventListener extends TestBase {
                 MyDatabaseEventListener.class.getName());
         conn = org.h2.Driver.load().connect(url, p);
         conn.close();
-        assertTrue(!calledCreateIndex);
+        assertFalse(calledCreateIndex);
     }
 
     private void testIndexNotRebuilt() throws SQLException {
@@ -176,7 +177,7 @@ public class TestDatabaseEventListener extends TestBase {
                 MyDatabaseEventListener.class.getName());
         conn = org.h2.Driver.load().connect(url, p);
         conn.close();
-        assertTrue(!calledCreateIndex);
+        assertFalse(calledCreateIndex);
     }
 
     private void testCloseLog0(boolean shutdown) throws SQLException {
@@ -205,7 +206,7 @@ public class TestDatabaseEventListener extends TestBase {
         conn = org.h2.Driver.load().connect(url, p);
         conn.close();
         if (calledOpened) {
-            assertTrue(!calledScan);
+            assertFalse(calledScan);
         }
     }
 

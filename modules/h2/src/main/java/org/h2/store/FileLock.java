@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -73,7 +73,7 @@ public class FileLock implements Runnable {
      */
     private long lastWrite;
 
-    private String method, ipAddress;
+    private String method;
     private Properties properties;
     private String uniqueId;
     private Thread watchdog;
@@ -350,7 +350,7 @@ public class FileLock implements Runnable {
         setUniqueId();
         // if this returns 127.0.0.1,
         // the computer is probably not networked
-        ipAddress = NetUtils.getLocalAddress();
+        String ipAddress = NetUtils.getLocalAddress();
         FileUtils.createDirectories(FileUtils.getParent(fileName));
         if (!FileUtils.createFile(fileName)) {
             waitUntilOld();
@@ -401,7 +401,7 @@ public class FileLock implements Runnable {
             serverSocket = NetUtils.createServerSocket(0, false);
             int port = serverSocket.getLocalPort();
             properties.setProperty("ipAddress", ipAddress);
-            properties.setProperty("port", String.valueOf(port));
+            properties.setProperty("port", Integer.toString(port));
         } catch (Exception e) {
             trace.debug(e, "lock");
             serverSocket = null;
@@ -486,11 +486,7 @@ public class FileLock implements Runnable {
                         save();
                     }
                     Thread.sleep(sleep);
-                } catch (OutOfMemoryError e) {
-                    // ignore
-                } catch (InterruptedException e) {
-                    // ignore
-                } catch (NullPointerException e) {
+                } catch (OutOfMemoryError | NullPointerException | InterruptedException e) {
                     // ignore
                 } catch (Exception e) {
                     trace.debug(e, "watchdog");

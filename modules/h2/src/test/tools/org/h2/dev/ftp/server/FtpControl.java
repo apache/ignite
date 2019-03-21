@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -304,7 +304,7 @@ public class FtpControl extends Thread {
             } else if ("SIZE".equals(command)) {
                 param = getFileName(param);
                 if (FileUtils.exists(param) && !FileUtils.isDirectory(param)) {
-                    reply(250, String.valueOf(FileUtils.size(param)));
+                    reply(250, Long.toString(FileUtils.size(param)));
                 } else {
                     reply(500, "Failed");
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -14,11 +14,12 @@ import org.h2.api.ErrorCode;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 
 /**
  * Test for views.
  */
-public class TestView extends TestBase {
+public class TestView extends TestDb {
 
     private static int x;
 
@@ -120,7 +121,15 @@ public class TestView extends TestBase {
         stat.execute("drop table test if exists");
         stat.execute("create table test(id int primary key, name varchar(1))");
         stat.execute("insert into test(id, name) values(1, 'b'), (3, 'a')");
-        ResultSet rs = stat.executeQuery(
+        ResultSet rs;
+        rs = stat.executeQuery(
+                "select nr from (select rownum() as nr, " +
+                "a.id as id from (select id from test order by name) as a) as b " +
+                "where b.id = 1;");
+        assertTrue(rs.next());
+        assertEquals(2, rs.getInt(1));
+        assertFalse(rs.next());
+        rs = stat.executeQuery(
                 "select nr from (select row_number() over() as nr, " +
                 "a.id as id from (select id from test order by name) as a) as b " +
                 "where b.id = 1;");
@@ -357,19 +366,19 @@ public class TestView extends TestBase {
                 "select * from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME = 'V1'");
         assertTrue(rs.next());
         assertEquals("ID1", rs.getString("COLUMN_NAME"));
-        assertEquals("((ID1 % 2) = 0)", rs.getString("CHECK_CONSTRAINT"));
+        assertEquals("((\"ID1\" % 2) = 0)", rs.getString("CHECK_CONSTRAINT"));
         assertTrue(rs.next());
         assertEquals("ID2", rs.getString("COLUMN_NAME"));
-        assertEquals("((ID2 % 1) = 0)", rs.getString("CHECK_CONSTRAINT"));
+        assertEquals("((\"ID2\" % 1) = 0)", rs.getString("CHECK_CONSTRAINT"));
         // Check with AliasExpression
         stat.execute("create view v2 as select ID1 key1,ID2 key2 from t0,t1");
         rs = stat.executeQuery("select * from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME = 'V2'");
         assertTrue(rs.next());
         assertEquals("KEY1", rs.getString("COLUMN_NAME"));
-        assertEquals("((KEY1 % 2) = 0)", rs.getString("CHECK_CONSTRAINT"));
+        assertEquals("((\"KEY1\" % 2) = 0)", rs.getString("CHECK_CONSTRAINT"));
         assertTrue(rs.next());
         assertEquals("KEY2", rs.getString("COLUMN_NAME"));
-        assertEquals("((KEY2 % 1) = 0)", rs.getString("CHECK_CONSTRAINT"));
+        assertEquals("((\"KEY2\" % 1) = 0)", rs.getString("CHECK_CONSTRAINT"));
         // Check hide of constraint if column is an Operation
         stat.execute("create view v3 as select ID1 + 1 ID1, ID2 + 1 ID2 from t0,t1");
         rs = stat.executeQuery("select * from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME = 'V3'");

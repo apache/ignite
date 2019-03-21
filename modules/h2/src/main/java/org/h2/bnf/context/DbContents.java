@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -7,14 +7,14 @@ package org.h2.bnf.context;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-import org.h2.command.Parser;
-import org.h2.util.New;
+import org.h2.jdbc.JdbcConnection;
+import org.h2.util.ParserUtil;
 import org.h2.util.StringUtils;
+import org.h2.util.Utils;
 
 /**
  * Keeps meta data information about a database.
@@ -29,11 +29,12 @@ public class DbContents {
     private boolean isPostgreSQL;
     private boolean isDerby;
     private boolean isSQLite;
-    private boolean isH2ModeMySQL;
     private boolean isMySQL;
     private boolean isFirebird;
     private boolean isMSSQLServer;
     private boolean isDB2;
+
+    private boolean databaseToUpper, databaseToLower;
 
     /**
      * @return The default schema.
@@ -61,13 +62,6 @@ public class DbContents {
      */
     public boolean isH2() {
         return isH2;
-    }
-
-    /**
-     * @return True if this is a H2 database in MySQL mode.
-     */
-    public boolean isH2ModeMySQL() {
-        return isH2ModeMySQL;
     }
 
     /**
@@ -128,19 +122,6 @@ public class DbContents {
     public synchronized void readContents(String url, Connection conn)
             throws SQLException {
         isH2 = url.startsWith("jdbc:h2:");
-        if (isH2) {
-            PreparedStatement prep = conn.prepareStatement(
-                    "SELECT UPPER(VALUE) FROM INFORMATION_SCHEMA.SETTINGS " +
-                    "WHERE NAME=?");
-            prep.setString(1, "MODE");
-            ResultSet rs = prep.executeQuery();
-            rs.next();
-            if ("MYSQL".equals(rs.getString(1))) {
-                isH2ModeMySQL = true;
-            }
-            rs.close();
-            prep.close();
-        }
         isDB2 = url.startsWith("jdbc:db2:");
         isSQLite = url.startsWith("jdbc:sqlite:");
         isOracle = url.startsWith("jdbc:oracle:");
@@ -151,6 +132,17 @@ public class DbContents {
         isDerby = url.startsWith("jdbc:derby:");
         isFirebird = url.startsWith("jdbc:firebirdsql:");
         isMSSQLServer = url.startsWith("jdbc:sqlserver:");
+        if (isH2) {
+            JdbcConnection.Settings settings = ((JdbcConnection) conn).getSettings();
+            databaseToUpper = settings.databaseToUpper;
+            databaseToLower = settings.databaseToLower;
+        }else if (isMySQL || isPostgreSQL) {
+            databaseToUpper = false;
+            databaseToLower = true;
+        } else {
+            databaseToUpper = true;
+            databaseToLower = false;
+        }
         DatabaseMetaData meta = conn.getMetaData();
         String defaultSchemaName = getDefaultSchemaName(meta);
         String[] schemaNames = getSchemaNames(meta);
@@ -196,7 +188,7 @@ public class DbContents {
             return new String[] { null };
         }
         ResultSet rs = meta.getSchemas();
-        ArrayList<String> schemaList = New.arrayList();
+        ArrayList<String> schemaList = Utils.newSmallArrayList();
         while (rs.next()) {
             String schema = rs.getString("TABLE_SCHEM");
             String[] ignoreNames = null;
@@ -266,7 +258,6 @@ public class DbContents {
 
     /**
      * Add double quotes around an identifier if required.
-     * For the H2 database, all identifiers are quoted.
      *
      * @param identifier the identifier
      * @return the quoted identifier
@@ -275,10 +266,10 @@ public class DbContents {
         if (identifier == null) {
             return null;
         }
-        if (isH2 && !isH2ModeMySQL) {
-            return Parser.quoteIdentifier(identifier);
+        if (ParserUtil.isSimpleIdentifier(identifier, databaseToUpper, databaseToLower)) {
+            return identifier;
         }
-        return StringUtils.toUpperEnglish(identifier);
+        return StringUtils.quoteIdentifier(identifier);
     }
 
 }

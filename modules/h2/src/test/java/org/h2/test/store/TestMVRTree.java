@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -17,16 +17,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
+
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.FileImageOutputStream;
+
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.rtree.MVRTreeMap;
 import org.h2.mvstore.rtree.SpatialKey;
 import org.h2.mvstore.type.StringDataType;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
-import org.h2.util.New;
 
 /**
  * Tests the r-tree.
@@ -134,7 +135,7 @@ public class TestMVRTree extends TestMVStore {
         for (SpatialKey k; it.hasNext();) {
             k = it.next();
             // System.out.println(k + ": " + r.get(k));
-            assertTrue(k != null);
+            assertNotNull(k);
         }
         s.close();
     }
@@ -181,7 +182,7 @@ public class TestMVRTree extends TestMVStore {
         assertEquals(len, r.size());
         int count = 0;
         for (SpatialKey k : r.keySet()) {
-            assertTrue(r.get(k) != null);
+            assertNotNull(r.get(k));
             count++;
         }
         assertEquals(len, count);
@@ -219,7 +220,7 @@ public class TestMVRTree extends TestMVStore {
         add(r, "Bellinzona", key(11, 46.12, 9.01, 17373));
         add(r, "Chur", key(12, 46.51, 9.32, 33756));
         // render(r, getBaseDir() + "/test.png");
-        ArrayList<String> list = New.arrayList();
+        ArrayList<String> list = new ArrayList<>(r.size());
         for (SpatialKey x : r.keySet()) {
             list.add(r.get(x));
         }
@@ -295,8 +296,8 @@ public class TestMVRTree extends TestMVStore {
             g2d.drawChars(s.toCharArray(), 0, s.length(), rect[0], rect[1] - 4);
         }
         g2d.setColor(Color.red);
-        ArrayList<SpatialKey> list = New.arrayList();
-        r.addNodeKeys(list,  r.getRoot());
+        ArrayList<SpatialKey> list = new ArrayList<>();
+        r.addNodeKeys(list,  r.getRootPage());
         for (SpatialKey x : list) {
             int[] rect = scale(b, x, width, height);
             g2d.drawRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
@@ -413,7 +414,7 @@ public class TestMVRTree extends TestMVStore {
                 while (it.hasNext()) {
                     SpatialKey n = it.next();
                     String a = map.get(n);
-                    assertFalse(a == null);
+                    assertNotNull(a);
                 }
                 break;
             }
@@ -424,7 +425,7 @@ public class TestMVRTree extends TestMVStore {
                 while (it.hasNext()) {
                     SpatialKey n = it.next();
                     String a = map.get(n);
-                    assertFalse(a == null);
+                    assertNotNull(a);
                 }
                 break;
             }

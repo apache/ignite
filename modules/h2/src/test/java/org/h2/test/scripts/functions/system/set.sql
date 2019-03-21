@@ -1,7 +1,10 @@
--- Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (http://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
+
+@reconnect off
+
 -- Try a custom column naming rules setup
 
 SET COLUMN_NAME_RULES=MAX_IDENTIFIER_LENGTH = 30;
@@ -24,6 +27,7 @@ SELECT 1 AS VERY_VERY_VERY_LONG_ID_VERY_VERY_VERY_LONG_ID, SUM(X)+1 AS _12345678
 > VERY_VERY_VERY_LONG_ID_VERY_VE _123456789012345 SUMX1 SUMX147 x noName6 noName7
 > ------------------------------ ---------------- ----- ------- - ------- -------
 > 1                              4                4     51      x !!!     !!!!
+> rows: 1
 
 SET COLUMN_NAME_RULES=EMULATE='Oracle';
 > ok
@@ -33,6 +37,7 @@ SELECT 1 AS VERY_VERY_VERY_LONG_ID, SUM(X)+1 AS _123456789012345, SUM(X)+1 , SUM
 > VERY_VERY_VERY_LONG_ID _123456789012345 SUMX1 SUMX147 x _UNNAMED_6 _UNNAMED_7
 > ---------------------- ---------------- ----- ------- - ---------- ----------
 > 1                      4                4     51      x !!!        !!!!
+> rows: 1
 
 SET COLUMN_NAME_RULES=EMULATE='Oracle';
 > ok
@@ -42,6 +47,7 @@ SELECT 1 AS VERY_VERY_VERY_LONG_ID, SUM(X)+1 AS _123456789012345, SUM(X)+1 , SUM
 > VERY_VERY_VERY_LONG_ID _123456789012345 SUMX1 SUMX147 x _UNNAMED_6 _UNNAMED_7 _23456789012345678901234567890XXX
 > ---------------------- ---------------- ----- ------- - ---------- ---------- ---------------------------------
 > 1                      4                4     51      x !!!        !!!!       Very Long
+> rows: 1
 
 SET COLUMN_NAME_RULES=EMULATE='PostgreSQL';
 > ok
@@ -51,6 +57,7 @@ SELECT 1 AS VERY_VERY_VERY_LONG_ID, SUM(X)+1 AS _123456789012345, SUM(X)+1 , SUM
 > VERY_VERY_VERY_LONG_ID _123456789012345 SUMX1 SUMX147 x _UNNAMED_6 _UNNAMED_7 QuotedColumnId
 > ---------------------- ---------------- ----- ------- - ---------- ---------- --------------
 > 1                      4                4     51      x !!!        !!!!       999
+> rows: 1
 
 SET COLUMN_NAME_RULES=DEFAULT;
 > ok

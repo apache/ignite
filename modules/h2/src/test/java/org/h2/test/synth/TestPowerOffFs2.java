@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -15,14 +15,14 @@ import java.util.Random;
 
 import org.h2.api.ErrorCode;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.test.utils.FilePathDebug;
-import org.h2.util.New;
 
 /**
  * Tests that use the debug file system to simulate power failure.
  * This test runs many random operations and stops after some time.
  */
-public class TestPowerOffFs2 extends TestBase {
+public class TestPowerOffFs2 extends TestDb {
 
     private static final String USER = "sa";
     private static final String PASSWORD = "sa";
@@ -30,8 +30,8 @@ public class TestPowerOffFs2 extends TestBase {
     private FilePathDebug fs;
 
     private String url;
-    private final ArrayList<Connection> connections = New.arrayList();
-    private final ArrayList<String> tables = New.arrayList();
+    private final ArrayList<Connection> connections = new ArrayList<>();
+    private final ArrayList<String> tables = new ArrayList<>();
 
     /**
      * Run just this test.

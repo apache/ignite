@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -8,8 +8,8 @@ package org.h2.test.db;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
-import org.h2.jdbc.JdbcSQLException;
 import org.h2.test.TestAll;
 import org.h2.test.TestBase;
 
@@ -235,7 +235,7 @@ public class TestGeneralCommonTableQueries extends AbstractBaseForCommonTableExp
             rs = prep.executeQuery();
             fail("Temp view T1 was accessible after previous WITH statement finished "+
                     "- but should not have been.");
-        } catch (JdbcSQLException e) {
+        } catch (SQLException e) {
             // ensure the T1 table has been removed even without auto commit
             assertContains(e.getMessage(), "Table \"T1\" not found;");
         }
@@ -492,7 +492,7 @@ public class TestGeneralCommonTableQueries extends AbstractBaseForCommonTableExp
         int expectedNumberOfRows = expectedRowData.length;
 
         testRepeatedQueryWithSetup(maxRetries, expectedRowData, expectedColumnNames, expectedNumberOfRows, setupSQL,
-                withQuery, maxRetries - 1, expectedColumnTypes);
+                withQuery, maxRetries - 1, expectedColumnTypes, false);
 
     }
 
@@ -512,7 +512,7 @@ public class TestGeneralCommonTableQueries extends AbstractBaseForCommonTableExp
         int expectedNumberOfRows = expectedRowData.length;
 
         testRepeatedQueryWithSetup(maxRetries, expectedRowData, expectedColumnNames, expectedNumberOfRows, setupSQL,
-                withQuery, maxRetries - 1, expectedColumnTypes);
+                withQuery, maxRetries - 1, expectedColumnTypes, false);
 
     }
 
@@ -527,14 +527,13 @@ public class TestGeneralCommonTableQueries extends AbstractBaseForCommonTableExp
         config = new TestAll();
 
         try {
-            // Test with settings: lazy mvStore memory mvcc multiThreaded
+            // Test with settings: lazy mvStore memory multiThreaded
             // connection url is
-            // mem:script;MV_STORE=true;LOG=1;LOCK_TIMEOUT=50;MVCC=TRUE;
+            // mem:script;MV_STORE=true;LOG=1;LOCK_TIMEOUT=50;
             // MULTI_THREADED=TRUE;LAZY_QUERY_EXECUTION=1
             config.lazy = true;
             config.mvStore = true;
             config.memory = true;
-            config.mvcc = true;
             config.multiThreaded = true;
 
             String setupSQL = "--no config set";
@@ -549,7 +548,7 @@ public class TestGeneralCommonTableQueries extends AbstractBaseForCommonTableExp
             int expectedNumberOfRows = expectedRowData.length;
 
             testRepeatedQueryWithSetup(maxRetries, expectedRowData, expectedColumnNames, expectedNumberOfRows,
-                    setupSQL, withQuery, maxRetries - 1, expectedColumnTypes);
+                    setupSQL, withQuery, maxRetries - 1, expectedColumnTypes, false);
         } finally {
             config = backupConfig;
         }
@@ -576,6 +575,6 @@ public class TestGeneralCommonTableQueries extends AbstractBaseForCommonTableExp
         int expectedNumberOfRows = expectedRowData.length;
 
         testRepeatedQueryWithSetup(maxRetries, expectedRowData, expectedColumnNames, expectedNumberOfRows, setupSQL,
-                withQuery, maxRetries - 1, expectedColumnTypes);
+                withQuery, maxRetries - 1, expectedColumnTypes, false);
     }
 }

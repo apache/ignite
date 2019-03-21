@@ -1,7 +1,7 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0, and the
- * EPL 1.0 (http://h2database.com/html/license.html). Initial Developer: H2
- * Group
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * and the EPL 1.0 (http://h2database.com/html/license.html).
+ * Initial Developer: H2 Group
  */
 package org.h2.value;
 
@@ -10,8 +10,10 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import org.h2.api.ErrorCode;
 import org.h2.api.TimestampWithTimeZone;
+import org.h2.engine.SysProperties;
 import org.h2.message.DbException;
 import org.h2.util.DateTimeUtils;
+import org.h2.util.LocalDateTimeUtils;
 
 /**
  * Implementation of the TIMESTAMP WITH TIME ZONE data type.
@@ -42,16 +44,6 @@ public class ValueTimestampTimeZone extends Value {
      * The default scale for timestamps.
      */
     static final int MAXIMUM_SCALE = ValueTimestamp.MAXIMUM_SCALE;
-
-    /**
-     * Get display size for the specified scale.
-     *
-     * @param scale scale
-     * @return display size
-     */
-    public static int getDisplaySize(int scale) {
-        return scale == 0 ? 25 : 26 + scale;
-    }
 
     /**
      * A bit field with bits for the year, month, and day (see DateTimeUtils for
@@ -167,33 +159,33 @@ public class ValueTimestampTimeZone extends Value {
     }
 
     @Override
-    public int getType() {
-        return Value.TIMESTAMP_TZ;
+    public TypeInfo getType() {
+        return TypeInfo.TYPE_TIMESTAMP_TZ;
+    }
+
+    @Override
+    public int getValueType() {
+        return TIMESTAMP_TZ;
+    }
+
+    @Override
+    public int getMemory() {
+        // Java 11 with -XX:-UseCompressedOops
+        return 40;
     }
 
     @Override
     public String getString() {
-        return DateTimeUtils.timestampTimeZoneToString(dateValue, timeNanos, timeZoneOffsetMins);
+        StringBuilder builder = new StringBuilder(ValueTimestampTimeZone.MAXIMUM_PRECISION);
+        DateTimeUtils.appendTimestampTimeZone(builder, dateValue, timeNanos, timeZoneOffsetMins);
+        return builder.toString();
     }
 
     @Override
-    public String getSQL() {
-        return "TIMESTAMP WITH TIME ZONE '" + getString() + "'";
-    }
-
-    @Override
-    public long getPrecision() {
-        return MAXIMUM_PRECISION;
-    }
-
-    @Override
-    public int getScale() {
-        return MAXIMUM_SCALE;
-    }
-
-    @Override
-    public int getDisplaySize() {
-        return MAXIMUM_PRECISION;
+    public StringBuilder getSQL(StringBuilder builder) {
+        builder.append("TIMESTAMP WITH TIME ZONE '");
+        DateTimeUtils.appendTimestampTimeZone(builder, dateValue, timeNanos, timeZoneOffsetMins);
+        return builder.append('\'');
     }
 
     @Override
@@ -224,7 +216,7 @@ public class ValueTimestampTimeZone extends Value {
     }
 
     @Override
-    protected int compareSecure(Value o, CompareMode mode) {
+    public int compareTypeSafe(Value o, CompareMode mode) {
         ValueTimestampTimeZone t = (ValueTimestampTimeZone) o;
         // Maximum time zone offset is +/-18 hours so difference in days between local
         // and UTC cannot be more than one day
@@ -273,8 +265,10 @@ public class ValueTimestampTimeZone extends Value {
 
     @Override
     public Object getObject() {
-        return new TimestampWithTimeZone(dateValue, timeNanos,
-                timeZoneOffsetMins);
+        if (SysProperties.RETURN_OFFSET_DATE_TIME && LocalDateTimeUtils.isJava8DateApiPresent()) {
+            return LocalDateTimeUtils.valueToOffsetDateTime(this);
+        }
+        return new TimestampWithTimeZone(dateValue, timeNanos, timeZoneOffsetMins);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -11,12 +11,13 @@ import java.sql.Statement;
 import org.h2.engine.SysProperties;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
+import org.h2.test.TestDb;
 import org.h2.util.MathUtils;
 
 /**
  * This test executes random SQL statements generated using the BNF tool.
  */
-public class TestRandomSQL extends TestBase {
+public class TestRandomSQL extends TestDb {
 
     private int success, total;
 
@@ -30,11 +31,15 @@ public class TestRandomSQL extends TestBase {
     }
 
     @Override
-    public void test() throws Exception {
+    public boolean isEnabled() {
         if (config.networked) {
-            return;
+            return false;
         }
-        config.memory = true;
+        return true;
+    }
+
+    @Override
+    public void test() throws Exception {
         int len = getSize(2, 6);
         for (int a = 0; a < len; a++) {
             int s = MathUtils.randomInt(Integer.MAX_VALUE);

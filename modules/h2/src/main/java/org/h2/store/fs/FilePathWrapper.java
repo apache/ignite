@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -41,7 +41,7 @@ public abstract class FilePathWrapper extends FilePath {
 
     private FilePathWrapper create(String path, FilePath base) {
         try {
-            FilePathWrapper p = getClass().newInstance();
+            FilePathWrapper p = getClass().getDeclaredConstructor().newInstance();
             p.name = path;
             p.base = base;
             return p;
@@ -158,9 +158,8 @@ public abstract class FilePathWrapper extends FilePath {
     }
 
     @Override
-    public FilePath createTempFile(String suffix, boolean deleteOnExit,
-            boolean inTempDir) throws IOException {
-        return wrap(base.createTempFile(suffix, deleteOnExit, inTempDir));
+    public FilePath createTempFile(String suffix, boolean inTempDir) throws IOException {
+        return wrap(base.createTempFile(suffix, inTempDir));
     }
 
 }
