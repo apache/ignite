@@ -22,6 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ml.tutorial.TitanicUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -39,7 +40,8 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  */
 public class DecisionTreeFromSparkExample {
     /** Path to Spark DT model. */
-    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/dt";
+    public static final String SPARK_MDL_PATH = IgniteUtils.resolveIgnitePath("examples/src/main/resources/models/spark/serialized/dt")
+        .toPath().toAbsolutePath().toString();
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {

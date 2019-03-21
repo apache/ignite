@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -28,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
  * The utility class.
@@ -43,7 +43,7 @@ public class TitanicUtils {
     public static IgniteCache<Integer, Object[]> readPassengers(Ignite ignite)
         throws FileNotFoundException {
         IgniteCache<Integer, Object[]> cache = getCache(ignite);
-        Scanner scanner = new Scanner(new File("examples/src/main/resources/datasets/titanic.csv"));
+        Scanner scanner = new Scanner(IgniteUtils.resolveIgnitePath("examples/src/main/resources/datasets/titanic.csv"));
 
         int cnt = 0;
         while (scanner.hasNextLine()) {
