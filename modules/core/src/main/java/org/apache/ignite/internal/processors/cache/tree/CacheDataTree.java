@@ -334,29 +334,23 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
     /**
      * todo fake implementation only for checking that closure is working properly with preloader.
-     * @param keys Keys.
-     * @param x Implementation specific argument, {@code null} always means that we need a full detached data row.
-     * @param c Closure.
-     * @throws IgniteCheckedException If failed.
+     * todo rework
      */
     @Override public void invokeAll(List<CacheSearchRow> keys, Object x, InvokeAllClosure<CacheDataRow, CacheSearchRow> c) throws IgniteCheckedException {
         checkDestroyed();
 
-        int cnt = keys.size();
-
-        assert cnt > 0 : cnt;
-
         CacheSearchRow lower = keys.get(0);
-        CacheSearchRow upper = keys.get(cnt - 1);
+        CacheSearchRow upper = keys.get(keys.size() - 1);
 
-        List<T2<CacheDataRow, CacheSearchRow>> batch = new ArrayList<>(cnt);
+        List<T2<CacheDataRow, CacheSearchRow>> batch = new ArrayList<>(keys.size());
 
         Iterator<CacheSearchRow> rowItr = keys.iterator();
 
-        assert lower.key().hashCode() <= upper.key().hashCode() : "Keys must be lower=" + lower.key().hashCode() + ", upper=" + upper.key().hashCode();
+        assert lower.key().hashCode() <= upper.key().hashCode() : "Keys not sorted, lower=" + lower.key().hashCode() + ", upper=" + upper.key().hashCode();
 
         GridCursor<CacheDataRow> cur = find(lower, upper, CacheDataRowAdapter.RowData.FULL);
 
+        CacheSearchRow lastRow = null;
         CacheSearchRow row = null;
         KeyCacheObject key = null;
 
@@ -370,17 +364,15 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             while (key == null || key.hashCode() <= oldKey.hashCode()) {
                 if (key != null && key.hashCode() == oldKey.hashCode()) {
                     while (key.hashCode() == oldKey.hashCode()) {
-                        if (key.equals(oldKey))
-                            batch.add(new T2<>(oldRow, row));
-                        else
-                            batch.add(new T2<>(null, row));
+                        // todo fix and test collision resolution
+                        batch.add(new T2<>(key.equals(oldKey) ? oldRow : null, row));
 
-                        row = null;
+                        lastRow = null;
 
                         if (!rowItr.hasNext())
                             break;
 
-                        row = rowItr.next();
+                        lastRow = row = rowItr.next();
                         key = row.key();
                     }
                 }
@@ -388,11 +380,11 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                     if (row != null)
                         batch.add(new T2<>(null, row));
 
-                    row = null;
+                    lastRow = null;
 
                     if (rowItr.hasNext()) {
-                        row = rowItr.next();
-                        key = row.key();
+                        lastRow = row = rowItr.next();
+                        key = lastRow.key();
                     }
                 }
 
@@ -401,8 +393,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             }
         }
 
-        if (row != null)
-            batch.add(new T2<>(key.equals(oldKey) ? oldRow : null, row));
+        if (lastRow != null)
+            batch.add(new T2<>(key.equals(oldKey) ? oldRow : null, lastRow));
 
         while (rowItr.hasNext())
             batch.add(new T2<>(null, rowItr.next()));
