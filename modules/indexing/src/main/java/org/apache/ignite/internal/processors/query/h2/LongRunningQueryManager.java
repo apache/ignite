@@ -103,8 +103,11 @@ public class LongRunningQueryManager {
      */
     private void checkLongRunning() {
         for (IgniteH2QueryInfo qinfo : qrys.keySet()) {
-            if (qinfo.time() > longQryWarnTimeout)
-                qinfo.printLogMessage(log, connMgr);
+            if (qinfo.time() > longQryWarnTimeout) {
+                qinfo.printLogMessage(log, connMgr, "Query execution is too long");
+
+                qrys.remove(qinfo);
+            }
         }
     }
 

@@ -171,9 +171,10 @@ public class IgniteH2QueryInfo {
 
     /**
      * @param log Logger.
+     * @param msg Log message
      * @param connMgr Connection manager.
      */
-    public void printLogMessage(IgniteLogger log, ConnectionManager connMgr) {
+    public void printLogMessage(IgniteLogger log, ConnectionManager connMgr, String msg) {
         Connection c = connMgr.connectionForThread().connection(schema);
 
         H2Utils.setupConnection(c, distributedJoin, enforceJoinOrder, lazy);
@@ -201,7 +202,7 @@ public class IgniteH2QueryInfo {
             log.warning("Cannot get plan for long query: " + sql, e);
         }
 
-        StringBuilder msg = new StringBuilder("Query execution is too long [time=")
+        StringBuilder msgSb = new StringBuilder(msg + " [time=")
             .append(time()).append("ms")
             .append(", distributedJoin=").append(distributedJoin)
             .append(", enforceJoinOrder=").append(enforceJoinOrder)
@@ -209,9 +210,9 @@ public class IgniteH2QueryInfo {
             .append(", scanCounts=[").append(scanCnt.toString()).append(']');
 
         if (qctx != null)
-            msg.append(", context=" + qctx);
+            msgSb.append(", context=" + qctx);
 
-        msg.append(", sql='")
+        msgSb.append(", sql='")
             .append(sql)
             .append("', plan=")
             .append(strPlan)
@@ -219,6 +220,6 @@ public class IgniteH2QueryInfo {
             .append(params == null ? "[]" : Arrays.deepToString(params.toArray()))
             .append(']');
 
-        LT.warn(log, msg.toString());
+        LT.warn(log, msgSb.toString());
     }
 }
