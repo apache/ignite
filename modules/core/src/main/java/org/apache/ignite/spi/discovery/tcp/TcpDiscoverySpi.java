@@ -2033,20 +2033,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             tcpExchange.handshakeResponseDataReceived(componentsData);
     }
 
-    /** */
-    Map<Integer, byte[]> collectClientPrefetchData() {
-        assert tcpExchange != null;
-
-        return tcpExchange.collectClientPrefetchData();
-    }
-
-    /** */
-    void clientPrefetchDataReceived(Map<Integer, byte[]> prefetchData) {
-        assert tcpExchange != null;
-
-        tcpExchange.clientPrefetchDataReceived(prefetchData);
-    }
-
     /**
      * @param dataPacket Data packet.
      */

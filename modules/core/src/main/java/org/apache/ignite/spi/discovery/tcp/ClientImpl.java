@@ -97,7 +97,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientDataPrefetchMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
@@ -714,11 +713,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 req.client(true);
 
-                if (!recon) {
+                if (!recon)
                     req.sendComponentsData(true);
-
-                    req.prefetchClientData(true);
-                }
 
                 spi.writeToSocket(sock, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
@@ -726,13 +722,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 if (res.hasComponentsData())
                     spi.handshakeResponseDataReceived(res.componentsData());
-
-
-                if (req.prefetchClientData()) {
-                    TcpDiscoveryClientDataPrefetchMessage prefetchMsg = spi.readMessage(sock, null, ackTimeout0);
-
-                    spi.clientPrefetchDataReceived(prefetchMsg.prefetchData());
-                }
 
                 UUID rmtNodeId = res.creatorNodeId();
 

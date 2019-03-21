@@ -26,10 +26,4 @@ public interface DiscoveryTcpSpiDataExchange {
 
     /** */
     void handshakeResponseDataReceived(Map<Integer, byte[]> componentsData);
-
-    /** */
-    Map<Integer,byte[]> collectClientPrefetchData();
-
-    /** */
-    void clientPrefetchDataReceived(Map<Integer, byte[]> prefetchData);
 }

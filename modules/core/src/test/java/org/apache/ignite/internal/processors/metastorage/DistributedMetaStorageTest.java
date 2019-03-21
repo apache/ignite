@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -79,8 +80,6 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     @After
     public void after() throws Exception {
         stopAllGrids();
-
-        System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
     }
 
     /**
@@ -259,9 +258,8 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testJoinCleanNodeFullData() throws Exception {
-        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
-
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
@@ -283,9 +281,8 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testDeactivateActivate() throws Exception {
-        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
-
         startGrid(0);
 
         grid(0).cluster().active(true);

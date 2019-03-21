@@ -158,15 +158,6 @@ public interface GridComponent {
     public default void onTcpHandshakeResponseDataReceived(Serializable componentData) {
     }
 
-    /** */
-    public default Serializable collectTcpClientPrefetchData() {
-        return null;
-    }
-
-    /** */
-    public default void onTcpClientPrefetchDataReceived(Serializable prefetchData) {
-    }
-
     /**
      * Prints memory statistics (sizes of internal structures, etc.).
      *

@@ -123,7 +123,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientDataPrefetchMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
@@ -6458,16 +6457,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvSock));
-
-                    if (req.prefetchClientData()) {
-                        Map<Integer, byte[]> prefetchData = spi.collectClientPrefetchData();
-
-                        spi.writeToSocket(
-                            sock,
-                            new TcpDiscoveryClientDataPrefetchMessage(locNodeId, prefetchData),
-                            spi.getEffectiveSocketTimeout(srvSock)
-                        );
-                    }
 
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
                     // the local node sends a handshake request message on the loopback address, so we get here.
