@@ -525,7 +525,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org", "metaTest", "dep", "PUBLIC", "IGNITE"));
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org", "metaTest", "dep", "PUBLIC", "IGNITE", "PREDEFINED_CLIENT_SCHEMA"));
 
             Set<String> schemas = new HashSet<>();
 
@@ -535,10 +535,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 assertEquals("There is only one possible catalog.",
                     JdbcUtils.CATALOG_NAME, rs.getString(2));
             }
-
-            assertFalse(schemas.contains("PREDEFINED_SCHEMAS_1"));
-
-            assertFalse(schemas.contains("PREDEFINED_SCHEMAS_2"));
 
             assertEquals(expectedSchemas, schemas);
         }
