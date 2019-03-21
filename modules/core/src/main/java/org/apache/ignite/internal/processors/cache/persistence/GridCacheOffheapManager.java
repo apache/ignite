@@ -1525,12 +1525,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * in accordance with the value of {@code lastThrottledCacheId}.
          * Used for fine-grained throttling on per-partition basis.
          */
+        private volatile long nextStoreCleanTime;
+
         /** */
         private PartitionMetaStorage<SimpleDataRow> partStorage;
-
-        /** Timestamp when next clean try will be allowed for current partition.
-         * Used for fine-grained throttling on per-partition basis. */
-        private volatile long nextStoreCleanTime;
 
         /** */
         private final boolean exists;
@@ -1577,7 +1575,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     if (PageIdUtils.partId(metas.reuseListRoot.pageId().pageId()) != partId ||
                         PageIdUtils.partId(metas.treeRoot.pageId().pageId()) != partId ||
-                        PageIdUtils.partId(metas.pendingTreeRoot.pageId().pageId()) != partId) {
+                        PageIdUtils.partId(metas.pendingTreeRoot.pageId().pageId()) != partId ||
+                        PageIdUtils.partId(metas.partMetastoreReuseListRoot.pageId().pageId()) != partId
+                        ) {
                         throw new IgniteCheckedException("Invalid meta root allocated [" +
                             "cacheOrGroupName=" + grp.cacheOrGroupName() +
                             ", partId=" + partId +
