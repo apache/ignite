@@ -35,8 +35,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * TODO add flag for stoppping primary w/o checkpoint.
@@ -144,14 +142,26 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
     /** */
     @Test
-    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance() throws Exception {
+    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_1() throws Exception {
+        doTestPartialPrepare_2TxCommitWithRebalance(true, new int[] {1, 0});
+    }
+
+    /** */
+    @Test
+    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_2() throws Exception {
+        doTestPartialPrepare_2TxCommitWithRebalance(false, new int[] {1, 0});
+    }
+
+    /** */
+    @Test
+    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_3() throws Exception {
         doTestPartialPrepare_2TxCommitWithRebalance(true, new int[] {0, 1});
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance2() throws Exception {
-        doTestPartialPrepare_2TxCommitWithRebalance(true, new int[] {1, 0});
+    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_4() throws Exception {
+        doTestPartialPrepare_2TxCommitWithRebalance(false, new int[] {0, 1});
     }
 
     /** */
@@ -288,7 +298,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * 5. Prepare tx1 on backup2 (mode=1, 2).
      * 6. Fail primary triggering tx rollback on recovery.
      * 7. Validate partitions integrity after node left. No holes are expected (they should be closed by message with counters)
-     *
+     * TODO FIXME simplify
      * @param skipCheckpoint Skip checkpoint on node stop.
      * @throws Exception
      */
@@ -455,9 +465,9 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      *
      * 1. Start 2 concurrent txs.
      * 2. Assign counters in specified order.
-     * 3. Prepare tx0 only on backup2.
+     * 3. Prepare tx0 and tx1.
      * 4. Finish tx1 only on backup2.
-     * 5. Stop primary and backup1.
+     * 5. Stop backup1 and primary. tx0 must commit on backup2.
      * 6. Validate partitions.
      * 7. Start backup2.
      * 8. Validate partitions again after (historical) rebalance.
@@ -471,10 +481,12 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         int[] sizes = new int[] {3, 7};
 
+        final int stopBackupIdx = 0;
+
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
             map -> {
                 Ignite primary = map.get(PARTITION_ID).get1();
-                Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
+                Ignite backup1 = map.get(PARTITION_ID).get2().get(stopBackupIdx);
                 Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
 
                 return new TwoPhaseCommitTxCallbackAdapter(
@@ -482,92 +494,46 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                     U.map((IgniteEx)backup1, new int[] {1, 0}, (IgniteEx)backup2, new int[] {1, 0}),
                     new HashMap<>(),
                     sizes.length) {
-                    @Override protected boolean onBackupPrepared(IgniteEx backup, IgniteInternalTx tx, int idx) {
-                        super.onBackupPrepared(backup, tx, idx);
-
-                        if (idx == 1 && backup == backup1) {
-                            if (cntr.getAndIncrement() == 2) {
-                                log.info("Stopping primary [name=" + primary.name() + ']');
-
-                                runAsync(new Runnable() {
-                                    @Override public void run() {
-                                        stopGrid(skipCheckpoint, primary.name());
-
-                                        TestRecordingCommunicationSpi.stopBlockAll();
-                                    }
-                                });
-                            }
-
-                            return true;
-                        }
-
-                        return false;
-                    }
-
                     @Override public boolean beforeBackupFinish(IgniteEx primary, IgniteEx backup,
                         @Nullable IgniteInternalTx primaryTx,
                         IgniteInternalTx backupTx, IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
                         int idx = order(nearXidVer);
 
-                        if (idx == 1 && backup == backup1) {
-                            if (cntr.getAndIncrement() == 2) {
-                                log.info("Stopping primary [name=" + primary.name() + ']');
-
-                                // TODO FIXME refactor: stopGridAsync
-                                runAsync(new Runnable() {
-                                    @Override public void run() {
-                                        stopGrid(skipCheckpoint, primary.name());
-
-                                        TestRecordingCommunicationSpi.stopBlockAll();
-                                    }
-                                });
-                            }
-
+                        if (idx == 0 || idx == 1 && backup == backup1)
                             return true;
-                        }
 
-                        return false;
+                        return super.beforeBackupFinish(primary, backup, primaryTx, backupTx, nearXidVer, fut);
                     }
 
                     @Override public boolean afterBackupFinish(IgniteEx primary, IgniteEx backup, IgniteUuid nearXidVer,
                         GridFutureAdapter<?> fut) {
                         int idx = order(nearXidVer);
 
-                        if (idx == 1 && backup == backup2) {
-                            log.info("TX: committed on backup [name=" + backup.name() + ", txId=" + idx + ']');
+                        log.info("TX: committed on backup [name=" + backup.name() + ", txId=" + idx + ']');
 
-                            if (cntr.getAndIncrement() == 2) {
-                                log.info("Stopping primary [name=" + primary.name() + ']');
+                        runAsync(new Runnable() {
+                            @Override public void run() {
+                                stopGrid(skipCheckpoint, backup1.name());
+                                stopGrid(skipCheckpoint, primary.name());
 
-                                runAsync(new Runnable() {
-                                    @Override public void run() {
-                                        stopGrid(skipCheckpoint, backup1.name());
-                                        stopGrid(skipCheckpoint, primary.name());
-
-                                        TestRecordingCommunicationSpi.stopBlockAll();
-                                    }
-                                });
+                                TestRecordingCommunicationSpi.stopBlockAll();
                             }
+                        });
 
-                            return true;
-                        }
-
-                        return super.afterBackupFinish(primary, backup, nearXidVer, fut);
+                        return true;
                     }
                 };
             },
             sizes);
-
         waitForTopology(2);
 
         awaitPartitionMapExchange();
 
-        assertPartitionsSame(idleVerify(grid("client"), DEFAULT_CACHE_NAME));
+        int size = grid(0).cache(DEFAULT_CACHE_NAME).size();
 
-        assertCountersSame(PARTITION_ID, true);
+        assertEquals(sizes[0] + sizes[1] + PRELOAD_KEYS_CNT, size); // Txs must be committed on single backup left.
 
-        // Start backup1.
-        startGrid(txTops.get(PARTITION_ID).get2().get(0).name());
+        startGrid(txTops.get(PARTITION_ID).get2().get(stopBackupIdx).name());
 
         awaitPartitionMapExchange();
 
