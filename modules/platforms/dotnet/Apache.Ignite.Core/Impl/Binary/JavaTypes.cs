@@ -91,6 +91,24 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets java full type name (aka boxed type) for the given java primitive type name.
+        /// </summary>
+        /// <param name="javaPrimitiveName">name of the java primitive such as "int"</param>
+        /// <returns>Java full type name such as "java.lang.Integer". Null if parameter is null or it is not a
+        /// java primitive name.</returns>
+        public static string GetJavaTypeName(string javaPrimitiveName)
+        {
+            if (javaPrimitiveName == null)
+                return null;
+
+            string boxedTypeName;
+
+            JavaPrimitiveToType.TryGetValue(javaPrimitiveName, out boxedTypeName);
+
+            return boxedTypeName;
+        }
+
+        /// <summary>
         /// Logs a warning for indirectly mapped types.
         /// </summary>
         public static void LogIndirectMappingWarning(Type type, ILogger log, string logInfo)
