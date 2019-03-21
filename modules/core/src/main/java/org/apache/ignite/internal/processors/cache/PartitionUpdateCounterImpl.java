@@ -40,10 +40,11 @@ import org.jetbrains.annotations.Nullable;
  * TODO add debugging info
  * TODO add update order tracking capabilities ?
  * TODO non-blocking version ? BitSets instead of TreeSet ?
+ * TODO describe shrink mechanism.
  */
 public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     /** Max allowed gaps. */
-    private static final int MAX_GAPS = 10_000;
+    public static final int MAX_GAPS = 10_000;
 
     /** */
     private static final byte VERSION = 1;
@@ -64,6 +65,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     /** Initial counter points to last sequential update after recovery. */
     private long initCntr;
 
+    /** TODO FIXME remove. */
     private int partId;
 
     /**
@@ -147,7 +149,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
 
     /**
      * Updates counter by delta from start position. Used only in transactions.
-     *  @param start Start.
+     * @param start Start.
      * @param delta Delta.
      */
     @Override public synchronized boolean update(long start, long delta) {
@@ -160,31 +162,46 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         }
 
         if (cur < start) {
-            // Try find existing gap.
-            NavigableSet<Item> set = queue.headSet(new Item(start, 0), false);
+            // Try merge with adjacent gaps in sequence.
+            Item tmp = new Item(start, delta);
+            Item ref = tmp;
 
+            NavigableSet<Item> set = queue.headSet(tmp, false);
+
+            // Merge with previous, possibly modifying previous.
             if (!set.isEmpty()) {
                 Item last = set.last();
 
-                if (last.start + last.delta == start)
+                if (last.start + last.delta == start) {
+                    tmp = last;
+
                     last.delta += delta;
-                else
-                    return offer(new Item(start, delta)); // backup node with gaps
+                }
             }
-            else if (!(set = queue.tailSet(new Item(start, 0), false)).isEmpty()) {
+
+            // Merge with next, possibly modifying previous and removing next.
+            if (!(set = queue.tailSet(tmp, false)).isEmpty()) {
                 Item first = set.first();
 
-                if (start + delta == first.start) {
-                    first.start = start;
-                    first.delta += delta;
-                }
-                else
-                    return offer(new Item(start, delta)); // backup node with gaps
-            }
-            else
-                return offer(new Item(start, delta)); // backup node with gaps
+                if (tmp.start + tmp.delta == first.start) {
+                    if (ref != tmp) {
+                        tmp.delta += first.delta;
 
-            return true;
+                        set.pollFirst(); // Merge and remove obsolete head.
+                    }
+                    else {
+                        tmp = first;
+
+                        first.start = start;
+                        first.delta += delta;
+                    }
+                }
+            }
+
+            if (tmp != ref)
+                return true;
+
+            return offer(new Item(start, delta)); // backup node with gaps
         }
 
         while (true) {
@@ -246,7 +263,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
      */
     private boolean offer(Item item) {
         if (queue.size() == MAX_GAPS) // Should trigger failure handler.
-            throw new IgniteException("Too much gaps [part=" + partId + ", cntr=" + this + ']');
+            throw new IgniteException("Too many gaps [cntr=" + this + ']');
 
         return queue.add(item);
     }
@@ -296,6 +313,11 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     /** {@inheritDoc} */
     @Override public synchronized boolean sequential() {
         return gaps().isEmpty();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int gapsCount() {
+        return queue.size();
     }
 
     @Override public synchronized @Nullable byte[] getBytes() {

@@ -104,4 +104,9 @@ public interface PartitionUpdateCounter {
      * @return {@code True} if counter has no missed updates.
      */
     public boolean sequential();
+
+    /**
+     * @return Gaps count.
+     */
+    public int gapsCount();
 }

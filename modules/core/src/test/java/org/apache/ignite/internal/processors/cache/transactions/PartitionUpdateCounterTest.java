@@ -37,7 +37,6 @@ import org.junit.runners.JUnit4;
 /**
  * Simple partition counter tests.
  */
-@RunWith(JUnit4.class)
 public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
     /**
      * Create new counter.
@@ -146,6 +145,44 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         assertTrue(pc.get() == pc.reserved());
 
         assertEquals(reserveCntr.sum(), pc.get());
+    }
+
+    @Test
+    public void testMaxGaps() {
+        PartitionUpdateCounter pc = newCounter();
+
+        int i;
+        for (i = 1; i <= PartitionUpdateCounterImpl.MAX_GAPS; i++)
+            pc.update(i*3, i*3 + 1);
+
+        i++;
+        try {
+            pc.update(i * 3, i * 3 + 1);
+
+            fail();
+        }
+        catch (Exception e) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void testFoldIntermediateUpdates() {
+        PartitionUpdateCounter pc = newCounter();
+
+        pc.update(0, 59);
+
+        pc.update(60, 5);
+
+        pc.update(67, 3);
+
+        pc.update(65, 2);
+
+        assertEquals(1, pc.gapsCount());
+
+        pc.update(59, 1);
+
+        assertTrue(pc.sequential());
     }
 
     /**

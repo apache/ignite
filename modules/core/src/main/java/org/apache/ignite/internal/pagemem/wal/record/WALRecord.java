@@ -132,9 +132,6 @@ public abstract class WALRecord {
         /** */
         PARTITION_META_PAGE_UPDATE_COUNTERS (PHYSICAL),
 
-        /** */
-        PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (PHYSICAL),
-
         /** Memory recovering start marker */
         MEMORY_RECOVERY,
 
@@ -214,7 +211,10 @@ public abstract class WALRecord {
         MVCC_TX_RECORD (LOGICAL),
 
         /** Rollback tx record. */
-        ROLLBACK_TX_RECORD (LOGICAL);
+        ROLLBACK_TX_RECORD (LOGICAL),
+
+        /** */
+        PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (PHYSICAL);
 
         /**
          * When you're adding a new record don't forget to choose record purpose explicitly
