@@ -74,14 +74,4 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
         return S.toString(TcpDiscoveryHandshakeRequest.class, this, "super", super.toString(),
             "isChangeTopology", changeTopology());
     }
-
-    /** */
-    public boolean sendComponentsData() {
-        return getFlag(SEND_COMPONENTS_DATA_FLAG_POS);
-    }
-
-    /** */
-    public void sendComponentsData(boolean snd) {
-        setFlag(SEND_COMPONENTS_DATA_FLAG_POS, snd);
-    }
 }

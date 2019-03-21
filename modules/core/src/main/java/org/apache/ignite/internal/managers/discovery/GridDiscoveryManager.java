@@ -935,9 +935,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
         });
 
-        if (spi instanceof TcpDiscoverySpi)
-            ((TcpDiscoverySpi)spi).setTcpDataExchange(new DiscoveryTcpSpiDataExchangeImpl(ctx));
-
         new DiscoveryMessageNotifierThread(discoNtfWrk).start();
 
         startSpi();

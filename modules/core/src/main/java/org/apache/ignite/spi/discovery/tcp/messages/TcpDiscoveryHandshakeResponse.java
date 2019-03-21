@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -31,23 +30,16 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     /** */
     private long order;
 
-    /** */
-    private Map<Integer, byte[]> componentsData;
-
     /**
      * Constructor.
      *
      * @param creatorNodeId Creator node ID.
      * @param locNodeOrder Local node order.
      */
-    public TcpDiscoveryHandshakeResponse(UUID creatorNodeId, long locNodeOrder, Map<Integer, byte[]> componentsData) {
+    public TcpDiscoveryHandshakeResponse(UUID creatorNodeId, long locNodeOrder) {
         super(creatorNodeId);
 
         order = locNodeOrder;
-        this.componentsData = componentsData;
-
-        if (componentsData != null)
-            hasComponentsData(true);
     }
 
     /**
@@ -114,21 +106,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
      */
     public void clientAck(boolean clientAck) {
         setFlag(CLIENT_ACK_FLAG_POS, clientAck);
-    }
-
-    /** */
-    public boolean hasComponentsData() {
-        return getFlag(SEND_COMPONENTS_DATA_FLAG_POS);
-    }
-
-    /** */
-    public void hasComponentsData(boolean hasComponentsData) {
-        setFlag(SEND_COMPONENTS_DATA_FLAG_POS, hasComponentsData);
-    }
-
-    /** */
-    public Map<Integer, byte[]> componentsData() {
-        return componentsData;
     }
 
     /** {@inheritDoc} */

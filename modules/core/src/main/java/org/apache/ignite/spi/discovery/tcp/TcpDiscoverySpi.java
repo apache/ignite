@@ -95,7 +95,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryTcpSpiDataExchange;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -327,9 +326,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** Data exchange. */
     protected DiscoverySpiDataExchange exchange;
-
-    /** TCP data exchange. */
-    protected DiscoveryTcpSpiDataExchange tcpExchange;
 
     /** Metrics provider. */
     protected DiscoveryMetricsProvider metricsProvider;
@@ -1483,11 +1479,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         this.exchange = exchange;
     }
 
-    /** */
-    public void setTcpDataExchange(DiscoveryTcpSpiDataExchange tcpExchange) {
-        this.tcpExchange = tcpExchange;
-    }
-
     /** {@inheritDoc} */
     @Override public void setMetricsProvider(DiscoveryMetricsProvider metricsProvider) {
         this.metricsProvider = metricsProvider;
@@ -2020,17 +2011,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     @Deprecated
     private static boolean versionCheckFailed(TcpDiscoveryCheckFailedMessage msg) {
         return msg.error().contains("versions are not compatible");
-    }
-
-    /** */
-    Map<Integer, byte[]> collectHandshakeResponseData() {
-        return tcpExchange == null ? null : tcpExchange.collectHandshakeResponseData();
-    }
-
-    /** */
-    void handshakeResponseDataReceived(Map<Integer, byte[]> componentsData) {
-        if (tcpExchange != null)
-            tcpExchange.handshakeResponseDataReceived(componentsData);
     }
 
     /**

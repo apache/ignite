@@ -1312,17 +1312,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId);
 
-                if (!(msg instanceof TcpDiscoveryCheckFailedMessage))
-                    req.sendComponentsData(true);
-
                 // Handshake.
                 spi.writeToSocket(sock, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, timeoutHelper.nextTimeoutChunk(
                     ackTimeout0));
-
-                if (res.hasComponentsData())
-                    spi.handshakeResponseDataReceived(res.componentsData());
 
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
@@ -6385,12 +6379,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     U.enhanceThreadName(U.id8(nodeId) + ' ' + sock.getInetAddress().getHostAddress()
                         + ":" + sock.getPort() + (req.client() ? " client" : ""));
 
-                    Map<Integer, byte[]> componentsData = req.sendComponentsData()
-                        ? spi.collectHandshakeResponseData()
-                        : null;
-
                     TcpDiscoveryHandshakeResponse res =
-                        new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder(), componentsData);
+                        new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
 
                     res.setDiscoveryDataPacketCompression(allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION));
 
