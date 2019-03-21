@@ -285,9 +285,14 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         }
     }
 
+    /** */
     protected static class ExecRegisterAndForwardAdapter<K, V> implements IgniteBiInClosure<K, V> {
+        /** RegisterExecAndForward. */
         private RegisterExecAndForward<K, V> instance;
 
+        /**
+         * @param runnable Runnable.
+         */
         public ExecRegisterAndForwardAdapter(IgniteRunnable runnable) {
             instance = new RegisterExecAndForward<>(runnable);
         }
@@ -307,8 +312,8 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
             instance = new RegisterExecAndForward<>(endpoints);
         }
 
-        @Override
-        public void apply(K k, V v) {
+        /** {@inheritDoc} */
+        @Override public void apply(K k, V v) {
             instance.run();
         }
     }
@@ -353,15 +358,15 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
             node = null;
         }
 
-        @Override
-        public boolean apply(K k, V v) {
+        /** {@inheritDoc} */
+        @Override public boolean apply(K k, V v) {
             run();
 
             return false;
         }
 
-        @Override
-        public void run() {
+        /** {@inheritDoc} */
+        @Override public void run() {
             Ignite loc = Ignition.localIgnite();
 
             if (node == null || node.equals(loc.name())) {
@@ -373,20 +378,20 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
                     runnable.run();
                 else {
                     compute(ignite, endpoints)
-                            .broadcast(() -> register());
+                        .broadcast(() -> register());
                 }
             }
         }
 
-        @Override
-        public Object process(MutableEntry<K, V> mutableEntry, Object... objects) {
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry<K, V> mutableEntry, Object... objects) {
             run();
 
             return null;
         }
 
-        @Override
-        public V apply(K k) {
+        /** {@inheritDoc} */
+        @Override public V apply(K k) {
             run();
 
             if (k instanceof Cache.Entry)
@@ -395,8 +400,8 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
             return null;
         }
 
-        @Override
-        public V call() throws Exception {
+        /** {@inheritDoc} */
+        @Override public V call() {
             run();
 
             return null;

@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
-import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;

@@ -114,7 +114,7 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .apply(new RegisterExecAndForward<Object, Object>(endpoints()), new Object());
+                        .apply(new RegisterExecAndForward<>(endpoints()), new Object());
                 }
             },
             () -> {

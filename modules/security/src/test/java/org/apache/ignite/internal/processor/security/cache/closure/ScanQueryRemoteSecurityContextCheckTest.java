@@ -99,7 +99,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
                 Ignition.localIgnite().cache(CACHE_NAME).query(
                     new ScanQuery<>(
-                        new RegisterExecAndForward<Object, Object>(SRV_CHECK, endpoints())
+                        new RegisterExecAndForward<>(SRV_CHECK, endpoints())
                     )
                 ).getAll();
             },

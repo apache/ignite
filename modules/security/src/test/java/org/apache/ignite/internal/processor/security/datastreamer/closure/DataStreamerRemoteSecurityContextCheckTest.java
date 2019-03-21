@@ -19,10 +19,7 @@ package org.apache.ignite.internal.processor.security.datastreamer.closure;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
@@ -78,7 +75,12 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
         IgniteRunnable checkCase = () -> {
             register();
 
-            dataStreamer(Ignition.localIgnite());
+            try (IgniteDataStreamer<Integer, Integer> strm = Ignition.localIgnite().dataStreamer(CACHE_NAME)) {
+                strm.receiver(StreamVisitor
+                    .from(new ExecRegisterAndForwardAdapter<>(endpoints())));
+
+                strm.addData(prmKey(grid(SRV_CHECK)), 100);
+            }
         };
 
         runAndCheck(grid(SRV_INITIATOR), checkCase);
@@ -93,18 +95,5 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
     /** {@inheritDoc} */
     @Override protected Collection<UUID> nodesToCheck() {
         return Collections.singletonList(nodeId(SRV_CHECK));
-    }
-
-    /**
-     * @param node Node.
-     */
-    private void dataStreamer(Ignite node) {
-        try (IgniteDataStreamer<Integer, Integer> strm = node.dataStreamer(CACHE_NAME)) {
-            strm.receiver(StreamVisitor
-                    .from(new ExecRegisterAndForwardAdapter<IgniteCache<Integer, Integer>, Map.Entry<Integer, Integer>>(
-                            endpoints())));
-
-            strm.addData(prmKey(grid(SRV_CHECK)), 100);
-        }
     }
 }
