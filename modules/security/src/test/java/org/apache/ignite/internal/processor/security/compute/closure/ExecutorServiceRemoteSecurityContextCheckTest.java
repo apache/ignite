@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
+import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.Ignite;
@@ -31,8 +32,8 @@ import org.junit.runners.JUnit4;
 /**
  * Testing operation security context when the service task is executed on remote nodes.
  * <p>
- * The initiator node broadcasts a task to feature call nodes that starts service task. That service task is executed
- * on feature transition nodes and broadcasts a task to endpoint nodes. On every step, it is performed verification that
+ * The initiator node broadcasts a task to 'run' nodes that starts service task. That service task is executed
+ * on 'check' nodes and broadcasts a task to 'endpoint' nodes. On every step, it is performed verification that
  * operation security context is the initiator context.
  */
 @RunWith(JUnit4.class)
@@ -85,7 +86,7 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
                 ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
 
                 try {
-                    svc.submit((Runnable)new CommonClosure(endpoints())).get();
+                    svc.submit(new ExecutorServiceClosure(endpoints())).get();
                 }
                 catch (Exception e) {
                     throw new RuntimeException(e);
@@ -96,5 +97,18 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
 
         runAndCheck(grid(SRV_INITIATOR), checkCase);
         runAndCheck(grid(CLNT_INITIATOR), checkCase);
+    }
+
+    /** */
+    static class ExecutorServiceClosure extends BroadcastRunner implements Runnable {
+        /** {@inheritDoc} */
+        public ExecutorServiceClosure(Collection<UUID> endpoints) {
+            super(endpoints);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            registerAndBroadcast();
+        }
     }
 }

@@ -22,24 +22,17 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.SecurityException;
 
@@ -287,18 +280,13 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         }
     }
 
-    /**
-     * Common closure for tests.
-     */
-    protected static class CommonClosure implements
-        IgniteRunnable,
-        IgniteCallable<Object>,
-        IgniteClosure<Object, Object>,
-        EntryProcessor<Integer, Integer, Object>,
-        IgniteBiInClosure<IgniteCache<Integer, Integer>, Map.Entry<Integer, Integer>> {
-
+    /** */
+    protected static class BroadcastRunner {
         /** Runnable. */
         private final IgniteRunnable runnable;
+
+        /** Expected local node name. */
+        private final String node;
 
         /** Collection of endpoint node ids. */
         private final Collection<UUID> endpoints;
@@ -306,62 +294,49 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /**
          * @param runnable Runnable.
          */
-        public CommonClosure(IgniteRunnable runnable) {
-            assert runnable != null;
-
-            this.runnable = runnable;
+        public BroadcastRunner(IgniteRunnable runnable) {
+            this.runnable = Objects.requireNonNull(runnable);
+            node = null;
             endpoints = Collections.emptyList();
         }
 
         /**
-         * @param endpoints Collection of endpoint node ids.
+         * @param node Expected local node name.
+         * @param endpoints Collection of endpont nodes ids.
          */
-        public CommonClosure(Collection<UUID> endpoints) {
-            assert !endpoints.isEmpty();
-
-            runnable = null;
+        public BroadcastRunner(String node, Collection<UUID> endpoints) {
+            this.node = node;
             this.endpoints = endpoints;
+            runnable = null;
         }
 
-        /** {@inheritDoc} */
-        @Override public void run() {
-            register();
+        /**
+         * @param endpoints Collection of endpont nodes ids.
+         */
+        public BroadcastRunner(Collection<UUID> endpoints) {
+            this.endpoints = endpoints;
+            runnable = null;
+            node = null;
+        }
 
-            Ignite ignite = Ignition.localIgnite();
+        /**
+         *
+         */
+        protected void registerAndBroadcast() {
+            Ignite loc = Ignition.localIgnite();
 
-            if (runnable != null)
-                runnable.run();
-            else {
-                compute(ignite, endpoints)
-                    .broadcast(() -> register());
+            if (node == null || node.equals(loc.name())) {
+                register();
+
+                Ignite ignite = Ignition.localIgnite();
+
+                if (runnable != null)
+                    runnable.run();
+                else {
+                    compute(ignite, endpoints)
+                        .broadcast(() -> register());
+                }
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object call() {
-            run();
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(Object o) {
-            run();
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object process(MutableEntry<Integer, Integer> entry,
-            Object... arguments) throws EntryProcessorException {
-            run();
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(IgniteCache<Integer, Integer> entries, Map.Entry<Integer, Integer> entry) {
-            run();
         }
     }
 }

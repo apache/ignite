@@ -41,8 +41,8 @@ import org.junit.Test;
 /**
  * Testing operation security context when the compute task is executed on remote nodes.
  * <p>
- * The initiator node broadcasts a task to feature call nodes that starts compute task. That compute task is executed on
- * feature transition nodes and broadcasts a task to endpoint nodes. On every step, it is performed verification that
+ * The initiator node broadcasts a task to 'run' nodes that starts compute task. That compute task is executed on
+ * 'check' nodes and broadcasts a task to 'endpoint' nodes. On every step, it is performed verification that
  * operation security context is the initiator context.
  */
 public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
@@ -98,14 +98,14 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
                 register();
 
                 Ignition.localIgnite().compute().execute(
-                    new TestComputeTask(nodesToCheck(), endpoints()), 0
+                    new ComputeTaskClosure(nodesToCheck(), endpoints()), 0
                 );
             },
             () -> {
                 register();
 
                 Ignition.localIgnite().compute().executeAsync(
-                    new TestComputeTask(nodesToCheck(), endpoints()), 0
+                    new ComputeTaskClosure(nodesToCheck(), endpoints()), 0
                 ).get();
             }
         );
@@ -114,7 +114,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
     /**
      * Compute task for tests.
      */
-    static class TestComputeTask implements ComputeTask<Integer, Integer> {
+    static class ComputeTaskClosure implements ComputeTask<Integer, Integer> {
         /** Collection of transition node ids. */
         private final Collection<UUID> remotes;
 
@@ -129,7 +129,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
          * @param remotes Collection of transition node ids.
          * @param endpoints Collection of endpoint node ids.
          */
-        public TestComputeTask(Collection<UUID> remotes, Collection<UUID> endpoints) {
+        public ComputeTaskClosure(Collection<UUID> remotes, Collection<UUID> endpoints) {
             assert !remotes.isEmpty();
             assert !endpoints.isEmpty();
 

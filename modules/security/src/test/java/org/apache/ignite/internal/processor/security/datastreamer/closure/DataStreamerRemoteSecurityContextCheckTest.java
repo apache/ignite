@@ -19,12 +19,15 @@ package org.apache.ignite.internal.processor.security.datastreamer.closure;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.stream.StreamVisitor;
 import org.junit.Test;
@@ -34,9 +37,9 @@ import org.junit.runners.JUnit4;
 /**
  * Testing operation security context when the closure of DataStreamer is executed on remote node.
  * <p>
- * The initiator node broadcasts a task to feature call node that starts DataStreamer's closure. That closure is
- * executed on feature transition node and broadcasts a task to endpoint nodes. On every step, it is performed
- * verification that operation security context is the initiator context.
+ * The initiator node broadcasts a task to 'run' node that starts DataStreamer's closure. That closure is executed on
+ * 'check' node and broadcasts a task to 'endpoint' nodes. On every step, it is performed verification that operation
+ * security context is the initiator context.
  */
 @RunWith(JUnit4.class)
 public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
@@ -98,9 +101,23 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
      */
     private void dataStreamer(Ignite node) {
         try (IgniteDataStreamer<Integer, Integer> strm = node.dataStreamer(CACHE_NAME)) {
-            strm.receiver(StreamVisitor.from(new CommonClosure(endpoints())));
+            strm.receiver(StreamVisitor.from(new DataStreamClosure(endpoints())));
 
             strm.addData(prmKey(grid(SRV_CHECK)), 100);
+        }
+    }
+
+    /** */
+    static class DataStreamClosure extends BroadcastRunner implements
+        IgniteBiInClosure<IgniteCache<Integer, Integer>, Map.Entry<Integer, Integer>> {
+        /** {@inheritDoc} */
+        public DataStreamClosure(Collection<UUID> endpoints) {
+            super(endpoints);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(IgniteCache<Integer, Integer> entries, Map.Entry<Integer, Integer> entry) {
+            registerAndBroadcast();
         }
     }
 }

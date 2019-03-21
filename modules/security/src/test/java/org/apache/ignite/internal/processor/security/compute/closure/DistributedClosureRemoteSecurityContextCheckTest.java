@@ -17,20 +17,23 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
+import java.util.Collection;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 
 /**
  * Testing operation security context when the compute closure is executed on remote nodes.
  * <p>
- * The initiator node broadcasts a task to run nodes that starts compute operation. That operation is executed on check
- * nodes and broadcasts a task to endpoint nodes. On every step, it is performed verification that operation security
- * context is the initiator context.
+ * The initiator node broadcasts a task to 'run' nodes that starts compute operation. That operation is executed on
+ * 'check' nodes and broadcasts a task to 'endpoint' nodes. On every step, it is performed verification that operation
+ * security context is the initiator context.
  */
 public class DistributedClosureRemoteSecurityContextCheckTest
     extends AbstractRemoteSecurityContextCheckTest {
@@ -83,47 +86,82 @@ public class DistributedClosureRemoteSecurityContextCheckTest
     private Stream<IgniteRunnable> checkCases() {
         return Stream.<IgniteRunnable>of(
             () -> compute(Ignition.localIgnite(), nodesToCheck())
-                .broadcast((IgniteRunnable)new CommonClosure(endpoints())),
+                .broadcast((IgniteRunnable)new ComputeClosure(endpoints())),
 
             () -> compute(Ignition.localIgnite(), nodesToCheck())
-                .broadcastAsync((IgniteRunnable)new CommonClosure(endpoints()))
+                .broadcastAsync((IgniteRunnable)new ComputeClosure(endpoints()))
                 .get(),
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .call(new CommonClosure(endpoints()));
+                        .call(new ComputeClosure(endpoints()));
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .callAsync(new CommonClosure(endpoints())).get();
+                        .callAsync(new ComputeClosure(endpoints())).get();
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .run(new CommonClosure(endpoints()));
+                        .run(new ComputeClosure(endpoints()));
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .runAsync(new CommonClosure(endpoints())).get();
+                        .runAsync(new ComputeClosure(endpoints())).get();
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .apply(new CommonClosure(endpoints()), new Object());
+                        .apply(new ComputeClosure(endpoints()), new Object());
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .applyAsync(new CommonClosure(endpoints()), new Object()).get();
+                        .applyAsync(new ComputeClosure(endpoints()), new Object()).get();
                 }
             }
-        ).map(CommonClosure::new);
+        ).map(ComputeClosure::new);
+    }
+
+    /** */
+    static class ComputeClosure extends BroadcastRunner implements
+        IgniteRunnable,
+        IgniteCallable<Object>,
+        IgniteClosure<Object, Object> {
+        /** {@inheritDoc} */
+        public ComputeClosure(IgniteRunnable runnable) {
+            super(runnable);
+        }
+
+        /** {@inheritDoc} */
+        public ComputeClosure(Collection<UUID> endpoints) {
+            super(endpoints);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            registerAndBroadcast();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() {
+            registerAndBroadcast();
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object apply(Object o) {
+            registerAndBroadcast();
+
+            return null;
+        }
     }
 }

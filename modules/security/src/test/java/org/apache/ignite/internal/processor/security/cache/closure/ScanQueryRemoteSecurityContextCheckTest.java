@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.UUID;
 import java.util.stream.Stream;
 import javax.cache.Cache;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
@@ -37,8 +36,8 @@ import org.junit.runners.JUnit4;
 /**
  * Testing operation security context when the filter of ScanQuery is executed on remote node.
  * <p>
- * The initiator node broadcasts a task to feature call node that starts ScanQuery's filter. That filter is executed on
- * feature transition node and broadcasts a task to endpoint nodes. On every step, it is performed verification that
+ * The initiator node broadcasts a task to 'run' node that starts ScanQuery's filter. That filter is executed on
+ * 'check' node and broadcasts a task to 'endpoint' nodes. On every step, it is performed verification that
  * operation security context is the initiator context.
  */
 @RunWith(JUnit4.class)
@@ -103,7 +102,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
                 Ignition.localIgnite().cache(CACHE_NAME).query(
                     new ScanQuery<>(
-                        new CommonClosure(SRV_CHECK, endpoints())
+                        new ScanQueryClosure(SRV_CHECK, endpoints())
                     )
                 ).getAll();
             },
@@ -112,7 +111,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
                 Ignition.localIgnite().cache(CACHE_NAME).query(
                     new ScanQuery<>((k, v) -> true),
-                    new CommonClosure(SRV_CHECK, endpoints())
+                    new ScanQueryClosure(SRV_CHECK, endpoints())
                 ).getAll();
             }
         );
@@ -121,52 +120,26 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     /**
      * Common closure for tests.
      */
-    static class CommonClosure implements
+    static class ScanQueryClosure extends BroadcastRunner implements
         IgniteClosure<Cache.Entry<Integer, Integer>, Integer>,
         IgniteBiPredicate<Integer, Integer> {
-        /** Expected local node name. */
-        private final String node;
-
-        /** Collection of endpont nodes ids. */
-        private final Collection<UUID> endpoints;
-
-        /**
-         * @param node Expected local node name.
-         * @param endpoints Collection of endpont nodes ids.
-         */
-        public CommonClosure(String node, Collection<UUID> endpoints) {
-            assert !endpoints.isEmpty();
-
-            this.node = node;
-            this.endpoints = endpoints;
+        /** {@inheritDoc} */
+        public ScanQueryClosure(String node, Collection<UUID> endpoints) {
+            super(node, endpoints);
         }
 
         /** {@inheritDoc} */
         @Override public Integer apply(Cache.Entry<Integer, Integer> entry) {
-            verifyAndBroadcast();
+            registerAndBroadcast();
 
             return entry.getValue();
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(Integer s, Integer i) {
-            verifyAndBroadcast();
+            registerAndBroadcast();
 
             return false;
-        }
-
-        /**
-         *
-         */
-        private void verifyAndBroadcast() {
-            Ignite loc = Ignition.localIgnite();
-
-            if (node.equals(loc.name())) {
-                register();
-
-                compute(loc, endpoints)
-                    .broadcast(() -> register());
-            }
         }
     }
 }

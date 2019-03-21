@@ -23,7 +23,6 @@ import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -33,7 +32,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -41,8 +39,8 @@ import org.junit.runners.JUnit4;
 /**
  * Testing operation security context when the filter of Load cache is executed on remote node.
  * <p>
- * The initiator node broadcasts a task to feature call node that starts load cache with filter. That filter is
- * executed on feature transition node and broadcasts a task to endpoint nodes. On every step, it is performed
+ * The initiator node broadcasts a task to 'run' node that starts load cache with filter. That filter is
+ * executed on 'check' node and broadcasts a task to 'endpoint' nodes. On every step, it is performed
  * verification that operation security context is the initiator context.
  */
 @RunWith(JUnit4.class)
@@ -99,7 +97,7 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
             Ignition.localIgnite()
                 .<Integer, Integer>cache(CACHE_NAME).loadCache(
-                new TestClosure(SRV_CHECK, endpoints())
+                new CacheLoadClosure(SRV_CHECK, endpoints())
             );
         };
 
@@ -120,37 +118,15 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
     /**
      * Closure for tests.
      */
-    static class TestClosure implements IgniteBiPredicate<Integer, Integer> {
-        /** Local ignite. */
-        @IgniteInstanceResource
-        private Ignite loc;
-
-        /** Expected local node name. */
-        private final String node;
-
-        /** Endpoint node id. */
-        private final Collection<UUID> endpoints;
-
-        /**
-         * @param node Expected local node name.
-         * @param endpoints Collection of endpont nodes ids.
-         */
-        public TestClosure(String node, Collection<UUID> endpoints) {
-            assert node != null;
-            assert !endpoints.isEmpty();
-
-            this.node = node;
-            this.endpoints = endpoints;
+    static class CacheLoadClosure extends BroadcastRunner implements IgniteBiPredicate<Integer, Integer> {
+        /** {@inheritDoc} */
+        public CacheLoadClosure(String node, Collection<UUID> endpoints) {
+            super(node, endpoints);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(Integer k, Integer v) {
-            if (node.equals(loc.name())) {
-                register();
-
-                compute(loc, endpoints)
-                    .broadcast(() -> register());
-            }
+        @Override public boolean apply(Integer integer, Integer integer2) {
+            registerAndBroadcast();
 
             return false;
         }

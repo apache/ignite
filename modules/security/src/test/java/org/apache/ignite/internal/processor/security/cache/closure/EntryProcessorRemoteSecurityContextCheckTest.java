@@ -21,6 +21,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.stream.Stream;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
@@ -32,9 +35,9 @@ import org.junit.runners.JUnit4;
 /**
  * Testing operation security context when EntryProcessor closure is executed on remote node.
  * <p>
- * The initiator node broadcasts a task to feature call node that starts EntryProcessor closure. That closure is
- * executed on feature transition node and broadcasts a task to endpoint nodes. On every step, it is performed
- * verification that operation security context is the initiator context.
+ * The initiator node broadcasts a task to 'run' node that starts EntryProcessor closure. That closure is executed on
+ * 'check' node and broadcasts a task to 'endpoint' nodes. On every step, it is performed verification that operation
+ * security context is the initiator context.
  */
 @RunWith(JUnit4.class)
 public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
@@ -93,19 +96,48 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
 
         return Stream.<IgniteRunnable>of(
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invoke(key, new CommonClosure(endpoints())),
+                .invoke(key, new EntryProcessorClosure(endpoints())),
 
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAll(Collections.singleton(key), new CommonClosure(endpoints())),
+                .invokeAll(Collections.singleton(key), new EntryProcessorClosure(endpoints())),
 
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAsync(key, new CommonClosure(endpoints()))
+                .invokeAsync(key, new EntryProcessorClosure(endpoints()))
                 .get(),
 
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAllAsync(Collections.singleton(key), new CommonClosure(endpoints()))
+                .invokeAllAsync(Collections.singleton(key), new EntryProcessorClosure(endpoints()))
                 .get()
         )
-            .map(CommonClosure::new);
+            .map(EntryProcessorClosure::new);
+    }
+
+    /** */
+    static class EntryProcessorClosure extends BroadcastRunner implements
+        IgniteRunnable,
+        EntryProcessor<Integer, Integer, Object> {
+
+        /** {@inheritDoc} */
+        public EntryProcessorClosure(IgniteRunnable runnable) {
+            super(runnable);
+        }
+
+        /** {@inheritDoc} */
+        public EntryProcessorClosure(Collection<UUID> endpoints) {
+            super(endpoints);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry<Integer, Integer> entry,
+            Object... arguments) throws EntryProcessorException {
+            registerAndBroadcast();
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            registerAndBroadcast();
+        }
     }
 }
