@@ -400,6 +400,8 @@ int main()
         // Start a node.
         Ignite ignite = Ignition::Start(cfg);
 
+        Sleep(5000);
+
         std::cout << std::endl;
         std::cout << ">>> Cache query example started." << std::endl;
         std::cout << std::endl;

@@ -26,6 +26,17 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="binaryConfiguration">
+            <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                <property name="compactFooter" value="false"/>
+                <property name="idMapper">
+                    <bean class="org.apache.ignite.binary.BinaryBasicIdMapper">
+                        <property name="lowerCase" value="true"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
