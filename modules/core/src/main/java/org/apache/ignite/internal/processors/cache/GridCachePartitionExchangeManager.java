@@ -285,18 +285,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean suspendOnTransition = true;
 
-                if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT &&
-                    (((DiscoveryCustomEvent)evt).customMessage() instanceof CacheAffinityChangeMessage)
+                if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT
+                    && ((DiscoveryCustomEvent)evt).customMessage() instanceof CacheAffinityChangeMessage
                 ) {
                     DiscoveryCustomEvent customEvt = (DiscoveryCustomEvent)evt;
 
                     CacheAffinityChangeMessage customMsg = (CacheAffinityChangeMessage)customEvt.customMessage();
 
-                    AffinityTopologyVersion msgTopVer = customMsg.exchangeId().topologyVersion();
-                    AffinityTopologyVersion curTopVer = lastInitializedFut.initialVersion();
+                    GridDhtPartitionExchangeId exchangeId = customMsg.exchangeId();
 
-                    if (msgTopVer.compareTo(curTopVer) <= 0)
-                        suspendOnTransition = false;
+                    if (exchangeId != null) {
+                        AffinityTopologyVersion msgTopVer = exchangeId.topologyVersion();
+                        AffinityTopologyVersion curTopVer = lastInitializedFut.initialVersion();
+
+                        if (msgTopVer.compareTo(curTopVer) <= 0)
+                            suspendOnTransition = false;
+                    }
                 }
 
                 if (suspendOnTransition && cache.state().transition()) {
