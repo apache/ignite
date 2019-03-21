@@ -45,8 +45,6 @@ public class DistributedBaselineConfiguration {
     private static final int DEFAULT_PERSISTENCE_TIMEOUT = 5 * 60_000;
     /** Default auto-adjust timeout for in-memory grid. */
     private static final int DEFAULT_IN_MEMORY_TIMEOUT = 0;
-    /** Default auto-adjust enable/disable. */
-    private static final boolean DEFAULT_AUTO_ADJUST_ENABLED = false;
     /** Message of baseline auto-adjust configuration. */
     private static final String AUTO_ADJUST_CONFIGURED_MESSAGE = "Baseline auto-adjust is '%s' with timeout='%d' ms";
     /** Message of baseline auto-adjust parameter was changed from default. */
@@ -57,6 +55,8 @@ public class DistributedBaselineConfiguration {
         "Baseline parameter '%s' was changed from '%s' to '%s'";
     /** */
     private volatile long dfltTimeout = DEFAULT_PERSISTENCE_TIMEOUT;
+    /** Default auto-adjust enable/disable. */
+    private volatile boolean dfltEnabled = false;
     /** */
     private final GridKernalContext ctx;
     /** */
@@ -86,8 +86,9 @@ public class DistributedBaselineConfiguration {
                 boolean persistenceEnabled = ctx.config() != null && CU.isPersistenceEnabled(ctx.config());
 
                 dfltTimeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
+                dfltEnabled = !persistenceEnabled;
 
-                baselineAutoAdjustEnabled.addListener(makeUpdateListener(DEFAULT_AUTO_ADJUST_ENABLED));
+                baselineAutoAdjustEnabled.addListener(makeUpdateListener(dfltEnabled));
                 baselineAutoAdjustTimeout.addListener(makeUpdateListener(dfltTimeout));
 
                 dispatcher.registerProperty(baselineAutoAdjustEnabled);
@@ -147,7 +148,7 @@ public class DistributedBaselineConfiguration {
      * @return Value of manual baseline control or auto adjusting baseline.
      */
     public boolean isBaselineAutoAdjustEnabled() {
-        return baselineAutoAdjustEnabled.getOrDefault(DEFAULT_AUTO_ADJUST_ENABLED);
+        return baselineAutoAdjustEnabled.getOrDefault(dfltEnabled);
     }
 
     /**
