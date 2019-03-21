@@ -132,6 +132,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
@@ -10792,7 +10793,49 @@ public abstract class IgniteUtils {
         Collection<T> srcDatas,
         IgniteThrowableFunction<T, R> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
-        if(srcDatas.isEmpty())
+        return doInParallel(parallelismLvl, executorSvc, srcDatas, operation, false);
+    }
+
+    /**
+     * Execute operation on data in parallel.
+     *
+     * @param parallelismLvl Number of threads on which it should be executed.
+     * @param executorSvc Service for parallel execution.
+     * @param srcDatas List of data for parallelization.
+     * @param operation Logic for execution of on each item of data.
+     * @param <T> Type of data.
+     * @param <R> Type of return value.
+     * @throws IgniteCheckedException if parallel execution was failed.
+     */
+    public static <T, R> Collection<R> doInParallelUninterruptibly(
+        int parallelismLvl,
+        ExecutorService executorSvc,
+        Collection<T> srcDatas,
+        IgniteThrowableFunction<T, R> operation
+    ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+        return doInParallel(parallelismLvl, executorSvc, srcDatas, operation, true);
+    }
+
+    /**
+     * Execute operation on data in parallel.
+     *
+     * @param parallelismLvl Number of threads on which it should be executed.
+     * @param executorSvc Service for parallel execution.
+     * @param srcDatas List of data for parallelization.
+     * @param operation Logic for execution of on each item of data.
+     * @param <T> Type of data.
+     * @param <R> Type of return value.
+     * @param uninterruptible {@code true} if a result should be awaited in any case.
+     * @throws IgniteCheckedException if parallel execution was failed.
+     */
+    private static <T, R> Collection<R> doInParallel(
+        int parallelismLvl,
+        ExecutorService executorSvc,
+        Collection<T> srcDatas,
+        IgniteThrowableFunction<T, R> operation,
+        boolean uninterruptible
+    ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+        if (srcDatas.isEmpty())
             return Collections.emptyList();
 
         int[] batchSizes = calculateOptimalBatchSizes(parallelismLvl, srcDatas.size());
@@ -10821,19 +10864,22 @@ public abstract class IgniteUtils {
             // Add to set only after check that batch is not empty.
             .peek(sharedBatchesSet::add)
             // Setup future in batch for waiting result.
-            .peek(batch -> batch.future = executorSvc.submit(() -> {
-                // Batch was stolen by the main stream.
-                if (!sharedBatchesSet.remove(batch)) {
-                    return null;
-                }
+            .peek(batch -> {
+                Future<Collection<R>> fut = executorSvc.submit(() -> {
+                    // Batch was stolen by the main stream.
+                    if (!sharedBatchesSet.remove(batch))
+                        return null;
 
-                Collection<R> results = new ArrayList<>(batch.tasks.size());
+                    Collection<R> results = new ArrayList<>(batch.tasks.size());
 
-                for (T item : batch.tasks)
-                    results.add(operation.apply(item));
+                    for (T item : batch.tasks)
+                        results.add(operation.apply(item));
 
-                return results;
-            }))
+                    return results;
+                });
+
+                batch.fut = uninterruptible ? new UninterruptibleFutureAdapter<>(fut) : fut;
+            })
             .collect(Collectors.toList());
 
         Throwable error = null;
@@ -10861,7 +10907,7 @@ public abstract class IgniteUtils {
         // Final result collection.
         Collection<R> results = new ArrayList<>(srcDatas.size());
 
-        for (Batch<T, R> batch: batches) {
+        for (Batch<T, R> batch : batches) {
             try {
                 Throwable err = batch.error;
 
@@ -10957,13 +11003,13 @@ public abstract class IgniteUtils {
         private Throwable error;
 
         /** */
-        private Future<Collection<R>> future;
+        private Future<Collection<R>> fut;
 
         /**
          * @param batchSize Batch size.
          */
         private Batch(int batchSize) {
-            this.tasks = new ArrayList<>(batchSize);
+            tasks = new ArrayList<>(batchSize);
         }
 
         /**
@@ -10977,7 +11023,7 @@ public abstract class IgniteUtils {
          * @param res Setup results for tasks.
          */
         public void result(Collection<R> res) {
-            this.result = res;
+            result = res;
         }
 
         /**
@@ -10991,9 +11037,90 @@ public abstract class IgniteUtils {
          * Get tasks results.
          */
         public Collection<R> result() throws ExecutionException, InterruptedException {
-            assert future != null;
+            assert fut != null;
 
-            return result != null ? result : future.get();
+            return result != null ? result : fut.get();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class UninterruptibleFutureAdapter<R> implements Future<R> {
+        /** */
+        private final Future<R> delegate;
+
+        /**
+         * Creates a new instance of this adapter that delegates all method calls to the given {@code delegate}.
+         *
+         * @param delegate Future that is used to service method calls.
+         */
+        UninterruptibleFutureAdapter(Future<R> delegate) {
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cancel(boolean mayInterruptIfRunning) {
+            return delegate.cancel(mayInterruptIfRunning);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isCancelled() {
+            return delegate.isCancelled();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDone() {
+            return delegate.isDone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public R get() throws ExecutionException {
+            boolean interrupted = false;
+
+            try {
+                while (true) {
+                    try {
+                        return delegate.get();
+                    }
+                    catch (InterruptedException e) {
+                        interrupted = true;
+                    }
+                }
+            }
+            finally {
+                if (interrupted)
+                    Thread.currentThread().interrupt();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public R get(
+            long timeout,
+            @NotNull TimeUnit unit
+        ) throws ExecutionException, TimeoutException {
+            boolean interrupted = false;
+
+            long remaining = unit.toMillis(timeout);
+
+            long end = U.currentTimeMillis() + remaining;
+
+            try {
+                while (true) {
+                    try {
+                        return delegate.get(remaining, TimeUnit.MILLISECONDS);
+                    }
+                    catch (InterruptedException e) {
+                        interrupted = true;
+
+                        remaining = end - U.currentTimeMillis();
+                    }
+                }
+            }
+            finally {
+                if (interrupted)
+                    Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -11010,28 +11137,6 @@ public abstract class IgniteUtils {
             batcheSizes[i % batcheSizes.length]++;
 
         return batcheSizes;
-    }
-
-    /**
-     * @param fut Future to wait for completion.
-     * @throws ExecutionException If the future
-     */
-    private static void getUninterruptibly(Future fut) throws ExecutionException {
-        boolean interrupted = false;
-
-        while (true) {
-            try {
-                fut.get();
-
-                break;
-            }
-            catch (InterruptedException e) {
-                interrupted = true;
-            }
-        }
-
-        if (interrupted)
-            Thread.currentThread().interrupt();
     }
 
     /**
