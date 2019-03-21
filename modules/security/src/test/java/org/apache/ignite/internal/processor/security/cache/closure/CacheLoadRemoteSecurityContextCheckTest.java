@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -97,7 +96,7 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
             Ignition.localIgnite()
                 .<Integer, Integer>cache(CACHE_NAME).loadCache(
-                new CacheLoadClosure(SRV_CHECK, endpoints())
+                new ExecRegisterAndForward<Integer, Integer>(SRV_CHECK, endpoints())
             );
         };
 
@@ -113,23 +112,6 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
     /** {@inheritDoc} */
     @Override protected Collection<UUID> nodesToCheck() {
         return Collections.singletonList(nodeId(SRV_CHECK));
-    }
-
-    /**
-     * Closure for tests.
-     */
-    static class CacheLoadClosure extends BroadcastRunner implements IgniteBiPredicate<Integer, Integer> {
-        /** {@inheritDoc} */
-        public CacheLoadClosure(String node, Collection<UUID> endpoints) {
-            super(node, endpoints);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(Integer integer, Integer integer2) {
-            registerAndBroadcast();
-
-            return false;
-        }
     }
 
     /**

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
-import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.Ignite;
@@ -86,7 +85,7 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
                 ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
 
                 try {
-                    svc.submit(new ExecutorServiceClosure(endpoints())).get();
+                    svc.submit((Runnable) new ExecRegisterAndForward<>(endpoints())).get();
                 }
                 catch (Exception e) {
                     throw new RuntimeException(e);
@@ -97,18 +96,5 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
 
         runAndCheck(grid(SRV_INITIATOR), checkCase);
         runAndCheck(grid(CLNT_INITIATOR), checkCase);
-    }
-
-    /** */
-    static class ExecutorServiceClosure extends BroadcastRunner implements Runnable {
-        /** {@inheritDoc} */
-        public ExecutorServiceClosure(Collection<UUID> endpoints) {
-            super(endpoints);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            registerAndBroadcast();
-        }
     }
 }

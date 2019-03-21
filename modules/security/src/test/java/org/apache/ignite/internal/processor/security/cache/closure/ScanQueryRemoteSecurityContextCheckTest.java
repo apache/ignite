@@ -21,13 +21,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.stream.Stream;
-import javax.cache.Cache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -102,7 +99,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
                 Ignition.localIgnite().cache(CACHE_NAME).query(
                     new ScanQuery<>(
-                        new ScanQueryClosure(SRV_CHECK, endpoints())
+                        new ExecRegisterAndForward<Object, Object>(SRV_CHECK, endpoints())
                     )
                 ).getAll();
             },
@@ -111,35 +108,9 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
                 Ignition.localIgnite().cache(CACHE_NAME).query(
                     new ScanQuery<>((k, v) -> true),
-                    new ScanQueryClosure(SRV_CHECK, endpoints())
+                    new ExecRegisterAndForward<>(SRV_CHECK, endpoints())
                 ).getAll();
             }
         );
-    }
-
-    /**
-     * Common closure for tests.
-     */
-    static class ScanQueryClosure extends BroadcastRunner implements
-        IgniteClosure<Cache.Entry<Integer, Integer>, Integer>,
-        IgniteBiPredicate<Integer, Integer> {
-        /** {@inheritDoc} */
-        public ScanQueryClosure(String node, Collection<UUID> endpoints) {
-            super(node, endpoints);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Integer apply(Cache.Entry<Integer, Integer> entry) {
-            registerAndBroadcast();
-
-            return entry.getValue();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(Integer s, Integer i) {
-            registerAndBroadcast();
-
-            return false;
-        }
     }
 }

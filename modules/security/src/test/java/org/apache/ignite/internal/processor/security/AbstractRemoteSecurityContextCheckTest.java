@@ -25,14 +25,22 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
 import java.util.stream.Stream;
+
+import javax.cache.Cache;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.SecurityException;
 
@@ -246,16 +254,13 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
 
             list.add(new T2<>(secSubjectId(ignite), ignite.name()));
 
-            map.computeIfPresent(ignite.name(),
-                new BiFunction<String, T2<Integer, Integer>, T2<Integer, Integer>>() {
-                    @Override public T2<Integer, Integer> apply(String name, T2<Integer, Integer> t2) {
-                        Integer val = t2.getValue();
+            map.computeIfPresent(ignite.name(), (name, t2) -> {
+                Integer val = t2.getValue();
 
-                        t2.setValue(++val);
+                t2.setValue(++val);
 
-                        return t2;
-                    }
-                });
+                return t2;
+            });
         }
 
         /**
@@ -280,8 +285,37 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         }
     }
 
+    protected static class ExecRegisterAndForwardAdapter<K, V> implements IgniteBiInClosure<K, V> {
+        private ExecRegisterAndForward<K, V> instance;
+
+        public ExecRegisterAndForwardAdapter(IgniteRunnable runnable) {
+            instance = new ExecRegisterAndForward<>(runnable);
+        }
+
+        /**
+         * @param node Expected local node name.
+         * @param endpoints Collection of endpont nodes ids.
+         */
+        public ExecRegisterAndForwardAdapter(String node, Collection<UUID> endpoints) {
+            instance = new ExecRegisterAndForward<>(node, endpoints);
+        }
+
+        /**
+         * @param endpoints Collection of endpont nodes ids.
+         */
+        public ExecRegisterAndForwardAdapter(Collection<UUID> endpoints) {
+            instance = new ExecRegisterAndForward<>(endpoints);
+        }
+
+        @Override
+        public void apply(K k, V v) {
+            instance.run();
+        }
+    }
+
     /** */
-    protected static class BroadcastRunner {
+    protected static class ExecRegisterAndForward<K, V> implements IgniteBiPredicate<K, V>, IgniteRunnable,
+            IgniteCallable<V>, EntryProcessor<K, V, Object>, IgniteClosure<K, V> {
         /** Runnable. */
         private final IgniteRunnable runnable;
 
@@ -294,7 +328,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /**
          * @param runnable Runnable.
          */
-        public BroadcastRunner(IgniteRunnable runnable) {
+        public ExecRegisterAndForward(IgniteRunnable runnable) {
             this.runnable = Objects.requireNonNull(runnable);
             node = null;
             endpoints = Collections.emptyList();
@@ -304,7 +338,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * @param node Expected local node name.
          * @param endpoints Collection of endpont nodes ids.
          */
-        public BroadcastRunner(String node, Collection<UUID> endpoints) {
+        public ExecRegisterAndForward(String node, Collection<UUID> endpoints) {
             this.node = node;
             this.endpoints = endpoints;
             runnable = null;
@@ -313,16 +347,21 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /**
          * @param endpoints Collection of endpont nodes ids.
          */
-        public BroadcastRunner(Collection<UUID> endpoints) {
+        public ExecRegisterAndForward(Collection<UUID> endpoints) {
             this.endpoints = endpoints;
             runnable = null;
             node = null;
         }
 
-        /**
-         *
-         */
-        protected void registerAndBroadcast() {
+        @Override
+        public boolean apply(K k, V v) {
+            run();
+
+            return false;
+        }
+
+        @Override
+        public void run() {
             Ignite loc = Ignition.localIgnite();
 
             if (node == null || node.equals(loc.name())) {
@@ -334,9 +373,33 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
                     runnable.run();
                 else {
                     compute(ignite, endpoints)
-                        .broadcast(() -> register());
+                            .broadcast(() -> register());
                 }
             }
+        }
+
+        @Override
+        public Object process(MutableEntry<K, V> mutableEntry, Object... objects) {
+            run();
+
+            return null;
+        }
+
+        @Override
+        public V apply(K k) {
+            run();
+
+            if (k instanceof Cache.Entry)
+                return (V) ((Cache.Entry)k).getValue();
+
+            return null;
+        }
+
+        @Override
+        public V call() throws Exception {
+            run();
+
+            return null;
         }
     }
 }

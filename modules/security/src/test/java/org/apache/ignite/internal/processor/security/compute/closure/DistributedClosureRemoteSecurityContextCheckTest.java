@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
-import java.util.Collection;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processor.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 
@@ -86,82 +83,47 @@ public class DistributedClosureRemoteSecurityContextCheckTest
     private Stream<IgniteRunnable> checkCases() {
         return Stream.<IgniteRunnable>of(
             () -> compute(Ignition.localIgnite(), nodesToCheck())
-                .broadcast((IgniteRunnable)new ComputeClosure(endpoints())),
+                .broadcast((IgniteRunnable)new ExecRegisterAndForward<>(endpoints())),
 
             () -> compute(Ignition.localIgnite(), nodesToCheck())
-                .broadcastAsync((IgniteRunnable)new ComputeClosure(endpoints()))
+                .broadcastAsync((IgniteRunnable)new ExecRegisterAndForward<>(endpoints()))
                 .get(),
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .call(new ComputeClosure(endpoints()));
+                        .call(new ExecRegisterAndForward<>(endpoints()));
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .callAsync(new ComputeClosure(endpoints())).get();
+                        .callAsync(new ExecRegisterAndForward<>(endpoints())).get();
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .run(new ComputeClosure(endpoints()));
+                        .run(new ExecRegisterAndForward<>(endpoints()));
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .runAsync(new ComputeClosure(endpoints())).get();
+                        .runAsync(new ExecRegisterAndForward<>(endpoints())).get();
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .apply(new ComputeClosure(endpoints()), new Object());
+                        .apply(new ExecRegisterAndForward<Object, Object>(endpoints()), new Object());
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
                     compute(Ignition.localIgnite(), id)
-                        .applyAsync(new ComputeClosure(endpoints()), new Object()).get();
+                        .applyAsync(new ExecRegisterAndForward<>(endpoints()), new Object()).get();
                 }
             }
-        ).map(ComputeClosure::new);
-    }
-
-    /** */
-    static class ComputeClosure extends BroadcastRunner implements
-        IgniteRunnable,
-        IgniteCallable<Object>,
-        IgniteClosure<Object, Object> {
-        /** {@inheritDoc} */
-        public ComputeClosure(IgniteRunnable runnable) {
-            super(runnable);
-        }
-
-        /** {@inheritDoc} */
-        public ComputeClosure(Collection<UUID> endpoints) {
-            super(endpoints);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            registerAndBroadcast();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object call() {
-            registerAndBroadcast();
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(Object o) {
-            registerAndBroadcast();
-
-            return null;
-        }
+        ).map(ExecRegisterAndForward::new);
     }
 }

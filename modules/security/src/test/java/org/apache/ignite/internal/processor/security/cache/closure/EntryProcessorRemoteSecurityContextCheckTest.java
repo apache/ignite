@@ -21,9 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.stream.Stream;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
@@ -96,48 +94,18 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
 
         return Stream.<IgniteRunnable>of(
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invoke(key, new EntryProcessorClosure(endpoints())),
+                .invoke(key, new ExecRegisterAndForward<Integer, Integer>(endpoints())),
 
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAll(Collections.singleton(key), new EntryProcessorClosure(endpoints())),
+                .invokeAll(Collections.singleton(key), new ExecRegisterAndForward<Integer, Integer>(endpoints())),
 
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAsync(key, new EntryProcessorClosure(endpoints()))
+                .invokeAsync(key, new ExecRegisterAndForward<Integer, Integer>(endpoints()))
                 .get(),
 
             () -> Ignition.localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAllAsync(Collections.singleton(key), new EntryProcessorClosure(endpoints()))
+                .invokeAllAsync(Collections.singleton(key), new ExecRegisterAndForward<Integer, Integer>(endpoints()))
                 .get()
-        )
-            .map(EntryProcessorClosure::new);
-    }
-
-    /** */
-    static class EntryProcessorClosure extends BroadcastRunner implements
-        IgniteRunnable,
-        EntryProcessor<Integer, Integer, Object> {
-
-        /** {@inheritDoc} */
-        public EntryProcessorClosure(IgniteRunnable runnable) {
-            super(runnable);
-        }
-
-        /** {@inheritDoc} */
-        public EntryProcessorClosure(Collection<UUID> endpoints) {
-            super(endpoints);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object process(MutableEntry<Integer, Integer> entry,
-            Object... arguments) throws EntryProcessorException {
-            registerAndBroadcast();
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            registerAndBroadcast();
-        }
+        ).map(ExecRegisterAndForward::new);
     }
 }

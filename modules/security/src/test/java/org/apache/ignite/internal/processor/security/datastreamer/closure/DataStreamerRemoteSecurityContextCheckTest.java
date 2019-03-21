@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processor.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.stream.StreamVisitor;
 import org.junit.Test;
@@ -101,23 +100,11 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
      */
     private void dataStreamer(Ignite node) {
         try (IgniteDataStreamer<Integer, Integer> strm = node.dataStreamer(CACHE_NAME)) {
-            strm.receiver(StreamVisitor.from(new DataStreamClosure(endpoints())));
+            strm.receiver(StreamVisitor
+                    .from(new ExecRegisterAndForwardAdapter<IgniteCache<Integer, Integer>, Map.Entry<Integer, Integer>>(
+                            endpoints())));
 
             strm.addData(prmKey(grid(SRV_CHECK)), 100);
-        }
-    }
-
-    /** */
-    static class DataStreamClosure extends BroadcastRunner implements
-        IgniteBiInClosure<IgniteCache<Integer, Integer>, Map.Entry<Integer, Integer>> {
-        /** {@inheritDoc} */
-        public DataStreamClosure(Collection<UUID> endpoints) {
-            super(endpoints);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(IgniteCache<Integer, Integer> entries, Map.Entry<Integer, Integer> entry) {
-            registerAndBroadcast();
         }
     }
 }
