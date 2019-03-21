@@ -107,6 +107,8 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
     }
 
     /**
+     * Evaluates label coordinate if need.
+     *
      * @param key Key.
      * @param value Value.
      * @return label coordinate.
@@ -169,14 +171,21 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
         return this;
     }
 
-    public <L1> Vectorizer<K, V, C, L1> map(IgniteFunction<LabeledVector<L>, LabeledVector<L1>> after) {
-        return new MappedVectorizer<>(this, after);
+    /**
+     * Map vectorizer answer. NOTE: function "func" should be on ignite servers.
+     *
+     * @param func mapper.
+     * @param <L1> Type of new label.
+     * @return mapped vectorizer.
+     */
+    public <L1> Vectorizer<K, V, C, L1> map(IgniteFunction<LabeledVector<L>, LabeledVector<L1>> func) {
+        return new MappedVectorizer<>(this, func);
     }
 
     /**
      * Shotrcuts for coordinates in feature vector.
      */
-    public static enum LabelCoordinate {
+    public enum LabelCoordinate {
         /** First. */FIRST,
         /** Last. */LAST
     }
@@ -232,23 +241,45 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
         return new DenseVector(size);
     }
 
+    /**
+     * @param <K> Type of key.
+     * @param <V> Type of value.
+     * @param <C> Type of coordinates.
+     * @param <L0> Type of original label.
+     * @param <L1> Type of mapped label.
+     */
     private static class MappedVectorizer<K, V, C, L0, L1> extends VectorizerAdapter<K, V, C, L1> {
+        /** Original vectorizer. */
         protected final Vectorizer<K, V, C, L0> original;
-        private final IgniteFunction<LabeledVector<L0>, LabeledVector<L1>> labelMapping;
 
+        /** Vectors mapping. */
+        private final IgniteFunction<LabeledVector<L0>, LabeledVector<L1>> mapping;
+
+        /**
+         * Creates an instance of MappedVectorizer.
+         */
         public MappedVectorizer(Vectorizer<K, V, C, L0> original,
             IgniteFunction<LabeledVector<L0>, LabeledVector<L1>> andThen) {
+
             this.original = original;
-            this.labelMapping = andThen;
+            this.mapping = andThen;
         }
 
         /** {@inheritDoc} */
         @Override public LabeledVector<L1> apply(K key, V value) {
-            return labelMapping.apply(original.apply(key, value));
+            return mapping.apply(original.apply(key, value));
         }
     }
 
-    public static class VectorizerAdapter<K,V,C,L> extends Vectorizer<K,V,C,L> {
+    /**
+     * Utility class for convenient overridings.
+     *
+     * @param <K> Type of key.
+     * @param <V> Type of value.
+     * @param <C> Type of coordinate.
+     * @param <L> Type od label.
+     */
+    public static class VectorizerAdapter<K, V, C, L> extends Vectorizer<K, V, C, L> {
         /** {@inheritDoc} */
         @Override protected Double feature(C coord, K key, V value) {
             throw new IllegalStateException();
