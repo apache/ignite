@@ -27,7 +27,7 @@ import org.junit.rules.TestName;
  */
 @SuppressWarnings({"TransientFieldInNonSerializableClass", "ExtendsUtilityClass"})
 @Deprecated
-public class JUnit3TestLegacySupport extends JUnitAssertAware {
+public class TestConditionsAware extends JUnitAssertAware {
     /**
      * Supports obtaining test name for JUnit4 framework in a way that makes it available for legacy methods invoked
      * from {@code runTest(Statement)}.
@@ -44,7 +44,7 @@ public class JUnit3TestLegacySupport extends JUnitAssertAware {
     }
 
     /**
-     * Used at the beginning of {@link #runTest} scenario and called before execution of every test method in class.
+     * Called before execution of every test method in class.
      * <p>
      * Do not annotate with Before in overriding methods.</p>
      *
@@ -55,8 +55,8 @@ public class JUnit3TestLegacySupport extends JUnitAssertAware {
     }
 
     /**
-     * Used in the end of {@link #runTest} scenario and called after execution of every test method in class
-     * or if something failed during the test execution.
+     * Called after execution of every test method in class or if {@link #beforeTest()} failed without test method
+     * execution.
      * <p>
      * Do not annotate with After in overriding methods.</p>
      *

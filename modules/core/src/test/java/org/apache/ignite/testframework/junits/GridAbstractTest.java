@@ -149,7 +149,7 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
     "TransientFieldInNonSerializableClass",
     "ProhibitedExceptionDeclared"
 })
-public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
+public abstract class GridAbstractTest extends TestConditionsAware {
     /**************************************************************
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
