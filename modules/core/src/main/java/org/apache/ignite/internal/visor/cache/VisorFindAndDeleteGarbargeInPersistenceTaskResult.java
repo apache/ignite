@@ -38,6 +38,8 @@ public class VisorFindAndDeleteGarbargeInPersistenceTaskResult extends IgniteDat
     @GridToStringInclude
     private Map<UUID, VisorFindAndDeleteGarbargeInPersistenceJobResult> result;
 
+    public VisorFindAndDeleteGarbargeInPersistenceTaskResult() {
+    }
 
     /**
      * @param result Results with founded garbarge (GroupId -> (CacheId, Count of keys)).

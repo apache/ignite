@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -73,8 +74,11 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -97,7 +101,9 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -119,10 +125,78 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
 public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration configuration = super.getConfiguration(gridName);
+
+        DataStorageConfiguration cfg = new DataStorageConfiguration();
+
+        cfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setPersistenceEnabled(true)
+            .setMaxSize(256 * 1024 * 1024));
+
+        configuration.setDataStorageConfiguration(cfg);
+
+        return configuration;
+    }
+
+    private CacheConfiguration<Object, Object> getCacheConfiguration(int i) {
+        return new CacheConfiguration<>(getCacheName(i))
+            .setGroupName("group")
+            .setAffinity(new RendezvousAffinityFunction(false, 64));
+    }
+
+    @NotNull private String getCacheName(int i) {
+        return "cache-" + i;
+    }
+
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
 
+    @Test
+    public void test() throws Exception {
+        IgniteEx ex = startGrids(3);
 
+        ex.cluster().active(true);
+
+
+        for (int j = 0; j < 3; j++) {
+            for (int i = 0; i < 64 * 10; i++) {
+                IgniteCache<Object, Object> cache = ex.getOrCreateCache(getCacheConfiguration(j));
+
+                byte[] val = new byte[ThreadLocalRandom.current().nextInt(8148)];
+
+                Arrays.fill(val, (byte)i);
+
+                cache.put(i, val);
+            }
+        }
+
+        ex.destroyCache(getCacheName(0));
+
+        assertNull(ex.cachex(getCacheName(0)));
+
+        IgniteProcessProxy.kill(grid(2).configuration().getIgniteInstanceName());
+
+        startGrid(2);
+
+        assertNull(ex.cachex(getCacheName(0)));
+
+        IgniteCache<Object, Object> cache = ex.createCache(getCacheConfiguration(0));
+
+        awaitPartitionMapExchange();
+
+        assertEquals(0, cache.size());
+
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isMultiJvm() {
+        return true;
+    }
 }
