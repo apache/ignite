@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -33,7 +35,7 @@ public class LongRunningQueryManager {
     private final ConnectionManager connMgr;
 
     /** Queries collection. Sorted collection isn't used to reduce 'put' time. */
-    private final ConcurrentHashMap<AbstractH2QueryInfo, Boolean> qrys = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<AbstractH2QueryInfo, TimeoutChecker> qrys = new ConcurrentHashMap<>();
 
     /** Check long query task. */
     private final GridTimeoutProcessor.CancelableTask checkLongQryTask;
@@ -82,11 +84,8 @@ public class LongRunningQueryManager {
      * @param qryInfo Query info to register.
      */
     public void registerQuery(AbstractH2QueryInfo qryInfo) {
-        if (timeout > 0 && qryInfo != null) {
-            qryInfo.setTimeout(timeout, timeoutMult);
-
-            qrys.put(qryInfo, true);
-        }
+        if (timeout > 0 && qryInfo != null)
+            qrys.put(qryInfo, new TimeoutChecker(timeout, timeoutMult));
     }
 
     /**
@@ -100,8 +99,10 @@ public class LongRunningQueryManager {
      *
      */
     private void checkLongRunning() {
-        for (AbstractH2QueryInfo qinfo : qrys.keySet()) {
-            if (qinfo.checkTimeout()) {
+        for (Map.Entry<AbstractH2QueryInfo, TimeoutChecker> e : qrys.entrySet()) {
+            AbstractH2QueryInfo qinfo = e.getKey();
+
+            if (e.getValue().checkTimeout(qinfo.time())) {
                 qinfo.printLogMessage(log, connMgr, "Query execution is too long");
 
                 if (timeoutMult <= 1)
@@ -124,6 +125,9 @@ public class LongRunningQueryManager {
      */
     public void setTimeout(long timeout) {
         this.timeout = timeout;
+
+        if (timeout <= 0)
+            qrys.clear();
     }
 
     /**
@@ -146,5 +150,40 @@ public class LongRunningQueryManager {
      */
     public void setTimeoutMultiplier(int timeoutMult) {
         this.timeoutMult = timeoutMult;
+    }
+
+    /**
+     * Holds timeout settings for the specified query.
+     */
+    private static class TimeoutChecker {
+        /** */
+        private long timeout;
+
+        /** */
+        private int timeoutMult;
+
+        /**
+         * @param timeout Initial timeout.
+         * @param timeoutMult Timeout multiplier.
+         */
+        public TimeoutChecker(long timeout, int timeoutMult) {
+            this.timeout = timeout;
+            this.timeoutMult = timeoutMult;
+        }
+
+        /**
+         * @param time Query execution time.
+         * @return {@code true} if timeout occurred.
+         */
+        public boolean checkTimeout(long time) {
+            if (time > timeout) {
+                if (timeoutMult > 1)
+                    timeout *= timeoutMult;
+
+                return true;
+            }
+            else
+                return false;
+        }
     }
 }
