@@ -62,6 +62,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -792,7 +793,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /**
      * {@inheritDoc}
      * <br/>
-     *
+     * Does nothing on client nodes. Also does nothinf if feature is not supported on some node in topology.
+     * Otherwise it fills databag with data required for joining node so it could be consistent with the cluster.
+     * There are 2 main cases: local node has enough history to send only updates or it doesn't. In first case
+     * the history is collected, otherwise whole distributed metastorage ({@code fullData}) is collected along with
+     * available history. Goal of collecting history in second case is to allow all nodes in cluster to have the same
+     * history so connection of new server will always give the same result.
      */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         if (isClient)
@@ -827,66 +833,64 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                 dataBag.addGridCommonData(COMPONENT_ID, nodeData);
             }
+            else if (remoteVer.id == actualVer.id) { // On client this would mean that cluster metastorage is empty.
+                Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, null);
+
+                dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+            }
             else {
-                if (remoteVer.id == actualVer.id) { // On client this would mean that cluster metastorage is empty.
-                    Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, null);
+                int availableHistSize = getAvailableHistorySize();
+
+                if (actualVer.id - remoteVer.id <= availableHistSize && !dataBag.isJoiningNodeClient()) {
+                    DistributedMetaStorageHistoryItem[] updates = history(remoteVer.id + 1, actualVer.id);
+
+                    Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, updates);
 
                     dataBag.addGridCommonData(COMPONENT_ID, nodeData);
                 }
                 else {
-                    int availableHistSize = getAvailableHistorySize();
+                    DistributedMetaStorageVersion ver0;
 
-                    if (actualVer.id - remoteVer.id <= availableHistSize && !dataBag.isJoiningNodeClient()) {
-                        DistributedMetaStorageHistoryItem[] updates = history(remoteVer.id + 1, actualVer.id);
+                    DistributedMetaStorageKeyValuePair[] fullData;
 
-                        Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, updates);
+                    DistributedMetaStorageHistoryItem[] hist;
 
-                        dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                    if (startupExtras == null || startupExtras.fullNodeData == null) {
+                        ver0 = ver;
+
+                        try {
+                            fullData = bridge.localFullData();
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw criticalError(e);
+                        }
+
+                        if (dataBag.isJoiningNodeClient())
+                            hist = EMPTY_ARRAY;
+                        else
+                            hist = history(ver.id - histCache.size() + 1, actualVer.id);
                     }
                     else {
-                        DistributedMetaStorageVersion ver0;
+                        ver0 = startupExtras.fullNodeData.ver;
 
-                        DistributedMetaStorageKeyValuePair[] fullData;
+                        fullData = startupExtras.fullNodeData.fullData;
 
-                        DistributedMetaStorageHistoryItem[] hist;
-
-                        if (startupExtras == null || startupExtras.fullNodeData == null) {
-                            ver0 = ver;
-
-                            try {
-                                fullData = bridge.localFullData();
-                            }
-                            catch (IgniteCheckedException e) {
-                                throw criticalError(e);
-                            }
-
-                            if (dataBag.isJoiningNodeClient())
-                                hist = EMPTY_ARRAY;
-                            else
-                                hist = history(ver.id - histCache.size() + 1, actualVer.id);
-                        }
-                        else {
-                            ver0 = startupExtras.fullNodeData.ver;
-
-                            fullData = startupExtras.fullNodeData.fullData;
-
-                            if (dataBag.isJoiningNodeClient())
-                                hist = EMPTY_ARRAY;
-                            else
-                                hist = startupExtras.fullNodeData.hist;
-                        }
-
-                        DistributedMetaStorageHistoryItem[] updates;
-
-                        if (startupExtras != null)
-                            updates = startupExtras.deferredUpdates.toArray(EMPTY_ARRAY);
+                        if (dataBag.isJoiningNodeClient())
+                            hist = EMPTY_ARRAY;
                         else
-                            updates = null;
-
-                        Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver0, fullData, hist, updates);
-
-                        dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                            hist = startupExtras.fullNodeData.hist;
                     }
+
+                    DistributedMetaStorageHistoryItem[] updates;
+
+                    if (startupExtras != null)
+                        updates = startupExtras.deferredUpdates.toArray(EMPTY_ARRAY);
+                    else
+                        updates = null;
+
+                    Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver0, fullData, hist, updates);
+
+                    dataBag.addGridCommonData(COMPONENT_ID, nodeData);
                 }
             }
         }
@@ -895,7 +899,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
     }
 
-    /** */
+    /**
+     * Retrieve joining node data from discovery data. It is expected that it is present as a {@code byte[]} object.
+     *
+     * @param discoData Joining node discovery data.
+     * @return Unmarshalled data or null if unmarshalling failed.
+     */
     @Nullable private DistributedMetaStorageJoiningNodeData getJoiningNodeData(
         JoiningNodeDiscoveryData discoData
     ) {
@@ -1043,8 +1052,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         return bridge.localFullData();
     }
 
-    /** {@inheritDoc} */
-    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
+    /**
+     * {@inheritDoc}
+     * <br/>
+     * Applies received updates if they are present in response.
+     *
+     * @param data Grid discovery data.
+     */
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
         lock.writeLock().lock();
 
         try {
