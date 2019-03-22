@@ -250,12 +250,18 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
         return true;
     }
 
+    /** */
     public class Account {
-       private Long id;
-       private String name;
-       private Long amount;
-       private Date updateDate;
+        /** */
+        private Long id;
+        /** */
+        private String name;
+        /** */
+        private Long amount;
+        /** */
+        private Date updateDate;
 
+        /** */
         public Account(Long id) {
             this.id = id;
 
@@ -264,6 +270,7 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
             updateDate = new Date();
         }
 
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -273,9 +280,9 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
             return Objects.equals(id, account.id);
         }
 
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(id);
         }
     }
-
 }
