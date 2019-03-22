@@ -34,18 +34,17 @@ public class VisorFindAndDeleteGarbargeInPersistenceTaskResult extends IgniteDat
     /** */
     private static final long serialVersionUID = 0L;
 
+
     /** Results of indexes validation from node. */
     @GridToStringInclude
     private Map<UUID, VisorFindAndDeleteGarbargeInPersistenceJobResult> result;
 
-    public VisorFindAndDeleteGarbargeInPersistenceTaskResult() {
-    }
 
-    /**
-     * @param result Results with founded garbarge (GroupId -> (CacheId, Count of keys)).
-     */
-    public VisorFindAndDeleteGarbargeInPersistenceTaskResult(Map<UUID, VisorFindAndDeleteGarbargeInPersistenceJobResult> result) {
-        this.result = result;
+    /** Exceptions while indexes validation from node. */
+    @GridToStringInclude
+    private Map<UUID, Exception> exceptions;
+
+    public VisorFindAndDeleteGarbargeInPersistenceTaskResult() {
     }
 
     /**
@@ -56,6 +55,9 @@ public class VisorFindAndDeleteGarbargeInPersistenceTaskResult extends IgniteDat
     public VisorFindAndDeleteGarbargeInPersistenceTaskResult(
         Map<UUID, VisorFindAndDeleteGarbargeInPersistenceJobResult> jobResults,
         Map<UUID, Exception> exceptions) {
+
+        this.result = jobResults;
+        this.exceptions = exceptions;
     }
 
     /**
@@ -65,6 +67,12 @@ public class VisorFindAndDeleteGarbargeInPersistenceTaskResult extends IgniteDat
         return result;
     }
 
+    /**
+     * @return Exception of execution on nodes.
+     */
+    public Map<UUID, Exception> exceptions() {
+        return exceptions;
+    }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {

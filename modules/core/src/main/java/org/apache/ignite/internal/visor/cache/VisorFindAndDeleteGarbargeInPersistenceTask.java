@@ -69,9 +69,7 @@ public class VisorFindAndDeleteGarbargeInPersistenceTask extends VisorMultiNodeT
         Collection<ClusterNode> srvNodes = ignite.cluster().forServers().nodes();
         Collection<UUID> ret = new ArrayList<>(srvNodes.size());
 
-        VisorFindAndDeleteGarbargeInPersistenceTaskArg taskArg = arg.getArgument();
-
-        Set<UUID> nodeIds = taskArg.getNodes() != null ? new HashSet<>(taskArg.getNodes()) : null;
+        Set<UUID> nodeIds = arg.getNodes() != null ? new HashSet<>(arg.getNodes()) : null;
 
         if (nodeIds == null) {
             for (ClusterNode node : srvNodes)
