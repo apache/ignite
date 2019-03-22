@@ -964,7 +964,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (!F.isEmpty(skippedConfigs))
                     U.warn(log, "Static configuration for the following caches will be ignored because a persistent " +
                         "cache with the same name already exist (see " +
-                        "https://apacheignite.readme.io/docs/jcache#section-dynamic-cache for more information): " +
+                        "https://apacheignite.readme.io/docs/cache-configuration for more information): " +
                         skippedConfigs);
             }
         }
