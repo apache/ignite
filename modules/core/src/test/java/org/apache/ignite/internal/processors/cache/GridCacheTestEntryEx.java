@@ -213,7 +213,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      * @param baseVer Base version.
      */
     void salvageRemote(GridCacheVersion baseVer) {
-        mvcc.salvageRemote(baseVer);
+        mvcc.salvageRemote(baseVer, false);
     }
 
     /**

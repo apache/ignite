@@ -613,7 +613,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 }
 
                 if (sysInvalidate && baseVer != null)
-                    mvcc.salvageRemote(baseVer);
+                    mvcc.salvageRemote(baseVer, isNear());
 
                 owner = mvcc.doneRemote(lockVer,
                     maskNull(pendingVers),

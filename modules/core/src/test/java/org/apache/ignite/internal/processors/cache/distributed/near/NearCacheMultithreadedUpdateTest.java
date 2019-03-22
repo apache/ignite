@@ -45,7 +45,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
     private boolean client;
 
     /** */
-    private final int SRV_CNT = 3;
+    private static final int SRV_CNT = 3;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
