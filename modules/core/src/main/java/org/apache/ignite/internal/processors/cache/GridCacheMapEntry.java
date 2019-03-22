@@ -6116,6 +6116,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 remove(conflictCtx, invokeRes, storeLoadedVal != null, transformed);
             }
 
+            entry.localPartition().activeStorageReadUnlock();
+
             assert updateRes != null && treeOp != null;
         }
 

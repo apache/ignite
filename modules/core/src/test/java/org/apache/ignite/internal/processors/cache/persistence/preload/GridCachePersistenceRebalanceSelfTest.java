@@ -26,12 +26,16 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
@@ -76,7 +80,8 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setMaxSize(100L * 1024 * 1024)
                     .setPersistenceEnabled(true))
-                .setWalMode(WALMode.LOG_ONLY));
+                .setWalMode(WALMode.LOG_ONLY))
+        .setCommunicationSpi(new TestRecordingCommunicationSpi());
     }
 
     /**
@@ -114,7 +119,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
         loadData(ignite0, DEFAULT_CACHE_NAME);
 
-        assertTrue(!ignite0.cluster().baselineConfiguration().isBaselineAutoAdjustEnabled());
+        assertTrue(!ignite0.cluster().isBaselineAutoAdjustEnabled());
 
         IgniteEx ignite1 = startGrid(1);
 
@@ -134,7 +139,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
             new CacheConfiguration<Integer, byte[]>("manual")
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setRebalanceMode(CacheRebalanceMode.ASYNC)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
                 .setBackups(1)
                 .setRebalanceDelay(-1)
                 .setAffinity(new RendezvousAffinityFunction(false)
@@ -142,13 +147,51 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
         loadData(ignite0, "manual");
 
-        assertTrue(!ignite0.cluster().baselineConfiguration().isBaselineAutoAdjustEnabled());
+        assertTrue(!ignite0.cluster().isBaselineAutoAdjustEnabled());
 
         IgniteEx ignite1 = startGrid(1);
 
         ignite1.cluster().setBaselineTopology(ignite1.cluster().nodes());
 
         printPartitionState("manual", 0);
+
+        cache.put(TEST_SIZE, new byte[1000]);
+
+        awaitPartitionMapExchange(true, true, Collections.singleton(ignite1.localNode()), true);
+    }
+
+    /** */
+    @Test
+    public void testPersistenceRebalanceAsyncUpdates() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        IgniteCache<Integer, byte[]> cache = ignite0.getOrCreateCache(
+            new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setRebalanceMode(CacheRebalanceMode.ASYNC)
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                .setBackups(1)
+                .setAffinity(new RendezvousAffinityFunction(false)
+                    .setPartitions(8)));
+
+        loadData(ignite0, DEFAULT_CACHE_NAME);
+
+        assertTrue(!ignite0.cluster().isBaselineAutoAdjustEnabled());
+
+        IgniteEx ignite1 = startGrid(1);
+
+        TestRecordingCommunicationSpi.spi(ignite1)
+            .blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return msg instanceof GridPartitionCopyDemandMessage;
+                }
+            });
+
+        ignite1.cluster().setBaselineTopology(ignite1.cluster().nodes());
+
+        TestRecordingCommunicationSpi.spi(ignite1).waitForBlocked();
 
         cache.put(TEST_SIZE, new byte[1000]);
 

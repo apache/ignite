@@ -136,7 +136,7 @@ public interface IgniteCacheOffheapManager {
      * @return Data store.
      * @throws IgniteCheckedException If failed.
      */
-    public CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException;
+    public CacheDataStoreProxy createCacheDataStore(int p) throws IgniteCheckedException;
 
     /**
      * @return Iterable over all existing cache data stores.
@@ -582,7 +582,7 @@ public interface IgniteCacheOffheapManager {
     /**
      *
      */
-    interface CacheDataStore {
+    interface CacheDataStore extends CacheDataStoreTracker {
         /**
          * @return Partition ID.
          */
@@ -592,78 +592,6 @@ public interface IgniteCacheOffheapManager {
          * @return Store name.
          */
         String name();
-
-        /**
-         * @param size Size to init.
-         * @param updCntr Update counter to init.
-         * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
-         */
-        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes);
-
-        /**
-         * @param cacheId Cache ID.
-         * @return Size.
-         */
-        long cacheSize(int cacheId);
-
-        /**
-         * @return Cache sizes if store belongs to group containing multiple caches.
-         */
-        Map<Integer, Long> cacheSizes();
-
-        /**
-         * @return Total size.
-         */
-        long fullSize();
-
-        /**
-         * @return {@code True} if there are no items in the store.
-         */
-        boolean isEmpty();
-
-        /**
-         * Updates size metric for particular cache.
-         *
-         * @param cacheId Cache ID.
-         * @param delta Size delta.
-         */
-        void updateSize(int cacheId, long delta);
-
-        /**
-         * @return Update counter.
-         */
-        long updateCounter();
-
-        /**
-         * @param val Update counter.
-         */
-        void updateCounter(long val);
-
-        /**
-         * Updates counters from start value by delta value.
-         *
-         * @param start Start.
-         * @param delta Delta
-         */
-        void updateCounter(long start, long delta);
-
-        /**
-         * @return Next update counter.
-         */
-        public long nextUpdateCounter();
-
-        /**
-         * Returns current value and updates counter by delta.
-         *
-         * @param delta Delta.
-         * @return Current value.
-         */
-        public long getAndIncrementUpdateCounter(long delta);
-
-        /**
-         * @return Initial update counter.
-         */
-        public long initialUpdateCounter();
 
         /**
          * @param cctx Cache context.
@@ -1017,11 +945,6 @@ public interface IgniteCacheOffheapManager {
         public RowStore rowStore();
 
         /**
-         * @param cntr Counter.
-         */
-        public void updateInitialCounter(long cntr);
-
-        /**
          * Inject rows cache cleaner.
          *
          * @param rowCacheCleaner Rows cache cleaner.
@@ -1034,13 +957,6 @@ public interface IgniteCacheOffheapManager {
          * @return PendingTree instance.
          */
         public PendingEntriesTree pendingTree();
-
-        /**
-         * Flushes pending update counters closing all possible gaps.
-         *
-         * @return Even-length array of pairs [start, end] for each gap.
-         */
-        GridLongList finalizeUpdateCounters();
 
         /**
          * Preload a store into page memory.

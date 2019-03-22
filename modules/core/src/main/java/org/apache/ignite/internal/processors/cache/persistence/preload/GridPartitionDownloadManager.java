@@ -37,6 +37,7 @@ import org.apache.ignite.internal.managers.communication.GridIoChannelListener;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheDataStoreProxy;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
@@ -56,7 +57,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.configuration.CacheConfiguration.DFLT_REBALANCE_TIMEOUT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.persistence.preload.GridPartitionUploadManager.persistenceRebalanceApplicable;
@@ -460,13 +460,23 @@ public class GridPartitionDownloadManager {
                 U.log(log, "Start partitions preloading [from=" + node.id() + ", fut=" + rebFut + ']');
 
                 try {
+                    Map<Integer, GridIntList> assigns = rebFut.nodeAssigns;
+
+                    for (Integer grpId : assigns.keySet()) {
+                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                        for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
+                            if (locPart.state() == MOVING)
+                                locPart.dataStore().storageMode(CacheDataStoreProxy.StorageMode.LOG_ONLY);
+                        }
+                    }
+
                     GridPartitionCopyDemandMessage msg0 = new GridPartitionCopyDemandMessage(rebFut.rebalanceId,
-                        rebFut.topVer, rebFut.nodeAssigns);
+                        rebFut.topVer, assigns);
 
                     futMap.put(node.id(), rebFut);
 
-                    cctx.gridIO().sendOrderedMessage(node, rebalanceThreadTopic(),
-                        msg0, SYSTEM_POOL, DFLT_REBALANCE_TIMEOUT, false);
+                    cctx.gridIO().sendToCustomTopic(node, rebalanceThreadTopic(), msg0, SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Error sending request for demanded cache partitions", e);

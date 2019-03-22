@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -29,7 +28,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
@@ -1206,8 +1204,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public final CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException {
-        CacheDataStore dataStore;
+    @Override public final CacheDataStoreProxy createCacheDataStore(int p) throws IgniteCheckedException {
+        CacheDataStoreProxy dataStore;
 
         partStoreLock.lock(p);
 
@@ -1230,7 +1228,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @return Cache data store.
      * @throws IgniteCheckedException If failed.
      */
-    protected CacheDataStore createCacheDataStore0(int p)
+    protected CacheDataStoreProxy createCacheDataStore0(int p)
         throws IgniteCheckedException {
         final long rootPage = allocateForTree();
 
@@ -1246,7 +1244,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             rootPage,
             true);
 
-        return new CacheDataStoreImpl(p, idxName, rowStore, dataTree);
+        return new CacheDataStoreProxyImpl(grp,
+            new CacheDataStoreImpl(p,
+                idxName,
+                rowStore,
+                dataTree,
+                new CacheDataStoreTrackerImpl(grp)),
+            null,
+            log);
     }
 
     /** {@inheritDoc} */
@@ -1294,7 +1299,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @param p Partition.
      * @return Tree name for given partition.
      */
-    protected final String treeName(int p) {
+    public static String treeName(int p) {
         return BPlusTree.treeName("p-" + p, "CacheData");
     }
 
@@ -1398,15 +1403,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** */
         private final CacheDataTree dataTree;
 
-        /** Update counter. */
-        protected final PartitionUpdateCounter pCntr = new PartitionUpdateCounter(log);
-
-        /** Partition size. */
-        private final AtomicLong storageSize = new AtomicLong();
-
-        /** */
-        private final ConcurrentMap<Integer, AtomicLong> cacheSizes = new ConcurrentHashMap<>();
-
         /** Mvcc remove handler. */
         private final PageHandler<MvccUpdateDataRow, Boolean> mvccUpdateMarker = new MvccMarkUpdatedHandler();
 
@@ -1415,6 +1411,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** */
         private final PageHandler<MvccDataRow, Boolean> mvccApplyChanges = new MvccApplyChangesHandler();
+
+        /** */
+        private final CacheDataStoreTracker tracker;
 
         /**
          * @param partId Partition number.
@@ -1426,12 +1425,21 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             int partId,
             String name,
             CacheDataRowStore rowStore,
-            CacheDataTree dataTree
+            CacheDataTree dataTree,
+            CacheDataStoreTracker tracker
         ) {
             this.partId = partId;
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
+            this.tracker = tracker;
+        }
+
+        /**
+         * @return The appropriate data storage tracker.
+         */
+        private CacheDataStoreTracker tracker() {
+            return tracker;
         }
 
         /**
@@ -1455,31 +1463,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long cacheSize(int cacheId) {
-            if (grp.sharedGroup()) {
-                AtomicLong size = cacheSizes.get(cacheId);
-
-                return size != null ? (int)size.get() : 0;
-            }
-
-            return storageSize.get();
+            return tracker().cacheSize(cacheId);
         }
 
         /** {@inheritDoc} */
         @Override public Map<Integer, Long> cacheSizes() {
-            if (!grp.sharedGroup())
-                return null;
-
-            Map<Integer, Long> res = new HashMap<>();
-
-            for (Map.Entry<Integer, AtomicLong> e : cacheSizes.entrySet())
-                res.put(e.getKey(), e.getValue().longValue());
-
-            return res;
+            return tracker().cacheSizes();
         }
 
         /** {@inheritDoc} */
         @Override public long fullSize() {
-            return storageSize.get();
+            return tracker().fullSize();
         }
 
         /**
@@ -1491,7 +1485,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                  * TODO https://issues.apache.org/jira/browse/IGNITE-10082
                  * Using of counters is cheaper than tree operations. Return size checking after the ticked is resolved.
                  */
-                return grp.mvccEnabled() ? dataTree.isEmpty() : storageSize.get() == 0;
+                return grp.mvccEnabled() ? dataTree.isEmpty() : tracker().isEmpty();
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to perform operation.", e);
@@ -1502,60 +1496,47 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void updateSize(int cacheId, long delta) {
-            storageSize.addAndGet(delta);
-
-            if (grp.sharedGroup()) {
-                AtomicLong size = cacheSizes.get(cacheId);
-
-                if (size == null) {
-                    AtomicLong old = cacheSizes.putIfAbsent(cacheId, size = new AtomicLong());
-
-                    if (old != null)
-                        size = old;
-                }
-
-                size.addAndGet(delta);
-            }
+            tracker().updateSize(cacheId, delta);
         }
 
         /** {@inheritDoc} */
         @Override public long nextUpdateCounter() {
-            return pCntr.next();
+            return tracker().nextUpdateCounter();
         }
 
         /** {@inheritDoc} */
         @Override public long initialUpdateCounter() {
-            return pCntr.initial();
+            return tracker().initialUpdateCounter();
         }
 
         /** {@inheritDoc} */
         @Override public void updateInitialCounter(long cntr) {
-            pCntr.updateInitial(cntr);
+            tracker().updateInitialCounter(cntr);
         }
 
         /** {@inheritDoc} */
         @Override public long getAndIncrementUpdateCounter(long delta) {
-            return pCntr.getAndAdd(delta);
+            return tracker().getAndIncrementUpdateCounter(delta);
         }
 
         /** {@inheritDoc} */
         @Override public long updateCounter() {
-            return pCntr.get();
+            return tracker().updateCounter();
         }
 
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
-            pCntr.update(val);
+            tracker().updateCounter(val);
         }
 
         /** {@inheritDoc} */
         @Override public void updateCounter(long start, long delta) {
-            pCntr.update(start, delta);
+            tracker().updateCounter(start, delta);
         }
 
         /** {@inheritDoc} */
         @Override public GridLongList finalizeUpdateCounters() {
-            return pCntr.finalizeUpdateCounters();
+            return tracker().finalizeUpdateCounters();
         }
 
         /** {@inheritDoc} */
@@ -2894,14 +2875,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes) {
-            pCntr.init(updCntr);
-
-            storageSize.set(size);
-
-            if (cacheSizes != null) {
-                for (Map.Entry<Integer, Long> e : cacheSizes.entrySet())
-                    this.cacheSizes.put(e.getKey(), new AtomicLong(e.getValue()));
-            }
+            tracker().init(size, updCntr, cacheSizes);
         }
 
         /** {@inheritDoc} */
