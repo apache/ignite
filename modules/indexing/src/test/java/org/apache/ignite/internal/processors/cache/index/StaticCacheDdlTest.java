@@ -123,7 +123,7 @@ public class StaticCacheDdlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    @Ignore("TODO ticket")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11604")
     @Test
     public void testDropColumn() throws Exception {
         String fieldName = "field_to_drop";
