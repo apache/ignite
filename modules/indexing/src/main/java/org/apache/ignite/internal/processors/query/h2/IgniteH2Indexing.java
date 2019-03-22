@@ -1022,14 +1022,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         IgniteH2QueryInfo qryInfo = longRunningQryMgr.registerQuery(stmt, sql, params);
 
         try {
-            return executeSqlQuery(conn, stmt, timeoutMillis, cancel);
-        }
-        finally {
-            longRunningQryMgr.unregisterQuery(qryInfo);
+            ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
 
             // Print log message on end of query again.
             if (qryInfo.time() > longRunningQryMgr.getLongQueryWarningTimeout())
-                qryInfo.printLogMessage(log, connMgr, "Long running query is finished or canceled");
+                qryInfo.printLogMessage(log, connMgr, "Long running query is finished");
+
+            return rs;
+        }
+        catch (Throwable e) {
+            // Print log message on end of query again.
+            if (qryInfo.time() > longRunningQryMgr.getLongQueryWarningTimeout()) {
+                qryInfo.printLogMessage(log, connMgr, "Long running query is finished with error " +
+                    "[errMsg=" + e.getMessage() + ']');
+            }
+
+            throw e;
+        }
+        finally {
+            longRunningQryMgr.unregisterQuery(qryInfo);
         }
     }
 

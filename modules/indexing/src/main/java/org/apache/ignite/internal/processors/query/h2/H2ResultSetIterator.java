@@ -83,6 +83,9 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     /** Fetched count of rows. */
     private long fetchedSize;
 
+    /** Big results flag. */
+    private boolean bigResults;
+
     /**
      * @param data Data array.
      * @param log Logger.
@@ -163,6 +166,7 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
                     "[fetched=" + fetchedSize + ']');
 
                 threshold *= 2;
+                bigResults = true;
             }
 
             return true;
@@ -203,6 +207,11 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
         if (data == null)
             // Nothing to close.
             return;
+
+        if (bigResults) {
+            qryInfo.printLogMessage(log, connectionMgr, "Query produced too big results is end. " +
+                "[fetched=" + fetchedSize + ']');
+        }
 
         U.closeQuiet(data);
 

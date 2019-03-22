@@ -113,6 +113,9 @@ class MapQueryResult {
     /** Fetched count of rows. */
     private long fetchedSize;
 
+    /** Big results flag. */
+    private boolean bigResults;
+
     /**
      * @param h2 Indexing SPI.
      * @param rs Result set.
@@ -270,6 +273,7 @@ class MapQueryResult {
                     "[fetched=" + fetchedSize + ']');
 
                 threshold *= 2;
+                bigResults = true;
             }
         }
 
@@ -312,6 +316,11 @@ class MapQueryResult {
                 return;
 
             closed = true;
+
+            if (bigResults) {
+                qryInfo.printLogMessage(log, h2.connections(), "Query produced too big results is end. " +
+                    "[fetched=" + fetchedSize + ']');
+            }
 
             U.closeQuiet(rs);
 
