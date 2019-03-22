@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.internal.GridKernalContextImpl;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.QueryMXBean;
 
 /**

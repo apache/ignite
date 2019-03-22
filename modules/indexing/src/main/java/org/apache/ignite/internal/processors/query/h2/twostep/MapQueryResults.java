@@ -107,6 +107,7 @@ class MapQueryResults {
      * @param q Query object.
      * @param qrySrcNodeId Query source node.
      * @param rs Result set.
+     * @param params Query
      * @param log Logger.
      * @param qryInfo Query info.
      */
