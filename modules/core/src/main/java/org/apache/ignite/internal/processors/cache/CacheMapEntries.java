@@ -68,6 +68,12 @@ public class CacheMapEntries {
     private Set<KeyCacheObject> skipped = new HashSet<>();
 
     /** */
+    private boolean sorted = true;
+
+    /** */
+    private KeyCacheObject temp;
+
+    /** */
     public CacheMapEntries(AffinityTopologyVersion topVer, int partId, GridCacheContext cctx, boolean preload) {
         this.topVer = topVer;
         this.cctx = cctx;
@@ -77,7 +83,10 @@ public class CacheMapEntries {
 
     /** */
     public void addEntry(KeyCacheObject key, CacheObject val, long expTime, long ttl, GridCacheVersion ver, GridDrType drType) {
-        infos.put(key, new CacheMapEntryInfo(this, val, expTime, ttl, ver, drType));
+        if (temp != null && sorted && temp.hashCode() >= key.hashCode())
+            sorted = false;
+
+        infos.put(temp = key, new CacheMapEntryInfo(this, val, expTime, ttl, ver, drType));
     }
 
     /** */
@@ -345,6 +354,11 @@ public class CacheMapEntries {
         /** {@inheritDoc} */
         @Override public Collection<T3<IgniteTree.OperationType, CacheDataRow, CacheDataRow>> result() {
             return resBatch;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean fastpath() {
+            return batch.sorted;
         }
 
         /** {@inheritDoc} */

@@ -159,6 +159,13 @@ public interface IgniteTree<L, T> {
          * @return operation, old row, new row
          */
         Collection<T3<OperationType, T, T>> result();
+
+        /**
+         * @return Fast path flag.
+         * @deprecated Workaround to select B+ tree search strategy, should be removed in final implementation.
+         */
+        @Deprecated
+        boolean fastpath();
     }
 
     /**

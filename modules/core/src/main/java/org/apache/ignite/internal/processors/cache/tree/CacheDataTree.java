@@ -333,71 +333,79 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     }
 
     /**
-     * todo fake implementation only for checking that closure is working properly with preloader.
+     * todo workaround (fake) implementation only for checking that closure is working properly with preloader.
      * todo rework
+     * todo remove flag sorted
      */
-    @Override public void invokeAll(List<CacheSearchRow> keys, Object x, InvokeAllClosure<CacheDataRow, CacheSearchRow> c) throws IgniteCheckedException {
+    @Override public void invokeAll(
+        List<CacheSearchRow> keys,
+        Object x,
+        InvokeAllClosure<CacheDataRow, CacheSearchRow> c
+    ) throws IgniteCheckedException {
         checkDestroyed();
-
-        CacheSearchRow lower = keys.get(0);
-        CacheSearchRow upper = keys.get(keys.size() - 1);
 
         List<T2<CacheDataRow, CacheSearchRow>> batch = new ArrayList<>(keys.size());
 
-        Iterator<CacheSearchRow> rowItr = keys.iterator();
+        if (c.fastpath()) {
+            GridCursor<CacheDataRow> cur = find(keys.get(0), keys.get(keys.size() - 1), CacheDataRowAdapter.RowData.FULL);
+            Iterator<CacheSearchRow> keyItr = keys.iterator();
 
-        assert lower.key().hashCode() <= upper.key().hashCode() : "Keys not sorted, lower=" + lower.key().hashCode() + ", upper=" + upper.key().hashCode();
+            CacheSearchRow lastRow = null;
+            CacheSearchRow row = null;
+            KeyCacheObject key = null;
 
-        GridCursor<CacheDataRow> cur = find(lower, upper, CacheDataRowAdapter.RowData.FULL);
+            CacheDataRow oldRow = null;
+            KeyCacheObject oldKey = null;
 
-        CacheSearchRow lastRow = null;
-        CacheSearchRow row = null;
-        KeyCacheObject key = null;
+            while (cur.next()) {
+                oldRow = cur.get();
+                oldKey = oldRow.key();
 
-        CacheDataRow oldRow = null;
-        KeyCacheObject oldKey = null;
+                while (key == null || key.hashCode() <= oldKey.hashCode()) {
+                    if (key != null && key.hashCode() == oldKey.hashCode()) {
+                        while (key.hashCode() == oldKey.hashCode()) {
+                            // todo fix and test collision resolution
+                            batch.add(new T2<>(key.equals(oldKey) ? oldRow : null, row));
 
-        while (cur.next()) {
-            oldRow = cur.get();
-            oldKey = oldRow.key();
+                            lastRow = null;
 
-            while (key == null || key.hashCode() <= oldKey.hashCode()) {
-                if (key != null && key.hashCode() == oldKey.hashCode()) {
-                    while (key.hashCode() == oldKey.hashCode()) {
-                        // todo fix and test collision resolution
-                        batch.add(new T2<>(key.equals(oldKey) ? oldRow : null, row));
+                            if (!keyItr.hasNext())
+                                break;
+
+                            lastRow = row = keyItr.next();
+                            key = row.key();
+                        }
+                    }
+                    else {
+                        if (row != null)
+                            batch.add(new T2<>(null, row));
 
                         lastRow = null;
 
-                        if (!rowItr.hasNext())
-                            break;
-
-                        lastRow = row = rowItr.next();
-                        key = row.key();
+                        if (keyItr.hasNext()) {
+                            lastRow = row = keyItr.next();
+                            key = lastRow.key();
+                        }
                     }
+
+                    if (!keyItr.hasNext())
+                        break;
                 }
-                else {
-                    if (row != null)
-                        batch.add(new T2<>(null, row));
+            }
 
-                    lastRow = null;
+            if (lastRow != null)
+                batch.add(new T2<>(key.equals(oldKey) ? oldRow : null, lastRow));
 
-                    if (rowItr.hasNext()) {
-                        lastRow = row = rowItr.next();
-                        key = lastRow.key();
-                    }
-                }
+            while (keyItr.hasNext())
+                batch.add(new T2<>(null, keyItr.next()));
+        } else {
+            for (CacheSearchRow row : keys) {
+                // todo NO_KEY
+                CacheDataRow oldRow = findOne(row, null, CacheDataRowAdapter.RowData.FULL);
 
-                if (!rowItr.hasNext())
-                    break;
+                batch.add(new T2<>(oldRow, row));
             }
         }
-
-        if (lastRow != null)
-            batch.add(new T2<>(key.equals(oldKey) ? oldRow : null, lastRow));
-
-        while (rowItr.hasNext())
-            batch.add(new T2<>(null, rowItr.next()));
 
         c.call(batch);
 
