@@ -2174,7 +2174,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (skipRemovedIndexUpdates(groupId, partId))
                                 break;
 
-
                             stripedApplyPage((pageMem) -> {
                                     try {
                                         applyPageSnapshot(pageMem, pageSnapshot);

@@ -1087,9 +1087,12 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startRemoteGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx,
-        boolean resetDiscovery)
-        throws Exception {
+    protected Ignite startRemoteGrid(
+        String igniteInstanceName,
+        IgniteConfiguration cfg,
+        GridSpringResourceContext ctx,
+        boolean resetDiscovery
+    ) throws Exception {
         if (ctx != null)
             throw new UnsupportedOperationException("Starting of grid at another jvm by context doesn't supported.");
 
