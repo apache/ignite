@@ -376,16 +376,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public long getLongQueryWarningTimeout() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setLongQueryWarningTimeout(long longQueryWarningTimeout) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
         @Override public void registerMxBeans(IgniteMBeansManager mbMgr) {
             // No-op.
         }

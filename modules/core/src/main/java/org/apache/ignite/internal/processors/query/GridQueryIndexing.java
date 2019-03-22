@@ -314,24 +314,12 @@ public interface GridQueryIndexing {
     public void checkStatementStreamable(PreparedStatement nativeStmt);
 
     /**
-     * Return row cache cleaner.
+     * Return row cache cleaner.Ye yflj gjcvjnhtnm ,sdftn kb nfr xnj,s
      *
      * @param cacheGroupId Cache group id.
      * @return Row cache cleaner.
      */
     public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
-
-    /**
-     * @return Timeout in milliseconds after which long query warning will be printed.
-     */
-    public long getLongQueryWarningTimeout();
-
-    /**
-     * Sets timeout in milliseconds after which long query warning will be printed.
-     *
-     * @param longQueryWarningTimeout Timeout in milliseconds after which long query warning will be printed.
-     */
-    public void setLongQueryWarningTimeout(long longQueryWarningTimeout);
 
     /**
      * Register SQL JMX beans.

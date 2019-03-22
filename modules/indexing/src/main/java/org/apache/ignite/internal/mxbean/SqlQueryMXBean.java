@@ -43,4 +43,29 @@ public interface SqlQueryMXBean {
     @MXBeanParametersNames("longQueryWarningTimeout")
     @MXBeanParametersDescriptions("Timeout in milliseconds after which long query warning will be printed.")
     void setLongQueryWarningTimeout(long longQueryWarningTimeout);
+
+    /**
+     * @return Long query timeout multiplier.
+     */
+    @MXBeanDescription("Long query timeout multiplier. The warning will be printed after: timeout, " +
+        "timeout * multiplier, timeout * multiplier * multiplier, etc. " +
+        "If the multiplier <= 1, the warning message is printed once.")
+    int getLongQueryTimeoutMultiplier();
+
+    /**
+     * Sets long query timeout multiplier. The warning will be printed after:
+     *      - timeout;
+     *      - timeout * multiplier;
+     *      - timeout * multiplier * multiplier;
+     *      - etc.
+     * If the multiplier <= 1, the warning message is printed once.
+     *
+     * @param longQueryTimeoutMultiplier Long query timeout multiplier.
+     */
+    @MXBeanDescription("Sets long query timeout multiplier. The warning will be printed after: timeout, " +
+        "timeout * multiplier, timeout * multiplier * multiplier, etc. " +
+        "If the multiplier <= 1, the warning message is printed once.")
+    @MXBeanParametersNames("longQueryTimeoutMultiplier")
+    @MXBeanParametersDescriptions("Long query timeout multiplier.")
+    void setLongQueryTimeoutMultiplier(int longQueryTimeoutMultiplier);
 }

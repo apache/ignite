@@ -18,28 +18,39 @@
 package org.apache.ignite.internal.mxbean;
 
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 
 /**
  * QueryMXBean implementation.
  */
 public class SqlQueryMXBeanImpl implements SqlQueryMXBean {
     /** */
-    private final GridKernalContext ctx;
+    private final IgniteH2Indexing h2idx;
 
     /**
      * @param ctx Context.
      */
     public SqlQueryMXBeanImpl(GridKernalContext ctx) {
-        this.ctx = ctx;
+        h2idx = (IgniteH2Indexing)ctx.query().getIndexing();
     }
 
     /** {@inheritDoc} */
     @Override public long getLongQueryWarningTimeout() {
-        return ctx.query().getIndexing().getLongQueryWarningTimeout();
+        return h2idx.longRunningQueries().getTimeout();
     }
 
     /** {@inheritDoc} */
-    @Override public void setLongQueryWarningTimeout(long longQueryWarningTimeout) {
-        ctx.query().getIndexing().setLongQueryWarningTimeout(longQueryWarningTimeout);
+    @Override public void setLongQueryWarningTimeout(long longQryWarningTimeout) {
+        h2idx.longRunningQueries().setTimeout(longQryWarningTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getLongQueryTimeoutMultiplier() {
+        return h2idx.longRunningQueries().getTimeoutMultiplier();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setLongQueryTimeoutMultiplier(int longQryTimeoutMultiplier) {
+        h2idx.longRunningQueries().setTimeoutMultiplier(longQryTimeoutMultiplier);
     }
 }
