@@ -1388,8 +1388,10 @@ public class IgniteTxHandler {
         try {
             if (req.commit() || req.isSystemInvalidate()) {
                 tx.commitVersion(req.commitVersion());
-                tx.invalidate(req.isInvalidate());
-                tx.systemInvalidate(req.isSystemInvalidate());
+                if (req.isInvalidate())
+                    tx.invalidate(true);
+                if (req.isSystemInvalidate())
+                    tx.systemInvalidate(true);
 
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);

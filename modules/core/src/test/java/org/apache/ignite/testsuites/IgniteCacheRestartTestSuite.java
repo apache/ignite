@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheNearRe
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedOptimisticTxNodeRestartTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheMultithreadedUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNodeRestartSelfTest;
 
 /**
@@ -41,6 +42,7 @@ public class IgniteCacheRestartTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest.class);
         suite.addTestSuite(IgniteCacheNearRestartRollbackSelfTest.class);
+        suite.addTestSuite(NearCacheMultithreadedUpdateTest.class);
 
         suite.addTestSuite(IgniteCacheCreateRestartSelfTest.class);
 
