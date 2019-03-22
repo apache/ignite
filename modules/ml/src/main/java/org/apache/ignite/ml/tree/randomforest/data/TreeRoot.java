@@ -63,7 +63,7 @@ public class TreeRoot implements IgniteModel<Vector, Double> {
     }
 
     /**
-     * @return all leafs in tree.
+     * @return All leafs in tree.
      */
     public List<TreeNode> getLeafs() {
         List<TreeNode> res = new ArrayList<>();

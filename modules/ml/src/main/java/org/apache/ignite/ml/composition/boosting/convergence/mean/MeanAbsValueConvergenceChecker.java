@@ -93,7 +93,7 @@ public class MeanAbsValueConvergenceChecker<K, V, C> extends ConvergenceChecker<
      *
      * @param left Left.
      * @param right Right.
-     * @return merged value.
+     * @return Merged value.
      */
     private IgniteBiTuple<Double, Long> reduce(IgniteBiTuple<Double, Long> left, IgniteBiTuple<Double, Long> right) {
         if (left == null) {

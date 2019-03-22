@@ -76,21 +76,21 @@ public abstract class DistributionMixture<C extends Distribution> implements Dis
     }
 
     /**
-     * @return an amount of components.
+     * @return An amount of components.
      */
     public int countOfComponents() {
         return componentProbs.size();
     }
 
     /**
-     * @return component probabilities.
+     * @return Component probabilities.
      */
     public Vector componentsProbs() {
         return componentProbs.copy();
     }
 
     /**
-     * @return list of components.
+     * @return List of components.
      */
     public List<C> distributions() {
         return Collections.unmodifiableList(distributions);

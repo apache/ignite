@@ -50,7 +50,7 @@ public abstract class ConvergenceChecker<K, V, C> implements Serializable {
     /** Loss function. */
     private Loss loss;
 
-    /** Upastream vectorizer. */
+    /** Upstream vectorizer. */
     private Vectorizer<K, V, C, Double> vectorizer;
 
     /** Precision of convergence check. */
@@ -85,7 +85,7 @@ public abstract class ConvergenceChecker<K, V, C> implements Serializable {
      *
      * @param envBuilder Learning environment builder.
      * @param currMdl Current model.
-     * @return true if GDB is converged.
+     * @return True if GDB is converged.
      */
     public boolean isConverged(
         LearningEnvironmentBuilder envBuilder,
@@ -108,7 +108,7 @@ public abstract class ConvergenceChecker<K, V, C> implements Serializable {
      *
      * @param dataset Dataset.
      * @param currMdl Current model.
-     * @return true if GDB is converged.
+     * @return True if GDB is converged.
      */
     public boolean isConverged(Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset,
         ModelsComposition currMdl) {
@@ -121,7 +121,7 @@ public abstract class ConvergenceChecker<K, V, C> implements Serializable {
      *
      * @param dataset Learning dataset.
      * @param mdl Model.
-     * @return error mean value.
+     * @return Error mean value.
      */
     public abstract Double computeMeanErrorOnDataset(
         Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset,
@@ -131,7 +131,7 @@ public abstract class ConvergenceChecker<K, V, C> implements Serializable {
      * Compute error for the specific vector of dataset.
      *
      * @param currMdl Current model.
-     * @return error.
+     * @return Error.
      */
     public double computeError(Vector features, Double answer, ModelsComposition currMdl) {
         Double realAnswer = externalLbToInternalMapping.apply(answer);

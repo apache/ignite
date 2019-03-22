@@ -135,7 +135,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
 
     /**
      * @param mdl Model.
-     * @return true if current critical for training parameters correspond to parameters from last training.
+     * @return True if current critical for training parameters correspond to parameters from last training.
      */
     public abstract boolean isUpdateable(M mdl);
 

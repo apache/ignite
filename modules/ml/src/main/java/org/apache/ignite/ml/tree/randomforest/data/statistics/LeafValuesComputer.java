@@ -76,7 +76,7 @@ public abstract class LeafValuesComputer<T> implements Serializable {
      * @param roots Learned trees.
      * @param leafs List of all leafs.
      * @param data Data.
-     * @return statistics on labels for each leaf nodes.
+     * @return Statistics on labels for each leaf nodes.
      */
     private Map<NodeId, T> computeLeafsStatisticsInPartition(ArrayList<TreeRoot> roots,
         Map<NodeId, TreeNode> leafs, BootstrappedDatasetPartition data) {
@@ -105,7 +105,7 @@ public abstract class LeafValuesComputer<T> implements Serializable {
      *
      * @param left first partition.
      * @param right second partition.
-     * @return merged statistics.
+     * @return Merged statistics.
      */
     private Map<NodeId, T> mergeLeafStatistics(Map<NodeId, T> left, Map<NodeId, T> right) {
         if (left == null)

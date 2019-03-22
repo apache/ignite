@@ -108,7 +108,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
      *
      * @param left Left.
      * @param right Right.
-     * @return merged leaf impurity statistics.
+     * @return Merged leaf impurity statistics.
      */
     private Map<NodeId, NodeImpurityHistograms<S>> reduceImpurityStatistics(Map<NodeId, NodeImpurityHistograms<S>> left,
         Map<NodeId, NodeImpurityHistograms<S>> right) {
@@ -136,7 +136,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
      *
      * @param sampleId Sample id.
      * @param meta Bucket Meta.
-     * @return impurity computer
+     * @return Impurity computer
      */
     protected abstract S createImpurityComputerForFeature(int sampleId, BucketMeta meta);
 

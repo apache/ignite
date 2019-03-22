@@ -362,7 +362,7 @@ class ReplicatedVectorMatrix implements Matrix {
      * Specialized optimized version of minus for ReplicatedVectorMatrix.
      *
      * @param mtx Matrix to be subtracted.
-     * @return new ReplicatedVectorMatrix resulting from subtraction.
+     * @return New ReplicatedVectorMatrix resulting from subtraction.
      */
     public Matrix minus(ReplicatedVectorMatrix mtx) {
         if (isColumnReplicated() == mtx.isColumnReplicated()) {
@@ -390,7 +390,7 @@ class ReplicatedVectorMatrix implements Matrix {
      * Specialized optimized version of plus for ReplicatedVectorMatrix.
      *
      * @param mtx Matrix to be added.
-     * @return new ReplicatedVectorMatrix resulting from addition.
+     * @return New ReplicatedVectorMatrix resulting from addition.
      */
     public Matrix plus(ReplicatedVectorMatrix mtx) {
         if (isColumnReplicated() == mtx.isColumnReplicated()) {

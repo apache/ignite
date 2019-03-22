@@ -118,14 +118,14 @@ public abstract class ObjectHistogram<T> implements Histogram<T, ObjectHistogram
      * Counter mapping.
      *
      * @param obj Object.
-     * @return counter.
+     * @return Counter.
      */
     public abstract Double mapToCounter(T obj);
 
     /**
      * Creates an instance of ObjectHistogram from child class.
      *
-     * @return object histogram.
+     * @return Object histogram.
      */
     public abstract ObjectHistogram<T> newInstance();
 }

@@ -46,6 +46,7 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
 
     /** Serial version uid. */
     private static final long serialVersionUID = 4301406952131379459L;
+
     /** If useAllValues == true then Vectorizer extract all fields as features from upstream object (except label). */
     private final boolean useAllValues;
 

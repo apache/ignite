@@ -55,7 +55,7 @@ public class Gene {
     }
 
     /**
-     * @return value for Gene
+     * @return Value for Gene
      */
     public Object getVal() {
         return val;

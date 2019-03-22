@@ -535,7 +535,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      *
      * @param lbl Label value.
      * @param <L> Label class.
-     * @return labeled vector.
+     * @return Labeled vector.
      */
     public default <L> LabeledVector<L> labeled(L lbl) {
         return new LabeledVector<>(this, lbl);

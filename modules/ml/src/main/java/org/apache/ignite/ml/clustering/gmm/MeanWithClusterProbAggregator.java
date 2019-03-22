@@ -64,14 +64,14 @@ class MeanWithClusterProbAggregator implements Serializable {
     }
 
     /**
-     * @return compute mean value by aggregated data.
+     * @return Compute mean value by aggregated data.
      */
     public Vector mean() {
         return weightedXsSum.divide(pcxiSum);
     }
 
     /**
-     * @return compute cluster probability by aggreated data.
+     * @return Compute cluster probability by aggreated data.
      */
     public double clusterProb() {
         return pcxiSum / rowCount;
@@ -192,14 +192,14 @@ class MeanWithClusterProbAggregator implements Serializable {
         }
 
         /**
-         * @return clusters probabilities.
+         * @return Clusters probabilities.
          */
         public Vector clusterProbabilities() {
             return clusterProbs;
         }
 
         /**
-         * @return means.
+         * @return Means.
          */
         public List<Vector> means() {
             return means;

@@ -82,7 +82,7 @@ public class GDBLearningStrategy {
      *
      * @param datasetBuilder Dataset builder.
      * @param vectorizer Upstream vectorizer.
-     * @return list of learned models.
+     * @return List of learned models.
      */
     public <K, V, C> List<IgniteModel<Vector, Double>> learnModels(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> vectorizer) {
@@ -144,7 +144,7 @@ public class GDBLearningStrategy {
      * Restores state of already learned model if can and sets learning parameters according to this state.
      *
      * @param mdlToUpdate Model to update.
-     * @return list of already learned models.
+     * @return List of already learned models.
      */
     @NotNull protected List<IgniteModel<Vector, Double>> initLearningState(GDBTrainer.GDBModel mdlToUpdate) {
         List<IgniteModel<Vector, Double>> models = new ArrayList<>();

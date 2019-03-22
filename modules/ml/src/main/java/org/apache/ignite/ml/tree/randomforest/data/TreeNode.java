@@ -170,28 +170,28 @@ public class TreeNode implements IgniteModel<Vector, Double> {
     }
 
     /**
-     * @return impurity in current node.
+     * @return Impurity in current node.
      */
     public double getImpurity() {
         return impurity;
     }
 
     /**
-     * @return depth of current node.
+     * @return Depth of current node.
      */
     public int getDepth() {
         return depth;
     }
 
     /**
-     * @return right subtree.
+     * @return Right subtree.
      */
     public TreeNode getLeft() {
         return left;
     }
 
     /**
-     * @return left subtree.
+     * @return Left subtree.
      */
     public TreeNode getRight() {
         return right;

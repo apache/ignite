@@ -149,7 +149,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      *
      * @param builder Dataset builder.
      * @param vectorizer Upstream vectorizer.
-     * @return true if labels learning was successful.
+     * @return True if labels learning was successful.
      */
     protected abstract <V, K, C> boolean learnLabels(DatasetBuilder<K, V> builder,
         Vectorizer<K, V, C, Double> vectorizer);
@@ -221,7 +221,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      * Sets CheckConvergenceStgyFactory.
      *
      * @param factory Factory.
-     * @return trainer.
+     * @return Trainer.
      */
     public GDBTrainer withCheckConvergenceStgyFactory(ConvergenceCheckerFactory factory) {
         this.checkConvergenceStgyFactory = factory;
@@ -231,7 +231,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     /**
      * Returns learning strategy.
      *
-     * @return learning strategy.
+     * @return Learning strategy.
      */
     protected GDBLearningStrategy getLearningStrategy() {
         return new GDBLearningStrategy();

@@ -72,7 +72,7 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     /**
      * @param vector features vector.
-     * @return a label with max probability.
+     * @return A label with max probability.
      */
     @Override public Double predict(Vector vector) {
         double maxProbapilityPower = -Double.MAX_VALUE;

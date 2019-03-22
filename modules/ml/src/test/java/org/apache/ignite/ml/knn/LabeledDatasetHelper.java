@@ -35,7 +35,7 @@ public class LabeledDatasetHelper {
      * Loads labeled dataset from file with .txt extension.
      *
      * @param rsrcPath path to dataset.
-     * @return null if path is incorrect.
+     * @return Null if path is incorrect.
      */
     public static LabeledVectorSet loadDatasetFromTxt(String rsrcPath, boolean isFallOnBadData) {
         try {

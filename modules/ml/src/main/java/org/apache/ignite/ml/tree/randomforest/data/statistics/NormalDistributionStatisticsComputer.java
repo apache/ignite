@@ -96,7 +96,7 @@ public class NormalDistributionStatisticsComputer implements Serializable {
      * @param left Left.
      * @param right Right.
      * @param meta Features meta.
-     * @return plus of statistics for each features.
+     * @return Plus of statistics for each features.
      */
     public List<NormalDistributionStatistics> reduceStats(List<NormalDistributionStatistics> left,
         List<NormalDistributionStatistics> right,

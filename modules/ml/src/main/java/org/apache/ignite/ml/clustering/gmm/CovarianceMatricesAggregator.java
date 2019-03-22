@@ -107,7 +107,7 @@ public class CovarianceMatricesAggregator implements Serializable {
 
     /**
      * @param other Other.
-     * @return sum of aggregators.
+     * @return Sum of aggregators.
      */
     CovarianceMatricesAggregator plus(CovarianceMatricesAggregator other) {
         A.ensure(this.mean.equals(other.mean), "this.mean == other.mean");
@@ -143,7 +143,7 @@ public class CovarianceMatricesAggregator implements Serializable {
 
     /**
      * @param clusterProb GMM component probability.
-     * @return computed covariance matrix.
+     * @return Computed covariance matrix.
      */
     private Matrix covariance(double clusterProb) {
         return weightedSum.divide(rowCount * clusterProb);
@@ -174,21 +174,21 @@ public class CovarianceMatricesAggregator implements Serializable {
     }
 
     /**
-     * @return mean vector.
+     * @return Mean vector.
      */
     Vector mean() {
         return mean.copy();
     }
 
     /**
-     * @return weighted sum.
+     * @return Weighted sum.
      */
     Matrix weightedSum() {
         return weightedSum.copy();
     }
 
     /**
-     * @return rows count.
+     * @return Rows count.
      */
     public int rowCount() {
         return rowCount;

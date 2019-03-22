@@ -53,7 +53,7 @@ public class MultiClassModel<M extends IgniteModel<Vector, Double>> implements I
 
     /**
      * @param clsLb Class label.
-     * @return model for class label if it exists.
+     * @return Model for class label if it exists.
      */
     public Optional<M> getModel(Double clsLb) {
         return Optional.ofNullable(models.get(clsLb));

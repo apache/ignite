@@ -55,7 +55,7 @@ public class VectorGeneratorsFamily implements VectorGenerator {
     }
 
     /**
-     * @return pseudo random vector with parent distribution id.
+     * @return Pseudo random vector with parent distribution id.
      */
     public VectorWithDistributionId getWithId() {
         int id = selector.getInt();

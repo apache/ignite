@@ -211,7 +211,7 @@ public interface VectorGenerator extends Supplier<Vector> {
     /**
      * Conterts vectors generator to unlabeled data stream generator.
      *
-     * @return data stream generator.
+     * @return Data stream generator.
      */
     public default DataStreamGenerator asDataStream() {
         final VectorGenerator gen = this;

@@ -76,7 +76,7 @@ public class MedianOfMedianConvergenceChecker<K, V, C> extends ConvergenceChecke
      *
      * @param mdl Model.
      * @param data Data.
-     * @return median value.
+     * @return Median value.
      */
     private double[] computeMedian(ModelsComposition mdl, FeatureMatrixWithLabelsOnHeapData data) {
         double[] errors = new double[data.getLabels().length];
@@ -89,7 +89,7 @@ public class MedianOfMedianConvergenceChecker<K, V, C> extends ConvergenceChecke
      * Compute median value on array of errors.
      *
      * @param errors Error values.
-     * @return median value of errors.
+     * @return Median value of errors.
      */
     private double getMedian(double[] errors) {
         if (errors.length == 0)
@@ -108,7 +108,7 @@ public class MedianOfMedianConvergenceChecker<K, V, C> extends ConvergenceChecke
      *
      * @param left Left partition.
      * @param right Right partition.
-     * @return merged median values.
+     * @return Merged median values.
      */
     private double[] reduce(double[] left, double[] right) {
         if (left == null)

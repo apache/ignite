@@ -65,10 +65,20 @@ class GmmPartitionData implements AutoCloseable {
     }
 
     /**
-     * @return all vectors from partition.
+     * Updates P(c|xi) values in partitions and compute dataset likelihood.
+     *
+     * @param dataset Dataset.
+     * @param clusterProbs Component probabilities.
+     * @param components Components.
+     * @return Dataset likelihood.
      */
-    public List<LabeledVector<Double>> getAllXs() {
-        return Collections.unmodifiableList(xs);
+    static double updatePcxiAndComputeLikelihood(Dataset<EmptyContext, GmmPartitionData> dataset, Vector clusterProbs,
+        List<MultivariateGaussianDistribution> components) {
+
+        return dataset.compute(
+            data -> updatePcxi(data, clusterProbs, components),
+            (left, right) -> asPrimitive(left) + asPrimitive(right)
+        );
     }
 
     /**
@@ -90,10 +100,10 @@ class GmmPartitionData implements AutoCloseable {
     }
 
     /**
-     * @return size of dataset partition.
+     * @return All vectors from partition.
      */
-    public int size() {
-        return pcxi.length;
+    public List<LabeledVector<Double>> getAllXs() {
+        return Collections.unmodifiableList(xs);
     }
 
     /** {@inheritDoc} */
@@ -169,20 +179,10 @@ class GmmPartitionData implements AutoCloseable {
     }
 
     /**
-     * Updates P(c|xi) values in partitions and compute dataset likelihood.
-     *
-     * @param dataset Dataset.
-     * @param clusterProbs Component probabilities.
-     * @param components Components.
-     * @return dataset likelihood.
+     * @return Size of dataset partition.
      */
-    static double updatePcxiAndComputeLikelihood(Dataset<EmptyContext, GmmPartitionData> dataset, Vector clusterProbs,
-        List<MultivariateGaussianDistribution> components) {
-
-        return dataset.compute(
-            data -> updatePcxi(data, clusterProbs, components),
-            (left, right) -> asPrimitive(left) + asPrimitive(right)
-        );
+    public int size() {
+        return pcxi.length;
     }
 
     /**
