@@ -57,7 +57,7 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartition
     /** */
     private static final int PARTITION_ID = 0;
 
-    /** TODO test should path with any combination of partition, add more varians ? */
+    /** TODO test should pass with any combination of partition, add more variants ? */
     private static final int PARTITION_ID_2 = PARTITION_ID + 1;
 
     /** */
@@ -80,13 +80,19 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartition
 
     /**
      * Test scenario: 2pc, 2 partitions, 3 transactions.
-     *
-     * txs prepared in order 0, 1, 2
-     * prevent tx[0] and tx[1] prepare for part2 on primary.
-     * tx[2] committed for both partition.
-     * wait until tx[2] fully committed for both partitions and tx[0] and tx[1] fully prepared
-     * stop primary node for part2.
-     * tx[0], tx[1] rolled back due to prepare fail for part2.
+     * <p>
+     * 1. txs prepared in order 0, 1, 2
+     * <p>
+     * 2. prevent tx[0] and tx[1] prepare for part2 on primary.
+     * <p>
+     * 3. tx[2] committed for both partition.
+     * <p>
+     * 4. wait until tx[2] fully committed for both partitions and tx[0] and tx[1] fully prepared
+     * <p>
+     * 5. stop primary node for part2.
+     * <p>
+     * 6. tx[0], tx[1] rolled back due to prepare fail for part2.
+     * <p>
      *
      * Pass condition: counters for rolled back txs are incremented on primary and backup nodes.
      *
@@ -138,7 +144,7 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartition
 
                         /** {@inheritDoc} */
                         @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
-                            GridFutureAdapter<?> fut) {
+                            GridFutureAdapter<?> proceedFut) {
                             if (txTop.get(PARTITION_ID).get1() == primary) {
                                 runAsync(() -> {
                                     log.info("TX: Prepared part1: " + order(nearXidVer));

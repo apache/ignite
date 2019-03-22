@@ -18,15 +18,14 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
  *
  */
-public class TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest extends TxPartitionCounterStateOnePrimaryOneBackupTest {
+public class TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest
+    extends TxPartitionCounterStateOnePrimaryOneBackupTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");

@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
@@ -29,6 +30,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -315,11 +318,6 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         return gaps().isEmpty();
     }
 
-    /** {@inheritDoc} */
-    @Override public int gapsCount() {
-        return queue.size();
-    }
-
     @Override public synchronized @Nullable byte[] getBytes() {
         if (queue.isEmpty())
             return null;
@@ -480,6 +478,12 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
 
     @Override public long reserved() {
         return reserveCntr.get();
+    }
+
+    @Override public Iterator<long[]> iterator() {
+        return F.iterator(queue.iterator(), item -> {
+            return new long[] {item.start, item.delta};
+        }, true);
     }
 
     /** {@inheritDoc} */

@@ -31,11 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -47,7 +45,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
@@ -70,7 +67,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -79,21 +75,19 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toCollection;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.cache.PartitionLossPolicy.IGNORE;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
- * Test framework for ordering transaction's prepares and commits by intercepting messages and releasing then in user defined order.
+ * Test framework for ordering transaction's prepares and commits by intercepting messages and releasing then
+ * in user defined order.
  */
 public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -133,8 +127,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         cfg.setCommunicationSpi(new IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi());
 
         boolean client = igniteInstanceName.startsWith(CLIENT_GRID_NAME);
-
-        cfg.setFailureDetectionTimeout(100000000000000L);
 
         cfg.setClientMode(client);
 
@@ -176,14 +168,21 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     }
 
     /**
+     * Runs a scenario.
+     *
      * @param partId Partition id.
      * @param part2Sup Optional second partition supplier.
      * @param nodesCnt Nodes count.
-     * @param clo Callback build closure.
+     * @param clo Callback closure which produces {@link TxCallback}.
      * @param sizes Sizes.
      */
-    protected Map<Integer, T2<Ignite, List<Ignite>>> runOnPartition(int partId, @Nullable Supplier<Integer> part2Sup, int backups, int nodesCnt,
-        IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback> clo, int[] sizes) throws Exception {
+    protected Map<Integer, T2<Ignite, List<Ignite>>> runOnPartition(
+        int partId,
+        @Nullable Supplier<Integer> part2Sup,
+        int backups,
+        int nodesCnt,
+        IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback> clo,
+        int[] sizes) throws Exception {
         this.backups = backups;
 
         IgniteEx crd = (IgniteEx)startGrids(nodesCnt);
@@ -219,7 +218,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         Ignite prim = primaryNode(keys.get(0), DEFAULT_CACHE_NAME);
 
-        List<Ignite> backupz = backups == 0 ? null : backups == 1 ? Collections.singletonList(backupNode(keys.get(0), DEFAULT_CACHE_NAME)) : backupNodes(keys.get(0), DEFAULT_CACHE_NAME);
+        List<Ignite> backupz = backups == 0 ? null : backups == 1 ?
+                Collections.singletonList(backupNode(keys.get(0), DEFAULT_CACHE_NAME)) :
+                backupNodes(keys.get(0), DEFAULT_CACHE_NAME);
 
         final TestRecordingCommunicationSpi clientWrappedSpi = spi(client);
 
@@ -233,9 +234,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         List<Integer> keysPart2 = part2Sup == null ? null :
             partitionKeys(crd.cache(DEFAULT_CACHE_NAME), part2Sup.get(), sizes.length, 0) ;
 
-        log.info("TX: topology [part1=" + partId + ", primary=" + prim.name() + ", backups=" + F.transform(backupz, ignite -> {
-            return ignite.name();
-        }));
+        log.info("TX: topology [part1=" + partId + ", primary=" + prim.name() +
+            ", backups=" + F.transform(backupz, Ignite::name));
 
         if (part2Sup != null) {
             int partId2 = part2Sup.get();
@@ -248,43 +248,40 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
             txTop.put(partId2, new T2<>(prim2, backupz2));
 
-            log.info("TX: topology [part2=" + partId2 + ", primary=" + prim2.name() + ", backups=" + F.transform(backupz2, ignite -> {
-                return ignite.name();
-            }));
+            log.info("TX: topology [part2=" + partId2 + ", primary=" + prim2.name() +
+                ", backups=" + F.transform(backupz2, Ignite::name));
         }
 
         TxCallback cb = clo.apply(txTop);
 
-        clientWrappedSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                if (msg instanceof GridNearTxPrepareRequest) {
-                    IgniteEx to = IgnitionEx.gridxx(node.id());
+        clientWrappedSpi.blockMessages((node, msg) -> {
+            if (msg instanceof GridNearTxPrepareRequest) {
+                IgniteEx to = IgnitionEx.gridxx(node.id());
 
-                    GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
+                GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
 
-                    if (!req.last())
-                        return false;
+                if (!req.last())
+                    return false;
 
-                    futMap.put(req.futureId(), req.version());
+                futMap.put(req.futureId(), req.version());
 
-                    return cb.beforePrimaryPrepare(to, req.version().asGridUuid(), createSendFuture(clientWrappedSpi, msg));
-                }
-                else if (msg instanceof GridNearTxFinishRequest) {
-                    IgniteEx to = IgnitionEx.gridxx(node.id());
-
-                    GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg;
-
-                    futMap.put(req.futureId(), req.version());
-
-                    IgniteInternalTx tx = findTx(to, req.version(), true);
-
-                    assertNotNull(tx);
-
-                    return cb.beforePrimaryFinish(to, tx, createSendFuture(clientWrappedSpi, msg));
-                }
-
-                return false;
+                return cb.beforePrimaryPrepare(to, req.version().asGridUuid(), createSendFuture(clientWrappedSpi, msg));
             }
+            else if (msg instanceof GridNearTxFinishRequest) {
+                IgniteEx to = IgnitionEx.gridxx(node.id());
+
+                GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg;
+
+                futMap.put(req.futureId(), req.version());
+
+                IgniteInternalTx tx = findTx(to, req.version(), true);
+
+                assertNotNull(tx);
+
+                return cb.beforePrimaryFinish(to, tx, createSendFuture(clientWrappedSpi, msg));
+            }
+
+            return false;
         });
 
         spi(prim).blockMessages(createPrimaryMessagePredicate(spi(prim), futMap, nearToLocVerMap, cb));
@@ -313,35 +310,33 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         CyclicBarrier b = new CyclicBarrier(sizes.length);
 
-        IgniteInternalFuture<Long> fut = runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                int txIdx = idx.getAndIncrement();
+        IgniteInternalFuture<Long> fut = runMultiThreadedAsync(() -> {
+            int txIdx = idx.getAndIncrement();
 
-                int[] range = ranges[txIdx];
+            int[] range = ranges[txIdx];
 
-                String lb = "t" + txIdx;
+            String lb = "t" + txIdx;
 
-                try (Transaction tx = client.transactions().withLabel(lb).txStart()) {
-                    cb.onTxStart(tx, txIdx);
+            try (Transaction tx = client.transactions().withLabel(lb).txStart()) {
+                cb.onTxStart(tx, txIdx);
 
-                    U.awaitQuiet(b); // Wait should always success.
+                U.awaitQuiet(b); // Wait should always success.
 
-                    for (Integer key : keys.subList(range[0], range[0] + range[1]))
-                        client.cache(DEFAULT_CACHE_NAME).put(key, 0);
+                for (Integer key : keys.subList(range[0], range[0] + range[1]))
+                    client.cache(DEFAULT_CACHE_NAME).put(key, 0);
 
-                    if (keysPart2 != null) { // Force 2PC.
-                        client.cache(DEFAULT_CACHE_NAME).put(keysPart2.get(txIdx), 0);
-                    }
-
-                    tx.commit();
-                }
-                catch (Throwable ignored) {
-                    // No-op.
-                    System.out.println();
+                if (keysPart2 != null) { // Force 2PC.
+                    client.cache(DEFAULT_CACHE_NAME).put(keysPart2.get(txIdx), 0);
                 }
 
-                // TODO FIXME expect rollback for some scenarios.
+                tx.commit();
             }
+            catch (Throwable ignored) {
+                // No-op.
+                System.out.println();
+            }
+
+            // TODO FIXME expect rollback for some scenarios.
         }, sizes.length, "tx-thread");
 
         try {
@@ -359,110 +354,115 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         return txTop;
     }
 
+    /**
+     * @param wrappedPrimSpi Wrapped prim spi.
+     * @param futMap Future map.
+     * @param nearToLocVerMap Near to local version map.
+     * @param cb Callback.
+     */
     private IgniteBiPredicate<ClusterNode, Message> createPrimaryMessagePredicate(TestRecordingCommunicationSpi wrappedPrimSpi,
         Map<IgniteUuid, GridCacheVersion> futMap,
         Map<GridCacheVersion, GridCacheVersion> nearToLocVerMap,
         TxCallback cb) {
-        return new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                if (msg instanceof GridDhtTxPrepareRequest) {
-                    IgniteEx to = IgnitionEx.gridxx(node.id());
+        return (node, msg) -> {
+            if (msg instanceof GridDhtTxPrepareRequest) {
+                IgniteEx to = IgnitionEx.gridxx(node.id());
 
-                    GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
+                GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
 
-                    if (!req.last())
-                        return false;
+                if (!req.last())
+                    return false;
 
-                    futMap.put(req.futureId(), req.nearXidVersion());
-                    nearToLocVerMap.put(req.version(), req.nearXidVersion());
+                futMap.put(req.futureId(), req.nearXidVersion());
+                nearToLocVerMap.put(req.version(), req.nearXidVersion());
 
-                    IgniteEx from = fromNode(wrappedPrimSpi);
+                IgniteEx from = fromNode(wrappedPrimSpi);
 
-                    IgniteInternalTx primTx = findTx(from, req.nearXidVersion(), true);
+                IgniteInternalTx primTx = findTx(from, req.nearXidVersion(), true);
 
-                    return cb.beforeBackupPrepare(from, to, primTx, createSendFuture(wrappedPrimSpi, msg));
-                }
-                else if (msg instanceof GridDhtTxFinishRequest) {
-                    IgniteEx to = IgnitionEx.gridxx(node.id());
-
-                    GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg;
-
-                    GridCacheVersion nearVer = nearToLocVerMap.get(req.version());
-                    futMap.put(req.futureId(), nearVer);
-
-                    IgniteEx from = fromNode(wrappedPrimSpi);
-
-                    IgniteInternalTx primTx = findTx(from, nearVer, true);
-                    IgniteInternalTx backupTx = findTx(to, nearVer, false);
-
-                    return cb.beforeBackupFinish(from, to, primTx, backupTx, nearVer.asGridUuid(), createSendFuture(wrappedPrimSpi, msg));
-                }
-                else if (msg instanceof GridNearTxPrepareResponse) {
-                    IgniteEx to = IgnitionEx.gridxx(node.id());
-
-                    GridNearTxPrepareResponse resp = (GridNearTxPrepareResponse)msg;
-
-                    IgniteEx from = fromNode(wrappedPrimSpi);
-
-                    GridCacheVersion ver = futMap.get(resp.futureId());
-
-                    IgniteInternalTx primTx = findTx(from, ver, true);
-
-                    return cb.afterPrimaryPrepare(from, primTx, ver.asGridUuid(), createSendFuture(wrappedPrimSpi, msg));
-                }
-                else if (msg instanceof GridNearTxFinishResponse) {
-                    IgniteEx to = IgnitionEx.gridxx(node.id());
-
-                    GridNearTxFinishResponse req = (GridNearTxFinishResponse)msg;
-
-                    IgniteEx from = fromNode(wrappedPrimSpi);
-
-                    IgniteUuid nearVer = futMap.get(req.futureId()).asGridUuid();
-
-                    return cb.afterPrimaryFinish(from, nearVer, createSendFuture(wrappedPrimSpi, msg));
-                }
-
-                return false;
+                return cb.beforeBackupPrepare(from, to, primTx, createSendFuture(wrappedPrimSpi, msg));
             }
+            else if (msg instanceof GridDhtTxFinishRequest) {
+                IgniteEx to = IgnitionEx.gridxx(node.id());
+
+                GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg;
+
+                GridCacheVersion nearVer = nearToLocVerMap.get(req.version());
+                futMap.put(req.futureId(), nearVer);
+
+                IgniteEx from = fromNode(wrappedPrimSpi);
+
+                IgniteInternalTx primTx = findTx(from, nearVer, true);
+                IgniteInternalTx backupTx = findTx(to, nearVer, false);
+
+                return cb.beforeBackupFinish(from, to, primTx, backupTx, nearVer.asGridUuid(), createSendFuture(wrappedPrimSpi, msg));
+            }
+            else if (msg instanceof GridNearTxPrepareResponse) {
+                GridNearTxPrepareResponse resp = (GridNearTxPrepareResponse)msg;
+
+                IgniteEx from = fromNode(wrappedPrimSpi);
+
+                GridCacheVersion ver = futMap.get(resp.futureId());
+
+                IgniteInternalTx primTx = findTx(from, ver, true);
+
+                return cb.afterPrimaryPrepare(from, primTx, ver.asGridUuid(), createSendFuture(wrappedPrimSpi, msg));
+            }
+            else if (msg instanceof GridNearTxFinishResponse) {
+                IgniteEx to = IgnitionEx.gridxx(node.id());
+
+                GridNearTxFinishResponse req = (GridNearTxFinishResponse)msg;
+
+                IgniteEx from = fromNode(wrappedPrimSpi);
+
+                IgniteUuid nearVer = futMap.get(req.futureId()).asGridUuid();
+
+                return cb.afterPrimaryFinish(from, nearVer, createSendFuture(wrappedPrimSpi, msg));
+            }
+
+            return false;
         };
     }
 
+    /**
+     * @param wrappedBackupSpi Wrapped backup spi.
+     * @param futMap Future map.
+     * @param cb Callback.
+     */
     private IgniteBiPredicate<ClusterNode, Message> createBackupMessagePredicate(TestRecordingCommunicationSpi wrappedBackupSpi,
         Map<IgniteUuid, GridCacheVersion> futMap, TxCallback cb) {
-        return new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                if (msg instanceof GridDhtTxPrepareResponse) {
-                    IgniteEx from = fromNode(wrappedBackupSpi);
-                    IgniteEx to = IgnitionEx.gridxx(node.id());
+        return (node, msg) -> {
+            if (msg instanceof GridDhtTxPrepareResponse) {
+                IgniteEx from = fromNode(wrappedBackupSpi);
+                IgniteEx to = IgnitionEx.gridxx(node.id());
 
-                    GridDhtTxPrepareResponse resp = (GridDhtTxPrepareResponse)msg;
+                GridDhtTxPrepareResponse resp = (GridDhtTxPrepareResponse)msg;
 
-                    GridCacheVersion ver = futMap.get(resp.futureId());
+                GridCacheVersion ver = futMap.get(resp.futureId());
 
-                    if (ver == null)
-                        return false; // Message from parallel partition.
+                if (ver == null)
+                    return false; // Message from parallel partition.
 
-                    IgniteInternalTx backupTx = findTx(from, ver, false);
+                IgniteInternalTx backupTx = findTx(from, ver, false);
 
-                    return cb.afterBackupPrepare(to, from, backupTx, ver.asGridUuid(), createSendFuture(wrappedBackupSpi, msg));
-                }
-                else if (msg instanceof GridDhtTxFinishResponse) {
-                    IgniteEx from = fromNode(wrappedBackupSpi);
-                    IgniteEx to = IgnitionEx.gridxx(node.id());
-
-                    GridDhtTxFinishResponse resp = (GridDhtTxFinishResponse)msg;
-
-                    GridCacheVersion ver = futMap.get(resp.futureId());
-
-                    if (ver == null)
-                        return false; // Message from parallel partition.
-
-                    // Version is null if message is a response to checkCommittedRequest.
-                    return cb.afterBackupFinish(to, from, ver.asGridUuid(), createSendFuture(wrappedBackupSpi, msg));
-                }
-
-                return false;
+                return cb.afterBackupPrepare(to, from, backupTx, ver.asGridUuid(), createSendFuture(wrappedBackupSpi, msg));
             }
+            else if (msg instanceof GridDhtTxFinishResponse) {
+                IgniteEx from = fromNode(wrappedBackupSpi);
+                IgniteEx to = IgnitionEx.gridxx(node.id());
+
+                GridDhtTxFinishResponse resp = (GridDhtTxFinishResponse)msg;
+
+                GridCacheVersion ver = futMap.get(resp.futureId());
+
+                if (ver == null)
+                    return false; // Message from parallel partition.
+
+                // Version is null if message is a response to checkCommittedRequest.
+                return cb.afterBackupFinish(to, from, ver.asGridUuid(), createSendFuture(wrappedBackupSpi, msg));
+            }
+
+            return false;
         };
     }
 
@@ -471,22 +471,22 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
      * @param msg Message.
      */
     private GridFutureAdapter<?> createSendFuture(TestRecordingCommunicationSpi wrapperSpi, Message msg) {
-        GridFutureAdapter<?> fut = new GridFutureAdapter<Object>();
+        GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
-        fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> fut) {
-                wrapperSpi.stopBlock(true, new IgnitePredicate<T2<ClusterNode, GridIoMessage>>() {
-                    @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
-                        return objects.get2().message() == msg;
-                    }
-                }, false);
-            }
-        });
+        fut.listen(fut1 -> wrapperSpi.stopBlock(true, objects -> objects.get2().message() == msg, false));
 
         return fut;
     }
 
+    /**
+     * Defines logic of tx messages delivery ordering.
+     */
     protected interface TxCallback {
+        /**
+         * @param primary Primary.
+         * @param nearXidVer Near xid version.
+         * @param proceedFut Proceed future.
+         */
         public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer,
             GridFutureAdapter<?> proceedFut);
 
@@ -499,35 +499,59 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         public boolean beforeBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx primaryTx,
             GridFutureAdapter<?> proceedFut);
 
+        /**
+         * @param primary Primary.
+         * @param tx Tx.
+         * @param proceedFut Proceed future.
+         */
         public boolean beforePrimaryFinish(IgniteEx primary, IgniteInternalTx tx, GridFutureAdapter<?> proceedFut);
 
+        /**
+         * @param primary Primary.
+         * @param nearXidVer Near xid version.
+         * @param proceedFut Proceed future.
+         */
         public boolean afterPrimaryFinish(IgniteEx primary, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut);
 
+        /**
+         * @param primary Primary.
+         * @param backup Backup.
+         * @param backupTx Backup tx.
+         * @param nearXidVer Near xid version.
+         * @param proceedFut Future.
+         */
         public boolean afterBackupPrepare(IgniteEx primary, IgniteEx backup, @Nullable IgniteInternalTx backupTx,
-            IgniteUuid nearXidVer, GridFutureAdapter<?> fut);
+            IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut);
 
-        public boolean afterBackupFinish(IgniteEx primary, IgniteEx backup, IgniteUuid nearXidVer, GridFutureAdapter<?> fut);
+        /**
+         * @param primary Primary.
+         * @param backup Backup.
+         * @param nearXidVer Near xid version.
+         * @param proceedFut Future.
+         */
+        public boolean afterBackupFinish(IgniteEx primary, IgniteEx backup, IgniteUuid nearXidVer,
+            GridFutureAdapter<?> proceedFut);
 
         /**
          * @param primary Prim.
          * @param backup Backup.
          * @param primaryTx Prim tx. Null for 2pc.
          * @param backupTx Backup tx.
-         * @param nearXidVer
-         * @param future Future.
+         * @param nearXidVer Near xid version.
+         * @param proceedFut Future.
          */
         public boolean beforeBackupFinish(IgniteEx primary, IgniteEx backup, @Nullable IgniteInternalTx primaryTx,
             IgniteInternalTx backupTx,
-            IgniteUuid nearXidVer, GridFutureAdapter<?> future);
+            IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut);
 
         /**
          * @param primary Primary.
          * @param tx Tx or null for one-phase commit.
          * @param nearXidVer Near xid version.
-         * @param fut Future.
+         * @param proceedFut Future.
          */
         public boolean afterPrimaryPrepare(IgniteEx primary, @Nullable IgniteInternalTx tx, IgniteUuid nearXidVer,
-            GridFutureAdapter<?> fut);
+            GridFutureAdapter<?> proceedFut);
 
         /**
          * Called when transaction got an order assignment.
@@ -540,56 +564,73 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
     /** */
     protected class TxCallbackAdapter implements TxCallback {
+        /** */
         private Map<Integer, IgniteUuid> txMap = new ConcurrentHashMap<>();
+        /** */
         private Map<IgniteUuid, Integer> revTxMap = new ConcurrentHashMap<>();
 
+        /** {@inheritDoc} */
         @Override public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean beforeBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx primaryTx,
             GridFutureAdapter<?> proceedFut) {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean afterBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx backupTx,
-            IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
+            IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean afterPrimaryPrepare(IgniteEx primary, @Nullable IgniteInternalTx tx, IgniteUuid nearXidVer,
-            GridFutureAdapter<?> fut) {
+            GridFutureAdapter<?> proceedFut) {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean beforePrimaryFinish(IgniteEx primary, IgniteInternalTx tx, GridFutureAdapter<?> proceedFut) {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean afterPrimaryFinish(IgniteEx primary, IgniteUuid nearXidVer,
             GridFutureAdapter<?> proceedFut) {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean beforeBackupFinish(IgniteEx primary, IgniteEx backup, IgniteInternalTx primaryTx,
             IgniteInternalTx backupTx,
-            IgniteUuid nearXidVer, GridFutureAdapter<?> future) {
+            IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean afterBackupFinish(IgniteEx primary, IgniteEx backup, IgniteUuid nearXidVer,
-            GridFutureAdapter<?> fut) {
+            GridFutureAdapter<?> proceedFut) {
             return false;
         }
 
+        /**
+         * @param order Order.
+         */
         protected IgniteUuid version(int order) {
             return txMap.get(order);
         }
 
+        /**
+         * @param ver Version.
+         */
         protected int order(IgniteUuid ver) {
             return revTxMap.get(ver);
         }
 
+        /** {@inheritDoc} */
         @Override public void onTxStart(Transaction tx, int idx) {
             txMap.put(idx, tx.xid());
             revTxMap.put(tx.xid(), idx);
@@ -604,11 +645,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
      * @param primary {@code True} to search primary tx.
      */
     private IgniteInternalTx findTx(IgniteEx n, GridCacheVersion nearVer, boolean primary) {
-        return n.context().cache().context().tm().activeTransactions().stream().filter(new Predicate<IgniteInternalTx>() {
-            @Override public boolean test(IgniteInternalTx tx) {
-                return nearVer.equals(tx.nearXidVersion()) && tx.local() == primary;
-            }
-        }).findAny().orElse(null);
+        return n.context().cache().context().tm().activeTransactions().stream().
+            filter(tx -> nearVer.equals(tx.nearXidVersion()) && tx.local() == primary).findAny().orElse(null);
     }
 
     /**
@@ -658,8 +696,13 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         stopGrid(grid.name(), skipCheckpointOnStop);
     }
 
-    private IgniteEx fromNode(TestRecordingCommunicationSpi primWrapperSpi) {
-        return IgnitionEx.gridxx(primWrapperSpi.getSpiContext().localNode().id());
+    /**
+     * @param spi SPI.
+     *
+     * @return Corresponding Ignite instance.
+     */
+    private IgniteEx fromNode(TestRecordingCommunicationSpi spi) {
+        return IgnitionEx.gridxx(spi.getSpiContext().localNode().id());
     }
 
     /**
@@ -691,6 +734,11 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         /** */
         private Map<T2<IgniteEx, IgniteUuid>, Integer> assignCntr = new ConcurrentHashMap<>();
 
+        /**
+         * @param prepares Prepares.
+         * @param commits Commits.
+         * @param txCnt Tx count.
+         */
         public TwoPhaseCommitTxCallbackAdapter(Map<IgniteEx, int[]> prepares, Map<IgniteEx, int[]> commits, int txCnt) {
             this(prepares, prepares, commits, txCnt);
         }
@@ -699,7 +747,11 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
          * @param prepares Map of node to it's prepare order.
          * @param commits Map of node to it's commit order.
          */
-        public TwoPhaseCommitTxCallbackAdapter(Map<IgniteEx, int[]> assigns, Map<IgniteEx, int[]> prepares, Map<IgniteEx, int[]> commits, int txCnt) {
+        public TwoPhaseCommitTxCallbackAdapter(
+            Map<IgniteEx, int[]> assigns,
+            Map<IgniteEx, int[]> prepares,
+            Map<IgniteEx, int[]> commits,
+            int txCnt) {
             this.txCnt = txCnt;
 
             // TODO validate orders (all unique)
@@ -725,7 +777,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /** */
-        protected boolean onPrimaryPrepared(IgniteEx primary, IgniteInternalTx tx, int idx) {
+        protected boolean onPrimaryPrepared(IgniteEx primary, IgniteInternalTx ignored, int idx) {
             log.info("TX: prepared on primary [name=" + primary.name() + ", txId=" + idx + ']');
 
             return false;
@@ -789,7 +841,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
          * @param primary Primary node.
          * @param primaryTx Primary tx.
          */
-        protected void onCounterAssigned(IgniteEx primary, IgniteInternalTx primaryTx, int idx){
+        protected void onCounterAssigned(IgniteEx primary, IgniteInternalTx ignored, int idx){
             log.info("TX: primary counter assigned: [name=" + primary.name() + ", txId=" + idx + ']');
         }
 
@@ -832,7 +884,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         /** {@inheritDoc} */
         @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
-            GridFutureAdapter<?> fut) {
+            GridFutureAdapter<?> proceedFut) {
             if (prepares.get(primary) == null)
                 return false;
 
@@ -879,21 +931,23 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
             runAsync(() -> {
                 if (assigns.get(primary) != null) {
-                    int v0 = assignCntr.compute(new T2<>(primary, primaryTx.nearXidVersion().asGridUuid()), (key, val) -> (val == null ? 0 : val) + 1);
+                    int v0 = assignCntr.compute(new T2<>(primary, primaryTx.nearXidVersion().asGridUuid()),
+                        (key, val) -> (val == null ? 0 : val) + 1);
 
                     if (v0 == 2) {
                         onCounterAssigned(primary, primaryTx, order(primaryTx.nearXidVersion().asGridUuid()));
 
                         if (!assigns.get(primary).isEmpty())
-                            futures.remove(new T3<>(primary, TxState.ASSIGN, version(assigns.get(primary).poll()))).onDone();
+                            futures.remove(new T3<>(primary, TxState.ASSIGN,
+                                version(assigns.get(primary).poll()))).onDone();
                     }
                 }
 
                 if (prepares.get(backup) != null) {
                     futures.put(new T3<>(backup, TxState.PREPARE, primaryTx.nearXidVersion().asGridUuid()), proceedFut);
 
-                    // Order prepares.
-                    if (countForNode(backup, TxState.PREPARE) == txCnt) {// Wait until all prep requests queued and force prepare order.
+                    // Wait until all prep requests queued and force prepare order.
+                    if (countForNode(backup, TxState.PREPARE) == txCnt) {
                         futures.remove(new T3<>(backup, TxState.PREPARE, version(prepares.get(backup).poll()))).onDone();
                     }
                 }
@@ -903,24 +957,25 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /** {@inheritDoc} */
-        @Override public boolean afterBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx backupTx, IgniteUuid nearXidVer,
-            GridFutureAdapter<?> fut) {
+        @Override public boolean afterBackupPrepare(
+            IgniteEx primary,
+            IgniteEx backup,
+            IgniteInternalTx backupTx,
+            IgniteUuid nearXidVer,
+            GridFutureAdapter<?> proceedFut) {
             if (prepares.get(backup) == null && prepares.get(primary) == null)
                 return false;
 
             runAsync(() -> {
                 if (prepares.get(primary) != null) {
-                    GridCompoundFuture<Object, Object> fut0 = (GridCompoundFuture<Object, Object>)futures.get(new T3<>(primary, TxState.PREPARE, nearXidVer));
+                    GridCompoundFuture<Object, Object> fut0 =
+                        (GridCompoundFuture<Object, Object>)futures.get(new T3<>(primary, TxState.PREPARE, nearXidVer));
 
-                    fut0.add((IgniteInternalFuture<Object>)fut);
+                    fut0.add((IgniteInternalFuture<Object>)proceedFut);
 
                     int sum = futures.entrySet().stream().filter(objects -> objects.getKey().get1() == primary &&
-                        objects.getKey().get2() == TxState.PREPARE).mapToInt(new ToIntFunction<Map.Entry<T3<IgniteEx, TxState, IgniteUuid>, GridFutureAdapter<?>>>() {
-                        @Override public int applyAsInt(
-                            Map.Entry<T3<IgniteEx, TxState, IgniteUuid>, GridFutureAdapter<?>> value) {
-                            return ((GridCompoundFuture)value.getValue()).futures().size();
-                        }
-                    }).sum();
+                        objects.getKey().get2() == TxState.PREPARE).
+                        mapToInt(value -> ((GridCompoundFuture)value.getValue()).futures().size()).sum();
 
                     if (sum == txCnt * 2)
                         futures.remove(new T3<>(primary, TxState.PREPARE, version(prepares.get(primary).poll()))).onDone();
@@ -943,14 +998,15 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         /** {@inheritDoc} */
         @Override public boolean beforeBackupFinish(IgniteEx primary, IgniteEx backup, @Nullable IgniteInternalTx primaryTx,
-            IgniteInternalTx backupTx, IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
+            IgniteInternalTx backupTx, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
             if (commits.get(backup) == null) // Ignore backup because the order is not specified.
                 return false;
 
             runAsync(() -> {
-                futures.put(new T3<>(backup, TxState.COMMIT, nearXidVer), fut);
+                futures.put(new T3<>(backup, TxState.COMMIT, nearXidVer), proceedFut);
 
-                Boolean prev = allPrimaryCommitted.putIfAbsent(nearXidVer, Boolean.TRUE); // First finish message to backup means what tx was committed on primary.
+                // First finish message to backup means what tx was committed on primary.
+                Boolean prev = allPrimaryCommitted.putIfAbsent(nearXidVer, Boolean.TRUE);
 
                 if (prev == null) {
                     if (onPrimaryCommitted(primary, order(nearXidVer)))
@@ -976,7 +1032,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         /** {@inheritDoc} */
         @Override public boolean afterBackupFinish(IgniteEx primary, IgniteEx backup, IgniteUuid nearXidVer,
-            GridFutureAdapter<?> fut) {
+            GridFutureAdapter<?> proceedFut) {
             if (commits.get(backup) == null) // Ignore backup because the order is not specified.
                 return false;
 

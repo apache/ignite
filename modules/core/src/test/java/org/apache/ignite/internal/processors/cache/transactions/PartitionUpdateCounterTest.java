@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
@@ -31,8 +32,6 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Simple partition counter tests.
@@ -166,6 +165,9 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testFoldIntermediateUpdates() {
         PartitionUpdateCounter pc = newCounter();
@@ -178,11 +180,47 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
         pc.update(65, 2);
 
-        assertEquals(1, pc.gapsCount());
+        Iterator<long[]> it = pc.iterator();
+        it.next();
+
+        assertFalse(it.hasNext());
 
         pc.update(59, 1);
 
         assertTrue(pc.sequential());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testGapsIterator() {
+        PartitionUpdateCounter pc = newCounter();
+
+        pc.update(67, 3);
+
+        pc.update(1, 58);
+
+        pc.update(60, 5);
+
+        Iterator<long[]> iter = pc.iterator();
+
+        long[] gap = iter.next();
+
+        assertEquals(1, gap[0]);
+        assertEquals(58, gap[1]);
+
+        gap = iter.next();
+
+        assertEquals(60, gap[0]);
+        assertEquals(5, gap[1]);
+
+        gap = iter.next();
+
+        assertEquals(67, gap[0]);
+        assertEquals(3, gap[1]);
+
+        assertFalse(iter.hasNext());
     }
 
     /**
