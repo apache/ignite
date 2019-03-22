@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -332,6 +334,48 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
         }
 
+        /**
+         * Class that processes cache filtering chain.
+         */
+        private class CachesFiltering {
+            /**
+             * Initially all cache descriptors are included.
+             */
+            private final Set<CacheGroupContext> filteredCacheGroups;
+
+            /** */
+            public CachesFiltering(Collection<CacheGroupContext> cacheGroups) {
+                filteredCacheGroups = new HashSet<>(cacheGroups);
+            }
+
+            /**
+             * Applies filtering closure.
+             *
+             * @param closure filter
+             * @return this
+             */
+            public CachesFiltering filter(
+                    IgniteInClosure<Set<CacheGroupContext>> closure) {
+                closure.apply(filteredCacheGroups);
+
+                return this;
+            }
+
+            /**
+             * Returns result set of cache ids.
+             *
+             * @return set of filtered cache ids.
+             */
+            public Set<Integer> result() {
+                Set<Integer> res = new HashSet<>();
+
+                for (CacheGroupContext cacheGrp : filteredCacheGroups)
+                    res.add(cacheGrp.groupId());
+
+                return res;
+            }
+        }
+
         /** */
         private List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> calcPartitionHashAsync(
             Set<Integer> grpIds,
@@ -356,35 +400,61 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
         /** */
         private Set<Integer> getGroupIds() {
-            Set<Integer> grpIds = new HashSet<>();
+            Collection<CacheGroupContext> cacheGroups = ignite.context().cache().cacheGroups();
 
-            if (arg.getCaches() != null && !arg.getCaches().isEmpty()) {
-                Set<String> missingCaches = new HashSet<>();
+            Set<Integer> grpIds = new CachesFiltering(cacheGroups)
+                .filter(this::filterByCacheNames)
+                .filter(this::filterByCacheFilter)
+                .filter(this::filterByExcludeCaches)
+                .result();
 
-                for (String cacheName : arg.getCaches()) {
-                    DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheName);
-
-                    if (desc == null || !isCacheMatchFilter(cacheName)) {
-                        missingCaches.add(cacheName);
-
-                        continue;
-                    }
-
-                    grpIds.add(desc.groupId());
-                }
-
-                handlingMissedCaches(missingCaches);
-            }
-            else if (onlySpecificCaches()) {
-                for (DynamicCacheDescriptor desc : ignite.context().cache().cacheDescriptors().values()) {
-                    if (desc.cacheConfiguration().getCacheMode() != LOCAL && isCacheMatchFilter(desc.cacheName()))
-                        grpIds.add(desc.groupId());
-                }
-            }
-            else
-                grpIds = getCacheGroupIds();
+            if (F.isEmpty(grpIds))
+                throw new IgniteException("There are no caches matching given filter options.");
 
             return grpIds;
+        }
+
+        /** */
+        private void filterByExcludeCaches(Set<CacheGroupContext> cachesToFilter) {
+            if (!F.isEmpty(arg.getExcludeCaches())) {
+                Set<Pattern> excludedNamesPatterns = new HashSet<>();
+
+                for (String excluded : arg.getExcludeCaches())
+                    excludedNamesPatterns.add(Pattern.compile(excluded));
+
+                boolean excludeSystemCaches;
+
+                if (arg instanceof VisorIdleVerifyDumpTaskArg) {
+                    CacheFilterEnum filter = ((VisorIdleVerifyDumpTaskArg) arg).getCacheFilterEnum();
+
+                    excludeSystemCaches = !(filter == CacheFilterEnum.SYSTEM);
+                } else
+                    excludeSystemCaches = true;
+
+                cachesToFilter.removeIf(grp ->
+                    (grp.systemCache() && excludeSystemCaches)
+                        || grp.isLocal()
+                        || doesGrpMatchOneOfPatterns(grp, excludedNamesPatterns)
+                );
+            }
+        }
+
+        /** */
+        private void filterByCacheFilter(Set<CacheGroupContext> cachesToFilter) {
+            if (onlySpecificCaches())
+                cachesToFilter.removeIf(grp -> !doesGrpMatchFilter(grp));
+        }
+
+        /** */
+        private void filterByCacheNames(Set<CacheGroupContext> cachesToFilter) {
+            if (arg.getCaches() != null && !arg.getCaches().isEmpty()) {
+                Set<Pattern> cacheNamesPatterns = new HashSet<>();
+
+                for (String cacheNameRegexp : arg.getCaches())
+                    cacheNamesPatterns.add(Pattern.compile(cacheNameRegexp));
+
+                cachesToFilter.removeIf(grp -> !doesGrpMatchOneOfPatterns(grp, cacheNamesPatterns));
+            }
         }
 
         /**
@@ -410,6 +480,44 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
 
             return grpIds;
+        }
+
+        /**
+         * Checks does the given group match filter.
+         *
+         * @param grp cache group.
+         * @return boolean result
+         */
+        private boolean doesGrpMatchFilter(CacheGroupContext grp) {
+            for (GridCacheContext cacheCtx : grp.caches()) {
+                DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheCtx.name());
+
+                if (desc.cacheConfiguration().getCacheMode() != LOCAL && isCacheMatchFilter(desc))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * Checks does the name of given cache group or some of the names of its caches
+         * match at least one of regexp from set.
+         *
+         * @param grp cache group
+         * @param patterns compiled regexp patterns
+         * @return boolean result
+         */
+        private boolean doesGrpMatchOneOfPatterns(CacheGroupContext grp, Set<Pattern> patterns) {
+            for (Pattern pattern : patterns) {
+                if (grp.name() != null && pattern.matcher(grp.name()).matches())
+                    return true;
+
+                for (GridCacheContext cacheCtx : grp.caches())
+                    if (cacheCtx.name() != null && pattern.matcher(cacheCtx.name()).matches())
+                        return true;
+            }
+
+            return false;
         }
 
         /**
@@ -468,13 +576,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         }
 
         /**
-         * @param cacheName Cache name.
+         * @param desc Cache descriptor.
          */
-        private boolean isCacheMatchFilter(String cacheName) {
+        private boolean isCacheMatchFilter(DynamicCacheDescriptor desc) {
             if (arg instanceof VisorIdleVerifyDumpTaskArg) {
                 DataStorageConfiguration dsCfg = ignite.context().config().getDataStorageConfiguration();
-
-                DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheName);
 
                 CacheConfiguration cc = desc.cacheConfiguration();
 
