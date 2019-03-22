@@ -152,7 +152,7 @@ public class LocalIgniteCluster implements AutoCloseable {
 
     /** */
     private static IgniteConfiguration getConfiguration(NodeConfiguration nodeCfg) {
-        IgniteConfiguration igniteCfg = Config.getServerConfiguration();
+        IgniteConfiguration igniteCfg = ClientConfigurationTestConfig.getServerConfiguration();
 
         ((TcpDiscoverySpi)igniteCfg.getDiscoverySpi()).getIpFinder().registerAddresses(
             Collections.singletonList(new InetSocketAddress(HOST, nodeCfg.getDiscoveryPort()))

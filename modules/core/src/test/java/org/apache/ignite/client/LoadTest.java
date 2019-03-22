@@ -66,7 +66,7 @@ public class LoadTest {
         final int BATCH_SIZE = 1000;
         final int PAGE_CNT = 3;
 
-        IgniteConfiguration srvCfg = Config.getServerConfiguration();
+        IgniteConfiguration srvCfg = ClientConfigurationTestConfig.getServerConfiguration();
 
         // No peer class loading from thin clients: we need the server to know about this class to deserialize
         // ScanQuery filter.
@@ -76,7 +76,7 @@ public class LoadTest {
         )));
 
         try (Ignite ignored = Ignition.start(srvCfg);
-             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER))
         ) {
             ClientCache<Integer, String> cache = client.createCache("testMultithreading");
 

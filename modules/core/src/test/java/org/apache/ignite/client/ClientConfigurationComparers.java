@@ -25,9 +25,9 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
-public final class Comparers {
+public final class ClientConfigurationComparers {
     /** Cannot instantiate. */
-    private Comparers() {}
+    private ClientConfigurationComparers() {}
 
     /** */
     public static boolean equal(ClientConfiguration a, Object o) {

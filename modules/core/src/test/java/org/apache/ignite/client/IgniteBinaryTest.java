@@ -51,13 +51,13 @@ public class IgniteBinaryTest {
         int key = 1;
         Person val = new Person(key, "Joe");
 
-        try (Ignite srv = Ignition.start(Config.getServerConfiguration())) {
+        try (Ignite srv = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration())) {
             // Add an entry directly to the Ignite server. This stores a schema-less object in the cache and
             // does not register schema in the client's metadata cache.
-            srv.cache(Config.DEFAULT_CACHE_NAME).put(key, val);
+            srv.cache(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME).put(key, val);
 
-            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
-                ClientCache<Integer, Person> cache = client.cache(Config.DEFAULT_CACHE_NAME);
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER))) {
+                ClientCache<Integer, Person> cache = client.cache(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME);
 
                 Person cachedVal = cache.get(key);
 
@@ -74,13 +74,13 @@ public class IgniteBinaryTest {
         int key = 1;
         Person val = new Person(key, "Joe");
 
-        try (Ignite srv = Ignition.start(Config.getServerConfiguration())) {
+        try (Ignite srv = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration())) {
             // Add an entry directly to the Ignite server. This stores a schema-less object in the cache and
             // does not register schema in the client's metadata cache.
-            srv.cache(Config.DEFAULT_CACHE_NAME).put(key, val);
+            srv.cache(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME).put(key, val);
 
-            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
-                ClientCache<Integer, BinaryObject> cache = client.cache(Config.DEFAULT_CACHE_NAME).withKeepBinary();
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER))) {
+                ClientCache<Integer, BinaryObject> cache = client.cache(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME).withKeepBinary();
 
                 BinaryObject cachedVal = cache.get(key);
 
@@ -97,9 +97,9 @@ public class IgniteBinaryTest {
     public void testBinaryObjectPutGet() throws Exception {
         int key = 1;
 
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration())) {
+        try (Ignite ignored = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration())) {
             try (IgniteClient client =
-                     Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+                     Ignition.startClient(new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER))
             ) {
                 IgniteBinary binary = client.binary();
 
@@ -108,12 +108,12 @@ public class IgniteBinaryTest {
                     .setField("name", "Joe", String.class)
                     .build();
 
-                ClientCache<Integer, BinaryObject> cache = client.cache(Config.DEFAULT_CACHE_NAME).withKeepBinary();
+                ClientCache<Integer, BinaryObject> cache = client.cache(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME).withKeepBinary();
 
                 cache.put(key, val);
 
                 BinaryObject cachedVal =
-                    client.cache(Config.DEFAULT_CACHE_NAME).<Integer, BinaryObject>withKeepBinary().get(key);
+                    client.cache(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME).<Integer, BinaryObject>withKeepBinary().get(key);
 
                 assertBinaryObjectsEqual(val, cachedVal);
             }
@@ -134,8 +134,8 @@ public class IgniteBinaryTest {
      */
     @Test
     public void testBinaryObjectApi() throws Exception {
-        try (Ignite srv = Ignition.start(Config.getServerConfiguration())) {
-            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
+        try (Ignite srv = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration())) {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER))) {
                 // Use "server-side" IgniteBinary as a reference to test the thin client IgniteBinary against
                 IgniteBinary refBinary = srv.binary();
 

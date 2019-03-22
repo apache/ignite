@@ -56,7 +56,7 @@ import static org.junit.Assert.fail;
 /**
  * Thin client functional tests.
  */
-public class FunctionalTest {
+public class ClientCacheFunctionalTest {
     /** Per test timeout */
     @Rule
     public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
@@ -101,13 +101,13 @@ public class FunctionalTest {
 
             Object[] cacheNames = new TreeSet<>(client.cacheNames()).toArray();
 
-            assertArrayEquals(new TreeSet<>(Arrays.asList(Config.DEFAULT_CACHE_NAME, CACHE_NAME)).toArray(), cacheNames);
+            assertArrayEquals(new TreeSet<>(Arrays.asList(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME, CACHE_NAME)).toArray(), cacheNames);
 
             client.destroyCache(CACHE_NAME);
 
             cacheNames = client.cacheNames().toArray();
 
-            assertArrayEquals(new Object[] {Config.DEFAULT_CACHE_NAME}, cacheNames);
+            assertArrayEquals(new Object[] {ClientConfigurationTestConfig.DEFAULT_CACHE_NAME}, cacheNames);
 
             cache = client.createCache(CACHE_NAME);
 
@@ -115,7 +115,7 @@ public class FunctionalTest {
 
             cacheNames = client.cacheNames().toArray();
 
-            assertArrayEquals(new TreeSet<>(Arrays.asList(Config.DEFAULT_CACHE_NAME, CACHE_NAME)).toArray(), cacheNames);
+            assertArrayEquals(new TreeSet<>(Arrays.asList(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME, CACHE_NAME)).toArray(), cacheNames);
 
             client.destroyCache(CACHE_NAME);
 
@@ -123,7 +123,7 @@ public class FunctionalTest {
 
             assertFalse(cache.containsKey(key));
 
-            assertArrayEquals(new TreeSet<>(Arrays.asList(Config.DEFAULT_CACHE_NAME, CACHE_NAME)).toArray(), cacheNames);
+            assertArrayEquals(new TreeSet<>(Arrays.asList(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME, CACHE_NAME)).toArray(), cacheNames);
         }
     }
 
@@ -136,7 +136,7 @@ public class FunctionalTest {
      */
     @Test
     public void testCacheConfiguration() throws Exception {
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+        try (Ignite ignored = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
             final String CACHE_NAME = "testCacheConfiguration";
@@ -183,7 +183,7 @@ public class FunctionalTest {
 
             assertEquals(CACHE_NAME, cache.getName());
 
-            assertTrue(Comparers.equal(cacheCfg, cache.getConfiguration()));
+            assertTrue(ClientConfigurationComparers.equal(cacheCfg, cache.getConfiguration()));
         }
     }
 
@@ -200,10 +200,10 @@ public class FunctionalTest {
     @Test
     public void testPutGet() throws Exception {
         // Existing cache, primitive key and object value
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+        try (Ignite ignored = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
-            ClientCache<Integer, Person> cache = client.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+            ClientCache<Integer, Person> cache = client.getOrCreateCache(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME);
 
             Integer key = 1;
             Person val = new Person(key, "Joe");
@@ -218,7 +218,7 @@ public class FunctionalTest {
         }
 
         // Non-existing cache, object key and primitive value
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+        try (Ignite ignored = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
             ClientCache<Person, Integer> cache = client.getOrCreateCache("testPutGet");
@@ -235,7 +235,7 @@ public class FunctionalTest {
         }
 
         // Object key and Object value
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+        try (Ignite ignored = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
             ClientCache<Person, Person> cache = client.getOrCreateCache("testPutGet");
@@ -263,10 +263,10 @@ public class FunctionalTest {
     @Test
     public void testBatchPutGet() throws Exception {
         // Existing cache, primitive key and object value
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+        try (Ignite ignored = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
-            ClientCache<Integer, Person> cache = client.cache(Config.DEFAULT_CACHE_NAME);
+            ClientCache<Integer, Person> cache = client.cache(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME);
 
             Map<Integer, Person> data = IntStream
                 .rangeClosed(1, 1000).boxed()
@@ -280,7 +280,7 @@ public class FunctionalTest {
         }
 
         // Non-existing cache, object key and primitive value
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+        try (Ignite ignored = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
             ClientCache<Person, Integer> cache = client.createCache("testBatchPutGet");
@@ -312,7 +312,7 @@ public class FunctionalTest {
      */
     @Test
     public void testAtomicPutGet() throws Exception {
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+        try (Ignite ignored = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
             ClientCache<Integer, String> cache = client.createCache("testRemoveReplace");
@@ -345,7 +345,7 @@ public class FunctionalTest {
      */
     @Test
     public void testRemoveReplace() throws Exception {
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+        try (Ignite ignored = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
             ClientCache<Integer, String> cache = client.createCache("testRemoveReplace");
@@ -416,7 +416,7 @@ public class FunctionalTest {
     /** */
     private static ClientConfiguration getClientConfiguration() {
         return new ClientConfiguration()
-            .setAddresses(Config.SERVER)
+            .setAddresses(ClientConfigurationTestConfig.SERVER)
             .setSendBufferSize(0)
             .setReceiveBufferSize(0);
     }

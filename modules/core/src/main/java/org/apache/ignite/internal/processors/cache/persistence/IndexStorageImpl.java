@@ -171,6 +171,10 @@ public class IndexStorageImpl implements IndexStorage {
         metaTree.destroy();
     }
 
+    public BPlusTree<IndexItem, IndexItem> getMetaTree() {
+        return metaTree;
+    }
+
     /**
      * Mask cache index name.
      *
@@ -178,10 +182,7 @@ public class IndexStorageImpl implements IndexStorage {
      * @return Masked name.
      */
     private String maskCacheIndexName(Integer cacheId, String idxName, int segment) {
-        if (grpShared)
-            idxName = Integer.toString(cacheId) + "_" + idxName;
-
-        return idxName + "%" + segment;
+        return (grpShared ? (Integer.toString(cacheId) + "_") : "") + idxName + "%" + segment;
     }
 
     /**
@@ -262,7 +263,7 @@ public class IndexStorageImpl implements IndexStorage {
     /**
      *
      */
-    private static class IndexItem {
+    public static class IndexItem {
         /** */
         private byte[] idxName;
 

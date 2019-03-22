@@ -102,6 +102,6 @@ public class ClientCacheConfigurationTest {
 
         Object desTarget = in.readObject();
 
-        assertTrue(Comparers.equal(target, desTarget));
+        assertTrue(ClientConfigurationComparers.equal(target, desTarget));
     }
 }

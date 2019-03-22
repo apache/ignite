@@ -63,7 +63,7 @@ public class SecurityTest {
     @Test
     public void testEncryption() throws Exception {
         // Server-side security configuration
-        IgniteConfiguration srvCfg = Config.getServerConfiguration();
+        IgniteConfiguration srvCfg = ClientConfigurationTestConfig.getServerConfiguration();
 
         SslContextFactory sslCfg = new SslContextFactory();
 
@@ -90,13 +90,13 @@ public class SecurityTest {
         srvCfg.setSslContextFactory(sslCfg);
 
         // Client-side security configuration
-        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses(Config.SERVER);
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER);
 
         try (Ignite ignored = Ignition.start(srvCfg)) {
             boolean failed;
 
             try (IgniteClient client = Ignition.startClient(clientCfg)) {
-                client.<Integer, String>cache(Config.DEFAULT_CACHE_NAME).put(1, "1");
+                client.<Integer, String>cache(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME).put(1, "1");
 
                 failed = false;
             }
@@ -119,7 +119,7 @@ public class SecurityTest {
                 .setSslTrustAll(false)
                 .setSslProtocol(SslProtocol.TLS)
             )) {
-                client.<Integer, String>cache(Config.DEFAULT_CACHE_NAME).put(1, "1");
+                client.<Integer, String>cache(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME).put(1, "1");
             }
 
             // Using user-supplied SSL Context Factory
@@ -127,7 +127,7 @@ public class SecurityTest {
                 .setSslMode(SslMode.REQUIRED)
                 .setSslContextFactory(sslCfg)
             )) {
-                client.<Integer, String>cache(Config.DEFAULT_CACHE_NAME).put(1, "1");
+                client.<Integer, String>cache(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME).put(1, "1");
             }
         }
     }
@@ -138,7 +138,7 @@ public class SecurityTest {
         Exception authError = null;
 
         try (Ignite ignored = igniteWithAuthentication();
-             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER)
                  .setUserName("JOE")
                  .setUserPassword("password")
              )
@@ -160,7 +160,7 @@ public class SecurityTest {
         final String PWD = "password";
 
         try (Ignite ignored = igniteWithAuthentication(new SimpleEntry<>(USER, PWD));
-             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER)
                  .setUserName(USER)
                  .setUserPassword(PWD)
              )
@@ -176,7 +176,7 @@ public class SecurityTest {
         final String PWD = "password";
 
         try (Ignite ignored = igniteWithAuthentication(new SimpleEntry<>(USER, PWD));
-             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER)
                  .setUserName(USER)
                  .setUserPassword(PWD)
              )
@@ -201,7 +201,7 @@ public class SecurityTest {
      */
     @SafeVarargs
     private static Ignite igniteWithAuthentication(SimpleEntry<String, String>... users) throws Exception {
-        Ignite ignite = Ignition.start(Config.getServerConfiguration()
+        Ignite ignite = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration()
             .setAuthenticationEnabled(true)
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
@@ -221,7 +221,7 @@ public class SecurityTest {
      */
     private static void createUser(String user, String pwd) throws Exception {
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration()
-            .setAddresses(Config.SERVER)
+            .setAddresses(ClientConfigurationTestConfig.SERVER)
             .setUserName("ignite")
             .setUserPassword("ignite")
         )) {

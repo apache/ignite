@@ -59,7 +59,7 @@ public class FunctionalQueryTest {
      */
     @Test
     public void testQueries() throws Exception {
-        IgniteConfiguration srvCfg = Config.getServerConfiguration();
+        IgniteConfiguration srvCfg = ClientConfigurationTestConfig.getServerConfiguration();
 
         // No peer class loading from thin clients: we need the server to know about this class to deserialize
         // ScanQuery filter.
@@ -71,7 +71,7 @@ public class FunctionalQueryTest {
         try (Ignite ignored = Ignition.start(srvCfg);
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
-            ClientCache<Integer, Person> cache = client.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+            ClientCache<Integer, Person> cache = client.getOrCreateCache(ClientConfigurationTestConfig.DEFAULT_CACHE_NAME);
 
             Map<Integer, Person> data = IntStream.rangeClosed(1, 100).boxed()
                 .collect(Collectors.toMap(i -> i, i -> new Person(i, String.format("Person %s", i))));
@@ -151,8 +151,8 @@ public class FunctionalQueryTest {
      */
     @Test
     public void testSql() throws Exception {
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration()); Ignite ignored2 = Ignition.start(Config.getServerConfiguration());
-             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+        try (Ignite ignored = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration()); Ignite ignored2 = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER))
         ) {
             client.query(
                 new SqlFieldsQuery(String.format(
@@ -193,8 +193,8 @@ public class FunctionalQueryTest {
     /** */
     @Test
     public void testGettingEmptyResultWhenQueryingEmptyTable() throws Exception {
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
-             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+        try (Ignite ignored = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER))
         ) {
             final String TBL = "Person";
 
@@ -238,7 +238,7 @@ public class FunctionalQueryTest {
 
     /** */
     private static ClientConfiguration getClientConfiguration() {
-        return new ClientConfiguration().setAddresses(Config.SERVER)
+        return new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER)
             .setSendBufferSize(0)
             .setReceiveBufferSize(0);
     }
