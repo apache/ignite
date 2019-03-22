@@ -3501,40 +3501,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param msg Single message to process.
-     * @param messageAccumulator Message to store message which need to be sent after.
-     */
-    private void processSingleMessageOnCrdFinish(
-        GridDhtPartitionsSingleMessage msg,
-        Map<Integer, CacheGroupAffinityMessage> messageAccumulator
-    ) {
-        for (Map.Entry<Integer, GridDhtPartitionMap> e : msg.partitions().entrySet()) {
-            Integer grpId = e.getKey();
-
-            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-            GridDhtPartitionTopology top = grp != null
-                ? grp.topology()
-                : cctx.exchange().clientTopology(grpId, events().discoveryCache());
-
-            CachePartitionPartialCountersMap cntrs = msg.partitionUpdateCounters(grpId, top.partitions());
-
-            if (cntrs != null)
-                top.collectUpdateCounters(cntrs);
-        }
-
-        Collection<Integer> affReq = msg.cacheGroupsAffinityRequest();
-
-        if (affReq != null)
-            CacheGroupAffinityMessage.createAffinityMessages(
-                cctx,
-                exchCtx.events().topologyVersion(),
-                affReq,
-                messageAccumulator
-            );
-    }
-
-    /**
      * Validates that partition update counters and cache sizes for all caches are consistent.
      */
     private void validatePartitionsState() {
