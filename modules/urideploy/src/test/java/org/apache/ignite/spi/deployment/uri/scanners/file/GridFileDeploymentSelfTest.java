@@ -173,16 +173,17 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
     }
 
     /**
-     * Tests task from files 'well-signed-deployfile.gar' and 'bad-signed-deployfile.gar'.
-     * File 'bad-signed-deployfile.gar' contains non-signed modifications.
+     * Tests task from files 'well-signed-deployfile.gar', 'bad-signed-deployfile.gar',
+     * 'well-signed-deployfile.jar' and 'bad-signed-deployfile.jar'.
+     * Files 'bad-signed-deployfile.gar', 'bad-signed-deployfile.jar' contain non-signed modifications.
      *
      * Sign JAR with command:
      * $ jarsigner -keystore $IGNITE_HOME/modules/tests/config/signeddeploy/keystore -storepass "abc123"
-     *      -keypass "abc123" -signedjar signed-deployfile.gar deployfile.gar business
+     *      -keypass "abc123" -signedjar signed-deployfile.jar deployfile.jar business
      *
      * Verify signed JAR-file:
      * $ jarsigner -verify -keystore $IGNITE_HOME/modules/tests/config/signeddeploy/keystore -storepass "abc123"
-     *      -keypass "abc123" signed-deployfile.gar
+     *      -keypass "abc123" signed-deployfile.jar
      *
      * @throws Exception If failed.
      */
@@ -190,10 +191,16 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
     public void testSignedDeployment() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask5");
         checkTask("GridUriDeploymentTestWithNameTask5");
+        checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask10");
+        checkTask("GridUriDeploymentTestWithNameTask10");
 
         assert getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask6") == null :
             "Task from GAR with invalid signature should not be deployed.";
-        assert getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestWithNameTask6")
+        assert getSpi().findResource("tasks.GridUriDeploymentTestWithNameTask6")
             == null : "Task from GAR with invalid signature should not be deployed.";
+        assert getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask11") == null :
+            "Task from JAR with invalid signature should not be deployed.";
+        assert getSpi().findResource("GridUriDeploymentTestWithNameTask11")
+            == null : "Task from JAR with invalid signature should not be deployed.";
     }
 }
