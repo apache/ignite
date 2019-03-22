@@ -29,6 +29,7 @@ AM_CPPFLAGS = \
 	-I$(srcdir)/os/linux/src \
 	-I@top_srcdir@/common/include \
 	-I@top_srcdir@/common/os/linux/include \
+	$(OPENSSL_INCLUDES) \
 	-DIGNITE_IMPL \
 	-D__STDC_LIMIT_MACROS \
 	-D__STDC_CONSTANT_MACROS
@@ -38,11 +39,13 @@ AM_CXXFLAGS = \
 	-std=c++03
 
 libignite_network_la_LIBADD = \
+    $(OPENSSL_LIBS) \
 	@top_srcdir@/common/libignite-common.la
 
 libignite_network_la_LDFLAGS = \
 	-no-undefined \
 	-version-info 0:0:0 \
+	$(OPENSSL_LDFLAGS) \
 	-release $(PACKAGE_VERSION)
 
 libignite_network_la_DEPENDENCIES = \

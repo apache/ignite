@@ -37,6 +37,7 @@ AM_CPPFLAGS = \
 	-I@top_srcdir@/thin-client/os/linux/include \
 	-I$(JAVA_HOME)/include \
 	-I$(JAVA_HOME)/include/linux \
+	-I$(JAVA_HOME)/include/darwin \
 	-DIGNITE_IMPL \
 	-D__STDC_LIMIT_MACROS \
 	-D__STDC_CONSTANT_MACROS \
@@ -51,7 +52,7 @@ ignite_thin_client_tests_LDADD = \
 	@top_srcdir@/network/libignite-network.la \
 	@top_srcdir@/thin-client/libignite-thin-client.la \
 	-lpthread \
-	-lboost_thread \
+	-lboost_thread-mt \
 	-lboost_system \
 	-lboost_chrono \
 	-lboost_unit_test_framework
@@ -77,3 +78,9 @@ clean-local: clean-check
 
 clean-check:
 	$(RM) $(ignite_thin_client_tests_OBJECTS)
+	
+if MAC_POSTPROCESS
+all-local: ignite
+	install_name_tool -add_rpath $(JAVA_HOME)/jre/lib/server ignite_thin_client_tests
+endif
+

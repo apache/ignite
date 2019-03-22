@@ -207,7 +207,9 @@ namespace ignite
                 return;
             }
 
+            #ifdef HAVE_DECL_TCP_KEEPIDLE
             setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPIDLE, reinterpret_cast<char*>(&idleOpt), sizeof(idleOpt));
+            #endif
 
             setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPINTVL,
                 reinterpret_cast<char*>(&idleRetryOpt), sizeof(idleRetryOpt));
