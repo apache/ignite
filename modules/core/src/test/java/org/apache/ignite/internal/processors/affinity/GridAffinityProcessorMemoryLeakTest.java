@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
@@ -70,58 +71,52 @@ public class GridAffinityProcessorMemoryLeakTest extends GridCommonAbstractTest 
      * @throws Exception In case of any exception.
      */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, value = "10")
     public void testAffinityProcessor() throws Exception {
         int maxHistSize = 10;
 
-        System.setProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, Integer.toString(maxHistSize));
+        Ignite ignite = startGrid(0);
 
-        try {
-            Ignite ignite = startGrid(0);
+        IgniteKernal grid = (IgniteKernal)grid(0);
 
-            IgniteKernal grid = (IgniteKernal)grid(0);
+        IgniteCache<String, String> cache;
 
-            IgniteCache<String, String> cache;
+        IgniteCache<String, String> globalCache = getOrCreateGlobalCache(ignite);
 
-            IgniteCache<String, String> globalCache = getOrCreateGlobalCache(ignite);
+        IgniteDataStreamer<String, String> globalStreamer;
 
-            IgniteDataStreamer<String, String> globalStreamer;
+        int cnt = maxHistSize * 30;
 
-            int cnt = maxHistSize * 30;
+        int expLimit = cnt / 2;
 
-            int expLimit = cnt / 2;
+        int size;
 
-            int size;
+        do {
+            try {
+                cache = createLocalCache(ignite, cnt);
 
-            do {
-                try {
-                    cache = createLocalCache(ignite, cnt);
+                cache.put("Key" + cnt, "Value" + cnt);
 
-                    cache.put("Key" + cnt, "Value" + cnt);
+                cache.destroy();
 
-                    cache.destroy();
+                globalStreamer = createGlobalStreamer(ignite, globalCache);
 
-                    globalStreamer = createGlobalStreamer(ignite, globalCache);
+                globalStreamer.addData("GlobalKey" + cnt, "GlobalValue" + cnt);
 
-                    globalStreamer.addData("GlobalKey" + cnt, "GlobalValue" + cnt);
+                globalStreamer.flush();
 
-                    globalStreamer.flush();
+                globalStreamer.close();
 
-                    globalStreamer.close();
+                size = ((ConcurrentSkipListMap)GridTestUtils.getFieldValue(grid.context().affinity(), "affMap")).size();
 
-                    size = ((ConcurrentSkipListMap)GridTestUtils.getFieldValue(grid.context().affinity(), "affMap")).size();
-
-                    assertTrue("Cache has size that bigger then expected [size=" + size +
-                        ", expLimit=" + expLimit + "]", size < expLimit);
-                }
-                catch (Exception e) {
-                    fail("Error was handled [" + e.getMessage() + "]");
-                }
+                assertTrue("Cache has size that bigger then expected [size=" + size +
+                    ", expLimit=" + expLimit + "]", size < expLimit);
             }
-            while (cnt-- > 0);
+            catch (Exception e) {
+                fail("Error was handled [" + e.getMessage() + "]");
+            }
         }
-        finally {
-            System.clearProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE);
-        }
+        while (cnt-- > 0);
     }
 
     /**

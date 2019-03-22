@@ -51,6 +51,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessag
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -308,72 +309,66 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, value = "10")
     public void testMulipleClientLeaveJoin() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, "10");
+        Ignite ig = startGrids(2);
 
-        try {
-            Ignite ig = startGrids(2);
+        ig.cluster().active(true);
 
-            ig.cluster().active(true);
+        startClient = true;
 
-            startClient = true;
+        IgniteEx stableClient = startGrid(2);
 
-            IgniteEx stableClient = startGrid(2);
+        IgniteCache<Integer, Integer> stableClientTxCacheProxy = stableClient.createCache(
+            new CacheConfiguration<Integer, Integer>()
+                .setName("tx")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setBackups(1)
+                .setAffinity(new RendezvousAffinityFunction(false, 32)));
 
-            IgniteCache<Integer, Integer> stableClientTxCacheProxy = stableClient.createCache(
-                new CacheConfiguration<Integer, Integer>()
-                    .setName("tx")
-                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                    .setBackups(1)
-                    .setAffinity(new RendezvousAffinityFunction(false, 32)));
+        awaitPartitionMapExchange();
 
-            awaitPartitionMapExchange();
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                for (int i = 0; i < 10; i++) {
+                    try {
+                        startGrid(3);
 
-            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    for (int i = 0; i < 10; i++) {
-                        try {
-                            startGrid(3);
-
-                            stopGrid(3);
-                        }
-                        catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
+                        stopGrid(3);
+                    }
+                    catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
                 }
-            });
+            }
+        });
 
-            CountDownLatch clientTxLatch = new CountDownLatch(1);
+        CountDownLatch clientTxLatch = new CountDownLatch(1);
 
-            IgniteInternalFuture loadFut = GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    try (Transaction tx = stableClient.transactions().txStart()) {
-                        ThreadLocalRandom r = ThreadLocalRandom.current();
+        IgniteInternalFuture loadFut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try (Transaction tx = stableClient.transactions().txStart()) {
+                    ThreadLocalRandom r = ThreadLocalRandom.current();
 
-                        stableClientTxCacheProxy.put(r.nextInt(100), r.nextInt());
+                    stableClientTxCacheProxy.put(r.nextInt(100), r.nextInt());
 
-                        try {
-                            clientTxLatch.await();
-                        }
-                        catch (InterruptedException e) {
-                            throw new IgniteInterruptedException(e);
-                        }
-
-                        tx.commit();
+                    try {
+                        clientTxLatch.await();
                     }
+                    catch (InterruptedException e) {
+                        throw new IgniteInterruptedException(e);
+                    }
+
+                    tx.commit();
                 }
-            });
+            }
+        });
 
-            fut.get();
+        fut.get();
 
-            clientTxLatch.countDown();
+        clientTxLatch.countDown();
 
-            loadFut.get();
-        }
-        finally {
-            System.clearProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE);
-        }
+        loadFut.get();
     }
 
     /**
