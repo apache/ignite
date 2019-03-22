@@ -63,4 +63,14 @@ public class SqlQueryMXBeanImpl implements SqlQueryMXBean {
     @Override public void setResultSetSizeThreshold(long rsSizeThreshold) {
         h2idx.longRunningQueries().setResultSetSizeThreshold(rsSizeThreshold);
     }
+
+    /** {@inheritDoc} */
+    @Override public int getResultSetSizeThresholdMultiplier() {
+        return h2idx.longRunningQueries().getResultSetSizeThresholdMultiplier();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setResultSetSizeThresholdMultiplier(int rsSizeThresholdMultiplier) {
+        h2idx.longRunningQueries().setResultSetSizeThresholdMultiplier(rsSizeThresholdMultiplier);
+    }
 }

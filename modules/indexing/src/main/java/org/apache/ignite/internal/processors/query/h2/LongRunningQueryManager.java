@@ -59,12 +59,22 @@ public class LongRunningQueryManager {
      * - etc...
      *
      * If the multiplier <= 1, the warning message is printed once.
-     * */
-
+     */
     private volatile int timeoutMult = 2;
 
     /** Query result set size threshold. */
     private volatile long rsSizeThreshold = DFLT_FETCHED_SIZE_THRESHOLD;
+
+    /**
+     * Result set size threshold multiplier. The warning will be printed after:
+     * - size of result set > threshold;
+     * - size of result set > threshold * multiplier;
+     * - size of result set > threshold * multiplier * multiplier;
+     * - etc.
+     *
+     * If the multiplier <= 1, the warning message is printed once.
+     */
+    private volatile int rsSizeThresholdMult = 2;
 
     /**
      * @param ctx Kernal context.
@@ -147,10 +157,10 @@ public class LongRunningQueryManager {
 
     /**
      * Sets long query timeout multiplier. The warning will be printed after:
-     *      - timeout;
-     *      - timeout * multiplier;
-     *      - timeout * multiplier * multiplier;
-     *      - etc...
+     * - timeout;
+     * - timeout * multiplier;
+     * - timeout * multiplier * multiplier;
+     * - etc...
      * If the multiplier <= 1, the warning message is printed once.
      *
      * @param timeoutMult Long query timeout multiplier.
@@ -176,6 +186,28 @@ public class LongRunningQueryManager {
      */
     public void setResultSetSizeThreshold(long rsSizeThreshold) {
         this.rsSizeThreshold = rsSizeThreshold;
+    }
+
+    /**
+     * Gets result set size threshold multiplier. The warning will be printed after:
+     *  - size of result set > threshold;
+     *  - size of result set > threshold * multiplier;
+     *  - size of result set > threshold * multiplier * multiplier;
+     *  - etc.
+     * If the multiplier <= 1, the warning message is printed once.
+     * @return Result set size threshold multiplier.
+     */
+    public int getResultSetSizeThresholdMultiplier() {
+        return rsSizeThresholdMult;
+    }
+
+    /**
+     * Sets result set size threshold multiplier.
+     *
+     * @param rsSizeThresholdMult Result set size threshold multiplier
+     */
+    public void setResultSetSizeThresholdMultiplier(int rsSizeThresholdMult) {
+        this.rsSizeThresholdMult = rsSizeThresholdMult;
     }
 
     /**

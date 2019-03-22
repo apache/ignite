@@ -69,7 +69,6 @@ public interface SqlQueryMXBean {
     @MXBeanParametersDescriptions("Long query timeout multiplier.")
     void setLongQueryTimeoutMultiplier(int longQueryTimeoutMultiplier);
 
-
     /**
      * @return Threshold result's row count, when count of fetched rows is bigger than the threshold
      *      warning will be printed.
@@ -91,4 +90,31 @@ public interface SqlQueryMXBean {
     @MXBeanParametersDescriptions("Threshold result's row count, when count of fetched rows is bigger than the " +
         "threshold warning will be printed.")
     void setResultSetSizeThreshold(long rsSizeThreshold);
+
+    /**
+     * Gets result set size threshold multiplier. The warning will be printed after:
+     *  - size of result set > threshold;
+     *  - size of result set > threshold * multiplier;
+     *  - size of result set > threshold * multiplier * multiplier;
+     *  - etc.
+     * If the multiplier <= 1, the warning message is printed once.
+     *
+     * @return Result set size threshold multiplier.
+     */
+    @MXBeanDescription("Gets result set size threshold multiplier. The warning will be printed when size " +
+        "of result set is bugger than: threshold, threshold * multiplier, threshold * multiplier * multiplier, " +
+        "etc. If the multiplier <= 1, the warning message is printed once.")
+    int getResultSetSizeThresholdMultiplier();
+
+    /**
+     * Sets result set size threshold multiplier.
+     *
+     * @param rsSizeThresholdMultiplier Result set size threshold multiplier.
+     */
+    @MXBeanDescription("Sets result set size threshold multiplier. The warning will be printed when size " +
+        "of result set is bugger than: threshold, threshold * multiplier, threshold * multiplier * multiplier," +
+        "etc. If the multiplier <= 1, the warning message is printed once.")
+    @MXBeanParametersNames("rsSizeThresholdMultiplier")
+    @MXBeanParametersDescriptions("TResult set size threshold multiplier.")
+    void setResultSetSizeThresholdMultiplier(int rsSizeThresholdMultiplier);
 }
