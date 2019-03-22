@@ -19,11 +19,20 @@ package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -37,6 +46,9 @@ import org.junit.runners.JUnit4;
 public class IgniteBaselineNodesRestartExchangeTest extends GridCommonAbstractTest {
     /** Grids count. */
     private static final int GRIDS_COUNT = 8;
+
+    /** Count of {@link GridDhtPartitionsFullMessage} or {@link GridDhtPartitionsSingleMessage} messages. */
+    private final AtomicInteger msgCnt = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -57,10 +69,14 @@ public class IgniteBaselineNodesRestartExchangeTest extends GridCommonAbstractTe
 
         cfg.setConsistentId(igniteInstanceName);
 
+        cfg.setCommunicationSpi(new TestTcpCommunicationSpi());
+
         return cfg;
     }
 
     /**
+     * Checks that there are no conflicts in case of mass leaving and starting baseline nodes.
+     *
      * @throws Exception if failed.
      */
     @Test
@@ -82,6 +98,10 @@ public class IgniteBaselineNodesRestartExchangeTest extends GridCommonAbstractTe
 
         awaitPartitionMapExchange();
 
+        assertTrue(msgCnt.get() > 0);
+
+        msgCnt.set(0);
+
         // Kill first three nodes.
         AtomicInteger killIdx = new AtomicInteger();
 
@@ -91,6 +111,9 @@ public class IgniteBaselineNodesRestartExchangeTest extends GridCommonAbstractTe
         killFut.get();
 
         awaitPartitionMapExchange();
+
+        // Check that there is no distributed PME.
+        assertTrue(msgCnt.get() == 0);
 
         // Start first three nodes and kill next three ones.
         AtomicInteger startIdx = new AtomicInteger();
@@ -102,8 +125,6 @@ public class IgniteBaselineNodesRestartExchangeTest extends GridCommonAbstractTe
             stopGrid(killIdx.getAndIncrement(), true), 3, "kill-node");
 
         killFut.get();
-
-        awaitPartitionMapExchange();
 
         startFut.get();
 
@@ -122,5 +143,21 @@ public class IgniteBaselineNodesRestartExchangeTest extends GridCommonAbstractTe
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** */
+    private class TestTcpCommunicationSpi extends TcpCommunicationSpi {
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node, Message msg,
+            IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
+            if (msg instanceof GridIoMessage) {
+                Message msg0 = ((GridIoMessage)msg).message();
+
+                if (msg0 instanceof GridDhtPartitionsFullMessage || msg0 instanceof GridDhtPartitionsSingleMessage)
+                    msgCnt.getAndIncrement();
+            }
+
+            super.sendMessage(node, msg, ackC);
+        }
     }
 }

@@ -843,6 +843,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         onLeft();
                 }
                 else if (isLocalAffinityRecalculation) {
+                    // Local affinity recalculation happens by baseline server node leaving.
                     onServerNodeEvent(crdNode);
 
                     exchange = ExchangeType.LOCAL_AFFINITY_RECALCULATION;
@@ -978,16 +979,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if ((firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED)
             && firstEvtDiscoCache.baselineNodes() != null) {
             // Check that there are no in-memory caches.
-            // TODO: improvement: they are only on left node.
             if (isInMemoryCachesConfigured())
                 return false;
 
             // Check that there are no moving partitions.
-            // TODO: improvement: they are only on left node.
             if (!cctx.affinity().isLastAffinityIdeal(crd != null && crd.isLocal()))
                 return false;
 
-            return firstEvtDiscoCache.baselineNode(firstDiscoEvt.eventNode());
+            return firstEvtDiscoCache.baselineNodes().stream()
+                .anyMatch(node -> node.consistentId().equals(firstDiscoEvt.eventNode().consistentId()));
         }
 
         return false;
@@ -4513,6 +4513,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         return;
 
                     try {
+                        // There is no need to handle events and merge changes in case of local affinity recalculation.
+                        if (isLocalAffinityRecalculation)
+                            return;
+
                         boolean crdChanged = false;
                         boolean allReceived = false;
                         boolean wasMerged = false;
