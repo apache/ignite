@@ -15,19 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc2;
+package org.apache.ignite.internal.commandline.baseline;
 
-import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
+import org.apache.ignite.internal.commandline.argument.CommandArg;
 
 /**
- * Test to check JDBC2 driver behavior when cache specified in connection string does not have any query entities.
+ * {@link BaselineCommand#AUTO_ADJUST} command arguments.
  */
-public class JdbcDefaultNoOpCacheTest extends org.apache.ignite.jdbc.JdbcDefaultNoOpCacheTest {
-    /** Ignite configuration URL. */
-    private static final String CFG_URL = "modules/clients/src/test/config/jdbc-config.xml";
+public enum AutoAdjustCommandArg implements CommandArg {
+    /** Enable auto-adjust. */
+    ENABLE("enable"),
+    /** Disable auto-adjust. */
+    DISABLE("disable"),
+    /** Set soft timeout. */
+    TIMEOUT("timeout");
+
+    /** Option name. */
+    private final String name;
+
+    /** */
+    AutoAdjustCommandArg(String name) {
+        this.name = name;
+    }
 
     /** {@inheritDoc} */
-    protected String getUrl() {
-        return CFG_URL_PREFIX + "cache=noop@" + CFG_URL;
+    @Override public String argName() {
+        return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return name;
     }
 }
