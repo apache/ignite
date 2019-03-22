@@ -125,6 +125,9 @@
         <zkclient.version>0.5</zkclient.version>
         <zookeeper.version>3.4.13</zookeeper.version>
 
+        <!-- Plugin versions -->
+        <maven.javadoc.plugin.version>2.10.1</maven.javadoc.plugin.version>
+
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
         <osgi.export.package>{local-packages}</osgi.export.package>
@@ -291,7 +294,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.10.1</version>
+                    <version>${maven.javadoc.plugin.version}</version>
                     <configuration>
                         <taglets>
                             <taglet>
@@ -765,11 +768,6 @@
                             <goal>jar</goal>
                         </goals>
                         <phase>package</phase>
-                        <configuration>
-                            <stylesheetfile>
-                                ${project.basedir}/${project.parent.relativePath}/../assembly/docfiles/javadoc.css
-                            </stylesheetfile>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
