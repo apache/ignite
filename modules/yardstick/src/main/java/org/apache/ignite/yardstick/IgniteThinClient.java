@@ -23,11 +23,15 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.SslMode;
+import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.yardstick.io.FileUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
@@ -41,6 +45,49 @@ import org.yardstickframework.BenchmarkUtils;
  * Thin client.
  */
 public class IgniteThinClient {
+
+    /** Property to overwrite default 10800 port to connect */
+    private static final String THIN_CLIENT_SERVER_PORT = "THIN_CLIENT_SERVER_PORT";
+
+    /** Bind specific server host to connect (otherwise wiil be selected from SERVER_HOSTS) */
+    private static final String THIN_CLIENT_SERVER_HOST = "THIN_CLIENT_SERVER_HOST";
+
+    /** User */
+    public static final String USER = "USER";
+
+    /** Password */
+    public static final String PASSWORD = "PASSWORD";
+
+    /** SSL key store path */
+    private static final String SSL_KEYSTORE_PATH = "SSL_KEYSTORE_PATH";
+
+    /** SSL trust store path */
+    private static final String SSL_TRUSTSTORE_PATH = "SSL_TRUSTSTORE_PATH";
+
+    /** SSL key store password */
+    private static final String SSL_KEYSTORE_PASSWORD = "SSL_KEYSTORE_PASSWORD";
+
+    /** SSL key store password */
+    private static final String SSL_TRUSTSTORE_PASSWORD = "SSL_TRUSTSTORE_PASSWORD";
+
+    /** (Optional) Client key store type (default JKS) */
+    private static final String SSL_CLIENT_STORE_TYPE = "SSL_CLIENT_STORE_TYPE";
+
+    /** (Optional) Server key store type (default JKS) */
+    private static final String SSL_TRUST_STORE_TYPE = "SSL_TRUST_STORE_TYPE";
+
+    /** (Optional) Key algorithm (default SunX509) */
+    private static final String SSL_KEY_ALGORITHM = "SSL_KEY_ALGORITHM";
+
+    /** (Optional) Trust all (default false) */
+    private static final String SSL_TRUST_ALL = "SSL_TRUST_ALL";
+
+    /** (Optional) SSL protocol (default TLS) */
+    private static final String SSL_PROTOCOL = "SSL_PROTOCOL";
+
+    /** Default trustAll */
+    private static final String DEFAULT_TRUST_ALL_STRING = "false";
+
     /** Thin client. */
     private IgniteClient client;
 
@@ -73,11 +120,74 @@ public class IgniteThinClient {
 
         ClientConfiguration clCfg = new ClientConfiguration();
 
-        String hostPort = host + ":10800";
+        // get predefined client hosts
+        String port = cfg.customProperties().getOrDefault(THIN_CLIENT_SERVER_PORT,
+            String.valueOf(ClientConnectorConfiguration.DFLT_PORT));
+
+        // overwrite server host to connect thin client
+        if (cfg.customProperties().containsKey(THIN_CLIENT_SERVER_HOST) &&
+            cfg.customProperties().get(THIN_CLIENT_SERVER_HOST) != null &&
+            !cfg.customProperties().get(THIN_CLIENT_SERVER_HOST).isEmpty())
+            host = cfg.customProperties().get(THIN_CLIENT_SERVER_HOST);
+
+        String hostPort = String.format("%s:%s", host, port);
 
         BenchmarkUtils.println(String.format("Using for connection address: %s", hostPort));
 
         clCfg.setAddresses(hostPort);
+
+        // set authentication if needed
+        boolean authenticationEnabled = cfg.customProperties().containsKey(USER) &&
+            cfg.customProperties().containsKey(PASSWORD);
+
+        if (authenticationEnabled) {
+            String username = cfg.customProperties().get(USER);
+
+            String pwd = cfg.customProperties().get(PASSWORD);
+
+            clCfg.setUserName(username)
+                .setUserPassword(pwd);
+
+            BenchmarkUtils.println(String.format("Authentication enabled with user: %s", username));
+        }
+
+        // set SSL if needed
+        boolean isSecuredConnection = cfg.customProperties().containsKey(SSL_KEYSTORE_PASSWORD) &&
+            cfg.customProperties().containsKey(SSL_KEYSTORE_PATH) &&
+            cfg.customProperties().containsKey(SSL_TRUSTSTORE_PATH);
+
+        if (isSecuredConnection) {
+            String keyStore = cfg.customProperties().get(SSL_KEYSTORE_PATH);
+
+            String keyStorePwd = cfg.customProperties().get(SSL_KEYSTORE_PASSWORD);
+
+            String keyStoreType = cfg.customProperties().getOrDefault(SSL_CLIENT_STORE_TYPE, SslContextFactory.DFLT_STORE_TYPE);
+
+            String trustStore = cfg.customProperties().get(SSL_TRUSTSTORE_PATH);
+
+            String trustStorePwd = cfg.customProperties().get(SSL_TRUSTSTORE_PASSWORD);
+
+            String trustStoreType = cfg.customProperties().getOrDefault(SSL_TRUST_STORE_TYPE, SslContextFactory.DFLT_STORE_TYPE);
+
+            String keyAlg = cfg.customProperties().getOrDefault(SSL_KEY_ALGORITHM, SslContextFactory.DFLT_KEY_ALGORITHM);
+
+            boolean trustAll = Boolean.valueOf(cfg.customProperties().getOrDefault(SSL_TRUST_ALL, DEFAULT_TRUST_ALL_STRING));
+
+            SslProtocol protocol = SslProtocol.valueOf(cfg.customProperties().getOrDefault(SSL_PROTOCOL, SslContextFactory.DFLT_SSL_PROTOCOL));
+
+            clCfg.setSslMode(SslMode.REQUIRED)
+                .setSslClientCertificateKeyStorePath(keyStore)
+                .setSslClientCertificateKeyStoreType(keyStoreType)
+                .setSslClientCertificateKeyStorePassword(keyStorePwd)
+                .setSslTrustCertificateKeyStorePath(trustStore)
+                .setSslTrustCertificateKeyStoreType(trustStoreType)
+                .setSslTrustCertificateKeyStorePassword(trustStorePwd)
+                .setSslKeyAlgorithm(keyAlg)
+                .setSslTrustAll(trustAll)
+                .setSslProtocol(protocol);
+
+            BenchmarkUtils.println("SSL connection configured");
+        }
 
         client = Ignition.startClient(clCfg);
 
@@ -89,8 +199,7 @@ public class IgniteThinClient {
      * @return Tuple with grid configuration and Spring application context.
      * @throws Exception If failed.
      */
-    private static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath)
-        throws Exception {
+    private static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath) throws Exception {
         URL url;
 
         try {
