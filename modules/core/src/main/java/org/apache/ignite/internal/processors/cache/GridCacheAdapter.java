@@ -2180,10 +2180,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                                                 entry.unswap();
 
+                                                GridCacheVersion newVer = ctx.versions().next();
+
                                                 EntryGetResult verVal = entry.versionedValue(
                                                     cacheVal,
                                                     res.version(),
-                                                    null,
+                                                    newVer,
                                                     expiry,
                                                     readerArgs);
 
@@ -2203,6 +2205,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                                         deserializeBinary,
                                                         true,
                                                         needVer);
+                                                }
+                                                else {
+                                                    ctx.addResult(
+                                                        map,
+                                                        key,
+                                                        new EntryGetResult(cacheVal, res.version()),
+                                                        skipVals,
+                                                        keepCacheObjects,
+                                                        deserializeBinary,
+                                                        false,
+                                                        needVer
+                                                    );
                                                 }
 
                                                 if (tx0 == null || (!tx0.implicit() &&

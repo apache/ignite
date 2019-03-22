@@ -70,7 +70,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
             cluster,
             ctx.getSystemExecutorService(),
             this::isBaselineAutoAdjustEnabled
-        ));
+        ), ctx.log(BaselineAutoAdjustScheduler.class));
         this.discoveryMgr = ctx.discovery();
     }
 
@@ -106,7 +106,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
 
                         long timeout = baselineConfiguration.getBaselineAutoAdjustTimeout();
 
-                        log.warning("Baseline will be changed in '" + timeout + "' ms");
+                        log.warning("Baseline auto-adjust will be executed in '" + timeout + "' ms");
 
                         baselineAutoAdjustScheduler.schedule(lastBaselineData, timeout);
                     });

@@ -15,19 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc2;
-
-import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
-
-/**
- * Test to check JDBC2 driver behavior when cache specified in connection string does not have any query entities.
- */
-public class JdbcDefaultNoOpCacheTest extends org.apache.ignite.jdbc.JdbcDefaultNoOpCacheTest {
-    /** Ignite configuration URL. */
-    private static final String CFG_URL = "modules/clients/src/test/config/jdbc-config.xml";
-
-    /** {@inheritDoc} */
-    @Override protected String getUrl() {
-        return CFG_URL_PREFIX + "cache=noop@" + CFG_URL;
-    }
+module ignite_modules_test {
+    requires ignite.core;
+    requires junit;
 }

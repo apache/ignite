@@ -36,7 +36,6 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
@@ -139,13 +138,6 @@ import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
  *
  */
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
-    /**
-     * Throttling timeout in millis which avoid excessive PendingTree access on unwind
-     * if there is nothing to clean yet.
-     */
-    public static final long UNWIND_THROTTLING_TIMEOUT = Long.getLong(
-        IgniteSystemProperties.IGNITE_UNWIND_THROTTLING_TIMEOUT, 500L);
-
     /** */
     protected GridCacheSharedContext ctx;
 
@@ -163,12 +155,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** */
     private PendingEntriesTree pendingEntries;
-
-    /** */
-    protected volatile boolean hasPendingEntries;
-
-    /** Timestamp when next clean try will be allowed. Used for throttling on per-group basis. */
-    protected volatile long nextCleanTime;
 
     /** */
     private final GridAtomicLong globalRmvId = new GridAtomicLong(U.currentTimeMillis() * 1000_000);
@@ -1319,16 +1305,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     ) throws IgniteCheckedException {
         assert !cctx.isNear() : cctx.name();
 
-        if (!hasPendingEntries || nextCleanTime > U.currentTimeMillis())
-            return false;
-
         assert pendingEntries != null;
 
         int cleared = expireInternal(cctx, c, amount);
-
-        // Throttle if there is nothing to clean anymore.
-        if (cleared < amount)
-            nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
 
         return amount != -1 && cleared >= amount;
     }
@@ -1967,7 +1946,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         (res == ResultType.PREV_NULL && noCreate)  // No op.
                     ) {
                     // Do nothing, except cleaning up not needed versions
-                    cleanup(cctx, updateRow.cleanupRows());
+                    cleanup0(cctx, updateRow.cleanupRows());
 
                     return updateRow;
                 }
@@ -1996,7 +1975,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                         updateRow.resultType(ResultType.FILTERED);
 
-                        cleanup(cctx, updateRow.cleanupRows());
+                        cleanup0(cctx, updateRow.cleanupRows());
 
                         return updateRow;
                     }
@@ -2008,7 +1987,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         if (op == CacheInvokeEntry.Operation.REMOVE) {
                             updateRow.resultType(ResultType.REMOVED_NOT_NULL);
 
-                            cleanup(cctx, updateRow.cleanupRows());
+                            cleanup0(cctx, updateRow.cleanupRows());
 
                             clearPendingEntries(cctx, oldRow);
 
@@ -2053,7 +2032,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 updatePendingEntries(cctx, updateRow, oldRow);
 
-                cleanup(cctx, updateRow.cleanupRows());
+                cleanup0(cctx, updateRow.cleanupRows());
 
                 return updateRow;
             }
@@ -2170,7 +2149,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     return updateRow;
                 else if (res == ResultType.VERSION_FOUND || res == ResultType.FILTERED) {
                     // Do nothing, except cleaning up not needed versions
-                    cleanup(cctx, updateRow.cleanupRows());
+                    cleanup0(cctx, updateRow.cleanupRows());
 
                     return updateRow;
                 }
@@ -2184,7 +2163,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     clearPendingEntries(cctx, oldRow);
                 }
 
-                cleanup(cctx, updateRow.cleanupRows());
+                cleanup0(cctx, updateRow.cleanupRows());
 
                 return updateRow;
             }
@@ -2237,7 +2216,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     return updateRow;
 
                 // Do nothing, except cleaning up not needed versions
-                cleanup(cctx, updateRow.cleanupRows());
+                cleanup0(cctx, updateRow.cleanupRows());
 
                 return updateRow;
             }
@@ -2248,81 +2227,113 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void mvccRemoveAll(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
-            key.valueBytes(cctx.cacheObjectContext());
+            if (!busyLock.enterBusy())
+                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+            try {
+                key.valueBytes(cctx.cacheObjectContext());
 
-            boolean cleanup = cctx.queries().enabled() || hasPendingEntries;
+                int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            assert cctx.shared().database().checkpointLockIsHeldByThread();
+                boolean cleanup = cctx.queries().enabled() || cctx.ttl().hasPendingEntries();
 
-            GridCursor<CacheDataRow> cur = dataTree.find(
-                new MvccMaxSearchRow(cacheId, key),
-                new MvccMinSearchRow(cacheId, key),
-                cleanup ? CacheDataRowAdapter.RowData.NO_KEY : CacheDataRowAdapter.RowData.LINK_ONLY
-            );
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
 
-            boolean first = true;
+                GridCursor<CacheDataRow> cur = dataTree.find(
+                    new MvccMaxSearchRow(cacheId, key),
+                    new MvccMinSearchRow(cacheId, key),
+                    cleanup ? CacheDataRowAdapter.RowData.NO_KEY : CacheDataRowAdapter.RowData.LINK_ONLY
+                );
 
-            while (cur.next()) {
-                CacheDataRow row = cur.get();
+                boolean first = true;
 
-                row.key(key);
+                while (cur.next()) {
+                    CacheDataRow row = cur.get();
 
-                assert row.link() != 0 : row;
+                    row.key(key);
 
-                boolean rmvd = dataTree.removex(row);
+                    assert row.link() != 0 : row;
 
-                assert rmvd : row;
+                    boolean rmvd = dataTree.removex(row);
 
-                if (cleanup) {
-                    if (cctx.queries().enabled())
-                        cctx.queries().remove(key, row);
+                    assert rmvd : row;
+
+                    if (cleanup) {
+                        if (cctx.queries().enabled())
+                            cctx.queries().remove(key, row);
+
+                        if (first)
+                            clearPendingEntries(cctx, row);
+                    }
+
+                    rowStore.removeRow(row.link(), grp.statisticsHolderData());
 
                     if (first)
-                        clearPendingEntries(cctx, row);
+                        first = false;
                 }
 
-                rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                // first == true means there were no row versions
+                if (!first)
+                    decrementSize(cctx.cacheId());
 
-                if (first)
-                    first = false;
             }
-
-            // first == true means there were no row versions
-            if (!first)
-                decrementSize(cctx.cacheId());
+            finally {
+                busyLock.leaveBusy();
+            }
         }
 
         /** {@inheritDoc} */
         @Override public int cleanup(GridCacheContext cctx, @Nullable List<MvccLinkAwareSearchRow> cleanupRows)
             throws IgniteCheckedException {
+            if (F.isEmpty(cleanupRows))
+                return 0;
+
+            if (!busyLock.enterBusy())
+                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+
+            try {
+                return cleanup0(cctx, cleanupRows);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+
+        /**
+         * @param cctx Cache context.
+         * @param cleanupRows Rows to cleanup.
+         * @throws IgniteCheckedException If failed.
+         * @return Cleaned rows count.
+         */
+        private int cleanup0(GridCacheContext cctx, @Nullable List<MvccLinkAwareSearchRow> cleanupRows)
+             throws IgniteCheckedException {
+             if (F.isEmpty(cleanupRows))
+                 return 0;
+
             int res = 0;
 
-            if (cleanupRows != null) {
-                GridCacheQueryManager qryMgr = cctx.queries();
+            GridCacheQueryManager qryMgr = cctx.queries();
 
-                for (int i = 0; i < cleanupRows.size(); i++) {
-                    MvccLinkAwareSearchRow cleanupRow = cleanupRows.get(i);
+            for (int i = 0; i < cleanupRows.size(); i++) {
+                MvccLinkAwareSearchRow cleanupRow = cleanupRows.get(i);
 
-                    assert cleanupRow.link() != 0 : cleanupRow;
+                assert cleanupRow.link() != 0 : cleanupRow;
 
-                    assert cctx.shared().database().checkpointLockIsHeldByThread();
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
 
-                    CacheDataRow oldRow = dataTree.remove(cleanupRow);
+                CacheDataRow oldRow = dataTree.remove(cleanupRow);
 
-                    if (oldRow != null) { // oldRow == null means it was cleaned by another cleanup process.
-                        assert oldRow.mvccCounter() == cleanupRow.mvccCounter();
+                if (oldRow != null) { // oldRow == null means it was cleaned by another cleanup process.
+                    assert oldRow.mvccCounter() == cleanupRow.mvccCounter();
 
-                        if (qryMgr.enabled())
-                            qryMgr.remove(oldRow.key(), oldRow);
+                    if (qryMgr.enabled())
+                        qryMgr.remove(oldRow.key(), oldRow);
 
-                        clearPendingEntries(cctx, oldRow);
+                    clearPendingEntries(cctx, oldRow);
 
-                        rowStore.removeRow(cleanupRow.link(), grp.statisticsHolderData());
+                    rowStore.removeRow(cleanupRow.link(), grp.statisticsHolderData());
 
-                        res++;
-                    }
+                    res++;
                 }
             }
 
@@ -2479,7 +2490,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     if (qryMgr.enabled())
                         qryMgr.store(updateRow, null, true);
 
-                    cleanup(cctx, updateRow.cleanupRows());
+                    cleanup0(cctx, updateRow.cleanupRows());
                 }
             }
             finally {
@@ -2540,7 +2551,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (pendingTree() != null && expireTime != 0) {
                 pendingTree().putx(new PendingRow(cacheId, expireTime, newRow.link()));
 
-                hasPendingEntries = true;
+                if (!cctx.ttl().hasPendingEntries())
+                    cctx.ttl().hasPendingEntries(true);
             }
         }
 
