@@ -34,16 +34,17 @@ public class VisorFindAndDeleteGarbargeInPersistenceTaskResult extends IgniteDat
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Results of indexes validation from node. */
     @GridToStringInclude
     private Map<UUID, VisorFindAndDeleteGarbargeInPersistenceJobResult> result;
-
 
     /** Exceptions while indexes validation from node. */
     @GridToStringInclude
     private Map<UUID, Exception> exceptions;
 
+    /**
+     *
+     */
     public VisorFindAndDeleteGarbargeInPersistenceTaskResult() {
     }
 

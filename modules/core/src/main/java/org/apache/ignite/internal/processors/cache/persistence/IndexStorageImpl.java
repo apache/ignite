@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -33,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -171,8 +174,27 @@ public class IndexStorageImpl implements IndexStorage {
         metaTree.destroy();
     }
 
-    public BPlusTree<IndexItem, IndexItem> getMetaTree() {
-        return metaTree;
+    /** {@inheritDoc} */
+    @Override public Collection<String> getIndexNames() throws IgniteCheckedException {
+        assert metaTree != null;
+        
+        GridCursor<IndexItem> cursor = metaTree.find(null, null);
+
+        ArrayList<String> names = new ArrayList<>((int)metaTree.size());
+
+        while (cursor.next()) {
+            IndexItem item = cursor.get();
+            
+            if (item != null)
+                names.add(new String(item.idxName));
+        }
+        
+        return names;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean nameIsAssosiatedWithCache(String idxName, int cacheId) {
+        return !grpShared || idxName.startsWith(Integer.toString(cacheId));
     }
 
     /**

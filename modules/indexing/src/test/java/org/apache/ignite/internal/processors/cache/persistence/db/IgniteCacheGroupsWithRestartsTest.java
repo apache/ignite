@@ -15,40 +15,51 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.persistence.db;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceJobResult;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTask;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTaskResult;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 
 /**
  *
  */
+@WithSystemProperty(key=IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value="true")
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
 public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
-
+    /** Group name. */
     public static final String GROUP = "group";
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(gridName);
 
@@ -63,10 +74,31 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         return configuration;
     }
 
+    /**
+     * @param i Cache index number.
+     * @return Cache configuration with the given number in name.
+     */
     private CacheConfiguration<Object, Object> getCacheConfiguration(int i) {
-        return new CacheConfiguration<>(getCacheName(i))
+        CacheConfiguration ccfg = new CacheConfiguration();
+
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+
+        fields.put("updateDate", "java.lang.Date");
+        fields.put("amount", "java.lang.Long");
+        fields.put("name", "java.lang.String");
+
+        Set<QueryIndex> indices = Collections.singleton(new QueryIndex("name", QueryIndexType.SORTED));
+
+        ccfg.setName(getCacheName(i))
             .setGroupName("group")
+            .setQueryEntities(Collections.singletonList(
+                new QueryEntity(Long.class, Account.class)
+                    .setFields(fields)
+                    .setIndexes(indices)
+            ))
             .setAffinity(new RendezvousAffinityFunction(false, 64));
+
+        return ccfg;
     }
 
     @NotNull private String getCacheName(int i) {
@@ -85,6 +117,8 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
+
+    @Ignore
     @Test
     public void testNodeRestartRightAfterCacheStop() throws Exception {
         IgniteEx ex = startGrids(3);
@@ -120,41 +154,40 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         Thread.sleep(5_000); //waiting for cache.dat deletion
 
-        IgniteProcessProxy.kill(grid(2).configuration().getIgniteInstanceName());
+        stopGrid(2, true);
 
-        IgniteProcessProxy ex1 = (IgniteProcessProxy)startGrid(2);
+        IgniteEx ex1 = startGrid(2);
 
         assertNull(ignite.cachex(getCacheName(0)));
 
         awaitPartitionMapExchange();
 
-        VisorFindAndDeleteGarbargeInPersistenceJobResult result = executeTask(ignite, ex1, false);
+        VisorFindAndDeleteGarbargeInPersistenceJobResult result = executeTask(ex1, false);
 
         Assert.assertTrue(result.hasGarbarge());
 
         Assert.assertTrue(result.checkResult()
-                        .get(CU.cacheId("group"))
-                        .get(CU.cacheId(getCacheName(0))) > 0);
+            .get(CU.cacheId("group"))
+            .get(CU.cacheId(getCacheName(0))) > 0);
 
         //removing garbage
-        result = executeTask(ignite, ex1, true);
+        result = executeTask(ex1, true);
 
         Assert.assertTrue(result.hasGarbarge());
 
-        result = executeTask(ignite, ex1, false);
+        result = executeTask(ex1, false);
 
         Assert.assertFalse(result.hasGarbarge());
     }
 
     private VisorFindAndDeleteGarbargeInPersistenceJobResult executeTask(
         IgniteEx ignite,
-        IgniteProcessProxy ex1,
         boolean deleteFoundGarbarge
     ) {
         VisorFindAndDeleteGarbargeInPersistenceTaskArg group = new VisorFindAndDeleteGarbargeInPersistenceTaskArg(
             Collections.singleton(GROUP), deleteFoundGarbarge, null);
 
-        UUID id = ex1.getId();
+        UUID id = ignite.localNode().id();
 
         VisorTaskArgument arg = new VisorTaskArgument(id, group, true);
 
@@ -178,13 +211,35 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
                 Arrays.fill(val, (byte)i);
 
-                cache.put(i, val);
+                cache.put((long)i, new Account(i));
             }
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
+    /**
+     *
+     */
+    static class Account {
+        /** */
+        private final int val;
+
+        /**
+         * @param val Value.
+         */
+        public Account(int val) {
+            this.val = val;
+        }
+
+        /**
+         * @return Value.
+         */
+        public int value() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Account.class, this);
+        }
     }
 }

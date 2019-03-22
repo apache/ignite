@@ -36,16 +36,12 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -178,7 +174,6 @@ public class VisorFindAndDeleteGarbargeInPersistenceClosure implements IgniteCal
         int curPart = 0;
 
         try {
-
             for (; curPart < procPartFutures.size(); curPart++) {
                 Future<Map<Integer, Map<Integer, Long>>> fut = procPartFutures.get(curPart);
 
@@ -204,14 +199,15 @@ public class VisorFindAndDeleteGarbargeInPersistenceClosure implements IgniteCal
                     for (Integer cacheId : e.getValue().keySet()) {
                         groupContext.offheap().stopCache(cacheId, true);
 
-//                        findAndDestroyIndexes(groupContext);
+                        ((GridCacheOffheapManager)
+                            groupContext.offheap()).findAndCleanupLostIndexesForStoppedCache(cacheId);
                     }
                 }
             }
 
             log.warning("VisorFindAndDeleteGarbargeInPersistenceClosure finished: processed " + totalPartitions + " partitions.");
         }
-        catch (InterruptedException | ExecutionException e) {
+        catch (InterruptedException | ExecutionException | IgniteCheckedException e) {
             for (int j = curPart; j < procPartFutures.size(); j++)
                 procPartFutures.get(j).cancel(false);
 
@@ -219,29 +215,6 @@ public class VisorFindAndDeleteGarbargeInPersistenceClosure implements IgniteCal
         }
 
         return new VisorFindAndDeleteGarbargeInPersistenceJobResult(res);
-    }
-
-    private void findAndDestroyIndexes(
-        CacheGroupContext groupContext) throws IgniteCheckedException {
-        IndexStorageImpl storage = (IndexStorageImpl)((GridCacheOffheapManager)
-            groupContext.offheap()).getIndexStorage();
-
-        storage.getMetaTree().visit(null, null,
-            new BPlusTree.TreeVisitorClosure<IndexStorageImpl.IndexItem, IndexStorageImpl.IndexItem>() {
-                @Override public int visit(
-                    BPlusTree<IndexStorageImpl.IndexItem, IndexStorageImpl.IndexItem> tree,
-                    BPlusIO<IndexStorageImpl.IndexItem> io,
-                    long pageAddr,
-                    int idx,
-                    IgniteWriteAheadLogManager wal
-                ) throws IgniteCheckedException {
-                    return 0;
-                }
-
-                @Override public int state() {
-                    return 0;
-                }
-        });
     }
 
     /**
