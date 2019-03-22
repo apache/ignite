@@ -15,7 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mxbean;
+package org.apache.ignite.internal.mxbean;
+
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
+import org.apache.ignite.mxbean.MXBeanParametersNames;
 
 /**
  * An MX bean allowing to monitor and tune SQL queries.
@@ -23,7 +27,7 @@ package org.apache.ignite.mxbean;
  * @deprecated Temporary monitoring solution.
  */
 @Deprecated
-public interface QueryMXBean {
+public interface SqlQueryMXBean {
     /**
      * @return Timeout in milliseconds after which long query warning will be printed.
      */

@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -381,6 +382,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void setLongQueryWarningTimeout(long longQueryWarningTimeout) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void registerMxBeans(IgniteMBeansManager mbMgr) {
             // No-op.
         }
     }

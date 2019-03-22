@@ -15,24 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query;
+package org.apache.ignite.internal.mxbean;
 
-import org.apache.ignite.internal.GridKernalContextImpl;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.mxbean.QueryMXBean;
+import org.apache.ignite.internal.GridKernalContext;
 
 /**
  * QueryMXBean implementation.
  */
-public class QueryMXBeanImpl implements QueryMXBean {
+public class SqlQueryMXBeanImpl implements SqlQueryMXBean {
     /** */
-    private final GridKernalContextImpl ctx;
+    private final GridKernalContext ctx;
 
     /**
      * @param ctx Context.
      */
-    public QueryMXBeanImpl(GridKernalContextImpl ctx) {
+    public SqlQueryMXBeanImpl(GridKernalContext ctx) {
         this.ctx = ctx;
     }
 

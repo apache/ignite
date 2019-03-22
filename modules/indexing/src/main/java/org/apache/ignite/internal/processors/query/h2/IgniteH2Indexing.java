@@ -55,6 +55,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.IgniteMBeansManager;
+import org.apache.ignite.internal.mxbean.SqlQueryMXBean;
+import org.apache.ignite.internal.mxbean.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -2742,6 +2745,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException {
+        SqlQueryMXBean qryMXBean = new SqlQueryMXBeanImpl(ctx);
+
+        mbMgr.registerMBean("SQL Query", qryMXBean.getClass().getSimpleName(), qryMXBean, SqlQueryMXBean.class);
     }
 
     /**
