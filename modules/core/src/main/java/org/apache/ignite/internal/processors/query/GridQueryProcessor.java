@@ -1819,7 +1819,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (rebuildIsMeaningless(cctx))
             return;
 
-        idx.markAsRebuldNeeded(cctx);
+        idx.markAsRebuildNeeded(cctx);
     }
 
     /**

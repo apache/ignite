@@ -381,7 +381,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void markAsRebuldNeeded(GridCacheContext cctx) {
+        @Override public void markAsRebuildNeeded(GridCacheContext cctx) {
             // No-op.
         }
 

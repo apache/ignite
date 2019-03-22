@@ -1789,7 +1789,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void markAsRebuldNeeded(GridCacheContext cctx) {
+    @Override public void markAsRebuildNeeded(GridCacheContext cctx) {
         assert cctx.group().persistenceEnabled(): cctx;
 
         markIndexRebuild(cctx.name(), true);

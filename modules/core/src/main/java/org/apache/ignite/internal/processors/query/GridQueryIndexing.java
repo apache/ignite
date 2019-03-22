@@ -290,7 +290,7 @@ public interface GridQueryIndexing {
      *
      * @param cctx Cache context.
      */
-    void markAsRebuldNeeded(GridCacheContext cctx);
+    void markAsRebuildNeeded(GridCacheContext cctx);
 
     /**
      * Returns backup filter.
