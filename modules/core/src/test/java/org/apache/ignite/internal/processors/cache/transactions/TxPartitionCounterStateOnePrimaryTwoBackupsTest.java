@@ -37,8 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
- * TODO add flag for stoppping primary w/o checkpoint.
- * TODO add txs with removes.
+ * Tests scenarios for tx reordering, missed updates and recovery for 2PC.
  */
 public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartitionCounterStateAbstractTest {
     /** */
@@ -63,121 +62,154 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     private static final int BACKUPS = 2;
 
     /** */
-    private static final int NODES_CNT = 3;
+    private static final int SERVERS_CNT = 3;
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_1_1() throws Exception {
-        // Txs not fully prepared and will be rolled back.
+    public void testPartialPrepare_2TX_1_1() throws Exception {
         doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {0, 1}, new int[] {1, 0}, 0);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_1_2() throws Exception {
-        // Will generate hole due to skipped tx0. Should be closed by finalizeUpdateCounters.
+    public void testPartialPrepare_2TX_1_2() throws Exception {
         doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {1, 0}, 7);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_2_1() throws Exception {
+    public void testPartialPrepare_2TX_2_1() throws Exception {
         doTestPartialPrepare_2tx(false, new int[] {3, 7}, new int[] {0, 1}, new int[] {0, 1}, new int[] {1, 0}, 0);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_2_2() throws Exception {
-        // Will generate hole due to skipped tx0. Should be closed by finalizeUpdateCounters.
+    public void testPartialPrepare_2TX_2_2() throws Exception {
         doTestPartialPrepare_2tx(false, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {1, 0}, 7);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailBackup_1() throws Exception {
+    public void testPartialCommit_2TX_1()
+        throws Exception {
+        doTestPartialCommit_2tx(true, new int[] {1, 0});
+    }
+
+    /** */
+    @Test
+    public void testPartialCommit_2TX_2()
+        throws Exception {
+        doTestPartialCommit_2tx(false, new int[] {1, 0});
+    }
+
+    /** */
+    @Test
+    public void testPartialCommit_2TX_3()
+        throws Exception {
+        doTestPartialCommit_2tx(true, new int[] {0, 1});
+    }
+
+    /** */
+    @Test
+    public void testPartialCommit_2TX_4()
+        throws Exception {
+        doTestPartialCommit_2tx(false, new int[] {0, 1});
+    }
+
+    /** */
+    @Test
+    public void testPartialCommit_3TX_1() throws Exception {
         doTestPartialCommit_3tx_1(false);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailBackup_2() throws Exception {
+    public void testPartialCommit_3TX_2() throws Exception {
         doTestPartialCommit_3tx_1(true);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx_1_1() throws Exception {
+    public void testPrepareOnlyTxFailover_3TX_1() throws Exception {
+        doTestPartialCommit_3tx_2(false);
+    }
+
+    /** */
+    @Test
+    public void testPrepareOnlyTxFailover_3TX_2() throws Exception {
+        doTestPartialCommit_3tx_2(true);
+    }
+
+    /** */
+    @Test
+    public void testPartialPrepare_3TX_1_1() throws Exception {
         doTestPartialPrepare_3tx(true, new int[] {2, 1, 0}, 0);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx_2_1() throws Exception {
+    public void testPartialPrepare_3TX_2_1() throws Exception {
         doTestPartialPrepare_3tx(true, new int[] {2, 1, 0}, 1);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx_3_1() throws Exception {
+    public void testPartialPrepare_3TX_3_1() throws Exception {
         doTestPartialPrepare_3tx(true, new int[] {2, 1, 0}, 2);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx_1_2() throws Exception {
+    public void testPartialPrepare_3TX_4_1() throws Exception {
+        doTestPartialPrepare_3tx(false, new int[] {2, 1, 0}, 0);
+    }
+
+    /** */
+    @Test
+    public void testPartialPrepare_3TX_5_1() throws Exception {
+        doTestPartialPrepare_3tx(false, new int[] {2, 1, 0}, 1);
+    }
+
+    /** */
+    @Test
+    public void testPartialPrepare_3TX_6_1() throws Exception {
+        doTestPartialPrepare_3tx(false, new int[] {2, 1, 0}, 2);
+    }
+
+    /** */
+    @Test
+    public void testPartialPrepare_3TX_1_2() throws Exception {
         doTestPartialPrepare_3tx(true, new int[] {0, 1, 2}, 0);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx_2_2() throws Exception {
+    public void testPartialPrepare_3TX_2_2() throws Exception {
         doTestPartialPrepare_3tx(true, new int[] {0, 1, 2}, 1);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx_3_2() throws Exception {
+    public void testPartialPrepare_3TX_3_2() throws Exception {
         doTestPartialPrepare_3tx(true, new int[] {0, 1, 2}, 2);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_1()
-        throws Exception {
-        doTestPartialCommit2Tx_2(true, new int[] {1, 0});
+    public void testPartialPrepare_3TX_4_2() throws Exception {
+        doTestPartialPrepare_3tx(false, new int[] {0, 1, 2}, 0);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_2()
-        throws Exception {
-        doTestPartialCommit2Tx_2(false, new int[] {1, 0});
+    public void testPartialPrepare_3TX_5_2() throws Exception {
+        doTestPartialPrepare_3tx(false, new int[] {0, 1, 2}, 1);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_3()
-        throws Exception {
-        doTestPartialCommit2Tx_2(true, new int[] {0, 1});
-    }
-
-    /** */
-    @Test
-    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_4()
-        throws Exception {
-        doTestPartialCommit2Tx_2(false, new int[] {0, 1});
-    }
-
-    /** */
-    @Test
-    public void testSkipReservedCountersAfterRecoveryStopPrimary() throws Exception {
-        doTestSkipReservedCountersAfterRecovery2(false);
-    }
-
-    /** */
-    @Test
-    public void testSkipReservedCountersAfterRecoveryStopPrimary2() throws Exception {
-        doTestSkipReservedCountersAfterRecovery2(true);
+    public void testPartialPrepare_3TX_6_2() throws Exception {
+        doTestPartialPrepare_3tx(false, new int[] {0, 1, 2}, 2);
     }
 
     /**
@@ -203,7 +235,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * @throws Exception If failed.
      */
     private void doTestPartialCommit_3tx_1(boolean skipCheckpointOnNodeStop) throws Exception {
-        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, SERVERS_CNT,
             new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
                 @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
                     Ignite primary = map.get(PARTITION_ID).get1();
@@ -245,7 +277,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         T2<Ignite, List<Ignite>> txTop = txTops.get(PARTITION_ID);
 
-        waitForTopology(NODES_CNT);
+        waitForTopology(SERVERS_CNT);
 
         awaitPartitionMapExchange();
 
@@ -334,7 +366,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         int expCntr = mode == 2 ? 1 : 2;
 
-        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, SERVERS_CNT,
             map -> {
                 Ignite primary = map.get(PARTITION_ID).get1();
                 Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
@@ -426,20 +458,20 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * 6. Fail primary.
      * <p>
      * 7. Validate partitions integrity after node left.
-
+     *
      * @param skipCheckpointOnNodeStop Skip checkpoint on node stop.
      * @param sizes Sizes.
      * @param assignOrder Assign order.
      * @param backup1Order Backup 1 order.
      * @param backup2Order Backup 2 order.
-     * @param expCommSize Expected communication size.
+     * @param expCommittedSize Expected committed size.
      * @throws Exception If failed.
      */
     private void doTestPartialPrepare_2tx(boolean skipCheckpointOnNodeStop, int[] sizes, int[] assignOrder, int[] backup1Order,
-        int[] backup2Order, int expCommSize) throws Exception {
+        int[] backup2Order, int expCommittedSize) throws Exception {
         AtomicInteger cntr = new AtomicInteger();
 
-        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, SERVERS_CNT,
             map -> {
                 Ignite primary = map.get(PARTITION_ID).get1();
                 Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
@@ -477,7 +509,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         assertCountersSame(PARTITION_ID, true);
 
-        assertEquals(PRELOAD_KEYS_CNT + expCommSize, grid("client").cache(DEFAULT_CACHE_NAME).size());
+        assertEquals(PRELOAD_KEYS_CNT + expCommittedSize, grid("client").cache(DEFAULT_CACHE_NAME).size());
 
         // Start primary.
         startGrid(txTops.get(PARTITION_ID).get1().name());
@@ -515,12 +547,12 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * @param assignOrder Tx counters assign order.
      * @throws Exception If failed.
      */
-    private void doTestPartialCommit2Tx_2(boolean skipCheckpointOnNodeStop, int[] assignOrder) throws Exception {
+    private void doTestPartialCommit_2tx(boolean skipCheckpointOnNodeStop, int[] assignOrder) throws Exception {
         final int[] sizes = new int[] {3, 7};
 
         final int stopBackupIdx = 0; // Backup with the index will be restarted.
 
-        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, SERVERS_CNT,
             map -> {
                 Ignite primary = map.get(PARTITION_ID).get1();
                 Ignite backup1 = map.get(PARTITION_ID).get2().get(stopBackupIdx);
@@ -576,40 +608,50 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     }
 
     /**
-     * Tests when counter reserved on prepare should never be applied after recovery.
+     * Test scenario:
+     * <p>
+     * 1. Assign counters in specified order.
+     * <p>
+     * 2. Prepare all three txs.
+     * <p>
+     * 3. Prevent committing any tx.
+     * <p>
+     * 4. Fail primary to trigger recovery.
+     * <p>
+     * Pass condition: after primary joined partitions are consistent, all transactions are committed.
      *
-     * @throws Exception
+     * @param skipCheckpointOnStop Skip checkpoint on node stop.
+     * @throws Exception If failed.
      */
-    private void doTestSkipReservedCountersAfterRecovery2(boolean skipCheckpointOnStop) throws Exception {
-        AtomicInteger cnt = new AtomicInteger();
-
-        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, map -> {
+    private void doTestPartialCommit_3tx_2(boolean skipCheckpointOnStop) throws Exception {
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, SERVERS_CNT, map -> {
             Ignite primary = map.get(PARTITION_ID).get1();
             Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
             Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
 
             return new TwoPhaseCommitTxCallbackAdapter(
                 U.map((IgniteEx)primary, new int[] {0, 1, 2}),
-                U.map((IgniteEx)primary, new int[] {0, 1, 2}, (IgniteEx)backup1, new int[] {0, 1, 2}, (IgniteEx)backup2, new int[] {0, 1, 2}),
+                U.map(
+                    (IgniteEx)primary, new int[] {0, 1, 2},
+                    (IgniteEx)backup1, new int[] {0, 1, 2},
+                    (IgniteEx)backup2, new int[] {0, 1, 2}),
                 new HashMap<>(),
                 SIZES.length) {
                 @Override public boolean beforePrimaryFinish(IgniteEx primary, IgniteInternalTx tx,
                     GridFutureAdapter<?> proceedFut) {
-                    if (cnt.getAndIncrement() == 2) {
-                        runAsync(() -> {
-                            stopGrid(skipCheckpointOnStop, primary.name());
+                    runAsync(() -> {
+                        stopGrid(skipCheckpointOnStop, primary.name());
 
-                            TestRecordingCommunicationSpi.stopBlockAll();
-                        });
-                    }
+                        TestRecordingCommunicationSpi.stopBlockAll();
+                    });
 
+                    // Stop primary before any tx committed.
                     return true;
-
                 }
             };
         }, SIZES);
 
-        waitForTopology(NODES_CNT);
+        waitForTopology(SERVERS_CNT);
 
         awaitPartitionMapExchange();
 
@@ -623,6 +665,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         awaitPartitionMapExchange();
 
+        // TODO assert with expected lwm value.
         assertCountersSame(PARTITION_ID, true);
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));

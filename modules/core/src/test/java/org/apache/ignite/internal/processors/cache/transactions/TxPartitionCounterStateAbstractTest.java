@@ -776,25 +776,28 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             }
         }
 
-        /** */
-        protected boolean onPrimaryPrepared(IgniteEx primary, IgniteInternalTx ignored, int idx) {
+        /**
+         * @param primary Primary.
+         * @param tx Tx.
+         * @param idx Index.
+         */
+        protected boolean onPrimaryPrepared(IgniteEx primary, IgniteInternalTx tx, int idx) {
             log.info("TX: prepared on primary [name=" + primary.name() + ", txId=" + idx + ']');
 
             return false;
         }
 
         /**
-         * @param primary Primary primary.
+         * @param primary Primary.
          */
         protected void onAllPrimaryPrepared(IgniteEx primary) {
             log.info("TX: all primary prepared [name=" + primary.name() + ']');
         }
 
         /**
-         * @param backup Backup node.
+         * @param backup Backup.
+         * @param tx Tx.
          * @param idx Index.
-         *
-         * @return {@code True} to stop processing of next transaction in specified order. TODO javadoc all.
          */
         protected boolean onBackupPrepared(IgniteEx backup, IgniteInternalTx tx, int idx) {
             log.info("TX: backup prepared [name=" + backup.name() + ", txId=" + idx + ']');
@@ -803,7 +806,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
-         * @param primary Primary node.
+         * @param primary Primary.
          * @param idx Index.
          */
         protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
@@ -817,7 +820,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
          * @param idx Index.
          */
         protected boolean onBackupCommitted(IgniteEx backup, int idx) {
-            log.info("TX: backup committed [name=" + backup.name() + ", id=" + backup.localNode().id() + ", txId=" + idx + ']');
+            log.info("TX: backup committed [name=" + backup.name() + ", id=" + backup.localNode().id() +
+                ", txId=" + idx + ']');
 
             return false;
         }
@@ -839,14 +843,14 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         /**
          *
          * @param primary Primary node.
-         * @param primaryTx Primary tx.
+         * @param tx Primary tx.
          */
-        protected void onCounterAssigned(IgniteEx primary, IgniteInternalTx ignored, int idx){
+        protected void onCounterAssigned(IgniteEx primary, IgniteInternalTx tx, int idx){
             log.info("TX: primary counter assigned: [name=" + primary.name() + ", txId=" + idx + ']');
         }
 
         /**
-         * @param node Primary.
+         * @param node Node.
          * @param state State.
          * @return Count of futures for node.
          */
