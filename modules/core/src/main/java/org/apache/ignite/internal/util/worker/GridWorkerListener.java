@@ -32,9 +32,4 @@ public interface GridWorkerListener extends EventListener {
      * @param w Stopped worker.
      */
     public void onStopped(GridWorker w);
-
-    /**
-     * @param w Idle worker.
-      */
-    public void onIdle(GridWorker w);
 }

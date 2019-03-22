@@ -97,7 +97,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     @SuppressWarnings({"NakedNotify", "CallToNotifyInsteadOfNotifyAll"})
     public boolean addTimeoutObject(GridTimeoutObject timeoutObj) {
         if (timeoutObj.endTime() <= 0 || timeoutObj.endTime() == Long.MAX_VALUE)
-            // Timeout will never happen.
+            // Timeout will never happen. 
             return false;
 
         boolean added = timeoutObjs.add(timeoutObj);
@@ -200,12 +200,8 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
          *
          */
         TimeoutWorker() {
-            super(
-                ctx.config().getIgniteInstanceName(),
-                "grid-timeout-worker",
-                GridTimeoutProcessor.this.log,
-                ctx.workersRegistry()
-            );
+            super(ctx.config().getIgniteInstanceName(), "grid-timeout-worker",
+                GridTimeoutProcessor.this.log, ctx.workersRegistry());
         }
 
         /** {@inheritDoc} */
@@ -214,11 +210,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
             try {
                 while (!isCancelled()) {
-                    updateHeartbeat();
-
                     long now = U.currentTimeMillis();
-
-                    onIdle();
 
                     for (Iterator<GridTimeoutObject> iter = timeoutObjs.iterator(); iter.hasNext(); ) {
                         GridTimeoutObject timeoutObj = iter.next();
@@ -262,29 +254,13 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                             if (first != null) {
                                 long waitTime = first.endTime() - U.currentTimeMillis();
 
-                                if (waitTime > 0) {
-                                    blockingSectionBegin();
-
-                                    try {
-                                        mux.wait(waitTime);
-                                    }
-                                    finally {
-                                        blockingSectionEnd();
-                                    }
-                                }
+                                if (waitTime > 0)
+                                    mux.wait(waitTime);
                                 else
                                     break;
                             }
-                            else {
-                                blockingSectionBegin();
-
-                                try {
-                                    mux.wait(5000);
-                                }
-                                finally {
-                                    blockingSectionEnd();
-                                }
-                            }
+                            else
+                                mux.wait(5000);
                         }
                     }
                 }
