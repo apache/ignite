@@ -239,7 +239,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             AffinityTopologyVersion oldVer = lastAffinityTopologyVersion.get();
             AffinityTopologyVersion newVer = ctx.cache().context().exchange().readyAffinityVersion();
 
-            boolean changed = oldVer == null || oldVer.compareTo(newVer) > 0;
+            boolean changed = oldVer == null || oldVer.compareTo(newVer) < 0;
 
             if (changed) {
                 boolean success = lastAffinityTopologyVersion.compareAndSet(oldVer, newVer);
