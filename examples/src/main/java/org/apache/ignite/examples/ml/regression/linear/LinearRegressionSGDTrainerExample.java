@@ -60,40 +60,43 @@ public class LinearRegressionSGDTrainerExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.MORTALITY_DATA);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.MORTALITY_DATA);
 
-            System.out.println(">>> Create new linear regression trainer object.");
-            LinearRegressionSGDTrainer<?> trainer = new LinearRegressionSGDTrainer<>(new UpdatesStrategy<>(
-                new RPropUpdateCalculator(),
-                RPropParameterUpdate.SUM_LOCAL,
-                RPropParameterUpdate.AVG
-            ), 100000,  10, 100, 123L);
+                System.out.println(">>> Create new linear regression trainer object.");
+                LinearRegressionSGDTrainer<?> trainer = new LinearRegressionSGDTrainer<>(new UpdatesStrategy<>(
+                    new RPropUpdateCalculator(),
+                    RPropParameterUpdate.SUM_LOCAL,
+                    RPropParameterUpdate.AVG
+                ), 100000, 10, 100, 123L);
 
-            System.out.println(">>> Perform the training to get the model.");
+                System.out.println(">>> Perform the training to get the model.");
 
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
-                .labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            LinearRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-            final IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
-            final IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
-            System.out.println(">>> Linear regression model: " + mdl);
+                final IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
+                final IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
+                System.out.println(">>> Linear regression model: " + mdl);
 
-            double rmse = Evaluator.evaluate(
-                dataCache,
-                mdl,
-                featureExtractor,
-                lbExtractor,
-                new RegressionMetrics()
-            );
+                double rmse = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    featureExtractor,
+                    lbExtractor,
+                    new RegressionMetrics()
+                );
 
-            System.out.println("\n>>> Rmse = " + rmse);
+                System.out.println("\n>>> Rmse = " + rmse);
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
-            dataCache.destroy();
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 }

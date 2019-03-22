@@ -35,8 +35,8 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * <p>
  * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
  * <p>
- * After that it creates the dataset based on the data in the cache and uses Dataset API to find and output
- * various statistical metrics of the data.</p>
+ * After that it creates the dataset based on the data in the cache and uses Dataset API to find and output various
+ * statistical metrics of the data.</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  */
@@ -46,20 +46,25 @@ public class CacheBasedDatasetExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Cache Based Dataset example started.");
 
-            IgniteCache<Integer, Person> persons = createCache(ignite);
+            IgniteCache<Integer, Person> persons = null;
+            try {
+                persons = createCache(ignite);
 
-            // Creates a cache based simple dataset containing features and providing standard dataset API.
-            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
-                ignite,
-                persons,
-                FeatureLabelExtractorWrapper.wrap((k, v) -> VectorUtils.of(v.getAge(), v.getSalary()))
-            )) {
-                new DatasetHelper(dataset).describe();
+                // Creates a cache based simple dataset containing features and providing standard dataset API.
+                try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
+                    ignite,
+                    persons,
+                    FeatureLabelExtractorWrapper.wrap((k, v) -> VectorUtils.of(v.getAge(), v.getSalary()))
+                )) {
+                    new DatasetHelper(dataset).describe();
+                }
+
+                System.out.println(">>> Cache Based Dataset example completed.");
+            } finally {
+                persons.destroy();
             }
-
-            System.out.println(">>> Cache Based Dataset example completed.");
-            persons.destroy();
         }
+
     }
 
     /** */

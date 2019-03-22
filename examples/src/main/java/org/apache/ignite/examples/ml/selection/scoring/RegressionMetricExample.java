@@ -57,30 +57,33 @@ public class RegressionMetricExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.CLEARED_MACHINES);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.CLEARED_MACHINES);
 
-            KNNRegressionTrainer trainer = new KNNRegressionTrainer();
+                KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
-                .labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            KNNRegressionModel knnMdl = (KNNRegressionModel)trainer.fit(ignite, dataCache, vectorizer).withK(5)
-                .withDistanceMeasure(new ManhattanDistance())
-                .withStrategy(NNStrategy.WEIGHTED);
+                KNNRegressionModel knnMdl = (KNNRegressionModel)trainer.fit(ignite, dataCache, vectorizer).withK(5)
+                    .withDistanceMeasure(new ManhattanDistance())
+                    .withStrategy(NNStrategy.WEIGHTED);
 
-            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
-            IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
-            double mae = Evaluator.evaluate(
-                dataCache,
-                knnMdl,
-                featureExtractor,
-                lbExtractor,
-                new RegressionMetrics().withMetric(RegressionMetricValues::mae)
-            );
+                IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
+                IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
+                double mae = Evaluator.evaluate(
+                    dataCache,
+                    knnMdl,
+                    featureExtractor,
+                    lbExtractor,
+                    new RegressionMetrics().withMetric(RegressionMetricValues::mae)
+                );
 
-            System.out.println("\n>>> Mae " + mae);
-            dataCache.destroy();
+                System.out.println("\n>>> Mae " + mae);
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 }

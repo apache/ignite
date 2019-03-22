@@ -65,54 +65,58 @@ public class CrossValidationExample {
             trainingSetCfg.setName("TRAINING_SET");
             trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
-            IgniteCache<Integer, LabeledVector<Double>> trainingSet = ignite.createCache(trainingSetCfg);
+            IgniteCache<Integer, LabeledVector<Double>> trainingSet = null;
+            try {
+                trainingSet = ignite.createCache(trainingSetCfg);
 
-            Random rnd = new Random(0);
+                Random rnd = new Random(0);
 
-            // Fill training data.
-            for (int i = 0; i < 1000; i++)
-                trainingSet.put(i, generatePoint(rnd));
+                // Fill training data.
+                for (int i = 0; i < 1000; i++)
+                    trainingSet.put(i, generatePoint(rnd));
 
-            // Create classification trainer.
-            DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
+                // Create classification trainer.
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
-            LabeledDummyVectorizer<Integer, Double> vectorizer = new LabeledDummyVectorizer<>();
-            CrossValidation<DecisionTreeNode, Double, Integer, LabeledVector<Double>> scoreCalculator
-                = new CrossValidation<>();
+                LabeledDummyVectorizer<Integer, Double> vectorizer = new LabeledDummyVectorizer<>();
+                CrossValidation<DecisionTreeNode, Double, Integer, LabeledVector<Double>> scoreCalculator
+                    = new CrossValidation<>();
 
-            IgniteBiFunction<Integer, LabeledVector<Double>, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
-            IgniteBiFunction<Integer, LabeledVector<Double>, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
-            double[] accuracyScores = scoreCalculator.score(
-                trainer,
-                new Accuracy<>(),
-                ignite,
-                trainingSet,
-                featureExtractor,
-                lbExtractor,
-                4
-            );
+                IgniteBiFunction<Integer, LabeledVector<Double>, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
+                IgniteBiFunction<Integer, LabeledVector<Double>, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
+                double[] accuracyScores = scoreCalculator.score(
+                    trainer,
+                    new Accuracy<>(),
+                    ignite,
+                    trainingSet,
+                    featureExtractor,
+                    lbExtractor,
+                    4
+                );
 
-            System.out.println(">>> Accuracy: " + Arrays.toString(accuracyScores));
+                System.out.println(">>> Accuracy: " + Arrays.toString(accuracyScores));
 
-            BinaryClassificationMetrics metrics = (BinaryClassificationMetrics)new BinaryClassificationMetrics()
-                .withNegativeClsLb(0.0)
-                .withPositiveClsLb(1.0)
-                .withMetric(BinaryClassificationMetricValues::balancedAccuracy);
+                BinaryClassificationMetrics metrics = (BinaryClassificationMetrics)new BinaryClassificationMetrics()
+                    .withNegativeClsLb(0.0)
+                    .withPositiveClsLb(1.0)
+                    .withMetric(BinaryClassificationMetricValues::balancedAccuracy);
 
-            double[] balancedAccuracyScores = scoreCalculator.score(
-                trainer,
-                metrics,
-                ignite,
-                trainingSet,
-                featureExtractor,
-                lbExtractor,
-                4
-            );
+                double[] balancedAccuracyScores = scoreCalculator.score(
+                    trainer,
+                    metrics,
+                    ignite,
+                    trainingSet,
+                    featureExtractor,
+                    lbExtractor,
+                    4
+                );
 
-            System.out.println(">>> Balanced Accuracy: " + Arrays.toString(balancedAccuracyScores));
+                System.out.println(">>> Balanced Accuracy: " + Arrays.toString(balancedAccuracyScores));
 
-            System.out.println(">>> Cross validation score calculator example completed.");
-            trainingSet.destroy();
+                System.out.println(">>> Cross validation score calculator example completed.");
+            } finally {
+                trainingSet.destroy();
+            }
         }
     }
 

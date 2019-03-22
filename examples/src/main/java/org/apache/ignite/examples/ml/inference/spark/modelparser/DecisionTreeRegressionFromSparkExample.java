@@ -50,42 +50,46 @@ public class DecisionTreeRegressionFromSparkExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+            IgniteCache<Integer, Object[]> dataCache = null;
+            try {
+                dataCache = TitanicUtils.readPassengers(ignite);
 
-            IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
-                double[] data = new double[] {(double)v[0], (double)v[1], (double)v[5], (double)v[6]};
-                data[0] = Double.isNaN(data[0]) ? 0 : data[0];
-                data[1] = Double.isNaN(data[1]) ? 0 : data[1];
-                data[2] = Double.isNaN(data[2]) ? 0 : data[2];
-                data[3] = Double.isNaN(data[3]) ? 0 : data[3];
-                return VectorUtils.of(data);
-            };
+                IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
+                    double[] data = new double[] {(double)v[0], (double)v[1], (double)v[5], (double)v[6]};
+                    data[0] = Double.isNaN(data[0]) ? 0 : data[0];
+                    data[1] = Double.isNaN(data[1]) ? 0 : data[1];
+                    data[2] = Double.isNaN(data[2]) ? 0 : data[2];
+                    data[3] = Double.isNaN(data[3]) ? 0 : data[3];
+                    return VectorUtils.of(data);
+                };
 
-            IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[4];
+                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[4];
 
-            DecisionTreeNode mdl = (DecisionTreeNode)SparkModelParser.parse(
-                SPARK_MDL_PATH,
-                SupportedSparkModels.DECISION_TREE_REGRESSION
-            );
+                DecisionTreeNode mdl = (DecisionTreeNode)SparkModelParser.parse(
+                    SPARK_MDL_PATH,
+                    SupportedSparkModels.DECISION_TREE_REGRESSION
+                );
 
-            System.out.println(">>> Decision tree regression model: " + mdl);
+                System.out.println(">>> Decision tree regression model: " + mdl);
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Ground Truth\t|");
-            System.out.println(">>> ---------------------------------");
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> | Prediction\t| Ground Truth\t|");
+                System.out.println(">>> ---------------------------------");
 
-            try (QueryCursor<Cache.Entry<Integer, Object[]>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Object[]> observation : observations) {
-                    Vector inputs = featureExtractor.apply(observation.getKey(), observation.getValue());
-                    double groundTruth = lbExtractor.apply(observation.getKey(), observation.getValue());
-                    double prediction = mdl.predict(inputs);
+                try (QueryCursor<Cache.Entry<Integer, Object[]>> observations = dataCache.query(new ScanQuery<>())) {
+                    for (Cache.Entry<Integer, Object[]> observation : observations) {
+                        Vector inputs = featureExtractor.apply(observation.getKey(), observation.getValue());
+                        double groundTruth = lbExtractor.apply(observation.getKey(), observation.getValue());
+                        double prediction = mdl.predict(inputs);
 
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
+                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
+                    }
                 }
-            }
 
-            System.out.println(">>> ---------------------------------");
-            dataCache.destroy();
+                System.out.println(">>> ---------------------------------");
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 }

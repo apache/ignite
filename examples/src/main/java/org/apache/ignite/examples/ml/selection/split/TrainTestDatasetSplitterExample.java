@@ -57,45 +57,48 @@ public class TrainTestDatasetSplitterExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.MORTALITY_DATA);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.MORTALITY_DATA);
 
-            System.out.println(">>> Create new linear regression trainer object.");
-            LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
+                System.out.println(">>> Create new linear regression trainer object.");
+                LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
-            System.out.println(">>> Create new training dataset splitter object.");
-            TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
-                .split(0.75);
+                System.out.println(">>> Create new training dataset splitter object.");
+                TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
+                    .split(0.75);
 
-            System.out.println(">>> Perform the training to get the model.");
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
-                .labeled(Vectorizer.LabelCoordinate.FIRST);
-            LinearRegressionModel mdl = trainer.fit(ignite, dataCache, split.getTrainFilter(), vectorizer);
+                System.out.println(">>> Perform the training to get the model.");
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
+                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, split.getTrainFilter(), vectorizer);
 
-            System.out.println(">>> Linear regression model: " + mdl);
+                System.out.println(">>> Linear regression model: " + mdl);
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Ground Truth\t|");
-            System.out.println(">>> ---------------------------------");
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> | Prediction\t| Ground Truth\t|");
+                System.out.println(">>> ---------------------------------");
 
-            ScanQuery<Integer, Vector> qry = new ScanQuery<>();
-            qry.setFilter(split.getTestFilter());
+                ScanQuery<Integer, Vector> qry = new ScanQuery<>();
+                qry.setFilter(split.getTestFilter());
 
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(qry)) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Vector val = observation.getValue();
-                    Vector inputs = val.copyOfRange(1, val.size());
-                    double groundTruth = val.get(0);
+                try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(qry)) {
+                    for (Cache.Entry<Integer, Vector> observation : observations) {
+                        Vector val = observation.getValue();
+                        Vector inputs = val.copyOfRange(1, val.size());
+                        double groundTruth = val.get(0);
 
-                    double prediction = mdl.predict(inputs);
+                        double prediction = mdl.predict(inputs);
 
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
+                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
+                    }
                 }
-            }
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
-            dataCache.destroy();
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 }

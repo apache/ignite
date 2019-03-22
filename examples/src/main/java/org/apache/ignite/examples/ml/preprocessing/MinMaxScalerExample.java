@@ -54,25 +54,29 @@ public class MinMaxScalerExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> MinMax preprocessing example started.");
 
-            IgniteCache<Integer, Person> persons = createCache(ignite);
+            IgniteCache<Integer, Person> persons = null;
+            try {
+                persons = createCache(ignite);
 
-            // Defines first preprocessor that extracts features from an upstream data.
-            IgniteBiFunction<Integer, Person, Vector> featureExtractor = (k, v) -> VectorUtils.of(
-                v.getAge(),
-                v.getSalary()
-            );
+                // Defines first preprocessor that extracts features from an upstream data.
+                IgniteBiFunction<Integer, Person, Vector> featureExtractor = (k, v) -> VectorUtils.of(
+                    v.getAge(),
+                    v.getSalary()
+                );
 
-            // Defines second preprocessor that normalizes features.
-            IgniteBiFunction<Integer, Person, Vector> preprocessor = new MinMaxScalerTrainer<Integer, Person>()
-                .fit(ignite, persons, featureExtractor);
+                // Defines second preprocessor that normalizes features.
+                IgniteBiFunction<Integer, Person, Vector> preprocessor = new MinMaxScalerTrainer<Integer, Person>()
+                    .fit(ignite, persons, featureExtractor);
 
-            // Creates a cache based simple dataset containing features and providing standard dataset API.
-            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, FeatureLabelExtractorWrapper.wrap(preprocessor))) {
-                new DatasetHelper(dataset).describe();
+                // Creates a cache based simple dataset containing features and providing standard dataset API.
+                try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, FeatureLabelExtractorWrapper.wrap(preprocessor))) {
+                    new DatasetHelper(dataset).describe();
+                }
+
+                System.out.println(">>> MinMax preprocessing example completed.");
+            } finally {
+                persons.destroy();
             }
-
-            System.out.println(">>> MinMax preprocessing example completed.");
-            persons.destroy();
         }
     }
 

@@ -60,45 +60,49 @@ public class DecisionTreeClassificationTrainerExample {
             trainingSetCfg.setName("TRAINING_SET");
             trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
-            IgniteCache<Integer, LabeledVector<Double>> trainingSet = ignite.createCache(trainingSetCfg);
+            IgniteCache<Integer, LabeledVector<Double>> trainingSet = null;
+            try {
+                trainingSet = ignite.createCache(trainingSetCfg);
 
-            Random rnd = new Random(0);
+                Random rnd = new Random(0);
 
-            // Fill training data.
-            for (int i = 0; i < 1000; i++)
-                trainingSet.put(i, generatePoint(rnd));
+                // Fill training data.
+                for (int i = 0; i < 1000; i++)
+                    trainingSet.put(i, generatePoint(rnd));
 
-            // Create classification trainer.
-            DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
+                // Create classification trainer.
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
-            // Train decision tree model.
-            LabeledDummyVectorizer<Integer, Double> vectorizer = new LabeledDummyVectorizer<>();
-            DecisionTreeNode mdl = trainer.fit(
-                ignite,
-                trainingSet,
-                vectorizer
-            );
+                // Train decision tree model.
+                LabeledDummyVectorizer<Integer, Double> vectorizer = new LabeledDummyVectorizer<>();
+                DecisionTreeNode mdl = trainer.fit(
+                    ignite,
+                    trainingSet,
+                    vectorizer
+                );
 
-            System.out.println(">>> Decision tree classification model: " + mdl);
+                System.out.println(">>> Decision tree classification model: " + mdl);
 
-            // Calculate score.
-            int correctPredictions = 0;
-            for (int i = 0; i < 1000; i++) {
-                LabeledVector<Double> pnt = generatePoint(rnd);
+                // Calculate score.
+                int correctPredictions = 0;
+                for (int i = 0; i < 1000; i++) {
+                    LabeledVector<Double> pnt = generatePoint(rnd);
 
-                double prediction = mdl.predict(pnt.features());
-                double lbl = pnt.label();
+                    double prediction = mdl.predict(pnt.features());
+                    double lbl = pnt.label();
 
-                if (i %50 == 1)
-                    System.out.printf(">>> test #: %d\t\t predicted: %.4f\t\tlabel: %.4f\n", i, prediction, lbl);
+                    if (i % 50 == 1)
+                        System.out.printf(">>> test #: %d\t\t predicted: %.4f\t\tlabel: %.4f\n", i, prediction, lbl);
 
-                if (Precision.equals(prediction, lbl, Precision.EPSILON))
-                    correctPredictions++;
+                    if (Precision.equals(prediction, lbl, Precision.EPSILON))
+                        correctPredictions++;
+                }
+
+                System.out.println(">>> Accuracy: " + correctPredictions / 10.0 + "%");
+                System.out.println(">>> Decision tree classification trainer example completed.");
+            } finally {
+                trainingSet.destroy();
             }
-
-            System.out.println(">>> Accuracy: " + correctPredictions / 10.0 + "%");
-            System.out.println(">>> Decision tree classification trainer example completed.");
-            trainingSet.destroy();
         }
     }
 

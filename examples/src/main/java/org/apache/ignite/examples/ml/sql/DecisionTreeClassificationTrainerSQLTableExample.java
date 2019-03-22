@@ -57,86 +57,90 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
             CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DUMMY_CACHE_NAME)
                 .setSqlSchema("PUBLIC");
 
-            IgniteCache<?, ?> cache = ignite.getOrCreateCache(cacheCfg);
+            IgniteCache<?, ?> cache = null;
+            try {
+                cache = ignite.getOrCreateCache(cacheCfg);
 
-            System.out.println(">>> Creating table with training data...");
-            cache.query(new SqlFieldsQuery("create table titanik_train (\n" +
-                "    passengerid int primary key,\n" +
-                "    survived int,\n" +
-                "    pclass int,\n" +
-                "    name varchar(255),\n" +
-                "    sex varchar(255),\n" +
-                "    age float,\n" +
-                "    sibsp int,\n" +
-                "    parch int,\n" +
-                "    ticket varchar(255),\n" +
-                "    fare float,\n" +
-                "    cabin varchar(255),\n" +
-                "    embarked varchar(255)\n" +
-                ") with \"template=partitioned\";")).getAll();
+                System.out.println(">>> Creating table with training data...");
+                cache.query(new SqlFieldsQuery("create table titanik_train (\n" +
+                    "    passengerid int primary key,\n" +
+                    "    survived int,\n" +
+                    "    pclass int,\n" +
+                    "    name varchar(255),\n" +
+                    "    sex varchar(255),\n" +
+                    "    age float,\n" +
+                    "    sibsp int,\n" +
+                    "    parch int,\n" +
+                    "    ticket varchar(255),\n" +
+                    "    fare float,\n" +
+                    "    cabin varchar(255),\n" +
+                    "    embarked varchar(255)\n" +
+                    ") with \"template=partitioned\";")).getAll();
 
-            System.out.println(">>> Filling training data...");
-            cache.query(new SqlFieldsQuery("insert into titanik_train select * from csvread('" +
-                IgniteUtils.resolveIgnitePath(TRAIN_DATA_RES).getAbsolutePath() + "')")).getAll();
+                System.out.println(">>> Filling training data...");
+                cache.query(new SqlFieldsQuery("insert into titanik_train select * from csvread('" +
+                    IgniteUtils.resolveIgnitePath(TRAIN_DATA_RES).getAbsolutePath() + "')")).getAll();
 
-            System.out.println(">>> Creating table with test data...");
-            cache.query(new SqlFieldsQuery("create table titanik_test (\n" +
-                "    passengerid int primary key,\n" +
-                "    pclass int,\n" +
-                "    name varchar(255),\n" +
-                "    sex varchar(255),\n" +
-                "    age float,\n" +
-                "    sibsp int,\n" +
-                "    parch int,\n" +
-                "    ticket varchar(255),\n" +
-                "    fare float,\n" +
-                "    cabin varchar(255),\n" +
-                "    embarked varchar(255)\n" +
-                ") with \"template=partitioned\";")).getAll();
+                System.out.println(">>> Creating table with test data...");
+                cache.query(new SqlFieldsQuery("create table titanik_test (\n" +
+                    "    passengerid int primary key,\n" +
+                    "    pclass int,\n" +
+                    "    name varchar(255),\n" +
+                    "    sex varchar(255),\n" +
+                    "    age float,\n" +
+                    "    sibsp int,\n" +
+                    "    parch int,\n" +
+                    "    ticket varchar(255),\n" +
+                    "    fare float,\n" +
+                    "    cabin varchar(255),\n" +
+                    "    embarked varchar(255)\n" +
+                    ") with \"template=partitioned\";")).getAll();
 
-            System.out.println(">>> Filling training data...");
-            cache.query(new SqlFieldsQuery("insert into titanik_test select * from csvread('" +
-                IgniteUtils.resolveIgnitePath(TEST_DATA_RES).getAbsolutePath() + "')")).getAll();
+                System.out.println(">>> Filling training data...");
+                cache.query(new SqlFieldsQuery("insert into titanik_test select * from csvread('" +
+                    IgniteUtils.resolveIgnitePath(TEST_DATA_RES).getAbsolutePath() + "')")).getAll();
 
-            System.out.println(">>> Prepare trainer...");
-            DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
+                System.out.println(">>> Prepare trainer...");
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
-            System.out.println(">>> Perform training...");
-            DecisionTreeNode mdl = trainer.fit(
-                new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIK_TRAIN"),
-                new BinaryObjectVectorizer<>("pclass", "age", "sibsp", "parch", "fare")
-                    .withFeature("sex", BinaryObjectVectorizer.Mapping.create().map("male", 1.0).defaultValue(0.0))
-                    .labeled("survived")
-            );
+                System.out.println(">>> Perform training...");
+                DecisionTreeNode mdl = trainer.fit(
+                    new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIK_TRAIN"),
+                    new BinaryObjectVectorizer<>("pclass", "age", "sibsp", "parch", "fare")
+                        .withFeature("sex", BinaryObjectVectorizer.Mapping.create().map("male", 1.0).defaultValue(0.0))
+                        .labeled("survived")
+                );
 
-            System.out.println(">>> Perform inference...");
-            try (QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select " +
-                "pclass, " +
-                "sex, " +
-                "age, " +
-                "sibsp, " +
-                "parch, " +
-                "fare from titanik_test"))) {
-                for (List<?> passenger : cursor) {
-                    Vector input = VectorUtils.of(new Double[]{
-                        asDouble(passenger.get(0)),
-                        "male".equals(passenger.get(1)) ? 1.0 : 0.0,
-                        asDouble(passenger.get(2)),
-                        asDouble(passenger.get(3)),
-                        asDouble(passenger.get(4)),
-                        asDouble(passenger.get(5))
-                    });
+                System.out.println(">>> Perform inference...");
+                try (QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select " +
+                    "pclass, " +
+                    "sex, " +
+                    "age, " +
+                    "sibsp, " +
+                    "parch, " +
+                    "fare from titanik_test"))) {
+                    for (List<?> passenger : cursor) {
+                        Vector input = VectorUtils.of(new Double[] {
+                            asDouble(passenger.get(0)),
+                            "male".equals(passenger.get(1)) ? 1.0 : 0.0,
+                            asDouble(passenger.get(2)),
+                            asDouble(passenger.get(3)),
+                            asDouble(passenger.get(4)),
+                            asDouble(passenger.get(5))
+                        });
 
-                    double prediction = mdl.predict(input);
+                        double prediction = mdl.predict(input);
 
-                    System.out.printf("Passenger %s will %s.\n", passenger, prediction == 0 ? "die" : "survive");
+                        System.out.printf("Passenger %s will %s.\n", passenger, prediction == 0 ? "die" : "survive");
+                    }
                 }
-            }
 
-            System.out.println(">>> Example completed.");
-            cache.query(new SqlFieldsQuery("DROP TABLE titanik_train"));
-            cache.query(new SqlFieldsQuery("DROP TABLE titanik_test"));
-            cache.destroy();
+                System.out.println(">>> Example completed.");
+            } finally {
+                cache.query(new SqlFieldsQuery("DROP TABLE titanik_train"));
+                cache.query(new SqlFieldsQuery("DROP TABLE titanik_test"));
+                cache.destroy();
+            }
         }
     }
 

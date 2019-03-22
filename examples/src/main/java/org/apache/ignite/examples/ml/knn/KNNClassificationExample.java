@@ -56,27 +56,30 @@ public class KNNClassificationExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            KNNClassificationTrainer trainer = new KNNClassificationTrainer();
+                KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
-                .labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            NNClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer).withK(3)
-                .withDistanceMeasure(new EuclideanDistance())
-                .withStrategy(NNStrategy.WEIGHTED);
+                NNClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer).withK(3)
+                    .withDistanceMeasure(new EuclideanDistance())
+                    .withStrategy(NNStrategy.WEIGHTED);
 
-            double accuracy = Evaluator.evaluate(
-                dataCache,
-                mdl,
-                CompositionUtils.asFeatureExtractor(vectorizer),
-                CompositionUtils.asLabelExtractor(vectorizer)
-            ).accuracy();
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    CompositionUtils.asFeatureExtractor(vectorizer),
+                    CompositionUtils.asLabelExtractor(vectorizer)
+                ).accuracy();
 
-            System.out.println("\n>>> Accuracy " + accuracy);
-            dataCache.destroy();
+                System.out.println("\n>>> Accuracy " + accuracy);
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 }

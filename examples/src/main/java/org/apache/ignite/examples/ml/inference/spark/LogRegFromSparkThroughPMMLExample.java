@@ -57,26 +57,29 @@ public class LogRegFromSparkThroughPMMLExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            String path = IgniteUtils.resolveIgnitePath( "examples/src/main/resources/models/spark/iris.pmml")
-                .toPath().toAbsolutePath().toString();
-            LogisticRegressionModel mdl = PMMLParser.load(path);
+                String path = IgniteUtils.resolveIgnitePath("examples/src/main/resources/models/spark/iris.pmml")
+                    .toPath().toAbsolutePath().toString();
+                LogisticRegressionModel mdl = PMMLParser.load(path);
 
-            System.out.println(">>> Logistic regression model: " + mdl);
+                System.out.println(">>> Logistic regression model: " + mdl);
 
-            double accuracy = Evaluator.evaluate(
-                dataCache,
-                mdl,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0),
-                new Accuracy<>()
-            );
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    (k, v) -> v.copyOfRange(1, v.size()),
+                    (k, v) -> v.get(0),
+                    new Accuracy<>()
+                );
 
-            System.out.println("\n>>> Accuracy " + accuracy);
-            System.out.println("\n>>> Test Error " + (1 - accuracy));
-            dataCache.destroy();
+                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Test Error " + (1 - accuracy));
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 

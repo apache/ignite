@@ -83,15 +83,19 @@ public class DatasetCreationExamples {
         IgniteConfiguration configuration = new IgniteConfiguration().setPeerClassLoadingEnabled(true);
         try (Ignite ignite = Ignition.start(configuration)) {
             String cacheName = "TEST_CACHE";
-            IgniteCache<UUID, LabeledVector<Double>> withCustomKeyCache = ignite.getOrCreateCache(
-                new CacheConfiguration<UUID, LabeledVector<Double>>(cacheName)
-                    .setAffinity(new RendezvousAffinityFunction(false, 10))
-            );
+            IgniteCache<UUID, LabeledVector<Double>> withCustomKeyCache = null;
+            try {
+                withCustomKeyCache = ignite.getOrCreateCache(
+                    new CacheConfiguration<UUID, LabeledVector<Double>>(cacheName)
+                        .setAffinity(new RendezvousAffinityFunction(false, 10))
+                );
 
-            // DataStreamGenerator can fill cache with vectors as values and HashCodes/random UUID/custom keys.
-            generator.fillCacheWithVecUUIDAsKey(DATASET_SIZE, withCustomKeyCache);
-            meanFromCache = computeMean(ignite, withCustomKeyCache);
-            ignite.destroyCache(cacheName);
+                // DataStreamGenerator can fill cache with vectors as values and HashCodes/random UUID/custom keys.
+                generator.fillCacheWithVecUUIDAsKey(DATASET_SIZE, withCustomKeyCache);
+                meanFromCache = computeMean(ignite, withCustomKeyCache);
+            } finally {
+                ignite.destroyCache(cacheName);
+            }
         }
 
         // Results should be near to expected value.

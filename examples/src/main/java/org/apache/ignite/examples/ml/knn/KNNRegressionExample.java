@@ -58,29 +58,32 @@ public class KNNRegressionExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.CLEARED_MACHINES);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.CLEARED_MACHINES);
 
-            KNNRegressionTrainer trainer = new KNNRegressionTrainer();
+                KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
-                .labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(ignite, dataCache, vectorizer)
-                .withK(5)
-                .withDistanceMeasure(new ManhattanDistance())
-                .withStrategy(NNStrategy.WEIGHTED);
+                KNNRegressionModel knnMdl = (KNNRegressionModel)trainer.fit(ignite, dataCache, vectorizer)
+                    .withK(5)
+                    .withDistanceMeasure(new ManhattanDistance())
+                    .withStrategy(NNStrategy.WEIGHTED);
 
-            double rmse = Evaluator.evaluate(
-                dataCache,
-                knnMdl,
-                CompositionUtils.asFeatureExtractor(vectorizer),
-                CompositionUtils.asLabelExtractor(vectorizer),
-                new RegressionMetrics()
-            );
+                double rmse = Evaluator.evaluate(
+                    dataCache,
+                    knnMdl,
+                    CompositionUtils.asFeatureExtractor(vectorizer),
+                    CompositionUtils.asLabelExtractor(vectorizer),
+                    new RegressionMetrics()
+                );
 
-            System.out.println("\n>>> Rmse = " + rmse);
-            dataCache.destroy();
+                System.out.println("\n>>> Rmse = " + rmse);
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 }

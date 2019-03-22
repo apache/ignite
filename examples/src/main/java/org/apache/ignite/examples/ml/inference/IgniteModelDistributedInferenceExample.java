@@ -54,49 +54,52 @@ public class IgniteModelDistributedInferenceExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.MORTALITY_DATA);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.MORTALITY_DATA);
 
-            System.out.println(">>> Create new linear regression trainer object.");
-            LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
+                System.out.println(">>> Create new linear regression trainer object.");
+                LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
-            System.out.println(">>> Perform the training to get the model.");
-            LinearRegressionModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
-            );
+                System.out.println(">>> Perform the training to get the model.");
+                LinearRegressionModel mdl = trainer.fit(
+                    ignite,
+                    dataCache,
+                    new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+                );
 
-            System.out.println(">>> Linear regression model: " + mdl);
+                System.out.println(">>> Linear regression model: " + mdl);
 
-            System.out.println(">>> Preparing model reader and model parser.");
-            ModelReader reader = new InMemoryModelReader(mdl);
-            ModelParser<Vector, Double, ?> parser = new IgniteModelParser<>();
-            try (Model<Vector, Future<Double>> infMdl = new IgniteDistributedModelBuilder(ignite, 4, 4)
-                .build(reader, parser)) {
-                System.out.println(">>> Inference model is ready.");
+                System.out.println(">>> Preparing model reader and model parser.");
+                ModelReader reader = new InMemoryModelReader(mdl);
+                ModelParser<Vector, Double, ?> parser = new IgniteModelParser<>();
+                try (Model<Vector, Future<Double>> infMdl = new IgniteDistributedModelBuilder(ignite, 4, 4)
+                    .build(reader, parser)) {
+                    System.out.println(">>> Inference model is ready.");
 
-                System.out.println(">>> ---------------------------------");
-                System.out.println(">>> | Prediction\t| Ground Truth\t|");
-                System.out.println(">>> ---------------------------------");
+                    System.out.println(">>> ---------------------------------");
+                    System.out.println(">>> | Prediction\t| Ground Truth\t|");
+                    System.out.println(">>> ---------------------------------");
 
-                try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                    for (Cache.Entry<Integer, Vector> observation : observations) {
-                        Vector val = observation.getValue();
-                        Vector inputs = val.copyOfRange(1, val.size());
-                        double groundTruth = val.get(0);
+                    try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
+                        for (Cache.Entry<Integer, Vector> observation : observations) {
+                            Vector val = observation.getValue();
+                            Vector inputs = val.copyOfRange(1, val.size());
+                            double groundTruth = val.get(0);
 
-                        double prediction = infMdl.predict(inputs).get();
+                            double prediction = infMdl.predict(inputs).get();
 
-                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
+                            System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
+                        }
                     }
                 }
+
+                System.out.println(">>> ---------------------------------");
+
+                System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
+            } finally {
+                dataCache.destroy();
             }
-
-            System.out.println(">>> ---------------------------------");
-
-            System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
-            dataCache.destroy();
         }
     }
 }

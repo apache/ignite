@@ -65,52 +65,55 @@ public class RandomForestClassificationExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.WINE_RECOGNITION);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.WINE_RECOGNITION);
 
-            AtomicInteger idx = new AtomicInteger(0);
-            RandomForestClassifierTrainer classifier = new RandomForestClassifierTrainer(
-                IntStream.range(0, dataCache.get(1).size() - 1).mapToObj(
-                    x -> new FeatureMeta("", idx.getAndIncrement(), false)).collect(Collectors.toList())
-            ).withAmountOfTrees(101)
-                .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
-                .withMaxDepth(4)
-                .withMinImpurityDelta(0.)
-                .withSubSampleSize(0.3)
-                .withSeed(0);
+                AtomicInteger idx = new AtomicInteger(0);
+                RandomForestClassifierTrainer classifier = new RandomForestClassifierTrainer(
+                    IntStream.range(0, dataCache.get(1).size() - 1).mapToObj(
+                        x -> new FeatureMeta("", idx.getAndIncrement(), false)).collect(Collectors.toList())
+                ).withAmountOfTrees(101)
+                    .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
+                    .withMaxDepth(4)
+                    .withMinImpurityDelta(0.)
+                    .withSubSampleSize(0.3)
+                    .withSeed(0);
 
-            System.out.println(">>> Configured trainer: " + classifier.getClass().getSimpleName());
+                System.out.println(">>> Configured trainer: " + classifier.getClass().getSimpleName());
 
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
-                .labeled(Vectorizer.LabelCoordinate.FIRST);
-            ModelsComposition randomForestMdl = classifier.fit(ignite, dataCache, vectorizer);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
+                ModelsComposition randomForestMdl = classifier.fit(ignite, dataCache, vectorizer);
 
-            System.out.println(">>> Trained model: " + randomForestMdl.toString(true));
+                System.out.println(">>> Trained model: " + randomForestMdl.toString(true));
 
-            int amountOfErrors = 0;
-            int totalAmount = 0;
+                int amountOfErrors = 0;
+                int totalAmount = 0;
 
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Vector val = observation.getValue();
-                    Vector inputs = val.copyOfRange(1, val.size());
-                    double groundTruth = val.get(0);
+                try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
+                    for (Cache.Entry<Integer, Vector> observation : observations) {
+                        Vector val = observation.getValue();
+                        Vector inputs = val.copyOfRange(1, val.size());
+                        double groundTruth = val.get(0);
 
-                    double prediction = randomForestMdl.predict(inputs);
+                        double prediction = randomForestMdl.predict(inputs);
 
-                    totalAmount++;
-                    if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))
-                        amountOfErrors++;
+                        totalAmount++;
+                        if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))
+                            amountOfErrors++;
+                    }
+
+                    System.out.println("\n>>> Evaluated model on " + totalAmount + " data points.");
+
+                    System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
+                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+                    System.out.println(">>> Random Forest multi-class classification algorithm over cached dataset usage example completed.");
                 }
 
-                System.out.println("\n>>> Evaluated model on " + totalAmount + " data points.");
-
-                System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double) totalAmount));
-                System.out.println(">>> Random Forest multi-class classification algorithm over cached dataset usage example completed.");
+            } finally {
+                dataCache.destroy();
             }
-
-            dataCache.destroy();
         }
     }
 }

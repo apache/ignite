@@ -59,34 +59,38 @@ public class DecisionTreeRegressionTrainerExample {
             trainingSetCfg.setName("TRAINING_SET");
             trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
-            IgniteCache<Integer, LabeledVector<Double>> trainingSet = ignite.createCache(trainingSetCfg);
+            IgniteCache<Integer, LabeledVector<Double>> trainingSet = null;
+            try {
+                trainingSet = ignite.createCache(trainingSetCfg);
 
-            // Fill training data.
-            generatePoints(trainingSet);
+                // Fill training data.
+                generatePoints(trainingSet);
 
-            // Create regression trainer.
-            DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(10, 0);
+                // Create regression trainer.
+                DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(10, 0);
 
-            // Train decision tree model.
-            DecisionTreeNode mdl = trainer.fit(ignite, trainingSet, new LabeledDummyVectorizer<>());
+                // Train decision tree model.
+                DecisionTreeNode mdl = trainer.fit(ignite, trainingSet, new LabeledDummyVectorizer<>());
 
-            System.out.println(">>> Decision tree regression model: " + mdl);
+                System.out.println(">>> Decision tree regression model: " + mdl);
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Ground Truth\t|");
-            System.out.println(">>> ---------------------------------");
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> | Prediction\t| Ground Truth\t|");
+                System.out.println(">>> ---------------------------------");
 
-            // Calculate score.
-            for (int x = 0; x < 10; x++) {
-                double predicted = mdl.predict(VectorUtils.of(x));
+                // Calculate score.
+                for (int x = 0; x < 10; x++) {
+                    double predicted = mdl.predict(VectorUtils.of(x));
 
-                System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.sin(x));
+                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.sin(x));
+                }
+
+                System.out.println(">>> ---------------------------------");
+
+                System.out.println(">>> Decision tree regression trainer example completed.");
+            } finally {
+                trainingSet.destroy();
             }
-
-            System.out.println(">>> ---------------------------------");
-
-            System.out.println(">>> Decision tree regression trainer example completed.");
-            trainingSet.destroy();
         }
     }
 

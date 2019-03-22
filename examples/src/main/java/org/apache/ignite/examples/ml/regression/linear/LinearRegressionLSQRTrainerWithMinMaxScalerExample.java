@@ -58,43 +58,46 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.MORTALITY_DATA);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.MORTALITY_DATA);
 
-            System.out.println(">>> Create new MinMaxScaler trainer object.");
-            MinMaxScalerTrainer<Integer, Vector> minMaxScalerTrainer = new MinMaxScalerTrainer<>();
+                System.out.println(">>> Create new MinMaxScaler trainer object.");
+                MinMaxScalerTrainer<Integer, Vector> minMaxScalerTrainer = new MinMaxScalerTrainer<>();
 
-            System.out.println(">>> Perform the training to get the MinMaxScaler preprocessor.");
-            IgniteBiFunction<Integer, Vector, Vector> preprocessor = minMaxScalerTrainer.fit(
-                ignite,
-                dataCache,
-                (k, v) -> v.copyOfRange(1, v.size())
-            );
+                System.out.println(">>> Perform the training to get the MinMaxScaler preprocessor.");
+                IgniteBiFunction<Integer, Vector, Vector> preprocessor = minMaxScalerTrainer.fit(
+                    ignite,
+                    dataCache,
+                    (k, v) -> v.copyOfRange(1, v.size())
+                );
 
-            System.out.println(">>> Create new linear regression trainer object.");
-            LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
+                System.out.println(">>> Create new linear regression trainer object.");
+                LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
-            System.out.println(">>> Perform the training to get the model.");
+                System.out.println(">>> Perform the training to get the model.");
 
-            final IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+                final IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
 
-            LinearRegressionModel mdl = trainer.fit(ignite, dataCache, FeatureLabelExtractorWrapper.wrap(preprocessor, lbExtractor)); //TODO: IGNITE-11581
+                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, FeatureLabelExtractorWrapper.wrap(preprocessor, lbExtractor)); //TODO: IGNITE-11581
 
-            System.out.println(">>> Linear regression model: " + mdl);
+                System.out.println(">>> Linear regression model: " + mdl);
 
-            double rmse = Evaluator.evaluate(
-                dataCache,
-                mdl,
-                preprocessor,
-                lbExtractor,
-                new RegressionMetrics()
-            );
+                double rmse = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    preprocessor,
+                    lbExtractor,
+                    new RegressionMetrics()
+                );
 
-            System.out.println("\n>>> Rmse = " + rmse);
+                System.out.println("\n>>> Rmse = " + rmse);
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> Linear regression model with MinMaxScaler preprocessor over cache based dataset usage example completed.");
-            dataCache.destroy();
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> Linear regression model with MinMaxScaler preprocessor over cache based dataset usage example completed.");
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 }

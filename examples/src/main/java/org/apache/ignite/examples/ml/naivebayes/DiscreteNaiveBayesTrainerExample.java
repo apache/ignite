@@ -55,32 +55,35 @@ public class DiscreteNaiveBayesTrainerExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.ENGLISH_VS_SCOTTISH);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.ENGLISH_VS_SCOTTISH);
 
-            double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
-            System.out.println(">>> Create new Discrete naive Bayes classification trainer object.");
-            DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer()
-                .setBucketThresholds(thresholds);
+                double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
+                System.out.println(">>> Create new Discrete naive Bayes classification trainer object.");
+                DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer()
+                    .setBucketThresholds(thresholds);
 
-            System.out.println(">>> Perform the training to get the model.");
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
-                .labeled(Vectorizer.LabelCoordinate.FIRST);
+                System.out.println(">>> Perform the training to get the model.");
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            DiscreteNaiveBayesModel mdl = trainer.fit(ignite, dataCache, vectorizer);
-            System.out.println(">>> Discrete Naive Bayes model: " + mdl);
+                DiscreteNaiveBayesModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+                System.out.println(">>> Discrete Naive Bayes model: " + mdl);
 
-            double accuracy = Evaluator.evaluate(
-                dataCache,
-                mdl,
-                CompositionUtils.asFeatureExtractor(vectorizer),
-                CompositionUtils.asLabelExtractor(vectorizer)
-            ).accuracy();
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    CompositionUtils.asFeatureExtractor(vectorizer),
+                    CompositionUtils.asLabelExtractor(vectorizer)
+                ).accuracy();
 
-            System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Accuracy " + accuracy);
 
-            System.out.println(">>> Discrete Naive bayes model over partitioned dataset usage example completed.");
-            dataCache.destroy();
+                System.out.println(">>> Discrete Naive bayes model over partitioned dataset usage example completed.");
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 

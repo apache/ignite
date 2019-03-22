@@ -42,20 +42,24 @@ public class TrainingWithBinaryObjectExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, BinaryObject> dataCache = populateCache(ignite);
+            IgniteCache<Integer, BinaryObject> dataCache = null;
+            try {
+                dataCache = populateCache(ignite);
 
-            // Create dataset builder with enabled support of keeping binary for upstream cache.
-            CacheBasedDatasetBuilder<Integer, BinaryObject> datasetBuilder =
-                new CacheBasedDatasetBuilder<>(ignite, dataCache).withKeepBinary(true);
+                // Create dataset builder with enabled support of keeping binary for upstream cache.
+                CacheBasedDatasetBuilder<Integer, BinaryObject> datasetBuilder =
+                    new CacheBasedDatasetBuilder<>(ignite, dataCache).withKeepBinary(true);
 
-            Vectorizer<Integer, BinaryObject, String, Double> vectorizer =
-                new BinaryObjectVectorizer<Integer>("feature1").labeled("label");
+                Vectorizer<Integer, BinaryObject, String, Double> vectorizer =
+                    new BinaryObjectVectorizer<Integer>("feature1").labeled("label");
 
-            KMeansTrainer trainer = new KMeansTrainer();
-            KMeansModel kmdl = trainer.fit(datasetBuilder, vectorizer);
+                KMeansTrainer trainer = new KMeansTrainer();
+                KMeansModel kmdl = trainer.fit(datasetBuilder, vectorizer);
 
-            System.out.println(">>> Model trained over binary objects. Model " + kmdl);
-            dataCache.destroy();
+                System.out.println(">>> Model trained over binary objects. Model " + kmdl);
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 

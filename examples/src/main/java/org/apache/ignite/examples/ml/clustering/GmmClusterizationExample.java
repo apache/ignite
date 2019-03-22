@@ -57,54 +57,58 @@ public class GmmClusterizationExample {
             System.out.println(">>> Ignite grid started.");
 
             long seed = 0;
-            IgniteCache<Integer, LabeledVector<Double>> dataCache = ignite.createCache(
-                new CacheConfiguration<Integer, LabeledVector<Double>>("GMM_EXAMPLE_CACHE")
-                    .setAffinity(new RendezvousAffinityFunction(false, 10))
-            );
 
-            // Dataset consists of three gaussians where two from them are rotated onto PI/4.
-            DataStreamGenerator dataStream = new VectorGeneratorsFamily.Builder().add(
-                RandomProducer.vectorize(
-                    new GaussRandomProducer(0, 2., seed++),
-                    new GaussRandomProducer(0, 3., seed++)
-                ).rotate(Math.PI / 4).move(VectorUtils.of(10., 10.))).add(
-                RandomProducer.vectorize(
-                    new GaussRandomProducer(0, 1., seed++),
-                    new GaussRandomProducer(0, 2., seed++)
-                ).rotate(-Math.PI / 4).move(VectorUtils.of(-10., 10.))).add(
-                RandomProducer.vectorize(
-                    new GaussRandomProducer(0, 3., seed++),
-                    new GaussRandomProducer(0, 3., seed++)
-                ).move(VectorUtils.of(0., -10.))
-            ).build(seed++).asDataStream();
+            IgniteCache<Integer, LabeledVector<Double>> dataCache = null;
+            try {
+                dataCache = ignite.createCache(
+                    new CacheConfiguration<Integer, LabeledVector<Double>>("GMM_EXAMPLE_CACHE")
+                        .setAffinity(new RendezvousAffinityFunction(false, 10))
+                );
 
-            AtomicInteger keyGen = new AtomicInteger();
-            dataStream.fillCacheWithCustomKey(50000, dataCache, v -> keyGen.getAndIncrement());
-            GmmTrainer trainer = new GmmTrainer(1);
+                // Dataset consists of three gaussians where two from them are rotated onto PI/4.
+                DataStreamGenerator dataStream = new VectorGeneratorsFamily.Builder().add(
+                    RandomProducer.vectorize(
+                        new GaussRandomProducer(0, 2., seed++),
+                        new GaussRandomProducer(0, 3., seed++)
+                    ).rotate(Math.PI / 4).move(VectorUtils.of(10., 10.))).add(
+                    RandomProducer.vectorize(
+                        new GaussRandomProducer(0, 1., seed++),
+                        new GaussRandomProducer(0, 2., seed++)
+                    ).rotate(-Math.PI / 4).move(VectorUtils.of(-10., 10.))).add(
+                    RandomProducer.vectorize(
+                        new GaussRandomProducer(0, 3., seed++),
+                        new GaussRandomProducer(0, 3., seed++)
+                    ).move(VectorUtils.of(0., -10.))
+                ).build(seed++).asDataStream();
 
-            GmmModel mdl = trainer
-                .withMaxCountIterations(10)
-                .withMaxCountOfClusters(4)
-                .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(seed))
-                .fit(ignite, dataCache, new LabeledDummyVectorizer<>());
+                AtomicInteger keyGen = new AtomicInteger();
+                dataStream.fillCacheWithCustomKey(50000, dataCache, v -> keyGen.getAndIncrement());
+                GmmTrainer trainer = new GmmTrainer(1);
 
-            System.out.println(">>> GMM means and covariances");
-            for (int i = 0; i < mdl.countOfComponents(); i++) {
-                MultivariateGaussianDistribution distribution = mdl.distributions().get(i);
-                System.out.println();
-                System.out.println("============");
-                System.out.println("Component #" + i);
-                System.out.println("============");
-                System.out.println("Mean vector = ");
-                Tracer.showAscii(distribution.mean());
-                System.out.println();
-                System.out.println("Covariance matrix = ");
-                Tracer.showAscii(distribution.covariance());
+                GmmModel mdl = trainer
+                    .withMaxCountIterations(10)
+                    .withMaxCountOfClusters(4)
+                    .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(seed))
+                    .fit(ignite, dataCache, new LabeledDummyVectorizer<>());
+
+                System.out.println(">>> GMM means and covariances");
+                for (int i = 0; i < mdl.countOfComponents(); i++) {
+                    MultivariateGaussianDistribution distribution = mdl.distributions().get(i);
+                    System.out.println();
+                    System.out.println("============");
+                    System.out.println("Component #" + i);
+                    System.out.println("============");
+                    System.out.println("Mean vector = ");
+                    Tracer.showAscii(distribution.mean());
+                    System.out.println();
+                    System.out.println("Covariance matrix = ");
+                    Tracer.showAscii(distribution.covariance());
+                }
+
+                System.out.println(">>>");
+            } finally {
+                dataCache.destroy();
             }
-
-            System.out.println(">>>");
-
-            dataCache.destroy();
         }
     }
 }

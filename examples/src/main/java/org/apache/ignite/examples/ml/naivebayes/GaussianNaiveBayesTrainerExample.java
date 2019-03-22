@@ -56,33 +56,36 @@ public class GaussianNaiveBayesTrainerExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            System.out.println(">>> Create new naive Bayes classification trainer object.");
-            GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
+                System.out.println(">>> Create new naive Bayes classification trainer object.");
+                GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
 
-            System.out.println(">>> Perform the training to get the model.");
+                System.out.println(">>> Perform the training to get the model.");
 
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
-                .labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            GaussianNaiveBayesModel mdl = trainer.fit(ignite, dataCache, vectorizer);
-            System.out.println(">>> Naive Bayes model: " + mdl);
+                GaussianNaiveBayesModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+                System.out.println(">>> Naive Bayes model: " + mdl);
 
-            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
-            IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
-            double accuracy = Evaluator.evaluate(
-                dataCache,
-                mdl,
-                featureExtractor,
-                lbExtractor
-            ).accuracy();
+                IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
+                IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    featureExtractor,
+                    lbExtractor
+                ).accuracy();
 
-            System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Accuracy " + accuracy);
 
-            System.out.println(">>> Naive bayes model over partitioned dataset usage example completed.");
-            dataCache.destroy();
+                System.out.println(">>> Naive bayes model over partitioned dataset usage example completed.");
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 

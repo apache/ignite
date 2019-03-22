@@ -55,33 +55,37 @@ public class GDBOnTreesRegressionTrainerExample {
 
             // Create cache with training data.
             CacheConfiguration<Integer, double[]> trainingSetCfg = createCacheConfiguration();
-            IgniteCache<Integer, double[]> trainingSet = fillTrainingData(ignite, trainingSetCfg);
+            IgniteCache<Integer, double[]> trainingSet = null;
+            try {
+                trainingSet = fillTrainingData(ignite, trainingSetCfg);
 
-            // Create regression trainer.
-            DatasetTrainer<ModelsComposition, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 1, 0.)
-                .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.001));
+                // Create regression trainer.
+                DatasetTrainer<ModelsComposition, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 1, 0.)
+                    .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.001));
 
-            // Train decision tree model.
-            Model<Vector, Double> mdl = trainer.fit(
-                ignite,
-                trainingSet,
-                new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
-            );
+                // Train decision tree model.
+                Model<Vector, Double> mdl = trainer.fit(
+                    ignite,
+                    trainingSet,
+                    new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+                );
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Valid answer \t|");
-            System.out.println(">>> ---------------------------------");
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> | Prediction\t| Valid answer \t|");
+                System.out.println(">>> ---------------------------------");
 
-            // Calculate score.
-            for (int x = -5; x < 5; x++) {
-                double predicted = mdl.predict(VectorUtils.of(x));
+                // Calculate score.
+                for (int x = -5; x < 5; x++) {
+                    double predicted = mdl.predict(VectorUtils.of(x));
 
-                System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.pow(x, 2));
+                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.pow(x, 2));
+                }
+
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> GDB regression trainer example completed.");
+            } finally {
+                trainingSet.destroy();
             }
-
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> GDB regression trainer example completed.");
-            trainingSet.destroy();
         }
     }
 

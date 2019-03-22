@@ -62,53 +62,56 @@ public class BaggedLogisticRegressionSGDTrainerExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            System.out.println(">>> Create new logistic regression trainer object.");
-            LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
-                .withUpdatesStgy(new UpdatesStrategy<>(
-                    new SimpleGDUpdateCalculator(0.2),
-                    SimpleGDParameterUpdate.SUM_LOCAL,
-                    SimpleGDParameterUpdate.AVG
-                ))
-                .withMaxIterations(100000)
-                .withLocIterations(100)
-                .withBatchSize(10)
-                .withSeed(123L);
+                System.out.println(">>> Create new logistic regression trainer object.");
+                LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
+                    .withUpdatesStgy(new UpdatesStrategy<>(
+                        new SimpleGDUpdateCalculator(0.2),
+                        SimpleGDParameterUpdate.SUM_LOCAL,
+                        SimpleGDParameterUpdate.AVG
+                    ))
+                    .withMaxIterations(100000)
+                    .withLocIterations(100)
+                    .withBatchSize(10)
+                    .withSeed(123L);
 
-            System.out.println(">>> Perform the training to get the model.");
+                System.out.println(">>> Perform the training to get the model.");
 
-            BaggedTrainer<Double> baggedTrainer = TrainerTransformers.makeBagged(
-                trainer,
-                10,
-                0.6,
-                4,
-                3,
-                new OnMajorityPredictionsAggregator())
-                .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(1));
+                BaggedTrainer<Double> baggedTrainer = TrainerTransformers.makeBagged(
+                    trainer,
+                    10,
+                    0.6,
+                    4,
+                    3,
+                    new OnMajorityPredictionsAggregator())
+                    .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(1));
 
-            System.out.println(">>> Perform evaluation of the model.");
+                System.out.println(">>> Perform evaluation of the model.");
 
-            Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
-                .labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            double[] score = new CrossValidation<BaggedModel, Double, Integer, Vector>().score(
-                baggedTrainer,
-                new Accuracy<>(),
-                ignite,
-                dataCache,
-                CompositionUtils.asFeatureExtractor(vectorizer),
-                CompositionUtils.asLabelExtractor(vectorizer),
-                3
-            );
+                double[] score = new CrossValidation<BaggedModel, Double, Integer, Vector>().score(
+                    baggedTrainer,
+                    new Accuracy<>(),
+                    ignite,
+                    dataCache,
+                    CompositionUtils.asFeatureExtractor(vectorizer),
+                    CompositionUtils.asLabelExtractor(vectorizer),
+                    3
+                );
 
-            System.out.println(">>> ---------------------------------");
+                System.out.println(">>> ---------------------------------");
 
-            Arrays.stream(score).forEach(sc -> System.out.println("\n>>> Accuracy " + sc));
+                Arrays.stream(score).forEach(sc -> System.out.println("\n>>> Accuracy " + sc));
 
-            System.out.println(">>> Bagged logistic regression model over partitioned dataset usage example completed.");
-            dataCache.destroy();
+                System.out.println(">>> Bagged logistic regression model over partitioned dataset usage example completed.");
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 }
