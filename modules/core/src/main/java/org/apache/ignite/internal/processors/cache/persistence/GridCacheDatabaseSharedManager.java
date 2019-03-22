@@ -2171,6 +2171,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             int groupId = pageSnapshot.fullPageId().groupId();
                             int partId = partId(pageSnapshot.fullPageId().pageId());
 
+                            if (skipRemovedIndexUpdates(groupId, partId))
+                                break;
+
+
                             stripedApplyPage((pageMem) -> {
                                     try {
                                         applyPageSnapshot(pageMem, pageSnapshot);
@@ -2237,6 +2241,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             int groupId = pageDelta.groupId();
                             int partId = partId(pageDelta.pageId());
+
+                            if (skipRemovedIndexUpdates(groupId, partId))
+                                break;
 
                             stripedApplyPage((pageMem) -> {
                                 try {
@@ -2454,6 +2461,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         finally {
             pageMem.releasePage(grpId, pageId, page);
         }
+    }
+
+    /**
+     * @param grpId Group id.
+     * @param partId Partition id.
+     */
+    private boolean skipRemovedIndexUpdates(int grpId, int partId) {
+        return (partId == PageIdAllocator.INDEX_PARTITION) && !storeMgr.hasIndexStore(grpId);
     }
 
     /**

@@ -682,17 +682,12 @@ public class GridH2Table extends TableBase {
             try {
                 ensureNotDestroyed();
 
-                boolean replaced;
+                H2CacheRow prevRowFromPk = (H2CacheRow)pk().put(row0);
 
-                if (prevRowAvailable)
-                    replaced = pk().putx(row0);
-                else {
-                    prevRow0 = (H2CacheRow)pk().put(row0);
+                if (prevRowFromPk == null && prevRow0 != null)
+                    prevRow0 = null;
 
-                    replaced = prevRow0 != null;
-                }
-
-                if (!replaced)
+                if (prevRowFromPk == null)
                     size.increment();
 
                 for (int i = pkIndexPos + 1, len = idxs.size(); i < len; i++) {
