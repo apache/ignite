@@ -278,6 +278,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Recovery mode flag. */
     private volatile boolean recoveryMode;
 
+    /** Flag indicates that cache has stopped. */
+    private volatile boolean stop;
+
     /** */
     private final boolean disableTriggeringCacheInterceptorOnConflict =
         Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
@@ -1039,6 +1042,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public GridCacheAdapter<K, V> cache() {
         return cache;
+    }
+
+    /**
+     * @return Cache stop state.
+     */
+    public boolean stop() {
+        return stop;
     }
 
     /**
@@ -2036,6 +2046,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Nulling references to potentially leak-prone objects.
      */
     public void cleanup() {
+        stop = true;
         cache = null;
         cacheCfg = null;
         evictMgr = null;

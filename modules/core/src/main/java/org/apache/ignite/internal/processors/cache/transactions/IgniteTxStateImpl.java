@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptor;
@@ -120,11 +121,20 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public void awaitLastFuture(GridCacheSharedContext cctx) {
+        cleanupCaches();
+
         for (int i = 0; i < activeCacheIds.size(); i++) {
             int cacheId = activeCacheIds.get(i);
 
             cctx.cacheContext(cacheId).cache().awaitLastFut();
         }
+    }
+
+    /** {@inheritDoc} */
+    private void cleanupCaches() {
+        for (IgniteTxEntry e : txMap.values())
+            if (e.context().stop())
+                activeCacheIds.removeValue(0, e.cacheId());
     }
 
     /** {@inheritDoc} */
@@ -393,6 +403,8 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
             int cacheId = activeCacheIds.get(i);
 
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+            assert cacheCtx != null : "cacheCtx == null";
 
             onTxEnd(cacheCtx, tx, commit);
         }
