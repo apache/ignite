@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2QueryInfo;
+import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -112,7 +112,7 @@ class MapQueryResults {
      * @param qryInfo Query info.
      */
     void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params,
-        IgniteLogger log, IgniteH2QueryInfo qryInfo) {
+        IgniteLogger log, MapH2QueryInfo qryInfo) {
         MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, lazyWorker,
             log, qryInfo);
 

@@ -45,7 +45,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
      */
     public H2FieldsIterator(ResultSet data,
         ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn,
-        IgniteLogger log, IgniteH2Indexing h2, IgniteH2QueryInfo qryInfo) throws IgniteCheckedException {
+        IgniteLogger log, IgniteH2Indexing h2, AbstractH2QueryInfo qryInfo) throws IgniteCheckedException {
         super(data, log, h2, qryInfo);
 
         this.detachedConn = detachedConn;

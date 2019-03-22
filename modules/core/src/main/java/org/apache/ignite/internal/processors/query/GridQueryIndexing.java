@@ -28,6 +28,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -321,29 +322,10 @@ public interface GridQueryIndexing {
     public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
 
     /**
-     * @return Timeout in milliseconds after which long query warning will be printed.
-     */
-    public long getLongQueryWarningTimeout();
-
-    /**
-     * Sets timeout in milliseconds after which long query warning will be printed.
+     * Register SQL JMX beans.
      *
-     * @param longQueryWarningTimeout Timeout in milliseconds after which long query warning will be printed.
+     * @param mbMgr Ignite MXBean manager.
+     * @throws IgniteCheckedException On bean registration error.
      */
-    public void setLongQueryWarningTimeout(long longQueryWarningTimeout);
-
-    /**
-     * @return Threshold result's row count, when count of fetched rows is bigger than the threshold
-     *      warning will be printed.
-     */
-    long getResultSetSizeThreshold();
-
-    /**
-     * Sets threshold result's row count, when count of fetched rows is bigger than the threshold
-     *      warning will be printed.
-     *
-     * @param resultSetSizeThreshold Threshold result's row count, when count of fetched rows is bigger than the threshold
-     *      warning will be printed.
-     */
-    void setResultSetSizeThreshold(long resultSetSizeThreshold);
+    void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException;
 }

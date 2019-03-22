@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2QueryInfo;
+import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -102,7 +102,7 @@ class MapQueryResult {
     private final MapQueryLazyWorker lazyWorker;
 
     /** Query info. */
-    private final IgniteH2QueryInfo qryInfo;
+    private final MapH2QueryInfo qryInfo;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -129,7 +129,7 @@ class MapQueryResult {
      */
     MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
         UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker,
-        IgniteLogger log, IgniteH2QueryInfo qryInfo) {
+        IgniteLogger log, MapH2QueryInfo qryInfo) {
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;

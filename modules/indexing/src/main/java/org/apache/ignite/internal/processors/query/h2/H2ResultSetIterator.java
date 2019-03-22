@@ -78,7 +78,7 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     private long threshold;
 
     /** Query info to print log message. */
-    private IgniteH2QueryInfo qryInfo;
+    private AbstractH2QueryInfo qryInfo;
 
     /** Fetched count of rows. */
     private long fetchedSize;
@@ -94,7 +94,7 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
      * @throws IgniteCheckedException If failed.
      */
     protected H2ResultSetIterator(ResultSet data, IgniteLogger log, IgniteH2Indexing h2,
-        IgniteH2QueryInfo qryInfo) throws IgniteCheckedException {
+        AbstractH2QueryInfo qryInfo) throws IgniteCheckedException {
         this.data = data;
 
         try {

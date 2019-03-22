@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -71,7 +72,7 @@ import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2QueryInfo;
+import org.apache.ignite.internal.processors.query.h2.ReduceH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
@@ -836,15 +837,19 @@ public class GridReduceQueryExecutor {
 
                             Collection<Object> params0 = F.asList(rdc.parameters(params));
 
-                            ResultSet res = h2.executeSqlQueryWithTimer(r.connection(),
-                                rdc.query(),
-                                params0,
-                                false, // The statement will cache some extra thread local objects.
-                                timeoutMillis,
-                                cancel);
+                            final PreparedStatement stmt = h2.preparedStatementWithParams(r.connection(), rdc.query(),
+                                params0, false);
 
-                            resIter = new H2FieldsIterator(res, null, log, h2,
-                                IgniteH2QueryInfo.collectInfo(res, rdc.query(), params0));
+                            ReduceH2QueryInfo qryInfo = new ReduceH2QueryInfo(stmt, rdc.query(), params0, qryReqId);
+
+                            ResultSet res = h2.executeSqlQueryWithTimer(stmt, r.connection(),
+                                rdc.query(),
+                                F.asList(rdc.parameters(params)),
+                                timeoutMillis,
+                                cancel,
+                                qryInfo);
+
+                            resIter = new H2FieldsIterator(res, null, log, h2, qryInfo);
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();
@@ -1460,7 +1465,7 @@ public class GridReduceQueryExecutor {
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
             ResultSet rs =
-                h2.executeSqlQueryWithTimer(c, "SELECT PLAN FROM " + mergeTableIdentifier(i), null, false, 0, null);
+                h2.executeSqlQueryWithTimer(c, "SELECT PLAN FROM " + mergeTableIdentifier(i), null, false, 0, null, null);
 
             lists.add(F.asList(getPlan(rs)));
         }
@@ -1480,7 +1485,7 @@ public class GridReduceQueryExecutor {
             F.asList(rdc.parameters(params)),
             false,
             0,
-            null);
+            null, null);
 
         lists.add(F.asList(getPlan(rs)));
 
