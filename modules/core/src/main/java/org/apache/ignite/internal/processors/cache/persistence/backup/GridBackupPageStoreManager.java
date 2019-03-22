@@ -178,7 +178,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
     @Override public void backup(
         long idx,
         Map<Integer, Set<Integer>> grpsBackup,
-        BackupProcessTask task,
+        BackupProcessSupplier task,
         IgniteInternalFuture<Boolean> fut
     ) throws IgniteCheckedException {
         if (!(cctx.database() instanceof GridCacheDatabaseSharedManager))
@@ -302,7 +302,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 if (fut.isCancelled())
                     return;
 
-                task.handlePartition(grpPartId,
+                task.supplyPartition(grpPartId,
                     resolvePartitionFileCfg(grpCfg, grpPartId.getPartitionId()),
                     partSize);
 
@@ -320,7 +320,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 if (fut.isCancelled())
                     return;
 
-                task.handleDelta(grpPartId,
+                task.supplyDelta(grpPartId,
                     resolvePartitionDeltaFileCfg(grpCfg, grpPartId.getPartitionId()),
                     deltaOffset,
                     deltaSize);

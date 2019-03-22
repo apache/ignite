@@ -27,14 +27,14 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
  * is written to the end of partition file and which is not belongs to the previously
  * copied partiton file by offset).
  */
-public interface BackupProcessTask {
+public interface BackupProcessSupplier {
     /**
      * @param grpPartId Cache group and partition pair identifiers.
      * @param file A representation of partiton file.
      * @param size Partiton size in bytes to handle.
      * @throws IgniteCheckedException If fails.
      */
-    public void handlePartition(
+    public void supplyPartition(
         GroupPartitionId grpPartId,
         File file,
         long size
@@ -47,7 +47,7 @@ public interface BackupProcessTask {
      * @param size Size of delta to handle.
      * @throws IgniteCheckedException If fails.
      */
-    public void handleDelta(
+    public void supplyDelta(
         GroupPartitionId grpPartId,
         File file,
         long offset,

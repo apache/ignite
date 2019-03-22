@@ -272,11 +272,11 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
             .backup(
                 1,
                 grpsBackup,
-                new BackupProcessTask() {
+                new BackupProcessSupplier() {
                     /** Last seen handled partition id file. */
                     private File lastSavedPartId;
 
-                    @Override public void handlePartition(
+                    @Override public void supplyPartition(
                         GroupPartitionId grpPartId,
                         File file,
                         long size
@@ -291,7 +291,7 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
                         }
                     }
 
-                    @Override public void handleDelta(
+                    @Override public void supplyDelta(
                         GroupPartitionId grpPartId,
                         File file,
                         long offset,

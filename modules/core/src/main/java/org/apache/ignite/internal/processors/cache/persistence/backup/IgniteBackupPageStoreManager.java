@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.backup;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -42,7 +40,7 @@ public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, Ig
     public void backup(
         long idx,
         Map<Integer, Set<Integer>> grpsBackup,
-        BackupProcessTask hndlr,
+        BackupProcessSupplier hndlr,
         IgniteInternalFuture<Boolean> fut
     ) throws IgniteCheckedException;
 

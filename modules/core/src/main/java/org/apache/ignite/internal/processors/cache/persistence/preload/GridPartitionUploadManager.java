@@ -34,7 +34,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessTask;
+import org.apache.ignite.internal.processors.cache.persistence.backup.BackupProcessSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileTransferManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.meta.PartitionFileMetaInfo;
@@ -182,7 +182,7 @@ public class GridPartitionUploadManager {
 
             backupMgr.backup(uploadFut.rebalanceId,
                 uploadFut.getAssigns(),
-                new SocketBackupProcessTask(
+                new SocketBackupProcessSupplier(
                     new FileTransferManager<>(cctx.kernalContext(), ch.channel(), uploadFut),
                     log
                 ),
@@ -208,7 +208,7 @@ public class GridPartitionUploadManager {
     }
 
     /** */
-    private static class SocketBackupProcessTask implements BackupProcessTask {
+    private static class SocketBackupProcessSupplier implements BackupProcessSupplier {
         /** */
         private final FileTransferManager<PartitionFileMetaInfo> ftMrg;
 
@@ -218,13 +218,13 @@ public class GridPartitionUploadManager {
         /**
          * @param ftMrg An upload helper class.
          */
-        public SocketBackupProcessTask(FileTransferManager<PartitionFileMetaInfo> ftMrg, IgniteLogger log) {
+        public SocketBackupProcessSupplier(FileTransferManager<PartitionFileMetaInfo> ftMrg, IgniteLogger log) {
             this.ftMrg = ftMrg;
             this.log = log;
         }
 
         /** {@inheritDoc} */
-        @Override public void handlePartition(
+        @Override public void supplyPartition(
             GroupPartitionId grpPartId,
             File file,
             long size
@@ -243,7 +243,7 @@ public class GridPartitionUploadManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void handleDelta(
+        @Override public void supplyDelta(
             GroupPartitionId grpPartId,
             File file,
             long offset,
