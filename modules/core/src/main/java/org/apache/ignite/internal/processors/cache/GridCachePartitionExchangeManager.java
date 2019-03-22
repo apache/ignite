@@ -298,8 +298,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         AffinityTopologyVersion msgTopVer = exchangeId.topologyVersion();
                         AffinityTopologyVersion curTopVer = lastInitializedFut.initialVersion();
 
-                        if (msgTopVer.compareTo(curTopVer) <= 0)
-                            suspendOnTransition = false;
+                        assert msgTopVer.compareTo(curTopVer) == 0 : msgTopVer + " " + curTopVer;
+
+                        suspendOnTransition = false;
                     }
                 }
 
