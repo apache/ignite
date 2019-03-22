@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
@@ -121,7 +122,7 @@ public class GridH2Table extends TableBase {
     private final LongAdder size = new LongAdder();
 
     /** */
-    private volatile boolean rebuildFromHashInProgress;
+    private final AtomicBoolean rebuildFromHashInProgress = new AtomicBoolean(false);
 
     /** Identifier. */
     private final QueryTable identifier;
@@ -684,7 +685,7 @@ public class GridH2Table extends TableBase {
 
                 boolean replaced;
 
-                if (prevRowAvailable && !rebuildFromHashInProgress)
+                if (prevRowAvailable && !rebuildFromHashInProgress.get())
                     replaced = pk().putx(row0);
                 else {
                     prevRow0 = pk().put(row0);
@@ -797,15 +798,15 @@ public class GridH2Table extends TableBase {
     public void markRebuildFromHashInProgress(boolean value) {
         assert !value || (idxs.size() >= 2 && index(1).getIndexType().isHash()) : "Table has no hash index.";
 
-        rebuildFromHashInProgress = value;
+        if (rebuildFromHashInProgress.compareAndSet(!value, value)) {
+            lock.writeLock().lock();
 
-        lock.writeLock().lock();
-
-        try {
-            incrementModificationCounter();
-        }
-        finally {
-            lock.writeLock().unlock();
+            try {
+                incrementModificationCounter();
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
         }
     }
 
@@ -813,7 +814,7 @@ public class GridH2Table extends TableBase {
      *
      */
     public boolean rebuildFromHashInProgress() {
-        return rebuildFromHashInProgress;
+        return rebuildFromHashInProgress.get();
     }
 
     /** {@inheritDoc} */
@@ -1009,7 +1010,7 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public Index getUniqueIndex() {
-        if (rebuildFromHashInProgress)
+        if (rebuildFromHashInProgress.get())
             return index(1);
         else
             return index(2);
@@ -1017,7 +1018,7 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public ArrayList<Index> getIndexes() {
-        if (!rebuildFromHashInProgress)
+        if (!rebuildFromHashInProgress.get())
             return idxs;
 
         ArrayList<Index> idxs = new ArrayList<>(2);
