@@ -24,7 +24,7 @@ import java.util.Arrays;
  */
 final class DistributedMetaStorageHistoryCache {
     /**
-     * Versiob of the oldest history item in the cache. For empty history it is expected to be zero until the
+     * Version of the oldest history item in the cache. For empty history it is expected to be zero until the
      * first change.
      */
     private long startingVer;

@@ -33,7 +33,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.IgniteFeatures.DISTRIBUTED_METASTORAGE;
 
 /**
- * API for distributed data storage. It is guaranteed that every read value is the same on every node in the cluster
+ * API for distributed data storage. Gives the ability to store configuration data (or any other data)
+ * consistently and cluster-wide. It is guaranteed that every read value is the same on every node in the cluster
  * all the time.
  */
 public interface ReadableDistributedMetaStorage {
@@ -54,12 +55,12 @@ public interface ReadableDistributedMetaStorage {
     }
 
     /**
-     * Get the total number of updates that metastorage ever had.
+     * Get the total number of updates (write/remove) that metastorage ever had.
      */
     long getUpdatesCount();
 
     /**
-     * Get value by the key.
+     * Get value by the key. Should be consistent for all nodes in cluster when it's in active state.
      *
      * @param key The key.
      * @return Value associated with the key.
@@ -81,7 +82,18 @@ public interface ReadableDistributedMetaStorage {
     ) throws IgniteCheckedException;
 
     /**
-     * Add listener on data updates.
+     * Add listener on data updates. Updates happens it two cases:
+     * <ul>
+     *     <li>
+     *         Some node invoked write or remove. Listeners are invoked after update update operation is
+     *         already completed.
+     *     </li>
+     *     <li>
+     *         Node is just started and not ready for write yet. In this case listeners are invoked for every
+     *         key with new value (retrieved from the clueter) or already existing value if there was no updates
+     *         for given key. This guarantees that all listeners are invoked for all updates in case of failover.
+     *     </li>
+     * </ul>
      *
      * @param keyPred Predicate to check whether this listener should be invoked on given key update or not.
      * @param lsnr Listener object.

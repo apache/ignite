@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.jetbrains.annotations.Nullable;
 
 /** */
 class DistributedMetaStorageUtil {
@@ -40,7 +39,7 @@ class DistributedMetaStorageUtil {
     /**
      * Key for history version.
      */
-    private static final String HISTORY_VER_KEY = "hv";
+    private static final String VER_KEY = "ver";
 
     /**
      * Prefix for history items. Each item will be stored using {@code hist-item-<ver>} key.
@@ -54,12 +53,12 @@ class DistributedMetaStorageUtil {
     private static final String CLEANUP_GUARD_KEY = "clean";
 
     /** */
-    @Nullable public static byte[] marshal(JdkMarshaller marshaller, Serializable val) throws IgniteCheckedException {
+    public static byte[] marshal(JdkMarshaller marshaller, Serializable val) throws IgniteCheckedException {
         return val == null ? null : marshaller.marshal(val);
     }
 
     /** */
-    @Nullable public static Serializable unmarshal(JdkMarshaller marshaller, byte[] valBytes) throws IgniteCheckedException {
+    public static Serializable unmarshal(JdkMarshaller marshaller, byte[] valBytes) throws IgniteCheckedException {
         return valBytes == null ? null : marshaller.unmarshal(valBytes, U.gridClassLoader());
     }
 
@@ -99,8 +98,8 @@ class DistributedMetaStorageUtil {
     }
 
     /** */
-    public static String historyVersionKey() {
-        return COMMON_KEY_PREFIX + HISTORY_VER_KEY;
+    public static String versionKey() {
+        return COMMON_KEY_PREFIX + VER_KEY;
     }
 
     /** */

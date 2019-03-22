@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyVersionKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.versionKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKeyPrefix;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.unmarshal;
@@ -142,7 +142,7 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         }
         else {
             DistributedMetaStorageVersion storedVer =
-                (DistributedMetaStorageVersion)metastorage.read(historyVersionKey());
+                (DistributedMetaStorageVersion)metastorage.read(versionKey());
 
             if (storedVer == null) {
                 ver = DistributedMetaStorageVersion.INITIAL_VERSION;

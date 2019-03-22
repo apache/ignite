@@ -28,7 +28,4 @@ class StartupExtras {
 
     /** */
     public DistributedMetaStorageClusterNodeData fullNodeData;
-
-    /** */
-    public long verFromDiscoveryClusterData;
 }

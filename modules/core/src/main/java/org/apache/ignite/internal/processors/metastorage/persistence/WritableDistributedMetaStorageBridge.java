@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyVersionKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.versionKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKeyPrefix;
 
@@ -87,7 +87,7 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
 
         dms.setVer(dms.getVer().nextVersion(histItem));
 
-        metastorage.write(historyVersionKey(), dms.getVer());
+        metastorage.write(versionKey(), dms.getVer());
     }
 
     /** {@inheritDoc} */
@@ -144,15 +144,15 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                     dms.addToHistoryCache(histItemVer, histItem);
                 }
 
-                metastorage.write(historyVersionKey(), dms.getVer());
+                metastorage.write(versionKey(), dms.getVer());
             }
 
             metastorage.remove(cleanupGuardKey);
         }
 
-        DistributedMetaStorageVersion storedVer = (DistributedMetaStorageVersion)metastorage.read(historyVersionKey());
+        DistributedMetaStorageVersion storedVer = (DistributedMetaStorageVersion)metastorage.read(versionKey());
 
         if (storedVer == null)
-            metastorage.write(historyVersionKey(), DistributedMetaStorageVersion.INITIAL_VERSION);
+            metastorage.write(versionKey(), DistributedMetaStorageVersion.INITIAL_VERSION);
     }
 }
