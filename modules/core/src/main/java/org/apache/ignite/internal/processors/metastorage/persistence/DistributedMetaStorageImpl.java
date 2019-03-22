@@ -480,41 +480,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public Long collectTcpHandshakeResponseData() {
-        lock.readLock().lock();
-
-        try {
-            long ver = getActualVersion().id;
-
-            return ver == 0L ? null : ver;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onTcpHandshakeResponseDataReceived(Serializable componentData) {
-        lock.writeLock().lock();
-
-        try {
-            assert startupExtras != null;
-
-            if (isClient)
-                startupExtras = new StartupExtras();
-
-            if (componentData != null) {
-                assert componentData instanceof Long;
-
-                startupExtras.verFromDiscoveryClusterData = (Long)componentData;
-            }
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
         lock.readLock().lock();
 

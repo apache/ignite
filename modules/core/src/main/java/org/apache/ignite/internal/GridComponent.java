@@ -149,15 +149,6 @@ public interface GridComponent {
      */
     public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data);
 
-    /** */
-    public default Serializable collectTcpHandshakeResponseData() {
-        return null;
-    }
-
-    /** */
-    public default void onTcpHandshakeResponseDataReceived(Serializable componentData) {
-    }
-
     /**
      * Prints memory statistics (sizes of internal structures, etc.).
      *

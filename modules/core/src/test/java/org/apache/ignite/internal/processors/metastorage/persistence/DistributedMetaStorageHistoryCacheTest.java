@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
+import java.util.LinkedList;
+import java.util.List;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -48,7 +50,7 @@ public class DistributedMetaStorageHistoryCacheTest {
         assertNull(histCache.get(0));
 
         // Cache with one element.
-        DistributedMetaStorageHistoryItem item0 = new DistributedMetaStorageHistoryItem("key0", EMPTY_BYTE_ARRAY);
+        DistributedMetaStorageHistoryItem item0 = newHistoryItem("key0");
 
         histCache.put(25L, item0);
 
@@ -62,7 +64,7 @@ public class DistributedMetaStorageHistoryCacheTest {
 
         assertEquals(singletonList(item0), asList(histCache.toArray()));
 
-        DistributedMetaStorageHistoryItem item1 = new DistributedMetaStorageHistoryItem("key1", new byte[0]);
+        DistributedMetaStorageHistoryItem item1 = newHistoryItem("key1");
 
         // Put with wrong history should throw default assertion error or do nothing.
         try {
@@ -113,5 +115,58 @@ public class DistributedMetaStorageHistoryCacheTest {
     @Test
     public void testExpand() {
         DistributedMetaStorageHistoryCache histCache = new DistributedMetaStorageHistoryCache();
+
+        List<DistributedMetaStorageHistoryItem> expect = new LinkedList<>();
+
+        long ver = 0L;
+
+        // Default 16-elemets internal array will fit 15 elemet without expanding.
+        for (; ver < 15L; ver++) {
+            DistributedMetaStorageHistoryItem newItem = newHistoryItem(Long.toString(ver));
+
+            histCache.put(ver, newItem);
+
+            expect.add(newItem);
+        }
+
+        assertEquals(expect, asList(histCache.toArray()));
+
+        // Clear the beginning of the array.
+        for (int i = 0; i < 5; i++) {
+            DistributedMetaStorageHistoryItem oldest = histCache.removeOldest();
+
+            DistributedMetaStorageHistoryItem expOldest = expect.remove(0);
+
+            assertEquals(expOldest, oldest);
+        }
+
+        assertEquals(expect, asList(histCache.toArray()));
+
+        // Overlap data through the end of the internal array.
+        for (; ver < 20L; ver++) {
+            DistributedMetaStorageHistoryItem newItem = newHistoryItem(Long.toString(ver));
+
+            histCache.put(ver, newItem);
+
+            expect.add(newItem);
+        }
+
+        assertEquals(expect, asList(histCache.toArray()));
+
+        // Expand the internal array.
+        for (; ver < 25L; ver++) {
+            DistributedMetaStorageHistoryItem newItem = newHistoryItem(Long.toString(ver));
+
+            histCache.put(ver, newItem);
+
+            expect.add(newItem);
+        }
+
+        assertEquals(expect, asList(histCache.toArray()));
+    }
+
+    /** */
+    private static DistributedMetaStorageHistoryItem newHistoryItem(String key) {
+        return new DistributedMetaStorageHistoryItem(key, EMPTY_BYTE_ARRAY);
     }
 }
