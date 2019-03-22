@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
@@ -139,12 +138,11 @@ public class LongRunningQueryManager {
 
     /**
      * Sets long query timeout multiplier. The warning will be printed after:
-     *      * - timeout;
-     *      * - timeout * multiplier;
-     *      * - timeout * multiplier * multiplier;
-     *      * - etc...
-     *      *
-     *      * If the multiplier <= 1, the warning message is printed once.
+     *      - timeout;
+     *      - timeout * multiplier;
+     *      - timeout * multiplier * multiplier;
+     *      - etc...
+     * If the multiplier <= 1, the warning message is printed once.
      *
      * @param timeoutMult Long query timeout multiplier.
      */
