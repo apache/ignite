@@ -173,7 +173,8 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
     }
 
     /**
-     * Map vectorizer answer. NOTE: function "func" should be on ignite servers.
+     * Map vectorizer answer. This method should be called after creating basic vectorizer.
+     * NOTE: function "func" should be on ignite servers.
      *
      * @param func mapper.
      * @param <L1> Type of new label.
@@ -268,7 +269,8 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
 
         /** {@inheritDoc} */
         @Override public LabeledVector<L1> apply(K key, V value) {
-            return mapping.apply(original.apply(key, value));
+            LabeledVector<L0> origVec = original.apply(key, value);
+            return mapping.apply(origVec);
         }
     }
 
