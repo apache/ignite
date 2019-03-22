@@ -21,6 +21,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ * Abstract class for TotalUsedPages metric tests.
+ */
 public class UsedPagesMetricAbstractTest extends GridCommonAbstractTest {
     /** */
     public static final String MY_CACHE = "myCache";

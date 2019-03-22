@@ -128,6 +128,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
         return totalAllocatedPages.longValue();
     }
 
+    /** {@inheritDoc} */
     @Override public long getTotalUsedPages() {
         return getTotalAllocatedPages() - dataRegionMetricsProvider.emptyDataPages();
     }

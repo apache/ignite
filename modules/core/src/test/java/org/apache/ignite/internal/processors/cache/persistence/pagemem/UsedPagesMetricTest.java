@@ -21,6 +21,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Test;
 
+/**
+ * TotalUsedPages metric in-memory tests.
+ */
 public class UsedPagesMetricTest extends UsedPagesMetricAbstractTest {
     /** */
     public static final int NODES = 2;

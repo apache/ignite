@@ -400,6 +400,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         };
     }
 
+    /**
+     * Provide that can be used to compute some metrics for provided data region.
+     *
+     * @param dataRegCfg Data region configuration.
+     * @return DataRegionMetricsProvider.
+     */
     protected DataRegionMetricsProvider dataRegionMetricsProvider(final DataRegionConfiguration dataRegCfg) {
         final String dataRegName = dataRegCfg.getName();
 

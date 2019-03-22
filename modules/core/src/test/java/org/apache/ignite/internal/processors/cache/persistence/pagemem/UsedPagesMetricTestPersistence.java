@@ -23,6 +23,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * TotalUsedPages metric persistence tests.
+ */
 public class UsedPagesMetricTestPersistence extends UsedPagesMetricAbstractTest {
     /** */
     public static final int NODES = 1;
@@ -46,15 +49,21 @@ public class UsedPagesMetricTestPersistence extends UsedPagesMetricAbstractTest 
                         ));
     }
 
+    /**
+     *
+     */
     @Before
     public void cleanBeforeStart() throws Exception {
         cleanPersistenceDir();
     }
 
+    /**
+     *
+     */
     @After
     public void stopAndClean() throws Exception {
-        for (int i = 0; i < NODES; i++)
-            grid(i).close();
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
