@@ -808,7 +808,7 @@ BOOST_AUTO_TEST_CASE(CacheClientDefaultDynamicCache)
     IgniteClient client = IgniteClient::Start(cfg);
 
     cache::CacheClient<std::string, int64_t> cache =
-        client.CreateCache<std::string, int64_t>("defaultdynamic");
+        client.CreateCache<std::string, int64_t>("defaultdynamic1");
 
     cache.RefreshAffinityMapping();
 
@@ -838,13 +838,57 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsDefaultDynamicCacheThreeNodes)
     IgniteClient client = IgniteClient::Start(cfg);
 
     cache::CacheClient<std::string, int64_t> cache =
-        client.CreateCache<std::string, int64_t>("defaultdynamic3");
+        client.CreateCache<std::string, int64_t>("defaultdynamic2");
 
     // No-op, but should compile.
     cache.RefreshAffinityMapping();
 
     for (int64_t i = 1; i < 1000; ++i)
         cache.Put(ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
+
+    for (int64_t i = 1; i < 1000; ++i)
+    {
+        int64_t val;
+        LocalPeek(cache, ignite::common::LexicalCast<std::string>(i * 39916801), val);
+
+        BOOST_REQUIRE_EQUAL(val, i * 5039);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsRebalance)
+{
+    StartNode("node1");
+    StartNode("node2");
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
+
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112,127.0.0.1:11113");
+    cfg.SetAffinityAwareness(true);
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<std::string, int64_t> cache =
+        client.CreateCache<std::string, int64_t>("defaultdynamic3");
+
+    for (int64_t i = 1; i < 1000; ++i)
+        cache.Put(ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
+    
+    for (int64_t i = 1; i < 1000; ++i)
+    {
+        int64_t val;
+        LocalPeek(cache, ignite::common::LexicalCast<std::string>(i * 39916801), val);
+    
+        BOOST_REQUIRE_EQUAL(val, i * 5039);
+    }
+
+    StartNode("node3");
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
+
+    // Warm-up
+    for (int64_t i = 1; i < 100; ++i)
+        cache.Get(ignite::common::LexicalCast<std::string>(i * 39916801));
 
     for (int64_t i = 1; i < 1000; ++i)
     {
