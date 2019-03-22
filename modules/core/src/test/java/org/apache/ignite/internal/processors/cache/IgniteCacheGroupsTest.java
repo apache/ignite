@@ -183,7 +183,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite client = startGrid(1);
 
-        client.cluster().active(true);
+        activate(client);
 
         IgniteCache c1 = client.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 0, false));
 
@@ -655,7 +655,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite srv0 = ignite(0);
 
-        srv0.cluster().active(true);
+        activate(srv0);
 
         srv0.createCache(cacheConfiguration(GROUP1, CACHE1, cacheMode, atomicityMode, 2, false));
         srv0.createCache(cacheConfiguration(GROUP1, CACHE2, cacheMode, atomicityMode, 2, false));
@@ -715,6 +715,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         assertTrue(keysSet.isEmpty());
     }
 
+    private void activate(Ignite srv0) {
+        srv0.cluster().active(true);
+        srv0.cluster().baselineAutoAdjustTimeout(0);
+    }
+
     /**
      * @param cacheMode Cache mode.
      * @param atomicityMode Cache atomicity mode.
@@ -735,7 +740,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite srv0 = ignite(0);
 
-        srv0.cluster().active(true);
+        activate(srv0);
 
         srv0.createCache(cacheConfiguration(GROUP1, CACHE1, cacheMode, atomicityMode, 2, false));
         srv0.createCache(cacheConfiguration(GROUP1, CACHE2, cacheMode, atomicityMode, 2, false));
@@ -939,7 +944,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite srv0 = ignite(0);
 
-        srv0.cluster().active(true);
+        activate(srv0);
 
         srv0.createCache(cacheConfiguration(GROUP1, CACHE1, cacheMode, atomicityMode, 2, false));
         srv0.createCache(cacheConfiguration(GROUP1, CACHE2, cacheMode, atomicityMode, 2, false));
@@ -1020,7 +1025,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite srv0 = ignite(0);
 
-        srv0.cluster().active(true);
+        activate(srv0);
 
         srv0.createCache(
             cacheConfiguration(GROUP1, CACHE1, cacheMode, atomicityMode, 2, false)
@@ -1380,6 +1385,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         ccfgs = staticConfigurations1(true);
         Ignite srv0 = startGrid(0);
 
+        activate(srv0);
+
         ccfgs = staticConfigurations1(true);
         startGrid(1);
 
@@ -1397,12 +1404,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         ccfgs = staticConfigurations1(true);
         startGrid(3);
 
+        awaitPartitionMapExchange();
+
         checkCacheDiscoveryDataConsistent();
 
         srv0.createCache(cacheConfiguration(GROUP1, "cache5", PARTITIONED, ATOMIC, 2, false));
 
         ccfgs = staticConfigurations1(true);
+
         startGrid(4);
+
+        awaitPartitionMapExchange();
 
         checkCacheDiscoveryDataConsistent();
 
@@ -1486,7 +1498,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite client = ignite(NODES - 1);
 
-        client.cluster().active(true);
+        activate(client);
 
         client.createCaches(Arrays.asList(cacheConfigurations(CACHES, GROUP2, "testCache2-")));
 
@@ -1519,7 +1531,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testRebalance1() throws Exception {
         Ignite srv0 = startGrid(0);
 
-        srv0.cluster().active(true);
+        activate(srv0);
 
         IgniteCache<Object, Object> srv0Cache1 =
             srv0.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 2, false));
@@ -1640,7 +1652,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testRebalance2() throws Exception {
         Ignite srv0 = startGrid(0);
 
-        srv0.cluster().active(true);
+        activate(srv0);
 
         IgniteCache<Object, Object> srv0Cache1 =
             srv0.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 0, false));
@@ -1668,6 +1680,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         assertEquals(ITEMS / 2, srv0Cache2.size());
 
         Ignite srv1 = startGrid(1);
+
+        srv1.cache("c1").rebalance().get();
+        srv1.cache("c2").rebalance().get();
 
         awaitPartitionMapExchange();
 
@@ -1750,7 +1765,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private void testNoKeyIntersect(CacheAtomicityMode atomicityMode) throws Exception {
         IgniteEx ex = startGrid(0);
 
-        ex.cluster().active(true);
+        activate(ex);
 
         testNoKeyIntersect(atomicityMode, false);
 
@@ -1785,7 +1800,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private void testNoKeyIntersect(CacheAtomicityMode atomicityMode, boolean heapCache) throws Exception {
         Ignite srv0 = ignite(0);
 
-        srv0.cluster().active(true);
+        activate(srv0);
 
         try {
             IgniteCache cache1 = srv0.
@@ -2989,7 +3004,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite node = startGrids(loc ? 1 : 4);
 
-        node.cluster().active(true);
+        activate(node);
 
         node.createCaches(F.asList(ccfg1, ccfg2));
 
@@ -3020,7 +3035,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite srv0 = startGridsMultiThreaded(1, SRVS - 1);
 
-        srv0.cluster().active(true);
+        activate(srv0);
 
         client = true;
 
@@ -3127,7 +3142,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite srv0 = startGridsMultiThreaded(1, SRVS - 1);
 
-        srv0.cluster().active(true);
+        activate(srv0);
 
         client = true;
 
@@ -3338,7 +3353,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
-        ignite.cluster().active(true);
+        activate(ignite);
 
         assertFalse(ignite.cacheNames().contains("AaAaBB"));
 
@@ -3387,7 +3402,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
-        ignite.cluster().active(true);
+        activate(ignite);
 
         assertFalse(ignite.cacheNames().contains(CACHE2));
 
@@ -3436,7 +3451,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
-        ignite.cluster().active(true);
+        activate(ignite);
 
         assertFalse(ignite.cacheNames().contains(CACHE2));
 
@@ -3485,7 +3500,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
-        ignite.cluster().active(true);
+        activate(ignite);
 
         assertFalse(ignite.cacheNames().contains("AaAaAa"));
 
@@ -3521,7 +3536,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         IgniteEx ex = startGrid(0);
 
-        ex.cluster().active(true);
+        activate(ex);
 
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache2").setGroupName("cache1")};
 
@@ -3567,7 +3582,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         IgniteEx ex = startGrid(0);
 
-        ex.cluster().active(true);
+        activate(ex);
 
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache1")};
 
@@ -3607,7 +3622,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
-        ignite.cluster().active(true);
+        activate(ignite);
 
         ignite.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
 
@@ -3677,7 +3692,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite node = ignite(0);
 
-        node.cluster().active(true);
+        activate(node);
 
         checkInterceptorPut(node.cache("c1"), "v1");
         checkInterceptorPut(node.cache("c2"), "v2");
@@ -3745,7 +3760,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite node = ignite(0);
 
-        node.cluster().active(true);
+        activate(node);
 
         checkStorePut(node.cache("c1"), Store1.map);
         assertTrue(Store2.map.isEmpty());
@@ -3817,6 +3832,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             startGrid(i);
         }
+
+        activate(grid(0));
 
         for (int i = 0; i < 4; i++)
             checkAffinityMappers(ignite(i));
@@ -3893,7 +3910,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private void continuousQueriesMultipleGroups(int srvs) throws Exception {
         Ignite srv0 = startGrids(srvs);
 
-        srv0.cluster().active(true);
+        activate(srv0);
 
         client = true;
 
@@ -3934,7 +3951,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testCacheIdSort() throws Exception {
         Ignite node = startGrid(0);
 
-        node.cluster().active(true);
+        activate(node);
 
         final List<IgniteCache> caches = new ArrayList<>(3);
 
@@ -4011,7 +4028,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testDataCleanup() throws Exception {
         Ignite node = startGrid(0);
 
-        node.cluster().active(true);
+        activate(node);
 
         IgniteCache cache0 = node.createCache(cacheConfiguration(GROUP1, "c0", PARTITIONED, ATOMIC, 1, false));
 
@@ -4080,7 +4097,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         final Ignite clientNode = startGrid(SRVS);
 
-        clientNode.cluster().active(true);
+        activate(clientNode);
 
         client = false;
 
