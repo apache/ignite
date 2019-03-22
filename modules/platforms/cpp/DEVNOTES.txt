@@ -130,3 +130,27 @@ Building in later versions of Visual Studio:
  * Open project\vs\ignite.sln or project\vs\ignite_86.sln in Visual Studio
  * You will be prompted to "Update VC++ Compiler and Libraries", click "Update"
  * Build the solution.
+
+Building on macOS
+-----------------
+
+A number of dependencies are required to build for macOS. The simplest way to acquire
+them is to use [Homebrew](https://brew.sh). Install the following packages:
+
+* autoconf
+* automake
+* boost
+* libtool
+* openssl
+
+Building otherwise works the same as on Linux. Remember to set `JAVA_HOME` and
+`IGNITE_HOME` then run:
+
+```
+glibtoolize && aclocal && autoheader && automake --add-missing && autoreconf
+./configure --disable-odbc --with-openssl=/usr/local/Cellar/openssl/1.0.2r
+```
+
+Limitations:
+
+* The ODBC driver doesn't currently build on a Mac. 
