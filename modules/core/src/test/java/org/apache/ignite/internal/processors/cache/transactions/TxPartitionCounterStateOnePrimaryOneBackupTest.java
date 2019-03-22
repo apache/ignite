@@ -138,9 +138,9 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
         loadDataToPartition(PARTITION_ID, primaryName, DEFAULT_CACHE_NAME, addCnt, TOTAL);
 
+        // TODO https://issues.apache.org/jira/browse/IGNITE-11607
         // Historical rebalance is not possible from history containing rebalanced entries.
         // Next rebalance will be full.
-        // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11607
         IgniteEx grid0 = startGrid(backupName);
 
         awaitPartitionMapExchange();
@@ -219,7 +219,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         }, 1);
 
         // Trigger rebalance.
-        IgniteEx primary = startGrid(primaryName);
+        startGrid(primaryName);
 
         fut.get();
 

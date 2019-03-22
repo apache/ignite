@@ -38,7 +38,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNREC
 
 /**
  * Tests partition consistency recovery in case then all owners are lost in the middle of transaction.
- * TODO FIXME proper fix - partition must be moved to lost state. link ticket.
+ * TODO https://issues.apache.org/jira/browse/IGNITE-11611
  */
 public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPartitionCounterStateAbstractTest {
     /** */

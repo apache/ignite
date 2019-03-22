@@ -26,7 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -67,18 +67,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance() throws Exception {
-        doTestPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance(false);
-    }
-
-    /** */
-    @Test
-    public void testPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance2() throws Exception {
-        doTestPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance(true);
-    }
-
-    /** */
-    @Test
     public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_1_1() throws Exception {
         // Txs not fully prepared and will be rolled back.
         doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {0, 1}, new int[] {1, 0}, 0);
@@ -102,6 +90,18 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_2_2() throws Exception {
         // Will generate hole due to skipped tx0. Should be closed by finalizeUpdateCounters.
         doTestPartialPrepare_2tx(false, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {1, 0}, 7);
+    }
+
+    /** */
+    @Test
+    public void testPrepareCommitReorderFailBackup_1() throws Exception {
+        doTestPartialCommit_3tx_1(false);
+    }
+
+    /** */
+    @Test
+    public void testPrepareCommitReorderFailBackup_2() throws Exception {
+        doTestPartialCommit_3tx_1(true);
     }
 
     /** */
@@ -142,25 +142,29 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
     /** */
     @Test
-    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_1() throws Exception {
+    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_1()
+        throws Exception {
         doTestPartialCommit2Tx_2(true, new int[] {1, 0});
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_2() throws Exception {
+    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_2()
+        throws Exception {
         doTestPartialCommit2Tx_2(false, new int[] {1, 0});
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_3() throws Exception {
+    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_3()
+        throws Exception {
         doTestPartialCommit2Tx_2(true, new int[] {0, 1});
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_4() throws Exception {
+    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance_4()
+        throws Exception {
         doTestPartialCommit2Tx_2(false, new int[] {0, 1});
     }
 
@@ -195,10 +199,10 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * <p>
      * 8. Check if primary is rebalanced correctly from new primary node.
      *
-     * @param skipCheckpoint Skip checkpoint.
+     * @param skipCheckpointOnNodeStop Skip checkpoint on node stop.
+     * @throws Exception If failed.
      */
-    private void doTestPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance(
-        boolean skipCheckpoint) throws Exception {
+    private void doTestPartialCommit_3tx_1(boolean skipCheckpointOnNodeStop) throws Exception {
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
             new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
                 @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
@@ -212,19 +216,21 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                             super.onBackupCommitted(backup, idx);
 
                             if (idx == BACKUP_COMMIT_ORDER[0]) {
-                                PartitionUpdateCounterImpl cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, backup.name());
+                                PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
 
-                                assertFalse(cntr.gaps().isEmpty());
+                                assertNotNull(cntr);
 
-                                PartitionUpdateCounterImpl.Item gap = cntr.gaps().first();
+                                assertFalse(cntr.sequential());
 
-                                assertEquals(PRELOAD_KEYS_CNT + SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]], gap.start());
-                                assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], gap.delta());
+                                long[] gap = cntr.iterator().next();
 
-                                runAsync(new Runnable() {
-                                    @Override public void run() {
-                                        stopGrid(skipCheckpoint, backup.name()); // Will stop backup node before all commits are applied.
-                                    }
+                                assertEquals(
+                                    PRELOAD_KEYS_CNT + SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]],
+                                    gap[0]);
+                                assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], gap[1]);
+
+                                runAsync(() -> {
+                                    stopGrid(skipCheckpointOnNodeStop, backup.name()); // Will stop backup node before all commits are applied.
                                 });
 
                                 return true;
@@ -258,10 +264,11 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
 
-        // Check if holes are closed on rebalance.
-        PartitionUpdateCounterImpl cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, backup.name());
+        PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
 
-        assertTrue(cntr.gaps().isEmpty());
+        assertNotNull(cntr);
+
+        assertTrue(cntr.sequential());
 
         assertEquals(TOTAL, cntr.get());
 
@@ -271,7 +278,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         awaitPartitionMapExchange();
 
-        cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, backup.name());
+        assertNotNull(cntr = counter(PARTITION_ID, backup.name()));
 
         assertEquals(TOTAL, cntr.reserved());
 
@@ -280,13 +287,14 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         loadDataToPartition(PARTITION_ID, backupName, DEFAULT_CACHE_NAME, addCnt, TOTAL);
 
+        // TODO https://issues.apache.org/jira/browse/IGNITE-11607
         // Historical rebalance is not possible from checkpoint containing rebalance entries.
-        // Next rebalance will be full. TODO FIXME repair this scenario ?
+        // Next rebalance will be full.
         IgniteEx grid0 = startGrid(primaryName);
 
         awaitPartitionMapExchange();
 
-        cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, grid0.name());
+        assertNotNull(cntr = counter(PARTITION_ID, grid0.name()));
 
         assertEquals(TOTAL + addCnt, cntr.get());
 
@@ -296,20 +304,32 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     }
 
     /**
-     * Test scenario:
-     *
+     * Tests counters consistency when transaction is not prepared on second backup.
+     * <p>
+     * Scenario:
+     * <p>
      * 1. Start 3 transactions.
+     * <p>
      * 2. Assign counters in given order.
+     * <p>
      * 3. Commit tx2.
-     * 4. Prepare tx0 on backup1 (mode=0, 2).
-     * 5. Prepare tx1 on backup2 (mode=1, 2).
+     * <p>
+     * 4. Prepare tx0 on backup1 (modes 0, 2).
+     * <p>
+     * 5. Prepare tx1 on backup2 (modes 1, 2).
+     * <p>
      * 6. Fail primary triggering tx rollback on recovery.
-     * 7. Validate partitions integrity after node left. No holes are expected (they should be closed by message with counters)
-     * TODO FIXME simplify
-     * @param skipCheckpoint Skip checkpoint on node stop.
-     * @throws Exception
+     * <p>
+     * 7. Validate partitions integrity after node left.
+     * <p>
+     * Pass condition: partitions are consistent, no holes are expected (they should be closed by message with counters)
+     *
+     * @param skipCheckpointOnNodeStop Skip checkpoint on node stop.
+     * @param assignOrder Tx assign order.
+     * @param mode Mode.
+     * @throws Exception If failed.
      */
-    private void doTestPartialPrepare_3tx(boolean skipCheckpoint, int[] assignOrder, int mode) throws Exception {
+    private void doTestPartialPrepare_3tx(boolean skipCheckpointOnNodeStop, int[] assignOrder, int mode) throws Exception {
         AtomicInteger cntr = new AtomicInteger();
 
         int expCntr = mode == 2 ? 1 : 2;
@@ -349,11 +369,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                         if (cntr.getAndIncrement() == expCntr) {
                             log.info("Stopping primary [name=" + primary.name() + ']');
 
-                            runAsync(new Runnable() {
-                                @Override public void run() {
-                                    stopGrid(skipCheckpoint, primary.name());
-                                }
-                            });
+                            runAsync(() -> stopGrid(skipCheckpointOnNodeStop, primary.name()));
                         }
 
                         return idx != 2;
@@ -366,12 +382,10 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                         if (cntr.getAndIncrement() == expCntr) {
                             log.info("TX: Stopping primary [name=" + primary.name() + ']');
 
-                            runAsync(new Runnable() {
-                                @Override public void run() {
-                                    stopGrid(skipCheckpoint, primary.name());
+                            runAsync(() -> {
+                                stopGrid(skipCheckpointOnNodeStop, primary.name());
 
-                                    TestRecordingCommunicationSpi.stopBlockAll();
-                                }
+                                TestRecordingCommunicationSpi.stopBlockAll();
                             });
                         }
 
@@ -442,12 +456,10 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                         if (cntr.getAndIncrement() == 1) {
                             log.info("Stopping primary [name=" + primary.name() + ']');
 
-                            runAsync(new Runnable() {
-                                @Override public void run() {
-                                    stopGrid(skipCheckpointOnNodeStop, primary.name());
+                            runAsync(() -> {
+                                stopGrid(skipCheckpointOnNodeStop, primary.name());
 
-                                    TestRecordingCommunicationSpi.stopBlockAll();
-                                }
+                                TestRecordingCommunicationSpi.stopBlockAll();
                             });
                         }
 
@@ -584,12 +596,10 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                 @Override public boolean beforePrimaryFinish(IgniteEx primary, IgniteInternalTx tx,
                     GridFutureAdapter<?> proceedFut) {
                     if (cnt.getAndIncrement() == 2) {
-                        runAsync(new Runnable() {
-                            @Override public void run() {
-                                stopGrid(skipCheckpointOnStop, primary.name());
+                        runAsync(() -> {
+                            stopGrid(skipCheckpointOnStop, primary.name());
 
-                                TestRecordingCommunicationSpi.stopBlockAll();
-                            }
+                            TestRecordingCommunicationSpi.stopBlockAll();
                         });
                     }
 
