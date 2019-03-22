@@ -59,12 +59,6 @@ public abstract class AbstractH2QueryInfo {
     /** Lazy mode. */
     private final boolean lazy;
 
-    /** Begin timestamp. */
-    private long timeout;
-
-    /** Begin timestamp. */
-    private long timeoutMult;
-
     /**
      * @param stmt Query statement.
      * @param sql Query statement.
@@ -105,29 +99,6 @@ public abstract class AbstractH2QueryInfo {
      */
     public long time() {
         return U.currentTimeMillis() - beginTs;
-    }
-
-    /**
-     * @param timeout Query timeout.
-     * @param timeoutMult Query timeout multiplier.
-     */
-    public void setTimeout(long timeout, int timeoutMult) {
-        this.timeout = timeout;
-        this.timeoutMult = timeoutMult;
-    }
-
-    /**
-     * @return Query time execution.
-     */
-    public boolean checkTimeout() {
-        if (time() > timeout) {
-            if (timeoutMult > 1)
-                timeout *= timeoutMult;
-
-            return true;
-        }
-        else
-            return false;
     }
 
     /**
