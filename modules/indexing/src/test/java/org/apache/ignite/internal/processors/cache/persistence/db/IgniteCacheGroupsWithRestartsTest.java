@@ -101,14 +101,20 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         return ccfg;
     }
 
-    @NotNull private String getCacheName(int i) {
+    /**
+     * @param i Index.
+     * @return Generated cache name for index.
+     */
+    private String getCacheName(int i) {
         return "cache-" + i;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         afterTest();
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -117,8 +123,10 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
-
-    @Ignore
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8717")
     @Test
     public void testNodeRestartRightAfterCacheStop() throws Exception {
         IgniteEx ex = startGrids(3);
@@ -142,8 +150,11 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         assertEquals(0, cache.size());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
-    public void test2() throws Exception {
+    public void testCleaningGarbargeAfterCacheDestroyedAndNodeStop() throws Exception {
         IgniteEx ignite = startGrids(3);
 
         prepareCachesAndData(ignite);
@@ -180,6 +191,11 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         Assert.assertFalse(result.hasGarbarge());
     }
 
+    /**
+     * @param ignite Ignite to execute task on.
+     * @param deleteFoundGarbarge If clearing mode should be used.
+     * @return Result of task run.
+     */
     private VisorFindAndDeleteGarbargeInPersistenceJobResult executeTask(
         IgniteEx ignite,
         boolean deleteFoundGarbarge
