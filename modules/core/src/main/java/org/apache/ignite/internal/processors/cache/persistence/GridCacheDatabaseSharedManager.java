@@ -2642,6 +2642,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             stripedApply(() -> {
                                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
+                                if (skipRemovedIndexUpdates(cacheCtx.groupId(), PageIdAllocator.INDEX_PARTITION))
+                                    cctx.kernalContext().query().markAsRebuildNeeded(cacheCtx);
+
                                 try {
                                     applyUpdate(cacheCtx, dataEntry);
                                 }
