@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -86,13 +87,13 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> ModelsComposition updateModel(ModelsComposition mdl,
+    @Override protected <K, V, C extends Serializable> ModelsComposition updateModel(ModelsComposition mdl,
         DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
         if (!learnLabels(datasetBuilder, extractor))
@@ -151,7 +152,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      * @param vectorizer Upstream vectorizer.
      * @return True if labels learning was successful.
      */
-    protected abstract <V, K, C> boolean learnLabels(DatasetBuilder<K, V> builder,
+    protected abstract <V, K, C extends Serializable> boolean learnLabels(DatasetBuilder<K, V> builder,
         Vectorizer<K, V, C, Double> vectorizer);
 
     /**
@@ -181,7 +182,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      * @param envBuilder Learning environment builder.
      * @param vectorizer Vectorizer.
      */
-    protected <V, K, C> IgniteBiTuple<Double, Long> computeInitialValue(
+    protected <V, K, C extends Serializable> IgniteBiTuple<Double, Long> computeInitialValue(
         LearningEnvironmentBuilder envBuilder,
         DatasetBuilder<K, V> builder,
         Vectorizer<K, V, C, Double> vectorizer) {

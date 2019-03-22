@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
@@ -66,7 +67,7 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     }
 
     /** {@inheritDoc} */
-    @Override protected <V, K, C> boolean learnLabels(DatasetBuilder<K, V> builder,
+    @Override protected <V, K, C extends Serializable> boolean learnLabels(DatasetBuilder<K, V> builder,
         Vectorizer<K, V, C, Double> vectorizer) {
 
         Set<Double> uniqLabels = builder.build(

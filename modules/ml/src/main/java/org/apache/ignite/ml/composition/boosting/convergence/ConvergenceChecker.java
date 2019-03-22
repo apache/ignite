@@ -37,7 +37,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public abstract class ConvergenceChecker<K, V, C> implements Serializable {
+public abstract class ConvergenceChecker<K, V, C extends Serializable> implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 710762134746674105L;
 
@@ -64,7 +64,7 @@ public abstract class ConvergenceChecker<K, V, C> implements Serializable {
      * @param loss Loss gradient.
      * @param datasetBuilder Dataset builder.
      * @param vectorizer Upstream vectorizer.
-     * @param precision Precision.
+     * @param precision Precision.FeatureMatrixWithLabelsOnHeapDataBuilder.java
      */
     public ConvergenceChecker(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,

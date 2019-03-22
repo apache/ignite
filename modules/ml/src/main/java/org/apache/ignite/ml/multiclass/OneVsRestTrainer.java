@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.multiclass;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -56,14 +57,14 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> MultiClassModel<M> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> MultiClassModel<M> fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> MultiClassModel<M> updateModel(MultiClassModel<M> newMdl,
+    @Override protected <K, V, C extends Serializable> MultiClassModel<M> updateModel(MultiClassModel<M> newMdl,
         DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> extractor) {
 
         IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
@@ -86,7 +87,7 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
                     return 0.0;
             };
 
-            FeatureLabelExtractorWrapper<K, V, Double> vectorizer = FeatureLabelExtractorWrapper.wrap(featureExtractor, lbTransformer);
+            FeatureLabelExtractorWrapper<K, V, C, Double> vectorizer = FeatureLabelExtractorWrapper.wrap(featureExtractor, lbTransformer);
             M mdl = Optional.ofNullable(newMdl)
                 .flatMap(multiClassModel -> multiClassModel.getModel(clsLb))
                 .map(learnedModel -> classifier.update(learnedModel, datasetBuilder, vectorizer))
@@ -104,11 +105,12 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
     }
 
     /** Iterates among dataset and collects class labels. */
-    private <K, V, C> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder,
+    private <K, V, C extends Serializable> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> vectorizer) {
         assert datasetBuilder != null;
 
-        PartitionDataBuilder<K, V, EmptyContext, LabelPartitionDataOnHeap> partDataBuilder = new LabelPartitionDataBuilderOnHeap<>(vectorizer);
+        PartitionDataBuilder<K, V, EmptyContext, LabelPartitionDataOnHeap> partDataBuilder =
+            new LabelPartitionDataBuilderOnHeap<>(vectorizer);
 
         List<Double> res = new ArrayList<>();
 

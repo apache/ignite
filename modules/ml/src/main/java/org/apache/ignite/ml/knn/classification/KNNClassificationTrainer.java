@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.knn.classification;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
@@ -28,14 +29,14 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  */
 public class KNNClassificationTrainer extends SingleLabelDatasetTrainer<KNNClassificationModel> {
     /** {@inheritDoc} */
-    @Override public <K, V, C> KNNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> KNNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> KNNClassificationModel updateModel(KNNClassificationModel mdl,
+    @Override protected <K, V, C extends Serializable> KNNClassificationModel updateModel(KNNClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
 

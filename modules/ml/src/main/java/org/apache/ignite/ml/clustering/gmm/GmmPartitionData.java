@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -114,7 +115,7 @@ class GmmPartitionData implements AutoCloseable {
     /**
      * Builder for GMM partition data.
      */
-    public static class Builder<K, V, C> implements PartitionDataBuilder<K, V, EmptyContext, GmmPartitionData> {
+    public static class Builder<K, V, C extends Serializable> implements PartitionDataBuilder<K, V, EmptyContext, GmmPartitionData> {
         /** Serial version uid. */
         private static final long serialVersionUID = 1847063348042022561L;
 

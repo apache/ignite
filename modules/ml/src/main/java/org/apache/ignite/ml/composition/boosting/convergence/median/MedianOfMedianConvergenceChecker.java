@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence.median;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
@@ -36,7 +37,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public class MedianOfMedianConvergenceChecker<K, V, C> extends ConvergenceChecker<K, V, C> {
+public class MedianOfMedianConvergenceChecker<K, V, C extends Serializable> extends ConvergenceChecker<K, V, C> {
     /** Serial version uid. */
     private static final long serialVersionUID = 4902502002933415287L;
 

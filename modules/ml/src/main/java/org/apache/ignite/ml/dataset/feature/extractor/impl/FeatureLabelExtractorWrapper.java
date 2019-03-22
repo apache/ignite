@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.dataset.feature.extractor.impl;
 
+import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
@@ -28,7 +29,7 @@ import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 /**
  * Temporary class for Features/Label extracting.
  */
-public class FeatureLabelExtractorWrapper<K, V, L> extends Vectorizer<K, V, Object, L> {
+public class FeatureLabelExtractorWrapper<K, V, C extends Serializable, L> extends Vectorizer<K, V, C, L> {
     /** Original extractor. */
     private final FeatureLabelExtractor<K, V, L> extractor;
 
@@ -45,11 +46,11 @@ public class FeatureLabelExtractorWrapper<K, V, L> extends Vectorizer<K, V, Obje
      * @param featuresEx Method for feature vector extracting.
      * @return wrapper.
      */
-    public static <K, V> FeatureLabelExtractorWrapper<K, V, Double> wrap(IgniteBiFunction<K, V, Vector> featuresEx) {
+    public static <K, V, C extends Serializable> FeatureLabelExtractorWrapper<K, V, C, Double> wrap(IgniteBiFunction<K, V, Vector> featuresEx) {
         return new FeatureLabelExtractorWrapper<>((k, v) -> featuresEx.apply(k, v).labeled(0.0));
     }
 
-    public static <K, V, L> FeatureLabelExtractorWrapper<K, V, L> wrap(IgniteBiFunction<K, V, Vector> featuresEx,
+    public static <K, V, C extends Serializable, L> FeatureLabelExtractorWrapper<K, V, C, L> wrap(IgniteBiFunction<K, V, Vector> featuresEx,
         IgniteBiFunction<K, V, L> lbExtractor) {
 
         return new FeatureLabelExtractorWrapper<>(CompositionUtils.asFeatureLabelExtractor(featuresEx, lbExtractor));
@@ -61,12 +62,12 @@ public class FeatureLabelExtractorWrapper<K, V, L> extends Vectorizer<K, V, Obje
     }
 
     /** {@inheritDoc} */
-    @Override protected Double feature(Object coord, K key, V value) {
+    @Override protected Double feature(C coord, K key, V value) {
         throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
-    @Override protected L label(Object coord, K key, V value) {
+    @Override protected L label(C coord, K key, V value) {
         throw new IllegalStateException();
     }
 
@@ -76,7 +77,7 @@ public class FeatureLabelExtractorWrapper<K, V, L> extends Vectorizer<K, V, Obje
     }
 
     /** {@inheritDoc} */
-    @Override protected List<Object> allCoords(K key, V value) {
+    @Override protected List<C> allCoords(K key, V value) {
         throw new IllegalStateException();
     }
 }

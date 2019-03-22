@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence.simple;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
@@ -35,7 +36,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public class ConvergenceCheckerStub<K, V, C> extends ConvergenceChecker<K, V, C> {
+public class ConvergenceCheckerStub<K, V, C extends Serializable> extends ConvergenceChecker<K, V, C> {
     /** Serial version uid. */
     private static final long serialVersionUID = 8534776439755210864L;
 

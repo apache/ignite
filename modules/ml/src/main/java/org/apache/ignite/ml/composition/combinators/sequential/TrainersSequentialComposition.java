@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.combinators.sequential;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -83,7 +84,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> ModelsSequentialComposition<I, O1, O2> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> ModelsSequentialComposition<I, O1, O2> fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, L> extractor) {
 
         IgniteModel<I, O1> mdl1 = tr1.fit(datasetBuilder, extractor);
@@ -132,7 +133,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
      * @param mdl Model.
      * @return Updated model.
      */
-    @Override protected <K, V, C> ModelsSequentialComposition<I, O1, O2> updateModel(
+    @Override protected <K, V, C extends Serializable> ModelsSequentialComposition<I, O1, O2> updateModel(
         ModelsSequentialComposition<I, O1, O2> mdl,
         DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, L> extractor) {
@@ -141,7 +142,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> ModelsSequentialComposition<I, O1, O2> update(
+    @Override public <K, V, C extends Serializable> ModelsSequentialComposition<I, O1, O2> update(
         ModelsSequentialComposition<I, O1, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, L> extractor) {
 
@@ -208,7 +209,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V, C> ModelsSequentialComposition<I, O, O> fit(DatasetBuilder<K, V> datasetBuilder,
+        @Override public <K, V, C extends Serializable> ModelsSequentialComposition<I, O, O> fit(DatasetBuilder<K, V> datasetBuilder,
             Vectorizer<K, V, C, L> extractor) {
 
             int i = 0;

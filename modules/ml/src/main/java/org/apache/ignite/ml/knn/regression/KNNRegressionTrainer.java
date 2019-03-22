@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.knn.regression;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.knn.KNNUtils;
@@ -27,14 +28,14 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  */
 public class KNNRegressionTrainer extends SingleLabelDatasetTrainer<KNNRegressionModel> {
     /** {@inheritDoc} */
-    @Override public <K, V, C> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> KNNRegressionModel updateModel(
+    @Override public <K, V, C extends Serializable> KNNRegressionModel updateModel(
         KNNRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {

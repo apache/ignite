@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.naivebayes.gaussian;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,7 +45,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
     private boolean equiprobableClasses;
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> GaussianNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> GaussianNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -60,7 +61,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> GaussianNaiveBayesModel updateModel(GaussianNaiveBayesModel mdl,
+    @Override protected <K, V, C extends Serializable> GaussianNaiveBayesModel updateModel(GaussianNaiveBayesModel mdl,
         DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> extractor) {
         assert datasetBuilder != null;
 

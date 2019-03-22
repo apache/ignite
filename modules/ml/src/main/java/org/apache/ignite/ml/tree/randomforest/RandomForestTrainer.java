@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.tree.randomforest;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -110,7 +111,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
         List<TreeRoot> models = null;
         try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
@@ -245,7 +246,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V, C extends Serializable> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
 
         ArrayList<IgniteModel<Vector, Double>> oldModels = new ArrayList<>(mdl.getModels());

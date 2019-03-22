@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.naivebayes.discrete;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,7 +52,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
     private double[][] bucketThresholds;
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> DiscreteNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> DiscreteNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -72,7 +73,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> DiscreteNaiveBayesModel updateModel(DiscreteNaiveBayesModel mdl,
+    @Override protected <K, V, C extends Serializable> DiscreteNaiveBayesModel updateModel(DiscreteNaiveBayesModel mdl,
         DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> extractor) {
 
         try (Dataset<EmptyContext, DiscreteNaiveBayesSumsHolder> dataset = datasetBuilder.build(

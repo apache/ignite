@@ -68,14 +68,14 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * @param extractor Mapping from upstream entry to {@link LabeledVector}.
      * @return Model.
      */
-    @Override public <K, V, C> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> ANNClassificationModel updateModel(ANNClassificationModel mdl,
+    @Override protected <K, V, C extends Serializable> ANNClassificationModel updateModel(ANNClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> extractor) {
 
         List<Vector> centers;
@@ -130,7 +130,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * @param <V> Type of a value in {@code upstream} data.
      * @return The arrays of vectors.
      */
-    private <K, V, C> List<Vector> getCentroids(Vectorizer<K,V,C,Double> vectorizer, DatasetBuilder<K, V> datasetBuilder) {
+    private <K, V, C extends Serializable> List<Vector> getCentroids(Vectorizer<K,V,C,Double> vectorizer, DatasetBuilder<K, V> datasetBuilder) {
         KMeansTrainer trainer = new KMeansTrainer()
             .withAmountOfClusters(k)
             .withMaxIterations(maxIterations)
@@ -165,7 +165,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     }
 
     /** */
-    private <K, V, C> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder,
+    private <K, V, C extends Serializable> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> vectorizer,
         List<Vector> centers) {
 

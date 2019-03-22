@@ -40,7 +40,7 @@ import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
  * @param <C> Type of "coordinate" - index of feature value in upstream object.
  * @param <L> Type of label for resulting vectors.
  */
-public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K, V, L>, Serializable {
+public abstract class Vectorizer<K, V, C extends Serializable, L> implements FeatureLabelExtractor<K, V, L>, Serializable {
     /** Label coordinate shortcut. */
     private LabelCoordinate lbCoordinateShortcut = null;
 
@@ -249,7 +249,7 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
      * @param <L0> Type of original label.
      * @param <L1> Type of mapped label.
      */
-    private static class MappedVectorizer<K, V, C, L0, L1> extends VectorizerAdapter<K, V, C, L1> {
+    private static class MappedVectorizer<K, V, C extends Serializable, L0, L1> extends VectorizerAdapter<K, V, C, L1> {
         /** Original vectorizer. */
         protected final Vectorizer<K, V, C, L0> original;
 
@@ -280,7 +280,7 @@ public abstract class Vectorizer<K, V, C, L> implements FeatureLabelExtractor<K,
      * @param <C> Type of coordinate.
      * @param <L> Type od label.
      */
-    public static class VectorizerAdapter<K, V, C, L> extends Vectorizer<K, V, C, L> {
+    public static class VectorizerAdapter<K, V, C extends Serializable, L> extends Vectorizer<K, V, C, L> {
         /** {@inheritDoc} */
         @Override protected Double feature(C coord, K key, V value) {
             throw new IllegalStateException();

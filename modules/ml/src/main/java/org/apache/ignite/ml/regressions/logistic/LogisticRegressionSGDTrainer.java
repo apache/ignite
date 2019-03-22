@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.regressions.logistic;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -63,14 +64,14 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
     private long seed = 1234L;
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
+    @Override protected <K, V, C extends Serializable> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
 

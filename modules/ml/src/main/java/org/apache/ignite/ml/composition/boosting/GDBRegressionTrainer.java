@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.composition.boosting.loss.SquaredError;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
@@ -38,7 +39,7 @@ public abstract class GDBRegressionTrainer extends GDBTrainer {
     }
 
     /** {@inheritDoc} */
-    @Override protected <V, K, C> boolean learnLabels(DatasetBuilder<K, V> builder,
+    @Override protected <V, K, C extends Serializable> boolean learnLabels(DatasetBuilder<K, V> builder,
         Vectorizer<K, V, C, Double> vectorizer) {
 
         return true;

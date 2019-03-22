@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -103,7 +104,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> GmmModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> GmmModel fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -477,7 +478,7 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> GmmModel updateModel(GmmModel mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V, C extends Serializable> GmmModel updateModel(GmmModel mdl, DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
 
         try (Dataset<EmptyContext, GmmPartitionData> dataset = datasetBuilder.build(envBuilder,

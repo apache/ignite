@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
@@ -39,7 +40,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  */
 public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<LinearRegressionModel> {
     /** {@inheritDoc} */
-    @Override public <K, V, C> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
@@ -56,7 +57,7 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> LinearRegressionModel updateModel(LinearRegressionModel mdl,
+    @Override protected <K, V, C extends Serializable> LinearRegressionModel updateModel(LinearRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
 

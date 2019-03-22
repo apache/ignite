@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.knn;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -40,7 +41,7 @@ public class KNNUtils {
      * @param vectorizer Upstream vectorizer.
      * @return Dataset.
      */
-    @Nullable public static <K, V, C> Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> buildDataset(
+    @Nullable public static <K, V, C extends Serializable> Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> buildDataset(
         LearningEnvironmentBuilder envBuilder,
         DatasetBuilder<K, V> datasetBuilder, Vectorizer<K,V,C,Double> vectorizer) {
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder

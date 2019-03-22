@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml;
 
+import java.io.Serializable;
 import java.util.stream.IntStream;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
@@ -447,7 +448,7 @@ public class TestUtils {
     public static <I, O, M extends IgniteModel<I, O>, L> DatasetTrainer<M, L> constantTrainer(M ml) {
         return new DatasetTrainer<M, L>() {
             /** {@inheritDoc} */
-            @Override public <K, V, C> M fit(DatasetBuilder<K, V> datasetBuilder,
+            @Override public <K, V, C extends Serializable> M fit(DatasetBuilder<K, V> datasetBuilder,
                 Vectorizer<K, V, C, L> extractor) {
                 return ml;
             }
@@ -458,7 +459,7 @@ public class TestUtils {
             }
 
             /** {@inheritDoc} */
-            @Override public <K, V, C> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+            @Override public <K, V, C extends Serializable> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
                 Vectorizer<K, V, C, L> extractor) {
                 return ml;
             }

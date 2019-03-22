@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.stacking;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -230,14 +231,14 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> StackedModel<IS, IA, O, AM> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> StackedModel<IS, IA, O, AM> fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, L> extractor) {
 
         return new StackedModel<>(getTrainer().fit(datasetBuilder, extractor));
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> StackedModel<IS, IA, O, AM> update(StackedModel<IS, IA, O, AM> mdl,
+    @Override public <K, V, C extends Serializable> StackedModel<IS, IA, O, AM> update(StackedModel<IS, IA, O, AM> mdl,
         DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor) {
 
         return new StackedModel<>(getTrainer().update(mdl, datasetBuilder, extractor));
@@ -347,13 +348,13 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
     /**
      * This method is never called, instead of constructing logic of update from
      * {@link DatasetTrainer#isUpdateable(IgniteModel)} and
-     * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, IgniteBiFunction, IgniteBiFunction)}
+     * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, Vectorizer)}
      * in this class we explicitly override update method.
      *
      * @param mdl Model.
      * @return Updated model.
      */
-    @Override protected <K, V, C> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
+    @Override protected <K, V, C extends Serializable> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
         DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, L> extractor) {
         // This method is never called, we override "update" instead.

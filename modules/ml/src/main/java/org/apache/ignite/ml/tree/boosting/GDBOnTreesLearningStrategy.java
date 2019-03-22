@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.tree.boosting;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.ml.IgniteModel;
@@ -56,7 +57,7 @@ public class GDBOnTreesLearningStrategy extends GDBLearningStrategy {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
+    @Override public <K, V, C extends Serializable> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
         DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> vectorizer) {
 
         DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();

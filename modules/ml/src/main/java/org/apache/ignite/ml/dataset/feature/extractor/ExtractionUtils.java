@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.dataset.feature.extractor;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -32,7 +33,7 @@ public class ExtractionUtils {
      * @param <V> Value type
      * @param <C> Type of coordinate.
      */
-    public abstract static class DefaultLabelVectorizer<K, V, C> extends Vectorizer<K, V, C, Double> {
+    public abstract static class DefaultLabelVectorizer<K, V, C extends Serializable> extends Vectorizer<K, V, C, Double> {
         /** Serial version uid. */
         private static final long serialVersionUID = 2876703640636013770L;
 

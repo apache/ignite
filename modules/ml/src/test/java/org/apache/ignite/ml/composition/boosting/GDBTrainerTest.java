@@ -190,7 +190,7 @@ public class GDBTrainerTest extends TrainerTest {
     private void testUpdate(Map<Integer, double[]> dataset, IgniteBiFunction<Integer, double[], Vector> fExtr,
         IgniteBiFunction<Integer, double[], Double> lExtr, GDBTrainer trainer) {
 
-        FeatureLabelExtractorWrapper<Integer, double[], Double> vectorizer = FeatureLabelExtractorWrapper.wrap(fExtr, lExtr);
+        FeatureLabelExtractorWrapper<Integer, double[], ?, Double> vectorizer = FeatureLabelExtractorWrapper.wrap(fExtr, lExtr);
         ModelsComposition originalMdl = trainer.fit(dataset, 1, vectorizer);
         ModelsComposition updatedOnSameDataset = trainer.update(originalMdl, dataset, 1, vectorizer);
 

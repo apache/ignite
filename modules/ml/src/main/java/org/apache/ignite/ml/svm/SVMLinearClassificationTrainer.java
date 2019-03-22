@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.svm;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Random;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -62,14 +63,14 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
      * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
      * @return Model.
      */
-    @Override public <K, V, C> SVMLinearClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> SVMLinearClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> SVMLinearClassificationModel updateModel(SVMLinearClassificationModel mdl,
+    @Override protected <K, V, C extends Serializable> SVMLinearClassificationModel updateModel(SVMLinearClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
 
@@ -127,7 +128,7 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
      * @param lbMapper Label Mapper.
      * @return Vectorizer.
      */
-    private <V, C, K> Vectorizer<K, V, C, Double> patchVectorizer(Vectorizer<K, V, C, Double> vectorizer,
+    private <V, C extends Serializable, K> Vectorizer<K, V, C, Double> patchVectorizer(Vectorizer<K, V, C, Double> vectorizer,
         IgniteFunction<Double, Double> lbMapper) {
 
         return new PatchedVectorizer<>(vectorizer, lbMapper);
@@ -353,7 +354,7 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
     /**
      * Wrapper for label patching.
      */
-    private static class PatchedVectorizer<K, V, C> extends Vectorizer<K, V, C, Double> {
+    private static class PatchedVectorizer<K, V, C extends Serializable> extends Vectorizer<K, V, C, Double> {
         private final Vectorizer<K, V, C, Double> originalVectorizer;
         private final IgniteFunction<Double, Double> labelMapping;
 

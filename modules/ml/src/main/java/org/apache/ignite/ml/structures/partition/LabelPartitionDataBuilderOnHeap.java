@@ -31,7 +31,7 @@ import org.apache.ignite.ml.environment.LearningEnvironment;
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable, CO>
+public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable, CO extends Serializable>
     implements PartitionDataBuilder<K, V, C, LabelPartitionDataOnHeap> {
     /** */
     private static final long serialVersionUID = -7820760153954269227L;

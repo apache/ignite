@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.clustering.kmeans;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -63,7 +64,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     private DistanceMeasure distance = new EuclideanDistance();
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -74,7 +75,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V, C extends Serializable> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> extractor) {
         assert datasetBuilder != null;
 

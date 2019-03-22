@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -84,7 +85,7 @@ public class GDBLearningStrategy {
      * @param vectorizer Upstream vectorizer.
      * @return List of learned models.
      */
-    public <K, V, C> List<IgniteModel<Vector, Double>> learnModels(DatasetBuilder<K, V> datasetBuilder,
+    public <K, V, C extends Serializable> List<IgniteModel<Vector, Double>> learnModels(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> vectorizer) {
 
         return update(null, datasetBuilder, vectorizer);
@@ -101,7 +102,7 @@ public class GDBLearningStrategy {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated models list.
      */
-    public <K, V, C> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
+    public <K, V, C extends Serializable> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
         DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> vectorizer) {
         if (trainerEnvironment == null)
             throw new IllegalStateException("Learning environment builder is not set.");

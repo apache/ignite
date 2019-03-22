@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.bagging;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
@@ -182,7 +183,7 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V, C> IgniteModel<Vector, Double> fit(
+        @Override public <K, V, C extends Serializable> IgniteModel<Vector, Double> fit(
             DatasetBuilder<K, V> datasetBuilder,
             Vectorizer<K, V, C, Double> extractor) {
             Dataset<Long, CountData> dataset = datasetBuilder.build(
@@ -202,7 +203,7 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected <K, V, C> IgniteModel<Vector, Double> updateModel(
+        @Override protected <K, V, C extends Serializable> IgniteModel<Vector, Double> updateModel(
             IgniteModel<Vector, Double> mdl,
             DatasetBuilder<K, V> datasetBuilder,
             Vectorizer<K, V, C, Double> extractor) {

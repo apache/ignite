@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.util.generators;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -177,11 +178,12 @@ public class DataStreamGeneratorTest {
     /** */
     private Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> buildDataset(
         DatasetBuilder<Vector, Double> b1) {
+        FeatureLabelExtractorWrapper<Vector, Double, ? extends Serializable, Double> wrapper = new FeatureLabelExtractorWrapper<>(
+            CompositionUtils.asFeatureLabelExtractor((v, l) -> v, (v, l) -> l)
+        );
         return b1.build(LearningEnvironmentBuilder.defaultBuilder(),
             new EmptyContextBuilder<>(),
-            new LabeledDatasetPartitionDataBuilderOnHeap<>(new FeatureLabelExtractorWrapper<>(
-                CompositionUtils.asFeatureLabelExtractor((v, l) -> v, (v, l) -> l)
-            ))
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(wrapper)
         );
     }
 

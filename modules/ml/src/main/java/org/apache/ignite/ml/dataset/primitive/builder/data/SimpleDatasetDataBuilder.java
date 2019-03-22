@@ -32,8 +32,9 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in <tt>upstream</tt> data.
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
+ * @param <CO> Type of COordinate for vectorizer.
  */
-public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO>
+public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends Serializable>
     implements PartitionDataBuilder<K, V, C, SimpleDatasetData> {
     /** */
     private static final long serialVersionUID = 756800193212149975L;

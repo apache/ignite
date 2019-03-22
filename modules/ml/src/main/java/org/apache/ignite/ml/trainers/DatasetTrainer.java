@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.trainers;
 
+import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -76,13 +77,13 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     public static <I, L> DatasetTrainer<IgniteModel<I, I>, L> identityTrainer() {
         return new DatasetTrainer<IgniteModel<I, I>, L>() {
             /** {@inheritDoc} */
-            @Override public <K, V, C> IgniteModel<I, I> fit(DatasetBuilder<K, V> datasetBuilder,
+            @Override public <K, V, C extends Serializable> IgniteModel<I, I> fit(DatasetBuilder<K, V> datasetBuilder,
                 Vectorizer<K, V, C, L> extractor) {
                 return x -> x;
             }
 
             /** {@inheritDoc} */
-            @Override protected <K, V, C> IgniteModel<I, I> updateModel(IgniteModel<I, I> mdl,
+            @Override protected <K, V, C extends Serializable> IgniteModel<I, I> updateModel(IgniteModel<I, I> mdl,
                 DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor) {
                 return x -> x;
             }
@@ -103,7 +104,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public abstract <K, V, C> M fit(DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor);
+    public abstract <K, V, C extends Serializable> M fit(DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor);
 
     /**
      * Gets state of model in arguments, compare it with training parameters of trainer and if they are fit then trainer
@@ -116,7 +117,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public <K, V, C> M update(M mdl, DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor) {
+    public <K, V, C extends Serializable> M update(M mdl, DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor) {
 
         if (mdl != null) {
             if (isUpdateable(mdl))
@@ -165,7 +166,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public <K, V, C> M fit(Ignite ignite, IgniteCache<K, V> cache, Vectorizer<K, V, C, L> vectorizer) {
+    public <K, V, C extends Serializable> M fit(Ignite ignite, IgniteCache<K, V> cache, Vectorizer<K, V, C, L> vectorizer) {
         return fit(new CacheBasedDatasetBuilder<>(ignite, cache), vectorizer);
     }
 
@@ -180,7 +181,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public <K, V, C> M update(M mdl, Ignite ignite, IgniteCache<K, V> cache, Vectorizer<K, V, C, L> vectorizer) {
+    public <K, V, C extends Serializable> M update(M mdl, Ignite ignite, IgniteCache<K, V> cache, Vectorizer<K, V, C, L> vectorizer) {
         return update(mdl, new CacheBasedDatasetBuilder<>(ignite, cache), vectorizer);
     }
 
@@ -195,7 +196,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public <K, V, C> M fit(Ignite ignite, IgniteCache<K, V> cache, IgniteBiPredicate<K, V> filter,
+    public <K, V, C extends Serializable> M fit(Ignite ignite, IgniteCache<K, V> cache, IgniteBiPredicate<K, V> filter,
         Vectorizer<K, V, C, L> vectorizer) {
 
         return fit(new CacheBasedDatasetBuilder<>(ignite, cache, filter), vectorizer);
@@ -213,7 +214,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public <K, V, C> M update(M mdl, Ignite ignite, IgniteCache<K, V> cache, IgniteBiPredicate<K, V> filter,
+    public <K, V, C extends Serializable> M update(M mdl, Ignite ignite, IgniteCache<K, V> cache, IgniteBiPredicate<K, V> filter,
         Vectorizer<K,V,C,L> vectorizer) {
         return update(
             mdl, new CacheBasedDatasetBuilder<>(ignite, cache, filter),
@@ -231,7 +232,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public <K, V, C> M fit(Map<K, V> data, int parts, Vectorizer<K, V, C, L> vectorizer) {
+    public <K, V, C extends Serializable> M fit(Map<K, V> data, int parts, Vectorizer<K, V, C, L> vectorizer) {
         return fit(new LocalDatasetBuilder<>(data, parts), vectorizer);
     }
 
@@ -246,7 +247,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public <K, V, C> M update(M mdl, Map<K, V> data, int parts, Vectorizer<K,V,C,L> vectorizer) {
+    public <K, V, C extends Serializable> M update(M mdl, Map<K, V> data, int parts, Vectorizer<K,V,C,L> vectorizer) {
         return update(
             mdl, new LocalDatasetBuilder<>(data, parts),
             vectorizer
@@ -264,7 +265,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public <K, V, C> M fit(Map<K, V> data, IgniteBiPredicate<K, V> filter, int parts,
+    public <K, V, C extends Serializable> M fit(Map<K, V> data, IgniteBiPredicate<K, V> filter, int parts,
         Vectorizer<K, V, C, L> vectorizer) {
         return fit(new LocalDatasetBuilder<>(data, filter, parts), vectorizer);
     }
@@ -280,7 +281,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public <K, V, C> M update(M mdl, Map<K, V> data, IgniteBiPredicate<K, V> filter, int parts,
+    public <K, V, C extends Serializable> M update(M mdl, Map<K, V> data, IgniteBiPredicate<K, V> filter, int parts,
         Vectorizer<K,V,C,L> vectorizer) {
         return update(
             mdl, new LocalDatasetBuilder<>(data, filter, parts),
@@ -311,7 +312,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    protected abstract <K, V, C> M updateModel(M mdl,
+    protected abstract <K, V, C extends Serializable> M updateModel(M mdl,
         DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, L> extractor);
 
@@ -349,7 +350,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     public <L1> DatasetTrainer<M, L1> withConvertedLabels(IgniteFunction<L1, L> new2Old) {
         DatasetTrainer<M, L> old = this;
         return new DatasetTrainer<M, L1>() {
-            private <K, V, C> Vectorizer<K, V, C, L> getNewExtractor(
+            private <K, V, C extends Serializable> Vectorizer<K, V, C, L> getNewExtractor(
                 Vectorizer<K, V, C, L1> extractor) {
                 return new Vectorizer.VectorizerAdapter<K, V, C, L>() {
                     /** {@inheritDoc} */
@@ -361,13 +362,13 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
             }
 
             /** {@inheritDoc} */
-            @Override public <K, V, C> M fit(DatasetBuilder<K, V> datasetBuilder,
+            @Override public <K, V, C extends Serializable> M fit(DatasetBuilder<K, V> datasetBuilder,
                 Vectorizer<K, V, C, L1> extractor) {
                 return old.fit(datasetBuilder, getNewExtractor(extractor));
             }
 
             /** {@inheritDoc} */
-            @Override protected <K, V, C> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+            @Override protected <K, V, C extends Serializable> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
                 Vectorizer<K, V, C, L1> extractor) {
                 return old.updateModel(mdl, datasetBuilder, getNewExtractor(extractor));
             }

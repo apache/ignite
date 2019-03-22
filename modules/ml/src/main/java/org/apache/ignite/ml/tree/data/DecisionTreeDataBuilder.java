@@ -32,7 +32,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class DecisionTreeDataBuilder<K, V, C extends Serializable, CO>
+public class DecisionTreeDataBuilder<K, V, C extends Serializable, CO extends Serializable>
     implements PartitionDataBuilder<K, V, C, DecisionTreeData> {
     /** */
     private static final long serialVersionUID = 3678784980215216039L;

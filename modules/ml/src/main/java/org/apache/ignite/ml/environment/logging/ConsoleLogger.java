@@ -104,12 +104,12 @@ public class ConsoleLogger implements MLLogger {
         }
 
         /** Low. */
-        public static IgniteFunction<Integer, MLLogger.Factory> LOW = part -> new Factory(VerboseLevel.LOW);
+        public static final IgniteFunction<Integer, MLLogger.Factory> LOW = part -> new Factory(VerboseLevel.LOW);
 
         /** High. */
-        public static IgniteFunction<Integer, MLLogger.Factory> HIGH = part -> new Factory(VerboseLevel.HIGH);
+        public static final IgniteFunction<Integer, MLLogger.Factory> HIGH = part -> new Factory(VerboseLevel.HIGH);
 
         /** Offset. */
-        public static IgniteFunction<Integer, MLLogger.Factory> OFF = part -> new Factory(VerboseLevel.OFF);
+        public static final IgniteFunction<Integer, MLLogger.Factory> OFF = part -> new Factory(VerboseLevel.OFF);
     }
 }

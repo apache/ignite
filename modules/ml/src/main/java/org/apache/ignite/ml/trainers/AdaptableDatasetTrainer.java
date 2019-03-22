@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.trainers;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.DatasetMapping;
 import org.apache.ignite.ml.composition.combinators.sequential.TrainersSequentialComposition;
@@ -93,7 +94,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> AdaptableDatasetModel<I, O, IW, OW, M> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> AdaptableDatasetModel<I, O, IW, OW, M> fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, L> extractor) {
         M fit = wrapped.
             withEnvironmentBuilder(envBuilder)
@@ -109,7 +110,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> AdaptableDatasetModel<I, O, IW, OW, M> updateModel(
+    @Override protected <K, V, C extends Serializable> AdaptableDatasetModel<I, O, IW, OW, M> updateModel(
         AdaptableDatasetModel<I, O, IW, OW, M> mdl, DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, L> extractor) {
         M updated = wrapped.withEnvironmentBuilder(envBuilder)
@@ -165,7 +166,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     public AdaptableDatasetTrainer<I, O, IW, OW, M, L> withDatasetMapping(DatasetMapping<L, L> mapping) {
         return of(new DatasetTrainer<M, L>() {
             /** {@inheritDoc} */
-            @Override public <K, V, C> M fit(DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor) {
+            @Override public <K, V, C extends Serializable> M fit(DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor) {
                 return wrapped.fit(datasetBuilder, extractor.map(lv -> new LabeledVector<>(
                     mapping.mapFeatures(lv.features()),
                     mapping.mapLabels(lv.label())
@@ -173,7 +174,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
             }
 
             /** {@inheritDoc} */
-            @Override public <K, V, C> M update(M mdl, DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> vectorizer) {
+            @Override public <K, V, C extends Serializable> M update(M mdl, DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> vectorizer) {
                 return wrapped.update(mdl, datasetBuilder, vectorizer.map(lv -> new LabeledVector<>(
                     mapping.mapFeatures(lv.features()),
                     mapping.mapLabels(lv.label())
@@ -186,7 +187,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
             }
 
             /** {@inheritDoc} */
-            @Override protected <K, V, C> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+            @Override protected <K, V, C extends Serializable> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
                 Vectorizer<K, V, C, L> extractor) {
                 return null;
             }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence.simple;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
@@ -36,7 +37,7 @@ public class ConvergenceCheckerStubFactory extends ConvergenceCheckerFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> ConvergenceChecker<K, V, C> create(long sampleSize,
+    @Override public <K, V, C extends Serializable> ConvergenceChecker<K, V, C> create(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
         DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> vectorizer) {
 

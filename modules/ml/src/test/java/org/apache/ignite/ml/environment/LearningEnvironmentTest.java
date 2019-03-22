@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.environment;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -87,7 +88,7 @@ public class LearningEnvironmentTest {
 
         DatasetTrainer<IgniteModel<Object, Vector>, Void> trainer = new DatasetTrainer<IgniteModel<Object, Vector>, Void>() {
             /** {@inheritDoc} */
-            @Override public <K, V, C> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder,
+            @Override public <K, V, C extends Serializable> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder,
                 Vectorizer<K, V, C, Void> extractor) {
                 Dataset<EmptyContext, TestUtils.DataWrapper<Integer>> ds = datasetBuilder.build(envBuilder,
                     new EmptyContextBuilder<>(),
@@ -108,7 +109,7 @@ public class LearningEnvironmentTest {
             }
 
             /** {@inheritDoc} */
-            @Override protected <K, V, C> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
+            @Override protected <K, V, C extends Serializable> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
                 DatasetBuilder<K, V> datasetBuilder,
                 Vectorizer<K, V, C, Void> extractor) {
                 return null;

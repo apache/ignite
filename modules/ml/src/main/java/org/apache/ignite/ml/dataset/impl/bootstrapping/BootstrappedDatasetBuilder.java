@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.dataset.impl.bootstrapping;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
 import org.apache.commons.math3.distribution.PoissonDistribution;
@@ -59,7 +60,7 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
      * @param samplesCnt Samples count.
      * @param subsampleSize Subsample size.
      */
-    public <C> BootstrappedDatasetBuilder(Vectorizer<K, V, C, Double> extractor, int samplesCnt, double subsampleSize) {
+    public <C extends Serializable> BootstrappedDatasetBuilder(Vectorizer<K, V, C, Double> extractor, int samplesCnt, double subsampleSize) {
         this.extractor = extractor;
         this.samplesCnt = samplesCnt;
         this.subsampleSize = subsampleSize;

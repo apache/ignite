@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.bagging;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -148,14 +149,14 @@ public class BaggedTrainer<L> extends
 
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> BaggedModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> BaggedModel fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, L> extractor) {
         IgniteModel<Vector, Double> fit = getTrainer().fit(datasetBuilder, extractor);
         return new BaggedModel(fit);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> BaggedModel update(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> BaggedModel update(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, L> extractor) {
         IgniteModel<Vector, Double> updated = getTrainer().update(mdl.model(), datasetBuilder, extractor);
         return new BaggedModel(updated);
@@ -189,7 +190,7 @@ public class BaggedTrainer<L> extends
      * @param mdl Model.
      * @return Updated model.
      */
-    @Override protected <K, V, C> BaggedModel updateModel(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V, C extends Serializable> BaggedModel updateModel(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, L> extractor) {
         // Should be never called.
         throw new IllegalStateException();

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
@@ -48,7 +49,7 @@ public abstract class ConvergenceCheckerFactory {
      * @param vectorizer Upstream vectorizer.
      * @return ConvergenceCheckerFactory instance.
      */
-    public abstract <K, V, C> ConvergenceChecker<K, V, C> create(long sampleSize,
+    public abstract <K, V, C extends Serializable> ConvergenceChecker<K, V, C> create(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
         DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, Double> vectorizer);

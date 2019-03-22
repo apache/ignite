@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence.mean;
 
+import java.io.Serializable;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
@@ -35,7 +36,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public class MeanAbsValueConvergenceChecker<K, V, C> extends ConvergenceChecker<K, V, C> {
+public class MeanAbsValueConvergenceChecker<K, V, C extends Serializable> extends ConvergenceChecker<K, V, C> {
     /** Serial version uid. */
     private static final long serialVersionUID = 8534776439755210864L;
 

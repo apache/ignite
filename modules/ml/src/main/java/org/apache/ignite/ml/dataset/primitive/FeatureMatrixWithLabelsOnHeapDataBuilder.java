@@ -32,8 +32,9 @@ import org.apache.ignite.ml.tree.data.DecisionTreeData;
  * @param <K> Type of a key in <tt>upstream</tt> data.
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
+ * @param <CO> Typer of COordinate for vectorizer.
  */
-public class FeatureMatrixWithLabelsOnHeapDataBuilder<K, V, C extends Serializable, CO>
+public class FeatureMatrixWithLabelsOnHeapDataBuilder<K, V, C extends Serializable, CO extends Serializable>
     implements PartitionDataBuilder<K, V, C, FeatureMatrixWithLabelsOnHeapData> {
     /** Serial version uid. */
     private static final long serialVersionUID = 6273736987424171813L;

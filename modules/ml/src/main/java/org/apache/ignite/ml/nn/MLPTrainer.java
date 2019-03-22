@@ -109,13 +109,13 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V, C extends Serializable> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, double[]> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C> MultilayerPerceptron updateModel(MultilayerPerceptron lastLearnedMdl,
+    @Override protected <K, V, C extends Serializable> MultilayerPerceptron updateModel(MultilayerPerceptron lastLearnedMdl,
         DatasetBuilder<K, V> datasetBuilder,
         Vectorizer<K, V, C, double[]> extractor) {
 
