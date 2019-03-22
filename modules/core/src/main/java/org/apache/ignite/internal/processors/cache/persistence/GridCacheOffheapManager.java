@@ -1416,6 +1416,367 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      *
      */
+    public class GridCacheDataStore extends AbstractGridCacheDataStore {
+        /** */
+        private volatile CacheFreeListImpl freeList;
+
+        /** */
+        private PendingEntriesTree pendingTree;
+
+        /**
+         * Cache id which should be throttled.
+         */
+        private volatile int lastThrottledCacheId;
+
+        /**
+         * Timestamp when next clean try will be allowed for the current partition
+         * in accordance with the value of {@code lastThrottledCacheId}.
+         * Used for fine-grained throttling on per-partition basis.
+         */
+        private volatile long nextStoreCleanTime;
+
+        /**
+         * @param partId Partition identifier.
+         * @param exists {@code True} if store for corresponding partition exists.
+         * @param tracker Partition tracker counter.
+         */
+        private GridCacheDataStore(
+            int partId,
+            boolean exists,
+            CacheDataStoreTracker tracker
+        ) {
+            super(partId, exists, tracker);
+        }
+
+        /** {@inheritDoc} */
+        @Override public RowStore rowStore() {
+            CacheDataStore delegate0 = delegate;
+
+            return delegate0 == null ? null : delegate0.rowStore();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void destroy() throws IgniteCheckedException {
+            // No need to destroy delegate.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void clear(int cacheId) throws IgniteCheckedException {
+            CacheDataStore delegate0 = init(true);
+
+            if (delegate0 == null)
+                return;
+
+            ctx.database().checkpointReadLock();
+            try {
+                // Clear persistent pendingTree
+                if (pendingTree != null) {
+                    PendingRow row = new PendingRow(cacheId);
+
+                    GridCursor<PendingRow> cursor = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
+
+                    while (cursor.next()) {
+                        PendingRow row0 = cursor.get();
+
+                        assert row0.link != 0 : row;
+
+                        boolean res = pendingTree.removex(row0);
+
+                        assert res;
+                    }
+                }
+
+                delegate0.clear(cacheId);
+            }
+            finally {
+                ctx.database().checkpointReadUnlock();
+            }
+        }
+
+        /**
+         * Gets the number of entries pending expire.
+         *
+         * @return Number of pending entries.
+         * @throws IgniteCheckedException If failed to get number of pending entries.
+         */
+        public long expiredSize() throws IgniteCheckedException {
+            CacheDataStore delegate0 = init(true);
+
+            return delegate0 == null ? 0 : delegate0.pendingTree().size();
+        }
+
+        /**
+         * Try to remove expired entries from data store.
+         *
+         * @param cctx Cache context.
+         * @param c Expiry closure that should be applied to expired entry. See {@link GridCacheTtlManager} for details.
+         * @param amount Limit of processed entries by single call, {@code -1} for no limit.
+         * @return cleared entries count.
+         * @throws IgniteCheckedException If failed.
+         */
+        public int purgeExpired(
+            GridCacheContext cctx,
+            IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
+            int amount
+        ) throws IgniteCheckedException {
+            CacheDataStore delegate0 = init(true);
+
+            long now = U.currentTimeMillis();
+
+            if (delegate0 == null || (cctx.cacheId() == lastThrottledCacheId && nextStoreCleanTime > now))
+                return 0;
+
+            assert pendingTree != null : "Partition data store was not initialized.";
+
+            int cleared = purgeExpiredInternal(cctx, c, amount);
+
+            // Throttle if there is nothing to clean anymore.
+            if (cleared < amount) {
+                lastThrottledCacheId = cctx.cacheId();
+
+                nextStoreCleanTime = now + GridCacheTtlManager.UNWIND_THROTTLING_TIMEOUT;
+            }
+
+            return cleared;
+        }
+
+        /**
+         * Removes expired entries from data store.
+         *
+         * @param cctx Cache context.
+         * @param c Expiry closure that should be applied to expired entry. See {@link GridCacheTtlManager} for details.
+         * @param amount Limit of processed entries by single call, {@code -1} for no limit.
+         * @return cleared entries count.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int purgeExpiredInternal(
+            GridCacheContext cctx,
+            IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
+            int amount
+        ) throws IgniteCheckedException {
+            GridDhtLocalPartition part = cctx.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
+
+            // Skip non-owned partitions.
+            if (part == null || part.state() != OWNING)
+                return 0;
+
+            cctx.shared().database().checkpointReadLock();
+            try {
+                if (!part.reserve())
+                    return 0;
+
+                try {
+                    if (part.state() != OWNING)
+                        return 0;
+
+                    long now = U.currentTimeMillis();
+
+                    GridCursor<PendingRow> cur;
+
+                    if (grp.sharedGroup())
+                        cur = pendingTree.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
+                    else
+                        cur = pendingTree.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
+
+                    if (!cur.next())
+                        return 0;
+
+                    GridCacheVersion obsoleteVer = null;
+
+                    int cleared = 0;
+
+                    do {
+                        PendingRow row = cur.get();
+
+                        if (amount != -1 && cleared > amount)
+                            return cleared;
+
+                        assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+
+                        row.key.partition(partId);
+
+                        if (pendingTree.removex(row)) {
+                            if (obsoleteVer == null)
+                                obsoleteVer = ctx.versions().next();
+
+                            GridCacheEntryEx e1 = cctx.cache().entryEx(row.key);
+
+                            if (e1 != null)
+                                c.apply(e1, obsoleteVer);
+                        }
+
+                        cleared++;
+                    }
+                    while (cur.next());
+
+                    return cleared;
+                }
+                finally {
+                    part.release();
+                }
+            }
+            finally {
+                cctx.shared().database().checkpointReadUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheDataStore init0(Metas metas) throws IgniteCheckedException {
+            CacheDataStore delegate0;
+
+            if (PageIdUtils.partId(metas.reuseListRoot.pageId().pageId()) != partId ||
+                PageIdUtils.partId(metas.treeRoot.pageId().pageId()) != partId ||
+                PageIdUtils.partId(metas.pendingTreeRoot.pageId().pageId()) != partId) {
+                throw new IgniteCheckedException("Invalid meta root allocated [" +
+                    "cacheOrGroupName=" + grp.cacheOrGroupName() +
+                    ", partId=" + partId +
+                    ", metas=" + metas + ']');
+            }
+
+            RootPage reuseRoot = metas.reuseListRoot;
+
+            freeList = new CacheFreeListImpl(
+                grp.groupId(),
+                grp.cacheOrGroupName() + "-" + partId,
+                grp.dataRegion().memoryMetrics(),
+                grp.dataRegion(),
+                null,
+                ctx.wal(),
+                reuseRoot.pageId().pageId(),
+                reuseRoot.isAllocated()) {
+                /** {@inheritDoc} */
+                @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                    assert grp.shared().database().checkpointLockIsHeldByThread();
+
+                    return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
+                }
+            };
+
+            CacheDataRowStore rowStore = new CacheDataRowStore(grp, freeList, partId);
+
+            RootPage treeRoot = metas.treeRoot;
+
+            CacheDataTree dataTree = new CacheDataTree(
+                grp,
+                name,
+                freeList,
+                rowStore,
+                treeRoot.pageId().pageId(),
+                treeRoot.isAllocated()) {
+                /** {@inheritDoc} */
+                @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                    assert grp.shared().database().checkpointLockIsHeldByThread();
+
+                    return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
+                }
+            };
+
+            RootPage pendingTreeRoot = metas.pendingTreeRoot;
+
+            final PendingEntriesTree pendingTree0 = new PendingEntriesTree(
+                grp,
+                "PendingEntries-" + partId,
+                grp.dataRegion().pageMemory(),
+                pendingTreeRoot.pageId().pageId(),
+                freeList,
+                pendingTreeRoot.isAllocated()) {
+                /** {@inheritDoc} */
+                @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                    assert grp.shared().database().checkpointLockIsHeldByThread();
+
+                    return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
+                }
+            };
+
+            PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+            delegate0 = new CacheDataStoreImpl(partId, name, rowStore, dataTree, tracker) {
+                /** {@inheritDoc} */
+                @Override public PendingEntriesTree pendingTree() {
+                    return pendingTree0;
+                }
+
+                /** {@inheritDoc} */
+                @Override public void preload() throws IgniteCheckedException {
+                    IgnitePageStoreManager pageStoreMgr = ctx.pageStore();
+
+                    if (pageStoreMgr == null)
+                        return;
+
+                    final int pages = pageStoreMgr.pages(grp.groupId(), partId);
+
+                    long pageId = pageMem.partitionMetaPageId(grp.groupId(), partId);
+
+                    // For each page sequentially pin/unpin.
+                    for (int pageNo = 0; pageNo < pages; pageId++, pageNo++) {
+                        long pagePointer = -1;
+
+                        try {
+                            pagePointer = pageMem.acquirePage(grp.groupId(), pageId);
+                        }
+                        finally {
+                            if (pagePointer != -1)
+                                pageMem.releasePage(grp.groupId(), pageId, pagePointer);
+                        }
+                    }
+                }
+            };
+
+            pendingTree = pendingTree0;
+
+            if (!pendingTree0.isEmpty())
+                grp.caches().forEach(cctx -> cctx.ttl().hasPendingEntries(true));
+
+            return delegate0;
+        }
+    }
+
+    /**
+     *
+     */
+    public class TempCacheDataStore extends AbstractGridCacheDataStore {
+        /** */
+        private final CacheDataStore store;
+
+        /**
+         * @param partId Partition identifier.
+         * @param exists {@code True} if store for corresponding partition exists.
+         * @param tracker Partition tracker counters.
+         */
+        public TempCacheDataStore(
+            int partId,
+            boolean exists,
+            CacheDataStoreTracker tracker
+        ) {
+            super(partId, exists, tracker);
+
+            store = new CacheDataStoreDecanter(grp, partId, tracker);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheDataStore init0(Metas metas) throws IgniteCheckedException {
+            return store;
+        }
+    }
+
+    /**
+     *
+     */
+    public static final GridCursor<CacheDataRow> EMPTY_CURSOR = new GridCursor<CacheDataRow>() {
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheDataRow get() {
+            return null;
+        }
+    };
+
+    /**
+     *
+     */
     private abstract class AbstractGridCacheDataStore implements CacheDataStore {
         /** */
         protected final int partId;
@@ -1472,7 +1833,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 return delegate0;
 
             if (checkExists && !exists)
-                    return null;
+                return null;
 
             try {
                 if (init.compareAndSet(false, true)) {
@@ -2141,365 +2502,4 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 delegate0.preload();
         }
     }
-
-    /**
-     *
-     */
-    public class GridCacheDataStore extends AbstractGridCacheDataStore {
-        /** */
-        private volatile CacheFreeListImpl freeList;
-
-        /** */
-        private PendingEntriesTree pendingTree;
-
-        /**
-         * Cache id which should be throttled.
-         */
-        private volatile int lastThrottledCacheId;
-
-        /**
-         * Timestamp when next clean try will be allowed for the current partition
-         * in accordance with the value of {@code lastThrottledCacheId}.
-         * Used for fine-grained throttling on per-partition basis.
-         */
-        private volatile long nextStoreCleanTime;
-
-        /**
-         * @param partId Partition identifier.
-         * @param exists {@code True} if store for corresponding partition exists.
-         * @param tracker Partition tracker counter.
-         */
-        private GridCacheDataStore(
-            int partId,
-            boolean exists,
-            CacheDataStoreTracker tracker
-        ) {
-            super(partId, exists, tracker);
-        }
-
-        /** {@inheritDoc} */
-        @Override public RowStore rowStore() {
-            CacheDataStore delegate0 = delegate;
-
-            return delegate0 == null ? null : delegate0.rowStore();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void destroy() throws IgniteCheckedException {
-            // No need to destroy delegate.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void clear(int cacheId) throws IgniteCheckedException {
-            CacheDataStore delegate0 = init(true);
-
-            if (delegate0 == null)
-                return;
-
-            ctx.database().checkpointReadLock();
-            try {
-                // Clear persistent pendingTree
-                if (pendingTree != null) {
-                    PendingRow row = new PendingRow(cacheId);
-
-                    GridCursor<PendingRow> cursor = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
-
-                    while (cursor.next()) {
-                        PendingRow row0 = cursor.get();
-
-                        assert row0.link != 0 : row;
-
-                        boolean res = pendingTree.removex(row0);
-
-                        assert res;
-                    }
-                }
-
-                delegate0.clear(cacheId);
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
-            }
-        }
-
-        /**
-         * Gets the number of entries pending expire.
-         *
-         * @return Number of pending entries.
-         * @throws IgniteCheckedException If failed to get number of pending entries.
-         */
-        public long expiredSize() throws IgniteCheckedException {
-            CacheDataStore delegate0 = init(true);
-
-            return delegate0 == null ? 0 : delegate0.pendingTree().size();
-        }
-
-        /**
-         * Try to remove expired entries from data store.
-         *
-         * @param cctx Cache context.
-         * @param c Expiry closure that should be applied to expired entry. See {@link GridCacheTtlManager} for details.
-         * @param amount Limit of processed entries by single call, {@code -1} for no limit.
-         * @return cleared entries count.
-         * @throws IgniteCheckedException If failed.
-         */
-        public int purgeExpired(
-            GridCacheContext cctx,
-            IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
-            int amount
-        ) throws IgniteCheckedException {
-            CacheDataStore delegate0 = init(true);
-
-            long now = U.currentTimeMillis();
-
-            if (delegate0 == null || (cctx.cacheId() == lastThrottledCacheId && nextStoreCleanTime > now))
-                return 0;
-
-            assert pendingTree != null : "Partition data store was not initialized.";
-
-            int cleared = purgeExpiredInternal(cctx, c, amount);
-
-            // Throttle if there is nothing to clean anymore.
-            if (cleared < amount) {
-                lastThrottledCacheId = cctx.cacheId();
-
-                nextStoreCleanTime = now + GridCacheTtlManager.UNWIND_THROTTLING_TIMEOUT;
-            }
-
-            return cleared;
-        }
-
-        /**
-         * Removes expired entries from data store.
-         *
-         * @param cctx Cache context.
-         * @param c Expiry closure that should be applied to expired entry. See {@link GridCacheTtlManager} for details.
-         * @param amount Limit of processed entries by single call, {@code -1} for no limit.
-         * @return cleared entries count.
-         * @throws IgniteCheckedException If failed.
-         */
-        private int purgeExpiredInternal(
-            GridCacheContext cctx,
-            IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
-            int amount
-        ) throws IgniteCheckedException {
-            GridDhtLocalPartition part = cctx.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
-
-            // Skip non-owned partitions.
-            if (part == null || part.state() != OWNING)
-                return 0;
-
-            cctx.shared().database().checkpointReadLock();
-            try {
-                if (!part.reserve())
-                    return 0;
-
-                try {
-                    if (part.state() != OWNING)
-                        return 0;
-
-                    long now = U.currentTimeMillis();
-
-                    GridCursor<PendingRow> cur;
-
-                    if (grp.sharedGroup())
-                        cur = pendingTree.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
-                    else
-                        cur = pendingTree.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
-
-                    if (!cur.next())
-                        return 0;
-
-                    GridCacheVersion obsoleteVer = null;
-
-                    int cleared = 0;
-
-                    do {
-                        PendingRow row = cur.get();
-
-                        if (amount != -1 && cleared > amount)
-                            return cleared;
-
-                        assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
-
-                        row.key.partition(partId);
-
-                        if (pendingTree.removex(row)) {
-                            if (obsoleteVer == null)
-                                obsoleteVer = ctx.versions().next();
-
-                            GridCacheEntryEx e1 = cctx.cache().entryEx(row.key);
-
-                            if (e1 != null)
-                                c.apply(e1, obsoleteVer);
-                        }
-
-                        cleared++;
-                    }
-                    while (cur.next());
-
-                    return cleared;
-                }
-                finally {
-                    part.release();
-                }
-            }
-            finally {
-                cctx.shared().database().checkpointReadUnlock();
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override protected CacheDataStore init0(Metas metas) throws IgniteCheckedException {
-            CacheDataStore delegate0;
-
-            if (PageIdUtils.partId(metas.reuseListRoot.pageId().pageId()) != partId ||
-                PageIdUtils.partId(metas.treeRoot.pageId().pageId()) != partId ||
-                PageIdUtils.partId(metas.pendingTreeRoot.pageId().pageId()) != partId) {
-                throw new IgniteCheckedException("Invalid meta root allocated [" +
-                    "cacheOrGroupName=" + grp.cacheOrGroupName() +
-                    ", partId=" + partId +
-                    ", metas=" + metas + ']');
-            }
-
-            RootPage reuseRoot = metas.reuseListRoot;
-
-            freeList = new CacheFreeListImpl(
-                grp.groupId(),
-                grp.cacheOrGroupName() + "-" + partId,
-                grp.dataRegion().memoryMetrics(),
-                grp.dataRegion(),
-                null,
-                ctx.wal(),
-                reuseRoot.pageId().pageId(),
-                reuseRoot.isAllocated()) {
-                /** {@inheritDoc} */
-                @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
-                    assert grp.shared().database().checkpointLockIsHeldByThread();
-
-                    return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
-                }
-            };
-
-            CacheDataRowStore rowStore = new CacheDataRowStore(grp, freeList, partId);
-
-            RootPage treeRoot = metas.treeRoot;
-
-            CacheDataTree dataTree = new CacheDataTree(
-                grp,
-                name,
-                freeList,
-                rowStore,
-                treeRoot.pageId().pageId(),
-                treeRoot.isAllocated()) {
-                /** {@inheritDoc} */
-                @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
-                    assert grp.shared().database().checkpointLockIsHeldByThread();
-
-                    return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
-                }
-            };
-
-            RootPage pendingTreeRoot = metas.pendingTreeRoot;
-
-            final PendingEntriesTree pendingTree0 = new PendingEntriesTree(
-                grp,
-                "PendingEntries-" + partId,
-                grp.dataRegion().pageMemory(),
-                pendingTreeRoot.pageId().pageId(),
-                freeList,
-                pendingTreeRoot.isAllocated()) {
-                /** {@inheritDoc} */
-                @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
-                    assert grp.shared().database().checkpointLockIsHeldByThread();
-
-                    return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
-                }
-            };
-
-            PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
-
-            delegate0 = new CacheDataStoreImpl(partId, name, rowStore, dataTree, tracker) {
-                /** {@inheritDoc} */
-                @Override public PendingEntriesTree pendingTree() {
-                    return pendingTree0;
-                }
-
-                /** {@inheritDoc} */
-                @Override public void preload() throws IgniteCheckedException {
-                    IgnitePageStoreManager pageStoreMgr = ctx.pageStore();
-
-                    if (pageStoreMgr == null)
-                        return;
-
-                    final int pages = pageStoreMgr.pages(grp.groupId(), partId);
-
-                    long pageId = pageMem.partitionMetaPageId(grp.groupId(), partId);
-
-                    // For each page sequentially pin/unpin.
-                    for (int pageNo = 0; pageNo < pages; pageId++, pageNo++) {
-                        long pagePointer = -1;
-
-                        try {
-                            pagePointer = pageMem.acquirePage(grp.groupId(), pageId);
-                        }
-                        finally {
-                            if (pagePointer != -1)
-                                pageMem.releasePage(grp.groupId(), pageId, pagePointer);
-                        }
-                    }
-                }
-            };
-
-            pendingTree = pendingTree0;
-
-            if (!pendingTree0.isEmpty())
-                grp.caches().forEach(cctx -> cctx.ttl().hasPendingEntries(true));
-
-            return delegate0;
-        }
-    }
-
-    /**
-     *
-     */
-    public class TempCacheDataStore extends AbstractGridCacheDataStore {
-        /** */
-        private final CacheDataStore store;
-
-        /**
-         * @param partId Partition identifier.
-         * @param exists {@code True} if store for corresponding partition exists.
-         * @param tracker Partition tracker counters.
-         */
-        public TempCacheDataStore(
-            int partId,
-            boolean exists,
-            CacheDataStoreTracker tracker
-        ) {
-            super(partId, exists, tracker);
-
-            store = new CacheDataStoreDecanter(grp, partId, tracker);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected CacheDataStore init0(Metas metas) throws IgniteCheckedException {
-            return store;
-        }
-    }
-
-    /**
-     *
-     */
-    public static final GridCursor<CacheDataRow> EMPTY_CURSOR = new GridCursor<CacheDataRow>() {
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheDataRow get() {
-            return null;
-        }
-    };
 }
