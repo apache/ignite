@@ -1816,7 +1816,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      */
     public void markAsRebuildNeeded(GridCacheContext cctx) {
-        if (rebuildIsMeaningful(cctx))
+        if (rebuildIsMeaningless(cctx))
             return;
 
         idx.markAsRebuldNeeded(cctx);
@@ -1824,9 +1824,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cctx Cache context.
-     * @return False if index rebuild is meaningless.
+     * @return True if index rebuild is meaningless (index module is disabled and so on).
      */
-    private boolean rebuildIsMeaningful(GridCacheContext cctx) {
+    private boolean rebuildIsMeaningless(GridCacheContext cctx) {
         // Indexing module is disabled, nothing to rebuild.
         if (idx == null)
             return true;
@@ -1850,7 +1850,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
         // Indexing module is disabled, nothing to rebuild.
-        if (rebuildIsMeaningful(cctx))
+        if (rebuildIsMeaningless(cctx))
             return null;
 
         // No need to rebuild if cache has no data.
