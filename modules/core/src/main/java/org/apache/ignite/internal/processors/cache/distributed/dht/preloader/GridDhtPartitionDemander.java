@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -1075,6 +1076,10 @@ public class GridDhtPartitionDemander {
 
         Iterator<GridCacheEntryInfo> infos = infosCol.iterator();
 
+        // todo
+        boolean batchPageWriteEnabled0 = batchPageWriteEnabled && (grp.dataRegion().config().isPersistenceEnabled() ||
+            grp.dataRegion().config().getPageEvictionMode() == DataPageEvictionMode.DISABLED);
+
         // Loop through all received entries and try to preload them.
         while (infos.hasNext()) {
             ctx.database().checkpointReadLock();
@@ -1090,7 +1095,7 @@ public class GridDhtPartitionDemander {
                     infosBatch.add(entry);
                 }
 
-                if (batchPageWriteEnabled && infosBatch.size() > BATCH_PRELOAD_THRESHOLD)
+                if (batchPageWriteEnabled0 && infosBatch.size() > BATCH_PRELOAD_THRESHOLD)
                     preloadEntriesBatch(node, p, infosBatch, topVer);
                 else
                     preloadEntriesSingle(node, p, infosBatch, topVer);
