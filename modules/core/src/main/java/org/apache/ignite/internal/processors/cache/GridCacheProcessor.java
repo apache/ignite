@@ -1583,7 +1583,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean nearEnabled = GridCacheUtils.isNearEnabled(cfg);
 
-        CacheCompressionManager compressMgr = sharedCtx.localNode().isClient() ? null : new CacheCompressionManager();
+        CacheCompressionManager compressMgr = ctx.config().isClientMode() ? null : new CacheCompressionManager();
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
         CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled())
