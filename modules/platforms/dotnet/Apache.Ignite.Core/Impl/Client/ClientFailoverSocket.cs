@@ -102,7 +102,6 @@ namespace Apache.Ignite.Core.Impl.Client
                 throw new IgniteClientException("Failed to resolve all specified hosts.");
             }
 
-            // TODO: Connect only one and return quicker?
             Connect();
         }
 
@@ -114,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritdoc /> */
-        public T DoOutInOpAffinity<T, TKey>( // TODO: This does not belong in Socket class. Move to IgniteClient?
+        public T DoOutInOpAffinity<T, TKey>(
             ClientOp opId,
             Action<IBinaryStream> writeAction,
             Func<IBinaryStream, T> readFunc,
