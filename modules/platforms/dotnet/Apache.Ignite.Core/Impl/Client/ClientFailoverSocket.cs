@@ -142,6 +142,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     ClientSocket socket;
                     if (socketMap.TryGetValue(nodeId, out socket))
                     {
+                        // TODO: Check if socket is still connected.
                         return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
                     }
                 }
@@ -193,10 +194,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             lock (_syncRoot)
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException("ClientFailoverSocket");
-                }
+                ThrowIfDisposed();
 
                 if (_socket == null)
                 {
@@ -204,6 +202,18 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
 
                 return _socket;
+            }
+        }
+
+        /// <summary>
+        /// Throws if disposed.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException"></exception>
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException("ClientFailoverSocket");
             }
         }
 
@@ -220,6 +230,16 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     _socket.Dispose();
                     _socket = null;
+                }
+
+                if (_nodeSocketMap != null)
+                {
+                    foreach (var socket in _nodeSocketMap.Values)
+                    {
+                        socket.Dispose();
+                    }
+
+                    _nodeSocketMap = null;
                 }
             }
         }
@@ -476,7 +496,12 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
             }
 
-            _nodeSocketMap = map;
+            lock (_syncRoot)
+            {
+                // TODO: Handle Disposed: disconnect all sockets.
+                ThrowIfDisposed();
+                _nodeSocketMap = map;
+            }
         }
     }
 }
