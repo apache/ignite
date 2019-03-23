@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -35,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -62,7 +61,7 @@ public class CacheMapEntries {
     private final boolean preload;
 
     /** */
-    private final LinkedHashMap<KeyCacheObject, CacheMapEntryInfo> infos = new LinkedHashMap<>();
+    private final List<CacheMapEntryInfo> infos = new ArrayList<>(8);
 
     /** */
     private Set<KeyCacheObject> skipped = new HashSet<>();
@@ -86,17 +85,12 @@ public class CacheMapEntries {
         if (temp != null && sorted && temp.hashCode() >= key.hashCode())
             sorted = false;
 
-        infos.put(temp = key, new CacheMapEntryInfo(this, val, expTime, ttl, ver, drType));
+        infos.add(new CacheMapEntryInfo(this, temp = key, val, expTime, ttl, ver, drType));
     }
 
     /** */
-    public Set<KeyCacheObject> keys() {
-        return infos.keySet();
-    }
-
-    /** */
-    public Collection<CacheMapEntryInfo> values() {
-        return infos.values();
+    public boolean preload() {
+        return preload;
     }
 
     /** */
@@ -110,13 +104,32 @@ public class CacheMapEntries {
     }
 
     /** */
-    public CacheMapEntryInfo get(KeyCacheObject key) {
-        return infos.get(key);
+    public Collection<KeyCacheObject> keys() {
+        return F.viewReadOnly(infos, CacheMapEntryInfo::key);
     }
 
     /** */
-    public boolean preload() {
-        return preload;
+    public Collection<CacheMapEntryInfo> values() {
+        return infos;
+    }
+
+    /** */
+    public CacheMapEntryInfo get(int idx) {
+        return infos.get(idx);
+    }
+
+    /**
+     * @return Count of batch entries.
+     */
+    public int size() {
+        return infos.size() - skipped.size();
+    }
+
+    /**
+     * @return Off heap update closure.
+     */
+    public OffheapInvokeAllClosure updateClosure() {
+        return new UpdateAllClosure(this, cctx);
     }
 
     /** */
@@ -139,12 +152,12 @@ public class CacheMapEntries {
         List<GridDhtCacheEntry> locked = new ArrayList<>(infos.size());
 
         while (true) {
-            for (Map.Entry<KeyCacheObject, CacheMapEntryInfo> e : infos.entrySet()) {
-                GridDhtCacheEntry entry = (GridDhtCacheEntry)cctx.cache().entryEx(e.getKey(), topVer);
+            for (CacheMapEntryInfo info : infos) {
+                GridDhtCacheEntry entry = (GridDhtCacheEntry)cctx.cache().entryEx(info.key(), topVer);
 
                 locked.add(entry);
 
-                e.getValue().cacheEntry(entry);
+                info.cacheEntry(entry);
             }
 
             boolean retry = false;
@@ -187,6 +200,7 @@ public class CacheMapEntries {
      */
     public void unlock() {
         // Process deleted entries before locks release.
+        // todo
         assert cctx.deferredDelete() : this;
 
         // Entries to skip eviction manager notification for.
@@ -194,9 +208,9 @@ public class CacheMapEntries {
         int size = infos.size();
 
         try {
-            for (Map.Entry<KeyCacheObject, CacheMapEntryInfo> e : infos.entrySet()) {
-                KeyCacheObject key = e.getKey();
-                GridCacheMapEntry entry = e.getValue().cacheEntry();
+            for (CacheMapEntryInfo info : infos) {
+                KeyCacheObject key = info.key();
+                GridCacheMapEntry entry = info.cacheEntry();
 
                 if (skipped.contains(key))
                     continue;
@@ -205,7 +219,7 @@ public class CacheMapEntries {
                     skipped.add(entry.key());
 
                 try {
-                    e.getValue().updateCacheEntry();
+                    info.updateCacheEntry();
                 } catch (IgniteCheckedException ex) {
                     skipped.add(entry.key());
                 }
@@ -215,7 +229,7 @@ public class CacheMapEntries {
             // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
             // an attempt to use cleaned resources.
             // That's why releasing locks in the finally block..
-            for (CacheMapEntryInfo info : infos.values()) {
+            for (CacheMapEntryInfo info : values()) {
                 GridCacheMapEntry entry = info.cacheEntry();
 
                 if (entry != null)
@@ -224,7 +238,7 @@ public class CacheMapEntries {
         }
 
         // Try evict partitions.
-        for (CacheMapEntryInfo info : infos.values()) {
+        for (CacheMapEntryInfo info : values()) {
             GridDhtCacheEntry entry = info.cacheEntry();
             if (entry != null)
                 entry.onUnlock();
@@ -236,26 +250,12 @@ public class CacheMapEntries {
 
         // Must touch all entries since update may have deleted entries.
         // Eviction manager will remove empty entries.
-        for (CacheMapEntryInfo info : infos.values()) {
+        for (CacheMapEntryInfo info : values()) {
             GridCacheMapEntry entry = info.cacheEntry();
 
             if (entry != null && !skipped.contains(entry.key()))
                 entry.touch();
         }
-    }
-
-    /**
-     * @return Count of batch entries.
-     */
-    public int size() {
-        return infos.size() - skipped.size();
-    }
-
-    /**
-     * @return Off heap update closure.
-     */
-    public OffheapInvokeAllClosure updateClosure() {
-        return new UpdateAllClosure(this, cctx, part);
     }
 
     /** */
@@ -264,32 +264,37 @@ public class CacheMapEntries {
         private static final long serialVersionUID = -4782459128689696534L;
 
         /** */
-        private final List<T3<IgniteTree.OperationType, CacheDataRow, CacheDataRow>> resBatch;
+        private final List<T3<IgniteTree.OperationType, CacheDataRow, CacheDataRow>> finalOps;
 
         /** */
         private final int cacheId;
 
         /** */
-        private final CacheMapEntries batch;
+        private final CacheMapEntries entries;
 
         /** */
-        public UpdateAllClosure(CacheMapEntries entries, GridCacheContext cctx, GridDhtLocalPartition part) {
-            batch = entries;
-            resBatch = new ArrayList<>(entries.size());
+        public UpdateAllClosure(CacheMapEntries entries, GridCacheContext cctx) {
+            this.entries = entries;
+            finalOps = new ArrayList<>(entries.size());
             cacheId = cctx.group().storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
         }
 
         /** {@inheritDoc} */
         @Override public void call(@Nullable Collection<T2<CacheDataRow, CacheSearchRow>> rows) throws IgniteCheckedException {
-            List<DataRow> newRows = new ArrayList<>(16);
+            List<DataRow> newRows = new ArrayList<>(8);
 
-            int partId = batch.part().id();
-            GridCacheContext cctx = batch.context();
+            int partId = entries.part().id();
+            GridCacheContext cctx = entries.context();
+
+            assert rows.size() == entries.size() : "size mismatch, expected=" + entries.size() + ", input=" + rows.size();
+
+            int idx = 0;
 
             for (T2<CacheDataRow, CacheSearchRow> t2 : rows) {
                 CacheDataRow oldRow = t2.get1();
                 KeyCacheObject key = t2.get2().key();
-                CacheMapEntryInfo newRowInfo = batch.get(key);
+
+                CacheMapEntryInfo newRowInfo = entries.get(idx++);
 
                 try {
                     if (newRowInfo.needUpdate(oldRow)) {
@@ -298,7 +303,7 @@ public class CacheMapEntries {
                         if (val != null) {
                             if (oldRow != null) {
                                 // todo batch updates
-                                CacheDataRow newRow = cctx.offheap().dataStore(batch.part()).createRow(
+                                CacheDataRow newRow = cctx.offheap().dataStore(entries.part()).createRow(
                                     cctx,
                                     key,
                                     newRowInfo.value(),
@@ -306,7 +311,7 @@ public class CacheMapEntries {
                                     newRowInfo.expireTime(),
                                     oldRow);
 
-                                resBatch.add(new T3<>(oldRow.link() == newRow.link() ? NOOP : PUT, oldRow, newRow));
+                                finalOps.add(new T3<>(oldRow.link() == newRow.link() ? NOOP : PUT, oldRow, newRow));
                             }
                             else {
                                 CacheObjectContext coCtx = cctx.cacheObjectContext();
@@ -322,7 +327,7 @@ public class CacheMapEntries {
 
                                 newRows.add(newRow);
 
-                                resBatch.add(new T3<>(PUT, oldRow, newRow));
+                                finalOps.add(new T3<>(PUT, oldRow, newRow));
                             }
                         }
                         else {
@@ -330,20 +335,22 @@ public class CacheMapEntries {
                             // todo   (in particular case oldRow should not contain key)
                             DataRow newRow = new DataRow(key, null, null, 0, 0, cacheId);
 
-                            resBatch.add(new T3<>(oldRow != null ? REMOVE : NOOP, oldRow, newRow));
+                            finalOps.add(new T3<>(oldRow != null ? REMOVE : NOOP, oldRow, newRow));
                         }
                     }
                 }
                 catch (GridCacheEntryRemovedException e) {
-                    batch.onRemove(key);
+                    entries.onRemove(key);
                 }
             }
 
             if (!newRows.isEmpty()) {
-                cctx.offheap().dataStore(batch.part()).rowStore().addRows(newRows, cctx.group().statisticsHolderData());
+                //cctx.shared().database().ensureFreeSpace(cctx.dataRegion());
+
+                cctx.offheap().dataStore(entries.part()).rowStore().addRows(newRows, cctx.group().statisticsHolderData());
 
                 if (cacheId == CU.UNDEFINED_CACHE_ID) {
-                    // Set cacheId before write keys into tree.
+                    // Set cacheId before put keys into tree.
                     for (DataRow row : newRows)
                         row.cacheId(cctx.cacheId());
 
@@ -353,12 +360,12 @@ public class CacheMapEntries {
 
         /** {@inheritDoc} */
         @Override public Collection<T3<IgniteTree.OperationType, CacheDataRow, CacheDataRow>> result() {
-            return resBatch;
+            return finalOps;
         }
 
         /** {@inheritDoc} */
         @Override public boolean fastpath() {
-            return batch.sorted;
+            return entries.sorted;
         }
 
         /** {@inheritDoc} */
@@ -371,6 +378,9 @@ public class CacheMapEntries {
     private static class CacheMapEntryInfo {
         /** */
         private final CacheMapEntries batch;
+
+        /** */
+        private KeyCacheObject key;
 
         /** */
         private final CacheObject val;
@@ -396,6 +406,7 @@ public class CacheMapEntries {
         /** */
         public CacheMapEntryInfo(
             CacheMapEntries batch,
+            KeyCacheObject key,
             CacheObject val,
             long expireTime,
             long ttl,
@@ -403,6 +414,7 @@ public class CacheMapEntries {
             GridDrType drType
         ) {
             this.batch = batch;
+            this.key = key;
             this.val = val;
             this.expireTime = expireTime;
             this.ver = ver;
@@ -411,10 +423,10 @@ public class CacheMapEntries {
         }
 
         /**
-         * @return Version.
+         * @return Key.
          */
-        public GridCacheVersion version() {
-            return ver;
+        public KeyCacheObject key() {
+            return key;
         }
 
         /**
@@ -422,6 +434,13 @@ public class CacheMapEntries {
          */
         public CacheObject value() {
             return val;
+        }
+
+        /**
+         * @return Version.
+         */
+        public GridCacheVersion version() {
+            return ver;
         }
 
         /**
