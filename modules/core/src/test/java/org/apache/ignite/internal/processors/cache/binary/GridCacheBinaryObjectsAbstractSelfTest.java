@@ -38,7 +38,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -98,6 +97,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /** */
     private static IgniteConfiguration cfg;
 
+    /** */
+    private boolean client;
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -132,6 +134,8 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         cfg.setCacheKeyConfiguration(arrayHashCfg);
 
         GridCacheBinaryObjectsAbstractSelfTest.cfg = cfg;
+
+        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -1228,14 +1232,14 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * The issue with primitive arrys as key has been fixed whenever multidementional arrays will couse exception
      */
     private void testPrimitiveArrayAsCacheKey(boolean withClient) throws Exception {
-        IgniteConfiguration cfg = new IgniteConfiguration();
+//        IgniteConfiguration cfg = new IgniteConfiguration();
 
-        Ignite srv = startGrid("server",cfg);
+        Ignite srv = startGrid(1);
 
-        Ignition.setClientMode(true);
+//        Ignition.setClientMode(true);
+        client = true;
 
-        Ignite ignite = withClient ? startGrid("client",cfg) : srv;
-
+        Ignite ignite = withClient ? startGrid(2) : srv;
 
         Object[] testIdx = new Object[]{
             new byte[]{1, 0, 1},
@@ -1247,26 +1251,26 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             new char[]{'a', 'b', 'c'},
         };
 
-        assertEquals (new KeyCacheObjectImpl(testIdx[0],null,1),
-            new KeyCacheObjectImpl(new byte[]{1, 0, 1},null,1));
+        assertEquals (new KeyCacheObjectImpl(testIdx[0], null, 1),
+            new KeyCacheObjectImpl(new byte[]{1, 0, 1}, null, 1));
 
-        assertEquals (new KeyCacheObjectImpl(testIdx[1],null,1),
-            new KeyCacheObjectImpl(new int[]{1, 2, 3},null,1));
+        assertEquals (new KeyCacheObjectImpl(testIdx[1], null, 1),
+            new KeyCacheObjectImpl(new int[]{1, 2, 3}, null,1));
 
-        assertEquals (new KeyCacheObjectImpl(testIdx[2],null,1),
-            new KeyCacheObjectImpl(new boolean[]{true, true, false},null,1));
+        assertEquals (new KeyCacheObjectImpl(testIdx[2],null, 1),
+            new KeyCacheObjectImpl(new boolean[]{true, true, false}, null, 1));
 
-        assertEquals (new KeyCacheObjectImpl(testIdx[3],null,1),
-            new KeyCacheObjectImpl(new float[]{1, 2, 3},null,1));
+        assertEquals (new KeyCacheObjectImpl(testIdx[3], null, 1),
+            new KeyCacheObjectImpl(new float[]{1, 2, 3}, null, 1));
 
-        assertEquals (new KeyCacheObjectImpl(testIdx[4],null,1),
-            new KeyCacheObjectImpl(new double[]{1, 2, 3},null,1));
+        assertEquals (new KeyCacheObjectImpl(testIdx[4], null, 1),
+            new KeyCacheObjectImpl(new double[]{1, 2, 3}, null, 1));
 
-        assertEquals (new KeyCacheObjectImpl(testIdx[5],null,1),
-            new KeyCacheObjectImpl(new long[]{1, 2, 3},null,1));
+        assertEquals (new KeyCacheObjectImpl(testIdx[5], null, 1),
+            new KeyCacheObjectImpl(new long[]{1, 2, 3}, null, 1));
 
-        assertEquals(new KeyCacheObjectImpl(testIdx[6],null,1),
-            new KeyCacheObjectImpl(new char[]{'a', 'b', 'c'},null,1));
+        assertEquals(new KeyCacheObjectImpl(testIdx[6], null, 1),
+            new KeyCacheObjectImpl(new char[]{'a', 'b', 'c'}, null, 1));
 
         CacheConfiguration<Object,Object> ccfg = new CacheConfiguration<>("default2");
 
