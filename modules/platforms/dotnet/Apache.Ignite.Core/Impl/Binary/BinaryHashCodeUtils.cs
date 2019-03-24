@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Utilities for binary hash codes.
     /// </summary>
-    internal class BinaryHashCodeUtils
+    internal static class BinaryHashCodeUtils
     {
         /// <summary>
         /// Gets the Ignite-specific hash code for the provided value.
@@ -55,10 +55,16 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return TypeCaster<char>.Cast(val);
 
             if (type == typeof(float))
-                return (TypeCaster<float>.Cast(val));
+            {
+                var floatVal = TypeCaster<float>.Cast(val);
+                return *(int*) &floatVal;
+            }
 
             if (type == typeof(double))
-                return (TypeCaster<double>.Cast(val));
+            {
+                var doubleVal = TypeCaster<double>.Cast(val);
+                return GetLongHashCode(*(long*) &doubleVal);
+            }
 
             if (type == typeof(sbyte))
             {
