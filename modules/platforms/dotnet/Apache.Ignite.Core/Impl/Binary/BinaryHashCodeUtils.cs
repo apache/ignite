@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the Ignite-specific hash code for the provided value.
         /// </summary>
-        public static unsafe int? GetHashCode<T>(T val, Marshaller marsh)
+        public static unsafe int GetHashCode<T>(T val, Marshaller marsh)
         {
             Debug.Assert(marsh != null);
             Debug.Assert(val != null);
@@ -96,7 +96,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return GetLongHashCode(*(long*) &val0);
             }
 
-            return null;
+            // TODO: Guid, DateTime
+            // TODO: Handle complex types
+            return -1;
         }
 
         private static int GetLongHashCode(long longVal)

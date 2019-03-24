@@ -437,23 +437,8 @@ namespace Apache.Ignite.Core.Impl.Client
 
         private int GetPartition<TKey>(TKey key, int partitionCount)
         {
-            var keyHash = GetHashCode(key);
+            var keyHash = BinaryHashCodeUtils.GetHashCode(key, _marsh);
             return ClientRendezvousAffinityFunction.GetPartitionForKey(keyHash, partitionCount);
-        }
-
-        private int GetHashCode<TKey>(TKey key)
-        {
-            // TODO: See cpp\thin-client\include\ignite\impl\thin\writable_key.h
-            // We'll have to do the same - implement hash for every primitive
-            // And for non-primitive we have to write to BinaryWriter to get the hash
-            // TODO: Take the affinity key into account!
-
-            if (key is int)
-            {
-                return TypeCaster<int>.Cast(key);
-            }
-
-            throw new NotImplementedException("TODO");
         }
 
         private void InitSocketMap()
