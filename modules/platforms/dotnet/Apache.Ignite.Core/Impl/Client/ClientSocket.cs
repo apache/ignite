@@ -555,7 +555,16 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void SocketWrite(byte[] buf, int len)
         {
-            _stream.Write(buf, 0, len);
+            try
+            {
+                _stream.Write(buf, 0, len);
+            }
+            catch (Exception e)
+            {
+                _exception = e;
+                Dispose();
+                throw;
+            }
         }
 
         /// <summary>
@@ -563,7 +572,16 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private int SocketRead(byte[] buf, int pos, int len)
         {
-            return _stream.Read(buf, pos, len);
+            try
+            {
+                return _stream.Read(buf, pos, len);
+            }
+            catch (Exception e)
+            {
+                _exception = e;
+                Dispose();
+                throw;
+            }
         }
 
         /// <summary>

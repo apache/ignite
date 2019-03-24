@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 ThrowIfDisposed();
 
-                if (_socket == null)
+                if (_socket == null || _socket.IsDisposed)
                 {
                     Connect();
                 }
