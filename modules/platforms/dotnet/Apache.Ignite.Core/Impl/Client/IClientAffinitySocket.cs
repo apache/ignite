@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
     using Apache.Ignite.Core.Client;
-    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     internal interface IClientAffinitySocket : IClientSocket  // TODO: We don't need interfaces.

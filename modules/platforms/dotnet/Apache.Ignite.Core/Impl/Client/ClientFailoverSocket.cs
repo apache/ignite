@@ -260,7 +260,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 try
                 {
                     // TODO: OnSocketError is wrong
-                    _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, OnSocketError, null,
+                    _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, null,
                         OnAffinityTopologyVersionChange);
 
                     // TODO: What if this is not null?
@@ -282,24 +282,6 @@ namespace Apache.Ignite.Core.Impl.Client
 
             throw new AggregateException("Failed to establish Ignite thin client connection, " +
                                          "examine inner exceptions for details.", errors);
-        }
-
-        /// <summary>
-        /// Called when socket error occurs.
-        /// </summary>
-        private void OnSocketError()
-        {
-            if (_config.ReconnectDisabled)
-            {
-                return;
-            }
-
-            // Reconnect on next operation.
-            lock (_syncRoot)
-            {
-                // TODO: This may be broken in some cases. OnSocketError is called during writes. Double check.
-                _socket = null;
-            }
         }
 
         /// <summary>
@@ -489,7 +471,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     try
                     {
-                        var socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, OnSocketError, null,
+                        var socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, null,
                             OnAffinityTopologyVersionChange);
 
                         endPoint.Socket = socket;

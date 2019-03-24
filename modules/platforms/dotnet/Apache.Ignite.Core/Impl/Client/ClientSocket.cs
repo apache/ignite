@@ -99,9 +99,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Disposed flag. */
         private bool _isDisposed;
 
-        /** Error callback. */
-        private readonly Action _onError;
-
         /** Topology version update callback. */
         private readonly Action<AffinityTopologyVersion> _topVerCallback;
 
@@ -111,16 +108,14 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <param name="clientConfiguration">The client configuration.</param>
         /// <param name="endPoint">The end point to connect to.</param>
         /// <param name="host">The host name (required for SSL).</param>
-        /// <param name="onError">Error callback.</param>
         /// <param name="version">Protocol version.</param>
         /// <param name="topVerCallback">Topology version update callback.</param>
         public ClientSocket(IgniteClientConfiguration clientConfiguration, EndPoint endPoint, string host,
-            Action onError = null, ClientProtocolVersion? version = null,
+            ClientProtocolVersion? version = null,
             Action<AffinityTopologyVersion> topVerCallback = null)
         {
             Debug.Assert(clientConfiguration != null);
 
-            _onError = onError;
             _topVerCallback = topVerCallback;
             _timeout = clientConfiguration.SocketTimeout;
 
@@ -446,10 +441,6 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     // Disconnected.
                     _exception = _exception ?? new SocketException((int) SocketError.ConnectionAborted);
-                    if (_onError != null)
-                    {
-                        _onError();
-                    }
                     Dispose();
                     CheckException();
                 }
@@ -564,18 +555,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void SocketWrite(byte[] buf, int len)
         {
-            try
-            {
-                _stream.Write(buf, 0, len);
-            }
-            catch (Exception)
-            {
-                if (_onError != null)
-                {
-                    _onError();
-                }
-                throw;
-            }
+            _stream.Write(buf, 0, len);
         }
 
         /// <summary>
@@ -583,18 +563,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private int SocketRead(byte[] buf, int pos, int len)
         {
-            try
-            {
-                return _stream.Read(buf, pos, len);
-            }
-            catch (Exception)
-            {
-                if (_onError != null)
-                {
-                    _onError();
-                }
-                throw;
-            }
+            return _stream.Read(buf, pos, len);
         }
 
         /// <summary>
