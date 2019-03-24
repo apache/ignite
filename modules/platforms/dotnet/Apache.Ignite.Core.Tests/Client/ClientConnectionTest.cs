@@ -531,9 +531,7 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.IsNotNull(GetSocketException(ex));
 
             // Second request causes reconnect attempt which fails (server is stopped).
-            var aex = Assert.Throws<AggregateException>(() => client.GetCacheNames());
-            Assert.AreEqual("Failed to establish Ignite thin client connection, " +
-                            "examine inner exceptions for details.", aex.Message.Substring(0, 88));
+            Assert.Catch(() => client.GetCacheNames());
 
             // Start server, next operation succeeds.
             Ignition.Start(TestUtils.GetTestConfiguration());
