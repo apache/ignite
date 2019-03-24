@@ -22,6 +22,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.IgniteClientConnectAfterCommunicationFailureTest;
 import org.apache.ignite.internal.IgniteClientReconnectApiExceptionTest;
 import org.apache.ignite.internal.IgniteClientReconnectAtomicsTest;
+import org.apache.ignite.internal.IgniteClientReconnectAtomicsWithLostPartitionsTest;
 import org.apache.ignite.internal.IgniteClientReconnectBinaryContexTest;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.IgniteClientReconnectCollectionsTest;
@@ -58,6 +59,7 @@ public class IgniteClientReconnectTestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectContinuousProcessorTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectComputeTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectAtomicsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectAtomicsWithLostPartitionsTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectCollectionsTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectServicesTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectStreamerTest.class));
