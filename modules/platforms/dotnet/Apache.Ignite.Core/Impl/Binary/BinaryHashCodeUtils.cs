@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (type == typeof(Guid))
             {
-
+                return GetGuidHashCode(TypeCaster<Guid>.Cast(val));
             }
 
             if (type == typeof(DateTime))
@@ -123,6 +123,39 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static int GetLongHashCode(long longVal)
         {
             return (int) (longVal ^ ((longVal >> 32) & 0xFFFFFFFF));
+        }
+
+        private static unsafe int GetGuidHashCode(Guid val)
+        {
+            var bytes = val.ToByteArray();
+            byte* jBytes = stackalloc byte[16];
+
+            jBytes[0] = bytes[6]; // c1
+            jBytes[1] = bytes[7]; // c2
+
+            jBytes[2] = bytes[4]; // b1
+            jBytes[3] = bytes[5]; // b2
+
+            jBytes[4] = bytes[0]; // a1
+            jBytes[5] = bytes[1]; // a2
+            jBytes[6] = bytes[2]; // a3
+            jBytes[7] = bytes[3]; // a4
+
+            jBytes[8] = bytes[15]; // k
+            jBytes[9] = bytes[14]; // j
+            jBytes[10] = bytes[13]; // i
+            jBytes[11] = bytes[12]; // h
+            jBytes[12] = bytes[11]; // g
+            jBytes[13] = bytes[10]; // f
+            jBytes[14] = bytes[9]; // e
+            jBytes[15] = bytes[8]; // d
+
+            var hi = *(long*) &jBytes[0];
+            var lo = *(long*) &jBytes[8];
+
+            var hilo = hi ^ lo;
+
+            return (int) (hilo ^ ((hilo >> 32) & 0xFFFFFFFF));
         }
     }
 }
