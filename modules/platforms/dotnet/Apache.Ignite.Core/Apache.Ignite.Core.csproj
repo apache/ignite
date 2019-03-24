@@ -77,6 +77,7 @@
     <Compile Include="Failure\NoOpFailureHandler.cs" />
     <Compile Include="Failure\StopNodeFailureHandler.cs" />
     <Compile Include="Failure\StopNodeOrHaltFailureHandler.cs" />
+    <Compile Include="Impl\Binary\BinaryHashCodeUtils.cs" />
     <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheAffinityAwarenessGroup.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheKeyConfiguration.cs" />
