@@ -483,10 +483,17 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 if (endPoint.Socket == null)
                 {
-                    var socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, OnSocketError, null,
-                        OnAffinityTopologyVersionChange);
+                    try
+                    {
+                        var socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, OnSocketError, null,
+                            OnAffinityTopologyVersionChange);
 
-                    endPoint.Socket = socket;
+                        endPoint.Socket = socket;
+                    }
+                    catch (SocketException)
+                    {
+                        continue;
+                    }
                 }
 
                 var nodeId = endPoint.Socket.ServerNodeId;
@@ -498,9 +505,17 @@ namespace Apache.Ignite.Core.Impl.Client
 
             lock (_syncRoot)
             {
-                // TODO: Handle Disposed: disconnect all sockets.
-                ThrowIfDisposed();
-                _nodeSocketMap = map;
+                if (!_disposed)
+                {
+                    _nodeSocketMap = map;
+                }
+                else
+                {
+                    foreach (var socket in map.Values)
+                    {
+                        socket.Dispose();
+                    }
+                }
             }
         }
     }
