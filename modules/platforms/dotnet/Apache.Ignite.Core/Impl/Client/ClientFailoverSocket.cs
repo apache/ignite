@@ -259,6 +259,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 try
                 {
+                    // TODO: OnSocketError is wrong
                     _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, OnSocketError, null,
                         OnAffinityTopologyVersionChange);
 
