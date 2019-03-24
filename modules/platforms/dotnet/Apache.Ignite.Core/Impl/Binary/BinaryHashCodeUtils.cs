@@ -19,6 +19,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Diagnostics;
+    using System.IO;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -116,8 +118,20 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return GetLongHashCode(milliseconds);
             }
 
-            // TODO: Handle complex types
-            return -1;
+            return GetComplexTypeHashCode(val, marsh);
+        }
+
+        private static int GetComplexTypeHashCode<T>(T val, Marshaller marsh)
+        {
+            using (var stream = new BinaryHeapStream(128))
+            {
+                var writer = marsh.StartMarshal(stream);
+
+                writer.Write(val);
+
+                // TODO: Somehow extract hash code from writer. It can be a nested AffinityMapped field.
+                return writer.GetHashCode();
+            }
         }
 
         private static int GetLongHashCode(long longVal)
