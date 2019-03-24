@@ -38,6 +38,9 @@ import org.junit.Test;
 
 /**
  * Tests scenarios for tx reordering, missed updates and recovery for 2PC.
+ *
+ * TODO FIXME implement all possible reordering/prepare/commit combinations for 2 and 3 txs count.
+ * TODO FIXME scenario descriptions are not very clear.
  */
 public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartitionCounterStateAbstractTest {
     /** */
@@ -73,8 +76,21 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     /** */
     @Test
     public void testPartialPrepare_2TX_1_2() throws Exception {
-        doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {1, 0}, 7);
+        doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {1, 0}, 0);
     }
+
+    /** */
+    @Test
+    public void testPartialPrepare_2TX_1_3() throws Exception {
+        doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {0, 1}, new int[] {0, 1}, 0);
+    }
+
+    /** */
+    @Test
+    public void testPartialPrepare_2TX_1_4() throws Exception {
+        doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {0, 1}, 0);
+    }
+
 
     /** */
     @Test
@@ -85,7 +101,19 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     /** */
     @Test
     public void testPartialPrepare_2TX_2_2() throws Exception {
-        doTestPartialPrepare_2tx(false, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {1, 0}, 7);
+        doTestPartialPrepare_2tx(false, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {1, 0}, 0);
+    }
+
+    /** */
+    @Test
+    public void testPartialPrepare_2TX_2_3() throws Exception {
+        doTestPartialPrepare_2tx(false, new int[] {3, 7}, new int[] {0, 1}, new int[] {0, 1}, new int[] {0, 1}, 0);
+    }
+
+    /** */
+    @Test
+    public void testPartialPrepare_2TX_2_4() throws Exception {
+        doTestPartialPrepare_2tx(false, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {0, 1}, 0);
     }
 
     /** */
@@ -451,24 +479,26 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * <p>
      * 2. Assign counters in given order.
      * <p>
-     * 4. Prepare tx0 on backup1.
+     * 4. Prepare first tx on backups. Prevent preparing on primary and near node triggering rollback by tx recovery.
      * <p>
-     * 5. Prepare tx1 on backup2
+     * 5. Fail primary for triggering recovery.
      * <p>
-     * 6. Fail primary.
-     * <p>
-     * 7. Validate partitions integrity after node left.
+     * 6. Validate partitions integrity after node left.
      *
      * @param skipCheckpointOnNodeStop Skip checkpoint on node stop.
      * @param sizes Sizes.
      * @param assignOrder Assign order.
-     * @param backup1Order Backup 1 order.
-     * @param backup2Order Backup 2 order.
+     * @param backup1PrepOrder Backup 1 order.
+     * @param backup2PrepOrder Backup 2 order.
      * @param expCommittedSize Expected committed size.
      * @throws Exception If failed.
      */
-    private void doTestPartialPrepare_2tx(boolean skipCheckpointOnNodeStop, int[] sizes, int[] assignOrder, int[] backup1Order,
-        int[] backup2Order, int expCommittedSize) throws Exception {
+    private void doTestPartialPrepare_2tx(boolean skipCheckpointOnNodeStop,
+        int[] sizes,
+        int[] assignOrder,
+        int[] backup1PrepOrder,
+        int[] backup2PrepOrder,
+        int expCommittedSize) throws Exception {
         AtomicInteger cntr = new AtomicInteger();
 
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, SERVERS_CNT,
@@ -479,13 +509,13 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
                 return new TwoPhaseCommitTxCallbackAdapter(
                     U.map((IgniteEx)primary, assignOrder),
-                    U.map((IgniteEx)backup1, backup1Order, (IgniteEx)backup2, backup2Order),
+                    U.map((IgniteEx)backup1, backup1PrepOrder, (IgniteEx)backup2, backup2PrepOrder),
                     new HashMap<>(),
                     sizes.length) {
                     @Override protected boolean onBackupPrepared(IgniteEx backup, IgniteInternalTx tx, int idx) {
                         super.onBackupPrepared(backup, tx, idx);
 
-                        if (cntr.getAndIncrement() == 1) {
+                        if (cntr.getAndIncrement() == 1) { // Both backups are prepared.
                             log.info("Stopping primary [name=" + primary.name() + ']');
 
                             runAsync(() -> {
@@ -496,6 +526,13 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                         }
 
                         return true;
+                    }
+
+                    @Override public boolean afterBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx backupTx,
+                        IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
+                        super.afterBackupPrepare(primary, backup, backupTx, nearXidVer, proceedFut);
+
+                        return true; // Prevent primary and near prepare causing tx rollback on recovery.
                     }
                 };
             },
@@ -612,11 +649,9 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * <p>
      * 1. Assign counters in specified order.
      * <p>
-     * 2. Prepare all three txs.
+     * 2. Prepare all three txs on backups.
      * <p>
-     * 3. Prevent committing any tx.
-     * <p>
-     * 4. Fail primary to trigger recovery.
+     * 3. Fail primary to trigger recovery. Some tx will be committed, some will be rolled back.
      * <p>
      * Pass condition: after primary joined partitions are consistent, all transactions are committed.
      *
@@ -626,8 +661,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     private void doTestPartialCommit_3tx_2(boolean skipCheckpointOnStop) throws Exception {
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, SERVERS_CNT, map -> {
             Ignite primary = map.get(PARTITION_ID).get1();
-            Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
-            Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
+            final Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
+            final Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
 
             return new TwoPhaseCommitTxCallbackAdapter(
                 U.map((IgniteEx)primary, new int[] {0, 1, 2}),
@@ -669,8 +704,5 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         assertCountersSame(PARTITION_ID, true);
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
-
-        // Recovery will commit backup transactions and primary should sync correctly.
-        assertEquals(TOTAL, client.cache(DEFAULT_CACHE_NAME).size());
     }
 }

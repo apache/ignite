@@ -224,6 +224,32 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    @Test
+    public void testOverlap() {
+        PartitionUpdateCounter pc = newCounter();
+
+        assertTrue(pc.update(13, 3));
+
+        assertTrue(pc.update(6, 7));
+
+        assertFalse(pc.update(13, 3));
+
+        assertFalse(pc.update(6, 7));
+
+        Iterator<long[]> iter = pc.iterator();
+        assertTrue(iter.hasNext());
+
+        long[] gap = iter.next();
+
+        assertEquals(6, gap[0]);
+        assertEquals(10, gap[1]);
+
+        assertFalse(iter.hasNext());
+    }
+
+    /**
      * @param cnt Count.
      * @param maxTxSize Max tx size.
      */

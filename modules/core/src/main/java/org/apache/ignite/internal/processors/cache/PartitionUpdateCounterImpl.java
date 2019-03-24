@@ -71,6 +71,9 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     /** TODO FIXME remove. */
     private int partId;
 
+    /** */
+    private CacheGroupContext grp;
+
     /**
      * @param log Logger.
      */
@@ -78,9 +81,11 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         this.log = log;
     }
 
-    public PartitionUpdateCounterImpl(IgniteLogger log, int partId) {
+    public PartitionUpdateCounterImpl(IgniteLogger log, int partId,
+        CacheGroupContext grp) {
         this.log = log;
         this.partId = partId;
+        this.grp = grp;
     }
 
     /**
@@ -180,6 +185,8 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
 
                     last.delta += delta;
                 }
+                else if (last.within(start) && last.within(start + delta - 1))
+                    return false;
             }
 
             // Merge with next, possibly modifying previous and removing next.
