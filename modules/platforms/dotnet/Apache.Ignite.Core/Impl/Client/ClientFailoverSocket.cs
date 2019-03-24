@@ -263,6 +263,8 @@ namespace Apache.Ignite.Core.Impl.Client
                     _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, OnSocketError, null,
                         OnAffinityTopologyVersionChange);
 
+                    // TODO: What if this is not null?
+                    // Need to generalize the logic over old and new way.
                     endPoint.Socket = _socket;
 
                     return;
@@ -295,6 +297,7 @@ namespace Apache.Ignite.Core.Impl.Client
             // Reconnect on next operation.
             lock (_syncRoot)
             {
+                // TODO: This may be broken in some cases. OnSocketError is called during writes. Double check.
                 _socket = null;
             }
         }

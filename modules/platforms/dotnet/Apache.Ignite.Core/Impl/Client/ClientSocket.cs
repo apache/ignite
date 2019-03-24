@@ -217,6 +217,14 @@ namespace Apache.Ignite.Core.Impl.Client
         public Guid? ServerNodeId { get; private set; }
 
         /// <summary>
+        /// Gets a value indicating whether this socket is disposed.
+        /// </summary>
+        public bool IsDisposed
+        {
+            get { return _isDisposed; }
+        }
+
+        /// <summary>
         /// Starts waiting for the new message.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
