@@ -65,9 +65,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Map from node ID to connected socket. */
         private volatile Dictionary<Guid, ClientSocket> _nodeSocketMap;
 
-        /** Whether the process of connecting to all nodes has been started.  */
-        private int _nodeSocketMapInitStarted;
-
         /** Map from cache ID to partition mapping. */
         private volatile ClientCacheTopologyPartitionMap _distributionMap;
 
@@ -123,7 +120,6 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             if (_config.EnableAffinityAwareness)
             {
-                InitSocketMap();
                 UpdateDistributionMap(cacheId);
 
                 var distributionMap = _distributionMap;
@@ -257,17 +253,20 @@ namespace Apache.Ignite.Core.Impl.Client
                 var idx = (startIdx + i) % _endPoints.Count;
                 var endPoint = _endPoints[idx];
 
+                if (endPoint.Socket != null && !endPoint.Socket.IsDisposed)
+                {
+                    _socket = endPoint.Socket;
+                    break;
+                }
+
                 try
                 {
-                    // TODO: OnSocketError is wrong
                     _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, null,
                         OnAffinityTopologyVersionChange);
 
-                    // TODO: What if this is not null?
-                    // Need to generalize the logic over old and new way.
                     endPoint.Socket = _socket;
 
-                    return;
+                    break;
                 }
                 catch (SocketException e)
                 {
@@ -280,8 +279,16 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
             }
 
-            throw new AggregateException("Failed to establish Ignite thin client connection, " +
-                                         "examine inner exceptions for details.", errors);
+            if (errors != null)
+            {
+                throw new AggregateException("Failed to establish Ignite thin client connection, " +
+                                             "examine inner exceptions for details.", errors);
+            }
+
+            if (_config.EnableAffinityAwareness)
+            {
+                InitSocketMap();
+            }
         }
 
         /// <summary>
@@ -455,19 +462,11 @@ namespace Apache.Ignite.Core.Impl.Client
 
         private void InitSocketMap()
         {
-            if (Interlocked.CompareExchange(ref _nodeSocketMapInitStarted, 1, 0) == 0)
-            {
-                TaskRunner.Run(InitSocketMapImpl);
-            }
-        }
-
-        private void InitSocketMapImpl()
-        {
             var map = new Dictionary<Guid, ClientSocket>();
 
             foreach (var endPoint in _endPoints)
             {
-                if (endPoint.Socket == null)
+                if (endPoint.Socket == null || endPoint.Socket.IsDisposed)
                 {
                     try
                     {
