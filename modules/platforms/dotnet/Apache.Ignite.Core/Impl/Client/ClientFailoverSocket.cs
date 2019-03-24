@@ -129,14 +129,11 @@ namespace Apache.Ignite.Core.Impl.Client
                 if (socketMap != null &&
                     distributionMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
                 {
-                    // TODO: Extract affinity key and hash code. Make it work for Primitives first.
-                    // 1) Just write provided key to a new writer. Keys are expected to be compact.
-                    // 2) Add optional callback to BinaryWriter so we can extract both AffinityKey (by field id) and hash code (in case it's a BinaryObject)
                     var partition = GetPartition(key, cachePartMap.PartitionNodeIds.Length);
                     var nodeId = cachePartMap.PartitionNodeIds[partition];
 
                     ClientSocket socket;
-                    if (socketMap.TryGetValue(nodeId, out socket))
+                    if (socketMap.TryGetValue(nodeId, out socket) && !socket.IsDisposed)
                     {
                         // TODO: Check if socket is still connected.
                         return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
@@ -368,7 +365,6 @@ namespace Apache.Ignite.Core.Impl.Client
                     {
                         // Map exists: request update for all caches.
                         // TODO: Add a limit for map size, use LRU.
-                        // TODO: Make sure we handle the situation when returned map does not have cacheId
                         var mapContainsCacheId = _distributionMap.CachePartitionMap.ContainsKey(cacheId);
                         var count = _distributionMap.CachePartitionMap.Count;
                         if (!mapContainsCacheId)
