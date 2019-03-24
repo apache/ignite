@@ -135,7 +135,6 @@ namespace Apache.Ignite.Core.Impl.Client
                     ClientSocket socket;
                     if (socketMap.TryGetValue(nodeId, out socket) && !socket.IsDisposed)
                     {
-                        // TODO: Check if socket is still connected.
                         return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
                     }
                 }
