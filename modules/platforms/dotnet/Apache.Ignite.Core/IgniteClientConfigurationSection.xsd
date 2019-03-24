@@ -252,6 +252,11 @@
                     <xs:documentation>Disables automatic reconnect on network or server failure.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="enableAffinityAwareness" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Enables affinity-aware connection: client will establish connection to every known server and route requests to primary nodes for cache operations.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="userName" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Username to be used to connect to secured cluster.</xs:documentation>
@@ -260,11 +265,6 @@
             <xs:attribute name="password" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Password to be used to connect to secured cluster.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="enableAffinityAwareness" type="xs:boolean">
-                <xs:annotation>
-                    <xs:documentation>Enables affinity-aware connection: client will establish connection to every known server and route requests to primary nodes for cache operations.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
         </xs:complexType>
