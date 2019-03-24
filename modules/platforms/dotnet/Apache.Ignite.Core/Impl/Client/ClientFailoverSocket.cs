@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 ThrowIfDisposed();
 
-                if (_socket == null || _socket.IsDisposed)
+                if (_socket == null || (_socket.IsDisposed && !_config.ReconnectDisabled))
                 {
                     Connect();
                 }
@@ -247,6 +247,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             List<Exception> errors = null;
             var startIdx = (int) Interlocked.Increment(ref _endPointIndex);
+            _socket = null;
 
             for (var i = 0; i < _endPoints.Count; i++)
             {
@@ -279,7 +280,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
             }
 
-            if (errors != null)
+            if (_socket == null && errors != null)
             {
                 throw new AggregateException("Failed to establish Ignite thin client connection, " +
                                              "examine inner exceptions for details.", errors);
