@@ -866,6 +866,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 case NONE: {
                     initTopologies();
 
+                    state = ExchangeLocalState.DONE;
+
                     onDone(topVer);
 
                     break;
