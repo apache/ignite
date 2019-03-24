@@ -102,7 +102,20 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return GetLongHashCode(*(long*) &val0);
             }
 
-            // TODO: Guid, DateTime
+            if (type == typeof(Guid))
+            {
+
+            }
+
+            if (type == typeof(DateTime))
+            {
+                long milliseconds;
+                int unused;
+                BinaryUtils.ToJavaDate(TypeCaster<DateTime>.Cast(val), out milliseconds, out unused);
+
+                return GetLongHashCode(milliseconds);
+            }
+
             // TODO: Handle complex types
             return -1;
         }
