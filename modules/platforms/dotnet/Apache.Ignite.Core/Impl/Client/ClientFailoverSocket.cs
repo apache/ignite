@@ -489,20 +489,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
             }
 
-            lock (_syncRoot)
-            {
-                if (!_disposed)
-                {
-                    _nodeSocketMap = map;
-                }
-                else
-                {
-                    foreach (var socket in map.Values)
-                    {
-                        socket.Dispose();
-                    }
-                }
-            }
+            _nodeSocketMap = map;
         }
     }
 }
