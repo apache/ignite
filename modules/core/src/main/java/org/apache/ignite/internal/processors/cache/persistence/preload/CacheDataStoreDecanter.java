@@ -59,9 +59,6 @@ public class CacheDataStoreDecanter extends CacheDataStoreAdapter {
     private final CacheDataStoreTracker tracker;
 
     /** */
-    private final AtomicBoolean init = new AtomicBoolean();
-
-    /** */
     private final Queue<DataRecord> store = new ConcurrentLinkedQueue<>();
 
     /**
@@ -100,7 +97,6 @@ public class CacheDataStoreDecanter extends CacheDataStoreAdapter {
         KeyCacheObject key,
         int partId
     ) throws IgniteCheckedException {
-        assert init.get();
 
     }
 
@@ -114,7 +110,6 @@ public class CacheDataStoreDecanter extends CacheDataStoreAdapter {
         @Nullable CacheDataRow oldRow
     ) throws IgniteCheckedException {
         assert oldRow == null;
-        assert init.get();
 
         DataRow dataRow = makeDataRow(key, val, ver, expireTime, cctx.cacheId());
 
@@ -140,7 +135,6 @@ public class CacheDataStoreDecanter extends CacheDataStoreAdapter {
         KeyCacheObject key,
         IgniteCacheOffheapManager.OffheapInvokeClosure c
     ) throws IgniteCheckedException {
-        assert init.get();
 
         // Assume we've performed an invoke operation on the B+ Tree and find nothing.
         // Emulating that always inserting/removing a new value.
@@ -149,14 +143,12 @@ public class CacheDataStoreDecanter extends CacheDataStoreAdapter {
 
     /** {@inheritDoc} */
     @Override public RowStore rowStore() {
-        assert init.get();
 
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public PendingEntriesTree pendingTree() {
-        assert init.get();
 
         return null;
     }

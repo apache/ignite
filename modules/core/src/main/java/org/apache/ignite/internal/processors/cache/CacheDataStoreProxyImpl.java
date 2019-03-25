@@ -193,6 +193,9 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         try {
             AtomicLong oldCnt = oldState.usageCnt;
 
+            U.log(log, "The storage usages [mode=" + oldState.mode + ", cnt=" + oldCnt.get() +
+                ", locks=" + modeLockMap.get(oldState.mode).getReadLockCount() + ']');
+
             currState = new StorageState(mode,
                 new TransitionStateFuture(mode,
                     oldState.mode,
@@ -204,7 +207,8 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
             if (oldCnt.get() == 0 && oldCnt.compareAndSet(0, USAGE_DENIED))
                 currState.transitionFut.tryDone(oldState.mode);
 
-            U.log(log, "The storage is sheduled to switch to the new mode: " + mode);
+            if (log.isDebugEnabled())
+                log.debug("The partition cache data storage is sheduled to switch to the new mode: " + mode);
 
             return currState.transitionFut;
         }
@@ -720,7 +724,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
                 return;
 
             assert mode == prevMode;
-            assert prevStateCnt.get() == 0;
+            assert prevStateCnt.get() == 0 || prevStateCnt.get() == USAGE_DENIED;
             assert prevStateLock.getReadLockCount() == 0;
 
             onDone(true);

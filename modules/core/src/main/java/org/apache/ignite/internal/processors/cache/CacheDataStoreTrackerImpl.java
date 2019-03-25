@@ -63,7 +63,7 @@ public class CacheDataStoreTrackerImpl implements CacheDataStoreTracker {
         if (init.compareAndSet(false, true)) {
             assert pCntr.get() == 0;
             assert storageSize.get() == 0;
-            assert cacheSizes.isEmpty();
+            assert cacheSizes == null || cacheSizes.isEmpty();
 
             pCntr.init(updCntr);
 
