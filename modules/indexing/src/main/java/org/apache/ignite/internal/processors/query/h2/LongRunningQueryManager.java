@@ -91,7 +91,8 @@ public class LongRunningQueryManager {
      * @param qryInfo Query info to remove.
      */
     public void unregisterQuery(AbstractH2QueryInfo qryInfo) {
-        qrys.remove(qryInfo);
+        if (qryInfo != null)
+            qrys.remove(qryInfo);
     }
 
     /**
