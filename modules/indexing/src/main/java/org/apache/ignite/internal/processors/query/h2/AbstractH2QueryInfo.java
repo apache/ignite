@@ -34,7 +34,7 @@ import org.h2.engine.Session;
 /**
  * Base H2 query info with commons for MAP, LOCAL, REDUCE queries.
  */
-public abstract class AbstractH2QueryInfo {
+public abstract class AbstractH2QueryInfo implements H2QueryInfo {
     /** Begin timestamp. */
     private final long beginTs;
 
@@ -107,25 +107,6 @@ public abstract class AbstractH2QueryInfo {
      * @param connMgr Connection manager.
      */
     public void printLogMessage(IgniteLogger log, ConnectionManager connMgr, String msg) {
-        Connection c = connMgr.connectionForThread().connection(schema);
-
-        H2Utils.setupConnection(c, distributedJoin, enforceJoinOrder);
-
-        String strPlan = null;
-
-        try (PreparedStatement pstmt = c.prepareStatement("EXPLAIN " + sql)) {
-            H2Utils.bindParameters(pstmt, params);
-
-            try (ResultSet plan = pstmt.executeQuery()) {
-                plan.next();
-
-                strPlan = plan.getString(1) + U.nl();
-            }
-        }
-        catch (Exception e) {
-            log.warning("Cannot get plan for long query: " + sql, e);
-        }
-
         StringBuilder msgSb = new StringBuilder(msg + " [");
 
         printInfo(msgSb);
@@ -138,11 +119,37 @@ public abstract class AbstractH2QueryInfo {
         msgSb.append(", sql='")
             .append(sql)
             .append("', plan=")
-            .append(strPlan)
+            .append(queryPlan(log, connMgr))
             .append(", parameters=")
             .append(params == null ? "[]" : Arrays.deepToString(params.toArray()))
             .append(']');
 
         LT.warn(log, msgSb.toString());
+    }
+
+    /**
+     * @param log Logger.
+     * @param connMgr Connection manager.
+     * @return Query plan.
+     */
+    protected String queryPlan(IgniteLogger log, ConnectionManager connMgr) {
+        Connection c = connMgr.connectionForThread().connection(schema);
+
+        H2Utils.setupConnection(c, distributedJoin, enforceJoinOrder);
+
+        try (PreparedStatement pstmt = c.prepareStatement("EXPLAIN " + sql)) {
+            H2Utils.bindParameters(pstmt, params);
+
+            try (ResultSet plan = pstmt.executeQuery()) {
+                plan.next();
+
+                return plan.getString(1) + U.nl();
+            }
+        }
+        catch (Exception e) {
+            log.warning("Cannot get plan for long query: " + sql, e);
+
+            return "[error on calculate plan: " + e.getMessage() + ']';
+        }
     }
 }
