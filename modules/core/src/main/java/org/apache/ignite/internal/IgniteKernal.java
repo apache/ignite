@@ -905,6 +905,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 hnd
             );
 
+            mBeansMgr = new IgniteMBeansManager(this);
+
             cfg.getMarshaller().setContext(ctx.marshallerContext());
 
             GridInternalSubscriptionProcessor subscriptionProc = new GridInternalSubscriptionProcessor(ctx);
@@ -1133,8 +1135,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             if (recon)
                 reconnectState.waitFirstReconnect();
-
-            mBeansMgr = new IgniteMBeansManager(this);
 
             // Register MBeans.
             mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
