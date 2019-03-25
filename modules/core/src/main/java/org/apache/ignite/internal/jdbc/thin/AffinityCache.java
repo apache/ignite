@@ -26,8 +26,10 @@ public final class AffinityCache {
 
     private final AffinityTopologyVersion version;
 
+    // TODO: Control maximum size of the cache. OOME is possible otherwise.
     private final Map<Integer, Map<Integer, UUID>> cachePartitionsDistribution;
 
+    // TODO: Control maximum size of the cache. OOME is possible otherwise.
     private final Map<String, JdbcThinPartitionResult> sqlCache;
 
     public AffinityCache(AffinityTopologyVersion version) {

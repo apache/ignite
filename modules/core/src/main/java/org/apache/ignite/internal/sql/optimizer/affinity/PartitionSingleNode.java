@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 public abstract class PartitionSingleNode implements PartitionNode {
     /** Table descriptor. */
     @GridToStringExclude
+    // TODO: VO: Consider removing table from here. Usages suggests that only cache name, join group and alias are needed.
     protected final PartitionTable tbl;
 
     /**
