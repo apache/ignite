@@ -863,6 +863,7 @@ public class JdbcThinConnection implements Connection {
         }
         try {
             try {
+                // TODO VO: Do not calculate if current context is sticky
                 Set<UUID> nodeIds = calculateNodeIds(req);
 
                 JdbcThinTcpIo cliIo = stickyIo == null ? cliIo(nodeIds) : stickyIo;
@@ -943,6 +944,7 @@ public class JdbcThinConnection implements Connection {
     @Nullable private Set<UUID> calculateNodeIds(JdbcRequest req) {
         Set<UUID> bestEffortAffinityNodeIds = null;
 
+        // TODO VO: Avoid multiple casts and multiple map lookups
         if (bestEffortAffinity && req instanceof JdbcQueryExecuteRequest && affinityCache != null &&
             affinityCache.containsPartitionResult(((JdbcQueryExecuteRequest)req).sqlQuery())) {
 
@@ -955,6 +957,7 @@ public class JdbcThinConnection implements Connection {
                     Map<Integer, UUID> cacheDistr = affinityCache.cacheDistribution(partRes.cacheId());
 
                     if (cacheDistr == null) {
+                        // TODO VO: May be it makes sense to move it to separate method.
                         JdbcResponse res;
 
                         try {
@@ -962,12 +965,18 @@ public class JdbcThinConnection implements Connection {
                                 new JdbcCachePartitionsRequest(Collections.singleton(partRes.cacheId())), null);
                         }
                         catch (IOException e) {
+                            // TODO VO: Most probably the only possible reason of IO exception here is broken connection.
+                            // TODO VO: We can close connection and exit here.
+
+                            // TODO VO: Need to define semantics on what happens in case one connection goes down.
+
                             // TODO: 07.03.19 log warning or smth.
                             // Skip best effort affinity optimization in case of exception during retrieving
                             // partition destribution.
                             return null;
                         }
 
+                        // TODO VO: Non success statuses are not possible, aren't they?
                         if (res.status() != ClientListenerResponse.STATUS_SUCCESS) {
                             // TODO: 07.03.19 log warning or smth.
                             // Skip best effort affinity optimization in case of any response status other then

@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Affinity topology version for jdbc thin client.
  */
+// TODO VO: Consider removing, looks weird.
 public class JdbcAffinityTopologyVersion {
     /** Affinity topology version. */
     private final AffinityTopologyVersion version;
