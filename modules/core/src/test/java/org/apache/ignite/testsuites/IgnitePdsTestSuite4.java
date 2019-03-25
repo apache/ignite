@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.IgniteRebalanceOnCachesStoppingOrDestroyingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 
@@ -37,6 +38,8 @@ public class IgnitePdsTestSuite4 extends TestSuite {
         suite.addTestSuite(IgnitePdsPartitionPreloadTest.class);
 
         suite.addTestSuite(IgnitePdsTaskCancelingTest.class);
+
+        suite.addTestSuite(IgniteRebalanceOnCachesStoppingOrDestroyingTest.class);
 
         return suite;
     }
