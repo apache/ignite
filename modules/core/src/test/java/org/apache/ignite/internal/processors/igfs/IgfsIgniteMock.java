@@ -54,6 +54,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -177,6 +178,13 @@ public class IgfsIgniteMock implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public GridKernalContext context() {
+        throwUnsupported();
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable LongJVMPauseDetector longJvmPauseDetector() {
         throwUnsupported();
 
         return null;
