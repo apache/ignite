@@ -465,7 +465,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             null,
             walMgr,
             new WalStateManager(kctx),
-            new GridCacheDatabaseSharedManager(kctx, new LongJVMPauseDetector(log)),
+            new GridCacheDatabaseSharedManager(kctx),
             null,
             null,
             null,
