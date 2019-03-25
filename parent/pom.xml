@@ -832,6 +832,25 @@
 
     <profiles>
         <profile>
+            <id>checkstyle</id>
+
+            <activation>
+                <property>
+                    <name>skipTests</name>
+                </property>
+            </activation>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>check-licenses</id>
             <build>
                 <plugins>
@@ -1304,25 +1323,6 @@
                         </plugin>
                     </plugins>
                 </pluginManagement>
-            </build>
-        </profile>
-
-        <profile>
-            <id>checkstyle</id>
-
-            <activation>
-                <property>
-                    <name>skipTests</name>
-                </property>
-            </activation>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-checkstyle-plugin</artifactId>
-                    </plugin>
-                </plugins>
             </build>
         </profile>
     </profiles>
