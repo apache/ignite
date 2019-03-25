@@ -1163,7 +1163,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
         }
         catch (GridCacheEntryRemovedException ignore) {
-            assert false : "Got removed exception on entry with dht local candidate: " + entries;
+            // Entry was unlocked by concurrent rollback.
+            onError(tx.rollbackException());
         }
 
         return null;
