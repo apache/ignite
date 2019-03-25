@@ -1026,7 +1026,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
                 startProcessor(createComponent(IGridClusterStateProcessor.class, ctx));
                 startProcessor(new IgniteAuthenticationProcessor(ctx));
-                startProcessor(new GridCacheProcessor(ctx, longJVMPauseDetector));
+                startProcessor(new GridCacheProcessor(ctx));
                 startProcessor(new GridQueryProcessor(ctx));
                 startProcessor(new ClientListenerProcessor(ctx));
                 startProcessor(createServiceProcessor());
@@ -1302,6 +1302,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (!isDaemon())
             ctx.discovery().ackTopology(ctx.discovery().localJoin().joinTopologyVersion().topologyVersion(),
                 EventType.EVT_NODE_JOINED, localNode());
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable LongJVMPauseDetector longJvmPauseDetector() {
+        return LongJVMPauseDetector.enabled() ? longJVMPauseDetector : null;
     }
 
     /**

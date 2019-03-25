@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -46,9 +47,6 @@ public class LongJVMPauseDetector {
     /** Ignite JVM pause detector threshold default value. */
     public static final int DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD = 500;
 
-    /** Ignite JVM pause detector disabled default value. */
-    public static final boolean DEFAULT_JVM_PAUSE_DETECTOR_DISABLED = false;
-
     /** Precision. */
     private static final int PRECISION = getInteger(IGNITE_JVM_PAUSE_DETECTOR_PRECISION, 50);
 
@@ -58,6 +56,10 @@ public class LongJVMPauseDetector {
 
     /** Event count. */
     private static final int EVT_CNT = getInteger(IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT, 20);
+
+    /** Disabled flag. */
+    private static final boolean DISABLED =
+        getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, false);
 
     /** Logger. */
     private final IgniteLogger log;
@@ -93,7 +95,7 @@ public class LongJVMPauseDetector {
      * Starts worker if not started yet.
      */
     public void start() {
-        if (getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, DEFAULT_JVM_PAUSE_DETECTOR_DISABLED)) {
+        if (DISABLED) {
             if (log.isDebugEnabled())
                 log.debug("JVM Pause Detector is disabled.");
 
@@ -173,6 +175,14 @@ public class LongJVMPauseDetector {
 
         if (worker != null && worker.isAlive() && !worker.isInterrupted())
             worker.interrupt();
+    }
+
+    /**
+     * @return {@code false} if {@link IgniteSystemProperties#IGNITE_JVM_PAUSE_DETECTOR_DISABLED} set to {@code true},
+     * and {@code true} otherwise.
+     */
+    public static boolean enabled() {
+        return !DISABLED;
     }
 
     /**

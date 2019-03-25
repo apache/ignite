@@ -71,7 +71,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgniteTransactionsEx;
-import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -292,12 +291,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Node's local cache configurations (both from static configuration and from persistent caches). */
     private CacheJoinNodeDiscoveryData localConfigs;
 
-    private final LongJVMPauseDetector pauseDetector;
-
     /**
      * @param ctx Kernal context.
      */
-    public GridCacheProcessor(GridKernalContext ctx, LongJVMPauseDetector pauseDetector) {
+    public GridCacheProcessor(GridKernalContext ctx) {
         super(ctx);
 
         caches = new ConcurrentHashMap<>();
@@ -306,8 +303,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         internalCaches = new HashSet<>();
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
-
-        this.pauseDetector = pauseDetector;
     }
 
     /**
@@ -3239,7 +3234,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteWriteAheadLogManager walMgr = null;
 
         if (CU.isPersistenceEnabled(ctx.config()) && !ctx.clientNode()) {
-            dbMgr = new GridCacheDatabaseSharedManager(ctx, pauseDetector);
+            dbMgr = new GridCacheDatabaseSharedManager(ctx);
 
             pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
 
