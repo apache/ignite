@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import java.io.Serializable;
 import java.lang.management.RuntimeMXBean;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
@@ -26,6 +27,7 @@ import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -938,7 +940,7 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
-    /**
+   /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
      *
      * Default is 500 ms.
@@ -1034,6 +1036,12 @@ public final class IgniteSystemProperties {
      * Default value of lazy query execution (Special for ver 2.5). Lazy mode must be used by default later.
      */
     public static final String IGNITE_QUERY_LAZY_DEFAULT = "IGNITE_QUERY_LAZY_DEFAULT";
+
+    /**
+     * Starting from this number of dirty pages in checkpoint, array will be sorted with
+     * {@link Arrays#parallelSort(Comparable[])} in case of {@link CheckpointWriteOrder#SEQUENTIAL}.
+     */
+    public static final String CHECKPOINT_PARALLEL_SORT_THRESHOLD = "CHECKPOINT_PARALLEL_SORT_THRESHOLD";
 
     /**
      * Enforces singleton.

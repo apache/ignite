@@ -92,11 +92,8 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.LoggerNodeIdAware;
@@ -1820,17 +1817,7 @@ public class IgnitionEx {
 
             validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
 
-            WorkersRegistry workerRegistry = new WorkersRegistry(
-                new IgniteBiInClosure<GridWorker, FailureType>() {
-                    @Override public void apply(GridWorker deadWorker, FailureType failureType) {
-                        if (grid != null)
-                            grid.context().failure().process(new FailureContext(
-                                failureType,
-                                new IgniteException(S.toString(GridWorker.class, deadWorker))));
-                    }
-                },
-                cfg.getFailureDetectionTimeout(),
-                log);
+            WorkersRegistry workerRegistry = new WorkersRegistry();
 
             stripedExecSvc = new StripedExecutor(
                 cfg.getStripedPoolSize(),
@@ -1901,7 +1888,7 @@ public class IgnitionEx {
                 cfg.getIgfsThreadPoolSize(),
                 cfg.getIgfsThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<>(),
+                new LinkedBlockingQueue<Runnable>(),
                 new IgfsThreadFactory(cfg.getIgniteInstanceName(), "igfs"));
 
             igfsExecSvc.allowCoreThreadTimeOut(true);
@@ -1924,7 +1911,7 @@ public class IgnitionEx {
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     DFLT_THREAD_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<>(),
+                    new LinkedBlockingQueue<Runnable>(),
                     GridIoPolicy.UNDEFINED,
                     oomeHnd
                 );
@@ -1940,7 +1927,7 @@ public class IgnitionEx {
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheKeepAliveTime(),
-                new LinkedBlockingQueue<>(),
+                new LinkedBlockingQueue<Runnable>(),
                 GridIoPolicy.UTILITY_CACHE_POOL,
                 oomeHnd);
 
@@ -1952,7 +1939,7 @@ public class IgnitionEx {
                 1,
                 1,
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<>(),
+                new LinkedBlockingQueue<Runnable>(),
                 GridIoPolicy.AFFINITY_POOL,
                 oomeHnd);
 
@@ -1967,7 +1954,7 @@ public class IgnitionEx {
                     cpus,
                     cpus * 2,
                     3000L,
-                    new LinkedBlockingQueue<>(1000),
+                    new LinkedBlockingQueue<Runnable>(1000),
                     GridIoPolicy.IDX_POOL,
                     oomeHnd
                 );
@@ -1981,7 +1968,7 @@ public class IgnitionEx {
                 cfg.getQueryThreadPoolSize(),
                 cfg.getQueryThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<>(),
+                new LinkedBlockingQueue<Runnable>(),
                 GridIoPolicy.QUERY_POOL,
                 oomeHnd);
 
@@ -1993,7 +1980,7 @@ public class IgnitionEx {
                 2,
                 2,
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<>(),
+                new LinkedBlockingQueue<Runnable>(),
                 GridIoPolicy.SCHEMA_POOL,
                 oomeHnd);
 
@@ -2011,7 +1998,7 @@ public class IgnitionEx {
                         execCfg.getSize(),
                         execCfg.getSize(),
                         DFLT_THREAD_KEEP_ALIVE_TIME,
-                        new LinkedBlockingQueue<>(),
+                        new LinkedBlockingQueue<Runnable>(),
                         GridIoPolicy.UNDEFINED,
                         oomeHnd);
 

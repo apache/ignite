@@ -2404,26 +2404,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Invokes {@link GridWorker#blockingSectionBegin()} for exchange worker.
-     * Should be called from exchange worker thread.
-     */
-    public void exchangerBlockingSectionBegin() {
-        assert exchWorker != null && Thread.currentThread() == exchWorker.runner();
-
-        exchWorker.blockingSectionBegin();
-    }
-
-    /**
-     * Invokes {@link GridWorker#blockingSectionEnd()} for exchange worker.
-     * Should be called from exchange worker thread.
-     */
-    public void exchangerBlockingSectionEnd() {
-        assert exchWorker != null && Thread.currentThread() == exchWorker.runner();
-
-        exchWorker.blockingSectionEnd();
-    }
-
-    /**
      * @return {@code True} If there is any exchange future in progress.
      */
     private boolean exchangeInProgress() {
@@ -2729,8 +2709,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             long cnt = 0;
 
             while (!isCancelled()) {
-                onIdle();
-
                 cnt++;
 
                 CachePartitionExchangeWorkerTask task = null;
@@ -2768,11 +2746,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (isCancelled())
                         Thread.currentThread().interrupt();
 
-                    updateHeartbeat();
-
                     task = futQ.poll(timeout, MILLISECONDS);
-
-                    updateHeartbeat();
 
                     if (task == null)
                         continue; // Main while loop.
@@ -2799,8 +2773,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (isCancelled())
                             break;
 
-                        if (task instanceof RebalanceReassignExchangeTask)
+                        if (task instanceof RebalanceReassignExchangeTask) {
                             exchId = ((RebalanceReassignExchangeTask) task).exchangeId();
+                        }
                         else if (task instanceof ForceRebalanceExchangeTask) {
                             forcePreload = true;
 
@@ -2868,25 +2843,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 long curTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
 
                                 try {
-                                    long exchTimeout = curTimeout > 0 && !txRolledBack
-                                            ? Math.min(curTimeout, dumpTimeout)
-                                            : dumpTimeout;
-
-                                    blockingSectionBegin();
-
-                                    try {
-                                        resVer = exchFut.get(exchTimeout, TimeUnit.MILLISECONDS);
-                                    } finally {
-                                        blockingSectionEnd();
-                                    }
-
-                                    onIdle();
+                                    resVer = exchFut.get(curTimeout > 0 && !txRolledBack ?
+                                            Math.min(curTimeout, dumpTimeout) : dumpTimeout, TimeUnit.MILLISECONDS);
 
                                     break;
                                 }
                                 catch (IgniteFutureTimeoutCheckedException ignored) {
-                                    updateHeartbeat();
-
                                     if (nextDumpTime <= U.currentTimeMillis()) {
                                         U.warn(diagnosticLog, "Failed to wait for partition map exchange [" +
                                             "topVer=" + exchFut.initialVersion() +

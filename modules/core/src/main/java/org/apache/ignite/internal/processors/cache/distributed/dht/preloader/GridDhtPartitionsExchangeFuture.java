@@ -1533,14 +1533,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             while (true) {
                 try {
-                    cctx.exchange().exchangerBlockingSectionBegin();
-
-                    try {
-                        releaseLatch.await(waitTimeout, TimeUnit.MILLISECONDS);
-                    }
-                    finally {
-                        cctx.exchange().exchangerBlockingSectionEnd();
-                    }
+                    releaseLatch.await(waitTimeout, TimeUnit.MILLISECONDS);
 
                     if (log.isInfoEnabled())
                         log.info("Finished waiting for partitions release latch: " + releaseLatch);

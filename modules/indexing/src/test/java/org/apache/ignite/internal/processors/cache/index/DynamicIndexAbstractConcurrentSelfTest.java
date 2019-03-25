@@ -1097,7 +1097,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
     /**
      * Start a node.
-     *
+     * 
      * @param cfg Configuration.
      * @return Ignite instance.
      */
