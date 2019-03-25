@@ -17,21 +17,144 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Collection;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.engine.Session;
 
 /**
- * H2 query info.
+ * Base H2 query info with commons for MAP, LOCAL, REDUCE queries.
  */
-public interface H2QueryInfo {
+public class H2QueryInfo {
+    /** Type. */
+    private final QueryType type;
+
+    /** Begin timestamp. */
+    private final long beginTs;
+
+    /** Query schema. */
+    private final String schema;
+
+    /** Query SQL. */
+    private final String sql;
+
+    /** Enforce join order. */
+    private final boolean enforceJoinOrder;
+
+    /** Join batch enabled (distributed join). */
+    private final boolean distributedJoin;
+
+    /** Lazy mode. */
+    private final boolean lazy;
+
+    /**
+     * @param type Query type.
+     * @param stmt Query statement.
+     * @param sql Query statement.
+     * @param params Query parameters.
+     */
+    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, Collection<Object> params) {
+        try {
+            assert stmt != null;
+
+            this.type = type;
+            this.sql = sql;
+
+            beginTs = U.currentTimeMillis();
+
+            schema = stmt.getConnection().getSchema();
+
+            Session s = H2Utils.session(stmt.getConnection());
+
+            enforceJoinOrder = s.isForceJoinOrder();
+            distributedJoin = s.isJoinBatchEnabled();
+            lazy = s.isLazyQueryExecution() || MapQueryLazyWorker.currentWorker() != null;
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException("Cannot collect query info", IgniteQueryErrorCode.UNKNOWN, e);
+        }
+    }
+
+    /**
+     * Print info specified by children.
+     *
+     * @param msg Message string builder.
+     */
+    protected void printInfo(StringBuilder msg) {
+        // No-op.
+    };
+
     /**
      * @return Query execution time.
      */
-    long time();
+    public long time() {
+        return U.currentTimeMillis() - beginTs;
+    }
 
     /**
      * @param log Logger.
      * @param msg Log message
      * @param connMgr Connection manager.
      */
-    void printLogMessage(IgniteLogger log, ConnectionManager connMgr, String msg);
+    public void printLogMessage(IgniteLogger log, ConnectionManager connMgr, String msg) {
+        StringBuilder msgSb = new StringBuilder(msg + " [");
+
+        msgSb.append("time=").append(time()).append("ms")
+            .append(", type=").append(type)
+            .append(", distributedJoin=").append(distributedJoin)
+            .append(", enforceJoinOrder=").append(enforceJoinOrder)
+            .append(", lazy=").append(lazy);
+
+        printInfo(msgSb);
+
+        msgSb.append(", sql='")
+            .append(sql)
+            .append("', plan=")
+            .append(queryPlan(log, connMgr))
+            .append(']');
+
+        LT.warn(log, msgSb.toString());
+    }
+
+    /**
+     * @param log Logger.
+     * @param connMgr Connection manager.
+     * @return Query plan.
+     */
+    protected String queryPlan(IgniteLogger log, ConnectionManager connMgr) {
+        Connection c = connMgr.connectionForThread().connection(schema);
+
+        H2Utils.setupConnection(c, distributedJoin, enforceJoinOrder);
+
+        try (PreparedStatement pstmt = c.prepareStatement("EXPLAIN " + sql)) {
+
+            try (ResultSet plan = pstmt.executeQuery()) {
+                plan.next();
+
+                return plan.getString(1) + U.nl();
+            }
+        }
+        catch (Exception e) {
+            log.warning("Cannot get plan for long query: " + sql, e);
+
+            return "[error on calculate plan: " + e.getMessage() + ']';
+        }
+    }
+
+    /**
+     * Query type.
+     */
+    public enum QueryType {
+        LOCAL,
+        MAP,
+        REDUCE
+    }
 }

@@ -72,7 +72,6 @@ import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.LocalExplainH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.ReduceH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -1468,7 +1467,7 @@ public class GridReduceQueryExecutor {
             ResultSet rs =
                 h2.executeSqlQueryWithTimer(c, "SELECT PLAN FROM " + mergeTableIdentifier(i),
                     null, false, 0, null,
-                    new LocalExplainH2QueryInfo(mergeTableIdentifier(i), null));
+                    null);
 
             lists.add(F.asList(getPlan(rs)));
         }
@@ -1491,7 +1490,7 @@ public class GridReduceQueryExecutor {
             false,
             0,
             null,
-            new LocalExplainH2QueryInfo(rdc.query(), params0));
+            null);
 
         lists.add(F.asList(getPlan(rs)));
 
