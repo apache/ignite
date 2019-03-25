@@ -60,6 +60,7 @@ import org.junit.runners.JUnit4;
  *
  */
 @RunWith(JUnit4.class)
+@SuppressWarnings("unchecked")
 public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE1 = "cache1";
@@ -74,7 +75,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     private static final long WAIT_CONDITION_TIMEOUT = 3_000L;
 
     /** Persistence. */
-    private boolean persistence = false;
+    private boolean persistence;
 
     /**
      * @throws Exception If failed.
@@ -104,7 +105,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
         final CacheManager mgr1 = Caching.getCachingProvider().getCacheManager();
         final CacheManager mgr2 = Caching.getCachingProvider().getCacheManager();
 
-        CacheConfiguration cfg1 = new CacheConfiguration()
+        CacheConfiguration<Object, Object> cfg1 = new CacheConfiguration<>()
             .setName(CACHE1)
             .setGroupName(GROUP)
             .setCacheMode(CacheMode.PARTITIONED)
@@ -112,7 +113,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         mgr1.createCache(CACHE1, cfg1);
 
-        CacheConfiguration cfg2 = new CacheConfiguration(cfg1)
+        CacheConfiguration<Object, Object> cfg2 = new CacheConfiguration<>(cfg1)
             .setName(CACHE2)
             .setStatisticsEnabled(true);
 
@@ -144,9 +145,9 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
         Ignite ig1 = startGrid(1);
         startGrid(2);
 
-        IgniteCache<?, ?> cache1 = ig1.cache(CACHE1);
+        IgniteCache<Object, Object> cache1 = ig1.cache(CACHE1);
 
-        CacheConfiguration cacheCfg2 = new CacheConfiguration(cache1.getConfiguration(CacheConfiguration.class));
+        CacheConfiguration<Object, Object> cacheCfg2 = new CacheConfiguration<Object, Object>(cache1.getConfiguration(CacheConfiguration.class));
 
         cacheCfg2.setName(CACHE2);
         cacheCfg2.setStatisticsEnabled(true);
@@ -173,7 +174,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         IgniteCache<?, ?> cache1 = grid(0).cache(CACHE1);
 
-        CacheConfiguration cacheCfg2 = new CacheConfiguration(cache1.getConfiguration(CacheConfiguration.class));
+        CacheConfiguration<Object, Object> cacheCfg2 = new CacheConfiguration<Object, Object>(cache1.getConfiguration(CacheConfiguration.class));
 
         cacheCfg2.setName(CACHE2);
 
@@ -204,7 +205,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
                     barrier.await();
 
-                    ignite.cluster().enableStatistics(Arrays.asList(CACHE1), true);
+                    ignite.cluster().enableStatistics(Collections.singletonList(CACHE1), true);
 
                     assertCachesStatisticsMode(true, false);
                 }
@@ -268,12 +269,12 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     public void testClusterApiClearStatistics() throws Exception {
         startGrids(3);
 
-        IgniteCache<?, ?> cache = grid(0).cache(CACHE1);
+        IgniteCache<Object, Object> cache = grid(0).cache(CACHE1);
 
         cache.enableStatistics(true);
 
         grid(0).getOrCreateCache(
-            new CacheConfiguration(cache.getConfiguration(CacheConfiguration.class)).setName(CACHE2)
+            new CacheConfiguration<Object, Object>(cache.getConfiguration(CacheConfiguration.class)).setName(CACHE2)
         ).enableStatistics(true);
 
         Collection<String> cacheNames = Arrays.asList(CACHE1, CACHE2);
@@ -313,6 +314,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
         for (String cacheName : cacheNames) {
             for (Ignite ig : G.allGrids()) {
                 assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @SuppressWarnings("ErrorNotRethrown")
                     @Override public boolean apply() {
                         boolean res = true;
 
@@ -380,10 +382,10 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
         Ignite ig1 = startGrid(1);
         Ignite ig2 = startGrid(2);
 
-        ig1.active(true);
+        ig1.cluster().active(true);
 
-        CacheConfiguration ccfg = ig1.cache(CACHE1).getConfiguration(CacheConfiguration.class);
-        CacheConfiguration cacheCfg2 = new CacheConfiguration(ccfg);
+        CacheConfiguration<Object, Object> ccfg = ig1.cache(CACHE1).getConfiguration(CacheConfiguration.class);
+        CacheConfiguration<Object, Object> cacheCfg2 = new CacheConfiguration<>(ccfg);
 
         cacheCfg2.setName(CACHE2);
         cacheCfg2.setStatisticsEnabled(true);
@@ -450,13 +452,13 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         ig1 = startGrid(1);
 
-        ig1.active(true);
+        ig1.cluster().active(true);
 
         ig1.getOrCreateCache(cacheCfg2.setStatisticsEnabled(false));
 
         if (persistence)
-            // cache1 - from local configuration, cache2 - restored from pds
-            assertCachesStatisticsMode(false, true);
+            // Both caches restored from pds.
+            assertCachesStatisticsMode(true, true);
         else
             assertCachesStatisticsMode(false, false);
 
