@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -620,10 +621,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         Collection<ClusterNode> srvNodes = ctx.cluster().get().forServers().nodes();
 
-        ArrayList baselineNodes = new ArrayList(srvNodes.size());
-
-        for (ClusterNode clN : srvNodes)
-            baselineNodes.add(clN);
+        Collection<BaselineNode> baselineNodes = new ArrayList<>(srvNodes);
 
         ctx.getSystemExecutorService().execute(new Runnable() {
             @Override public void run() {
