@@ -304,7 +304,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             for (IgniteTxEntry entry : tx.allEntries()) {
                 if (entry.cacheId() == cacheId) {
-                    rollbackTx(tx, false);
+                    rollbackTx(tx, false, false);
 
                     break;
                 }
@@ -317,9 +317,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         txFinishSync.onDisconnected(reconnectFut);
 
         for (IgniteInternalTx tx : idMap.values())
-            rollbackTx(tx, true);
+            rollbackTx(tx, true, false);
         for (IgniteInternalTx tx : nearIdMap.values())
-            rollbackTx(tx, true);
+            rollbackTx(tx, true, false);
 
         IgniteClientDisconnectedException err =
             new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected.");
@@ -1263,15 +1263,17 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param tx Transaction to rollback.
      * @param clearThreadMap {@code True} if need remove tx from thread map.
+     * @param skipCompletedVers {@code True} if tx should skip adding itself to completed versions map on finish.
      */
-    public void rollbackTx(IgniteInternalTx tx, boolean clearThreadMap) {
+    public void rollbackTx(IgniteInternalTx tx, boolean clearThreadMap, boolean skipCompletedVers) {
         assert tx != null;
 
         if (log.isDebugEnabled())
             log.debug("Rolling back from TM [locNodeId=" + cctx.localNodeId() + ", tx=" + tx + ']');
 
         // 1. Record transaction version to avoid duplicates.
-        addRolledbackTx(tx);
+        if (!skipCompletedVers)
+            addRolledbackTx(tx);
 
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 
