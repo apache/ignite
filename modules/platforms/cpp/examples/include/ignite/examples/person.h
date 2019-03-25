@@ -86,7 +86,7 @@ namespace ignite
                 std::ostringstream oss;
 
                 oss << "PersonKey [id=" << id
-                    << ", orgId=" << orgIdAff
+                    << ", orgIdAff=" << orgIdAff
                     << "]";
                 return oss.str();
             }
