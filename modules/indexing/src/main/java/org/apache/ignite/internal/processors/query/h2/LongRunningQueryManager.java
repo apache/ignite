@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.sql.PreparedStatement;
-import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -35,7 +34,7 @@ public class LongRunningQueryManager {
     private final ConnectionManager connMgr;
 
     /** Queries collection. Sorted collection isn't used to reduce 'put' time. */
-    private final ConcurrentHashMap<IgniteH2QueryInfo, Boolean> qrys = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<H2QueryInfo, TimeoutChecker> qrys = new ConcurrentHashMap<>();
 
     /** Check long query task. */
     private final GridTimeoutProcessor.CancelableTask checkLongQryTask;
@@ -43,8 +42,20 @@ public class LongRunningQueryManager {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Query timeout milliseconds. */
-    private volatile long longQryWarnTimeout;
+    /** Long query timeout milliseconds. */
+    private volatile long timeout;
+
+    /**
+     * Long query timeout multiplier. The warning will be printed after:
+     * - timeout;
+     * - timeout * multiplier;
+     * - timeout * multiplier * multiplier;
+     * - etc...
+     *
+     * If the multiplier <= 1, the warning message is printed once.
+     * */
+
+    private volatile int timeoutMult = 2;
 
     /**
      * @param ctx Kernal context.
@@ -56,7 +67,7 @@ public class LongRunningQueryManager {
 
         checkLongQryTask = ctx.timeout().schedule(this::checkLongRunning, CHECK_PERIOD, CHECK_PERIOD);
 
-        longQryWarnTimeout = ctx.config().getLongQueryWarningTimeout();
+        timeout = ctx.config().getLongQueryWarningTimeout();
     }
 
     /**
@@ -69,23 +80,19 @@ public class LongRunningQueryManager {
     }
 
     /**
-     * @param stmt Query statement.
-     * @param sql Query statement.
-     * @param params Query parameters.
-     * @return Registered info.
+     * @param qryInfo Query info to register.
      */
-    public IgniteH2QueryInfo registerQuery(PreparedStatement stmt, String sql, Collection<Object> params) {
-        IgniteH2QueryInfo info = IgniteH2QueryInfo.collectInfo(stmt, sql, params);
+    public void registerQuery(H2QueryInfo qryInfo) {
+        assert qryInfo != null;
 
-        qrys.put(info, true);
-
-        return info;
+        if (timeout > 0)
+            qrys.put(qryInfo, new TimeoutChecker(timeout, timeoutMult));
     }
 
     /**
      * @param qryInfo Query info to remove.
      */
-    public void unregisterQuery(IgniteH2QueryInfo qryInfo) {
+    public void unregisterQuery(H2QueryInfo qryInfo) {
         qrys.remove(qryInfo);
     }
 
@@ -93,17 +100,23 @@ public class LongRunningQueryManager {
      *
      */
     private void checkLongRunning() {
-        for (IgniteH2QueryInfo qinfo : qrys.keySet()) {
-            if (qinfo.time() > longQryWarnTimeout)
-                qinfo.printLogMessage(log, connMgr);
+        for (Map.Entry<H2QueryInfo, TimeoutChecker> e : qrys.entrySet()) {
+            H2QueryInfo qinfo = e.getKey();
+
+            if (e.getValue().checkTimeout(qinfo.time())) {
+                qinfo.printLogMessage(log, connMgr, "Query execution is too long");
+
+                if (timeoutMult <= 1)
+                    qrys.remove(qinfo);
+            }
         }
     }
 
     /**
      * @return Timeout in milliseconds after which long query warning will be printed.
      */
-    public long getLongQueryWarningTimeout() {
-        return longQryWarnTimeout;
+    public long getTimeout() {
+        return timeout;
     }
 
     /**
@@ -111,7 +124,66 @@ public class LongRunningQueryManager {
      *
      * @param timeout Timeout in milliseconds after which long query warning will be printed.
      */
-    public void setLongQueryWarningTimeout(long timeout) {
-        longQryWarnTimeout = timeout;
+    public void setTimeout(long timeout) {
+        this.timeout = timeout;
+
+        if (timeout <= 0)
+            qrys.clear();
+    }
+
+    /**
+     * @return Long query timeout multiplier.
+     */
+    public int getTimeoutMultiplier() {
+        return timeoutMult;
+    }
+
+    /**
+     * Sets long query timeout multiplier. The warning will be printed after:
+     *      - timeout;
+     *      - timeout * multiplier;
+     *      - timeout * multiplier * multiplier;
+     *      - etc...
+     * If the multiplier <= 1, the warning message is printed once.
+     *
+     * @param timeoutMult Long query timeout multiplier.
+     */
+    public void setTimeoutMultiplier(int timeoutMult) {
+        this.timeoutMult = timeoutMult;
+    }
+
+    /**
+     * Holds timeout settings for the specified query.
+     */
+    private static class TimeoutChecker {
+        /** */
+        private long timeout;
+
+        /** */
+        private int timeoutMult;
+
+        /**
+         * @param timeout Initial timeout.
+         * @param timeoutMult Timeout multiplier.
+         */
+        public TimeoutChecker(long timeout, int timeoutMult) {
+            this.timeout = timeout;
+            this.timeoutMult = timeoutMult;
+        }
+
+        /**
+         * @param time Query execution time.
+         * @return {@code true} if timeout occurred.
+         */
+        public boolean checkTimeout(long time) {
+            if (time > timeout) {
+                if (timeoutMult > 1)
+                    timeout *= timeoutMult;
+
+                return true;
+            }
+            else
+                return false;
+        }
     }
 }

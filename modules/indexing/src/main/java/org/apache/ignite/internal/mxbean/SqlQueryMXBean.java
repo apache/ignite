@@ -15,7 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mxbean;
+package org.apache.ignite.internal.mxbean;
+
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
+import org.apache.ignite.mxbean.MXBeanParametersNames;
 
 /**
  * An MX bean allowing to monitor and tune SQL queries.
@@ -23,7 +27,7 @@ package org.apache.ignite.mxbean;
  * @deprecated Temporary monitoring solution.
  */
 @Deprecated
-public interface QueryMXBean {
+public interface SqlQueryMXBean {
     /**
      * @return Timeout in milliseconds after which long query warning will be printed.
      */
@@ -39,4 +43,29 @@ public interface QueryMXBean {
     @MXBeanParametersNames("longQueryWarningTimeout")
     @MXBeanParametersDescriptions("Timeout in milliseconds after which long query warning will be printed.")
     void setLongQueryWarningTimeout(long longQueryWarningTimeout);
+
+    /**
+     * @return Long query timeout multiplier.
+     */
+    @MXBeanDescription("Long query timeout multiplier. The warning will be printed after: timeout, " +
+        "timeout * multiplier, timeout * multiplier * multiplier, etc. " +
+        "If the multiplier <= 1, the warning message is printed once.")
+    int getLongQueryTimeoutMultiplier();
+
+    /**
+     * Sets long query timeout multiplier. The warning will be printed after:
+     *      - timeout;
+     *      - timeout * multiplier;
+     *      - timeout * multiplier * multiplier;
+     *      - etc.
+     * If the multiplier <= 1, the warning message is printed once.
+     *
+     * @param longQueryTimeoutMultiplier Long query timeout multiplier.
+     */
+    @MXBeanDescription("Sets long query timeout multiplier. The warning will be printed after: timeout, " +
+        "timeout * multiplier, timeout * multiplier * multiplier, etc. " +
+        "If the multiplier <= 1, the warning message is printed once.")
+    @MXBeanParametersNames("longQueryTimeoutMultiplier")
+    @MXBeanParametersDescriptions("Long query timeout multiplier.")
+    void setLongQueryTimeoutMultiplier(int longQueryTimeoutMultiplier);
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
@@ -54,16 +55,17 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsReservation;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -790,12 +792,21 @@ public class GridMapQueryExecutor {
                 for (GridCacheSqlQuery qry : qrys) {
                     ResultSet rs = null;
 
+                    MapH2QueryInfo qryInfo = null;
+
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
-                        rs = h2.executeSqlQueryWithTimer(conn, qry.query(),
-                            F.asList(qry.parameters(params)), true,
+                        Collection<Object> params0 = F.asList(qry.parameters(params));
+
+                        final PreparedStatement stmt = h2.preparedStatementWithParams(conn, qry.query(),
+                            params0, true);
+
+                        qryInfo = new MapH2QueryInfo(stmt, qry.query(), params0, node, reqId, segmentId);
+
+                        rs = h2.executeSqlQueryWithTimer(stmt, conn, qry.query(),
+                            params0,
                             timeout,
-                            qr.queryCancel(qryIdx));
+                            qr.queryCancel(qryIdx), qryInfo);
 
                         if (evt) {
                             ctx.event().record(new CacheQueryExecutedEvent<>(
