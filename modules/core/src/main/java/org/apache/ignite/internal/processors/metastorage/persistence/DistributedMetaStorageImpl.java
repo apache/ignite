@@ -744,9 +744,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /**
      * {@inheritDoc}
      * <br/>
-     * Since {@link #validateNode(ClusterNode, JoiningNodeDiscoveryData)} has already been invoked we can be sure that
-     * joining node has valid discovery data. Current method does something meaningful only if joining node has bigger
-     * distributed metastorage version, in this case all required updates will be added to deferred updates queue.
+     * Since {@link #validateNode(ClusterNode, DiscoveryDataBag.JoiningNodeDiscoveryData)} has already been invoked we
+     * can be sure that joining node has valid discovery data. Current method does something meaningful only if joining
+     * node has bigger distributed metastorage version, in this case all required updates will be added to deferred
+     * updates queue.
      *
      * @see StartupExtras#deferredUpdates
      */
