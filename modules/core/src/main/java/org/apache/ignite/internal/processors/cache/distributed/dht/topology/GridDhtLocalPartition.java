@@ -70,6 +70,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
+import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -299,7 +300,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @return Data store.
      */
-    public CacheDataStoreProxy dataStore() {
+    public CacheDataStore dataStore() {
         return store;
     }
 
@@ -448,7 +449,29 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         lock.unlock();
     }
 
-    /** */
+    /**
+     * Set <tt>FULL</tt> {@link CacheDataStoreProxy.StorageMode} to the corresponding partition.
+     */
+    public void storageModeFull() {
+        if (state() == MOVING)
+            return;
+
+        store.storageMode(CacheDataStoreProxy.StorageMode.FULL);
+    }
+
+    /**
+     * Set <tt>LOG_ONLY</tt> {@link CacheDataStoreProxy.StorageMode} to the corresponding partition.
+     */
+    public void storageModeLogOnly() {
+        if (state() == MOVING)
+            return;
+
+        store.storageMode(CacheDataStoreProxy.StorageMode.LOG_ONLY);
+    }
+
+    /**
+     * Relese the read lock on corresponding storage.
+     */
     public void activeStorageReadUnlock() {
         store.activeStorageReadUnlock();
     }

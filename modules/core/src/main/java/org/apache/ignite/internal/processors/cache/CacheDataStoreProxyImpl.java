@@ -65,19 +65,19 @@ import org.jetbrains.annotations.Nullable;
  *     </ul>
  * </p>
  * <p>
- *     <tt>Case 1:</tt> The storage in transition state (threads are accessing both old and new modes) counters
- *     (e.g. partition counter, storage size, cache sizes counter) must be synchronized.
+ *     <tt>Case 0:</tt> All async operations for the storage in LOG_ONLY mode must not touch pages in the durable
+ *     PageMemory.
+ * </p>
+ * <p>
+ *     <tt>Case 1:</tt> While the storage in transition state (threads are accessing both old and new modes) it must
+ *     have all counters (e.g. partition counter, storage size, cache sizes counter) to be synchronized.
  * </p>
  * <p>
  *     <tt>Case 2:</tt> The switching storage mode and setting a new storage for the same mode simultaneously
  *     must be forbidden.
  * </p>
  * <p>
- *     <tt>Case 3:</tt> While the storage in transition state it must delegate call on both the previous and
- *     the next modes, but return result only of its call only from locally enabled mode (saved in thread local).
- * </p>
- * <p>
- *     <tt>Case 4:</tt> Thread switch its working storage mode on first access to it (if previously have no locks
+ *     <tt>Case 3:</tt> Thread switch its working storage mode on first access to it (if previously have no locks
  *     on it).
  * </p>
  *
