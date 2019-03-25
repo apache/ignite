@@ -41,7 +41,7 @@ public class AbstractFailureHandlerTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected static class DummyFailureHandler extends AbstractFailureHandler {
+    protected static class DummyFailureHandler implements FailureHandler {
         /** Failure. */
         private volatile boolean failure;
 
@@ -49,7 +49,7 @@ public class AbstractFailureHandlerTest extends GridCommonAbstractTest {
         private volatile FailureContext ctx;
 
         /** {@inheritDoc} */
-        @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
             failure = true;
 
             ctx = failureCtx;

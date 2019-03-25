@@ -143,9 +143,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /** Log only. */
     private boolean logOnly;
 
-    /** */
-    private long customFailureDetectionTimeout = -1;
-
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
         return fork;
@@ -202,9 +199,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         if (!getTestIgniteInstanceName(0).equals(gridName))
             cfg.setUserAttributes(F.asMap(HAS_CACHE, true));
-
-        if (customFailureDetectionTimeout > 0)
-            cfg.setFailureDetectionTimeout(customFailureDetectionTimeout);
 
         return cfg;
     }
@@ -621,10 +615,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testHugeCheckpointRecord() throws Exception {
-        long prevFDTimeout = customFailureDetectionTimeout;
-
         try {
-            customFailureDetectionTimeout = 40_000;
             final IgniteEx ignite = startGrid(1);
 
             ignite.active(true);
@@ -665,8 +656,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             fut.get();
         }
         finally {
-            customFailureDetectionTimeout = prevFDTimeout;
-
             stopAllGrids();
         }
     }
