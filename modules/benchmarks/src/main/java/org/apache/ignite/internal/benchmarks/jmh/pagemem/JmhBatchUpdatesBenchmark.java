@@ -131,7 +131,7 @@ public class JmhBatchUpdatesBenchmark {
         r4000_16000(4_000, 16_000),
 
         /** Mixed objects, mostly large objects. */
-        r100_32000(100, 32_000);
+        r0_32000(100, 32_000);
 
         /** */
         private final int min;
