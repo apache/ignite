@@ -92,7 +92,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     private static final int VALS = 10;
 
     /** */
-    public static boolean singleNode = false;
+    public static boolean singleNode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -101,6 +101,11 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
         cfg.setClientMode(igniteInstanceName.endsWith("0") && !singleNode);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void unconditionalCleanupAfterTests() {
+        // No-op.
     }
 
     /**

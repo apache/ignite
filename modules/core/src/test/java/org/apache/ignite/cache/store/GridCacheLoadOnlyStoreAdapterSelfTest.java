@@ -42,16 +42,11 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         super.beforeTestsStarted();
 
         startGrid(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -66,6 +61,8 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings("unchecked")
     private CacheConfiguration<?, ?> cacheConfiguration() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         assertNotNull(store);

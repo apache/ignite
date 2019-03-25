@@ -17,29 +17,36 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.Time;
+import java.lang.reflect.Field;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -50,8 +57,10 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.managers.discovery.ClusterMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
@@ -60,10 +69,13 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Tests for ignite SQL system views.
@@ -159,6 +171,114 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Test indexes system view.
+     * @throws Exception in case of failure.
+     */
+    @Test
+    public void testIndexesView() throws Exception {
+        IgniteEx srv = startGrid(getConfiguration());
+
+        IgniteEx client = startGrid(getConfiguration().setClientMode(true).setIgniteInstanceName("CLIENT"));
+
+        srv.createCache(cacheConfiguration("TST1"));
+
+        execSql("CREATE TABLE PUBLIC.AFF_CACHE (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1 DESC, ID2)) WITH \"affinity_key=ID2\"");
+
+        execSql("CREATE TABLE CACHE_SQL (ID INT PRIMARY KEY, MY_VAL VARCHAR)");
+
+        execSql("CREATE INDEX IDX_2 ON CACHE_SQL(ID DESC) INLINE_SIZE 13");
+
+        execSql("CREATE TABLE PUBLIC.DFLT_CACHE (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1 DESC, ID2))");
+
+        execSql("CREATE INDEX IDX_1 ON PUBLIC.DFLT_CACHE(ID2 DESC, ID1, MY_VAL DESC)");
+
+        execSql("CREATE INDEX IDX_3 ON PUBLIC.DFLT_CACHE(MY_VAL)");
+
+        execSql("CREATE TABLE PUBLIC.DFLT_AFF_CACHE (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1 DESC, ID2)) WITH \"affinity_key=ID1\"");
+
+        execSql("CREATE INDEX IDX_AFF_1 ON PUBLIC.DFLT_AFF_CACHE(ID2 DESC, ID1, MY_VAL DESC)");
+
+        String idxSql = "SELECT * FROM IGNITE.INDEXES ORDER BY TABLE_NAME, INDEX_NAME";
+
+        List<List<?>> srvNodeIndexes = execSql(srv, idxSql);
+
+        List<List<?>> clientNodeNodeIndexes = execSql(client, idxSql);
+
+        Assert.assertEquals(srvNodeIndexes.toString(), clientNodeNodeIndexes.toString());
+
+        //ToDo: As of now we can see duplicates columns within index due to https://issues.apache.org/jira/browse/IGNITE-11125
+
+        String[][] expectedResults = {
+            {"PUBLIC", "AFF_CACHE", "AFFINITY_KEY", "\"ID2\" ASC, \"ID1\" ASC", "BTREE", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "10"},
+            {"PUBLIC", "AFF_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
+            {"PUBLIC", "AFF_CACHE", "_key_PK", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "10"},
+            {"PUBLIC", "AFF_CACHE", "_key_PK_hash", "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", "HASH", "false", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
+
+            {"PUBLIC", "CACHE_SQL", "IDX_2", "\"ID\" DESC, \"ID\" ASC", "BTREE", "false", "false", "707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "13"},
+            {"PUBLIC", "CACHE_SQL", "__SCAN_", "null", "SCAN", "false", "false",  "707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "null"},
+            {"PUBLIC", "CACHE_SQL", "_key_PK", "\"ID\" ASC", "BTREE", "true", "true", "707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "5"},
+            {"PUBLIC", "CACHE_SQL", "_key_PK_hash", "\"ID\" ASC", "HASH", "false", "true", "707660652", "SQL_PUBLIC_CACHE_SQL", "707660652", "SQL_PUBLIC_CACHE_SQL", "null"},
+
+            {"PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
+            {"PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", "BTREE", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
+            {"PUBLIC", "DFLT_AFF_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "null"},
+            {"PUBLIC", "DFLT_AFF_CACHE", "_key_PK", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "10"},
+            {"PUBLIC", "DFLT_AFF_CACHE", "_key_PK_hash", "\"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC", "HASH", "false", "true", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "1374144180", "SQL_PUBLIC_DFLT_AFF_CACHE", "null"},
+
+            {"PUBLIC", "DFLT_CACHE", "IDX_1", "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"ID1\" ASC, \"ID2\" ASC", "BTREE", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
+            {"PUBLIC", "DFLT_CACHE", "IDX_3", "\"MY_VAL\" ASC, \"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC, \"ID2\" ASC", "BTREE", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
+            {"PUBLIC", "DFLT_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "null"},
+            {"PUBLIC", "DFLT_CACHE", "_key_PK", "\"ID1\" ASC, \"ID2\" ASC", "BTREE", "true", "true", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
+            {"PUBLIC", "DFLT_CACHE", "_key_PK_hash", "\"ID1\" ASC, \"ID2\" ASC", "HASH", "false", "true", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "null"},
+
+            {"TST1", "VALUECLASS", "TST1_INDEX", "\"KEY\" ASC, \"_KEY\" ASC", "BTREE", "false", "false", "2584860", "TST1", "2584860", "TST1", "10"},
+            {"TST1", "VALUECLASS", "__SCAN_", "null", "SCAN", "false", "false", "2584860", "TST1", "2584860", "TST1", "null"},
+            {"TST1", "VALUECLASS", "_key_PK", "\"_KEY\" ASC", "BTREE", "true", "true", "2584860", "TST1", "2584860", "TST1", "10"},
+            {"TST1", "VALUECLASS", "_key_PK_hash", "\"_KEY\" ASC", "HASH", "false", "true", "2584860", "TST1", "2584860", "TST1", "null"},
+        };
+
+        for (int i = 0; i < srvNodeIndexes.size(); i++) {
+            List<?> resRow = srvNodeIndexes.get(i);
+
+            String[] expRow = expectedResults[i];
+
+            assertEquals(expRow.length, resRow.size());
+
+            for (int j = 0; j < expRow.length; j++)
+                assertEquals(expRow[j], String.valueOf(resRow.get(j)));
+        }
+    }
+
+
+    /**
+     * @return Default cache configuration.
+     */
+    protected CacheConfiguration<AbstractSchemaSelfTest.KeyClass, AbstractSchemaSelfTest.ValueClass> cacheConfiguration(String cacheName) throws Exception {
+        CacheConfiguration ccfg = new CacheConfiguration().setName(cacheName);
+
+        QueryEntity entity = new QueryEntity();
+
+        entity.setKeyType(AbstractSchemaSelfTest.KeyClass.class.getName());
+        entity.setValueType(AbstractSchemaSelfTest.ValueClass.class.getName());
+
+        entity.setKeyFieldName("key");
+        entity.addQueryField("key", entity.getKeyType(), null);
+
+        entity.addQueryField("id", Long.class.getName(), null);
+        entity.addQueryField("field1", Long.class.getName(), null);
+
+        entity.setKeyFields(Collections.singleton("id"));
+
+        entity.setIndexes(Collections.singletonList(
+            new QueryIndex("key", true, cacheName + "_index")
+        ));
+
+        ccfg.setQueryEntities(Collections.singletonList(entity));
+
+        return ccfg;
+    }
+
+    /**
      * Test different query modes.
      */
     @Test
@@ -185,6 +305,191 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         qry = new SqlFieldsQuery(sql).setLocal(true);
 
         assertEquals(nodeId, ((List<?>)cache.query(qry).getAll().get(0)).get(0));
+    }
+
+    /**
+     * Test Query history system view.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testQueryHistoryMetricsModes() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        final String SCHEMA_NAME = "TEST_SCHEMA";
+        final long MAX_SLEEP = 500;
+        final long MIN_SLEEP = 50;
+
+        long tsBeforeRun = System.currentTimeMillis();
+
+        IgniteCache cache = ignite.createCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setIndexedTypes(Integer.class, String.class)
+                .setSqlSchema(SCHEMA_NAME)
+                .setSqlFunctionClasses(GridTestUtils.SqlTestFunctions.class)
+        );
+
+        cache.put(100, "200");
+
+        String sql = "SELECT \"STRING\"._KEY, \"STRING\"._VAL FROM \"STRING\" WHERE _key=100 AND sleep_and_can_fail()>0";
+
+        GridTestUtils.SqlTestFunctions.sleepMs = MIN_SLEEP;
+        GridTestUtils.SqlTestFunctions.fail = false;
+
+        cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll();
+
+        GridTestUtils.SqlTestFunctions.sleepMs = MAX_SLEEP;
+        GridTestUtils.SqlTestFunctions.fail = false;
+
+        cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll();
+
+        GridTestUtils.SqlTestFunctions.sleepMs = MIN_SLEEP;
+        GridTestUtils.SqlTestFunctions.fail = true;
+
+        GridTestUtils.assertThrows(log,
+            () ->
+                cache.query(new SqlFieldsQuery(sql).setSchema(SCHEMA_NAME)).getAll()
+            , CacheException.class,
+            "Exception calling user-defined function");
+
+        String sqlHist = "SELECT SCHEMA_NAME, SQL, LOCAL, EXECUTIONS, FAILURES, DURATION_MIN, DURATION_MAX, LAST_START_TIME " +
+            "FROM IGNITE.LOCAL_SQL_QUERY_HISTORY ORDER BY LAST_START_TIME";
+
+        cache.query(new SqlFieldsQuery(sqlHist).setLocal(true)).getAll();
+        cache.query(new SqlFieldsQuery(sqlHist).setLocal(true)).getAll();
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery(sqlHist).setLocal(true)).getAll();
+
+        assertEquals(2, res.size());
+
+        long tsAfterRun = System.currentTimeMillis();
+
+        List<?> firstRow = res.get(0);
+        List<?> secondRow = res.get(1);
+
+        //SCHEMA_NAME
+        assertEquals(SCHEMA_NAME, firstRow.get(0));
+        assertEquals(SCHEMA_NAME, secondRow.get(0));
+
+        //SQL
+        assertEquals(sql, firstRow.get(1));
+        assertEquals(sqlHist, secondRow.get(1));
+
+        // LOCAL flag
+        assertEquals(false, firstRow.get(2));
+        assertEquals(true, secondRow.get(2));
+
+        // EXECUTIONS
+        assertEquals(3L, firstRow.get(3));
+        assertEquals(2L, secondRow.get(3));
+
+        //FAILURES
+        assertEquals(1L, firstRow.get(4));
+        assertEquals(0L, secondRow.get(4));
+
+        //DURATION_MIN
+        assertTrue((Long)firstRow.get(5) >= MIN_SLEEP);
+        assertTrue((Long)firstRow.get(5) < (Long)firstRow.get(6));
+
+        //DURATION_MAX
+        assertTrue((Long)firstRow.get(6) >= MAX_SLEEP);
+
+        //LAST_START_TIME
+        assertFalse(((Timestamp)firstRow.get(7)).before(new Timestamp(tsBeforeRun)));
+        assertFalse(((Timestamp)firstRow.get(7)).after(new Timestamp(tsAfterRun)));
+    }
+
+    /**
+     * Test running queries system view.
+     */
+    @Test
+    public void testRunningQueriesView() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache cache = ignite.createCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, String.class)
+        );
+
+        cache.put(100,"200");
+
+        String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES";
+
+        FieldsQueryCursor notClosedFieldQryCursor = cache.query(new SqlFieldsQuery(sql).setLocal(true));
+
+        List<?> cur = cache.query(new SqlFieldsQuery(sql).setLocal(true)).getAll();
+
+        assertEquals(2, cur.size());
+
+        List<?> res0 = (List<?>)cur.get(0);
+        List<?> res1 = (List<?>)cur.get(1);
+
+        Timestamp ts = (Timestamp)res0.get(4);
+
+        Instant now = Instant.now();
+
+        long diffInMillis = now.minusMillis(ts.getTime()).toEpochMilli();
+
+        assertTrue(diffInMillis < 3000);
+
+        assertEquals(sql, res0.get(0));
+
+        assertEquals(sql, res1.get(0));
+
+        assertTrue((Boolean)res0.get(3));
+
+        String id0 = (String)res0.get(1);
+        String id1 = (String)res1.get(1);
+
+        assertNotEquals(id0, id1);
+
+
+        String qryPrefix = ignite.localNode().id() + "_";
+
+        String qryId1 = qryPrefix + "1";
+        String qryId2 = qryPrefix + "2";
+
+        assertTrue(id0.equals(qryId1) || id1.equals(qryId1));
+
+        assertTrue(id0.equals(qryId2) || id1.equals(qryId2));
+
+        assertEquals(2, cache.query(new SqlFieldsQuery(sql)).getAll().size());
+
+        notClosedFieldQryCursor.close();
+
+        assertEquals(1, cache.query(new SqlFieldsQuery(sql)).getAll().size());
+
+        cache.put(100,"200");
+
+        QueryCursor notClosedQryCursor = cache.query(new SqlQuery<>(String.class, "_key=100"));
+
+        String expSqlQry = "SELECT \"default\".\"STRING\"._KEY, \"default\".\"STRING\"._VAL FROM " +
+            "\"default\".\"STRING\" WHERE _key=100";
+
+        cur = cache.query(new SqlFieldsQuery(sql)).getAll();
+
+        assertEquals(2, cur.size());
+
+        res0 = (List<?>)cur.get(0);
+        res1 = (List<?>)cur.get(1);
+
+        assertTrue(expSqlQry, res0.get(0).equals(expSqlQry) || res1.get(0).equals(expSqlQry));
+
+        assertFalse((Boolean)res0.get(3));
+
+        assertFalse((Boolean)res1.get(3));
+
+        notClosedQryCursor.close();
+
+        sql = "SELECT SQL, QUERY_ID FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE QUERY_ID='" + qryPrefix + "7'";
+
+        assertEquals(qryPrefix + "7", ((List<?>)cache.query(new SqlFieldsQuery(sql)).getAll().get(0)).get(1));
+
+        sql = "SELECT SQL FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE DURATION > 100000";
+
+        assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
+
+        sql = "SELECT SQL FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE QUERY_ID='UNKNOWN'";
+
+        assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
     }
 
     /**
@@ -342,14 +647,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             Integer.class, Integer.class, Float.class, // Waiting jobs.
             Integer.class, Integer.class, Float.class, Integer.class, // Rejected jobs.
             Integer.class, Integer.class, Float.class, Integer.class, // Canceled jobs.
-            Time.class, Time.class, Time.class, // Jobs wait time.
-            Time.class, Time.class, Time.class, Time.class, // Jobs execute time.
+            Long.class, Long.class, Long.class, // Jobs wait time.
+            Long.class, Long.class, Long.class, Long.class, // Jobs execute time.
             Integer.class, Integer.class, // Executed jobs/task.
-            Time.class, Time.class, Time.class, Float.class, Float.class, // Busy/idle time.
+            Long.class, Long.class, Long.class, Float.class, Float.class, // Busy/idle time.
             Integer.class, Double.class, Double.class, Double.class, // CPU.
             Long.class, Long.class, Long.class, Long.class, Long.class, // Heap memory.
             Long.class, Long.class, Long.class, Long.class, Long.class, // Nonheap memory.
-            Time.class, Timestamp.class, Timestamp.class, Long.class, // Uptime.
+            Long.class, Timestamp.class, Timestamp.class, Long.class, // Uptime.
             Integer.class, Integer.class, Long.class, Integer.class, // Threads.
             Integer.class, Long.class, Integer.class, Long.class, // Sent/received messages.
             Integer.class); // Outbound message queue.
@@ -426,18 +731,18 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                     assertEquals(metrics.getCurrentCancelledJobs(), resMetrics.get(0).get(13));
                     assertEquals(metrics.getAverageCancelledJobs(), resMetrics.get(0).get(14));
                     assertEquals(metrics.getTotalCancelledJobs(), resMetrics.get(0).get(15));
-                    assertEquals(metrics.getMaximumJobWaitTime(), convertToMilliseconds(resMetrics.get(0).get(16)));
-                    assertEquals(metrics.getCurrentJobWaitTime(), convertToMilliseconds(resMetrics.get(0).get(17)));
-                    assertEquals((long)metrics.getAverageJobWaitTime(), convertToMilliseconds(resMetrics.get(0).get(18)));
-                    assertEquals(metrics.getMaximumJobExecuteTime(), convertToMilliseconds(resMetrics.get(0).get(19)));
-                    assertEquals(metrics.getCurrentJobExecuteTime(), convertToMilliseconds(resMetrics.get(0).get(20)));
-                    assertEquals((long)metrics.getAverageJobExecuteTime(), convertToMilliseconds(resMetrics.get(0).get(21)));
-                    assertEquals(metrics.getTotalJobsExecutionTime(), convertToMilliseconds(resMetrics.get(0).get(22)));
+                    assertEquals(metrics.getMaximumJobWaitTime(), resMetrics.get(0).get(16));
+                    assertEquals(metrics.getCurrentJobWaitTime(), resMetrics.get(0).get(17));
+                    assertEquals((long)metrics.getAverageJobWaitTime(), resMetrics.get(0).get(18));
+                    assertEquals(metrics.getMaximumJobExecuteTime(), resMetrics.get(0).get(19));
+                    assertEquals(metrics.getCurrentJobExecuteTime(), resMetrics.get(0).get(20));
+                    assertEquals((long)metrics.getAverageJobExecuteTime(), resMetrics.get(0).get(21));
+                    assertEquals(metrics.getTotalJobsExecutionTime(), resMetrics.get(0).get(22));
                     assertEquals(metrics.getTotalExecutedJobs(), resMetrics.get(0).get(23));
                     assertEquals(metrics.getTotalExecutedTasks(), resMetrics.get(0).get(24));
-                    assertEquals(metrics.getTotalBusyTime(), convertToMilliseconds(resMetrics.get(0).get(25)));
-                    assertEquals(metrics.getTotalIdleTime(), convertToMilliseconds(resMetrics.get(0).get(26)));
-                    assertEquals(metrics.getCurrentIdleTime(), convertToMilliseconds(resMetrics.get(0).get(27)));
+                    assertEquals(metrics.getTotalBusyTime(), resMetrics.get(0).get(25));
+                    assertEquals(metrics.getTotalIdleTime(), resMetrics.get(0).get(26));
+                    assertEquals(metrics.getCurrentIdleTime(), resMetrics.get(0).get(27));
                     assertEquals(metrics.getBusyTimePercentage(), resMetrics.get(0).get(28));
                     assertEquals(metrics.getIdleTimePercentage(), resMetrics.get(0).get(29));
                     assertEquals(metrics.getTotalCpus(), resMetrics.get(0).get(30));
@@ -454,7 +759,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                     assertEquals(metrics.getNonHeapMemoryCommitted(), resMetrics.get(0).get(41));
                     assertEquals(metrics.getNonHeapMemoryMaximum(), resMetrics.get(0).get(42));
                     assertEquals(metrics.getNonHeapMemoryTotal(), resMetrics.get(0).get(43));
-                    assertEquals(metrics.getUpTime(), convertToMilliseconds(resMetrics.get(0).get(44)));
+                    assertEquals(metrics.getUpTime(), resMetrics.get(0).get(44));
                     assertEquals(metrics.getStartTime(), ((Timestamp)resMetrics.get(0).get(45)).getTime());
                     assertEquals(metrics.getNodeStartTime(), ((Timestamp)resMetrics.get(0).get(46)).getTime());
                     assertEquals(metrics.getLastDataVersion(), resMetrics.get(0).get(47));
@@ -543,9 +848,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         execSql("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)");
 
         for (int i = 0; i < 500; i++)
-            execSql("INSERT INTO DEFAULT.TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
+            execSql("INSERT INTO TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
 
-        String sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.CACHE_GROUPS_IO";
+        String sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.LOCAL_CACHE_GROUPS_IO";
 
         List<List<?>> res1 = execSql(sql1);
 
@@ -553,14 +858,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(2, map.size());
 
-        assertTrue(map.containsKey("SQL_default_TST"));
+        assertTrue(map.containsKey("SQL_PUBLIC_TST"));
 
-        assertTrue((Long)map.get("SQL_default_TST") > 0);
+        assertTrue((Long)map.get("SQL_PUBLIC_TST") > 0);
 
         assertTrue(map.containsKey(DEFAULT_CACHE_NAME));
 
-        sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.CACHE_GROUPS_IO WHERE " +
-            "GROUP_NAME='SQL_default_TST'";
+        sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.LOCAL_CACHE_GROUPS_IO WHERE " +
+            "GROUP_NAME='SQL_PUBLIC_TST'";
 
         assertEquals(1, execSql(sql1).size());
     }
@@ -586,7 +891,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         List<List<?>> cacheSqlInfos = execSql("SELECT * FROM IGNITE.TABLES WHERE TABLE_NAME = 'CACHE_SQL'");
 
         List<?> expRow = asList(
-            "DEFAULT",           // SCHEMA_NAME
+            "PUBLIC",           // SCHEMA_NAME
             "CACHE_SQL",         // TABLE_NAME
             "cache_sql",         // CACHE_NAME
             cacheSqlId,          // CACHE_ID
@@ -1015,6 +1320,161 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Regression test. Verifies that duration metrics is able to be longer than 24 hours.
+     */
+    @Test
+    public void testDurationMetricsCanBeLonger24Hours() throws Exception {
+        Ignite ign = startGrid("MockedMetrics", getConfiguration().setMetricsUpdateFrequency(500));
+
+        ClusterNode node = ign.cluster().localNode();
+
+        assert node instanceof TcpDiscoveryNode : "Setup failed, test is incorrect.";
+
+        // Get rid of metrics provider: current logic ignores metrics field if provider != null.
+        setField(node, "metricsProvider", null);
+
+        ClusterMetricsImpl original = getField(node, "metrics");
+
+        setField(node, "metrics", new MockedClusterMetrics(original));;
+
+        List<?> durationMetrics = execSql(ign,
+            "SELECT " +
+                "MAX_JOBS_WAIT_TIME, " +
+                "CUR_JOBS_WAIT_TIME, " +
+                "AVG_JOBS_WAIT_TIME, " +
+
+                "MAX_JOBS_EXECUTE_TIME, " +
+                "CUR_JOBS_EXECUTE_TIME, " +
+                "AVG_JOBS_EXECUTE_TIME, " +
+                "TOTAL_JOBS_EXECUTE_TIME, " +
+
+                "TOTAL_BUSY_TIME, " +
+
+                "TOTAL_IDLE_TIME, " +
+                "CUR_IDLE_TIME, " +
+                "UPTIME " +
+
+                "FROM IGNITE.NODE_METRICS").get(0);
+
+        List<Long> elevenExpVals = LongStream
+            .generate(() -> MockedClusterMetrics.LONG_DURATION_MS)
+            .limit(11)
+            .boxed()
+            .collect(Collectors.toList());
+
+        assertEqualsCollections(elevenExpVals, durationMetrics);
+    }
+
+    /**
+     * Mock for {@link ClusterMetricsImpl} that always returns big (more than 24h) duration for all duration metrics.
+     */
+    public static class MockedClusterMetrics extends ClusterMetricsImpl {
+        /** Some long (> 24h) duration. */
+        public static final long LONG_DURATION_MS = TimeUnit.DAYS.toMillis(365);
+
+        /**
+         * Constructor.
+         *
+         * @param original - original cluster metrics object. Required to leave the original behaviour for not overriden
+         * methods.
+         */
+        public MockedClusterMetrics(ClusterMetricsImpl original) throws Exception {
+            super(
+                getField(original, "ctx"),
+                getField(original, "vmMetrics"),
+                getField(original, "nodeStartTime"));
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaximumJobWaitTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCurrentJobWaitTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public double getAverageJobWaitTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaximumJobExecuteTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCurrentJobExecuteTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public double getAverageJobExecuteTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getTotalJobsExecutionTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getTotalBusyTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getTotalIdleTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCurrentIdleTime() {
+            return LONG_DURATION_MS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getUpTime() {
+            return LONG_DURATION_MS;
+        }
+    }
+
+    /**
+     * Get field value using reflection.
+     *
+     * @param target object containing the field.
+     * @param fieldName name of the field.
+     */
+    private static <T> T getField(Object target, String fieldName) throws Exception {
+        Class clazz = target.getClass();
+
+        Field fld = clazz.getDeclaredField(fieldName);
+
+        fld.setAccessible(true);
+
+        return (T) fld.get(target);
+    }
+
+    /**
+     * Set field using reflection.
+     *
+     * @param target object containing the field.
+     * @param fieldName name of the field.
+     * @param val new field value.
+     */
+    private static void setField(Object target, String fieldName, Object val) throws Exception {
+        Class clazz = target.getClass();
+
+        Field fld = clazz.getDeclaredField(fieldName);
+
+        fld.setAccessible(true);
+
+        fld.set(target, val);
+    }
+
+    /**
      * Gets ignite configuration with persistence enabled.
      */
     private IgniteConfiguration getPdsConfiguration(String consistentId) throws Exception {
@@ -1028,20 +1488,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         cfg.setConsistentId(consistentId);
 
         return cfg;
-    }
-
-    /**
-     * Convert Time to milliseconds.
-     *
-     * Note: Returned Time values from SQL it's milliseconds since January 1, 1970, 00:00:00 GMT. To get right interval
-     * in milliseconds this value must be adjusted to current time zone.
-     *
-     * @param sqlTime Time value returned from SQL.
-     */
-    private long convertToMilliseconds(Object sqlTime) {
-        Time time0 = (Time)sqlTime;
-
-        return time0.getTime() + TimeZone.getDefault().getOffset(time0.getTime());
     }
 
     /**

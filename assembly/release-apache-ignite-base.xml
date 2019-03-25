@@ -158,6 +158,12 @@
             <outputDirectory>/platforms/cpp/common</outputDirectory>
         </fileSet>
 
+        <!-- Move CPP "network" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/network</directory>
+            <outputDirectory>/platforms/cpp/network</outputDirectory>
+        </fileSet>
+
         <!-- Move CPP "jni" module. -->
         <fileSet>
             <directory>modules/platforms/cpp/jni</directory>
@@ -218,18 +224,6 @@
             <outputDirectory>/platforms/cpp/bin</outputDirectory>
         </fileSet>
 
-        <!-- Move CPP binaries. -->
-        <fileSet>
-            <directory>modules/platforms/cpp/bin</directory>
-            <outputDirectory>/platforms/cpp/bin</outputDirectory>
-        </fileSet>
-
-        <!-- Move CPP binaries. -->
-        <fileSet>
-            <directory>modules/platforms/cpp/bin</directory>
-            <outputDirectory>/platforms/cpp/bin</outputDirectory>
-        </fileSet>
-
         <!-- Copy Node.js binaries. -->
         <fileSet>
             <directory>modules/platforms/nodejs/lib</directory>
@@ -261,6 +255,11 @@
         <fileSet>
             <directory>modules/platforms/python/requirements</directory>
             <outputDirectory>/platforms/python/requirements</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/platforms/python/examples</directory>
+            <outputDirectory>/platforms/python/examples</outputDirectory>
         </fileSet>
 
         <!-- Other files. -->

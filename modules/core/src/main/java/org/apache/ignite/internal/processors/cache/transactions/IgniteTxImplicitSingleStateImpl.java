@@ -30,6 +30,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.GridIntList;
@@ -58,6 +59,9 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** */
     private boolean recovery;
 
+    /** */
+    private volatile boolean useMvccCaching;
+
     /** {@inheritDoc} */
     @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxAdapter tx)
         throws IgniteCheckedException {
@@ -68,6 +72,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         this.recovery = recovery;
 
         tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
+
+        useMvccCaching = cacheCtx.mvccEnabled() && (cacheCtx.isDrEnabled() || cacheCtx.hasContinuousQueryListeners(tx));
     }
 
     /** {@inheritDoc} */
@@ -120,7 +126,14 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         if (cacheCtx == null)
             return null;
 
-        Throwable err = topFut.validateCache(cacheCtx, recovery, read, null, entry);
+        Throwable err = null;
+
+        if (entry != null) {
+            // An entry is a singleton list here, so a key is taken from a first element.
+            KeyCacheObject key = entry.get(0).key();
+
+            err = topFut.validateCache(cacheCtx, recovery, read, key, null);
+        }
 
         if (err != null) {
             return new IgniteCheckedException(
@@ -304,6 +317,13 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         GridCacheContext ctx0 = cacheCtx;
 
         return ctx0 != null && ctx0.mvccEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean useMvccCaching(int cacheId) {
+        assert cacheCtx == null || cacheCtx.cacheId() == cacheId;
+
+        return useMvccCaching;
     }
 
     /** {@inheritDoc} */

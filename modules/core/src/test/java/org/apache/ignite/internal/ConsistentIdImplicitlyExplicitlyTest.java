@@ -20,19 +20,18 @@ package org.apache.ignite.internal;
 import java.io.Serializable;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID;
 
 /**
  * Checks consistent id in various cases.
  */
-@RunWith(JUnit4.class)
 public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest {
     /** Ipaddress with port pattern. */
     private static final String IPADDRESS_WITH_PORT_PATTERN = "^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
@@ -73,8 +72,6 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
 
         defConsistentId = null;
         persistenceEnabled = false;
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID);
     }
 
     /** {@inheritDoc} */
@@ -88,8 +85,6 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
 
             persistenceEnabled = false;
         }
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID);
     }
 
     /**
@@ -133,10 +128,9 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
      * @throws Exception if failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_OVERRIDE_CONSISTENT_ID, value = "JvmProp consistent id")
     public void testConsistentIdConfiguredInJvmProp() throws Exception {
-        String specificConsistentId = "JvmProp consistent id";
-
-        System.setProperty(IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID, specificConsistentId);
+        String specificConsistentId = System.getProperty(IGNITE_OVERRIDE_CONSISTENT_ID);
 
         Ignite ignite = startGrid(0);
 
@@ -171,12 +165,11 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
      * @throws Exception if failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_OVERRIDE_CONSISTENT_ID, value = "JvmProp consistent id")
     public void testConsistentIdConfiguredInIgniteCfgAndJvmProp() throws Exception {
         defConsistentId = "IgniteCfg consistent id";
 
-        String specificConsistentId = "JvmProp consistent id";
-
-        System.setProperty(IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID, specificConsistentId);
+        String specificConsistentId = System.getProperty(IGNITE_OVERRIDE_CONSISTENT_ID);;
 
         Ignite ignite = startGrid(0);
 

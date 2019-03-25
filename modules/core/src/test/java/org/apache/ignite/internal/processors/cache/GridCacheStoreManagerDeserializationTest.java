@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -62,11 +63,10 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     /** Test cache name. */
     protected static final String CACHE_NAME = "cache_name";
 
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.setUp();
+    /** */
+    @Before
+    public void beforeGridCacheStoreManagerDeserializationTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /**
@@ -102,6 +102,8 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
      */
     @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         CacheConfiguration cc = defaultCacheConfiguration();
 
         // Template

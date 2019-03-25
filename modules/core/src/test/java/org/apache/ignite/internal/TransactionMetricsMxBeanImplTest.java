@@ -51,6 +51,8 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+
         final IgniteConfiguration cfg = super.getConfiguration(name);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
@@ -77,7 +79,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
 
         super.beforeTestsStarted();
     }

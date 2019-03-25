@@ -1,4 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -o nounset
+set -o errexit
+set -o pipefail
+set -o errtrace
+set -o functrace
+
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -23,7 +30,7 @@
 #
 # Import common functions.
 #
-if [ "${IGNITE_HOME}" = "" ];
+if [ "${IGNITE_HOME:-}" = "" ];
     then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
     else IGNITE_HOME_TMP=${IGNITE_HOME};
 fi
@@ -45,7 +52,7 @@ checkJava
 #
 setIgniteHome
 
-if [ "${DEFAULT_CONFIG}" == "" ]; then
+if [ "${DEFAULT_CONFIG:-}" == "" ]; then
     DEFAULT_CONFIG=config/default-config.xml
 fi
 
@@ -80,7 +87,7 @@ fi
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`
 
-if [ "${DOCK_OPTS}" == "" ]; then
+if [ "${DOCK_OPTS:-}" == "" ]; then
     DOCK_OPTS="-Xdock:name=Ignite Node"
 fi
 
@@ -134,7 +141,7 @@ fi
 #
 # Set main class to start service (grid node by default).
 #
-if [ "${MAIN_CLASS}" = "" ]; then
+if [ "${MAIN_CLASS:-}" = "" ]; then
     MAIN_CLASS=org.apache.ignite.startup.cmdline.CommandLineStartup
 fi
 
@@ -147,7 +154,7 @@ fi
 #
 # Final JVM_OPTS for Java 9+ compatibility
 #
-javaMajorVersion "${JAVA_HOME}/bin/java"
+javaMajorVersion "${JAVA}"
 
 if [ $version -eq 8 ] ; then
     JVM_OPTS="\
@@ -167,7 +174,7 @@ elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
         --add-modules=java.xml.bind \
         ${JVM_OPTS}"
 
-elif [ $version -eq 11 ] ; then
+elif [ $version -ge 11 ] ; then
     JVM_OPTS="\
         --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
         --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
@@ -188,12 +195,12 @@ do
             Darwin*)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS}
+                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} && ERRORCODE="$?" || ERRORCODE="$?"
             ;;
             *)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS}
+                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} && ERRORCODE="$?" || ERRORCODE="$?"
             ;;
         esac
     else
@@ -201,17 +208,15 @@ do
             Darwin*)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
                  -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}"
+                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}" && ERRORCODE="$?" || ERRORCODE="$?"
             ;;
             *)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
                  -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}"
+                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}" && ERRORCODE="$?" || ERRORCODE="$?"
             ;;
         esac
     fi
-
-    ERRORCODE="$?"
 
     if [ ! -f "${RESTART_SUCCESS_FILE}" ] ; then
         break
@@ -223,3 +228,4 @@ done
 if [ -f "${RESTART_SUCCESS_FILE}" ] ; then
     rm -f "${RESTART_SUCCESS_FILE}"
 fi
+

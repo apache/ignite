@@ -56,7 +56,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         super.beforeTestsStarted();
     }
@@ -75,6 +75,8 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
      * @return Test cache configuration.
      */
     public CacheConfiguration cacheConfiguration(String igniteInstanceName) {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);

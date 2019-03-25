@@ -198,6 +198,24 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     }
 
     /**
+     * Trains model based on the specified data.
+     *
+     * @param ignite Ignite instance.
+     * @param cache Ignite cache.
+     * @param extractor Features and labels extractor.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return Model.
+     */
+    public <K, V> M fit(Ignite ignite, IgniteCache<K, V> cache,
+        FeatureLabelExtractor<K, V, L> extractor) {
+        return fit(
+            new CacheBasedDatasetBuilder<>(ignite, cache),
+            extractor
+        );
+    }
+
+    /**
      * Gets state of model in arguments, update in according to new data and return new model.
      *
      * @param mdl Learned model.

@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
 import org.junit.Test;
 
 /**
@@ -97,8 +96,12 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
         ccfg.setName("cache1");
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        if (MvccFeatureChecker.forcedMvcc())
+            ccfg.setRebalanceDelay(Long.MAX_VALUE);
+        else
+            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         for (int k = 0; k < iterations; k++) {
             System.out.println("Iteration: " + k);
@@ -118,8 +121,6 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultipleDynamicCaches() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
-
         int caches = 10;
 
         int entries = 10;
@@ -134,8 +135,12 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        if (MvccFeatureChecker.forcedMvcc())
+            ccfg.setRebalanceDelay(Long.MAX_VALUE);
+        else
+            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         ccfg.setIndexedTypes(Integer.class, String.class);
 

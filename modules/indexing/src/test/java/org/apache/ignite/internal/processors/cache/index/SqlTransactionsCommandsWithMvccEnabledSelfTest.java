@@ -57,13 +57,6 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
             "atomicity=transactional_snapshot\"");
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Test that BEGIN opens a transaction.
      */
@@ -135,7 +128,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that attempting to perform various SQL operations within non SQL transaction yields an exception.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11357")
     @Test
     public void testSqlOperationsWithinNonSqlTransaction() {
         assertSqlOperationWithinNonSqlTransactionThrows("COMMIT");

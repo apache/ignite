@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.ml.inference.spark.modelparser;
 
-import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -25,11 +24,13 @@ import org.apache.ignite.examples.ml.tutorial.TitanicUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.sparkmodelparser.SparkModelParser;
 import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
+
+import java.io.FileNotFoundException;
 
 /**
  * Run SVM model loaded from snappy.parquet file.
@@ -39,8 +40,7 @@ import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
  */
 public class SVMFromSparkExample {
     /** Path to Spark SVM model. */
-    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/svm/data" +
-        "/part-00000-b3d800e2-a36c-4948-8e65-29c9f5c9c5b2-c000.snappy.parquet";
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/svm";
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
@@ -70,7 +70,7 @@ public class SVMFromSparkExample {
 
             System.out.println(">>> SVM: " + mdl);
 
-            double accuracy = BinaryClassificationEvaluator.evaluate(
+            double accuracy = Evaluator.evaluate(
                 dataCache,
                 mdl,
                 featureExtractor,

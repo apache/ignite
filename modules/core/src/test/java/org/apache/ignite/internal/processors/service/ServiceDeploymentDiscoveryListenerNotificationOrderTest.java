@@ -30,7 +30,7 @@
  import org.apache.ignite.testframework.GridTestUtils;
  import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  import org.junit.Assume;
- import org.junit.BeforeClass;
+ import org.junit.Before;
  import org.junit.Test;
 
  /**
@@ -43,8 +43,8 @@
   */
  public class ServiceDeploymentDiscoveryListenerNotificationOrderTest extends GridCommonAbstractTest {
      /** */
-     @BeforeClass
-     public static void check() {
+     @Before
+     public void check() {
          Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
      }
 

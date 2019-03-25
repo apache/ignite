@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -45,10 +45,10 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     private static final IgnitePredicate<ClusterNode> CLIENT_FILTER = (IgnitePredicate<ClusterNode>)ClusterNode::isClient;
 
     /** */
-    private boolean client;
+    private static boolean client;
 
     /** */
-    private ServiceConfiguration srvcCfg;
+    private static ServiceConfiguration srvcCfg;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -63,8 +63,8 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @BeforeClass
-    public static void check() {
+    @Before
+    public void check() {
         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
     }
 

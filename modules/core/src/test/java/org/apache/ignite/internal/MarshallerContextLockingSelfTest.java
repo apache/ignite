@@ -44,10 +44,10 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
  */
 public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     /** Inner logger. */
-    private InnerLogger innerLog;
+    private static InnerLogger innerLog;
 
     /** */
-    private GridTestKernalContext ctx;
+    private static GridTestKernalContext ctx;
 
     /** */
     private static final int THREADS = 4;

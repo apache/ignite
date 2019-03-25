@@ -48,7 +48,6 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.dml.UpdateMode.BULK_LOAD;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * Update plan - where to take data to update cache from and how to construct new keys and values, if needed.
@@ -205,7 +204,7 @@ public final class UpdatePlan {
         if (QueryUtils.isSqlType(desc.keyClass())) {
             assert keyColIdx != -1;
 
-            key = DmlUtils.convert(key, rowDesc, desc.keyClass(), colTypes[keyColIdx]);
+            key = DmlUtils.convert(key, rowDesc, desc.keyClass(), colTypes[keyColIdx], colNames[keyColIdx]);
         }
 
         Object val = valSupplier.apply(row);
@@ -213,7 +212,7 @@ public final class UpdatePlan {
         if (QueryUtils.isSqlType(desc.valueClass())) {
             assert valColIdx != -1;
 
-            val = DmlUtils.convert(val, rowDesc, desc.valueClass(), colTypes[valColIdx]);
+            val = DmlUtils.convert(val, rowDesc, desc.valueClass(), colTypes[valColIdx], colNames[valColIdx]);
         }
 
         if (key == null) {
@@ -250,7 +249,7 @@ public final class UpdatePlan {
 
             Class<?> expCls = prop.type();
 
-            newColVals.put(colName, DmlUtils.convert(row.get(i), rowDesc, expCls, colTypes[i]));
+            newColVals.put(colName, DmlUtils.convert(row.get(i), rowDesc, expCls, colTypes[i], colNames[i]));
         }
 
         desc.setDefaults(key, val);
@@ -260,7 +259,7 @@ public final class UpdatePlan {
         Column[] tblCols = tbl.getColumns();
 
         // First 2 columns are _key and _val Skip 'em.
-        for (int i = DEFAULT_COLUMNS_COUNT; i < tblCols.length; i++) {
+        for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT; i < tblCols.length; i++) {
             if (tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
                 continue;
 
@@ -323,7 +322,7 @@ public final class UpdatePlan {
 
             assert prop != null : "Unknown property: " + colNames[i];
 
-            newColVals.put(colNames[i], DmlUtils.convert(row.get(i + 2), rowDesc, prop.type(), colTypes[i]));
+            newColVals.put(colNames[i], DmlUtils.convert(row.get(i + 2), rowDesc, prop.type(), colTypes[i], colNames[i]));
         }
 
         newVal = valSupplier.apply(row);
@@ -332,8 +331,8 @@ public final class UpdatePlan {
             throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
         // Skip key and value - that's why we start off with 3rd column
-        for (int i = 0; i < tbl.getColumns().length - DEFAULT_COLUMNS_COUNT; i++) {
-            Column c = tbl.getColumn(i + DEFAULT_COLUMNS_COUNT);
+        for (int i = 0; i < tbl.getColumns().length - QueryUtils.DEFAULT_COLUMNS_COUNT; i++) {
+            Column c = tbl.getColumn(i + QueryUtils.DEFAULT_COLUMNS_COUNT);
 
             if (rowDesc.isKeyValueOrVersionColumn(c.getColumnId()))
                 continue;
@@ -472,7 +471,7 @@ public final class UpdatePlan {
                 if (j == keyColIdx || j == valColIdx) {
                     Class<?> colCls = j == keyColIdx ? desc.type().keyClass() : desc.type().valueClass();
 
-                    colVal = DmlUtils.convert(colVal, desc, colCls, colTypes[j]);
+                    colVal = DmlUtils.convert(colVal, desc, colCls, colTypes[j], colNames[j]);
                 }
 
                 resRow.add(colVal);

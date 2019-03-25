@@ -28,7 +28,7 @@ public class GridTcpCommunicationSpiTcpFailureDetectionSelfTest extends GridTcpC
     /** */
     private static final int SPI_COUNT = 4;
 
-    private TcpCommunicationSpi spis[] = new TcpCommunicationSpi[SPI_COUNT];
+    private static TcpCommunicationSpi spis[] = new TcpCommunicationSpi[SPI_COUNT];
 
     /** {@inheritDoc} */
     @Override protected int getSpiCount() {

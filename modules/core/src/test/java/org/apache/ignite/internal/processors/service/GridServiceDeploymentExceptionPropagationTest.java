@@ -24,14 +24,14 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 /** */
 public class GridServiceDeploymentExceptionPropagationTest extends GridCommonAbstractTest {
     /** */
-    @BeforeClass
-    public static void check() {
+    @Before
+    public void check() {
         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
     }
 

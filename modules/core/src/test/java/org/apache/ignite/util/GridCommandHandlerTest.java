@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -51,8 +52,10 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -112,15 +115,18 @@ import org.junit.Test;
 
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -157,6 +163,15 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         super.afterTestsStopped();
 
         GridTestUtils.cleanIdleVerifyLogFiles();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
@@ -180,9 +195,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         // Delete idle-verify dump files.
         try (DirectoryStream<Path> files = newDirectoryStream(
-                Paths.get(U.defaultWorkDirectory()),
-                entry -> entry.toFile().getName().startsWith(IDLE_DUMP_FILE_PREFIX)
-            )
+            Paths.get(U.defaultWorkDirectory()),
+            entry -> entry.toFile().getName().startsWith(IDLE_DUMP_FILE_PREFIX)
+        )
         ) {
             for (Path path : files)
                 delete(path);
@@ -192,6 +207,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         System.setOut(sysOut);
 
+        log.info("----------------------------------------");
         if (testOut != null)
             System.out.println(testOut.toString());
     }
@@ -359,6 +375,78 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test baseline collect works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBaselineCollectCrd() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        assertFalse(ignite.cluster().active());
+
+        ignite.cluster().active(true);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11212"));
+
+        String crdStr = findCrdInfo();
+
+        assertEquals("(Coordinator: ConsistentId=" +
+            grid(0).cluster().localNode().consistentId() + ", Order=1)", crdStr);
+
+        stopGrid(0);
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11212"));
+
+        crdStr = findCrdInfo();
+
+        assertEquals("(Coordinator: ConsistentId=" +
+            grid(1).cluster().localNode().consistentId() + ", Order=2)", crdStr);
+
+        startGrid(0);
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11212"));
+
+        crdStr = findCrdInfo();
+
+        assertEquals("(Coordinator: ConsistentId=" +
+            grid(1).cluster().localNode().consistentId() + ", Order=2)", crdStr);
+
+        stopGrid(1);
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11211"));
+
+        crdStr = findCrdInfo();
+
+        assertEquals("(Coordinator: ConsistentId=" +
+            grid(0).cluster().localNode().consistentId() + ", Order=4)", crdStr);
+
+    }
+
+    /**
+     * @return utility information about coordinator
+     */
+    private String findCrdInfo() {
+        String outStr = testOut.toString();
+
+        int i = outStr.indexOf("(Coordinator: ConsistentId=");
+
+        assertTrue(i != -1);
+
+        String crdStr = outStr.substring(i);
+
+        return crdStr.substring(0, crdStr.indexOf('\n'));
+    }
+
+    /**
      * @param ignites Ignites.
      * @return Local node consistent ID.
      */
@@ -497,6 +585,129 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--baseline", "version", String.valueOf(ignite.cluster().topologyVersion())));
 
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
+    }
+
+    /**
+     * Test that baseline auto_adjustment settings update works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBaselineAutoAdjustmentSettings() throws Exception {
+        Ignite ignite = startGrid();
+
+        ignite.cluster().active(true);
+
+        IgniteCluster cl = ignite.cluster();
+
+        assertFalse(cl.isBaselineAutoAdjustEnabled());
+
+        long timeout = cl.baselineAutoAdjustTimeout();
+
+        assertEquals(EXIT_CODE_OK, execute(
+            "--baseline",
+            "auto_adjust",
+            "enable",
+            "timeout",
+            Long.toString(timeout + 1)
+        ));
+
+        assertTrue(cl.isBaselineAutoAdjustEnabled());
+
+        assertEquals(timeout + 1, cl.baselineAutoAdjustTimeout());
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "disable"));
+
+        assertFalse(cl.isBaselineAutoAdjustEnabled());
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "auto_adjust"));
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "auto_adjust", "true"));
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "auto_adjust", "enable", "x"));
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "auto_adjust", "disable", "x"));
+
+        log.info("================================================");
+        System.out.println(testOut.toString());
+
+        log.info("================================================");
+    }
+
+    /**
+     * Test that updating of baseline auto_adjustment settings via control.sh actually influence cluster's baseline.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBaselineAutoAdjustmentAutoRemoveNode() throws Exception {
+        Ignite ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "enable", "timeout", "2000"));
+
+        assertEquals(3, ignite.cluster().currentBaselineTopology().size());
+
+        stopGrid(2);
+
+        assertEquals(3, ignite.cluster().currentBaselineTopology().size());
+
+        assertTrue(waitForCondition(() -> ignite.cluster().currentBaselineTopology().size() == 2, 10000));
+
+        Collection<BaselineNode> baselineNodesAfter = ignite.cluster().currentBaselineTopology();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "disable"));
+
+        stopGrid(1);
+
+        Thread.sleep(3000L);
+
+        Collection<BaselineNode> baselineNodesFinal = ignite.cluster().currentBaselineTopology();
+
+        assertEquals(
+            baselineNodesAfter.stream().map(BaselineNode::consistentId).collect(Collectors.toList()),
+            baselineNodesFinal.stream().map(BaselineNode::consistentId).collect(Collectors.toList())
+        );
+    }
+
+    /**
+     * Test that updating of baseline auto_adjustment settings via control.sh actually influence cluster's baseline.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBaselineAutoAdjustmentAutoAddNode() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        ignite.cluster().active(true);
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "enable", "timeout", "2000"));
+
+        assertEquals(1, ignite.cluster().currentBaselineTopology().size());
+
+        startGrid(1);
+
+        assertEquals(1, ignite.cluster().currentBaselineTopology().size());
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline"));
+
+        assertTrue(waitForCondition(() -> ignite.cluster().currentBaselineTopology().size() == 2, 10000));
+
+        Collection<BaselineNode> baselineNodesAfter = ignite.cluster().currentBaselineTopology();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "disable"));
+
+        startGrid(2);
+
+        Thread.sleep(3000L);
+
+        Collection<BaselineNode> baselineNodesFinal = ignite.cluster().currentBaselineTopology();
+
+        assertEquals(
+            baselineNodesAfter.stream().map(BaselineNode::consistentId).collect(Collectors.toList()),
+            baselineNodesFinal.stream().map(BaselineNode::consistentId).collect(Collectors.toList())
+        );
     }
 
     /**
@@ -840,7 +1051,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             Collection<IgniteInternalTx> txs = ((IgniteEx)ignite).context().cache().context().tm().activeTransactions();
 
-            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     for (IgniteInternalTx tx : txs)
                         if (!tx.local()) {
@@ -964,7 +1175,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testCorrectCacheOptionsNaming() throws Exception {
         Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
 
-        for(CacheCommand cmd : CacheCommand.values()) {
+        for (CacheCommand cmd : CacheCommand.values()) {
             for (CommandArg arg : CommandArgFactory.getArgs(cmd))
                 assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
         }
@@ -1344,7 +1555,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     private void corruptPartition(File partitionsDir) throws IOException {
         ThreadLocalRandom rand = ThreadLocalRandom.current();
 
-        for(File partFile : partitionsDir.listFiles((d, n) -> n.startsWith("part"))) {
+        for (File partFile : partitionsDir.listFiles((d, n) -> n.startsWith("part"))) {
             try (RandomAccessFile raf = new RandomAccessFile(partFile, "rw")) {
                 byte[] buf = new byte[1024];
 

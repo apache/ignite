@@ -131,10 +131,10 @@ public class IgniteCacheQueriesLoadTest1 extends AbstractIndexingCommonTest {
     private static final int NODES = 5;
 
     /** Distribution of partitions by nodes. */
-    private Map<UUID, List<Integer>> partitionsMap;
+    private static Map<UUID, List<Integer>> partitionsMap;
 
     /** Preload amount. */
-    private final int preloadAmount = 10_000;
+    private static final int preloadAmount = 10_000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

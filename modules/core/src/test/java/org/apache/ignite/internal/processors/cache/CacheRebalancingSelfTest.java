@@ -72,7 +72,7 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalanceLocalCacheFuture() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         startGrid(
             getTestIgniteInstanceName(0),

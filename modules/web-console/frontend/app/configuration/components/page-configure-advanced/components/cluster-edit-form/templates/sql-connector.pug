@@ -1,0 +1,117 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'query'
+-var model = '$ctrl.clonedCluster'
+-var connectionModel = model + '.sqlConnectorConfiguration'
+-var connectionEnabled = connectionModel + '.enabled'
+
+panel-collapsible(
+    ng-form=form
+    on-open=`ui.loadPanel('${form}')`
+    ng-show='$ctrl.available(["2.1.0", "2.3.0"])'
+)
+    panel-title Query configuration
+    //- TODO IGNITE-5415 Add link to documentation.
+    panel-content.pca-form-row(ng-if=`$ctrl.available(["2.1.0", "2.3.0"]) && ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Enabled',
+                    model: connectionEnabled,
+                    name: '"SqlConnectorEnabled"',
+                    tip: 'Flag indicating whether to configure SQL connector configuration'
+                })
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'Host:',
+                    model: `${connectionModel}.host`,
+                    name: '"SqlConnectorHost"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: 'localhost'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Port:',
+                    model: `${connectionModel}.port`,
+                    name: '"SqlConnectorPort"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '10800',
+                    min: '1025'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Port range:',
+                    model: `${connectionModel}.portRange`,
+                    name: '"SqlConnectorPortRange"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '100',
+                    min: '0'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Socket send buffer size:',
+                    model: `${connectionModel}.socketSendBufferSize`,
+                    name: '"SqlConnectorSocketSendBufferSize"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Socket send buffer size.<br/>\
+                          When set to <b>0</b>, operation system default will be used'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Socket receive buffer size:',
+                    model: `${connectionModel}.socketReceiveBufferSize`,
+                    name: '"SqlConnectorSocketReceiveBufferSize"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Socket receive buffer size.<br/>\
+                         When set to <b>0</b>, operation system default will be used'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Max connection cursors:',
+                    model: `${connectionModel}.maxOpenCursorsPerConnection`,
+                    name: '"SqlConnectorMaxOpenCursorsPerConnection"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '128',
+                    min: '0',
+                    tip: 'Max number of opened cursors per connection'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Pool size:',
+                    model: `${connectionModel}.threadPoolSize`,
+                    name: '"SqlConnectorThreadPoolSize"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Size of thread pool that is in charge of processing SQL requests'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'TCP_NODELAY option',
+                    model: `${connectionModel}.tcpNoDelay`,
+                    name: '"SqlConnectorTcpNoDelay"',
+                    disabled: `!${connectionEnabled}`
+                })
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterQuery')

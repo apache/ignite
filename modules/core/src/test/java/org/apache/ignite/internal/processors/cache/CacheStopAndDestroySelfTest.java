@@ -284,7 +284,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearDoubleDestroy() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         startGridsMultiThreaded(gridCount());
 
@@ -327,7 +327,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLocalDoubleDestroy() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         startGridsMultiThreaded(gridCount());
 
@@ -577,7 +577,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearClose() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         startGridsMultiThreaded(gridCount());
 
@@ -653,7 +653,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearCloseWithTry() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         startGridsMultiThreaded(gridCount());
 
@@ -694,7 +694,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLocalClose() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         memCfg = new DataStorageConfiguration();
 
@@ -748,7 +748,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLocalCloseWithTry() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         memCfg = new DataStorageConfiguration();
 

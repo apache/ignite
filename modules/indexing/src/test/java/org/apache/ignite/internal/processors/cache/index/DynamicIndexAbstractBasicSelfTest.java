@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -38,8 +37,10 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -658,6 +659,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, value = "true")
     public void testCreateIndexWithInlineSizePartitionedAtomic() throws Exception {
         checkCreateIndexWithInlineSize(PARTITIONED, ATOMIC, false);
     }
@@ -668,6 +670,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, value = "true")
     public void testCreateIndexWithInlineSizePartitionedAtomicNear() throws Exception {
         checkCreateIndexWithInlineSize(PARTITIONED, ATOMIC, true);
     }
@@ -678,6 +681,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, value = "true")
     public void testCreateIndexWithInlineSizePartitionedTransactional() throws Exception {
         checkCreateIndexWithInlineSize(PARTITIONED, TRANSACTIONAL, false);
     }
@@ -688,6 +692,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, value = "true")
     public void testCreateIndexWithInlineSizePartitionedTransactionalNear() throws Exception {
         checkCreateIndexWithInlineSize(PARTITIONED, TRANSACTIONAL, true);
     }
@@ -698,6 +703,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, value = "true")
     public void testCreateIndexWithInlineSizeReplicatedAtomic() throws Exception {
         checkCreateIndexWithInlineSize(REPLICATED, ATOMIC, false);
     }
@@ -708,6 +714,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, value = "true")
     public void testCreateIndexWithInlineSizeReplicatedTransactional() throws Exception {
         checkCreateIndexWithInlineSize(REPLICATED, TRANSACTIONAL, false);
     }
@@ -725,26 +732,14 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         initialize(mode, atomicityMode, near);
 
-        String prevFallbackPropVal = System.getProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK);
+        checkNoIndexIsCreatedForInlineSize(-2, IgniteQueryErrorCode.PARSING);
+        checkNoIndexIsCreatedForInlineSize(Integer.MIN_VALUE, IgniteQueryErrorCode.PARSING);
 
-        try {
-            System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, "true");
-
-            checkNoIndexIsCreatedForInlineSize(-2, IgniteQueryErrorCode.PARSING);
-            checkNoIndexIsCreatedForInlineSize(Integer.MIN_VALUE, IgniteQueryErrorCode.PARSING);
-
-            checkIndexCreatedForInlineSize(0);
-            loadInitialData();
-            checkIndexCreatedForInlineSize(1);
-            loadInitialData();
-            checkIndexCreatedForInlineSize(Integer.MAX_VALUE);
-        }
-        finally {
-            if (prevFallbackPropVal != null)
-                System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, prevFallbackPropVal);
-            else
-                System.clearProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK);
-        }
+        checkIndexCreatedForInlineSize(0);
+        loadInitialData();
+        checkIndexCreatedForInlineSize(1);
+        loadInitialData();
+        checkIndexCreatedForInlineSize(Integer.MAX_VALUE);
     }
 
     /**
@@ -794,6 +789,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, value = "true")
     public void testCreateIndexWithParallelismPartitionedAtomic() throws Exception {
         checkCreateIndexWithParallelism(PARTITIONED, ATOMIC, false);
     }
@@ -804,6 +800,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, value = "true")
     public void testCreateIndexWithParallelismPartitionedAtomicNear() throws Exception {
         checkCreateIndexWithParallelism(PARTITIONED, ATOMIC, true);
     }
@@ -814,6 +811,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, value = "true")
     public void testCreateIndexWithParallelismPartitionedTransactional() throws Exception {
         checkCreateIndexWithParallelism(PARTITIONED, TRANSACTIONAL, false);
     }
@@ -824,6 +822,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, value = "true")
     public void testCreateIndexWithParallelismPartitionedTransactionalNear() throws Exception {
         checkCreateIndexWithParallelism(PARTITIONED, TRANSACTIONAL, true);
     }
@@ -834,6 +833,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, value = "true")
     public void testCreateIndexWithParallelismReplicatedAtomic() throws Exception {
         checkCreateIndexWithParallelism(REPLICATED, ATOMIC, false);
     }
@@ -844,6 +844,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, value = "true")
     public void testCreateIndexWithParallelismReplicatedTransactional() throws Exception {
         checkCreateIndexWithParallelism(REPLICATED, TRANSACTIONAL, false);
     }
@@ -861,26 +862,14 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         initialize(mode, atomicityMode, near);
 
-        String prevFallbackPropVal = System.getProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK);
+        checkNoIndexIsCreatedForParallelism(-2, IgniteQueryErrorCode.PARSING);
+        checkNoIndexIsCreatedForParallelism(Integer.MIN_VALUE, IgniteQueryErrorCode.PARSING);
 
-        try {
-            System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, "true");
-
-            checkNoIndexIsCreatedForParallelism(-2, IgniteQueryErrorCode.PARSING);
-            checkNoIndexIsCreatedForParallelism(Integer.MIN_VALUE, IgniteQueryErrorCode.PARSING);
-
-            checkIndexCreatedForParallelism(0);
-            loadInitialData();
-            checkIndexCreatedForParallelism(1);
-            loadInitialData();
-            checkIndexCreatedForParallelism(5);
-        }
-        finally {
-            if (prevFallbackPropVal != null)
-                System.setProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, prevFallbackPropVal);
-            else
-                System.clearProperty(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK);
-        }
+        checkIndexCreatedForParallelism(0);
+        loadInitialData();
+        checkIndexCreatedForParallelism(1);
+        loadInitialData();
+        checkIndexCreatedForParallelism(5);
     }
 
     /**

@@ -1413,8 +1413,10 @@ public class IgniteTxHandler {
         try {
             if (req.commit() || req.isSystemInvalidate()) {
                 tx.commitVersion(req.commitVersion());
-                tx.invalidate(req.isInvalidate());
-                tx.systemInvalidate(req.isSystemInvalidate());
+                if (req.isInvalidate())
+                    tx.invalidate(true);
+                if (req.isSystemInvalidate())
+                    tx.systemInvalidate(true);
                 tx.mvccSnapshot(req.mvccSnapshot());
 
                 // Complete remote candidates.
@@ -1884,7 +1886,7 @@ public class IgniteTxHandler {
                         EntryProcessor entryProc = null;
                         Object[] invokeArgs = null;
 
-                        boolean needOldVal = ctx.shared().mvccCaching().continuousQueryListeners(ctx, tx, key) != null;
+                        boolean needOldVal = tx.txState().useMvccCaching(ctx.cacheId());
 
                         Message val0 = vals != null ? vals.get(i) : null;
 

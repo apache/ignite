@@ -50,7 +50,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -109,18 +108,6 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
         for (int i = 0; i < CLIENTS; i++)
             assertTrue(grid(SRVS + i).configuration().isClientMode());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -237,7 +224,16 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
                     Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
 
-                    cache.put(key, rnd.nextInt());
+                    while (true) {
+                        try {
+                            cache.put(key, rnd.nextInt());
+
+                            break;
+                        }
+                        catch (CacheException e) {
+                            MvccFeatureChecker.assertMvccWriteConflict(e);
+                        }
+                    }
                 }
             });
 
@@ -253,7 +249,16 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                         map.put(key, rnd.nextInt());
                     }
 
-                    cache.putAll(map);
+                    while (true) {
+                        try {
+                            cache.putAll(map);
+
+                            break;
+                        }
+                        catch (CacheException e) {
+                            MvccFeatureChecker.assertMvccWriteConflict(e);
+                        }
+                    }
                 }
             });
 
