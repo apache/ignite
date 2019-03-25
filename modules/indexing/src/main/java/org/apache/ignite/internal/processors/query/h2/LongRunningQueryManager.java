@@ -40,7 +40,7 @@ public class LongRunningQueryManager {
     private final ConnectionManager connMgr;
 
     /** Queries collection. Sorted collection isn't used to reduce 'put' time. */
-    private final ConcurrentHashMap<AbstractH2QueryInfo, TimeoutChecker> qrys = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<H2QueryInfo, TimeoutChecker> qrys = new ConcurrentHashMap<>();
 
     /** Check long query task. */
     private final GridTimeoutProcessor.CancelableTask checkLongQryTask;
@@ -101,25 +101,26 @@ public class LongRunningQueryManager {
     /**
      * @param qryInfo Query info to register.
      */
-    public void registerQuery(AbstractH2QueryInfo qryInfo) {
-        if (timeout > 0 && qryInfo != null)
+    public void registerQuery(H2QueryInfo qryInfo) {
+        assert qryInfo != null;
+
+        if (timeout > 0)
             qrys.put(qryInfo, new TimeoutChecker(timeout, timeoutMult));
     }
 
     /**
      * @param qryInfo Query info to remove.
      */
-    public void unregisterQuery(AbstractH2QueryInfo qryInfo) {
-        if (qryInfo != null)
-            qrys.remove(qryInfo);
+    public void unregisterQuery(H2QueryInfo qryInfo) {
+        qrys.remove(qryInfo);
     }
 
     /**
      *
      */
     private void checkLongRunning() {
-        for (Map.Entry<AbstractH2QueryInfo, TimeoutChecker> e : qrys.entrySet()) {
-            AbstractH2QueryInfo qinfo = e.getKey();
+        for (Map.Entry<H2QueryInfo, TimeoutChecker> e : qrys.entrySet()) {
+            H2QueryInfo qinfo = e.getKey();
 
             if (e.getValue().checkTimeout(qinfo.time())) {
                 qinfo.printLogMessage(log, connMgr, "Query execution is too long");
