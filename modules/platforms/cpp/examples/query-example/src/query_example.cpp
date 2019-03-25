@@ -369,24 +369,34 @@ void Initialize()
     orgCache.Put(org1Id, org1);
     orgCache.Put(org2Id, org2);
 
-    Cache<int64_t, Person> personCache =
-        Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> personCache =
+        Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     // Clear cache before running the example.
     personCache.Clear();
 
     // People.
+
+    // Collocated by 1st organisation:
     Person p1(org1Id, "John", "Doe", "John Doe has Master Degree.", 2000);
     Person p2(org1Id, "Jane", "Doe", "Jane Doe has Bachelor Degree.", 1000);
+
+    PersonKey pKey1 (1, org1Id);
+    PersonKey pKey2 (2, org1Id);
+
+    // Collocated by second organisation:
     Person p3(org2Id, "John", "Smith", "John Smith has Bachelor Degree.", 1000);
     Person p4(org2Id, "Jane", "Smith", "Jane Smith has Master Degree.", 2000);
 
+    PersonKey pKey3 (3, org2Id);
+    PersonKey pKey4 (4, org2Id);
+
     // Note that in this example we use custom affinity key for Person objects
     // to ensure that all persons are collocated with their organizations.
-    personCache.Put(1, p1);
-    personCache.Put(2, p2);
-    personCache.Put(3, p3);
-    personCache.Put(4, p4);
+    personCache.Put(pKey1, p1);
+    personCache.Put(pKey2, p2);
+    personCache.Put(pKey3, p3);
+    personCache.Put(pKey4, p4);
 }
 
 int main()

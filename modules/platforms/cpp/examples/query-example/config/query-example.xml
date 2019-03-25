@@ -40,6 +40,16 @@
             </bean>
         </property>
 
+        <property name="cacheKeyConfiguration">
+            <list>
+                <bean class="org.apache.ignite.cache.CacheKeyConfiguration">
+                    <property name="typeName" value="PersonKey"/>
+
+                    <property name="affinityKeyFieldName" value="orgIdAff" />
+                </bean>
+            </list>
+        </property>
+
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -52,7 +62,7 @@
                     <property name="queryEntities">
                         <list>
                             <bean class="org.apache.ignite.cache.QueryEntity">
-                                <property name="keyType" value="java.lang.Long"/>
+                                <property name="keyType" value="PersonKey"/>
                                 <property name="valueType" value="Person"/>
 
                                 <property name="fields">
@@ -84,7 +94,7 @@
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="Organization"/>
-                    <property name="cacheMode" value="REPLICATED"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
