@@ -915,59 +915,57 @@ public class GridDhtPartitionDemander {
         if (entries.isEmpty())
             return;
 
-        Map<Integer, CacheMapEntries> cctxMap = new HashMap<>();
+        grp.listenerLock().readLock().lock();
 
-        // Map by context.
-        for (GridCacheEntryInfo info : entries) {
-            try {
-                GridCacheContext cctx0 = grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
+        try {
+            Map<Integer, CacheMapEntries> cctxs = new HashMap<>();
 
-                if (cctx0 == null)
-                    return;
+            // Map by context.
+            for (GridCacheEntryInfo e : entries) {
+                try {
+                    GridCacheContext cctx0 = grp.sharedGroup() ? ctx.cacheContext(e.cacheId()) : grp.singleCacheContext();
 
-                if (cctx0.isNear())
-                    cctx0 = cctx0.dhtCache().context();
+                    if (cctx0 == null)
+                        return;
 
-                final GridCacheContext cctx = cctx0;
+                    if (cctx0.isNear())
+                        cctx0 = cctx0.dhtCache().context();
 
-                if (log.isTraceEnabled())
-                    log.trace("Rebalancing key [key=" + info.key() + ", part=" + p + ", node=" + from.id() + ']');
+                    final GridCacheContext cctx = cctx0;
 
-                CacheMapEntries batch = cctxMap.get(cctx.cacheId());
+                    if (log.isTraceEnabled())
+                        log.trace("Rebalancing key [key=" + e.key() + ", part=" + p + ", node=" + from.id() + ']');
 
-                if (batch == null) {
-                    // todo lock should be called for ALL group
-                    cctx.group().listenerLock().readLock().lock();
+                    CacheMapEntries batch =
+                        cctxs.computeIfAbsent(cctx.cacheId(), v -> new CacheMapEntries(topVer, p, cctx, true));
 
-                    cctxMap.put(cctx.cacheId(), batch = new CacheMapEntries(topVer, p, cctx, true));
+                    batch.add(e.key(), e.value(), e.expireTime(), e.ttl(), e.version(), DR_PRELOAD);
                 }
-
-                batch.addEntry(info.key(), info.value(), info.expireTime(), info.ttl(), info.version(), DR_PRELOAD);
-            }
-            catch (GridDhtInvalidPartitionException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Partition became invalid during rebalancing (will ignore): " + p);
-            }
-        }
-
-        for (CacheMapEntries batch : cctxMap.values()) {
-            GridCacheContext cctx = batch.context();
-
-            batch.lock();
-
-            try {
-                cctx.offheap().invokeAll(cctx, batch.keys(), batch.part(), batch.offheapUpdateClosure());
-            }
-            finally {
-                batch.unlock();
-
-                cctx.group().listenerLock().readLock().unlock();
-
-                for (GridCacheContext cctx0 : grp.caches()) {
-                    if (cctx0.statisticsEnabled())
-                        cctx0.cache().metrics0().onRebalanceKeysReceived(batch.size());
+                catch (GridDhtInvalidPartitionException ignored) {
+                    if (log.isDebugEnabled())
+                        log.debug("Partition became invalid during rebalancing (will ignore): " + p);
                 }
             }
+
+            for (CacheMapEntries batch : cctxs.values()) {
+                GridCacheContext cctx = batch.context();
+
+                batch.lock();
+
+                try {
+                    cctx.offheap().invokeAll(cctx, batch.keys(), batch.part(), batch.offheapUpdateClosure());
+                }
+                finally {
+                    batch.unlock();
+
+                    for (GridCacheContext cctx0 : grp.caches()) {
+                        if (cctx0.statisticsEnabled())
+                            cctx0.cache().metrics0().onRebalanceKeysReceived(batch.size());
+                    }
+                }
+            }
+        } finally {
+            grp.listenerLock().readLock().unlock();
         }
     }
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,17 +31,13 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.Off
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.IgniteTree;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.GridCacheMapEntry.ATOMIC_VER_COMPARATOR;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.REMOVE;
@@ -82,13 +79,13 @@ public class CacheMapEntries {
     }
 
     /** */
-    public void addEntry(KeyCacheObject key, CacheObject val, long expTime, long ttl, GridCacheVersion ver, GridDrType drType) {
+    public void add(KeyCacheObject key, CacheObject val, long expTime, long ttl, GridCacheVersion ver, GridDrType drType) {
         if (temp != null && ordered && temp.hashCode() >= key.hashCode())
             ordered = false;
 
         CacheMapEntryInfo old = infos.put(temp = key, new CacheMapEntryInfo(this, val, expTime, ttl, ver, drType));
 
-        assert old == null || ATOMIC_VER_COMPARATOR.compare(old.version(), ver) < 0 :
+        assert old == null || GridCacheMapEntry.ATOMIC_VER_COMPARATOR.compare(old.version(), ver) < 0 :
             "Entry version mismatch: prev=" + old.version() + ", current=" + ver;
     }
 
@@ -238,23 +235,8 @@ public class CacheMapEntries {
     }
 
     /** */
-    public void onError(KeyCacheObject key, IgniteCheckedException e) {
-        skipped.add(key);
-    }
-
-    /** */
     boolean preload() {
         return preload;
-    }
-
-    /** */
-    Collection<CacheMapEntryInfo> values() {
-        return infos.values();
-    }
-
-    /** */
-    CacheMapEntryInfo get(KeyCacheObject key) {
-        return infos.get(key);
     }
 
     /** */
@@ -284,18 +266,20 @@ public class CacheMapEntries {
         }
 
         /** {@inheritDoc} */
-        @Override public void call(@Nullable Collection<T2<CacheDataRow, CacheSearchRow>> rows) throws IgniteCheckedException {
+        @Override public void call(Collection<CacheDataRow> rows) throws IgniteCheckedException {
+            assert rows.size() == entries.size() : "size mismatch, expect=" + entries.size() + ", input=" + rows.size();
+
             List<DataRow> newRows = new ArrayList<>(8);
 
             int partId = entries.part().id();
             GridCacheContext cctx = entries.context();
 
-            assert rows.size() == entries.size() : "size mismatch, expected=" + entries.size() + ", input=" + rows.size();
+            Iterator<CacheDataRow> rowsIter = rows.iterator();
 
-            for (T2<CacheDataRow, CacheSearchRow> t2 : rows) {
-                CacheDataRow oldRow = t2.get1();
-                KeyCacheObject key = t2.get2().key();
-                CacheMapEntryInfo newRowInfo = entries.get(key);
+            for (Map.Entry<KeyCacheObject, CacheMapEntryInfo> e : entries.infos.entrySet()) {
+                KeyCacheObject key = e.getKey();
+                CacheMapEntryInfo newRowInfo = e.getValue();
+                CacheDataRow oldRow = rowsIter.next();
 
                 try {
                     if (newRowInfo.needUpdate(oldRow)) {
@@ -303,7 +287,6 @@ public class CacheMapEntries {
 
                         if (val != null) {
                             if (oldRow != null) {
-                                // todo batch updates
                                 CacheDataRow newRow = cctx.offheap().dataStore(entries.part()).createRow(
                                     cctx,
                                     key,
@@ -316,7 +299,7 @@ public class CacheMapEntries {
                             }
                             else {
                                 CacheObjectContext coCtx = cctx.cacheObjectContext();
-                                // todo why we need this
+
                                 val.valueBytes(coCtx);
                                 key.valueBytes(coCtx);
 
@@ -340,13 +323,14 @@ public class CacheMapEntries {
                         }
                     }
                 }
-                catch (GridCacheEntryRemovedException e) {
+                catch (GridCacheEntryRemovedException ex) {
                     entries.onRemove(key);
                 }
             }
 
             if (!newRows.isEmpty()) {
-                cctx.offheap().dataStore(entries.part()).rowStore().addRows(newRows, cctx.group().statisticsHolderData());
+                cctx.offheap().dataStore(entries.part()).rowStore().
+                    addRows(newRows, cctx.group().statisticsHolderData());
 
                 if (cacheId == CU.UNDEFINED_CACHE_ID) {
                     // Set cacheId before write keys into tree.
@@ -472,7 +456,7 @@ public class CacheMapEntries {
             if (cctx.group().persistenceEnabled()) {
                 if (!isStartVer) {
                     if (cctx.atomic())
-                        update0 = ATOMIC_VER_COMPARATOR.compare(currVer, version()) < 0;
+                        update0 = GridCacheMapEntry.ATOMIC_VER_COMPARATOR.compare(currVer, version()) < 0;
                     else
                         update0 = currVer.compareTo(version()) < 0;
                 }

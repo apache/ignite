@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccDataPage
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
@@ -335,16 +334,12 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /**
      * todo workaround (fake) implementation only for checking that closure is working properly with preloader.
      * todo rework
-     * todo remove flag sorted
      */
-    @Override public void invokeAll(
-        List<CacheSearchRow> keys,
-        Object x,
-        InvokeAllClosure<CacheDataRow, CacheSearchRow> c
-    ) throws IgniteCheckedException {
+    @Override public void invokeAll(List<CacheSearchRow> keys, Object x, InvokeAllClosure<CacheDataRow> c)
+        throws IgniteCheckedException {
         checkDestroyed();
 
-        List<T2<CacheDataRow, CacheSearchRow>> rows = new ArrayList<>(keys.size());
+        List<CacheDataRow> rows = new ArrayList<>(keys.size());
 
         if (c.fastpath()) {
             GridCursor<CacheDataRow> cur = find(keys.get(0), keys.get(keys.size() - 1), CacheDataRowAdapter.RowData.FULL);
@@ -364,8 +359,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                 while (key == null || key.hashCode() <= oldKey.hashCode()) {
                     if (key != null && key.hashCode() == oldKey.hashCode()) {
                         while (key.hashCode() == oldKey.hashCode()) {
-                            // todo fix and test collision resolution
-                            rows.add(new T2<>(key.equals(oldKey) ? oldRow : null, row));
+                            // todo test collision resolution
+                            rows.add(key.equals(oldKey) ? oldRow : null);
 
                             lastRow = null;
 
@@ -378,7 +373,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                     }
                     else {
                         if (row != null)
-                            rows.add(new T2<>(null, row));
+                            rows.add(null);
 
                         lastRow = null;
 
@@ -394,16 +389,16 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             }
 
             if (lastRow != null)
-                rows.add(new T2<>(key.equals(oldKey) ? oldRow : null, lastRow));
+                rows.add(key.equals(oldKey) ? oldRow : null);
 
-            while (keyItr.hasNext())
-                rows.add(new T2<>(null, keyItr.next()));
+            for (; keyItr.hasNext(); keyItr.next())
+                rows.add(null);
         } else {
             for (CacheSearchRow row : keys) {
                 // todo NO_KEY
                 CacheDataRow oldRow = findOne(row, null, CacheDataRowAdapter.RowData.FULL);
 
-                rows.add(new T2<>(oldRow, row));
+                rows.add(oldRow);
             }
         }
 

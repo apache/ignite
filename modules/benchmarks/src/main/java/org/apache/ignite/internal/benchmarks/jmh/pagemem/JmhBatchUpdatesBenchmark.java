@@ -99,7 +99,7 @@ public class JmhBatchUpdatesBenchmark {
     private static int iteration = 0;
 
     /** */
-    public enum RANGE {
+    public enum OBJECT_SIZE_RANGE {
         /** */
         r0_4(0, 4),
 
@@ -140,12 +140,11 @@ public class JmhBatchUpdatesBenchmark {
         private final int max;
 
         /** */
-        RANGE(int min, int max) {
+        OBJECT_SIZE_RANGE(int min, int max) {
             this.min = min;
             this.max = max;
         }
     }
-
 
     /**
      * Create Ignite configuration.
@@ -212,7 +211,6 @@ public class JmhBatchUpdatesBenchmark {
     public void checkBatch(Data data, Preloader preloader) throws IgniteCheckedException {
         preloader.demanderBatch.preloadEntriesBatch(null, 0, data.batchData, data.cctxBatch.topology().readyTopologyVersion());
     }
-
 
     /**
      * Start 2 servers and 1 client.
@@ -311,7 +309,7 @@ public class JmhBatchUpdatesBenchmark {
     public static class Data {
         /** */
         @Param
-        private RANGE range;
+        private OBJECT_SIZE_RANGE range;
 
         /** */
         private int[] sizes;
