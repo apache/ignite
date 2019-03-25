@@ -280,7 +280,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
                 while (!stop.get()) {
                     stopGrid(gridIdx, true);
 
-                    Thread.sleep(1000L);
+                    Thread.sleep(100L);
 
                     startGrid(gridIdx);
 
@@ -310,8 +310,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         }
 
         awaitPartitionMapExchange();
-
-        Thread.sleep(3_000L); // Remove later.
 
         for (int i = 0; i < cnt; i++) {
             DistributedMetaStorage distributedMetastorage = metastorage(i);
