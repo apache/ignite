@@ -37,9 +37,6 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.mxbean.MXBeanDescription;
-import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
-import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
@@ -314,7 +311,7 @@ public interface GridQueryIndexing {
     public void checkStatementStreamable(PreparedStatement nativeStmt);
 
     /**
-     * Return row cache cleaner.Ye yflj gjcvjnhtnm ,sdftn kb nfr xnj,s
+     * Return row cache cleaner.
      *
      * @param cacheGroupId Cache group id.
      * @return Row cache cleaner.
