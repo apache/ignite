@@ -591,7 +591,16 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 processMessage(nodeId, cacheMsg, c);
         }
         catch (Throwable e) {
-            U.error(log, "Failed to process message [senderId=" + nodeId + ", messageType=" + cacheMsg.getClass() + ']', e);
+            try {
+                U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=" + cacheMsg + ']', e);
+            }
+            catch (Throwable e0) {
+                U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=(failed to log message)", e);
+
+                U.error(log, "Failed to log message due to an error: ", e0);
+            }
+
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             if (e instanceof Error)
                 throw (Error)e;
