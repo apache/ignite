@@ -1304,11 +1304,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 EventType.EVT_NODE_JOINED, localNode());
     }
 
-    /** {@inheritDoc} */
-    @Override public @Nullable LongJVMPauseDetector longJvmPauseDetector() {
-        return LongJVMPauseDetector.enabled() ? longJVMPauseDetector : null;
-    }
-
     /**
      * Create description of an executor service for logging.
      *

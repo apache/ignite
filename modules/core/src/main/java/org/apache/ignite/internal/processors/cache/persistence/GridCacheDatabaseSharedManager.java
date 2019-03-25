@@ -3378,10 +3378,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             tmpWriteBuf.order(ByteOrder.nativeOrder());
 
-            pauseDetector = ((IgniteEx) grid()).longJvmPauseDetector();
-
-            assert LongJVMPauseDetector.enabled() == (pauseDetector != null) :
-                "Enabled: " + LongJVMPauseDetector.enabled() + " pauseDetector: " + pauseDetector;
+            pauseDetector = cctx.kernalContext().longJvmPauseDetector();
         }
 
         /**

@@ -22,7 +22,6 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
@@ -175,10 +174,4 @@ public interface IgniteEx extends Ignite {
      * @param rebalanceEnabled rebalance enabled flag.
      */
     public void rebalanceEnabled(boolean rebalanceEnabled);
-
-    /**
-     * @return Long JVM pause detector, or null, if {@link IgniteSystemProperties#IGNITE_JVM_PAUSE_DETECTOR_DISABLED} is
-     * {@code true}.
-     */
-    public @Nullable LongJVMPauseDetector longJvmPauseDetector();
 }
