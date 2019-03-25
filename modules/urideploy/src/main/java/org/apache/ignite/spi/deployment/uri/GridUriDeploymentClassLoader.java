@@ -105,6 +105,19 @@ class GridUriDeploymentClassLoader extends URLClassLoader {
         return cls;
     }
 
+    /**
+     * Load class from GAR file.
+     *
+     * @param name Class name.
+     * @return Loaded class.
+     * @throws ClassNotFoundException If no class found.
+     * @deprecated Use {@link GridUriDeploymentClassLoader#loadClassIsolated(String)} instead.
+     */
+    @Deprecated
+    public synchronized Class<?> loadClassGarOnly(String name) throws ClassNotFoundException {
+        return loadClassIsolated(name);
+    }
+
     /** {@inheritDoc} */
     @Override public URL getResource(String name) {
         URL url = findResource(name);
@@ -149,6 +162,20 @@ class GridUriDeploymentClassLoader extends URLClassLoader {
         catch (IOException ignored) {
             return null;
         }
+    }
+
+    /**
+     * Returns an input stream for reading the specified resource from GAR file only.
+     *
+     * @param name Resource name.
+     * @return An input stream for reading the resource, or {@code null}
+     *      if the resource could not be found.
+     *
+     * @deprecated Use {@link GridUriDeploymentClassLoader#getResourceAsStreamIsolated(String)} instead.
+     */
+    @Deprecated
+    @Nullable public InputStream getResourceAsStreamGarOnly(String name) {
+        return getResourceAsStreamIsolated(name);
     }
 
     /** {@inheritDoc} */
