@@ -67,13 +67,13 @@ public class IgniteThinClient {
     /** SSL key store password */
     private static final String SSL_KEYSTORE_PASSWORD = "SSL_KEYSTORE_PASSWORD";
 
-    /** SSL key store password */
+    /** SSL trust store password */
     private static final String SSL_TRUSTSTORE_PASSWORD = "SSL_TRUSTSTORE_PASSWORD";
 
-    /** (Optional) Client key store type (default JKS) */
-    private static final String SSL_CLIENT_STORE_TYPE = "SSL_CLIENT_STORE_TYPE";
+    /** (Optional) Key store type (default JKS) */
+    private static final String SSL_KEY_STORE_TYPE = "SSL_KEY_STORE_TYPE";
 
-    /** (Optional) Server key store type (default JKS) */
+    /** (Optional) Trust store type (default JKS) */
     private static final String SSL_TRUST_STORE_TYPE = "SSL_TRUST_STORE_TYPE";
 
     /** (Optional) Key algorithm (default SunX509) */
@@ -152,16 +152,20 @@ public class IgniteThinClient {
         }
 
         // set SSL if needed
+        boolean trustAll = Boolean.valueOf(cfg.customProperties().getOrDefault(SSL_TRUST_ALL, DEFAULT_TRUST_ALL_STRING));
+
         boolean isSecuredConnection = cfg.customProperties().containsKey(SSL_KEYSTORE_PASSWORD) &&
             cfg.customProperties().containsKey(SSL_KEYSTORE_PATH) &&
-            cfg.customProperties().containsKey(SSL_TRUSTSTORE_PATH);
+            // if trustAll == true or trustStore params defined
+            ((cfg.customProperties().containsKey(SSL_TRUSTSTORE_PASSWORD) &&
+                cfg.customProperties().containsKey(SSL_TRUSTSTORE_PATH)) || trustAll);
 
         if (isSecuredConnection) {
             String keyStore = cfg.customProperties().get(SSL_KEYSTORE_PATH);
 
             String keyStorePwd = cfg.customProperties().get(SSL_KEYSTORE_PASSWORD);
 
-            String keyStoreType = cfg.customProperties().getOrDefault(SSL_CLIENT_STORE_TYPE, SslContextFactory.DFLT_STORE_TYPE);
+            String keyStoreType = cfg.customProperties().getOrDefault(SSL_KEY_STORE_TYPE, SslContextFactory.DFLT_STORE_TYPE);
 
             String trustStore = cfg.customProperties().get(SSL_TRUSTSTORE_PATH);
 
@@ -170,8 +174,6 @@ public class IgniteThinClient {
             String trustStoreType = cfg.customProperties().getOrDefault(SSL_TRUST_STORE_TYPE, SslContextFactory.DFLT_STORE_TYPE);
 
             String keyAlg = cfg.customProperties().getOrDefault(SSL_KEY_ALGORITHM, SslContextFactory.DFLT_KEY_ALGORITHM);
-
-            boolean trustAll = Boolean.valueOf(cfg.customProperties().getOrDefault(SSL_TRUST_ALL, DEFAULT_TRUST_ALL_STRING));
 
             SslProtocol protocol = SslProtocol.valueOf(cfg.customProperties().getOrDefault(SSL_PROTOCOL, SslContextFactory.DFLT_SSL_PROTOCOL));
 
@@ -199,7 +201,8 @@ public class IgniteThinClient {
      * @return Tuple with grid configuration and Spring application context.
      * @throws Exception If failed.
      */
-    private static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath) throws Exception {
+    private static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath)
+        throws Exception {
         URL url;
 
         try {
