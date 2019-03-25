@@ -27,18 +27,7 @@ export default angular
         'ignite-console.user'
     ])
     .component('pageLanding', {
-        template,
-        controller: class LandingController {
-            static images = [
-                '/images/page-landing-carousel-1.png',
-                '/images/page-landing-carousel-2.png',
-                '/images/page-landing-carousel-3.png'
-            ];
-
-            $onInit() {
-                this.images = LandingController.images;
-            }
-        }
+        template
     })
     .config(['$stateProvider', function($stateProvider) {
         // set up the states
