@@ -34,11 +34,13 @@ import org.h2.engine.Session;
 /**
  * Base H2 query info with commons for MAP, LOCAL, REDUCE queries.
  */
+// TODO: Can we have more flat hierarchy? H2QueryInfo -> Map, Reduce
 public abstract class AbstractH2QueryInfo implements H2QueryInfo {
     /** Begin timestamp. */
     private final long beginTs;
 
     /** Query statement. */
+    // TODO VO: Remove
     private final PreparedStatement stmt;
 
     /** Query schema. */
@@ -48,6 +50,7 @@ public abstract class AbstractH2QueryInfo implements H2QueryInfo {
     private final String sql;
 
     /** Query params. */
+    // TODO VO: Remove as it might be sensitive info
     private final Collection<Object> params;
 
     /** Enforce join order. */

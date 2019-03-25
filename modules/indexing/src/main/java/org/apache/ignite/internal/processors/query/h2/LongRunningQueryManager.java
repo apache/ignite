@@ -65,6 +65,7 @@ public class LongRunningQueryManager {
 
         log = ctx.log(LongRunningQueryManager.class);
 
+        // TODO: Can we have separate worker here?
         checkLongQryTask = ctx.timeout().schedule(this::checkLongRunning, CHECK_PERIOD, CHECK_PERIOD);
 
         timeout = ctx.config().getLongQueryWarningTimeout();
@@ -85,6 +86,7 @@ public class LongRunningQueryManager {
     public void registerQuery(H2QueryInfo qryInfo) {
         assert qryInfo != null;
 
+        // TODO: Race condition.
         if (timeout > 0)
             qrys.put(qryInfo, new TimeoutChecker(timeout, timeoutMult));
     }

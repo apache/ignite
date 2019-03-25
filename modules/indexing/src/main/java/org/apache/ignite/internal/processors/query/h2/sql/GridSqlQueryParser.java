@@ -401,6 +401,7 @@ public class GridSqlQueryParser {
     private static final Getter<Column, Boolean> COLUMN_IS_COMPUTED = getter(Column.class, "isComputed");
 
     /** */
+    // TODO VO: Unused
     public static final Getter<TableFilter, Integer> TABLE_FILTER_SCAN_COUNT = getter(TableFilter.class, "scanCount");
 
     /** */
