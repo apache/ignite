@@ -4503,6 +4503,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param node Left node.
      */
     public void onNodeLeft(final ClusterNode node) {
+        // There is no need to handle events and merge changes in case of local affinity recalculation.
+        if (isLocalAffinityRecalculation)
+            return;
+
         if (isDone() || !enterBusy())
             return;
 
@@ -4513,10 +4517,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         return;
 
                     try {
-                        // There is no need to handle events and merge changes in case of local affinity recalculation.
-                        if (isLocalAffinityRecalculation)
-                            return;
-
                         boolean crdChanged = false;
                         boolean allReceived = false;
                         boolean wasMerged = false;
