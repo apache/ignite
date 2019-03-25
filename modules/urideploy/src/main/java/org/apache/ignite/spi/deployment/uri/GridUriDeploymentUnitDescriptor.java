@@ -151,7 +151,7 @@ class GridUriDeploymentUnitDescriptor {
     }
 
     /**
-     * Tasks package file.
+     * Tasks' package file.
      *
      * @return {@code null} if tasks were deployed directly and package file if tasks were deployed from it.
      */
