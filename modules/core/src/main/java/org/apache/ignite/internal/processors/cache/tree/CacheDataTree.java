@@ -344,7 +344,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     ) throws IgniteCheckedException {
         checkDestroyed();
 
-        List<T2<CacheDataRow, CacheSearchRow>> batch = new ArrayList<>(keys.size());
+        List<T2<CacheDataRow, CacheSearchRow>> rows = new ArrayList<>(keys.size());
 
         if (c.fastpath()) {
             GridCursor<CacheDataRow> cur = find(keys.get(0), keys.get(keys.size() - 1), CacheDataRowAdapter.RowData.FULL);
@@ -365,7 +365,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                     if (key != null && key.hashCode() == oldKey.hashCode()) {
                         while (key.hashCode() == oldKey.hashCode()) {
                             // todo fix and test collision resolution
-                            batch.add(new T2<>(key.equals(oldKey) ? oldRow : null, row));
+                            rows.add(new T2<>(key.equals(oldKey) ? oldRow : null, row));
 
                             lastRow = null;
 
@@ -378,7 +378,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                     }
                     else {
                         if (row != null)
-                            batch.add(new T2<>(null, row));
+                            rows.add(new T2<>(null, row));
 
                         lastRow = null;
 
@@ -394,20 +394,20 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             }
 
             if (lastRow != null)
-                batch.add(new T2<>(key.equals(oldKey) ? oldRow : null, lastRow));
+                rows.add(new T2<>(key.equals(oldKey) ? oldRow : null, lastRow));
 
             while (keyItr.hasNext())
-                batch.add(new T2<>(null, keyItr.next()));
+                rows.add(new T2<>(null, keyItr.next()));
         } else {
             for (CacheSearchRow row : keys) {
                 // todo NO_KEY
                 CacheDataRow oldRow = findOne(row, null, CacheDataRowAdapter.RowData.FULL);
 
-                batch.add(new T2<>(oldRow, row));
+                rows.add(new T2<>(oldRow, row));
             }
         }
 
-        c.call(batch);
+        c.call(rows);
 
         for (T3<OperationType, CacheDataRow, CacheDataRow> t3 : c.result()) {
             OperationType oper = t3.get1();

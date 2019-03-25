@@ -68,7 +68,7 @@ public class CacheMapEntries {
     private Set<KeyCacheObject> skipped = new HashSet<>();
 
     /** */
-    private boolean sorted = true;
+    private boolean ordered = true;
 
     /** */
     private KeyCacheObject temp;
@@ -83,20 +83,13 @@ public class CacheMapEntries {
 
     /** */
     public void addEntry(KeyCacheObject key, CacheObject val, long expTime, long ttl, GridCacheVersion ver, GridDrType drType) {
-        if (temp != null && sorted && temp.hashCode() >= key.hashCode())
-            sorted = false;
+        if (temp != null && ordered && temp.hashCode() >= key.hashCode())
+            ordered = false;
 
-        infos.put(temp = key, new CacheMapEntryInfo(this, val, expTime, ttl, ver, drType));
-    }
+        CacheMapEntryInfo old = infos.put(temp = key, new CacheMapEntryInfo(this, val, expTime, ttl, ver, drType));
 
-    /** */
-    public Set<KeyCacheObject> keys() {
-        return infos.keySet();
-    }
-
-    /** */
-    public Collection<CacheMapEntryInfo> values() {
-        return infos.values();
+        assert old == null || ATOMIC_VER_COMPARATOR.compare(old.version(), ver) < 0 :
+            "Entry version mismatch: prev=" + old.version() + ", current=" + ver;
     }
 
     /** */
@@ -110,28 +103,22 @@ public class CacheMapEntries {
     }
 
     /** */
-    public CacheMapEntryInfo get(KeyCacheObject key) {
-        return infos.get(key);
+    public Set<KeyCacheObject> keys() {
+        return infos.keySet();
     }
 
-    /** */
-    public boolean preload() {
-        return preload;
+    /**
+     * @return Count of batch entries.
+     */
+    public int size() {
+        return infos.size() - skipped.size();
     }
 
-    /** */
-    public void onRemove(KeyCacheObject key) {
-        skipped.add(key);
-    }
-
-    /** */
-    public void onError(KeyCacheObject key, IgniteCheckedException e) {
-        skipped.add(key);
-    }
-
-    /** */
-    public boolean skip(KeyCacheObject key) {
-        return skipped.contains(key);
+    /**
+     * @return Off heap update closure.
+     */
+    public OffheapInvokeAllClosure offheapUpdateClosure() {
+        return new UpdateAllClosure(this, cctx);
     }
 
     /** */
@@ -187,6 +174,7 @@ public class CacheMapEntries {
      */
     public void unlock() {
         // Process deleted entries before locks release.
+        // todo
         assert cctx.deferredDelete() : this;
 
         // Entries to skip eviction manager notification for.
@@ -244,18 +232,34 @@ public class CacheMapEntries {
         }
     }
 
-    /**
-     * @return Count of batch entries.
-     */
-    public int size() {
-        return infos.size() - skipped.size();
+    /** */
+    public void onRemove(KeyCacheObject key) {
+        skipped.add(key);
     }
 
-    /**
-     * @return Off heap update closure.
-     */
-    public OffheapInvokeAllClosure updateClosure() {
-        return new UpdateAllClosure(this, cctx, part);
+    /** */
+    public void onError(KeyCacheObject key, IgniteCheckedException e) {
+        skipped.add(key);
+    }
+
+    /** */
+    boolean preload() {
+        return preload;
+    }
+
+    /** */
+    Collection<CacheMapEntryInfo> values() {
+        return infos.values();
+    }
+
+    /** */
+    CacheMapEntryInfo get(KeyCacheObject key) {
+        return infos.get(key);
+    }
+
+    /** */
+    boolean skip(KeyCacheObject key) {
+        return skipped.contains(key);
     }
 
     /** */
@@ -264,32 +268,34 @@ public class CacheMapEntries {
         private static final long serialVersionUID = -4782459128689696534L;
 
         /** */
-        private final List<T3<IgniteTree.OperationType, CacheDataRow, CacheDataRow>> resBatch;
+        private final List<T3<IgniteTree.OperationType, CacheDataRow, CacheDataRow>> finalOps;
 
         /** */
         private final int cacheId;
 
         /** */
-        private final CacheMapEntries batch;
+        private final CacheMapEntries entries;
 
         /** */
-        public UpdateAllClosure(CacheMapEntries entries, GridCacheContext cctx, GridDhtLocalPartition part) {
-            batch = entries;
-            resBatch = new ArrayList<>(entries.size());
+        public UpdateAllClosure(CacheMapEntries entries, GridCacheContext cctx) {
+            this.entries = entries;
+            finalOps = new ArrayList<>(entries.size());
             cacheId = cctx.group().storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
         }
 
         /** {@inheritDoc} */
         @Override public void call(@Nullable Collection<T2<CacheDataRow, CacheSearchRow>> rows) throws IgniteCheckedException {
-            List<DataRow> newRows = new ArrayList<>(16);
+            List<DataRow> newRows = new ArrayList<>(8);
 
-            int partId = batch.part().id();
-            GridCacheContext cctx = batch.context();
+            int partId = entries.part().id();
+            GridCacheContext cctx = entries.context();
+
+            assert rows.size() == entries.size() : "size mismatch, expected=" + entries.size() + ", input=" + rows.size();
 
             for (T2<CacheDataRow, CacheSearchRow> t2 : rows) {
                 CacheDataRow oldRow = t2.get1();
                 KeyCacheObject key = t2.get2().key();
-                CacheMapEntryInfo newRowInfo = batch.get(key);
+                CacheMapEntryInfo newRowInfo = entries.get(key);
 
                 try {
                     if (newRowInfo.needUpdate(oldRow)) {
@@ -298,7 +304,7 @@ public class CacheMapEntries {
                         if (val != null) {
                             if (oldRow != null) {
                                 // todo batch updates
-                                CacheDataRow newRow = cctx.offheap().dataStore(batch.part()).createRow(
+                                CacheDataRow newRow = cctx.offheap().dataStore(entries.part()).createRow(
                                     cctx,
                                     key,
                                     newRowInfo.value(),
@@ -306,7 +312,7 @@ public class CacheMapEntries {
                                     newRowInfo.expireTime(),
                                     oldRow);
 
-                                resBatch.add(new T3<>(oldRow.link() == newRow.link() ? NOOP : PUT, oldRow, newRow));
+                                finalOps.add(new T3<>(oldRow.link() == newRow.link() ? NOOP : PUT, oldRow, newRow));
                             }
                             else {
                                 CacheObjectContext coCtx = cctx.cacheObjectContext();
@@ -322,7 +328,7 @@ public class CacheMapEntries {
 
                                 newRows.add(newRow);
 
-                                resBatch.add(new T3<>(PUT, oldRow, newRow));
+                                finalOps.add(new T3<>(PUT, oldRow, newRow));
                             }
                         }
                         else {
@@ -330,17 +336,17 @@ public class CacheMapEntries {
                             // todo   (in particular case oldRow should not contain key)
                             DataRow newRow = new DataRow(key, null, null, 0, 0, cacheId);
 
-                            resBatch.add(new T3<>(oldRow != null ? REMOVE : NOOP, oldRow, newRow));
+                            finalOps.add(new T3<>(oldRow != null ? REMOVE : NOOP, oldRow, newRow));
                         }
                     }
                 }
                 catch (GridCacheEntryRemovedException e) {
-                    batch.onRemove(key);
+                    entries.onRemove(key);
                 }
             }
 
             if (!newRows.isEmpty()) {
-                cctx.offheap().dataStore(batch.part()).rowStore().addRows(newRows, cctx.group().statisticsHolderData());
+                cctx.offheap().dataStore(entries.part()).rowStore().addRows(newRows, cctx.group().statisticsHolderData());
 
                 if (cacheId == CU.UNDEFINED_CACHE_ID) {
                     // Set cacheId before write keys into tree.
@@ -353,12 +359,12 @@ public class CacheMapEntries {
 
         /** {@inheritDoc} */
         @Override public Collection<T3<IgniteTree.OperationType, CacheDataRow, CacheDataRow>> result() {
-            return resBatch;
+            return finalOps;
         }
 
         /** {@inheritDoc} */
         @Override public boolean fastpath() {
-            return batch.sorted;
+            return entries.ordered;
         }
 
         /** {@inheritDoc} */
