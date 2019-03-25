@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -45,11 +46,13 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        compressProc = cctx.kernalContext().compress();
+        GridKernalContext kctx = cctx.kernalContext();
+
+        compressProc = kctx.compress();
 
         CacheConfiguration cfg = cctx.config();
 
-        diskPageCompression = cfg.getDiskPageCompression();
+        diskPageCompression = kctx.discovery().localNode().isClient() ? null : cfg.getDiskPageCompression();
 
         if (diskPageCompression != null) {
             if (!cctx.dataRegion().config().isPersistenceEnabled())
@@ -60,9 +63,9 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
                 checkCompressionLevelBounds(lvl, diskPageCompression) :
                 getDefaultCompressionLevel(diskPageCompression);
 
-            DataStorageConfiguration dsCfg = cctx.kernalContext().config().getDataStorageConfiguration();
+            DataStorageConfiguration dsCfg = kctx.config().getDataStorageConfiguration();
 
-            File dbPath = cctx.kernalContext().pdsFolderResolver().resolveFolders().persistentStoreRootPath();
+            File dbPath = kctx.pdsFolderResolver().resolveFolders().persistentStoreRootPath();
 
             assert dbPath != null;
 
