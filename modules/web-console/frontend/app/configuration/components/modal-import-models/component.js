@@ -21,8 +21,8 @@ import _ from 'lodash';
 import naturalCompare from 'natural-compare-lite';
 import find from 'lodash/fp/find';
 import get from 'lodash/fp/get';
-import {race, timer, merge, of, from, combineLatest, EMPTY} from 'rxjs';
-import {tap, filter, take, pluck, switchMap, map} from 'rxjs/operators';
+import {combineLatest, EMPTY, from, merge, of, race, timer} from 'rxjs';
+import {distinctUntilChanged, filter, map, pluck, switchMap, take, tap} from 'rxjs/operators';
 import ObjectID from 'bson-objectid';
 import {uniqueName} from 'app/utils/uniqueName';
 import {defaultNames} from '../../defaultNames';
@@ -1066,6 +1066,7 @@ export class ModalImportModels {
 
         this.agentIsAvailable$ = this.agentMgr.connectionSbj.pipe(
             pluck('state'),
+            distinctUntilChanged(),
             map((state) => state !== 'AGENT_DISCONNECTED')
         );
 
