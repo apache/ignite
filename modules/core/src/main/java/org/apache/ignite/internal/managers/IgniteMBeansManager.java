@@ -177,9 +177,8 @@ public class IgniteMBeansManager {
                 workerCtrlMXBean, WorkersControlMXBean.class);
         }
 
-        if (ctx.query().moduleEnabled()) {
+        if (ctx.query().moduleEnabled())
             ctx.query().getIndexing().registerMxBeans(this);
-        }
     }
 
     /**
