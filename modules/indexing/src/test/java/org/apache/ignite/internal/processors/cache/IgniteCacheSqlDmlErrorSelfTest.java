@@ -23,7 +23,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -33,15 +35,32 @@ import org.junit.Test;
 /**
  * Negative java API tests for dml queries (insert, merge, update).
  */
-public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheSqlDmlErrorSelfTest extends AbstractIndexingCommonTest {
     /** Dummy cache, just cache api entry point. */
     private static IgniteCache<?, ?> cache;
 
+    /** Old allow value. */
+    private static boolean oldAllowColumnsVal;
+
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_UPDATES");
+
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
+
         startGrids(1);
 
         cache = grid(0).createCache(DEFAULT_CACHE_NAME);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
+
+        super.afterTestsStopped();
     }
 
     /**
