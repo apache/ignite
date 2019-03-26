@@ -17,16 +17,15 @@
 
 package org.apache.ignite.testframework.junits;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
 /**
- * Supports compatibility with old tests that expect specific threading behavior of JUnit 3 TestCase class,
- * inherited assertions and specific old interface for GridTestUtils.
- * @deprecated and should be removed once all tests will be refactored to use proper API.
+ * Provides the basic functionality for Ignite test conditions and environment.
  */
 @SuppressWarnings({"TransientFieldInNonSerializableClass", "ExtendsUtilityClass"})
-@Deprecated
 public class TestConditionsAware extends JUnitAssertAware {
     /**
      * Supports obtaining test name for JUnit4 framework in a way that makes it available for legacy methods invoked
@@ -46,9 +45,9 @@ public class TestConditionsAware extends JUnitAssertAware {
     /**
      * Called before execution of every test method in class.
      * <p>
-     * Do not annotate with Before in overriding methods.</p>
+     * Do not annotate with {@link Before} in overriding methods.</p>
      *
-     * @throws Exception If failed. {@link #afterTest()} will be called in this case.
+     * @throws Exception If failed. {@link #afterTest()} will be called anyway.
      */
     protected void beforeTest() throws Exception {
         // No-op.
@@ -58,7 +57,7 @@ public class TestConditionsAware extends JUnitAssertAware {
      * Called after execution of every test method in class or if {@link #beforeTest()} failed without test method
      * execution.
      * <p>
-     * Do not annotate with After in overriding methods.</p>
+     * Do not annotate with {@link After} in overriding methods.</p>
      *
      * @throws Exception If failed.
      */
