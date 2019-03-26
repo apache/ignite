@@ -413,10 +413,12 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         Ignite client = startGrid(2);
 
-        assertTrue(GridTestUtils.waitForCondition(() ->
-                new AffinityTopologyVersion(3, 0).equals(grid(0).context().discovery().topologyVersionEx()) &&
-                    new AffinityTopologyVersion(2, 1).equals(grid(1).context().discovery().topologyVersionEx()),
-            10_000));
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+                AffinityTopologyVersion topVer0 = grid(0).context().discovery().topologyVersionEx();
+                AffinityTopologyVersion topVer1 = grid(1).context().discovery().topologyVersionEx();
+
+                return topVer0.topologyVersion() == 3 && topVer1.topologyVersion() == 2;
+            }, 10_000));
 
         final IgniteCache<Integer, Integer> txCache = client.cache(PARTITIONED_TX_CLIENT_CACHE_NAME);
 
@@ -429,16 +431,17 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
             updated.set(true);
         });
 
-        assertFalse(GridTestUtils.waitForCondition(updated::get, 10_000));
+        assertFalse(GridTestUtils.waitForCondition(updated::get, 5_000));
 
         latch.countDown();
 
-        assertTrue(GridTestUtils.waitForCondition(updated::get, 10_000));
+        assertTrue(GridTestUtils.waitForCondition(updated::get, 5_000));
 
         for (int i = 0; i < 32; ++i)
             assertEquals(Integer.valueOf(i), txCache.get(i));
 
-        assertEquals(new AffinityTopologyVersion(3, 0), grid(1).context().discovery().topologyVersionEx());
+        assertEquals("Expected major topology version is 3.",
+            3, grid(1).context().discovery().topologyVersionEx().topologyVersion());
     }
 
     /**
