@@ -17,21 +17,21 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
-import java.io.FileNotFoundException;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerPreprocessor;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
+
+import java.io.FileNotFoundException;
 
 /**
  * Run linear regression model based on <a href="http://web.stanford.edu/group/SOL/software/lsqr/">LSQR algorithm</a>
@@ -75,25 +75,22 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
             LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
             System.out.println(">>> Perform the training to get the model.");
-            LinearRegressionModel mdl = trainer.fit(ignite, dataCache, preprocessor, (k, v) -> v.get(0));
+
+            final IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+
+            LinearRegressionModel mdl = trainer.fit(ignite, dataCache, preprocessor, lbExtractor);
 
             System.out.println(">>> Linear regression model: " + mdl);
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Ground Truth\t|");
-            System.out.println(">>> ---------------------------------");
+            double rmse = Evaluator.evaluate(
+                dataCache,
+                mdl,
+                preprocessor,
+                lbExtractor,
+                new RegressionMetrics()
+            );
 
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Integer key = observation.getKey();
-                    Vector val = observation.getValue();
-                    double groundTruth = val.get(0);
-
-                    double prediction = mdl.predict(preprocessor.apply(key, val));
-
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                }
-            }
+            System.out.println("\n>>> Rmse = " + rmse);
 
             System.out.println(">>> ---------------------------------");
             System.out.println(">>> Linear regression model with MinMaxScaler preprocessor over cache based dataset usage example completed.");

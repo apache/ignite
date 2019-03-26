@@ -81,7 +81,15 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
 
         hnd.setDirectoriesListed(true);
 
-        File resourseBaseDir = U.resolveIgnitePath(GridTestProperties.getProperty("ant.urideployment.gar.path.tmp"));
+        String garPathTmp = GridTestProperties.getProperty("ant.urideployment.gar.path.tmp");
+
+        File resourseBaseDir = U.resolveIgnitePath(garPathTmp);
+
+        if (resourseBaseDir == null) {
+            resourseBaseDir = new File(U.getIgniteHome(), garPathTmp);
+
+            assertTrue(resourseBaseDir.mkdirs());
+        }
 
         rsrcBase = resourseBaseDir.getPath();
 

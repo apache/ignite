@@ -537,7 +537,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
                 return null;
             }
-        }, SQLException.class, "Value conversion failed [from=java.lang.String, to=java.lang.Integer]");
+        }, SQLException.class, "Value conversion failed [column=AGE, from=java.lang.String, to=java.lang.Integer]");
     }
 
     /**

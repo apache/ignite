@@ -42,7 +42,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -239,7 +238,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
                 if (NEAR_ATOMIC_CACHE_NAME.equals(cacheName) || NEAR_TX_CACHE_NAME.equals(cacheName) ||
                     NEAR_MVCC_TX_CACHE_NAME.equals(cacheName)) {
                     CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<Integer, String>(cacheName)
-                        .setNearConfiguration(new NearCacheConfiguration<Integer, String>());
+                        .setNearConfiguration(new NearCacheConfiguration<Integer, String>()).setSqlSchema("test");
 
                     if (NEAR_TX_CACHE_NAME.equals(cacheName))
                         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -285,9 +284,14 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
-            GridQueryCancel cancel, boolean registerAsNewQry) {
+        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(
+            String schemaName,
+            SqlFieldsQuery qry,
+            SqlClientContext cliCtx,
+            boolean keepBinary,
+            boolean failOnMultipleStmts,
+            GridQueryCancel cancel
+        ) {
             return null;
         }
 

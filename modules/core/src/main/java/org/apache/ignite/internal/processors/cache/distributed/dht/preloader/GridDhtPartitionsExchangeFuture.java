@@ -866,6 +866,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 case NONE: {
                     initTopologies();
 
+                    synchronized (mux) {
+                        state = ExchangeLocalState.DONE;
+                    }
+
                     onDone(topVer);
 
                     break;
@@ -890,9 +894,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 exchLog.info("Finished exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
         }
         catch (IgniteInterruptedCheckedException e) {
-            assert cctx.kernalContext().isStopping();
+            assert cctx.kernalContext().isStopping() || cctx.kernalContext().clientDisconnected();
 
-            onDone(new IgniteCheckedException("Node stopped"));
+            if (cctx.kernalContext().clientDisconnected())
+                onDone(new IgniteCheckedException("Client disconnected"));
+            else
+                onDone(new IgniteCheckedException("Node stopped"));
 
             throw e;
         }
@@ -2260,6 +2267,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             initFut.onDone(err == null);
+
+            cctx.exchange().latch().dropLatch(DISTRIBUTED_LATCH_ID, initialVersion());
 
             if (exchCtx != null && exchCtx.events().hasServerLeft()) {
                 ExchangeDiscoveryEvents evts = exchCtx.events();

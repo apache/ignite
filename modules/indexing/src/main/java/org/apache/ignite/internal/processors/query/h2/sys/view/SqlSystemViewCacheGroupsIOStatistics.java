@@ -40,7 +40,7 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
      * @param ctx Grid context.
      */
     public SqlSystemViewCacheGroupsIOStatistics(GridKernalContext ctx) {
-        super("CACHE_GROUPS_IO", "IO statistics for cache groups", ctx, "GROUP_NAME",
+        super("LOCAL_CACHE_GROUPS_IO", "Local node IO statistics for cache groups", ctx, "GROUP_NAME",
             newColumn("GROUP_ID", Value.INT),
             newColumn("GROUP_NAME"),
             newColumn("PHYSICAL_READS", Value.LONG),
