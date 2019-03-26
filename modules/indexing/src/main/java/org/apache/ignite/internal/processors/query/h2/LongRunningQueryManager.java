@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 /**
  * Long running query manager.
  */
-public class LongRunningQueryManager {
+public final class LongRunningQueryManager {
     /** Check period in ms. */
     private static final long CHECK_PERIOD = 1_000;
 
@@ -100,6 +100,7 @@ public class LongRunningQueryManager {
 
         Thread thread = new Thread(checkWorker);
 
+        thread.setDaemon(true);
         thread.start();
     }
 
@@ -163,9 +164,6 @@ public class LongRunningQueryManager {
      */
     public void setTimeout(long timeout) {
         this.timeout = timeout;
-
-        if (timeout <= 0)
-            qrys.clear();
     }
 
     /**

@@ -793,7 +793,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             checkSecurity(parser.cacheIds());
         }
 
-        final H2QueryInfo qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry, params);
+        final H2QueryInfo qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry);
 
         return new GridQueryFieldsResultAdapter(meta, null) {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
@@ -1017,6 +1017,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param params Parameters.
      * @param timeoutMillis Query timeout.
      * @param cancel Query cancel.
+     * @param qryInfo Query info to track long running queries.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
@@ -2460,14 +2461,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
-        longRunningQryMgr.stop();
-
         mapQryExec.cancelLazyWorkers();
 
         schemas.clear();
         cacheName2schema.clear();
 
         GridH2QueryContext.clearLocalNodeStop(nodeId);
+
+        longRunningQryMgr.stop();
 
         connMgr.stop();
 

@@ -59,9 +59,8 @@ public class H2QueryInfo {
      * @param type Query type.
      * @param stmt Query statement.
      * @param sql Query statement.
-     * @param params Query parameters.
      */
-    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, Collection<Object> params) {
+    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql) {
         try {
             assert stmt != null;
 
@@ -116,10 +115,12 @@ public class H2QueryInfo {
         printInfo(msgSb);
 
         msgSb.append(", sql='")
-            .append(sql)
-            .append("', plan=")
-            .append(queryPlan(log, connMgr))
-            .append(']');
+            .append(sql);
+
+        if (type != QueryType.REDUCE)
+            msgSb.append("', plan=").append(queryPlan(log, connMgr));
+
+        msgSb.append(']');
 
         LT.warn(log, msgSb.toString());
     }
