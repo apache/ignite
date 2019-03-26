@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private readonly IDictionary<int, int> _keyConfiguration;
 
         public ClientCachePartitionMap(int cacheId, IList<Guid> partitionNodeIds,
-            IDictionary<int, int> keyConfiguration = null)
+            IDictionary<int, int> keyConfiguration)
         {
             Debug.Assert(partitionNodeIds != null && partitionNodeIds.Count > 0);
 
@@ -50,6 +50,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             get { return _cacheId; }
         }
 
+        /// <summary>
+        /// Key configuration: map from key type id to affinity field id.
+        /// </summary>
         public IDictionary<int, int> KeyConfiguration
         {
             get { return _keyConfiguration; }
