@@ -51,6 +51,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.nodestart.IgniteRemoteStartSpecification;
 import org.apache.ignite.internal.util.nodestart.IgniteSshHelper;
@@ -113,7 +114,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
         nodeLoc = new ClusterNodeLocalMapImpl(ctx);
 
-        distributedBaselineConfiguration = new DistributedBaselineConfiguration(cfg, ctx.internalSubscriptionProcessor());
+        distributedBaselineConfiguration = new DistributedBaselineConfiguration(
+            cfg, ctx.internalSubscriptionProcessor(), ctx.log(DistributedBaselineConfiguration.class)
+        );
     }
 
     /** {@inheritDoc} */
@@ -368,6 +371,17 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         }
     }
 
+    /**
+     * Sets baseline topology constructed from the cluster topology of the given version (the method succeeds only if
+     * the cluster topology has not changed). All client and daemon nodes will be filtered out of the resulting
+     * baseline.
+     *
+     * @param topVer Topology version to set.
+     */
+    public void triggerBaselineAutoAdjust(long topVer) {
+        setBaselineTopology(topVer, true);
+    }
+
     /** */
     private boolean isInMemoryMode() {
         return !CU.isPersistenceEnabled(cfg);
@@ -460,6 +474,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void setBaselineTopology(long topVer) {
+        setBaselineTopology(topVer, false);
+    }
+
+    private void setBaselineTopology(long topVer, boolean isBaselineAutoAdjust) {
         guard();
 
         try {
@@ -480,7 +498,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
             validateBeforeBaselineChange(target);
 
-            ctx.state().changeGlobalState(true, target, true).get();
+            ctx.state().changeGlobalState(true, target, true, isBaselineAutoAdjust).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -579,6 +597,68 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
         try {
             return ctx.cache().walEnabled(cacheName);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isBaselineAutoAdjustEnabled() {
+        return distributedBaselineConfiguration.isBaselineAutoAdjustEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) {
+        baselineAutoAdjustEnabledAsync(baselineAutoAdjustEnabled).get();
+    }
+
+    /**
+     * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline. {@code True} If
+     * cluster in auto-adjust. {@code False} If cluster in manuale.
+     * @return Future for await operation completion.
+     */
+    public IgniteFuture<?> baselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled) {
+        guard();
+
+        try {
+            return new IgniteFutureImpl<>(
+                distributedBaselineConfiguration.updateBaselineAutoAdjustEnabledAsync(baselineAutoAdjustEnabled));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long baselineAutoAdjustTimeout() {
+        return distributedBaselineConfiguration.getBaselineAutoAdjustTimeout();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) {
+        baselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout).get();
+    }
+
+    /**
+     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
+     * server topology change (node join/left/fail).
+     * @return Future for await operation completion.
+     */
+    public IgniteFuture<?> baselineAutoAdjustTimeoutAsync(long baselineAutoAdjustTimeout) {
+        A.ensure(baselineAutoAdjustTimeout >= 0, "timeout should be positive or zero");
+
+        guard();
+
+        try {
+            return new IgniteFutureImpl<>(
+                distributedBaselineConfiguration.updateBaselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -803,6 +883,13 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         this.reconnecFut = reconnecFut;
     }
 
+    /**
+     * @return Baseline configuration.
+     */
+    public DistributedBaselineConfiguration baselineConfiguration() {
+        return distributedBaselineConfiguration;
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public IgniteFuture<?> clientReconnectFuture() {
         return reconnecFut;
@@ -821,11 +908,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** {@inheritDoc} */
     @Override protected Object readResolve() throws ObjectStreamException {
         return ctx.grid().cluster();
-    }
-
-    /** {@inheritDoc} */
-    @Override public DistributedBaselineConfiguration baselineConfiguration() {
-        return distributedBaselineConfiguration;
     }
 
     /** {@inheritDoc} */

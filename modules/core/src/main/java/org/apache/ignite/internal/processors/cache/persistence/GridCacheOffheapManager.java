@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -179,6 +180,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
         assert grp.dataRegion().pageMemory() instanceof PageMemoryEx;
 
+        syncMetadata(ctx);
+    }
+
+    /** {@inheritDoc} */
+    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        if (!ctx.nextSnapshot())
+            syncMetadata(ctx);
+    }
+
+    /**
+     * Syncs and saves meta-information of all data structures to page memory.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void syncMetadata(Context ctx) throws IgniteCheckedException {
         Executor execSvc = ctx.executor();
 
         boolean needSnapshot = ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
@@ -198,17 +214,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
-        syncMetadata(execSvc, ctx, needSnapshot);
+        syncMetadata(ctx, ctx.executor(), needSnapshot);
     }
 
     /**
      * Syncs and saves meta-information of all data structures to page memory.
      *
      * @param execSvc Executor service to run save process
-     * @param ctx Checkpoint listener context.
      * @throws IgniteCheckedException If failed.
      */
-    private void syncMetadata(Executor execSvc, Context ctx, boolean needSnapshot) throws IgniteCheckedException {
+    private void syncMetadata(Context ctx, Executor execSvc, boolean needSnapshot) throws IgniteCheckedException {
         if (execSvc == null) {
             reuseList.saveMetadata();
 
@@ -238,13 +253,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /**
-     * @return {@code True} is group is not empty.
-     */
-    private boolean notEmpty(CacheDataStore store) {
-        return store.rowStore() != null && (store.fullSize() > 0  || store.updateCounter() > 0);
-    }
-
-    /**
      * @param store Store to save metadata.
      * @throws IgniteCheckedException If failed.
      */
@@ -257,9 +265,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         RowStore rowStore0 = store.rowStore();
 
         if (rowStore0 != null) {
-            CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
-
-            freeList.saveMetadata();
+            ((CacheFreeListImpl)rowStore0.freeList()).saveMetadata();
 
             long updCntr = store.updateCounter();
             long size = store.fullSize();
@@ -379,7 +385,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         else
                             pageCnt = io.getCandidatePageCount(partMetaPageAddr);
 
-                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
+                        if (changed && PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
                             wal.log(new MetaPageUpdatePartitionDataRecord(
                                 grpId,
                                 partMetaId,
@@ -958,9 +964,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     ) throws IgniteCheckedException {
         assert !cctx.isNear() : cctx.name();
 
-        if (!hasPendingEntries || nextCleanTime > U.currentTimeMillis())
-            return false;
-
         // Prevent manager being stopped in the middle of pds operation.
         if (!busyLock.enterBusy())
             return false;
@@ -974,10 +977,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 if (amount != -1 && cleared >= amount)
                     return true;
             }
-
-            // Throttle if there is nothing to clean anymore.
-            if (cleared < amount)
-                nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
         }
         finally {
             busyLock.leaveBusy();
@@ -1421,8 +1420,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** */
         private volatile CacheDataStore delegate;
 
-        /** Timestamp when next clean try will be allowed for current partition.
-         * Used for fine-grained throttling on per-partition basis. */
+        /**
+         * Cache id which should be throttled.
+         */
+        private volatile int lastThrottledCacheId;
+
+        /**
+         * Timestamp when next clean try will be allowed for the current partition
+         * in accordance with the value of {@code lastThrottledCacheId}.
+         * Used for fine-grained throttling on per-partition basis.
+         */
         private volatile long nextStoreCleanTime;
 
         /** */
@@ -1467,6 +1474,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 try {
                     Metas metas = getOrAllocatePartitionMetas();
+
+                    if (PageIdUtils.partId(metas.reuseListRoot.pageId().pageId()) != partId ||
+                        PageIdUtils.partId(metas.treeRoot.pageId().pageId()) != partId ||
+                        PageIdUtils.partId(metas.pendingTreeRoot.pageId().pageId()) != partId) {
+                        throw new IgniteCheckedException("Invalid meta root allocated [" +
+                            "cacheOrGroupName=" + grp.cacheOrGroupName() +
+                            ", partId=" + partId +
+                            ", metas=" + metas + ']');
+                    }
 
                     RootPage reuseRoot = metas.reuseListRoot;
 
@@ -1559,8 +1575,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     pendingTree = pendingTree0;
 
-                    if (!hasPendingEntries && !pendingTree0.isEmpty())
-                        hasPendingEntries = true;
+                    if (!pendingTree0.isEmpty())
+                        grp.caches().forEach(cctx -> cctx.ttl().hasPendingEntries(true));
 
                     int grpId = grp.groupId();
                     long partMetaId = pageMem.partitionMetaPageId(grpId, partId);
@@ -1952,24 +1968,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             return delegate.mvccInitialValue(cctx, key, val, ver, expireTime, mvccVer, newMvccVer);
         }
-
+        
         /** {@inheritDoc} */
-        @Override public boolean mvccInitialValueIfAbsent(
+        @Override public boolean mvccApplyHistoryIfAbsent(
             GridCacheContext cctx,
             KeyCacheObject key,
-            @Nullable CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            MvccVersion mvccVer,
-            MvccVersion newMvccVer,
-            byte txState,
-            byte newTxState)
-            throws IgniteCheckedException
-        {
+            List<GridCacheMvccEntryInfo> hist)
+            throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccInitialValueIfAbsent(cctx, key, val, ver, expireTime, mvccVer, newMvccVer,
-                txState, newTxState);
+            return delegate.mvccApplyHistoryIfAbsent(cctx, key, hist);
         }
 
         /** {@inheritDoc} */
@@ -2307,14 +2315,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @return cleared entries count.
          * @throws IgniteCheckedException If failed.
          */
-        public int purgeExpired(GridCacheContext cctx,
+        public int purgeExpired(
+            GridCacheContext cctx,
             IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
-            int amount) throws IgniteCheckedException {
+            int amount
+        ) throws IgniteCheckedException {
             CacheDataStore delegate0 = init0(true);
 
             long now = U.currentTimeMillis();
 
-            if (delegate0 == null || nextStoreCleanTime > now)
+            if (delegate0 == null || (cctx.cacheId() == lastThrottledCacheId && nextStoreCleanTime > now))
                 return 0;
 
             assert pendingTree != null : "Partition data store was not initialized.";
@@ -2322,8 +2332,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int cleared = purgeExpiredInternal(cctx, c, amount);
 
             // Throttle if there is nothing to clean anymore.
-            if (cleared < amount)
-                nextStoreCleanTime = now + UNWIND_THROTTLING_TIMEOUT;
+            if (cleared < amount) {
+                lastThrottledCacheId = cctx.cacheId();
+
+                nextStoreCleanTime = now + GridCacheTtlManager.UNWIND_THROTTLING_TIMEOUT;
+            }
 
             return cleared;
         }
@@ -2337,10 +2350,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @return cleared entries count.
          * @throws IgniteCheckedException If failed.
          */
-        private int purgeExpiredInternal(GridCacheContext cctx,
+        private int purgeExpiredInternal(
+            GridCacheContext cctx,
             IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
-            int amount) throws IgniteCheckedException {
-
+            int amount
+        ) throws IgniteCheckedException {
             GridDhtLocalPartition part = cctx.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
 
             // Skip non-owned partitions.

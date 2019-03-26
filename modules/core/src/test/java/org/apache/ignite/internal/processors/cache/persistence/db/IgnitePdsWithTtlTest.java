@@ -24,6 +24,7 @@ import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -34,14 +35,21 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /**
  * Test TTL worker with persistence enabled
@@ -51,10 +59,30 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     public static final String CACHE_NAME = "expirableCache";
 
     /** */
+    public static final String GROUP_NAME = "group1";
+
+    /** */
+    public static final int PART_SIZE = 32;
+
+    /** */
     private static final int EXPIRATION_TIMEOUT = 10;
 
     /** */
-    public static final int ENTRIES = 100_000;
+    public static final int ENTRIES = 50_000;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -79,26 +107,36 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        final CacheConfiguration ccfg = new CacheConfiguration();
-        ccfg.setName(CACHE_NAME);
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-        ccfg.setExpiryPolicyFactory(AccessedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, EXPIRATION_TIMEOUT)));
-        ccfg.setEagerTtl(true);
-        ccfg.setGroupName("group1");
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
-
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
-                        .setMaxSize(192L * 1024 * 1024)
+                        .setMaxSize(2L * 1024 * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 ).setWalMode(WALMode.LOG_ONLY));
 
-        cfg.setCacheConfiguration(ccfg);
+        cfg.setCacheConfiguration(getCacheConfiguration(CACHE_NAME));
 
         return cfg;
+    }
+
+    /**
+     * Returns a new cache configuration with the given name and {@code GROUP_NAME} group.
+     * @param name Cache name.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration getCacheConfiguration(String name) {
+        CacheConfiguration ccfg = new CacheConfiguration();
+
+        ccfg.setName(name);
+        ccfg.setGroupName(GROUP_NAME);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, PART_SIZE));
+        ccfg.setExpiryPolicyFactory(AccessedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, EXPIRATION_TIMEOUT)));
+        ccfg.setEagerTtl(true);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+
+        return ccfg;
     }
 
     /**
@@ -107,6 +145,31 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     @Test
     public void testTtlIsApplied() throws Exception {
         loadAndWaitForCleanup(false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testTtlIsAppliedForMultipleCaches() throws Exception {
+        IgniteEx srv = startGrid(0);
+        srv.cluster().active(true);
+
+        int cacheCnt = 2;
+
+        // Create a new caches in the same group.
+        // It is important that initially created cache CACHE_NAME remains empty.
+        for (int i = 0; i < cacheCnt; ++i) {
+            String cacheName = CACHE_NAME + "-" + i;
+
+            srv.getOrCreateCache(getCacheConfiguration(cacheName));
+
+            fillCache(srv.cache(cacheName));
+        }
+
+        waitAndCheckExpired(srv, srv.cache(CACHE_NAME + "-" + (cacheCnt - 1)));
+
+        stopAllGrids();
     }
 
     /**
@@ -127,6 +190,8 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         fillCache(srv.cache(CACHE_NAME));
 
         if (restartGrid) {
+            srv.context().cache().context().database().wakeupForCheckpoint("test-checkpoint");
+
             stopGrid(0);
             srv = startGrid(0);
             srv.cluster().active(true);
@@ -134,9 +199,9 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
         final IgniteCache<Integer, byte[]> cache = srv.cache(CACHE_NAME);
 
-        pringStatistics((IgniteCacheProxy)cache, "After restart from LFS");
+        printStatistics((IgniteCacheProxy)cache, "After restart from LFS");
 
-        waitAndCheckExpired(cache);
+        waitAndCheckExpired(srv, cache);
 
         stopAllGrids();
     }
@@ -158,9 +223,9 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
         final IgniteCache<Integer, byte[]> cache = srv.cache(CACHE_NAME);
 
-        pringStatistics((IgniteCacheProxy)cache, "After rebalancing start");
+        printStatistics((IgniteCacheProxy)cache, "After rebalancing start");
 
-        waitAndCheckExpired(cache);
+        waitAndCheckExpired(srv, cache);
 
         stopAllGrids();
     }
@@ -217,26 +282,49 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         for (int i = 0; i < ENTRIES; i++)
             cache.get(i); // touch entries
 
-        pringStatistics((IgniteCacheProxy)cache, "After cache puts");
+        printStatistics((IgniteCacheProxy)cache, "After cache puts");
     }
 
     /** */
     protected void waitAndCheckExpired(
-        final IgniteCache<Integer, byte[]> cache) throws IgniteInterruptedCheckedException {
-        GridTestUtils.waitForCondition(new PA() {
+        IgniteEx srv,
+        final IgniteCache<Integer, byte[]> cache
+    ) throws IgniteCheckedException {
+        boolean awaited = GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 return cache.size() == 0;
             }
-        }, TimeUnit.SECONDS.toMillis(EXPIRATION_TIMEOUT + 1));
+        }, TimeUnit.SECONDS.toMillis(EXPIRATION_TIMEOUT + EXPIRATION_TIMEOUT / 2));
 
-        pringStatistics((IgniteCacheProxy)cache, "After timeout");
+        assertTrue("Cache is not empty. size=" + cache.size(), awaited);
+
+        printStatistics((IgniteCacheProxy)cache, "After timeout");
+
+        GridCacheSharedContext ctx = srv.context().cache().context();
+        GridCacheContext cctx = ctx.cacheContext(CU.cacheId(CACHE_NAME));
+
+        // Check partitions through internal API.
+        for (int partId = 0; partId < PART_SIZE; ++partId) {
+            GridDhtLocalPartition locPart = cctx.dht().topology().localPartition(partId);
+
+            if (locPart == null)
+                continue;
+
+            IgniteCacheOffheapManager.CacheDataStore dataStore =
+                ctx.cache().cacheGroup(CU.cacheId(GROUP_NAME)).offheap().dataStore(locPart);
+
+            GridCursor cur = dataStore.cursor();
+
+            assertFalse(cur.next());
+            assertEquals(0, locPart.fullSize());
+        }
 
         for (int i = 0; i < ENTRIES; i++)
             assertNull(cache.get(i));
     }
 
     /** */
-    private void pringStatistics(IgniteCacheProxy cache, String msg) {
+    private void printStatistics(IgniteCacheProxy cache, String msg) {
         System.out.println(msg + " {{");
         cache.context().printMemoryStats();
         System.out.println("}} " + msg);

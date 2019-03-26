@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.database;
 import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -43,6 +45,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
 /**
  *
  */
+@WithSystemProperty(key = IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, value = "true")
 public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String TMPL_NAME = "test_cache*";
@@ -110,8 +113,6 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "true");
-
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -122,8 +123,6 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        System.clearProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
     }
 
     /** */
@@ -253,6 +252,10 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         db.addCheckpointListener(new DbCheckpointListener() {
             @Override public void onMarkCheckpointBegin(Context ctx) {
                 cnt.countDown();
+            }
+
+            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+
             }
 
             @Override public void onCheckpointBegin(Context ctx) {

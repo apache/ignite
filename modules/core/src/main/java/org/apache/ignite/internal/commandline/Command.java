@@ -42,6 +42,9 @@ public enum Command {
     /** */
     WAL("--wal");
 
+    /** Private values copy so there's no need in cloning it every time. */
+    private static final Command[] VALUES = Command.values();
+
     /** */
     private final String text;
 
@@ -57,7 +60,7 @@ public enum Command {
      * @return Command for the text.
      */
     public static Command of(String text) {
-        for (Command cmd : Command.values()) {
+        for (Command cmd : VALUES) {
             if (cmd.text().equalsIgnoreCase(text))
                 return cmd;
         }

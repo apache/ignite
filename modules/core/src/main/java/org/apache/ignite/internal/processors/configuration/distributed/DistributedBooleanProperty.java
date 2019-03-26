@@ -32,7 +32,7 @@ public class DistributedBooleanProperty extends DistributedProperty<Boolean> {
      * @param initVal Initial initVal of property.
      * @return Property detached from processor.(Distributed updating are not accessable).
      */
-    public static DistributedBooleanProperty detachedProperty(String name, Boolean initVal) {
+    public static DistributedBooleanProperty detachedBooleanProperty(String name, Boolean initVal) {
         return new DistributedBooleanProperty(name, initVal);
     }
 }

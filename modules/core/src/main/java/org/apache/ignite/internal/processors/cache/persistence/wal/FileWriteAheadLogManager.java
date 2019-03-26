@@ -493,7 +493,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             archiver.restart();
         }
 
-        if (dsCfg.isWalCompactionEnabled()) {
+        if (dsCfg.isWalCompactionEnabled() && !cctx.kernalContext().recoveryMode()) {
             assert compressor != null : "Compressor should be initialized.";
 
             compressor.restart();
@@ -1192,7 +1192,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 switchSegmentRecordOffset.set(idx, hnd.getSwitchSegmentRecordOffset());
             }
 
-            FileWriteHandle next = initNextWriteHandle(cur);
+            FileWriteHandle next;
+            try {
+                next = initNextWriteHandle(cur);
+            }
+            catch (IgniteCheckedException e) {
+                //Allow to avoid forever waiting in other threads.
+                cur.signalNextAvailable();
+
+                throw e;
+            }
 
             next.writeHeader();
 
