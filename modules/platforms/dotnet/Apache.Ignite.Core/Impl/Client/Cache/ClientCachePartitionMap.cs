@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client.Cache
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
 
     /// <summary>
@@ -29,15 +30,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private readonly int _cacheId;
 
         /** Array of node id per partition. */
-        private readonly Guid[] _partitionNodeIds;
+        private readonly IList<Guid> _partitionNodeIds;
 
         /** Key configuration. */
-        private readonly ClientCacheKeyConfiguration[] _keyConfiguration;
+        private readonly IList<ClientCacheKeyConfiguration> _keyConfiguration;
 
-        public ClientCachePartitionMap(int cacheId, Guid[] partitionNodeIds,
-            ClientCacheKeyConfiguration[] keyConfiguration = null)
+        public ClientCachePartitionMap(int cacheId, IList<Guid> partitionNodeIds,
+            IList<ClientCacheKeyConfiguration> keyConfiguration = null)
         {
-            Debug.Assert(partitionNodeIds != null && partitionNodeIds.Length > 0);
+            Debug.Assert(partitionNodeIds != null && partitionNodeIds.Count > 0);
 
             _cacheId = cacheId;
             _keyConfiguration = keyConfiguration;
@@ -49,12 +50,12 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             get { return _cacheId; }
         }
 
-        public ClientCacheKeyConfiguration[] KeyConfiguration
+        public IList<ClientCacheKeyConfiguration> KeyConfiguration
         {
             get { return _keyConfiguration; }
         }
 
-        public Guid[] PartitionNodeIds
+        public IList<Guid> PartitionNodeIds
         {
             get { return _partitionNodeIds; }
         }

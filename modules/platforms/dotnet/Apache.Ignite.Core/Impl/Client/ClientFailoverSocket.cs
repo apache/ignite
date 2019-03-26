@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 if (socketMap != null &&
                     distributionMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
                 {
-                    var partition = GetPartition(key, cachePartMap.PartitionNodeIds.Length);
+                    var partition = GetPartition(key, cachePartMap.PartitionNodeIds.Count);
                     var nodeId = cachePartMap.PartitionNodeIds[partition];
 
                     ClientSocket socket;

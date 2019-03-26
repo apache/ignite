@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Diagnostics;
-    using System.IO;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -31,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the Ignite-specific hash code for the provided value.
         /// </summary>
-        public static unsafe int GetHashCode<T>(T val, Marshaller marsh)
+        public static unsafe int GetHashCode<T>(T val, Marshaller marsh, int? affinityKeyFieldId)
         {
             Debug.Assert(marsh != null);
             Debug.Assert(val != null);
@@ -118,10 +117,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return GetLongHashCode(milliseconds);
             }
 
-            return GetComplexTypeHashCode(val, marsh);
+            return GetComplexTypeHashCode(val, marsh, affinityKeyFieldId);
         }
 
-        private static int GetComplexTypeHashCode<T>(T val, Marshaller marsh)
+        private static int GetComplexTypeHashCode<T>(T val, Marshaller marsh, int? affinityKeyFieldId)
         {
             using (var stream = new BinaryHeapStream(128))
             {
