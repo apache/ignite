@@ -19,11 +19,11 @@ package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.security.TestSecurityPluginConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TestReconnectPluginProvider;
-import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -42,22 +42,20 @@ public class AuthenticationRestartTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(1120_000);
 
+        cfg.setPluginConfigurations(
+            new TestSecurityPluginConfiguration()
+                .setPermissions(
+                    SecurityPermissionSetBuilder.create().defaultAllowAll(true).build()
+                )
+        );
+
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        TestReconnectPluginProvider.enabled = true;
-        TestReconnectProcessor.enabled = true;
-
         startGrid("server");
         startGrid("client");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        TestReconnectPluginProvider.enabled = false;
-        TestReconnectProcessor.enabled = false;
     }
 
     /**
