@@ -50,7 +50,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.ConsistencyGatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -243,14 +242,16 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             if (!context().transactional())
                 throw new UnsupportedOperationException("Consistency check is not supported for atomic caches.");
 
+            if (context().isLocal())
+                throw new UnsupportedOperationException("Consistency check is not supported for local caches.");
+
             if (context().config().getBackups() == 0)
                 throw new UnsupportedOperationException("Consistency check is suitable only in case " +
                     "at least 1 backup configured for cache.");
 
             assert !opCtx.consistency();
 
-            return new ConsistencyGatewayProtectedCacheProxy<>(
-                new GatewayProtectedCacheProxy<>(delegate, opCtx.setConsistency(true), lock));
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setConsistency(true), lock);
         }
         finally {
             onLeave(opGate);

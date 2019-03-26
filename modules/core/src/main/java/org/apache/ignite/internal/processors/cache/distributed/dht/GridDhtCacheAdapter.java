@@ -59,7 +59,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdat
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridDhtConsistencyCheckFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridDhtConsistencyGetWithCheckFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
@@ -830,7 +830,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (!consistency)
             return fut;
         else {
-            GridDhtConsistencyCheckFuture cFut = new GridDhtConsistencyCheckFuture(
+            GridDhtConsistencyGetWithCheckFuture cFut = new GridDhtConsistencyGetWithCheckFuture(
                 topVer,
                 fut,
                 ctx,

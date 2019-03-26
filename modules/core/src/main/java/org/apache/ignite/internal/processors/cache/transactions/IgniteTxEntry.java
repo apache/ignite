@@ -661,7 +661,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @return {@code True} if has previous value explicitly set.
      */
-    boolean hasPreviousValue() {
+    public boolean hasPreviousValue() {
         return prevVal.hasValue();
     }
 

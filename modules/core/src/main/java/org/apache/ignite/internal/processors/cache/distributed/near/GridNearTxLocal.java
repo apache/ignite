@@ -61,7 +61,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridDhtConsistencyRecoveryFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridNearConsistencyGetWithRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
@@ -2280,7 +2280,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ)) ?
                                             F.first(txEntry.entryProcessors()) : null;
 
-                                    if (needVer || consistency) {
+                                    if (needVer) {
                                         getRes = cached.innerGetVersioned(
                                             null,
                                             GridNearTxLocal.this,
@@ -2325,14 +2325,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             cacheKey,
                                             val,
                                             skipVals,
-                                            keepCacheObjects || consistency,
+                                            keepCacheObjects,
                                             deserializeBinary,
                                             false,
                                             getRes,
                                             readVer,
                                             0,
                                             0,
-                                            needVer || consistency);
+                                            needVer);
 
                                         if (readVer != null)
                                             txEntry.entryReadVersion(readVer);
@@ -2366,15 +2366,80 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 missed,
                                 deserializeBinary,
                                 skipVals,
-                                keepCacheObjects || consistency,
+                                keepCacheObjects,
                                 skipStore,
                                 recovery,
                                 consistency,
-                                needVer || consistency,
+                                needVer,
                                 expiryPlc0);
                         }
 
-                        return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
+                        if (consistency) {
+                            GridNearConsistencyGetWithRecoveryFuture fut = new GridNearConsistencyGetWithRecoveryFuture(
+                                topVer,
+                                cacheCtx,
+                                keys,
+                                !skipStore,
+                                subjId,
+                                taskName,
+                                deserializeBinary,
+                                recovery,
+                                cacheCtx.cache().expiryPolicy(expiryPlc0),
+                                skipVals,
+                                label(),
+                                mvccSnapshot);
+
+                            fut.init();
+
+                            return new GridEmbeddedFuture<>(
+                                new IgniteBiClosure<Map<KeyCacheObject, EntryGetResult>, Exception, Map<K, V>>() {
+                                    @Override public Map<K, V>
+                                    apply(Map<KeyCacheObject, EntryGetResult> map, Exception e) {
+                                        // For every fixed entry.
+                                        for (Map.Entry<KeyCacheObject, EntryGetResult> entry : map.entrySet()) {
+                                            EntryGetResult getRes = entry.getValue();
+
+                                            enlistWrite(
+                                                cacheCtx,
+                                                entryTopVer,
+                                                entry.getKey(),
+                                                getRes.value(),
+                                                expiryPlc0,
+                                                null,
+                                                null,
+                                                false,
+                                                false,
+                                                null,
+                                                null,
+                                                skipStore,
+                                                false,
+                                                !deserializeBinary,
+                                                recovery,
+                                                consistency,
+                                                null);
+
+                                            cacheCtx.addResult(retMap,
+                                                entry.getKey(),
+                                                getRes.value(),
+                                                skipVals,
+                                                keepCacheObjects,
+                                                deserializeBinary,
+                                                false,
+                                                getRes,
+                                                getRes.version(),
+                                                0,
+                                                0,
+                                                needVer);
+                                        }
+
+                                        return Collections.emptyMap();
+                                    }
+                                },
+                                fut
+                            );
+                        }
+
+                        return new GridFinishedFuture<>(Collections.emptyMap());
                     }
                 };
 
@@ -2386,9 +2451,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
                 };
 
-                final GridNearTxLocal tx = this;
-
-                if (fut.isDone() && !consistency) {
+                if (fut.isDone()) {
                     try {
                         IgniteInternalFuture<Map<K, V>> fut1 = plc2.apply(fut.get(), null);
 
@@ -2409,64 +2472,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
                 }
                 else {
-                    IgniteInternalFuture<Map<K, V>> fut0 = nonInterruptable(new GridEmbeddedFuture<>(
+                    return nonInterruptable(new GridEmbeddedFuture<>(
                         fut,
                         plc2,
                         finClos));
-
-                    if (!consistency)
-                        return fut0;
-                    else {
-                        return nonInterruptable(new GridEmbeddedFuture<>(
-                            fut0,
-                            new C2<Map<K, V>, Exception, IgniteInternalFuture<Map<K, V>>>() {
-                                @Override public IgniteInternalFuture<Map<K, V>> apply(Map<K, V> map, Exception e) {
-                                    if (e != null)
-                                        return fut0;
-
-                                    GridDhtConsistencyRecoveryFuture cFut0 = new GridDhtConsistencyRecoveryFuture(
-                                        tx,
-                                        map,
-                                        cacheCtx,
-                                        false,
-                                        deserializeBinary,
-                                        recovery,
-                                        cacheCtx.cache().expiryPolicy(expiryPlc0),
-                                        skipVals
-                                    );
-
-                                    cFut0.init();
-
-                                    return cFut0;
-                                }
-                            },
-                            new C2<Map<K, V>, Exception, Map<K, V>>() {
-                                @Override public Map<K, V> apply(Map<K, V> map, Exception e) {
-                                    Map<K, V> res = new HashMap<>();
-
-                                    for (Map.Entry<K, V> entry : map.entrySet()) {
-                                        EntryGetResult getRes = (EntryGetResult)entry.getValue();
-                                        KeyCacheObject key = (KeyCacheObject)entry.getKey();
-
-                                        cacheCtx.addResult(res,
-                                            key,
-                                            getRes.value(),
-                                            skipVals,
-                                            keepCacheObjects,
-                                            deserializeBinary,
-                                            false,
-                                            getRes,
-                                            getRes.version(),
-                                            0,
-                                            0,
-                                            needVer);
-                                    }
-
-                                    return res;
-                                }
-                            }
-                        ));
-                    }
                 }
             }
             else {
@@ -2586,6 +2595,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         val = txEntry.applyEntryProcessors(val);
 
                     if (val != null) {
+                        if (consistency) {
+                            if (txEntry.op() != READ)
+                                throw new IgniteCheckedException(
+                                    "Consistency-get operation can not be performed after update operation.");
+                            else
+                                throw new IgniteCheckedException(
+                                    "Some values were read from explicit transaction's cache due to isolation mode. " +
+                                    "Consistency-get operation should always use non-cached values. " +
+                                    "It should be performed as a first get operation at " +
+                                    "REPEATABLE_READ or SERIALIZABLE transactions. ");
+                        }
+
                         GridCacheVersion ver = null;
 
                         if (needVer) {
@@ -2622,6 +2643,25 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                         cacheCtx.addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, false,
                             ver, 0, 0);
+                    }
+                    else {
+                        // Consistency violation was found at current tx and fixed at another tx.
+                        // Because of found violation entry was not finally marked as valid (!hasPreviousValue).
+                        // Retrying get operation to get fixed value.
+                        if (!txEntry.hasPreviousValue()) {
+                            while (true) {
+                                assert consistency /* implicit retry on getXXX */ && (optimistic() || readCommitted());
+
+                                try {
+                                    missed.put(key, txEntry.cached().version());
+
+                                    break;
+                                }
+                                catch (GridCacheEntryRemovedException ignored) {
+                                    txEntry.cached(entryEx(cacheCtx, txKey, topVer));
+                                }
+                            }
+                        }
                     }
                 }
                 else {
@@ -2718,7 +2758,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         GridCacheVersion readVer = null;
                         EntryGetResult getRes = null;
 
-                        if (!consistency && (!pessimistic() || readCommitted() && !skipVals)) {
+                        if ((!pessimistic() || (readCommitted() && !skipVals)) && !consistency) {
                             IgniteCacheExpiryPolicy accessPlc =
                                 optimistic() ? accessPolicy(cacheCtx, txKey, expiryPlc) : null;
 

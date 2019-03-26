@@ -77,6 +77,7 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
         prepareAndCheck(
             initiator,
             cnt,
+            raw,
             (ConsistencyRecoveryData data) -> {
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
                     // Recovery (inside tx).
@@ -96,7 +97,7 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
                 }
 
                 ENSURE_FIXED.accept(data); // Checks (outside tx).
-            }, raw);
+            });
     }
 
     /**

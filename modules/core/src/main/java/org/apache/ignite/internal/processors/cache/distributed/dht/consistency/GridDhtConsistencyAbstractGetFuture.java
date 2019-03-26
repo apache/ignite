@@ -32,44 +32,41 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public abstract class GridDhtConsistencyAbstractFuture<T> extends GridFutureAdapter<T> {
+public abstract class GridDhtConsistencyAbstractGetFuture extends GridFutureAdapter<Map<KeyCacheObject, EntryGetResult>> {
     /** Backup node's get futures. */
-    protected final Collection<GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> backupFuts;
+    protected final Collection<GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs;
 
     /** Topology version. */
     protected final AffinityTopologyVersion topVer;
-
-    /** Cctx. */
-    protected final GridCacheContext cctx;
-
     /**
      *
      */
-    protected GridDhtConsistencyAbstractFuture(
+    protected GridDhtConsistencyAbstractGetFuture(
         AffinityTopologyVersion topVer,
-        GridCacheContext cctx,
+        GridCacheContext<KeyCacheObject, EntryGetResult> ctx,
         Collection<KeyCacheObject> keys,
         boolean readThrough,
-        @Nullable UUID subjId,
+        UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        @Nullable String txLbl,
-        @Nullable MvccSnapshot mvccSnapshot) {
+        String txLbl,
+        MvccSnapshot mvccSnapshot,
+        boolean backups) {
         this.topVer = topVer;
-        this.cctx = cctx;
 
         Map<ClusterNode, Collection<KeyCacheObject>> mappings = new HashMap<>();
 
         for (KeyCacheObject key : keys) {
-            Collection<ClusterNode> nodes = cctx.affinity().backupsByKey(key, topVer);
+            Collection<ClusterNode> nodes = backups ?
+                ctx.affinity().backupsByKey(key, topVer):
+                ctx.affinity().nodesByKey(key, topVer);
 
             for (ClusterNode node : nodes) {
                 mappings.computeIfAbsent(node, k -> new HashSet<>());
@@ -78,11 +75,11 @@ public abstract class GridDhtConsistencyAbstractFuture<T> extends GridFutureAdap
             }
         }
 
-        backupFuts = new HashSet<>(mappings.size() - 1);
+        futs = new HashSet<>(mappings.size() - 1);
 
         for (Map.Entry<ClusterNode, Collection<KeyCacheObject>> entry : mappings.entrySet()) {
-            GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> backupFut = new GridPartitionedGetFuture<>(
-                (GridCacheContext<KeyCacheObject, EntryGetResult>)cctx, // Todo
+            GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut = new GridPartitionedGetFuture<>(
+                ctx,
                 entry.getValue(),
                 readThrough,
                 false, // Always backup.
@@ -99,9 +96,9 @@ public abstract class GridDhtConsistencyAbstractFuture<T> extends GridFutureAdap
                 mvccSnapshot,
                 entry.getKey()); // Explicit node instead of automated mapping.
 
-            backupFut.listen(this::onResult);
+            fut.listen(this::onResult);
 
-            backupFuts.add(backupFut);
+            futs.add(fut);
         }
     }
 
@@ -109,7 +106,7 @@ public abstract class GridDhtConsistencyAbstractFuture<T> extends GridFutureAdap
      *
      */
     public void init() {
-        for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : backupFuts)
+        for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs)
             fut.init(topVer);
     }
 

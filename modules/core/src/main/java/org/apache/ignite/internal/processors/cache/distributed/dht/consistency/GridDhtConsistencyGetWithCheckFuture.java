@@ -27,33 +27,31 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Checks data consistency. Checks that each backup value equals to primary value.
  */
-public class GridDhtConsistencyCheckFuture
-    extends GridDhtConsistencyAbstractFuture<Map<KeyCacheObject, EntryGetResult>> {
+public class GridDhtConsistencyGetWithCheckFuture extends GridDhtConsistencyAbstractGetFuture {
     /** Primary node's (current) get future. */
     private final IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> primaryFut;
 
     /**
      *
      */
-    public GridDhtConsistencyCheckFuture(
+    public GridDhtConsistencyGetWithCheckFuture(
         AffinityTopologyVersion topVer,
         IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> primaryFut,
         GridCacheContext cctx,
         Collection<KeyCacheObject> keys,
         boolean readThrough,
-        @Nullable UUID subjId,
+        UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        @Nullable String txLbl,
-        @Nullable MvccSnapshot mvccSnapshot) {
+        String txLbl,
+        MvccSnapshot mvccSnapshot) {
         super(topVer,
             cctx,
             keys,
@@ -65,7 +63,8 @@ public class GridDhtConsistencyCheckFuture
             expiryPlc,
             skipVals,
             txLbl,
-            mvccSnapshot);
+            mvccSnapshot,
+            true);
 
         this.primaryFut = primaryFut;
 
@@ -81,7 +80,7 @@ public class GridDhtConsistencyCheckFuture
             if (check())
                 onDone(primaryFut.result());
             else {
-                // todo event
+                // todo event ?
 
                 onDone(null,
                     new IgniteConsistencyViolationException("Distributed cache consistency violation detected."));
@@ -93,7 +92,7 @@ public class GridDhtConsistencyCheckFuture
      *
      */
     private boolean checkIsDone() {
-        for (IgniteInternalFuture fut : backupFuts) {
+        for (IgniteInternalFuture fut : futs) {
             if (!fut.isDone())
                 return false;
         }
@@ -107,7 +106,7 @@ public class GridDhtConsistencyCheckFuture
     private boolean check() {
         Map<KeyCacheObject, EntryGetResult> primaryRes = primaryFut.result();
 
-        for (IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut : backupFuts) {
+        for (IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut : futs) {
             Map<KeyCacheObject, EntryGetResult> backupRes = fut.result();
 
             for (Map.Entry<KeyCacheObject, EntryGetResult> entry : backupRes.entrySet()) {

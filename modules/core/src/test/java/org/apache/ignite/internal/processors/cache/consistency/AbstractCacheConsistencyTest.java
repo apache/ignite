@@ -119,17 +119,9 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                 Integer key = entry.getKey();
                 Integer latest = entry.getValue().latest;
 
-                // Regular check.
                 Integer res = raw ?
                     cache.getEntry(key).getValue() :
                     cache.get(key);
-
-                assertEquals(latest, res);
-
-                // Consistency check.
-                res = raw ?
-                    cache.withConsistency().getEntry(key).getValue() :
-                    cache.withConsistency().get(key);
 
                 assertEquals(latest, res);
             }
@@ -204,8 +196,8 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
     protected void prepareAndCheck(
         Ignite initiator,
         Integer cnt,
-        Consumer<ConsistencyRecoveryData> c,
-        boolean raw)
+        boolean raw,
+        Consumer<ConsistencyRecoveryData> c)
         throws Exception {
         IgniteCache<Integer, Integer> cache = initiator.getOrCreateCache(DEFAULT_CACHE_NAME);
 

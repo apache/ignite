@@ -480,11 +480,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void removeEntry(IgniteTxKey key) {
-        txMap.remove(key);
-    }
-
-    /** {@inheritDoc} */
     @Override public void seal() {
         if (readView != null)
             readView.seal();

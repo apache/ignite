@@ -100,6 +100,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
@@ -529,6 +530,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
+    /** */
+    public final GridCacheProxyImpl<K, V> withConsistency(){
+        CacheOperationContext opCtx = new CacheOperationContext(
+            false,
+            null,
+            false,
+            null,
+            false,
+            null,
+            false,
+            true,
+            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
+
+        return new GridCacheProxyImpl<>(ctx, this, opCtx);
+    }
+
     /** {@inheritDoc} */
     @Override public final <K1, V1> GridCacheProxyImpl<K1, V1> keepBinary() {
         CacheOperationContext opCtx = new CacheOperationContext(
@@ -540,22 +557,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             false,
-            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
-
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
-    }
-
-    /** {@inheritDoc} */
-    public final <K1, V1> IgniteInternalCache<K1, V1> consistency(){
-        CacheOperationContext opCtx = new CacheOperationContext(
-            false,
-            null,
-            false,
-            null,
-            false,
-            null,
-            false,
-            true,
             DFLT_ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
@@ -4809,7 +4810,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 needVer).get();
         }
         catch (IgniteConsistencyViolationException e) {
-            fixConsistency(key);
+            fixConsistencyViolation(key);
 
             return get0(key, taskName, deserializeBinary, needVer);
         }
@@ -4876,7 +4877,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
         catch (IgniteConsistencyViolationException e) {
             for (K key : keys)
-                fixConsistency(key);
+                fixConsistencyViolation(key);
 
             return getAll0(keys, deserializeBinary, needVer);
         }
@@ -4885,21 +4886,24 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * @param key Key.
      */
-    private void fixConsistency(final K key) throws IgniteCheckedException {
+    private void fixConsistencyViolation(final K key) throws IgniteCheckedException {
         final GridNearTxLocal orig = checkCurrentTx();
 
         assert orig == null || orig.optimistic() || orig.readCommitted();
 
-        if (orig != null)
-            orig.txState().removeEntry(ctx.txKey(ctx.toCacheKeyObject(key)));
-
+        // Async check and recover if necessary.
         ctx.kernalContext().closure().callLocalSafe(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                // Todo timeout?
+            @Override public Void call() throws IgniteCheckedException {
                 try (Transaction tx = ctx.grid().transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
-                    consistency().get(key);
+                    withConsistency().get(key);
 
-                    tx.commit();
+                    final GridNearTxLocal tx0 = checkCurrentTx();
+
+                    IgniteTxKey txKey = ctx.txKey(ctx.toCacheKeyObject(key));
+
+                    // Value was broken, fixed locally and should be spread across the topology.
+                    if (tx0.txState().hasWriteKey(txKey))
+                        tx.commit();
                 }
 
                 return null;

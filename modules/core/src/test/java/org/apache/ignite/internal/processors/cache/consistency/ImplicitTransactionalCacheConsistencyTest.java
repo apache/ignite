@@ -51,11 +51,11 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
         prepareAndCheck(
             initiator,
             1,
+            raw,
             (ConsistencyRecoveryData data) -> {
                 GET_CHECK_AND_FIX.accept(data);
                 ENSURE_FIXED.accept(data);
-            },
-            raw);
+            });
     }
 
     /**
@@ -76,10 +76,10 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
         prepareAndCheck(
             initiator,
             amount,
+            raw,
             (ConsistencyRecoveryData data) -> {
                 GETALL_CHECK_AND_FIX.accept(data);
                 ENSURE_FIXED.accept(data);
-            },
-            raw);
+            });
     }
 }
