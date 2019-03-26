@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.spi.communication.tcp.IgniteCacheSslStartStopSelfTest;
+import org.apache.ignite.spi.communication.tcp.IgniteCacheSslStartStopWithPersistenceSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -25,6 +26,9 @@ import org.junit.runners.Suite;
  * Test suite.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({IgniteCacheSslStartStopSelfTest.class})
+@Suite.SuiteClasses({
+    IgniteCacheSslStartStopSelfTest.class,
+    IgniteCacheSslStartStopWithPersistenceSelfTest.class
+})
 public class IgniteCacheFailoverTestSuiteSsl {
 }
