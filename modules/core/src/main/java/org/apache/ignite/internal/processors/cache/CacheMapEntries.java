@@ -68,7 +68,7 @@ public class CacheMapEntries {
     private boolean ordered = true;
 
     /** */
-    private KeyCacheObject temp;
+    private KeyCacheObject lastKey;
 
     /** */
     public CacheMapEntries(AffinityTopologyVersion topVer, int partId, GridCacheContext cctx, boolean preload) {
@@ -80,10 +80,10 @@ public class CacheMapEntries {
 
     /** */
     public void add(KeyCacheObject key, CacheObject val, long expTime, long ttl, GridCacheVersion ver, GridDrType drType) {
-        if (temp != null && ordered && temp.hashCode() >= key.hashCode())
+        if (lastKey != null && ordered && lastKey.hashCode() >= key.hashCode())
             ordered = false;
 
-        CacheMapEntryInfo old = infos.put(temp = key, new CacheMapEntryInfo(this, val, expTime, ttl, ver, drType));
+        CacheMapEntryInfo old = infos.put(lastKey = key, new CacheMapEntryInfo(this, val, expTime, ttl, ver, drType));
 
         assert old == null || GridCacheMapEntry.ATOMIC_VER_COMPARATOR.compare(old.version(), ver) < 0 :
             "Entry version mismatch: prev=" + old.version() + ", current=" + ver;
@@ -138,9 +138,6 @@ public class CacheMapEntries {
 
                 if (entry == null)
                     continue;
-
-                // todo ensure free space
-                // todo check obsolete
 
                 entry.lockEntry();
 
@@ -211,6 +208,7 @@ public class CacheMapEntries {
         // Try evict partitions.
         for (CacheMapEntryInfo info : infos.values()) {
             GridDhtCacheEntry entry = info.cacheEntry();
+
             if (entry != null)
                 entry.onUnlock();
         }
@@ -329,6 +327,8 @@ public class CacheMapEntries {
             }
 
             if (!newRows.isEmpty()) {
+                // cctx.shared().database().ensureFreeSpace(cctx.dataRegion());
+
                 cctx.offheap().dataStore(entries.part()).rowStore().
                     addRows(newRows, cctx.group().statisticsHolderData());
 

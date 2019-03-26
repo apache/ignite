@@ -1000,9 +1000,11 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         int written = 0;
 
         for (T row : rows) {
-            boolean fragment = row.size() > maxPayloadSIze;
+            int size = row.size();
 
-            int payloadSize = row.size() % maxPayloadSIze;
+            boolean fragment = size > maxPayloadSIze;
+
+            int payloadSize = size % maxPayloadSIze;
 
             assert payloadSize <= getFreeSpace(pageAddr) : "can't call addRow if not enough space for the whole row";
 
@@ -1035,7 +1037,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
             setLinkByPageId(row, pageId, cnt);
 
-            ++cnt;
+            cnt += 1;
         }
 
         setDirectCount(pageAddr, cnt);

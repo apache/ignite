@@ -344,10 +344,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                     assert written == size : "The object is not fully written into page: pageId=" + pageId +
                         ", written=" + written + ", size=" + row.size();
-
-                    evictionTracker.touchPage(pageId);
                 }
             }
+
+            evictionTracker.touchPage(pageId);
 
             putPage((AbstractDataPageIO)io, pageId, page, pageAddr, statHolder);
 
