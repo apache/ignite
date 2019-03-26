@@ -41,7 +41,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinAffinityAwarenessMappings;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinAffinityAwarenessMappingGroup;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
@@ -439,7 +439,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     throw new IllegalArgumentException();
             }
             return new JdbcResponse(new JdbcQueryExecuteResult(req.cursorId(), processor.updateCnt(), null),
-                connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+                connCtx.getAffinityTopologyVersionIfChanged());
         }
         catch (Exception e) {
             U.error(null, "Error processing file batch", e);
@@ -608,7 +608,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 // responses for the same query on the client side
                 return new JdbcResponse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams),
-                    connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+                    connCtx.getAffinityTopologyVersionIfChanged());
             }
 
             if (results.size() == 1) {
@@ -652,7 +652,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     cur.close();
                 }
 
-                return new JdbcResponse(res, connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+                return new JdbcResponse(res, connCtx.getAffinityTopologyVersionIfChanged());
             }
             else {
                 List<JdbcResultInfo> jdbcResults = new ArrayList<>(results.size());
@@ -685,7 +685,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 }
 
                 return new JdbcResponse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults, items, last),
-                    connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+                    connCtx.getAffinityTopologyVersionIfChanged());
             }
         }
         catch (Exception e) {
@@ -804,7 +804,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 cur.close();
             }
 
-            return new JdbcResponse(res, connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+            return new JdbcResponse(res, connCtx.getAffinityTopologyVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -839,7 +839,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             JdbcQueryMetadataResult res = new JdbcQueryMetadataResult(req.cursorId(),
                 cur.meta());
 
-            return new JdbcResponse(res, connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+            return new JdbcResponse(res, connCtx.getAffinityTopologyVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -928,10 +928,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             if (firstErr.isEmpty())
                 return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, ClientListenerResponse.STATUS_SUCCESS,
-                    null), connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+                    null), connCtx.getAffinityTopologyVersionIfChanged());
             else
                 return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, firstErr.getKey(), firstErr.getValue()),
-                    connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+                    connCtx.getAffinityTopologyVersionIfChanged());
         }
         catch (QueryCancelledException e) {
             return exceptionToResult(e);
@@ -1041,7 +1041,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             JdbcMetaTablesResult res = new JdbcMetaTablesResult(tabMetas);
 
-            return new JdbcResponse(res, connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+            return new JdbcResponse(res, connCtx.getAffinityTopologyVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to get tables metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1070,7 +1070,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             else
                 res = new JdbcMetaColumnsResult(colsMeta);
 
-            return new JdbcResponse(res, connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+            return new JdbcResponse(res, connCtx.getAffinityTopologyVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to get columns metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1088,7 +1088,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             Collection<JdbcIndexMeta> idxInfos = meta.getIndexesMeta(req.schemaName(), req.tableName());
 
             return new JdbcResponse(new JdbcMetaIndexesResult(idxInfos),
-                connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+                connCtx.getAffinityTopologyVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1115,7 +1115,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             JdbcMetaParamsResult res = new JdbcMetaParamsResult(meta);
 
-            return new JdbcResponse(res, connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+            return new JdbcResponse(res, connCtx.getAffinityTopologyVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1133,7 +1133,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             Collection<JdbcPrimaryKeyMeta> pkMeta = meta.getPrimaryKeys(req.schemaName(), req.tableName());
 
             return new JdbcResponse(new JdbcMetaPrimaryKeysResult(pkMeta),
-                connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+                connCtx.getAffinityTopologyVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1153,7 +1153,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             SortedSet<String> schemas = meta.getSchemasMeta(schemaPtrn);
 
             return new JdbcResponse(new JdbcMetaSchemasResult(schemas),
-                connCtx.checkAffinityTopologyVersion().getVersionIfChanged());
+                connCtx.getAffinityTopologyVersionIfChanged());
         }
         catch (Exception e) {
             U.error(log, "Failed to get schemas metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1273,21 +1273,21 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         return null;
     }
 
-    private JdbcResponse getCachePartitions (JdbcCachePartitionsRequest req) {
-        JdbcThinAffinityAwarenessMappings mappings = new JdbcThinAffinityAwarenessMappings();
+    private JdbcResponse getCachePartitions(JdbcCachePartitionsRequest req) {
+        List<JdbcThinAffinityAwarenessMappingGroup> mappings = new ArrayList<>();
 
-        JdbcAffinityTopologyVersion topVer = connCtx.checkAffinityTopologyVersion();
+        AffinityTopologyVersion topVer = connCtx.getAffinityTopologyVersion();
 
-        for (int cacheId: req.cacheIds()) {
+        for (int cacheId : req.cacheIds()) {
             Map<UUID, Set<Integer>> partitionsMap = getPartitionsMap(
                 connCtx.kernalContext().cache().cacheDescriptor(cacheId),
-                topVer.getVersion());
+                topVer);
 
-            mappings.add(cacheId, partitionsMap);
+            mappings.add(new JdbcThinAffinityAwarenessMappingGroup(cacheId, partitionsMap));
         }
 
-        return new JdbcResponse(new JdbcCachePartitionsResult(mappings),
-            topVer.getVersionIfChanged());
+        // TODO: 26.03.19 use another logic for checking topology version in case of JdbcCachePartitionsResponse and Query Response with PartitionResult.
+        return new JdbcResponse(new JdbcCachePartitionsResult(mappings), topVer);
     }
 
     /**

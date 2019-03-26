@@ -17,27 +17,30 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
 
 public final class AffinityCache {
+    /** Partition distributions cache limit. */
+    public static final int DISTRIBUTIONS_CACHE_LIMIT = 1000;
+
+    /** SQL cache limit. */
+    public static final int SQL_CACHE_LIMIT = 100_000;
 
     private final AffinityTopologyVersion version;
 
-    // TODO: Control maximum size of the cache. OOME is possible otherwise.
-    private final Map<Integer, Map<Integer, UUID>> cachePartitionsDistribution;
+    private final GridBoundedLinkedHashMap<Integer, Map<Integer, UUID>> cachePartitionsDistribution;
 
-    // TODO: Control maximum size of the cache. OOME is possible otherwise.
-    private final Map<String, JdbcThinPartitionResult> sqlCache;
+    private final GridBoundedLinkedHashMap<String, JdbcThinPartitionResult> sqlCache;
 
     public AffinityCache(AffinityTopologyVersion version) {
         this.version = version;
 
-        cachePartitionsDistribution = new HashMap<>();
+        cachePartitionsDistribution = new GridBoundedLinkedHashMap<>(DISTRIBUTIONS_CACHE_LIMIT);
 
-        sqlCache = new HashMap<>();
+        sqlCache = new GridBoundedLinkedHashMap<>(SQL_CACHE_LIMIT);
     }
 
     /**

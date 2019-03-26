@@ -230,11 +230,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         super.onDisconnected();
     }
 
-    /**
-     * Atomically check whether affinity topology version has changed since the last call and sets new version as a last.
-     * @return New version, if it has changed since the last call.
-     */
-    public JdbcAffinityTopologyVersion checkAffinityTopologyVersion() {
+//    /**
+//     * Atomically check whether affinity topology version has changed since the last call and sets new version as a last.
+//     * @return New version, if it has changed since the last call.
+//     */
+    public AffinityTopologyVersion getAffinityTopologyVersion() {
         while (true) {
             AffinityTopologyVersion oldVer = lastAffinityTopologyVersion.get();
             AffinityTopologyVersion newVer = ctx.cache().context().exchange().readyAffinityVersion();
@@ -248,7 +248,25 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                     continue;
             }
 
-            return new JdbcAffinityTopologyVersion(newVer, changed);
+            return newVer;
+        }
+    }
+
+    public AffinityTopologyVersion getAffinityTopologyVersionIfChanged() {
+        while (true) {
+            AffinityTopologyVersion oldVer = lastAffinityTopologyVersion.get();
+            AffinityTopologyVersion newVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+            boolean changed = oldVer == null || oldVer.compareTo(newVer) < 0;
+
+            if (changed) {
+                boolean success = lastAffinityTopologyVersion.compareAndSet(oldVer, newVer);
+
+                if (!success)
+                    continue;
+            }
+
+            return changed ? newVer : null;
         }
     }
 }

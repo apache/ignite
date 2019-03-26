@@ -863,10 +863,7 @@ public class JdbcThinConnection implements Connection {
         }
         try {
             try {
-                // TODO VO: Do not calculate if current context is sticky
-                Set<UUID> nodeIds = calculateNodeIds(req);
-
-                JdbcThinTcpIo cliIo = stickyIo == null ? cliIo(nodeIds) : stickyIo;
+                JdbcThinTcpIo cliIo = stickyIo == null ? cliIo(calculateNodeIds(req)) : stickyIo;
 
                 if (stmt != null && stmt.requestTimeout() != NO_TIMEOUT) {
                     reqTimeoutTimerTask = new RequestTimeoutTimerTask(
@@ -936,88 +933,78 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
-     * Calculate node UUID.
+     * Calculate node UUIDs.
      *
      * @param req Jdbc request for which we'll try to calculate node id.
      * @return node UUID or null if failed to calculate.
      */
     @Nullable private Set<UUID> calculateNodeIds(JdbcRequest req) {
-        Set<UUID> bestEffortAffinityNodeIds = null;
+        if (!bestEffortAffinity || !(req instanceof JdbcQueryExecuteRequest) || affinityCache == null)
+            return null;
 
-        // TODO VO: Avoid multiple casts and multiple map lookups
-        if (bestEffortAffinity && req instanceof JdbcQueryExecuteRequest && affinityCache != null &&
-            affinityCache.containsPartitionResult(((JdbcQueryExecuteRequest)req).sqlQuery())) {
+        JdbcQueryExecuteRequest qry = (JdbcQueryExecuteRequest)req;
 
-            JdbcThinPartitionResult partRes = affinityCache.partitionResult(((JdbcQueryExecuteRequest)req).sqlQuery());
+        JdbcThinPartitionResult partRes = affinityCache.partitionResult(qry.sqlQuery());
 
-            if (partRes != null) {
-                int[] parts = calculatePartitions(partRes, ((JdbcQueryExecuteRequest)req).arguments());
+        if (partRes == null)
+            return null;
 
-                if (parts != null && parts.length != 0) {
-                    Map<Integer, UUID> cacheDistr = affinityCache.cacheDistribution(partRes.cacheId());
+        int[] parts = calculatePartitions(partRes, qry.arguments());
 
-                    if (cacheDistr == null) {
-                        // TODO VO: May be it makes sense to move it to separate method.
-                        JdbcResponse res;
+        if (parts == null || parts.length == 0)
+            return null;
 
-                        try {
-                            res = cliIo(null).sendRequest(
-                                new JdbcCachePartitionsRequest(Collections.singleton(partRes.cacheId())), null);
-                        }
-                        catch (IOException e) {
-                            // TODO VO: Most probably the only possible reason of IO exception here is broken connection.
-                            // TODO VO: We can close connection and exit here.
+        Map<Integer, UUID> cacheDistr = affinityCache.cacheDistribution(partRes.cacheId());
 
-                            // TODO VO: Need to define semantics on what happens in case one connection goes down.
+        if (cacheDistr == null)
+            cacheDistr = retrieveCacheDistribution(partRes.cacheId());
 
-                            // TODO: 07.03.19 log warning or smth.
-                            // Skip best effort affinity optimization in case of exception during retrieving
-                            // partition destribution.
-                            return null;
-                        }
+        if (parts.length == 1)
+            return Collections.singleton(cacheDistr.get(parts[0]));
+        else {
+            Set<UUID> bestEffortAffinityNodeIds = new HashSet<>();
 
-                        // TODO VO: Non success statuses are not possible, aren't they?
-                        if (res.status() != ClientListenerResponse.STATUS_SUCCESS) {
-                            // TODO: 07.03.19 log warning or smth.
-                            // Skip best effort affinity optimization in case of any response status other then
-                            // STATUS_SUCCESS.
-                            return null;
-                        }
+            for (int part : parts)
+                bestEffortAffinityNodeIds.add(cacheDistr.get(part));
 
-                        if (res.affinityVersionChanged() &&
-                            (affinityCache == null || !affinityCache.version().equals(res.affinityVersion())))
-                            affinityCache = new AffinityCache(res.affinityVersion());
+            return bestEffortAffinityNodeIds;
+        }
+    }
 
-                        JdbcThinAffinityAwarenessMappings mappings =
-                            ((JdbcCachePartitionsResult) res.response()).getMappings();
+    private Map<Integer, UUID> retrieveCacheDistribution(int cacheId) {
+        JdbcResponse res;
 
-                        // Despite the fact that, at this moment, we request partition destribution only for one cache,
-                        // we might retrieve multiple caches but exactly with same distribution.
-                        assert mappings.mappings().size() == 1;
+        try {
+            res = cliIo(null).sendRequest(
+                new JdbcCachePartitionsRequest(Collections.singleton(cacheId)), null);
+        }
+        catch (IOException e) {
+            onDisconnect();
 
-                        JdbcThinAffinityAwarenessMappingGroup mappingGrp = mappings.mappings().get(0);
-
-                        cacheDistr = mappingGrp.revertMappings();
-
-                        for (int cacheId: mappingGrp.cacheIds())
-                            affinityCache.addCacheDistribution(cacheId, cacheDistr);
-                    }
-
-                    if (parts.length == 1)
-                        bestEffortAffinityNodeIds = Collections.singleton(cacheDistr.get(parts[0]));
-                    else {
-                        bestEffortAffinityNodeIds = new HashSet<>();
-
-                        for (int part: parts)
-                            bestEffortAffinityNodeIds.add(cacheDistr.get(part));
-
-                        return bestEffortAffinityNodeIds;
-                    }
-                }
-            }
+            return null;
         }
 
-        return bestEffortAffinityNodeIds;
+        assert res.status() == ClientListenerResponse.STATUS_SUCCESS;
+
+        if (res.affinityVersionChanged() &&
+            (affinityCache == null || !affinityCache.version().equals(res.affinityVersion())))
+            affinityCache = new AffinityCache(res.affinityVersion());
+
+        List<JdbcThinAffinityAwarenessMappingGroup> mappings =
+            ((JdbcCachePartitionsResult)res.response()).getMappings();
+
+        // Despite the fact that, at this moment, we request partition destribution only for one cache,
+        // we might retrieve multiple caches but exactly with same distribution.
+        assert mappings.size() == 1;
+
+        JdbcThinAffinityAwarenessMappingGroup mappingGrp = mappings.get(0);
+
+        Map<Integer, UUID> cacheDistr = mappingGrp.revertMappings();
+
+        for (int mpCacheId : mappingGrp.cacheIds())
+            affinityCache.addCacheDistribution(mpCacheId, cacheDistr);
+
+        return cacheDistr;
     }
 
     /**

@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinAffinityAwarenessMappings;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinAffinityAwarenessMappingGroup;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
 // TODO VO: Add aff topology version and use it to check whether it is valid to add collected distributions to current AffinityCache.
 public class JdbcCachePartitionsResult extends JdbcResult {
 
-    private JdbcThinAffinityAwarenessMappings mappings;
+    private List<JdbcThinAffinityAwarenessMappingGroup> mappings;
 
     /**
      * Default constructor.
@@ -35,13 +37,13 @@ public class JdbcCachePartitionsResult extends JdbcResult {
         super(CACHE_PARTITIONS);
     }
 
-    public JdbcCachePartitionsResult(JdbcThinAffinityAwarenessMappings mappings) {
+    public JdbcCachePartitionsResult(List<JdbcThinAffinityAwarenessMappingGroup> mappings) {
         super(CACHE_PARTITIONS);
 
         this.mappings = mappings;
     }
 
-    public JdbcThinAffinityAwarenessMappings getMappings() {
+    public List<JdbcThinAffinityAwarenessMappingGroup> getMappings() {
         return mappings;
     }
 
@@ -51,13 +53,22 @@ public class JdbcCachePartitionsResult extends JdbcResult {
 
         assert mappings != null;
 
-        mappings.writeBinary(writer, ver);
+        writer.writeInt(mappings.size());
+
+        for (JdbcThinAffinityAwarenessMappingGroup mappingGroup : mappings)
+            mappingGroup.writeBinary(writer, ver);
     }
 
     @Override
     public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.readBinary(reader, ver);
+        List<JdbcThinAffinityAwarenessMappingGroup> res = new ArrayList<>();
 
-        mappings = JdbcThinAffinityAwarenessMappings.readMappings(reader, ver);
+        int mappingsSize = reader.readInt();
+
+        for (int i = 0; i < mappingsSize; i++)
+            res.add(JdbcThinAffinityAwarenessMappingGroup.readGroup(reader, ver));
+
+        mappings = res;
     }
 }
