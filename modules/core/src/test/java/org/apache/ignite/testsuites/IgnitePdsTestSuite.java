@@ -41,6 +41,8 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryNoStoreLeakTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSmokeTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.UsedPagesMetricTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.UsedPagesMetricTestPersistence;
 import org.apache.ignite.internal.processors.cache.persistence.wal.CpTriggeredWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ExplicitWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBufferTest;
@@ -86,6 +88,8 @@ public class IgnitePdsTestSuite extends TestSuite {
 
         // Metrics
         suite.addTestSuite(FillFactorMetricTest.class);
+        suite.addTestSuite(UsedPagesMetricTest.class);
+        suite.addTestSuite(UsedPagesMetricTestPersistence.class);
 
         // Binary meta tests.
         suite.addTestSuite(IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest.class);

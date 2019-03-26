@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Impl
 
             Name = reader.ReadString();
             TotalAllocatedPages = reader.ReadLong();
+            TotalUsedPages = reader.ReadLong();
             TotalAllocatedSize = reader.ReadLong();
             AllocationRate = reader.ReadFloat();
             EvictionRate = reader.ReadFloat();
@@ -56,11 +57,14 @@ namespace Apache.Ignite.Core.Impl
         public long TotalAllocatedPages { get; private set; }
 
         /** <inheritdoc /> */
+        public long TotalUsedPages { get; private set; }
+
+        /** <inheritdoc /> */
         public long TotalAllocatedSize { get; private set; }
 
         /** <inheritdoc /> */
         public float AllocationRate { get; private set; }
-        
+
         /** <inheritdoc /> */
         public float EvictionRate { get; private set; }
 
