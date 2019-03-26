@@ -522,7 +522,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         const keyClsName = this.javaTypes.shortClassName(map.keyClsName);
         const valClsName = this.javaTypes.shortClassName(map.valClsName);
 
-        const genericTypeShort = this.javaTypes.shortClassName(map.keyClsGenericType);
+        const genericTypeShort = map.keyClsGenericType ? this.javaTypes.shortClassName(map.keyClsGenericType) : '';
         const keyClsGeneric = map.keyClsGenericType ?
             map.isKeyClsGenericTypeExtended ? `<? extends ${genericTypeShort}>` : `<${genericTypeShort}>`
             : '';
