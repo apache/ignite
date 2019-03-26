@@ -330,7 +330,9 @@ public class CassandraHelper {
         }
     }
 
-    /** */
+    /**
+     * Note that setting of cassandra.storagedir property is expected.
+     */
     public static void startEmbeddedCassandra(Logger log) {
         ClassLoader clsLdr = CassandraHelper.class.getClassLoader();
         URL url = clsLdr.getResource(EMBEDDED_CASSANDRA_YAML);
