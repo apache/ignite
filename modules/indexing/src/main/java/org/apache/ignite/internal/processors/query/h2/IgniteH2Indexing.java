@@ -1002,7 +1002,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public ResultSet executeSqlQueryWithTimer(Connection conn, String sql, @Nullable Collection<Object> params,
-        boolean useStmtCache, int timeoutMillis, @Nullable GridQueryCancel cancel, H2QueryInfo qryInfo)
+        boolean useStmtCache, int timeoutMillis, @Nullable GridQueryCancel cancel, final H2QueryInfo qryInfo)
         throws IgniteCheckedException {
         return executeSqlQueryWithTimer(preparedStatementWithParams(conn, sql, params, useStmtCache),
             conn, sql, params, timeoutMillis, cancel, qryInfo);
@@ -1022,7 +1022,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public ResultSet executeSqlQueryWithTimer(PreparedStatement stmt, Connection conn, String sql,
         @Nullable Collection<Object> params, int timeoutMillis, @Nullable GridQueryCancel cancel,
-        H2QueryInfo qryInfo)
+        final H2QueryInfo qryInfo)
         throws IgniteCheckedException {
 
         if (qryInfo != null)
