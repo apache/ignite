@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 if (socketMap != null &&
                     distributionMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
                 {
-                    var partition = GetPartition(key, cachePartMap.PartitionNodeIds.Count);
+                    var partition = GetPartition(key, cachePartMap.PartitionNodeIds.Count, cachePartMap.KeyConfiguration);
                     var nodeId = cachePartMap.PartitionNodeIds[partition];
 
                     ClientSocket socket;
@@ -435,9 +435,9 @@ namespace Apache.Ignite.Core.Impl.Client
             }
         }
 
-        private int GetPartition<TKey>(TKey key, int partitionCount)
+        private int GetPartition<TKey>(TKey key, int partitionCount, IDictionary<int, int> keyConfiguration)
         {
-            var keyHash = BinaryHashCodeUtils.GetHashCode(key, _marsh);
+            var keyHash = BinaryHashCodeUtils.GetHashCode(key, _marsh, keyConfiguration);
             return ClientRendezvousAffinityFunction.GetPartitionForKey(keyHash, partitionCount);
         }
 

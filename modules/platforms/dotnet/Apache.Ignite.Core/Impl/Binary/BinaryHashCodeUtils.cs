@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>

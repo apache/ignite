@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private readonly List<KeyValuePair<Guid, List<int>>> _partitionMap;
 
         /** */
-        private readonly List<KeyValuePair<int, ClientCacheKeyConfiguration[]>> _caches;
+        private readonly List<KeyValuePair<int, Dictionary<int, int>>> _caches;
 
         public ClientCacheAffinityAwarenessGroup(IBinaryStream stream)
         {
@@ -41,26 +41,29 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             var applicable = stream.ReadBool();
 
             var cachesCount = stream.ReadInt();
-            _caches = new List<KeyValuePair<int, ClientCacheKeyConfiguration[]>>(cachesCount);
+            _caches = new List<KeyValuePair<int, Dictionary<int, int>>>(cachesCount);
 
             for (var i = 0; i < cachesCount; i++)
             {
                 var cacheId = stream.ReadInt();
                 if (!applicable)
                 {
-                    _caches.Add(new KeyValuePair<int, ClientCacheKeyConfiguration[]>(cacheId, null));
+                    _caches.Add(new KeyValuePair<int, Dictionary<int, int>>(cacheId, null));
                     continue;
                 }
 
                 var keyCfgCount = stream.ReadInt();
-                var keyCfgs = new ClientCacheKeyConfiguration[keyCfgCount];
-
-                for (var j = 0; j < keyCfgCount; j++)
+                Dictionary<int, int> keyCfgs = null;
+                if (keyCfgCount > 0)
                 {
-                    keyCfgs[j] = new ClientCacheKeyConfiguration(stream.ReadInt(), stream.ReadInt());
+                    keyCfgs = new Dictionary<int, int>(keyCfgCount);
+                    for (var j = 0; j < keyCfgCount; j++)
+                    {
+                        keyCfgs[stream.ReadInt()] = stream.ReadInt();
+                    }
                 }
 
-                _caches.Add(new KeyValuePair<int, ClientCacheKeyConfiguration[]>(cacheId, keyCfgs));
+                _caches.Add(new KeyValuePair<int, Dictionary<int, int>>(cacheId, keyCfgs));
             }
 
             if (!applicable)
@@ -91,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Gets the caches.
         /// </summary>
-        public List<KeyValuePair<int, ClientCacheKeyConfiguration[]>> Caches
+        public List<KeyValuePair<int, Dictionary<int, int>>> Caches
         {
             get { return _caches; }
         }

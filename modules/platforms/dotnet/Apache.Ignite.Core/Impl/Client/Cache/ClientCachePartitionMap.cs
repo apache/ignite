@@ -33,10 +33,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private readonly IList<Guid> _partitionNodeIds;
 
         /** Key configuration. */
-        private readonly IList<ClientCacheKeyConfiguration> _keyConfiguration;
+        private readonly IDictionary<int, int> _keyConfiguration;
 
         public ClientCachePartitionMap(int cacheId, IList<Guid> partitionNodeIds,
-            IList<ClientCacheKeyConfiguration> keyConfiguration = null)
+            IDictionary<int, int> keyConfiguration = null)
         {
             Debug.Assert(partitionNodeIds != null && partitionNodeIds.Count > 0);
 
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             get { return _cacheId; }
         }
 
-        public IList<ClientCacheKeyConfiguration> KeyConfiguration
+        public IDictionary<int, int> KeyConfiguration
         {
             get { return _keyConfiguration; }
         }
