@@ -55,8 +55,7 @@ public class LongRunningQueryManager {
      * - etc...
      *
      * If the multiplier <= 1, the warning message is printed once.
-     * */
-
+     */
     private volatile int timeoutMult = 2;
 
     /**
