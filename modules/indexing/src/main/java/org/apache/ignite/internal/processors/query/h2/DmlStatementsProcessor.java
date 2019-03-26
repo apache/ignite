@@ -111,20 +111,21 @@ public class DmlStatementsProcessor {
         }
     };
 
-    /** Dummy anonymous class to advance RMV anonymous value to 5. */
-    private static final Runnable DUMMY_4 = new Runnable() {
-        @Override public void run() {
-            // No-op.
-        }
-    };
+    /** Remove updater for compatibility with < 2.7.x. Must not be moved around to keep at anonymous position 4. */
+    public static final IgniteInClosure<MutableEntry<Object, Object>> RMV_OLD =
+        new IgniteInClosure<MutableEntry<Object, Object>>() {
+            @Override public void apply(MutableEntry<Object, Object> e) {
+                e.remove();
+            }
+        };
 
     /** Remove updater. Must not be moved around to keep at anonymous position 5. */
     public static final IgniteInClosure<MutableEntry<Object, Object>> RMV =
         new IgniteInClosure<MutableEntry<Object, Object>>() {
-        @Override public void apply(MutableEntry<Object, Object> e) {
-            e.remove();
-        }
-    };
+            @Override public void apply(MutableEntry<Object, Object> e) {
+                e.remove();
+            }
+        };
 
     /**
      * Entry value updater.
