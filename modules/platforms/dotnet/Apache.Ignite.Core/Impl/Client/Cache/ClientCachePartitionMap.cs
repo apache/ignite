@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /// <summary>
-        /// Key configuration: map from key type id to affinity field id.
+        /// Key configuration: map from key type id to affinity key field id.
         /// </summary>
         public IDictionary<int, int> KeyConfiguration
         {
