@@ -801,7 +801,7 @@ public class GridMapQueryExecutor {
                         final PreparedStatement stmt = h2.preparedStatementWithParams(conn, qry.query(),
                             params0, true);
 
-                        qryInfo = new MapH2QueryInfo(stmt, qry.query(), params0, node, reqId, segmentId);
+                        qryInfo = new MapH2QueryInfo(stmt, qry.query(), node, reqId, segmentId);
 
                         rs = h2.executeSqlQueryWithTimer(stmt, conn, qry.query(),
                             params0,

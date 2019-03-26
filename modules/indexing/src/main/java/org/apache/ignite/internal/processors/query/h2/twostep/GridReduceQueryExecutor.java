@@ -840,8 +840,7 @@ public class GridReduceQueryExecutor {
                             final PreparedStatement stmt = h2.preparedStatementWithParams(r.connection(), rdc.query(),
                                 params0, false);
 
-                            // TODO: Pass original SQL
-                            ReduceH2QueryInfo qryInfo = new ReduceH2QueryInfo(stmt, rdc.query(), params0, qryReqId);
+                            ReduceH2QueryInfo qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(), qryReqId);
 
                             ResultSet res = h2.executeSqlQueryWithTimer(stmt, r.connection(),
                                 rdc.query(),

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.PreparedStatement;
-import java.util.Collection;
 
 /**
  * Reduce query info.
@@ -30,12 +29,10 @@ public class ReduceH2QueryInfo extends H2QueryInfo {
     /**
      * @param stmt Query statement.
      * @param sql Query statement.
-     * @param params Query parameters.
      * @param reqId Request ID.
      */
-    public ReduceH2QueryInfo(PreparedStatement stmt, String sql, Collection<Object> params,
-        long reqId) {
-        super(QueryType.REDUCE, stmt, sql, params);
+    public ReduceH2QueryInfo(PreparedStatement stmt, String sql, long reqId) {
+        super(QueryType.REDUCE, stmt, sql);
 
         this.reqId= reqId;
     }
