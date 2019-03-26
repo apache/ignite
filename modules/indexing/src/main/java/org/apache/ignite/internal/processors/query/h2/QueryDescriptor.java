@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 /**
  * Key for cached two-step query.
  */
-public class QueryParserCacheKey {
+public class QueryDescriptor {
     /** */
     private final String schemaName;
 
@@ -28,7 +28,7 @@ public class QueryParserCacheKey {
     private final String sql;
 
     /** */
-    private final boolean grpByCollocated;
+    private final boolean collocated;
 
     /** */
     private final boolean distributedJoins;
@@ -37,28 +37,97 @@ public class QueryParserCacheKey {
     private final boolean enforceJoinOrder;
 
     /** */
-    private final boolean isLocal;
+    private final boolean loc;
+
+    /** Skip reducer on update flag. */
+    private final boolean skipReducerOnUpdate;
+
+    /** Batched flag. */
+    private final boolean batched;
 
     /**
      * @param schemaName Schema name.
      * @param sql Sql.
-     * @param grpByCollocated Collocated GROUP BY.
+     * @param collocated Collocated GROUP BY.
      * @param distributedJoins Distributed joins enabled.
      * @param enforceJoinOrder Enforce join order of tables.
-     * @param isLocal Query is local flag.
+     * @param loc Query is local flag.
+     * @param skipReducerOnUpdate Skip reducer on update flag.
      */
-    QueryParserCacheKey(String schemaName,
+    QueryDescriptor(
+        String schemaName,
         String sql,
-        boolean grpByCollocated,
+        boolean collocated,
         boolean distributedJoins,
         boolean enforceJoinOrder,
-        boolean isLocal) {
+        boolean loc,
+        boolean skipReducerOnUpdate,
+        boolean batched
+    ) {
         this.schemaName = schemaName;
         this.sql = sql;
-        this.grpByCollocated = grpByCollocated;
+        this.collocated = collocated;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
-        this.isLocal = isLocal;
+        this.loc = loc;
+        this.skipReducerOnUpdate = skipReducerOnUpdate;
+        this.batched = batched;
+    }
+
+    /**
+     * @return Schema name.
+     */
+    public String schemaName() {
+        return schemaName;
+    }
+
+    /**
+     * @return SQL.
+     */
+    public String sql() {
+        return sql;
+    }
+
+    /**
+     * @return Collocated GROUP BY flag.
+     */
+    public boolean collocated() {
+        return collocated;
+    }
+
+    /**
+     * @return Distributed joins flag.
+     */
+    public boolean distributedJoins() {
+        return distributedJoins;
+    }
+
+    /**
+     * @return Enforce join order flag.
+     */
+    public boolean enforceJoinOrder() {
+        return enforceJoinOrder;
+    }
+
+    /**
+     * @return Local flag.
+     */
+    public boolean local() {
+        return loc;
+    }
+
+    /**
+     * @return Skip reducer on update flag.
+     */
+    public boolean skipReducerOnUpdate() {
+        return skipReducerOnUpdate;
+    }
+
+    /**
+     * @return Batched flag.
+     */
+    public boolean batched() {
+        return batched;
     }
 
     /** {@inheritDoc} */
@@ -70,9 +139,9 @@ public class QueryParserCacheKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        QueryParserCacheKey that = (QueryParserCacheKey)o;
+        QueryDescriptor that = (QueryDescriptor)o;
 
-        if (grpByCollocated != that.grpByCollocated)
+        if (collocated != that.collocated)
             return false;
 
         if (distributedJoins != that.distributedJoins)
@@ -81,20 +150,31 @@ public class QueryParserCacheKey {
         if (enforceJoinOrder != that.enforceJoinOrder)
             return false;
 
+        if (skipReducerOnUpdate != that.skipReducerOnUpdate)
+            return false;
+
+        if (batched != that.batched)
+            return false;
+
         if (schemaName != null ? !schemaName.equals(that.schemaName) : that.schemaName != null)
             return false;
 
-        return isLocal == that.isLocal && sql.equals(that.sql);
+        return loc == that.loc && sql.equals(that.sql);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("AssignmentReplaceableWithOperatorAssignment")
     @Override public int hashCode() {
         int res = schemaName != null ? schemaName.hashCode() : 0;
+
         res = 31 * res + sql.hashCode();
-        res = 31 * res + (grpByCollocated ? 1 : 0);
+        res = 31 * res + (collocated ? 1 : 0);
+
         res = res + (distributedJoins ? 2 : 0);
         res = res + (enforceJoinOrder ? 4 : 0);
-        res = res + (isLocal ? 8 : 0);
+        res = res + (loc ? 8 : 0);
+        res = res + (skipReducerOnUpdate ? 16 : 0);
+        res = res + (batched ? 32 : 0);
 
         return res;
     }

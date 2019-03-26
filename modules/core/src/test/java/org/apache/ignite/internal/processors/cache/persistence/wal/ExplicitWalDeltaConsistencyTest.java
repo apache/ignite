@@ -73,8 +73,6 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
      */
     @Test
     public final void testNotEmptyPds() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10822", MvccFeatureChecker.forcedMvcc());
-
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);

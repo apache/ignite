@@ -17,17 +17,25 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 
 /**
- * Test to check JDBC2 driver behavior when cache specified in connection string does not have any query entities.
+ * Jdbc v2 test for schema name case (in)sensitivity.
  */
-public class JdbcDefaultNoOpCacheTest extends org.apache.ignite.jdbc.JdbcDefaultNoOpCacheTest {
-    /** Ignite configuration URL. */
-    private static final String CFG_URL = "modules/clients/src/test/config/jdbc-config.xml";
+public class JdbcSchemaCaseSelfTest extends JdbcAbstractSchemaCaseTest {
+    /** JDBC URL. */
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=test0@modules/clients/src/test/config/jdbc-config.xml";
 
     /** {@inheritDoc} */
-    protected String getUrl() {
-        return CFG_URL_PREFIX + "cache=noop@" + CFG_URL;
+    @Override protected Connection connect(String schema) throws SQLException {
+        Connection conn = DriverManager.getConnection(BASE_URL);
+
+        conn.setSchema(schema);
+
+        return conn;
     }
 }
