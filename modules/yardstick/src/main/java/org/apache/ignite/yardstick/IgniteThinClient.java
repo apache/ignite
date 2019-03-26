@@ -147,8 +147,6 @@ public class IgniteThinClient {
 
             clCfg.setUserName(username)
                 .setUserPassword(pwd);
-
-            BenchmarkUtils.println(String.format("Authentication enabled with user: %s", username));
         }
 
         // set SSL if needed
@@ -187,8 +185,6 @@ public class IgniteThinClient {
                 .setSslKeyAlgorithm(keyAlg)
                 .setSslTrustAll(trustAll)
                 .setSslProtocol(protocol);
-
-            BenchmarkUtils.println("SSL connection configured");
         }
 
         client = Ignition.startClient(clCfg);
