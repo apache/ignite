@@ -866,6 +866,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 case NONE: {
                     initTopologies();
 
+                    synchronized (mux) {
+                        state = ExchangeLocalState.DONE;
+                    }
+
                     onDone(topVer);
 
                     break;
@@ -2263,6 +2267,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             initFut.onDone(err == null);
+
+            cctx.exchange().latch().dropLatch(DISTRIBUTED_LATCH_ID, initialVersion());
 
             if (exchCtx != null && exchCtx.events().hasServerLeft()) {
                 ExchangeDiscoveryEvents evts = exchCtx.events();
