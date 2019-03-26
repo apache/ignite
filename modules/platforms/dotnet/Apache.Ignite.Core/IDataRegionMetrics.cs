@@ -33,6 +33,11 @@ namespace Apache.Ignite.Core
         long TotalAllocatedPages { get; }
 
         /// <summary>
+        /// Gets a total number of pages used for storing the data.
+        /// </summary>
+        long TotalUsedPages { get; }
+
+        /// <summary>
         /// Gets the size of allocated pages in bytes.
         /// </summary>
         long TotalAllocatedSize { get; }
