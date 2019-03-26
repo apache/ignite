@@ -890,8 +890,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         final String dataRegName = dataRegCfg.getName();
 
         return new DataRegionMetricsProvider() {
-            @Override
-            public long freeSpace() {
+            @Override public long partiallyFilledPagesFreeSpace() {
                 long freeSpace = 0L;
 
                 for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
@@ -906,8 +905,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 return freeSpace;
             }
 
-            @Override
-            public long emptyDataPages() {
+            @Override public long emptyDataPages() {
                 long emptyDataPages = 0L;
 
                 for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {

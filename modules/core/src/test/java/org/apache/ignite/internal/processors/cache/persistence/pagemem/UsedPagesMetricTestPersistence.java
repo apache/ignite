@@ -39,14 +39,14 @@ public class UsedPagesMetricTestPersistence extends UsedPagesMetricAbstractTest 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-                .setDataStorageConfiguration(
-                        new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                                new DataRegionConfiguration()
-                                        .setPersistenceEnabled(true)
-                                        .setInitialSize(100 * 1024L * 1024L)
-                                        .setMaxSize(500 * 1024L * 1024L)
-                                        .setMetricsEnabled(true)
-                        ));
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setInitialSize(100 * 1024L * 1024L)
+                        .setMaxSize(500 * 1024L * 1024L)
+                        .setMetricsEnabled(true)
+                ));
     }
 
     /**
@@ -71,7 +71,7 @@ public class UsedPagesMetricTestPersistence extends UsedPagesMetricAbstractTest 
      * Tests that totalUsedPages metric for data region with enabled persistence
      * and pages being rotated to disk behaves correctly.
      *
-     * @throws Exception
+     * @throws Exception if failed
      */
     @Test
     public void testFillAndRemovePagesRotation() throws Exception {
@@ -82,7 +82,7 @@ public class UsedPagesMetricTestPersistence extends UsedPagesMetricAbstractTest 
      * Tests that totalUsedPages metric for data region with enabled persistence
      * and pages that are not being rotated to disk behaves correctly.
      *
-     * @throws Exception
+     * @throws Exception if failed
      */
     @Test
     public void testFillAndRemoveWithoutPagesRotation() throws Exception {

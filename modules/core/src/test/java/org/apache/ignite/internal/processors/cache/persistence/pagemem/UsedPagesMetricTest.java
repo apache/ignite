@@ -37,13 +37,13 @@ public class UsedPagesMetricTest extends UsedPagesMetricAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-                .setDataStorageConfiguration(
-                        new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                                new DataRegionConfiguration()
-                                        .setInitialSize(100 * 1024L * 1024L)
-                                        .setMaxSize(500 * 1024L * 1024L)
-                                        .setMetricsEnabled(true)
-                        ));
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setInitialSize(100 * 1024L * 1024L)
+                        .setMaxSize(500 * 1024L * 1024L)
+                        .setMetricsEnabled(true)
+                ));
     }
 
     /**

@@ -413,21 +413,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             private CacheFreeListImpl freeList;
 
             private CacheFreeListImpl getFreeList() {
-                if (freeList == null) {
+                if (freeList == null)
                     freeList = freeListMap.get(dataRegName);
-                }
+
                 return freeList;
             }
 
-            @Override
-            public long freeSpace() {
+            @Override public long partiallyFilledPagesFreeSpace() {
                 CacheFreeListImpl freeList0 = getFreeList();
+
                 return freeList0 == null ? 0L : freeList0.freeSpace();
             }
 
-            @Override
-            public long emptyDataPages() {
+            @Override public long emptyDataPages() {
                 CacheFreeListImpl freeList0 = getFreeList();
+
                 return freeList0 == null ? 0L : freeList0.emptyDataPages();
             }
         };

@@ -64,7 +64,12 @@ public interface DataRegionMetrics {
     public long getTotalAllocatedPages();
 
     /**
-     * Gets a total number of pages used for storing the data.
+     * Gets a total number of pages used for storing the data. It includes allocated pages except of empty
+     * pages that are not used yet or pages that can be reused.
+     * <p>
+     * E. g. data region contains 1000 allocated pages, and 200 pages are used to store some data, this
+     * metric shows 200 used pages. Then the data was partially deleted and 50 pages were totally freed,
+     * hence this metric should show 150 used pages.
      *
      * @return Total number of used pages.
      */

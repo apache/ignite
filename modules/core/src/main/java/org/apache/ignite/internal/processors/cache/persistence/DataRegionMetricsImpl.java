@@ -27,7 +27,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl.GroupAllocationTracker;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -171,7 +170,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
         if (!metricsEnabled || dataRegionMetricsProvider == null)
             return 0;
 
-        long freeSpace = dataRegionMetricsProvider.freeSpace();
+        long freeSpace = dataRegionMetricsProvider.partiallyFilledPagesFreeSpace();
 
         long totalAllocated = getPageSize() * totalAllocatedPages.longValue();
 

@@ -41,16 +41,18 @@ public class UsedPagesMetricAbstractTest extends GridCommonAbstractTest {
      * @param iterations count of check iterations
      * @param storedEntriesCount count of key-value pairs in each iteration
      * @param valueSize size of value in bytes
-     * @throws Exception
+     * @throws Exception if failed
      */
     protected void testFillAndRemove(
-            int nodeCount,
-            int iterations,
-            int storedEntriesCount,
-            int valueSize
+        int nodeCount,
+        int iterations,
+        int storedEntriesCount,
+        int valueSize
     ) throws Exception {
         Ignite node = startGrids(nodeCount);
+
         node.cluster().active(true);
+
         IgniteCache cache = node.getOrCreateCache(MY_CACHE);
 
         long beforeFill;
@@ -60,22 +62,27 @@ public class UsedPagesMetricAbstractTest extends GridCommonAbstractTest {
         for (int iter = 0; iter < iterations; iter++) {
 
             DataRegionMetrics metricsBeforeFill = node.dataRegionMetrics(DEFAULT_DATA_REGION);
+
             beforeFill = metricsBeforeFill.getTotalUsedPages();
 
             for (int i = 0; i < storedEntriesCount; i++) {
                 final long res = (i * i) % LARGE_PRIME;
+
                 cache.put(res, new byte[valueSize]);
             }
 
             DataRegionMetrics metricsAfterFill = node.dataRegionMetrics(DEFAULT_DATA_REGION);
+
             afterFill = metricsAfterFill.getTotalUsedPages();
 
             for (int i = 0; i < storedEntriesCount; i++) {
                 final long res = (i * i) % LARGE_PRIME;
+
                 cache.remove(res);
             }
 
             DataRegionMetrics metricsAfterRemove = node.dataRegionMetrics(DEFAULT_DATA_REGION);
+
             afterRemove = metricsAfterRemove.getTotalUsedPages();
 
             log.info(String.format("Used pages count before fill: %d", beforeFill));

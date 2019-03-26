@@ -22,14 +22,16 @@ package org.apache.ignite;
  */
 public interface DataRegionMetricsProvider {
     /**
-     * Calculates free space for data region.
+     * Calculates free space of partially filled pages for this data region. It does not include
+     * empty data pages.
      *
      * @return free space in bytes.
      */
-    public long freeSpace();
+    public long partiallyFilledPagesFreeSpace();
 
     /**
-     * Calculates empty data pages count for region.
+     * Calculates empty data pages count for region. It counts only totally free pages that
+     * can be reused (e. g. pages that are contained in reuse bucket of free list).
      *
      * @return empty data pages count.
      */
