@@ -47,6 +47,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -215,7 +216,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     public void testPreparedStatementMetaDataNegative() throws Exception {
         // Perform checks few times due to query/plan caching.
         for (int i = 0; i < 3; i++) {
-            // Check h2 dml statements
+            // Check h2 dml statement.
             try (Connection conn = DriverManager.getConnection(BASE_URL)) {
                 String update = "update \"pers\".Person set name = 'weird' where orgId < 0";
 
@@ -224,7 +225,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 assertNull(psMeta);
             }
 
-            // H2 ddl statements
+            // H2 ddl statement.
             try (Connection conn = DriverManager.getConnection(BASE_URL)) {
                 String update = "CREATE TABLE DDL_METADATA_TAB (ID INT PRIMARY KEY, VAL INT)";
 
@@ -233,13 +234,23 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 assertNull(psMeta);
             }
 
-            // And native parser statements.
+            // And native parser statement.
             try (Connection conn = DriverManager.getConnection(BASE_URL)) {
                 String nativeCmd = "create index my_idx on PUBLIC.TEST(name)";
 
                 ResultSetMetaData psMeta = conn.prepareStatement(nativeCmd).getMetaData();
 
                 assertNull(psMeta);
+            }
+
+            // Non parsable.
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement notCorrect = conn.prepareStatement("select * from NotExistingTable;");
+
+                GridTestUtils.assertThrows(log(), notCorrect::getMetaData, SQLException.class,
+                    "Table \"NOTEXISTINGTABLE\" not found");
             }
         }
     }
@@ -559,6 +570,16 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     public void testParametersMetadata() throws Exception {
         // Perform checks few times due to query/plan caching.
         for (int i = 0; i < 3; i++) {
+            // No parameters statement.
+            try(Connection conn = DriverManager.getConnection(BASE_URL)) {
+                conn.setSchema("\"pers\"");
+                
+                PreparedStatement noParams = conn.prepareStatement("select * from Person;");
+                ParameterMetaData params = noParams.getParameterMetaData();
+
+                assertEquals("Parameters should be empty.", 0, params.getParameterCount());
+            }
+
             // Selects.
             try (Connection conn = DriverManager.getConnection(BASE_URL)) {
                 conn.setSchema("\"pers\"");
@@ -598,6 +619,21 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 assertEquals(Types.INTEGER, meta.getParameterType(2));
                 assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
             }
+        }
+    }
+
+    /**
+     * Check that parameters metadata throws correct exception on non-parsable statement.
+     */
+    @Test
+    public void testParametersMetadataNegative() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            conn.setSchema("\"pers\"");
+
+            PreparedStatement notCorrect = conn.prepareStatement("select * from NotExistingTable;");
+
+            GridTestUtils.assertThrows(log(), notCorrect::getParameterMetaData, SQLException.class,
+                "Table \"NOTEXISTINGTABLE\" not found");
         }
     }
 

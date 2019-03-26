@@ -40,7 +40,12 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinParameterMetadata;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * JDBC prepared statement implementation.
@@ -52,11 +57,17 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     /** Batch arguments. */
     private List<List<Object>> batchArgs;
 
-    /** Cached parameters meta of the {@link #sql}. */
+    /** Cached parameters meta of the {@link #sql}. {@code Null} if not fetched yet*/
     private ParameterMetaData paramsMeta;
 
-    /** Cached result set meta of the {@link #sql}. */
-    private ResultSetMetaData resMeta;
+    /**
+     * Cached result set meta of the {@link #sql}. {@code Null} if this statement is not a SELECT statement or if it
+     * just not fetched yet.
+     */
+    @Nullable private ResultSetMetaData resMeta;
+
+    /** Whether metadata of returning result set have been fetched. */
+    private boolean resMetaFetched = false;
 
     /**
      * Creates new prepared statement.
@@ -273,17 +284,37 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        // In this case we don't tell cases "meta is not fetched" and "this statement is not a select, so meta is null".
-        // This is ok, because getting metadata of non-select statements is not a happy path.
-        if (resMeta == null) {
-            SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
+        if (!resMetaFetched) {
+            assert resMeta == null;
 
-            setupQuery(qry);
+            resMeta = resultMetaData();
 
-            resMeta = conn.resultMetaData(qry);
+            resMetaFetched = true;
         }
 
         return resMeta;
+    }
+
+    /**
+     * Fetches metadata of the result set is returned when specified query gets executed.
+     *
+     * @return metadata describing result set or {@code null} if query is not a SELECT operation.
+     */
+    @Nullable private ResultSetMetaData resultMetaData() throws SQLException {
+        SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
+
+        setupQuery(qry);
+
+        try {
+            List<GridQueryFieldMetadata> meta = conn.ignite().context().query().getIndexing().resultMetaData(conn.schemaName(), qry);
+
+            if (meta == null)
+                return null;
+
+            return new JdbcResultSetMetadata(meta);
+        } catch (IgniteSQLException ex) {
+            throw ex.toJdbcException();
+        }
     }
 
     /** {@inheritDoc} */
@@ -315,16 +346,27 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ParameterMetaData getParameterMetaData() throws SQLException {
         ensureNotClosed();
 
-        if (paramsMeta == null) {
-            SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
-
-            setupQuery(qry);
-
-            paramsMeta = conn.parameterMetaData(qry);
-
-        }
+        if (paramsMeta == null)
+            paramsMeta = parameterMetaData();
 
         return paramsMeta;
+    }
+
+    /**
+     * Fetches parameters metadata of the specified query.
+     */
+    private ParameterMetaData parameterMetaData() throws SQLException {
+        SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
+
+        setupQuery(qry);
+
+        try {
+            List<JdbcParameterMeta> params = conn.ignite().context().query().getIndexing().parameterMetaData(conn.schemaName(), qry);
+
+            return new JdbcThinParameterMetadata(params);
+        } catch (IgniteSQLException ex) {
+            throw ex.toJdbcException();
+        }
     }
 
     /** {@inheritDoc} */

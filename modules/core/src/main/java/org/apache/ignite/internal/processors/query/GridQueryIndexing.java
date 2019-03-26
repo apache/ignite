@@ -254,7 +254,7 @@ public interface GridQueryIndexing {
      *
      * @param schemaName the default schema name for query.
      * @param sql Sql query.
-     * @return metadata.
+     * @return metadata describing all the parameters, even in case of multi-statement.
      * @throws SQLException if failed to get meta.
      */
     public List<JdbcParameterMeta> parameterMetaData(String schemaName, SqlFieldsQuery sql) throws SQLException;
@@ -264,10 +264,10 @@ public interface GridQueryIndexing {
      *
      * @param schemaName the default schema name for query.
      * @param sql Sql query.
-     * @return metadata or {@code null} if provided query is not a SELECT statement.
+     * @return metadata or {@code null} if provided query is multi-statement or id it's not a SELECT statement.
      * @throws SQLException if failed to get meta.
      */
-    public List<GridQueryFieldMetadata> resultMetaData(String schemaName, SqlFieldsQuery sql) throws SQLException;
+    @Nullable public List<GridQueryFieldMetadata> resultMetaData(String schemaName, SqlFieldsQuery sql) throws SQLException;
 
     /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes

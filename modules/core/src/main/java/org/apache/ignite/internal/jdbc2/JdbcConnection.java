@@ -25,9 +25,7 @@ import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.NClob;
-import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -39,7 +37,6 @@ import java.sql.Struct;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -60,12 +57,9 @@ import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinParameterMetadata;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -76,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.jetbrains.annotations.Nullable;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
@@ -915,31 +908,6 @@ public class JdbcConnection implements Connection {
      */
     JdbcStatement createStatement0() throws SQLException {
         return (JdbcStatement)createStatement();
-    }
-
-    /**
-     * Fetches parameters metadata of the specified query.
-     *
-     * @param qry Query fetch parameters meta for.
-     */
-    ParameterMetaData parameterMetaData(SqlFieldsQuery qry) throws SQLException {
-        List<JdbcParameterMeta> params = ignite().context().query().getIndexing().parameterMetaData(schemaName(), qry);
-
-        return new JdbcThinParameterMetadata(params);
-    }
-
-    /**
-     * Fetches metadata of the result set is returned when specified query gets executed.
-     *
-     * @return metadata describing result set or {@code null} if query is not a SELECT operation.
-     */
-    @Nullable ResultSetMetaData resultMetaData(SqlFieldsQuery qry) throws SQLException {
-        List<GridQueryFieldMetadata> meta = ignite().context().query().getIndexing().resultMetaData(schemaName(), qry);
-
-        if (meta == null)
-            return null;
-
-        return new JdbcResultSetMetadata(meta);
     }
 
     /**
