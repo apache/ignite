@@ -75,9 +75,9 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @After
-    public void afterTest() throws Exception {
+    @Override public void afterTest() throws Exception {
         stopAllGrids();
     }
 

@@ -50,12 +50,8 @@ public class FitnessTask extends ComputeTaskAdapter<List<Long>, Boolean> {
         this.cfg = cfg;
     }
 
-    /**
-     * @param nodes List of ClusterNode
-     * @param chromosomeKeys List of chromosome keys
-     * @return Map of jobs to nodes
-     */
-    public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
+    /** {@inheritDoc} */
+    @Override public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
 
         Map<ComputeJob, ClusterNode> map = new HashMap<>();
 
@@ -72,21 +68,14 @@ public class FitnessTask extends ComputeTaskAdapter<List<Long>, Boolean> {
         return map;
     }
 
-    /**
-     * @param list List of ComputeJobResult
-     * @return Boolean value
-     */
-    public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
+    /** {@inheritDoc} */
+    @Override public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
 
         return Boolean.TRUE;
     }
 
-    /**
-     * @param res ComputeJobResult
-     * @param rcvd List of ComputeJobResult
-     * @return ComputeJobResultPolicy
-     */
-    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
+    /** {@inheritDoc} */
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         IgniteException err = res.getException();
 
         if (err != null)

@@ -700,7 +700,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             readerArgs);
     }
 
-    /** {@inheritDoc} */
+    /** */
     @SuppressWarnings({"TooBroadScope"})
     private Object innerGet0(
         GridCacheVersion nextVer,

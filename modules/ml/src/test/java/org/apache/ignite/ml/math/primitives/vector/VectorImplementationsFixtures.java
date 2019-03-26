@@ -215,8 +215,8 @@ class VectorImplementationsFixtures {
             return (size, delta) -> ctor.apply(size + delta, extras[extraIdx]);
         }
 
-        /** */
-        void selfTest() {
+        /** {@inheritDoc} */
+        @Override void selfTest() {
             final Set<Integer> extraIdxs = new HashSet<>();
 
             int cnt = 0;

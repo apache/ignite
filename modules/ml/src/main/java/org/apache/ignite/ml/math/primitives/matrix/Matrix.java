@@ -505,10 +505,8 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      */
     public Vector viewDiagonal();
 
-    /**
-     * Destroys matrix if managed outside of JVM. It's a no-op in all other cases.
-     */
-    public default void destroy() {
+    /** {@inheritDoc} */
+    @Override public default void destroy() {
         // No-op.
     }
 

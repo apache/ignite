@@ -1368,7 +1368,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     }
 
     /** {@inheritDoc} */
-    public IgniteSpiAdapter setName(String name) {
+    @Override public IgniteSpiAdapter setName(String name) {
         super.setName(name);
 
         return this;

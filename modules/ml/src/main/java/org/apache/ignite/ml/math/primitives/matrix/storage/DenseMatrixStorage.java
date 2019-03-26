@@ -193,8 +193,8 @@ public class DenseMatrixStorage implements MatrixStorage {
         data = (double[])in.readObject();
     }
 
-    /** Get the access mode of this storage. */
-    public int accessMode() {
+    /** {@inheritDoc} */
+    @Override public int accessMode() {
         return stoMode;
     }
 
