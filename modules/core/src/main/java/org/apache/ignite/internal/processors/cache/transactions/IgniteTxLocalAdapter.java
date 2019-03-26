@@ -923,7 +923,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 if (commit)
                     cctx.tm().commitTx(this);
                 else
-                    cctx.tm().rollbackTx(this, clearThreadMap);
+                    cctx.tm().rollbackTx(this, clearThreadMap, false);
             }
 
             state(commit ? COMMITTED : ROLLED_BACK);
@@ -988,7 +988,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            cctx.tm().rollbackTx(this, clearThreadMap);
+            cctx.tm().rollbackTx(this, clearThreadMap, false);
 
             if (!internal()) {
                 Collection<CacheStoreManager> stores = txState.stores(cctx);
