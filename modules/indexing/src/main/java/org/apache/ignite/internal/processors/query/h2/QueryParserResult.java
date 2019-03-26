@@ -24,8 +24,11 @@ import org.jetbrains.annotations.Nullable;
  * Result of parsing and splitting SQL from {@link SqlFieldsQuery}.
  */
 public class QueryParserResult {
-    /** New fields query that may be executed right away. */
-    private final SqlFieldsQuery qry;
+    /** Query descriptor. */
+    private final QueryDescriptor qryDesc;
+
+    /** Query parameters. */
+    private final QueryParameters qryParams;
 
     /** Remaining query. */
     private final SqlFieldsQuery remainingQry;
@@ -42,20 +45,23 @@ public class QueryParserResult {
     /**
      * Constructor.
      *
-     * @param qry New query.
+     * @param qryDesc Query descriptor.
+     * @param qryParams Query parameters.
      * @param remainingQry Remaining query.
      * @param select Select.
      * @param dml DML.
      * @param cmd Command.
      */
     public QueryParserResult(
-        SqlFieldsQuery qry,
+        QueryDescriptor qryDesc,
+        QueryParameters qryParams,
         SqlFieldsQuery remainingQry,
         @Nullable QueryParserResultSelect select,
         @Nullable QueryParserResultDml dml,
         @Nullable QueryParserResultCommand cmd
     ) {
-        this.qry = qry;
+        this.qryDesc = qryDesc;
+        this.qryParams = qryParams;
         this.remainingQry = remainingQry;
         this.select = select;
         this.dml = dml;
@@ -63,10 +69,17 @@ public class QueryParserResult {
     }
 
     /**
-     * @return New fields query that may be executed right away.
+     * @return Query descriptor.
      */
-    public SqlFieldsQuery query() {
-        return qry;
+    public QueryDescriptor queryDescriptor() {
+        return qryDesc;
+    }
+
+    /**
+     * @return Query parameters.
+     */
+    public QueryParameters queryParameters() {
+        return qryParams;
     }
 
     /**
