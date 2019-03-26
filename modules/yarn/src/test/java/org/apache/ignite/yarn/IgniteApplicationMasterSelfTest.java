@@ -295,6 +295,20 @@ public class IgniteApplicationMasterSelfTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testQueue() throws Exception {
+        // Default Queue check
+        Map<String, String> result = props.toEnvs();
+        assertEquals(ClusterProperties.DEFAULT_IGNITE_YARN_QUEUE, result.get(ClusterProperties.IGNITE_YARN_QUEUE));
+
+        props.yarnQueue("ignite");
+        result = props.toEnvs();
+        assertEquals("ignite", result.get(ClusterProperties.IGNITE_YARN_QUEUE));
+    }
+
+    /**
      * @param host Host.
      * @param cpu Cpu count.
      * @param mem Memory.
