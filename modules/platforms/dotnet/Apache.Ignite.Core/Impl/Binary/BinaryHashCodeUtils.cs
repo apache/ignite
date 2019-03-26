@@ -130,6 +130,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writer.Write(val);
 
                 // TODO: Somehow extract hash code from writer. It can be a nested AffinityMapped field.
+                // TODO: Forget AffinityKeyMapped for the first iteration
                 return writer.GetHashCode();
             }
         }
