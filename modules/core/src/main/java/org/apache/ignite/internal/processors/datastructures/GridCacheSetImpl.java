@@ -141,6 +141,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     boolean checkHeader() throws IgniteCheckedException {
         IgniteInternalCache<GridCacheSetHeaderKey, GridCacheSetHeader> cache0 = ctx.cache();
 
+        if (cache0 == null)
+            return false;
+
         GridCacheSetHeader hdr = cache0.get(new GridCacheSetHeaderKey(name));
 
         return hdr != null && hdr.id().equals(id);

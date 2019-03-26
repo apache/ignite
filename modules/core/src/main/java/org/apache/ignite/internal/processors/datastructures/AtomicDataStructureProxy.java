@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValue>
-    implements GridCacheRemovable,IgniteChangeGlobalStateSupport {
+    implements GridCacheRemovable, IgniteChangeGlobalStateSupport {
     /** Logger. */
     protected IgniteLogger log;
 
@@ -70,10 +70,11 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
      * @param key Structure key.
      * @param cacheView Cache projection.
      */
-    public AtomicDataStructureProxy(String name,
+    public AtomicDataStructureProxy(
+        String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, V> cacheView)
-    {
+        IgniteInternalCache<GridCacheInternalKey, V> cacheView
+    ) {
         assert key != null;
         assert cacheView != null;
 

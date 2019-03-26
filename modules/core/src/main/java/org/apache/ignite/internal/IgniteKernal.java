@@ -4062,7 +4062,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             reconnectState.reconnectDone = new GridFutureAdapter<>();
 
+            DataStructuresProcessor dataStructuresProcessor = ctx.dataStructures();
+
+            dataStructuresProcessor.onReconnected(clusterRestarted);
+
             for (GridComponent comp : ctx.components()) {
+                if (comp == dataStructuresProcessor)
+                    continue;
+
                 IgniteInternalFuture<?> fut = comp.onReconnected(clusterRestarted);
 
                 if (fut != null)

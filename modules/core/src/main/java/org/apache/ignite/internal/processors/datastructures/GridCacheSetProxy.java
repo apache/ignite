@@ -44,51 +44,13 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Cache set proxy.
  */
-public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Deserialization stash. */
-    private static final ThreadLocal<T3<GridKernalContext, String, String>> stash =
-        new ThreadLocal<T3<GridKernalContext, String, String>>() {
-            @Override protected T3<GridKernalContext, String, String> initialValue() {
-                return new T3<>();
-            }
-        };
-
-    /** Delegate set. */
-    private GridCacheSetImpl<T> delegate;
-
-    /** Cache context. */
-    private GridCacheContext cctx;
-
-    /** Cache gateway. */
-    private GridCacheGateway gate;
-
-    /** Busy lock. */
-    private GridSpinBusyLock busyLock;
-
-    /** Check removed flag. */
-    private boolean rmvCheck;
-
-    /**
-     * Required by {@link Externalizable}.
-     */
-    public GridCacheSetProxy() {
-        // No-op.
-    }
-
+public class GridCacheSetProxy<T> extends GridCacheCollectionProxy<GridCacheSetImpl> implements IgniteSet<T>, Externalizable {
     /**
      * @param cctx Cache context.
      * @param delegate Delegate set.
      */
     public GridCacheSetProxy(GridCacheContext cctx, GridCacheSetImpl<T> delegate) {
-        this.cctx = cctx;
-        this.delegate = delegate;
-
-        gate = cctx.gate();
-
-        busyLock = new GridSpinBusyLock();
+        super(cctx, delegate);
     }
 
     /**
@@ -96,6 +58,38 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
      */
     public GridCacheSetImpl delegate() {
         return delegate;
+    }
+
+    @Override protected GridCacheSetImpl reStartDelegate() {
+        try {
+            GridCacheSetProxy proxy = (GridCacheSetProxy)cctx.dataStructures().set(name(), false, false, false);
+
+            return proxy != null ? proxy.delegate() : null;
+        }
+        catch (IgniteCheckedException e) {
+            return null;
+        }
+    }
+
+    @Override protected void checkRemove() {
+        boolean rmvd;
+
+        try {
+            rmvd = !delegate.checkHeader();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+
+        rmvCheck = false;
+
+        if (rmvd) {
+            delegate.removed(true);
+
+            //cctx.dataStructures().onRemoved(this);
+
+            throw removedError();
+        }
     }
 
     /**
@@ -109,248 +103,157 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int size() {
-        enterBusy();
+        enter();
 
         try {
-            gate.enter();
-
-            try {
-                return delegate.size();
-            }
-            finally {
-                gate.leave();
-            }
+            return delegate.size();
         }
         finally {
-            leaveBusy();
+            leave();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        enterBusy();
+        enter();
 
         try {
-            gate.enter();
-
-            try {
-                return delegate.isEmpty();
-            }
-            finally {
-                gate.leave();
-            }
+            return delegate.isEmpty();
         }
         finally {
-            leaveBusy();
+            leave();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean contains(final Object o) {
-        enterBusy();
+        enter();
 
         try {
-            gate.enter();
-
-            try {
-                return delegate.contains(o);
-            }
-            finally {
-                gate.leave();
-            }
+            return delegate.contains(o);
         }
         finally {
-            leaveBusy();
+            leave();
         }
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Object[] toArray() {
-        enterBusy();
+        enter();
 
         try {
-            gate.enter();
-
-            try {
-                return delegate.toArray();
-            }
-            finally {
-                gate.leave();
-            }
+            return delegate.toArray();
         }
         finally {
-            leaveBusy();
+            leave();
         }
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T1> T1[] toArray(final T1[] a) {
-        enterBusy();
+        enter();
 
         try {
-            gate.enter();
-
-            try {
-                return delegate.toArray(a);
-            }
-            finally {
-                gate.leave();
-            }
+            return (T1[])delegate.toArray(a);
         }
         finally {
-            leaveBusy();
+            leave();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean add(final T t) {
-        enterBusy();
+        enter();
 
         try {
-            gate.enter();
-
-            try {
-                return delegate.add(t);
-            }
-            finally {
-                gate.leave();
-            }
+            return delegate.add(t);
         }
         finally {
-            leaveBusy();
+            leave();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean remove(final Object o) {
-        enterBusy();
+        enter();
 
         try {
-            gate.enter();
-
-            try {
-                return delegate.remove(o);
-            }
-            finally {
-                gate.leave();
-            }
+            return delegate.remove(o);
         }
         finally {
-            leaveBusy();
+            leave();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsAll(final Collection<?> c) {
-        enterBusy();
+        enter();
 
         try {
-            gate.enter();
-
-            try {
-                return delegate.containsAll(c);
-            }
-            finally {
-                gate.leave();
-            }
+            return delegate.containsAll(c);
         }
         finally {
-            leaveBusy();
+            leave();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean addAll(final Collection<? extends T> c) {
-        enterBusy();
+        enter();
 
         try {
-            gate.enter();
-
-            try {
-                return delegate.addAll(c);
-            }
-            finally {
-                gate.leave();
-            }
+            return delegate.addAll(c);
         }
         finally {
-            leaveBusy();
+            leave();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean retainAll(final Collection<?> c) {
-        enterBusy();
+        enter();
 
         try {
-            gate.enter();
-
-            try {
-                return delegate.retainAll(c);
-            }
-            finally {
-                gate.leave();
-            }
+            return delegate.retainAll(c);
         }
         finally {
-            leaveBusy();
+            leave();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean removeAll(final Collection<?> c) {
-        enterBusy();
+        enter();
 
         try {
-            gate.enter();
-
-            try {
-                return delegate.removeAll(c);
-            }
-            finally {
-                gate.leave();
-            }
+            return delegate.removeAll(c);
         }
         finally {
-            leaveBusy();
+            leave();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        enterBusy();
+        enter();
 
         try {
-            gate.enter();
-
-            try {
-                delegate.clear();
-            }
-            finally {
-                gate.leave();
-            }
+            delegate.clear();
         }
         finally {
-            leaveBusy();
+            leave();
         }
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<T> iterator() {
-        enterBusy();
+        enter();
 
         try {
-            gate.enter();
-
-            try {
-                return delegate.iterator();
-            }
-            finally {
-                gate.leave();
-            }
+            return delegate.iterator();
         }
         finally {
-            leaveBusy();
+            leave();
         }
     }
 
@@ -402,93 +305,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <R> R affinityCall(final IgniteCallable<R> job) {
-        return delegate.affinityCall(job);
-    }
-
-    /**
-     * Enters busy state.
-     */
-    private void enterBusy() {
-        boolean rmvd;
-
-        if (rmvCheck) {
-            try {
-                rmvd = !delegate().checkHeader();
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-
-            rmvCheck = false;
-
-            if (rmvd) {
-                delegate.removed(true);
-
-                cctx.dataStructures().onRemoved(this);
-
-                throw removedError();
-            }
-        }
-
-        if (!busyLock.enterBusy())
-            throw removedError();
-    }
-
-    /**
-     *
-     */
-    public void needCheckNotRemoved() {
-        rmvCheck = true;
-    }
-
-    /**
-     * @return Error.
-     */
-    private IllegalStateException removedError() {
-        return new IllegalStateException("Set has been removed from cache: " + delegate);
-    }
-
-    /**
-     * Leaves busy state.
-     */
-    private void leaveBusy() {
-        busyLock.leaveBusy();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(cctx.kernalContext());
-        U.writeString(out, name());
-        U.writeString(out, cctx.group().name());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        T3<GridKernalContext, String, String> t = stash.get();
-
-        t.set1((GridKernalContext)in.readObject());
-        t.set2(U.readString(in));
-        t.set3(U.readString(in));
-    }
-
-    /**
-     * Reconstructs object on unmarshalling.
-     *
-     * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of unmarshalling error.
-     */
-    protected Object readResolve() throws ObjectStreamException {
-        try {
-            T3<GridKernalContext, String, String> t = stash.get();
-
-            return t.get1().dataStructures().set(t.get2(), t.get3(), null);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
-        }
+        return (R)delegate.affinityCall(job);
     }
 
     /** {@inheritDoc} */

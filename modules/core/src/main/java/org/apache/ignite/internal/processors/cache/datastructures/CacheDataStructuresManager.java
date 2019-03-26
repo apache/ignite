@@ -201,6 +201,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
                 queuesMap.remove(e.getKey(), queue);
             }
+            else
+                queue.needCheckNotRemoved();
         }
     }
 
