@@ -640,6 +640,7 @@
                                 <logViolationsToConsole>true</logViolationsToConsole>
                                 <failsOnError>true</failsOnError>
                                 <failOnViolation>true</failOnViolation>
+                                <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
                                 <configLocation>../checkstyle/checkstyle.xml</configLocation>
                                 <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
                                 <includeTestSourceDirectory>true</includeTestSourceDirectory>
@@ -833,13 +834,6 @@
     <profiles>
         <profile>
             <id>checkstyle</id>
-
-            <activation>
-                <property>
-                    <name>skipTests</name>
-                </property>
-            </activation>
-
             <build>
                 <plugins>
                     <plugin>
