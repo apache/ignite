@@ -420,6 +420,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public Set<String> schemasNames() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery sql) {
             // No-op.
             return true;

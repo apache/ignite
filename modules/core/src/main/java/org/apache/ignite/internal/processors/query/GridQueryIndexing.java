@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -348,6 +349,13 @@ public interface GridQueryIndexing {
      * @return Schema name. Should not be null since we should not fail for an invalid cache name.
      */
     public String schema(String cacheName);
+
+    /**
+     * Gets database schemas names.
+     *
+     * @return Schema names.
+     */
+    public Set<String> schemasNames();
 
     /**
      * Whether passed sql statement is single insert statement eligible for streaming.

@@ -37,6 +37,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -382,6 +383,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     msg.onError(new SchemaOperationException("Schema changes are not supported for LOCAL cache."));
                 }
+                else if (failOnStaticCacheSchemaChanges(cacheDesc)) {
+                    // Do not allow any schema changes when keep static cache configuration flag is set.
+                    if (log.isDebugEnabled())
+                        log.debug("Received schema propose discovery message, but cache is statically configured " +
+                            "and " + IgniteSystemProperties.IGNITE_KEEP_STATIC_CACHE_CONFIGURATION +
+                            " flag is set (will report error) [opId=" + opId + ", msg=" + msg + ']');
+
+                    msg.onError(new SchemaOperationException("Schema changes are not supported for statically " +
+                        "configured cache when " + IgniteSystemProperties.IGNITE_KEEP_STATIC_CACHE_CONFIGURATION +
+                        " flag is set."));
+                }
                 else {
                     // Preserve deployment ID so that we can distinguish between different caches with the same name.
                     if (msg.deploymentId() == null)
@@ -403,6 +415,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         return onSchemaProposeDiscovery0(msg);
+    }
+
+    /**
+     * @param cacheDesc Cache descriptor to check.
+     * @return {@code true} if cache is statically configured, IGNITE_KEEP_STATIC_CACHE_CONFIGURATION system property
+     *      is set and cache is persistent, {@code false} otherwise.
+     */
+    private boolean failOnStaticCacheSchemaChanges(DynamicCacheDescriptor cacheDesc) {
+        return cacheDesc.staticallyConfigured() &&
+            ctx.cache().keepStaticCacheConfiguration() &&
+            cacheDesc.groupDescriptor().persistenceEnabled();
     }
 
     /**
