@@ -302,7 +302,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         GridTestUtils.runAsync(() -> {
             while (true) {
                 try {
-                    nodeStartBarrier.await(10000, TimeUnit.MILLISECONDS);
+                    nodeStartBarrier.await(20000, TimeUnit.MILLISECONDS);
 
                     Ignite ignite = ignite(0);
 
