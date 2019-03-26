@@ -297,7 +297,7 @@ public class Function extends Expression implements FunctionCall {
         addFunction("REGEXP_LIKE", REGEXP_LIKE, VAR_ARGS, Value.BOOLEAN);
 
         // date
-        addFunctionNotDeterministic("CURRENT_DATE", CURRENT_DATE, 0, Value.DATE, false);
+        addFunctionNotDeterministic("CURRENT_DATE", CURRENT_DATE, 0, Value.DATE, true);
         addFunctionNotDeterministic("CURDATE", CURRENT_DATE, 0, Value.DATE);
         addFunctionNotDeterministic("SYSDATE", CURRENT_DATE, 0, Value.DATE, false);
         addFunctionNotDeterministic("TODAY", CURRENT_DATE, 0, Value.DATE, false);
