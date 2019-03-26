@@ -28,5 +28,5 @@ public interface DistributePropertyListener<T> {
      * @param oldVal Old value which was changed from.
      * @param newVal New value which was changed to.
      */
-    void listen(String name, T oldVal, T newVal);
+    void onUpdate(String name, T oldVal, T newVal);
 }

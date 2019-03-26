@@ -158,7 +158,7 @@ public class DistributedProperty<T extends Serializable> {
 
         val = (T)newVal;
 
-        updateListeners.forEach(listener -> listener.listen(name, oldVal, val));
+        updateListeners.forEach(listener -> listener.onUpdate(name, oldVal, val));
     }
 
     /** {@inheritDoc} */
