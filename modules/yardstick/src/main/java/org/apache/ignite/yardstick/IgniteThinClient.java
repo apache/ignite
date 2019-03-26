@@ -152,11 +152,13 @@ public class IgniteThinClient {
         // set SSL if needed
         boolean trustAll = Boolean.valueOf(cfg.customProperties().getOrDefault(SSL_TRUST_ALL, DEFAULT_TRUST_ALL_STRING));
 
+        boolean trustStoreDefined = cfg.customProperties().containsKey(SSL_TRUSTSTORE_PASSWORD) &&
+            cfg.customProperties().containsKey(SSL_TRUSTSTORE_PATH);
+
         boolean isSecuredConnection = cfg.customProperties().containsKey(SSL_KEYSTORE_PASSWORD) &&
             cfg.customProperties().containsKey(SSL_KEYSTORE_PATH) &&
             // if trustAll == true or trustStore params defined
-            ((cfg.customProperties().containsKey(SSL_TRUSTSTORE_PASSWORD) &&
-                cfg.customProperties().containsKey(SSL_TRUSTSTORE_PATH)) || trustAll);
+            (trustStoreDefined || trustAll);
 
         if (isSecuredConnection) {
             String keyStore = cfg.customProperties().get(SSL_KEYSTORE_PATH);
@@ -165,23 +167,26 @@ public class IgniteThinClient {
 
             String keyStoreType = cfg.customProperties().getOrDefault(SSL_KEY_STORE_TYPE, SslContextFactory.DFLT_STORE_TYPE);
 
-            String trustStore = cfg.customProperties().get(SSL_TRUSTSTORE_PATH);
-
-            String trustStorePwd = cfg.customProperties().get(SSL_TRUSTSTORE_PASSWORD);
-
-            String trustStoreType = cfg.customProperties().getOrDefault(SSL_TRUST_STORE_TYPE, SslContextFactory.DFLT_STORE_TYPE);
-
             String keyAlg = cfg.customProperties().getOrDefault(SSL_KEY_ALGORITHM, SslContextFactory.DFLT_KEY_ALGORITHM);
 
             SslProtocol protocol = SslProtocol.valueOf(cfg.customProperties().getOrDefault(SSL_PROTOCOL, SslContextFactory.DFLT_SSL_PROTOCOL));
+
+            if (trustStoreDefined) {
+                String trustStore = cfg.customProperties().get(SSL_TRUSTSTORE_PATH);
+
+                String trustStorePwd = cfg.customProperties().get(SSL_TRUSTSTORE_PASSWORD);
+
+                String trustStoreType = cfg.customProperties().getOrDefault(SSL_TRUST_STORE_TYPE, SslContextFactory.DFLT_STORE_TYPE);
+
+                clCfg.setSslTrustCertificateKeyStorePath(trustStore)
+                    .setSslTrustCertificateKeyStoreType(trustStoreType)
+                    .setSslTrustCertificateKeyStorePassword(trustStorePwd);
+            }
 
             clCfg.setSslMode(SslMode.REQUIRED)
                 .setSslClientCertificateKeyStorePath(keyStore)
                 .setSslClientCertificateKeyStoreType(keyStoreType)
                 .setSslClientCertificateKeyStorePassword(keyStorePwd)
-                .setSslTrustCertificateKeyStorePath(trustStore)
-                .setSslTrustCertificateKeyStoreType(trustStoreType)
-                .setSslTrustCertificateKeyStorePassword(trustStorePwd)
                 .setSslKeyAlgorithm(keyAlg)
                 .setSslTrustAll(trustAll)
                 .setSslProtocol(protocol);
