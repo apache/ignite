@@ -45,7 +45,6 @@ import org.yardstickframework.BenchmarkUtils;
  * Thin client.
  */
 public class IgniteThinClient {
-
     /** Property to overwrite default 10800 port to connect */
     private static final String THIN_CLIENT_SERVER_PORT = "THIN_CLIENT_SERVER_PORT";
 
