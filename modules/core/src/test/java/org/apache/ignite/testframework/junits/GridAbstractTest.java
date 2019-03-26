@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.io.File;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -76,6 +77,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
+import org.apache.ignite.internal.util.GridDebug;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -565,7 +567,13 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        // No-op.
+        File f = new File("dmp-" + getClass().getSimpleName() + ".hprof");
+
+        GridDebug.dumpHeap(f.getName(), true);
+
+        System.out.println("+++ MEM: " + f.length());
+
+        f.delete();
     }
 
     /** {@inheritDoc} */
