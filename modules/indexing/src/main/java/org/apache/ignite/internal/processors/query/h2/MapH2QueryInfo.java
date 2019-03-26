@@ -24,7 +24,7 @@ import org.apache.ignite.cluster.ClusterNode;
 /**
  * Map query info.
  */
-public class MapH2QueryInfo extends AbstractH2QueryInfo {
+public class MapH2QueryInfo extends H2QueryInfo {
     /** Node. */
     private final ClusterNode node;
 
@@ -44,7 +44,7 @@ public class MapH2QueryInfo extends AbstractH2QueryInfo {
      */
     public MapH2QueryInfo(PreparedStatement stmt, String sql, Collection<Object> params,
         ClusterNode node, long reqId, int segment) {
-        super(stmt, sql, params);
+        super(QueryType.MAP, stmt, sql, params);
 
         this.node = node;
         this.reqId= reqId;

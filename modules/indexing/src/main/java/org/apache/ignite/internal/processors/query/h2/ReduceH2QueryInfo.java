@@ -23,7 +23,7 @@ import java.util.Collection;
 /**
  * Reduce query info.
  */
-public class ReduceH2QueryInfo extends AbstractH2QueryInfo {
+public class ReduceH2QueryInfo extends H2QueryInfo {
     /** Request id. */
     private final long reqId;
 
@@ -35,14 +35,13 @@ public class ReduceH2QueryInfo extends AbstractH2QueryInfo {
      */
     public ReduceH2QueryInfo(PreparedStatement stmt, String sql, Collection<Object> params,
         long reqId) {
-        super(stmt, sql, params);
+        super(QueryType.REDUCE, stmt, sql, params);
 
         this.reqId= reqId;
     }
 
     /** {@inheritDoc} */
     @Override protected void printInfo(StringBuilder msg) {
-        msg.append("type=REDUCE")
-            .append(", reqId=").append(reqId);
+        msg.append(", reqId=").append(reqId);
     }
 }

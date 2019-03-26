@@ -154,7 +154,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         testLog.registerListener(lsnr);
 
-        sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2");
+        sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2 where T0.id > ?", 0);
 
         assertTrue(lsnr.check());
     }

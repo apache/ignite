@@ -793,7 +793,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             checkSecurity(parser.cacheIds());
         }
 
-        final LocalH2QueryInfo qryInfo = new LocalH2QueryInfo(stmt, qry, params);
+        final H2QueryInfo qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry, params);
 
         return new GridQueryFieldsResultAdapter(meta, null) {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
@@ -1002,7 +1002,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public ResultSet executeSqlQueryWithTimer(Connection conn, String sql, @Nullable Collection<Object> params,
-        boolean useStmtCache, int timeoutMillis, @Nullable GridQueryCancel cancel, H2QueryInfo qryInfo)
+        boolean useStmtCache, int timeoutMillis, @Nullable GridQueryCancel cancel, final H2QueryInfo qryInfo)
         throws IgniteCheckedException {
         return executeSqlQueryWithTimer(preparedStatementWithParams(conn, sql, params, useStmtCache),
             conn, sql, params, timeoutMillis, cancel, qryInfo);
@@ -1022,22 +1022,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public ResultSet executeSqlQueryWithTimer(PreparedStatement stmt, Connection conn, String sql,
         @Nullable Collection<Object> params, int timeoutMillis, @Nullable GridQueryCancel cancel,
-        H2QueryInfo qryInfo)
+        final H2QueryInfo qryInfo)
         throws IgniteCheckedException {
-        assert qryInfo != null;
 
-        longRunningQryMgr.registerQuery(qryInfo);
+        if (qryInfo != null)
+            longRunningQryMgr.registerQuery(qryInfo);
 
         try {
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
 
-            if (qryInfo.time() > longRunningQryMgr.getTimeout())
+            if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout())
                 qryInfo.printLogMessage(log, connMgr, "Long running query is finished");
 
             return rs;
         }
         catch (Throwable e) {
-            if (qryInfo.time() > longRunningQryMgr.getTimeout()) {
+            if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout()) {
                 qryInfo.printLogMessage(log, connMgr, "Long running query is finished with error: "
                     + e.getMessage());
             }
@@ -1045,7 +1045,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw  e;
         }
         finally {
-            longRunningQryMgr.unregisterQuery(qryInfo);
+            if (qryInfo != null)
+                longRunningQryMgr.unregisterQuery(qryInfo);
         }
     }
 

@@ -401,9 +401,6 @@ public class GridSqlQueryParser {
     private static final Getter<Column, Boolean> COLUMN_IS_COMPUTED = getter(Column.class, "isComputed");
 
     /** */
-    public static final Getter<TableFilter, Integer> TABLE_FILTER_SCAN_COUNT = getter(TableFilter.class, "scanCount");
-
-    /** */
     private static final Getter<Column, Expression> COLUMN_CHECK_CONSTRAINT = getter(Column.class, "checkConstraint");
 
     /** Class for private class: 'org.h2.command.CommandList'. */

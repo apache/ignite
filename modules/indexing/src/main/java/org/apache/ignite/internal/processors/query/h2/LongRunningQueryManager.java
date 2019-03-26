@@ -21,7 +21,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 
 /**
  * Long running query manager.
@@ -42,8 +44,8 @@ public class LongRunningQueryManager {
     /** Queries collection. Sorted collection isn't used to reduce 'put' time. */
     private final ConcurrentHashMap<H2QueryInfo, TimeoutChecker> qrys = new ConcurrentHashMap<>();
 
-    /** Check long query task. */
-    private final GridTimeoutProcessor.CancelableTask checkLongQryTask;
+    /** Check worker. */
+    private final GridWorker checkWorker;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -84,16 +86,28 @@ public class LongRunningQueryManager {
 
         log = ctx.log(LongRunningQueryManager.class);
 
-        checkLongQryTask = ctx.timeout().schedule(this::checkLongRunning, CHECK_PERIOD, CHECK_PERIOD);
+        checkWorker = new GridWorker(ctx.igniteInstanceName(), "long-qry", log) {
+            @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+                while (true) {
+                    checkLongRunning();
+
+                    U.sleep(CHECK_PERIOD);
+                }
+            }
+        };
 
         timeout = ctx.config().getLongQueryWarningTimeout();
+
+        Thread thread = new Thread(checkWorker);
+
+        thread.start();
     }
 
     /**
      *
      */
     public void stop() {
-        checkLongQryTask.close();
+        checkWorker.cancel();
 
         qrys.clear();
     }
@@ -104,14 +118,18 @@ public class LongRunningQueryManager {
     public void registerQuery(H2QueryInfo qryInfo) {
         assert qryInfo != null;
 
-        if (timeout > 0)
-            qrys.put(qryInfo, new TimeoutChecker(timeout, timeoutMult));
+        final long timeout0 = timeout;
+
+        if (timeout0 > 0)
+            qrys.put(qryInfo, new TimeoutChecker(timeout0, timeoutMult));
     }
 
     /**
      * @param qryInfo Query info to remove.
      */
     public void unregisterQuery(H2QueryInfo qryInfo) {
+        assert qryInfo != null;
+
         qrys.remove(qryInfo);
     }
 
@@ -125,7 +143,7 @@ public class LongRunningQueryManager {
             if (e.getValue().checkTimeout(qinfo.time())) {
                 qinfo.printLogMessage(log, connMgr, "Query execution is too long");
 
-                if (timeoutMult <= 1)
+                if (e.getValue().timeoutMult <= 1)
                     qrys.remove(qinfo);
             }
         }

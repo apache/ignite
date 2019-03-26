@@ -15,26 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.internal.processors.cache.index;
 
-import java.sql.PreparedStatement;
-import java.util.Collection;
+import org.apache.ignite.IgniteSystemProperties;
 
 /**
- * Local query info.
+ *
  */
-public class LocalH2QueryInfo extends AbstractH2QueryInfo {
-    /**
-     * @param stmt Query statement.
-     * @param sql Query statement.
-     * @param params Query parameters.
-     */
-    public LocalH2QueryInfo(PreparedStatement stmt, String sql, Collection<Object> params) {
-        super(stmt, sql, params);
+public class StaticCacheDdlKeepStaticConfigurationTest extends StaticCacheDdlTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_KEEP_STATIC_CACHE_CONFIGURATION, "true");
+
+        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
-    @Override protected void printInfo(StringBuilder msg) {
-        msg.append("type=LOCAL");
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_KEEP_STATIC_CACHE_CONFIGURATION);
     }
 }
