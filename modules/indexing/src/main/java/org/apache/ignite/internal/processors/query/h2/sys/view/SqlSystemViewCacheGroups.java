@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.sys.view;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -36,9 +38,9 @@ public class SqlSystemViewCacheGroups extends SqlAbstractLocalSystemView {
      * @param ctx Grid context.
      */
     public SqlSystemViewCacheGroups(GridKernalContext ctx) {
-        super("CACHE_GROUPS", "Cache groups", ctx, "ID",
-            newColumn("ID", Value.INT),
-            newColumn("GROUP_NAME"),
+        super("CACHE_GROUPS", "Cache groups", ctx, "CACHE_GROUP_ID",
+            newColumn("CACHE_GROUP_ID", Value.INT),
+            newColumn("CACHE_GROUP_NAME"),
             newColumn("IS_SHARED", Value.BOOLEAN),
             newColumn("CACHE_COUNT", Value.INT),
             newColumn("CACHE_MODE"),
@@ -57,7 +59,6 @@ public class SqlSystemViewCacheGroups extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         SqlSystemViewColumnCondition idCond = conditionForColumn("ID", first, last);
 
@@ -77,25 +78,29 @@ public class SqlSystemViewCacheGroups extends SqlAbstractLocalSystemView {
             cacheGroups = ctx.cache().cacheGroupDescriptors().values();
 
         return F.iterator(cacheGroups,
-            grp -> createRow(
-                ses,
-                grp.groupId(),
-                grp.cacheOrGroupName(),
-                grp.sharedGroup(),
-                grp.caches() == null ? 0 : grp.caches().size(),
-                grp.config().getCacheMode(),
-                grp.config().getAtomicityMode(),
-                grp.config().getAffinity(),
-                grp.config().getAffinity() != null ? grp.config().getAffinity().partitions() : null,
-                grp.config().getNodeFilter(),
-                grp.config().getDataRegionName(),
-                grp.config().getTopologyValidator(),
-                grp.config().getPartitionLossPolicy(),
-                grp.config().getRebalanceMode(),
-                grp.config().getRebalanceDelay(),
-                grp.config().getRebalanceOrder(),
-                grp.config().getBackups()
-            ), true);
+            grp -> {
+                CacheConfiguration<?, ?> ccfg = grp.config();
+
+                return createRow(
+                    ses,
+                    grp.groupId(),
+                    grp.cacheOrGroupName(),
+                    grp.sharedGroup(),
+                    grp.caches() == null ? 0 : grp.caches().size(),
+                    ccfg.getCacheMode(),
+                    ccfg.getAtomicityMode(),
+                    toStringSafe(ccfg.getAffinity()),
+                    ccfg.getAffinity() != null ? ccfg.getAffinity().partitions() : null,
+                    nodeFilter(ccfg),
+                    ccfg.getDataRegionName(),
+                    toStringSafe(ccfg.getTopologyValidator()),
+                    ccfg.getPartitionLossPolicy(),
+                    ccfg.getRebalanceMode(),
+                    ccfg.getRebalanceDelay(),
+                    ccfg.getRebalanceOrder(),
+                    ccfg.getCacheMode() == CacheMode.REPLICATED ? null : ccfg.getBackups()
+                );
+            }, true);
     }
 
     /** {@inheritDoc} */
