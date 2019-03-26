@@ -960,7 +960,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 true
             );
 
-            WALPointer restored = binaryState.lastReadRecordPointer().map(FileWALPointer::next).orElse(null);
+            WALPointer restored = binaryState.lastReadRecordPointer();
+
+            if(restored.equals(CheckpointStatus.NULL_PTR))
+                restored = null; // This record is first
+            else
+                restored = restored.next();
 
             if (restored == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
                 throw new StorageException("The memory cannot be restored. The critical part of WAL archive is missing " +
@@ -1983,7 +1988,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 dumpPartitionsInfo(cctx, log);
             }
 
-            walTail = tailPointer(logicalState.lastReadRecordPointer().orElse(null));
+            walTail = logicalState.lastReadRecordPointer();
 
             cctx.wal().onDeActivate(kctx);
         }
@@ -2043,31 +2048,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         return res;
-    }
-
-    /**
-     * Calculates tail pointer for WAL at the end of logical recovery.
-     *
-     * @param from Start replay WAL from.
-     * @return Tail pointer.
-     * @throws IgniteCheckedException If failed.
-     */
-    private WALPointer tailPointer(WALPointer from) throws IgniteCheckedException {
-        WALIterator it = cctx.wal().replay(from);
-
-        try {
-            while (it.hasNextX()) {
-                IgniteBiTuple<WALPointer, WALRecord> rec = it.nextX();
-
-                if (rec == null)
-                    break;
-            }
-        }
-        finally {
-            it.close();
-        }
-
-        return it.lastRead().map(WALPointer::next).orElse(null);
     }
 
     /**
@@ -2263,7 +2243,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (!finalizeState)
             return null;
 
-        FileWALPointer lastReadPtr = restoreBinaryState.lastReadRecordPointer().orElse(null);
+        FileWALPointer lastReadPtr = restoreBinaryState.lastReadRecordPointer();
 
         if (status.needRestoreMemory()) {
             if (restoreBinaryState.needApplyBinaryUpdate())
@@ -2601,7 +2581,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         WALIterator it = cctx.wal().replay(status.startPtr, recordTypePredicate);
 
-        RestoreLogicalState restoreLogicalState = new RestoreLogicalState(it, lastArchivedSegment, cacheGroupsPredicate);
+        RestoreLogicalState restoreLogicalState = new RestoreLogicalState(status, it, lastArchivedSegment, cacheGroupsPredicate);
 
         try {
             while (it.hasNextX()) {
@@ -5247,6 +5227,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Last archived segment. */
         protected final long lastArchivedSegment;
 
+        /** Checkpoint status. */
+        protected final CheckpointStatus status;
+
         /** WAL iterator. */
         private final WALIterator iterator;
 
@@ -5254,15 +5237,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private final IgnitePredicate<Integer> cacheGroupPredicate;
 
         /**
+         * @param status Checkpoint status.
          * @param iterator WAL iterator.
          * @param lastArchivedSegment Last archived segment index.
          * @param cacheGroupPredicate Cache groups predicate.
          */
         protected RestoreStateContext(
+            CheckpointStatus status,
             WALIterator iterator,
             long lastArchivedSegment,
             IgnitePredicate<Integer> cacheGroupPredicate
         ) {
+            this.status = status;
             this.iterator = iterator;
             this.lastArchivedSegment = lastArchivedSegment;
             this.cacheGroupPredicate = cacheGroupPredicate;
@@ -5344,8 +5330,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          * @return Last read WAL record pointer.
          */
-        public Optional<FileWALPointer> lastReadRecordPointer() {
-            return iterator.lastRead().map(ptr -> (FileWALPointer)ptr);
+        public FileWALPointer lastReadRecordPointer() {
+            assert status.startPtr != null && status.startPtr instanceof FileWALPointer;
+
+            return iterator.lastRead()
+                .map(ptr -> (FileWALPointer)ptr)
+                .orElseGet(() -> (FileWALPointer)status.startPtr);
         }
 
         /**
@@ -5353,7 +5343,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return Flag indicates need throws CRC exception or not.
          */
         public boolean throwsCRCError() {
-            return lastReadRecordPointer().filter(ptr -> ptr.index() <= lastArchivedSegment).isPresent();
+            return lastReadRecordPointer().index() <= lastArchivedSegment;
         }
     }
 
@@ -5361,8 +5351,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * Restore memory context. Tracks the safety of binary recovery.
      */
     public class RestoreBinaryState extends RestoreStateContext {
-        /** Checkpoint status. */
-        private final CheckpointStatus status;
 
         /** The flag indicates need to apply the binary update or no needed. */
         private boolean needApplyBinaryUpdates;
@@ -5379,9 +5367,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             long lastArchivedSegment,
             IgnitePredicate<Integer> cacheGroupsPredicate
         ) {
-            super(iterator, lastArchivedSegment, cacheGroupsPredicate);
+            super(status, iterator, lastArchivedSegment, cacheGroupsPredicate);
 
-            this.status = status;
             this.needApplyBinaryUpdates = status.needRestoreMemory();
         }
 
@@ -5448,8 +5435,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * @param lastArchivedSegment Last archived segment index.
          */
-        public RestoreLogicalState(WALIterator iterator, long lastArchivedSegment, IgnitePredicate<Integer> cacheGroupsPredicate) {
-            super(iterator, lastArchivedSegment, cacheGroupsPredicate);
+        public RestoreLogicalState(CheckpointStatus status, WALIterator iterator, long lastArchivedSegment, IgnitePredicate<Integer> cacheGroupsPredicate) {
+            super(status, iterator, lastArchivedSegment, cacheGroupsPredicate);
         }
 
         /**
