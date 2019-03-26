@@ -1020,6 +1020,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
+    // TODO: Unused parameters
     public ResultSet executeSqlQueryWithTimer(PreparedStatement stmt, Connection conn, String sql,
         @Nullable Collection<Object> params, int timeoutMillis, @Nullable GridQueryCancel cancel,
         final H2QueryInfo qryInfo)
@@ -2460,6 +2461,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
+        // TODO: Move below.
         longRunningQryMgr.stop();
 
         mapQryExec.cancelLazyWorkers();

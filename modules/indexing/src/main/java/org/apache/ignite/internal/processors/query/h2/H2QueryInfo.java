@@ -61,6 +61,7 @@ public class H2QueryInfo {
      * @param sql Query statement.
      * @param params Query parameters.
      */
+    // TODO: Parems - unused
     public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, Collection<Object> params) {
         try {
             assert stmt != null;
@@ -118,7 +119,7 @@ public class H2QueryInfo {
         msgSb.append(", sql='")
             .append(sql)
             .append("', plan=")
-            .append(queryPlan(log, connMgr))
+            .append(queryPlan(log, connMgr)) // TODO: Do not print plan for reduce query.
             .append(']');
 
         LT.warn(log, msgSb.toString());

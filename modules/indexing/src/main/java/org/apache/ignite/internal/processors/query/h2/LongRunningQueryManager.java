@@ -81,6 +81,8 @@ public class LongRunningQueryManager {
         Thread thread = new Thread(checkWorker);
 
         thread.start();
+
+        // TODO: Make daemon.
     }
 
     /**
@@ -144,6 +146,7 @@ public class LongRunningQueryManager {
     public void setTimeout(long timeout) {
         this.timeout = timeout;
 
+        // TODO: Remove
         if (timeout <= 0)
             qrys.clear();
     }
