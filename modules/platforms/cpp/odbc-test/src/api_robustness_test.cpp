@@ -831,6 +831,30 @@ BOOST_AUTO_TEST_CASE(TestSQLNumParams)
     SQLNumParams(stmt, 0);
 }
 
+BOOST_AUTO_TEST_CASE(TestSQLNumParamsEscaped)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    SQLCHAR sql[] = "SELECT {fn NOW()}";
+
+    // Everyting is ok.
+    SQLRETURN ret = SQLPrepare(stmt, sql, sizeof(sql));
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLSMALLINT params;
+
+    // Everithing is ok.
+    ret = SQLNumParams(stmt, &params);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLNumParams(stmt, 0);
+}
+
 BOOST_AUTO_TEST_CASE(TestSQLGetDiagField)
 {
     // There are no checks because we do not really care what is the result of these
