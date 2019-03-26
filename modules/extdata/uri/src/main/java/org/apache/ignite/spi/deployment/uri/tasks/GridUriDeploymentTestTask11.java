@@ -15,19 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc2;
+package org.apache.ignite.spi.deployment.uri.tasks;
 
-import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+
+import java.util.Collection;
+import java.util.List;
 
 /**
- * Test to check JDBC2 driver behavior when cache specified in connection string does not have any query entities.
+ * Simple URI deployment test task.
  */
-public class JdbcDefaultNoOpCacheTest extends org.apache.ignite.jdbc.JdbcDefaultNoOpCacheTest {
-    /** Ignite configuration URL. */
-    private static final String CFG_URL = "modules/clients/src/test/config/jdbc-config.xml";
+public class GridUriDeploymentTestTask11 extends ComputeTaskSplitAdapter<Object, Object> {
+    /**
+     * {@inheritDoc}
+     */
+    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
+        return null;
+    }
 
-    /** {@inheritDoc} */
-    protected String getUrl() {
-        return CFG_URL_PREFIX + "cache=noop@" + CFG_URL;
+    /**
+     * {@inheritDoc}
+     */
+    @Override public Object reduce(List<ComputeJobResult> results) {
+        return null;
     }
 }

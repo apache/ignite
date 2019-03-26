@@ -39,6 +39,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -384,6 +385,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     msg.onError(new SchemaOperationException("Schema changes are not supported for LOCAL cache."));
                 }
+                else if (failOnStaticCacheSchemaChanges(cacheDesc)) {
+                    // Do not allow any schema changes when keep static cache configuration flag is set.
+                    if (log.isDebugEnabled())
+                        log.debug("Received schema propose discovery message, but cache is statically configured " +
+                            "and " + IgniteSystemProperties.IGNITE_KEEP_STATIC_CACHE_CONFIGURATION +
+                            " flag is set (will report error) [opId=" + opId + ", msg=" + msg + ']');
+
+                    msg.onError(new SchemaOperationException("Schema changes are not supported for statically " +
+                        "configured cache when " + IgniteSystemProperties.IGNITE_KEEP_STATIC_CACHE_CONFIGURATION +
+                        " flag is set."));
+                }
                 else {
                     // Preserve deployment ID so that we can distinguish between different caches with the same name.
                     if (msg.deploymentId() == null)
@@ -405,6 +417,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         return onSchemaProposeDiscovery0(msg);
+    }
+
+    /**
+     * @param cacheDesc Cache descriptor to check.
+     * @return {@code true} if cache is statically configured, IGNITE_KEEP_STATIC_CACHE_CONFIGURATION system property
+     *      is set and cache is persistent, {@code false} otherwise.
+     */
+    private boolean failOnStaticCacheSchemaChanges(DynamicCacheDescriptor cacheDesc) {
+        return cacheDesc.staticallyConfigured() &&
+            ctx.cache().keepStaticCacheConfiguration() &&
+            cacheDesc.groupDescriptor().persistenceEnabled();
     }
 
     /**
@@ -677,6 +700,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void onCacheStart0(GridCacheContextInfo<?, ?> cacheInfo, QuerySchema schema, boolean isSql)
         throws IgniteCheckedException {
+        if (!cacheSupportSql(cacheInfo.config()))
+            return;
 
         ctx.cache().context().database().checkpointReadLock();
 
@@ -1698,7 +1723,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param destroy Destroy flag.
      */
     public void onCacheStop0(GridCacheContextInfo cacheInfo, boolean destroy) {
-        if (idx == null)
+        if (idx == null || !cacheSupportSql(cacheInfo.config()))
             return;
 
         String cacheName = cacheInfo.name();
@@ -1754,6 +1779,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     missedCacheTypeIter.remove();
             }
         }
+    }
+
+    /**
+     * Check is cache configured for SQL.
+     *
+     * @param cfg Cache configuration.
+     * @return {@code true} If cache configuration support SQL, {@code false} otherwise.
+     */
+    private boolean cacheSupportSql(CacheConfiguration cfg) {
+        return !F.isEmpty(cfg.getQueryEntities())
+            || !F.isEmpty(cfg.getSqlSchema())
+            || !F.isEmpty(cfg.getSqlFunctionClasses());
     }
 
     /**
@@ -2233,8 +2270,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         return executeQuerySafe(cctx, () -> {
             assert idx != null;
 
-            final String schemaName = qry.getSchema() != null ? qry.getSchema()
-                : (cctx != null ? idx.schema(cctx.name()) : QueryUtils.DFLT_SCHEMA);
+            final String schemaName = getSchemaName(cctx, qry);
 
             IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
                 new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
@@ -2259,6 +2295,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             return executeQuery(qryType, qry.getSql(), cctx, clo, true);
         });
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @return Schema name.
+     */
+    private String getSchemaName(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry) {
+        if (qry.getSchema() != null)
+            return qry.getSchema();
+        else if (cctx != null) {
+            String cacheSchemaName = idx.schema(cctx.name());
+
+            if (!F.isEmpty(cacheSchemaName))
+                return cacheSchemaName;
+        }
+
+        return QueryUtils.DFLT_SCHEMA;
     }
 
     /**

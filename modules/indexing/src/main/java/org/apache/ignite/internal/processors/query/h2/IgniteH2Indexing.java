@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
@@ -532,6 +533,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     try {
                         Connection conn0 = conn.object().connection(qryDesc.schemaName());
+
+                        H2Utils.setupConnection(conn0,
+                            qryDesc.distributedJoins(), qryDesc.enforceJoinOrder(), qryParams.lazy());
 
                         List<Object> args = F.asList(qryParams.arguments());
 
@@ -1771,6 +1775,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public String schema(String cacheName) {
         return schemaMgr.schemaName(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> schemasNames(){
+        return schemaMgr.schemaNames();
     }
 
     /** {@inheritDoc} */
