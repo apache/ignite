@@ -25,6 +25,8 @@ import java.net.Socket;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -51,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
+import static java.lang.Math.abs;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanToByte;
 
 /**
@@ -98,6 +101,9 @@ public class JdbcThinTcpIo {
 
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
+
+    /** Random. */
+    private static final AtomicLong IDX_GEN = new AtomicLong(new Random(U.currentTimeMillis()).nextLong());
 
     /** Connection properties. */
     private final ConnectionProperties connProps;
@@ -597,6 +603,22 @@ public class JdbcThinTcpIo {
         assert srvProtoVer != null;
 
         return srvProtoVer.compareTo(VER_2_8_0) >= 0;
+    }
+
+    /**
+     * Get next server index.
+     *
+     * @param len Number of servers.
+     * @return Index of the next server to connect to.
+     */
+    private static int nextServerIndex(int len) {
+        if (len == 1)
+            return 0;
+        else {
+            long nextIdx = IDX_GEN.getAndIncrement();
+
+            return (int)(abs(nextIdx) % len);
+        }
     }
 
     /**

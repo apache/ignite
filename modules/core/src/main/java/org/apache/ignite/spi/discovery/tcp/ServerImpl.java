@@ -3650,28 +3650,43 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (debugMode)
                         debugLog(msg, "Pending messages will be resent to local node");
 
-                    for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
-                        prepareNodeAddedMessage(pendingMsg, locNodeId, pendingMsgs.msgs,
-                            pendingMsgs.customDiscardId);
-
-                        pendingMsg.senderNodeId(locNodeId);
-
-                        msgWorker.addMessage(pendingMsg);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Pending message has been sent to local node [msg=" + msg.id() +
-                                ", pendingMsgId=" + pendingMsg + ']');
-
-                        if (debugMode) {
-                            debugLog(msg, "Pending message has been sent to local node [msg=" + msg.id() +
-                                ", pendingMsgId=" + pendingMsg + ']');
-                        }
-                    }
+                    processPendingMessagesLocally(msg);
                 }
 
                 LT.warn(log, "Local node has detected failed nodes and started cluster-wide procedure. " +
                         "To speed up failure detection please see 'Failure Detection' section under javadoc" +
                         " for 'TcpDiscoverySpi'");
+            }
+        }
+
+        /**
+         * Called when local node became the only alive node in topology.
+         *
+         * @param curMsg Currently processed messages. There are three options possible:<ul>
+         *     <li>{@link TcpDiscoveryNodeLeftMessage} from the last node.</li>
+         *     <li>{@link TcpDiscoveryNodeFailedMessage} from the last node.</li>
+         *     <li>Any other message, but all other nodes failed while sending.</li>
+         * </ul>
+         */
+        private void processPendingMessagesLocally(TcpDiscoveryAbstractMessage curMsg) {
+            UUID locNodeId = getLocalNodeId();
+
+            for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
+                prepareNodeAddedMessage(pendingMsg, locNodeId, pendingMsgs.msgs,
+                    pendingMsgs.customDiscardId);
+
+                pendingMsg.senderNodeId(locNodeId);
+
+                msgWorker.addMessage(pendingMsg);
+
+                if (log.isDebugEnabled())
+                    log.debug("Pending message has been sent to local node [msg=" + curMsg.id() +
+                        ", pendingMsg=" + pendingMsg + ']');
+
+                if (debugMode) {
+                    debugLog(curMsg, "Pending message has been sent to local node [msg=" + curMsg.id() +
+                        ", pendingMsg=" + pendingMsg + ']');
+                }
             }
         }
 
@@ -5152,6 +5167,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     log.debug("Unable to send message across the ring (topology has no remote nodes): " + msg);
 
                 U.closeQuiet(sock);
+
+                processPendingMessagesLocally(msg);
             }
 
             checkPendingCustomMessages();
@@ -5330,6 +5347,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     log.debug("Unable to send message across the ring (topology has no remote nodes): " + msg);
 
                 U.closeQuiet(sock);
+
+                processPendingMessagesLocally(msg);
             }
 
             checkPendingCustomMessages();
@@ -5896,7 +5915,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (joiningEmpty && isLocalNodeCoordinator()) {
                 TcpDiscoveryCustomEventMessage msg;
 
-                while ((msg = pollPendingCustomeMessage()) != null)
+                while ((msg = pollPendingCustomMessage()) != null)
                     processCustomMessage(msg, true);
             }
         }
@@ -5904,7 +5923,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @return Pending custom message.
          */
-        @Nullable private TcpDiscoveryCustomEventMessage pollPendingCustomeMessage() {
+        @Nullable private TcpDiscoveryCustomEventMessage pollPendingCustomMessage() {
             synchronized (mux) {
                 return pendingCustomMsgs.poll();
             }
