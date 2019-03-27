@@ -99,6 +99,8 @@ public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapt
     @Override protected void stop0(boolean cancel) {
         downloadMgr.stop0(cancel);
         uploadMgr.stop0(cancel);
+
+        ((GridCacheDatabaseSharedManager) cctx.database()).removeCheckpointListener(switchMgr);
     }
 
     /**
@@ -144,6 +146,9 @@ public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapt
     private boolean rebalanceByPartitionSupported(CacheGroupContext grp, Collection<ClusterNode> nodes) {
         // Do not rebalance system cache with files as they are not exists.
         if (grp.groupId() == CU.cacheId(UTILITY_CACHE_NAME))
+            return false;
+
+        if (grp.mvccEnabled())
             return false;
 
         return presistenceRebalanceEnabled &&
@@ -222,6 +227,7 @@ public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapt
 
                         //TODO invalidate partition
 
+                        // Switching mode under the write lock.
                         locPart.storageMode(rq.nextMode);
                     }
                 }
