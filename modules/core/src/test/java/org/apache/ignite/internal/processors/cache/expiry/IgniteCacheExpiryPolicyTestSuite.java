@@ -61,6 +61,8 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheTtlManagerNotificationTest.class);
         suite.addTestSuite(IgniteCacheOnlyOneTtlCleanupThreadExistsTest.class);
 
+        suite.addTestSuite(IgniteCacheExpireWhileRebalanceTest.class);
+
         return suite;
     }
 }
