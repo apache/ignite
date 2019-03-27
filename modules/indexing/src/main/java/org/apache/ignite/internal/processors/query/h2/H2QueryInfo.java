@@ -87,7 +87,7 @@ public class H2QueryInfo {
      */
     protected void printInfo(StringBuilder msg) {
         // No-op.
-    };
+    }
 
     /**
      * @return Query execution time.
