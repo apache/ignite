@@ -87,7 +87,7 @@ public class JavaFunction extends Expression implements FunctionCall {
                 functionAlias.getSchema().getId() != Constants.MAIN_SCHEMA_ID) {
             Parser.quoteIdentifier(builder, functionAlias.getSchema().getName(), alwaysQuote).append('.');
         }
-        Parser.quoteIdentifier(builder, functionAlias.getName(), alwaysQuote).append('(');
+        Parser.quoteIdentifier(builder, functionAlias.getName(), false).append('(');
         writeExpressions(builder, this.args, alwaysQuote);
         return builder.append(')');
     }
