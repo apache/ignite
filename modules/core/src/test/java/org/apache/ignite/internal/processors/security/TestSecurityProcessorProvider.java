@@ -18,9 +18,8 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
 import java.util.UUID;
-import org.apache.ignite.IgniteException;
+import java.util.function.Function;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -69,58 +68,26 @@ public class TestSecurityProcessorProvider implements PluginProvider {
     @SuppressWarnings("unchecked")
     @Override public @Nullable Object createComponent(PluginContext ctx, Class cls) {
         if (cls.isAssignableFrom(GridSecurityProcessor.class)) {
-            String secProcCls = securityProcessorClass(ctx);
+            Function<GridKernalContext, GridSecurityProcessor> f = secProcBuilder(ctx);
 
-            if(secProcCls == null)
-                return null;
-
-            try {
-                Class implCls = Class.forName(secProcCls);
-
-                if (implCls == null)
-                    throw new IgniteException("Failed to find component implementation: " + cls.getName());
-
-                if (!GridSecurityProcessor.class.isAssignableFrom(implCls))
-                    throw new IgniteException("Component implementation does not implement component interface " +
-                        "[component=" + cls.getName() + ", implementation=" + implCls.getName() + ']');
-
-                Constructor constructor;
-
-                try {
-                    constructor = implCls.getConstructor(GridKernalContext.class);
-                }
-                catch (NoSuchMethodException e) {
-                    throw new IgniteException("Component does not have expected constructor: " + implCls.getName(), e);
-                }
-
-                try {
-                    return constructor.newInstance(((IgniteEx)ctx.grid()).context());
-                }
-                catch (ReflectiveOperationException e) {
-                    throw new IgniteException("Failed to create component [component=" + cls.getName() +
-                        ", implementation=" + implCls.getName() + ']', e);
-                }
-            }
-            catch (ClassNotFoundException e) {
-                throw new IgniteException("Failed to load class [cls=" + secProcCls + "]", e);
-            }
+            return f != null ? f.apply(((IgniteEx)ctx.grid()).context()) : null;
         }
 
         return null;
     }
 
     /**
-     * Getting security processor class name.
+     * Gets security processor builder.
      *
      * @param ctx Context.
      */
-    private String securityProcessorClass(PluginContext ctx) {
+    private Function<GridKernalContext, GridSecurityProcessor> secProcBuilder(PluginContext ctx){
         IgniteConfiguration igniteCfg = ctx.igniteConfiguration();
 
         if (igniteCfg.getPluginConfigurations() != null) {
             for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
                 if (pluginCfg instanceof TestSecurityPluginConfiguration)
-                    return ((TestSecurityPluginConfiguration)pluginCfg).getSecurityProcessorClass();
+                    return ((TestSecurityPluginConfiguration)pluginCfg).builder();
             }
         }
 

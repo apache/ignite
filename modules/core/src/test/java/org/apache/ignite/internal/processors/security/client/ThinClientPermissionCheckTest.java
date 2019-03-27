@@ -96,13 +96,13 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
 
         String instanceName = getTestIgniteInstanceName(idx);
 
-        return getConfiguration(instanceName,
-            secPluginCfg("srv_" + instanceName, null, allowAllPermissionSet())
-                .thinClientSecData(clientData))
-            .setCacheConfiguration(
-                new CacheConfiguration().setName(CACHE),
-                new CacheConfiguration().setName(FORBIDDEN_CACHE)
-            );
+        return getConfiguration(
+            instanceName,
+            secPluginCfg("srv_" + instanceName, null, allowAllPermissionSet(), clientData)
+        ).setCacheConfiguration(
+            new CacheConfiguration().setName(CACHE),
+            new CacheConfiguration().setName(FORBIDDEN_CACHE)
+        );
     }
 
     /** {@inheritDoc} */

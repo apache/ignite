@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.util.Arrays;
+import java.util.function.Function;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -82,11 +84,17 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      * @param prmSet Security permission set.
      * @return Security plaugin configuration.
      */
-    protected TestSecurityPluginConfiguration secPluginCfg(String login, String pwd, SecurityPermissionSet prmSet){
-        return new TestSecurityPluginConfiguration()
-            .setLogin(login)
-            .setPwd(pwd)
-            .setPermissions(prmSet);
+    protected TestSecurityPluginConfiguration secPluginCfg(String login, String pwd, SecurityPermissionSet prmSet,
+        TestSecurityData... clientData) {
+        return new TestSecurityPluginConfiguration() {
+            @Override public Function<GridKernalContext, GridSecurityProcessor> builder() {
+                return ctx -> new TestSecurityProcessor(
+                    ctx,
+                    new TestSecurityData(login, pwd, prmSet),
+                    Arrays.asList(clientData)
+                );
+            }
+        };
     }
 
     /**

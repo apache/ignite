@@ -17,16 +17,19 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.TestSecurityPluginConfiguration;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -72,8 +75,11 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
 
         if(secEnabled){
             cfg.setPluginConfigurations(
-                new TestSecurityPluginConfiguration()
-                    .setPermissions(SecurityPermissionSetBuilder.create().defaultAllowAll(true).build())
+                new TestSecurityPluginConfiguration() {
+                    @Override public Function<GridKernalContext, GridSecurityProcessor> builder() {
+                        return TestReconnectProcessor::new;
+                    }
+                }
             );
         }
 

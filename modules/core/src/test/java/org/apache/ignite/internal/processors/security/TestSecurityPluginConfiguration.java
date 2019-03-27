@@ -17,122 +17,16 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.function.Function;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.plugin.PluginConfiguration;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 /**
- * Security configuration for test.
+ * Grid security configuration for tests.
  */
-public class TestSecurityPluginConfiguration implements PluginConfiguration {
-    /** Test security processor. */
-    public static final String DFLT_TEST_SECURITY_PROCESSOR =
-        TestSecurityProcessor.class.getCanonicalName();
-
-    /** Node security data. */
-    private TestSecurityData nodeSecData = new TestSecurityData();
-
-    /** Thin clients security data. */
-    private Collection<TestSecurityData> predefinedAuthData = Collections.emptyList();
-
-    /** Security processor class name. */
-    private String secProcCls = DFLT_TEST_SECURITY_PROCESSOR;
-
+public interface TestSecurityPluginConfiguration extends PluginConfiguration {
     /**
-     * Getting security permission set.
+     * Function thta produce GridSecurityProcessor.
      */
-    public SecurityPermissionSet getPermissions() {
-        return nodeSecData.getPermissions();
-    }
-
-    /**
-     * @param prmSet Security permission set.
-     */
-    public TestSecurityPluginConfiguration setPermissions(SecurityPermissionSet prmSet) {
-        nodeSecData.setPermissions(prmSet);
-
-        return this;
-    }
-
-    /**
-     * Login.
-     */
-    public String getLogin() {
-        return nodeSecData.getLogin();
-    }
-
-    /**
-     * @param login Login.
-     */
-    public TestSecurityPluginConfiguration setLogin(String login) {
-        nodeSecData.setLogin(login);
-
-        return this;
-    }
-
-    /**
-     * Password.
-     */
-    public String getPwd() {
-        return nodeSecData.getPwd();
-    }
-
-    /**
-     * @param pwd Password.
-     */
-    public TestSecurityPluginConfiguration setPwd(String pwd) {
-        nodeSecData.setPwd(pwd);
-
-        return this;
-    }
-
-    /**
-     * @param nodeSecData Node security data.
-     */
-    public TestSecurityPluginConfiguration nodeSecData(TestSecurityData nodeSecData) {
-        this.nodeSecData = nodeSecData;
-
-        return this;
-    }
-
-    /**
-     * @return Node security data.
-     */
-    public TestSecurityData nodeSecData() {
-        return nodeSecData;
-    }
-
-    /**
-     * @param data Array of thin client security data.
-     */
-    public TestSecurityPluginConfiguration thinClientSecData(TestSecurityData... data) {
-        predefinedAuthData = Collections.unmodifiableCollection(Arrays.asList(data));
-
-        return this;
-    }
-
-    /**
-     * @return Collection of thin client security data.
-     */
-    public Collection<TestSecurityData> thinClientsSecData() {
-        return predefinedAuthData;
-    }
-
-    /**
-     * Getting security processor class name.
-     */
-    public String getSecurityProcessorClass() {
-        return secProcCls;
-    }
-
-    /**
-     * @param secProcCls Security processor class name.
-     */
-    public TestSecurityPluginConfiguration setSecurityProcessorClass(String secProcCls) {
-        this.secProcCls = secProcCls;
-
-        return this;
-    }
+    public Function<GridKernalContext, GridSecurityProcessor> builder();
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -25,12 +26,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -47,14 +46,23 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** Permissions. */
     private static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
 
-    /** Config. */
-    private TestSecurityPluginConfiguration cfg;
+    /** Node security data. */
+    private final TestSecurityData nodeSecData;
+
+    /** Users security data. */
+    private final Collection<TestSecurityData> predefinedAuthData;
 
     /**
-     * @param ctx Context.
+     * Constructor.
      */
-    public TestSecurityProcessor(GridKernalContext ctx) {
+    public TestSecurityProcessor(GridKernalContext ctx, TestSecurityData nodeSecData,
+        Collection<TestSecurityData> predefinedAuthData) {
         super(ctx);
+
+        this.nodeSecData = nodeSecData;
+        this.predefinedAuthData = predefinedAuthData.isEmpty()
+            ? Collections.emptyList()
+            : new ArrayList<>(predefinedAuthData);
     }
 
     /** {@inheritDoc} */
@@ -122,13 +130,11 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        TestSecurityData nodeSecData = configuration().nodeSecData();
-
         PERMS.put(nodeSecData.credentials(), nodeSecData.getPermissions());
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, nodeSecData.credentials());
 
-        for (TestSecurityData data : configuration().thinClientsSecData())
+        for (TestSecurityData data : predefinedAuthData)
             PERMS.put(data.credentials(), data.getPermissions());
     }
 
@@ -136,32 +142,9 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
 
-        PERMS.remove(configuration().nodeSecData().credentials());
+        PERMS.remove(nodeSecData.credentials());
 
-        for (TestSecurityData data : configuration().thinClientsSecData())
+        for (TestSecurityData data : predefinedAuthData)
             PERMS.remove(data.credentials());
-    }
-
-    /**
-     * Security configuration.
-     */
-    private TestSecurityPluginConfiguration configuration() {
-        if (cfg == null) {
-            IgniteConfiguration igniteCfg = ctx.config();
-
-            if (igniteCfg.getPluginConfigurations() != null) {
-                for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
-                    if (pluginCfg instanceof TestSecurityPluginConfiguration) {
-                        cfg = (TestSecurityPluginConfiguration)pluginCfg;
-
-                        break;
-                    }
-                }
-            }
-        }
-
-        assert cfg != null;
-
-        return cfg;
     }
 }
