@@ -1339,9 +1339,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean keepBinary,
         GridQueryCancel cancel
     ) {
-        if (cancel == null)
-            cancel = new GridQueryCancel();
-
         // Check security.
         if (ctx.security().enabled())
             checkSecurity(select.cacheIds());
@@ -2304,6 +2301,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 try {
                     List<List<List<?>>> cur = plan.createRows(argss);
 
+                    //https://issues.apache.org/jira/browse/IGNITE-11176 - Need to support cancellation
                     ress = DmlUtils.processSelectResultBatched(plan, cur, qryParams.pageSize());
                 }
                 finally {
@@ -2573,6 +2571,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         int pageSize = loc ? 0 : qryParams.pageSize();
 
+        //https://issues.apache.org/jira/browse/IGNITE-11176 - Need to support cancellation
         return DmlUtils.processSelectResult(plan, cur, pageSize);
     }
 
@@ -2662,6 +2661,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     it = plan.iteratorForTransaction(connMgr, cur);
                 }
 
+                //https://issues.apache.org/jira/browse/IGNITE-11176 - Need to support cancellation
                 IgniteInternalFuture<Long> fut = tx.updateAsync(
                     cctx,
                     it,
@@ -2700,6 +2700,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (parts != null && parts.length == 0)
                 return new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
             else {
+                //https://issues.apache.org/jira/browse/IGNITE-11176 - Need to support cancellation
                 IgniteInternalFuture<Long> fut = tx.updateAsync(
                     cctx,
                     ids,

@@ -299,8 +299,9 @@ public class CommandProcessor {
         GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().runningQueryInfo(qryId);
 
         if (runningQryInfo == null)
-            err = "Failed to cancel query due to query doesn't exist " +
-                "[nodeId=" + ctx.localNodeId() + ",qryId=" + qryId + "]";
+            err = "Query with provided ID doesn't exist [nodeId=" + ctx.localNodeId() + ", qryId=" + qryId + "]";
+        else if (!runningQryInfo.cancelable())
+            err = "Query doesn't support cancellation [nodeId=" + ctx.localNodeId() + ", qryId=" + qryId + "]";
 
         if (msg.asyncResponse()) {
             snd = idx.send(GridTopic.TOPIC_QUERY,
@@ -314,7 +315,7 @@ public class CommandProcessor {
         }
 
         try {
-            if (runningQryInfo != null)
+            if (err == null)
                 runningQryInfo.cancel();
         }
         catch (Exception e) {
