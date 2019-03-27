@@ -374,7 +374,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dataRegCfg Data region configuration.
      * @return Closure.
      *
-     * @Deprecated use {@link #dataRegionMetricsProvider(DataRegionConfiguration)} instead.
+     * @deprecated use {@link #dataRegionMetricsProvider(DataRegionConfiguration)} instead.
      */
     @Deprecated
     protected IgniteOutClosure<Long> freeSpaceProvider(final DataRegionConfiguration dataRegCfg) {
