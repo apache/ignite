@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -441,6 +442,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
                 throw new IgniteCheckedException("Test query exception " + ctx.name() + " " + new Random().nextInt());
 
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void registerMxBeans(IgniteMBeansManager mbMgr) {
+            // No-op.
         }
     }
 }
