@@ -469,7 +469,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Long JVM pause detector.
      */
-    LongJVMPauseDetector longJvmPauseDetector();
+    public LongJVMPauseDetector longJvmPauseDetector();
 
     /**
      * Checks whether this node is invalid due to a critical error or not.
