@@ -1835,6 +1835,18 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(new[] {1, 2, 1, 1, 1, 3}, bytes1);
         }
+
+        [Test]
+        public void TestTypeWithDuplicatePropertyName()
+        {
+            var marsh = new Marshaller(null);
+            TestDelegate action = () => marsh.GetDescriptor(typeof(DerivedSamePropertyClass));
+
+            var ex = Assert.Throws<BinaryObjectException>(action);
+
+            var expectedExMessage = "Type 'DerivedSamePropertyClass' contains more then one field with name 'Property' declared.";
+            Assert.That(ex.Message, Is.EqualTo(expectedExMessage));
+        }
     }
 
     /// <summary>
@@ -2227,5 +2239,21 @@ namespace Apache.Ignite.Core.Tests.Binary
     {
         /** */
         public int NameMapperTestField { get; set; }
+    }
+
+    /// <summary>
+    /// Base class for testing.
+    /// </summary>
+    public class BaseSamePropertyClass
+    {
+        public int Property { get; private set; }
+    }
+
+    /// <summary>
+    /// Derived class that hides base class' property name.
+    /// </summary>
+    public class DerivedSamePropertyClass : BaseSamePropertyClass
+    {
+        public new int Property { get; private set; }
     }
 }

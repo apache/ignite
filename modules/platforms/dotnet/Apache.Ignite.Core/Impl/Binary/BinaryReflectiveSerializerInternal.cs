@@ -142,22 +142,18 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var fields = ReflectionUtils.GetAllFields(type).Where(x => !x.IsNotSerialized).ToList();
 
-            IDictionary<int, string> idMap = new Dictionary<int, string>();
+            var fieldsSet = new HashSet<string>();
 
             foreach (FieldInfo field in fields)
             {
                 string fieldName = BinaryUtils.CleanFieldName(field.Name);
 
-                int fieldId = BinaryUtils.FieldId(typeId, fieldName, converter, idMapper);
-
-                if (idMap.ContainsKey(fieldId))
+                if (fieldsSet.Contains(fieldName))
                 {
-                    throw new BinaryObjectException("Conflicting field IDs [type=" +
-                                                    type.Name + ", field1=" + idMap[fieldId] + ", field2=" + fieldName +
-                                                    ", fieldId=" + fieldId + ']');
+                    throw new BinaryObjectException(string.Format("Type '{0}' contains more then one field with name '{1}' declared.", type.Name, fieldName));
                 }
 
-                idMap[fieldId] = fieldName;
+                fieldsSet.Add(fieldName);
             }
 
             fields.Sort(Compare);
