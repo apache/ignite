@@ -49,6 +49,7 @@ public abstract class GridCacheCollectionProxy<T> implements Externalizable {
     /** */
     private volatile GridFutureAdapter<?> suspendFut;
 
+    /** */
     public GridCacheCollectionProxy(){
 
     }

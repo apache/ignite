@@ -44,7 +44,15 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Cache set proxy.
  */
-public class GridCacheSetProxy<T> extends GridCacheCollectionProxy<GridCacheSetImpl> implements IgniteSet<T>, Externalizable {
+public class GridCacheSetProxy<T> extends GridCacheCollectionProxy<GridCacheSetImpl> implements IgniteSet<T> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    public GridCacheSetProxy(){
+        // No-op.
+    }
+
     /**
      * @param cctx Cache context.
      * @param delegate Delegate set.
@@ -67,6 +75,7 @@ public class GridCacheSetProxy<T> extends GridCacheCollectionProxy<GridCacheSetI
             return proxy != null ? proxy.delegate() : null;
         }
         catch (IgniteCheckedException e) {
+
             return null;
         }
     }

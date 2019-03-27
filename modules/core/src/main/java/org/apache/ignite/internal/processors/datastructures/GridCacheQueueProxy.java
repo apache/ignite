@@ -41,6 +41,9 @@ import org.jetbrains.annotations.Nullable;
  * Cache queue proxy.
  */
 public class GridCacheQueueProxy<T> extends GridCacheCollectionProxy<GridCacheQueueAdapter> implements IgniteQueue<T> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Required by {@link Externalizable}.
      */
