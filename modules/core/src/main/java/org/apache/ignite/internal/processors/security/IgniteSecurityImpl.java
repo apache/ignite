@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
 /**
  * Default Grid security Manager implementation.
  */
-public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, GridProcessor {
+public class IgniteSecurityImpl implements IgniteSecurity, GridProcessor {
     /** */
     private static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's grid security processor class " +
         "is not equal to remote node's grid security processor class " +
@@ -75,7 +75,7 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
      * @param ctx Grid kernal context.
      * @param secPrc Security processor.
      */
-    public IgniteSecurityProcessorImpl(GridKernalContext ctx, GridSecurityProcessor secPrc) {
+    public IgniteSecurityImpl(GridKernalContext ctx, GridSecurityProcessor secPrc) {
         assert ctx != null;
         assert secPrc != null;
 

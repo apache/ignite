@@ -30,16 +30,16 @@ import org.apache.ignite.plugin.security.SecuritySubject;
 /**
  * Ignite Security Processor.
  * <p>
- * The differences between {@code IgniteSecurityProcessor} and {@code GridSecurityProcessor} are:
+ * The differences between {@code IgniteSecurity} and {@code GridSecurityProcessor} are:
  * <ul>
- * <li>{@code IgniteSecurityProcessor} allows to define a current security context by
+ * <li>{@code IgniteSecurity} allows to define a current security context by
  * {@link #withContext(SecurityContext)} or {@link #withContext(UUID)} methods.
- * <li>{@code IgniteSecurityProcessor} doesn't require to pass {@code SecurityContext} to authorize operations.
- * <li>{@code IgniteSecurityProcessor} doesn't extend {@code GridProcessor} interface
+ * <li>{@code IgniteSecurity} doesn't require to pass {@code SecurityContext} to authorize operations.
+ * <li>{@code IgniteSecurity} doesn't extend {@code GridProcessor} interface
  * sequentially it doesn't have any methods of the lifecycle of {@code GridProcessor}.
  * </ul>
  */
-public interface IgniteSecurityProcessor {
+public interface IgniteSecurity {
     /**
      * Creates {@link OperationSecurityContext}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
@@ -116,7 +116,7 @@ public interface IgniteSecurityProcessor {
     }
 
     /**
-     * @return True if IgniteSecurityProcessor is a plugin implementation,
+     * @return True if IgniteSecurity is a plugin implementation,
      * false if it's used a default NoOp implementation.
      */
     public boolean enabled();

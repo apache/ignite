@@ -21,17 +21,17 @@ package org.apache.ignite.internal.processors.security;
  *
  */
 public class OperationSecurityContext implements AutoCloseable {
-    /** Ignite Security processor. */
-    private final IgniteSecurityProcessor proc;
+    /** Ignite Security. */
+    private final IgniteSecurity proc;
 
     /** Security context. */
     private final SecurityContext secCtx;
 
     /**
-     * @param proc Ignite Security processor.
+     * @param proc Ignite Security.
      * @param secCtx Security context.
      */
-    OperationSecurityContext(IgniteSecurityProcessor proc, SecurityContext secCtx) {
+    OperationSecurityContext(IgniteSecurity proc, SecurityContext secCtx) {
         assert proc != null;
         assert secCtx != null || !proc.enabled();
 
