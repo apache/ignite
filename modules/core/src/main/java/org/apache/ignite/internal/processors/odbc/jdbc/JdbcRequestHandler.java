@@ -653,7 +653,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     cur.close();
                 }
 
-                return new JdbcResponse(res, connCtx.getAffinityTopologyVersionIfChanged());
+                return new JdbcResponse(
+                    res,
+                    res.partitionResult() != null ?
+                        connCtx.getAffinityTopologyVersion() :
+                        connCtx.getAffinityTopologyVersionIfChanged());
             }
             else {
                 List<JdbcResultInfo> jdbcResults = new ArrayList<>(results.size());
@@ -1293,7 +1297,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             mappings.add(new JdbcThinAffinityAwarenessMappingGroup(cacheId, partitionsMap));
         }
 
-        // TODO: 26.03.19 use another logic for checking topology version in case of JdbcCachePartitionsResponse and Query Response with PartitionResult.
         return new JdbcResponse(new JdbcCachePartitionsResult(mappings), topVer);
     }
 

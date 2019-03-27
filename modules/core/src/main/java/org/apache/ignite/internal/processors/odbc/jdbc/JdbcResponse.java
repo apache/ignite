@@ -92,13 +92,6 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
     }
 
     /**
-     * @return Affinity affinityVersion changed.
-     */
-    public boolean affinityVersionChanged() {
-        return affinityVer != null;
-    }
-
-    /**
      * @return Version.
      */
     public AffinityTopologyVersion affinityVersion() {

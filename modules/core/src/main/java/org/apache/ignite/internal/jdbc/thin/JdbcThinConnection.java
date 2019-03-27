@@ -63,6 +63,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
@@ -896,30 +897,33 @@ public class JdbcThinConnection implements Connection {
                 else if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
                     throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
 
-            if (bestEffortAffinity) {
-                if (res.affinityVersionChanged() &&
-                    (affinityCache == null || !affinityCache.version().equals(res.affinityVersion())))
-                    affinityCache = new AffinityCache(res.affinityVersion());
+                if (bestEffortAffinity) {
+                    AffinityTopologyVersion resAffinityVer = res.affinityVersion();
 
-                // Partition result was requested.
-                if (reqPartRes && res.response() instanceof JdbcQueryExecuteResult) {
-                    PartitionResult partRes = ((JdbcQueryExecuteResult)res.response()).partitionResult();
+                    if (resAffinityVer != null &&
+                        (affinityCache == null || affinityCache.version().compareTo(resAffinityVer) < 0))
+                        affinityCache = new AffinityCache(resAffinityVer);
 
-                    affinityCache.addSqlQuery(((JdbcQueryExecuteRequest)req).sqlQuery(),
-                        new JdbcThinPartitionResultDescriptor(
-                            partRes,
-                            partRes.tree() != null ? GridCacheUtils.cacheId(partRes.tree().cacheName()) : null,
-                            new PartitionClientContext(partRes.affinity().parts())));
+                    // Partition result was requested.
+                    if (reqPartRes && res.response() instanceof JdbcQueryExecuteResult &&
+                        affinityCache.version().equals(resAffinityVer)) {
+                        PartitionResult partRes = ((JdbcQueryExecuteResult)res.response()).partitionResult();
+
+                        affinityCache.addSqlQuery(((JdbcQueryExecuteRequest)req).sqlQuery(),
+                            new JdbcThinPartitionResultDescriptor(
+                                partRes,
+                                partRes.tree() != null ? GridCacheUtils.cacheId(partRes.tree().cacheName()) : null,
+                                new PartitionClientContext(partRes.affinity().parts())));
+                    }
                 }
-            }
 
                 return new JdbcResultWithIo(res.response(), cliIo);
-        }
-        catch (SQLException e) {
-            throw e;
-        }
-        catch (Exception e) {
-            onDisconnect();
+            }
+            catch (SQLException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                onDisconnect();
 
                 if (e instanceof SocketTimeoutException)
                     throw new SQLException("Connection timed out.", SqlStateCode.CONNECTION_FAILURE, e);
@@ -998,9 +1002,16 @@ public class JdbcThinConnection implements Connection {
 
         assert res.status() == ClientListenerResponse.STATUS_SUCCESS;
 
-        if (res.affinityVersionChanged() &&
-            (affinityCache == null || !affinityCache.version().equals(res.affinityVersion())))
-            affinityCache = new AffinityCache(res.affinityVersion());
+        AffinityTopologyVersion resAffinityVer = res.affinityVersion();
+
+        if (affinityCache == null || affinityCache.version().compareTo(resAffinityVer) < 0)
+            affinityCache = new AffinityCache(resAffinityVer);
+        else if (affinityCache.version().compareTo(resAffinityVer) > 0) {
+            // Jdbc thin affinity cache is binded to the newer affinity topology version, so we should ignore retrieved
+            // partition destribution. Given situation might occur in case of concurrent race and is not
+            // possible in single-threaded jdbc thin client, so it's a reserve for the future.
+            return null;
+        }
 
         List<JdbcThinAffinityAwarenessMappingGroup> mappings =
             ((JdbcCachePartitionsResult)res.response()).getMappings();

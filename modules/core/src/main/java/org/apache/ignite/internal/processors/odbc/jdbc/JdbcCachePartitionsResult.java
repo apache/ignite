@@ -26,8 +26,6 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinAffinityAwarenessMappingGroup;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
-// TODO VO: Add aff topology version and use it to check whether it is valid to add collected distributions to current AffinityCache.
-
 /**
  * Jdbc thin partiton result that contains partition mappings.
  */
