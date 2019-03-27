@@ -102,8 +102,6 @@ public abstract class GridCacheCollectionProxy<T> implements Externalizable {
     protected void enter(){
         enterBusy();
 
-        System.out.println(">>> LOCK");
-
         gate.enter();
     }
 
@@ -111,8 +109,6 @@ public abstract class GridCacheCollectionProxy<T> implements Externalizable {
         gate.leave();
 
         leaveBusy();
-
-        System.out.println(">>>UN_LOCK");
     }
 
     /**
