@@ -1981,8 +1981,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         List<GridDhtCacheEntry> locked,
         GridNearAtomicAbstractUpdateRequest req,
         GridNearAtomicUpdateResponse res,
-        DhtAtomicUpdateResult dhtUpdRes
-    )
+        DhtAtomicUpdateResult dhtUpdRes)
         throws GridCacheEntryRemovedException
     {
         GridDhtPartitionTopology top = topology();
