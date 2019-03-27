@@ -66,6 +66,8 @@ public class IgniteCacheExpiryPolicyTestSuite {
         suite.addTest(new JUnit4TestAdapter(GridCacheTtlManagerNotificationTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteCacheOnlyOneTtlCleanupThreadExistsTest.class));
 
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheExpireWhileRebalanceTest.class));
+
         return suite;
     }
 }
