@@ -51,6 +51,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_BATCH_PAGE_WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 
 /**
  *
@@ -58,37 +59,45 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 @RunWith(Parameterized.class)
 public class FreeListPreloadWithBatchUpdatesTest extends GridCommonAbstractTest {
     /** */
-    private static final int HDR_SIZE = 8 + 32;
-
-    /** */
     private static final long DEF_REG_SIZE_INIT = 3400 * 1024 * 1024L;
 
     /** */
     private static final long DEF_REG_SIZE = 6144 * 1024 * 1024L;
 
     /** */
+    private static final int LARGE_PAGE = 16 * 1024;
+
+    /** */
     private static final String DEF_CACHE_NAME = "some-cache";
 
     /** */
-    @Parameterized.Parameters(name = "with atomicity={0} and persistence={1}")
+    @Parameterized.Parameters(name = " atomicity={0}, persistence={1}, pageSize={2}")
     public static Iterable<Object[]> setup() {
         return Arrays.asList(new Object[][]{
-            {CacheAtomicityMode.ATOMIC, false},
-            {CacheAtomicityMode.ATOMIC, true},
-            {CacheAtomicityMode.TRANSACTIONAL, false},
-            {CacheAtomicityMode.TRANSACTIONAL, true},
-            {CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, false},
-            {CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, true}
+            {CacheAtomicityMode.ATOMIC, false, DFLT_PAGE_SIZE},
+            {CacheAtomicityMode.ATOMIC, true, DFLT_PAGE_SIZE},
+            {CacheAtomicityMode.ATOMIC, false, LARGE_PAGE},
+            {CacheAtomicityMode.ATOMIC, true, LARGE_PAGE},
+            {CacheAtomicityMode.TRANSACTIONAL, false, DFLT_PAGE_SIZE},
+            {CacheAtomicityMode.TRANSACTIONAL, true, DFLT_PAGE_SIZE},
+            {CacheAtomicityMode.TRANSACTIONAL, false, LARGE_PAGE},
+            {CacheAtomicityMode.TRANSACTIONAL, true, LARGE_PAGE},
+            {CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, false, DFLT_PAGE_SIZE},
+            {CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, true, DFLT_PAGE_SIZE}
         });
     }
 
     /** */
-    @Parameterized.Parameter()
+    @Parameterized.Parameter
     public CacheAtomicityMode cacheAtomicityMode;
 
     /** */
     @Parameterized.Parameter(1)
     public boolean persistence;
+
+    /** */
+    @Parameterized.Parameter(2)
+    public Integer pageSize;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -102,6 +111,7 @@ public class FreeListPreloadWithBatchUpdatesTest extends GridCommonAbstractTest 
         DataStorageConfiguration storeCfg = new DataStorageConfiguration();
 
         storeCfg.setDefaultDataRegionConfiguration(def);
+        storeCfg.setPageSize(pageSize);
 
         if (persistence) {
             storeCfg.setWalMode(WALMode.LOG_ONLY);
@@ -250,20 +260,27 @@ public class FreeListPreloadWithBatchUpdatesTest extends GridCommonAbstractTest 
 
         log.info("Updating values on node #1.");
 
-        for (int i = 100; i < 1000; i++) {
-            if (i % 33 == 0) {
+        for (int i = 100; i < 2000; i++) {
+            if (i % 3 == 0) {
                 cache.remove(i);
 
                 srcMap.remove(i);
             }
             else {
-                byte[] bytes = new byte[512];
+                byte[] bytes = new byte[ThreadLocalRandom.current().nextInt(16384)];
 
                 Arrays.fill(bytes, (byte)1);
 
                 srcMap.put(i, bytes);
                 cache.put(i, bytes);
             }
+        }
+
+        for (int i = 10_000; i < 11_000; i++) {
+            byte[] bytes = new byte[ThreadLocalRandom.current().nextInt(16384)];
+
+            srcMap.put(i, bytes);
+            cache.put(i, bytes);
         }
 
         forceCheckpoint();

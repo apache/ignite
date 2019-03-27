@@ -92,9 +92,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /** */
     private final PageEvictionTracker evictionTracker;
 
-    /** */
-    private final int maxPayloadSize = pageSize() - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
-
     /**
      *
      */
@@ -343,7 +340,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 T row = rows.get(idx);
 
                 int size = row.size();
-                int payloadSize = size % maxPayloadSize;
+                int payloadSize = size % MIN_SIZE_FOR_DATA_PAGE;
 
                 // If there is not enough space on page.
                 if (remainSpace < payloadSize)
@@ -352,7 +349,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 if (pageIsEmpty)
                     rows0.add(row);
                 else {
-                    int written = size > maxPayloadSize ?
+                    int written = size > MIN_SIZE_FOR_DATA_PAGE ?
                         addRowFragment(pageId, page, pageAddr, iox, row, size - payloadSize, size) :
                         addRow(pageId, page, pageAddr, iox, row, size);
 
@@ -383,11 +380,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         private int getPageEntrySize(T row, AbstractDataPageIO<T> io) throws IgniteCheckedException {
             int size = row.size();
 
-            int sizeSetup = size > maxPayloadSize ?
+            int sizeSetup = size > MIN_SIZE_FOR_DATA_PAGE ?
                 AbstractDataPageIO.SHOW_PAYLOAD_LEN | AbstractDataPageIO.SHOW_LINK | AbstractDataPageIO.SHOW_ITEM :
                 AbstractDataPageIO.SHOW_PAYLOAD_LEN | AbstractDataPageIO.SHOW_ITEM;
 
-            return io.getPageEntrySize(size % maxPayloadSize, sizeSetup);
+            return io.getPageEntrySize(size % MIN_SIZE_FOR_DATA_PAGE, sizeSetup);
         }
     }
 
@@ -646,42 +643,37 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** {@inheritDoc} */
     @Override public void insertDataRows(Collection<T> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        // Data rows <-> count of pages needed
-        List<T> largeRows = new ArrayList<>(8);
+        // Objects that don't fit into a single data page.
+        List<T> largeRows = new ArrayList<>();
 
-        // other objects
+        // Ordinary objects and the remaining parts of large objects.
         List<T> regularRows = new ArrayList<>(8);
 
         for (T dataRow : rows) {
             int size = dataRow.size();
 
-            if (size < maxPayloadSize)
+            if (size < MIN_SIZE_FOR_DATA_PAGE)
                 regularRows.add(dataRow);
             else {
                 largeRows.add(dataRow);
 
-                if (size % maxPayloadSize > 0)
+                if (size % MIN_SIZE_FOR_DATA_PAGE > 0)
                     regularRows.add(dataRow);
             }
         }
 
         for (T row : largeRows) {
-            int rowSize = row.size();
+            int size = row.size();
 
             int written = 0;
 
             do {
-                if (written != 0)
-                    memMetrics.incrementLargeEntriesPages();
+                int remaining = size - written;
 
-                int remaining = rowSize - written;
-
-                long pageId;
-
-                if (remaining >= MIN_SIZE_FOR_DATA_PAGE)
-                    pageId = takeEmptyPage(REUSE_BUCKET, ioVersions(), statHolder);
-                else
+                if (remaining < MIN_SIZE_FOR_DATA_PAGE)
                     break;
+
+                long pageId = takeEmptyPage(REUSE_BUCKET, ioVersions(), statHolder);
 
                 AbstractDataPageIO<T> initIo = null;
 
@@ -698,6 +690,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 written = write(pageId, writeRow, initIo, row, written, FAIL_I, statHolder);
 
                 assert written != FAIL_I; // We can't fail here.
+
+                memMetrics.incrementLargeEntriesPages();
             }
             while (written != COMPLETE);
         }
@@ -705,21 +699,19 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         for (int writtenCnt = 0; writtenCnt < regularRows.size(); ) {
             T row = regularRows.get(writtenCnt);
 
-            int size = row.size() % maxPayloadSize;
+            int size = row.size() % MIN_SIZE_FOR_DATA_PAGE;
 
-            int minBucket = bucket(size, false) + 1;
-
-            long pageId = 0;
+            int minBucket = bucket(size, false);
 
             AbstractDataPageIO<T> initIo = null;
 
-            if (size != MIN_SIZE_FOR_DATA_PAGE) {
-                for (int b = REUSE_BUCKET - 1; b >= minBucket; b--) {
-                    pageId = takeEmptyPage(b, ioVersions(), statHolder);
+            long pageId = 0;
 
-                    if (pageId != 0L)
-                        break;
-                }
+            for (int b = REUSE_BUCKET - 1; b > minBucket; b--) {
+                pageId = takeEmptyPage(b, ioVersions(), statHolder);
+
+                if (pageId != 0L)
+                    break;
             }
 
             if (pageId == 0)
