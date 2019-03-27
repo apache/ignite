@@ -131,7 +131,8 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
             },
             null,
             IgniteCheckedException.class,
-            "Unsupported ciphersuite"
+            // Java 8 has "Unsupported ciphersuite", Java 11 has "Unsupported CipherSuite"
+            "Unsupported"
         );
     }
 
