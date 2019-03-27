@@ -164,6 +164,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     private static final IgniteProductVersion EXCHANGE_PROTOCOL_2_SINCE = IgniteProductVersion.fromString("2.1.4");
 
+    /** Stripe id for cluster activation event. */
+    private static final int CLUSTER_ACTIVATION_EVT_STRIPE_ID = 1;
+
     /** Atomic reference for pending partition resend timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
 
@@ -623,7 +626,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         Collection<BaselineNode> baselineNodes = new ArrayList<>(srvNodes);
 
-        ctx.getSystemExecutorService().execute(new Runnable() {
+        ctx.getStripedExecutorService().execute(CLUSTER_ACTIVATION_EVT_STRIPE_ID, new Runnable() {
             @Override public void run() {
                 if (ctx.event().isRecordable(evtType)) {
                     ClusterActivationEvent evt = new ClusterActivationEvent(ctx.discovery().localNode(), msg, evtType, baselineNodes);
