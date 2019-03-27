@@ -78,15 +78,11 @@ public class CacheDataStoreTrackerImpl implements CacheDataStoreTracker {
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        assert init.get();
-
         return storageSize.get() == 0;
     }
 
     /** {@inheritDoc} */
     @Override public long cacheSize(int cacheId) {
-        assert init.get();
-
         if (grp.sharedGroup()) {
             AtomicLong size = cacheSizes.get(cacheId);
 
@@ -98,8 +94,6 @@ public class CacheDataStoreTrackerImpl implements CacheDataStoreTracker {
 
     /** {@inheritDoc} */
     @Override public Map<Integer, Long> cacheSizes() {
-        assert init.get();
-
         if (!grp.sharedGroup())
             return null;
 
@@ -113,8 +107,6 @@ public class CacheDataStoreTrackerImpl implements CacheDataStoreTracker {
 
     /** {@inheritDoc} */
     @Override public long fullSize() {
-        assert init.get();
-
         return storageSize.get();
     }
 
@@ -140,57 +132,41 @@ public class CacheDataStoreTrackerImpl implements CacheDataStoreTracker {
 
     /** {@inheritDoc} */
     @Override public long nextUpdateCounter() {
-        assert init.get();
-
         return pCntr.next();
     }
 
     /** {@inheritDoc} */
     @Override public long initialUpdateCounter() {
-        assert init.get();
-
         return pCntr.initial();
     }
 
     /** {@inheritDoc} */
     @Override public void updateInitialCounter(long cntr) {
-        assert init.get();
-
         pCntr.updateInitial(cntr);
     }
 
     /** {@inheritDoc} */
     @Override public long getAndIncrementUpdateCounter(long delta) {
-        assert init.get();
-
         return pCntr.getAndAdd(delta);
     }
 
     /** {@inheritDoc} */
     @Override public long updateCounter() {
-        assert init.get();
-
         return pCntr.get();
     }
 
     /** {@inheritDoc} */
     @Override public void updateCounter(long val) {
-        assert init.get();
-
         pCntr.update(val);
     }
 
     /** {@inheritDoc} */
     @Override public void updateCounter(long start, long delta) {
-        assert init.get();
-
         pCntr.update(start, delta);
     }
 
     /** {@inheritDoc} */
     @Override public GridLongList finalizeUpdateCounters() {
-        assert init.get();
-
         return pCntr.finalizeUpdateCounters();
     }
 }

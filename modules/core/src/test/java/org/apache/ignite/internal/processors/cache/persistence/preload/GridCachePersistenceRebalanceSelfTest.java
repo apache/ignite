@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.preload;
 
 import java.util.Collections;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -84,23 +82,6 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         .setCommunicationSpi(new TestRecordingCommunicationSpi());
     }
 
-    /**
-     * @param ignite Ignite.
-     * @param name Cache name.
-     */
-    protected void loadData(Ignite ignite, String name) {
-        try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(name)) {
-            streamer.allowOverwrite(true);
-
-            for (int i = 0; i < TEST_SIZE; i++) {
-                if ((i + 1) % (TEST_SIZE / 10) == 0)
-                    log.info("Prepared " + (i + 1) * 100 / (TEST_SIZE) + "% entries.");
-
-                streamer.addData(i, i + name.hashCode());
-            }
-        }
-    }
-
     /** */
     @Test
     public void testPersistenceRebalanceBase() throws Exception {
@@ -117,7 +98,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
                 .setAffinity(new RendezvousAffinityFunction(false)
                     .setPartitions(8)));
 
-        loadData(ignite0, DEFAULT_CACHE_NAME);
+        loadData(ignite0, DEFAULT_CACHE_NAME, TEST_SIZE);
 
         assertTrue(!ignite0.cluster().isBaselineAutoAdjustEnabled());
 
@@ -145,7 +126,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
                 .setAffinity(new RendezvousAffinityFunction(false)
                     .setPartitions(8)));
 
-        loadData(ignite0, "manual");
+        loadData(ignite0, "manual", TEST_SIZE);
 
         assertTrue(!ignite0.cluster().isBaselineAutoAdjustEnabled());
 
@@ -176,7 +157,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
                 .setAffinity(new RendezvousAffinityFunction(false)
                     .setPartitions(8)));
 
-        loadData(ignite0, DEFAULT_CACHE_NAME);
+        loadData(ignite0, DEFAULT_CACHE_NAME, TEST_SIZE);
 
         assertTrue(!ignite0.cluster().isBaselineAutoAdjustEnabled());
 

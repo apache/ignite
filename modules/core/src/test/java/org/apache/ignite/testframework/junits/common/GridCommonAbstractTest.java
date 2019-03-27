@@ -43,6 +43,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -1972,6 +1973,24 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     .cache().context().database();
 
             dbMgr.waitForCheckpoint("test");
+        }
+    }
+
+    /**
+     * @param ignite Ignite instance to load.
+     * @param name The cache name to add random data to.
+     * @param size The total size of entries.
+     */
+    protected void loadData(Ignite ignite, String name, int size) {
+        try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(name)) {
+            streamer.allowOverwrite(true);
+
+            for (int i = 0; i < size; i++) {
+                if ((i + 1) % (size / 10) == 0)
+                    log.info("Prepared " + (i + 1) * 100 / (size) + "% entries.");
+
+                streamer.addData(i, i + name.hashCode());
+            }
         }
     }
 

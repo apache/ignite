@@ -73,13 +73,14 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         IgniteLogger log
     ) {
         assert primary != null;
-        assert secondary != null;
 
         this.grp = grp;
         this.log = log;
 
         storageMap.put(StorageMode.FULL, primary);
-        storageMap.put(StorageMode.LOG_ONLY, secondary);
+
+        if (secondary != null)
+            storageMap.put(StorageMode.LOG_ONLY, secondary);
     }
 
     /** {@inheritDoc} */
@@ -132,7 +133,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
      * @return The currently active cache data storage.
      */
     private IgniteCacheOffheapManager.CacheDataStore activeStorage() {
-        return storageMap.get(currMode);
+        return storageMap.getOrDefault(currMode, storageMap.get(StorageMode.FULL));
     }
 
     /** {@inheritDoc} */
