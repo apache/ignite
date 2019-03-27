@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -143,6 +144,7 @@ public class QueryParser {
                 qryDesc,
                 QueryParameters.fromQuery(qry),
                 null,
+                cached.parametersMeta(),
                 cached.select(),
                 cached.dml(),
                 cached.command()
@@ -157,7 +159,7 @@ public class QueryParser {
 
         // Add to cache if not multi-statement.
         if (parseRes.remainingQuery() == null) {
-            cached = new QueryParserCacheEntry(parseRes.select(), parseRes.dml(), parseRes.command());
+            cached = new QueryParserCacheEntry(parseRes.parametersMeta(), parseRes.select(), parseRes.dml(), parseRes.command());
 
             cache.put(qryDesc, cached);
         }
@@ -223,6 +225,7 @@ public class QueryParser {
                 newPlanKey,
                 QueryParameters.fromQuery(newQry),
                 remainingQry,
+                Collections.emptyList(), // Currently none of native statements supports parameters.
                 null,
                 null,
                 cmd
@@ -354,6 +357,7 @@ public class QueryParser {
                     newQryDesc,
                     QueryParameters.fromQuery(newQry),
                     remainingQry,
+                    paramsMeta,
                     null,
                     null,
                     cmd
@@ -366,18 +370,20 @@ public class QueryParser {
                     newQryDesc,
                     QueryParameters.fromQuery(newQry),
                     remainingQry,
+                    paramsMeta,
                     null,
                     null,
                     cmd
                 );
             }
             else if (GridSqlQueryParser.isDml(prepared)) {
-                QueryParserResultDml dml = prepareDmlStatement(newQryDesc, prepared, paramsMeta);
+                QueryParserResultDml dml = prepareDmlStatement(newQryDesc, prepared);
 
                 return new QueryParserResult(
                     newQryDesc,
                     QueryParameters.fromQuery(newQry),
                     remainingQry,
+                    paramsMeta,
                     null,
                     dml,
                     null
@@ -442,7 +448,6 @@ public class QueryParser {
                     stmt0,
                     twoStepQry,
                     meta,
-                    paramsMeta,
                     cacheIds,
                     mvccCacheId,
                     forUpdate
@@ -452,6 +457,7 @@ public class QueryParser {
                     newQryDesc,
                     QueryParameters.fromQuery(newQry),
                     remainingQry,
+                    paramsMeta,
                     select,
                     null,
                     null
@@ -530,11 +536,9 @@ public class QueryParser {
      *
      * @param planKey Plan key.
      * @param prepared Prepared.
-     * @param paramsMeta description of the query positional parameters.
      * @return Statement.
      */
-    private QueryParserResultDml prepareDmlStatement(QueryDescriptor planKey, Prepared prepared,
-        List<JdbcParameterMeta> paramsMeta) {
+    private QueryParserResultDml prepareDmlStatement(QueryDescriptor planKey, Prepared prepared) {
         if (F.eq(QueryUtils.SCHEMA_SYS, planKey.schemaName()))
             throw new IgniteSQLException("DML statements are not supported on " + planKey.schemaName() + " schema",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -598,7 +602,6 @@ public class QueryParser {
 
         return new QueryParserResultDml(
             stmt,
-            paramsMeta,
             mvccEnabled,
             streamTbl,
             plan

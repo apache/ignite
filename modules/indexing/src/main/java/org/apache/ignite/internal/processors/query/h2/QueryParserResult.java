@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -35,6 +35,9 @@ public class QueryParserResult {
 
     /** Remaining query. */
     private final SqlFieldsQuery remainingQry;
+
+    /** Metadata for the positional query parameters ('?'). */
+    private final List<JdbcParameterMeta> paramsMeta;
 
     /** Select. */
     private final QueryParserResultSelect select;
@@ -51,6 +54,7 @@ public class QueryParserResult {
      * @param qryDesc Query descriptor.
      * @param qryParams Query parameters.
      * @param remainingQry Remaining query.
+     * @param paramsMeta metadata info about positional parameters of current parsed query (not includes remainingSql).
      * @param select Select.
      * @param dml DML.
      * @param cmd Command.
@@ -59,13 +63,17 @@ public class QueryParserResult {
         QueryDescriptor qryDesc,
         QueryParameters qryParams,
         SqlFieldsQuery remainingQry,
+        @NotNull List<JdbcParameterMeta> paramsMeta,
         @Nullable QueryParserResultSelect select,
         @Nullable QueryParserResultDml dml,
         @Nullable QueryParserResultCommand cmd
     ) {
+        assert paramsMeta != null;
+
         this.qryDesc = qryDesc;
         this.qryParams = qryParams;
         this.remainingQry = remainingQry;
+        this.paramsMeta = paramsMeta;
         this.select = select;
         this.dml = dml;
         this.cmd = cmd;
@@ -138,20 +146,14 @@ public class QueryParserResult {
      * @return Number of current statement parameters.
      */
     public int parametersCount() {
-        return parametersMeta().size();
+        return paramsMeta.size();
     }
 
     /**
-     * @return Descriptions of each query parameter of current statement.
+     * @return Descriptions of each query parameter of current statement. Empty list in case of native command, never
+     * {@code null}.
      */
-    public List<JdbcParameterMeta> parametersMeta() {
-        // Only SELECT and DML can have parameters.
-        if (select != null)
-            return select.parametersMeta();
-
-        if (dml != null)
-            return dml.parametersMeta();
-
-        return Collections.emptyList();
+    @NotNull public List<JdbcParameterMeta> parametersMeta() {
+        return paramsMeta;
     }
 }
