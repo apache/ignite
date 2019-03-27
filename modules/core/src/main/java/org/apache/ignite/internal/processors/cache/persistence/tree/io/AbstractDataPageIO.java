@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -993,10 +994,14 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         final Collection<T> rows,
         final int pageSize
     ) throws IgniteCheckedException {
-        // todo code duplication (3 times!)
         int maxPayloadSIze = pageSize - MIN_DATA_PAGE_OVERHEAD;
+
+        int regularSizeFlags = SHOW_PAYLOAD_LEN | SHOW_ITEM;
+        int fragmentSizeFlags = regularSizeFlags | SHOW_LINK;
+
         int dataOff = pageSize;
         int cnt = 0;
+
         int written = 0;
 
         for (T row : rows) {
@@ -1006,11 +1011,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
             int payloadSize = size % maxPayloadSIze;
 
-            assert payloadSize <= getFreeSpace(pageAddr) : "can't call addRow if not enough space for the whole row";
-
-            int sizeSetup = fragment ? SHOW_PAYLOAD_LEN | SHOW_LINK | SHOW_ITEM : SHOW_PAYLOAD_LEN | SHOW_ITEM;
-
-            int fullEntrySize = getPageEntrySize(payloadSize, sizeSetup);
+            int fullEntrySize = getPageEntrySize(payloadSize, fragment ? fragmentSizeFlags : regularSizeFlags);
 
             written += fullEntrySize;
 
@@ -1024,7 +1025,6 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
                 buf.putShort((short)(payloadSize | FRAGMENTED_FLAG));
                 buf.putLong(row.link());
 
-                // todo is it 0?
                 writeFragmentData(row, buf, 0, payloadSize);
             }
             else

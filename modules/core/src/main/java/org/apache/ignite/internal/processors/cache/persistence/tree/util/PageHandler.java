@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree.util;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
@@ -90,7 +90,8 @@ public abstract class PageHandler<X, R> {
         long pageAddr,
         PageIO io,
         Boolean walPlc,
-        Collection<X> args,
+        List<X> args,
+        int intArg,
         IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
@@ -358,7 +359,8 @@ public abstract class PageHandler<X, R> {
         PageIO init,
         IgniteWriteAheadLogManager wal,
         Boolean walPlc,
-        Collection<X> args,
+        List<X> args,
+        int intArg,
         R lockFailed,
         IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
@@ -383,7 +385,7 @@ public abstract class PageHandler<X, R> {
                 else
                     init = PageIO.getPageIO(pageAddr);
 
-                R res = h.runAll(grpId, pageId, page, pageAddr, init, walPlc, args, statHolder);
+                R res = h.runAll(grpId, pageId, page, pageAddr, init, walPlc, args, intArg, statHolder);
 
                 ok = true;
 

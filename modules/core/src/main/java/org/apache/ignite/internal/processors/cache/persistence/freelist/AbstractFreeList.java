@@ -33,7 +33,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
@@ -47,10 +46,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO.SHOW_ITEM;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO.SHOW_LINK;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO.SHOW_PAYLOAD_LEN;
 
 /**
  */
@@ -76,9 +71,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /** */
     private static final int MAX_DATA_ROWS_PER_PAGE = 255; // Item index on data page has 1-byte length.
 
-    /** */
-    private static final int MIN_DATA_ROW_SIZE = 39; // 17 (version) + 7 (min key) + 7 (min value) + 8 (expireTime)
-
     /**
      * Step between buckets in free list, measured in powers of two.
      * For example, for page size 4096 and 256 buckets, shift is 4 and step is 16 bytes.
@@ -99,6 +91,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** */
     private final PageEvictionTracker evictionTracker;
+
+    /** */
+    private final int maxPayloadSize = pageSize() - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
     /**
      *
@@ -321,6 +316,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      *
      */
     private class WriteRowsHandler extends WriteRowHandler {
+
         /** {@inheritDoc} */
         @Override public Integer runAll(
             int cacheId,
@@ -329,39 +325,69 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             long pageAddr,
             PageIO io,
             Boolean walPlc,
-            Collection<T> args,
+            List<T> rows,
+            int writtenCnt,
             IoStatisticsHolder statHolder
         ) throws IgniteCheckedException {
-            int maxPayloadSize = pageSize() - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
-
             AbstractDataPageIO<T> iox = (AbstractDataPageIO<T>)io;
 
-            // todo !! optimize WAL recording
-            if (iox.getFreeSpace(pageAddr) == maxPayloadSize && !needWalDeltaRecord(pageId, page, null)) {
-                // todo save links for WAL
-                iox.addRows(pageMem, pageId, pageAddr, args, pageSize());
-                // todo update wal
-            }
-            else {
-                for (T row : args) {
-                    assert iox.getFreeSpace(pageAddr) > 0 : iox.getFreeSpace(pageAddr);
+            int idx = writtenCnt;
+            int remainSpace = iox.getFreeSpace(pageAddr);
+            int remainItems = MAX_DATA_ROWS_PER_PAGE - iox.getRowsCount(pageAddr);
 
-                    int size = row.size();
+            boolean pageIsEmpty = remainItems == MAX_DATA_ROWS_PER_PAGE;
 
+            List<T> rows0 = pageIsEmpty ? new ArrayList<>(8) : null;
+
+            while (idx < rows.size() && remainItems > 0) {
+                T row = rows.get(idx);
+
+                int size = row.size();
+                int payloadSize = size % maxPayloadSize;
+
+                // If there is not enough space on page.
+                if (remainSpace < payloadSize)
+                    break;
+
+                if (pageIsEmpty)
+                    rows0.add(row);
+                else {
                     int written = size > maxPayloadSize ?
-                        addRowFragment(pageId, page, pageAddr, iox, row, size - (size % maxPayloadSize), size) :
+                        addRowFragment(pageId, page, pageAddr, iox, row, size - payloadSize, size) :
                         addRow(pageId, page, pageAddr, iox, row, size);
 
                     assert written == size : "The object is not fully written into page: pageId=" + pageId +
                         ", written=" + written + ", size=" + row.size();
                 }
+
+                remainSpace -= getPageEntrySize(row, iox);
+                remainItems -= 1;
+
+                idx += 1;
             }
+
+            // Update page counters only once.
+            if (pageIsEmpty)
+                iox.addRows(pageMem, pageId, pageAddr, rows0, pageSize());
+
+            assert idx != writtenCnt;
 
             evictionTracker.touchPage(pageId);
 
             putPage((AbstractDataPageIO)io, pageId, page, pageAddr, statHolder);
 
-            return COMPLETE;
+            return idx;
+        }
+
+        /** */
+        private int getPageEntrySize(T row, AbstractDataPageIO<T> io) throws IgniteCheckedException {
+            int size = row.size();
+
+            int sizeSetup = size > maxPayloadSize ?
+                AbstractDataPageIO.SHOW_PAYLOAD_LEN | AbstractDataPageIO.SHOW_LINK | AbstractDataPageIO.SHOW_ITEM :
+                AbstractDataPageIO.SHOW_PAYLOAD_LEN | AbstractDataPageIO.SHOW_ITEM;
+
+            return io.getPageEntrySize(size % maxPayloadSize, sizeSetup);
         }
     }
 
@@ -620,14 +646,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** {@inheritDoc} */
     @Override public void insertDataRows(Collection<T> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        int pageSize = pageSize();
-
-        // Max bytes per data page.
-        int maxPayload = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
-
-        // On large data pages it is possible to get item index overflow, because it cannot be greater 255.
-        boolean checkItemIdOverflow = pageSize / MIN_DATA_ROW_SIZE > MAX_DATA_ROWS_PER_PAGE;
-
         // Data rows <-> count of pages needed
         List<T> largeRows = new ArrayList<>(8);
 
@@ -635,19 +653,18 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         List<T> regularRows = new ArrayList<>(8);
 
         for (T dataRow : rows) {
-            if (dataRow.size() < maxPayload)
+            int size = dataRow.size();
+
+            if (size < maxPayloadSize)
                 regularRows.add(dataRow);
             else {
                 largeRows.add(dataRow);
 
-                int tailSize = dataRow.size() % maxPayload;
-
-                if (tailSize > 0)
+                if (size % maxPayloadSize > 0)
                     regularRows.add(dataRow);
             }
         }
 
-        // Writing large objects.
         for (T row : largeRows) {
             int rowSize = row.size();
 
@@ -685,106 +702,40 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             while (written != COMPLETE);
         }
 
-        List<T> dataRows = new ArrayList<>(MAX_DATA_ROWS_PER_PAGE);
-        AbstractDataPageIO<T> initIo = null;
+        for (int writtenCnt = 0; writtenCnt < regularRows.size(); ) {
+            T row = regularRows.get(writtenCnt);
 
-        long pageId = 0;
-        int maxRowsPerPage = 0;
-        int remainPageSpace = 0;
+            int size = row.size() % maxPayloadSize;
 
-        AbstractDataPageIO<T> latestPageIO = ioVersions().latest();
+            int minBucket = bucket(size, false) + 1;
 
-        for (int i = 0; i < regularRows.size(); i++) {
-            T row = regularRows.get(i);
+            long pageId = 0;
 
-            boolean tail = i == (regularRows.size() - 1);
+            AbstractDataPageIO<T> initIo = null;
 
-            int size = row.size();
+            if (size != MIN_SIZE_FOR_DATA_PAGE) {
+                for (int b = REUSE_BUCKET - 1; b >= minBucket; b--) {
+                    pageId = takeEmptyPage(b, ioVersions(), statHolder);
 
-            boolean fragment = size > maxPayload;
-
-            int sizeSetup = fragment ? SHOW_PAYLOAD_LEN | SHOW_LINK | SHOW_ITEM : SHOW_PAYLOAD_LEN | SHOW_ITEM;
-
-            int payloadSize = latestPageIO.getPageEntrySize(fragment ? size % maxPayload : size, sizeSetup);
-
-            // There is no space left on this page.
-            if (pageId != 0 && ((remainPageSpace - payloadSize) < 0 || dataRows.size() == maxRowsPerPage)) {
-                int written = write(pageId, writeRows, initIo, dataRows, FAIL_I, statHolder);
-
-                assert written == COMPLETE : written;
-
-                initIo = null;
-
-                pageId = 0;
-                remainPageSpace = 0;
-
-                dataRows.clear();
+                    if (pageId != 0L)
+                        break;
+                }
             }
 
-            dataRows.add(row);
+            if (pageId == 0)
+                pageId = takeEmptyPage(REUSE_BUCKET, ioVersions(), statHolder);
 
             if (pageId == 0) {
-                maxRowsPerPage = MAX_DATA_ROWS_PER_PAGE;
+                pageId = allocateDataPage(row.partition());
 
-                int minBucket = bucket(payloadSize, false) + 1;
-
-                if (payloadSize != MIN_SIZE_FOR_DATA_PAGE) {
-                    for (int b = REUSE_BUCKET - 1; b >= minBucket; b--) {
-                        pageId = takeEmptyPage(b, ioVersions(), statHolder);
-
-                        if (pageId != 0L) {
-                            remainPageSpace = (b << shift);
-
-                            break;
-                        }
-                    }
-                }
-
-                if (pageId == 0)
-                    pageId = takeEmptyPage(REUSE_BUCKET, ioVersions(), statHolder);
-
-                if (pageId == 0) {
-                    pageId = allocateDataPage(row.partition());
-
-                    initIo = latestPageIO;
-                }
-                else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
-                    pageId = initReusedPage(pageId, row.partition(), statHolder);
-                else {
-                    pageId = PageIdUtils.changePartitionId(pageId, row.partition());
-
-                    if (checkItemIdOverflow) {
-                        long page = pageMem.acquirePage(grpId, pageId, statHolder);
-
-                        long pageAddr = PageHandler.readLock(pageMem, grpId, pageId, page, this);
-
-                        try {
-                            maxRowsPerPage = MAX_DATA_ROWS_PER_PAGE - latestPageIO.getRowsCount(pageAddr);
-                        }
-                        finally {
-                            PageHandler.readUnlock(pageMem, grpId, pageId, page, pageAddr, this);
-                        }
-                    }
-                }
-
-                if (remainPageSpace == 0)
-                    remainPageSpace = maxPayload;
+                initIo = ioVersions().latest();
             }
+            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
+                pageId = initReusedPage(pageId, row.partition(), statHolder);
+            else
+                pageId = PageIdUtils.changePartitionId(pageId, row.partition());
 
-            remainPageSpace -= payloadSize;
-
-            if (tail) {
-                int written;
-
-                if (dataRows.size() == 1) {
-                    written = fragment ? row.size() - (row.size() % maxPayload) : 0;
-
-                    written = write(pageId, writeRows, initIo, row, written, FAIL_I, statHolder);
-                } else
-                    written = write(pageId, writeRows, initIo, dataRows, FAIL_I, statHolder);
-
-                assert written == COMPLETE : written;
-            }
+            writtenCnt = write(pageId, writeRows, initIo, regularRows, writtenCnt, FAIL_I, statHolder);;
         }
     }
 

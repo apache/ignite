@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
@@ -322,10 +322,11 @@ public abstract class DataStructure implements PageLockListener {
         long pageId,
         PageHandler<X, R> h,
         PageIO init,
-        Collection<X> arg,
+        List<X> arg,
+        int intArg,
         R lockFailed,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        return PageHandler.writePageBatch(pageMem, grpId, pageId, this, h, init, wal, null, arg, lockFailed, statHolder);
+        return PageHandler.writePageBatch(pageMem, grpId, pageId, this, h, init, wal, null, arg, intArg, lockFailed, statHolder);
     }
 
     /**
