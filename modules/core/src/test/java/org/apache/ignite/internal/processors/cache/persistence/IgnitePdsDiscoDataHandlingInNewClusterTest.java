@@ -190,6 +190,9 @@ public class IgnitePdsDiscoDataHandlingInNewClusterTest extends GridCommonAbstra
                 mixedCachesGroupFound = true;
         }
 
-        assertTrue(defaultGroupFound && mixedCachesGroupFound);
+        assertTrue(String.format("Default group found: %b, mixed group found: %b",
+            defaultGroupFound,
+            mixedCachesGroupFound),
+            defaultGroupFound && mixedCachesGroupFound);
     }
 }

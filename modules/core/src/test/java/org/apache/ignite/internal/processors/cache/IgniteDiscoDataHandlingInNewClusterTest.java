@@ -130,7 +130,7 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
             );
         }
 
-        if (igniteInstanceName.equals(NODE_4_DIFF_STATIC_CONFIG) || igniteInstanceName.equals("clientWithDiffConfig"))
+        if (igniteInstanceName.equals(NODE_4_DIFF_STATIC_CONFIG) || igniteInstanceName.equals(CLIENT_WITH_DIFF_CONFIG))
             cfg.setCacheConfiguration(
                 prepareStaticCacheCfg(STATIC_CACHE_NAME_1),
                 prepareStaticCacheCfg(STATIC_CACHE_NAME_2)
@@ -202,7 +202,7 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
     private void verifyCachesAndGroups(IgniteEx ignite, Collection<String> cacheNames) {
         Map<String, DynamicCacheDescriptor> caches = ignite.context().cache().cacheDescriptors();
 
-        assertEquals(3, caches.size());
+        assertEquals(cacheNames.size() + 1, caches.size());
         assertTrue(caches.keySet().contains(GridCacheUtils.UTILITY_CACHE_NAME));
         assertTrue(caches.keySet().containsAll(cacheNames));
 

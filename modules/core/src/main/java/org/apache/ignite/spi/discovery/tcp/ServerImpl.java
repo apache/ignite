@@ -4954,8 +4954,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (gridDiscoveryData != null)
                     spi.onExchange(gridDiscoveryData, U.resolveClassLoader(spi.ignite().configuration()));
 
-                for (DiscoveryDataPacket dataPacket : joiningNodesDiscoDataList)
-                    spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                if (joiningNodesDiscoDataList != null) {
+                    for (DiscoveryDataPacket dataPacket : joiningNodesDiscoDataList)
+                        spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                }
 
                 nullifyDiscoData();
 
