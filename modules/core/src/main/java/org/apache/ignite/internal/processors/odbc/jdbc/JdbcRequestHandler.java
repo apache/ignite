@@ -108,6 +108,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private static final JdbcResponse JDBC_QUERY_CANCELLED_RESPONSE =
         new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
 
+    /** JDBC connection context. */
     private final JdbcConnectionContext connCtx;
 
     /** Client context. */
@@ -194,7 +195,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.connCtx = connCtx;
         this.sender = sender;
 
-        this.meta = new JdbcMetadataInfo(connCtx.kernalContext());
+        meta = new JdbcMetadataInfo(connCtx.kernalContext());
 
         Factory<GridWorker> orderedFactory = new Factory<GridWorker>() {
             @Override public GridWorker create() {
@@ -202,7 +203,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
         };
 
-        this.cliCtx = new SqlClientContext(
+        cliCtx = new SqlClientContext(
             connCtx.kernalContext(),
             orderedFactory,
             distributedJoins,
@@ -592,7 +593,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setSchema(schemaName);
 
             List<FieldsQueryCursor<List<?>>> results = connCtx.kernalContext().query().querySqlFields(null, qry,
-                cliCtx, true,protocolVer.compareTo(VER_2_3_0) < 0, cancel);
+                cliCtx, true, protocolVer.compareTo(VER_2_3_0) < 0, cancel);
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -1273,6 +1274,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         return null;
     }
 
+    /**
+     * Retrieve cache partitions distributions for given cache Ids.
+     *
+     * @param req <code>JdbcCachePartitionsRequest</code> that incapsulates set of cache Ids.
+     * @return Partitions distributions.
+     */
     private JdbcResponse getCachePartitions(JdbcCachePartitionsRequest req) {
         List<JdbcThinAffinityAwarenessMappingGroup> mappings = new ArrayList<>();
 
@@ -1296,9 +1303,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Partitions mapping for cache.
      */
     private Map<UUID, Set<Integer>> getPartitionsMap(DynamicCacheDescriptor cacheDesc, AffinityTopologyVersion affVer) {
-        GridCacheContext cacheContext = connCtx.kernalContext().cache().context().cacheContext(cacheDesc.cacheId());
+        GridCacheContext cacheCtx = connCtx.kernalContext().cache().context().cacheContext(cacheDesc.cacheId());
 
-        AffinityAssignment assignment = cacheContext.affinity().assignment(affVer);
+        AffinityAssignment assignment = cacheCtx.affinity().assignment(affVer);
 
         Set<ClusterNode> nodes = assignment.primaryPartitionNodes();
 

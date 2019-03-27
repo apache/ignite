@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -26,8 +27,12 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinAffinityAwarenessMappingGrou
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
 // TODO VO: Add aff topology version and use it to check whether it is valid to add collected distributions to current AffinityCache.
-public class JdbcCachePartitionsResult extends JdbcResult {
 
+/**
+ * Jdbc thin partiton result that contains partition mappings.
+ */
+public class JdbcCachePartitionsResult extends JdbcResult {
+    /** Partitions Mappings. */
     private List<JdbcThinAffinityAwarenessMappingGroup> mappings;
 
     /**
@@ -37,18 +42,28 @@ public class JdbcCachePartitionsResult extends JdbcResult {
         super(CACHE_PARTITIONS);
     }
 
+    /**
+     * Constructor.
+     *
+     * @param mappings Partitions mappings.
+     */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public JdbcCachePartitionsResult(List<JdbcThinAffinityAwarenessMappingGroup> mappings) {
         super(CACHE_PARTITIONS);
 
         this.mappings = mappings;
     }
 
+    /**
+     * @return Partitons mappings.
+     */
     public List<JdbcThinAffinityAwarenessMappingGroup> getMappings() {
-        return mappings;
+        return Collections.unmodifiableList(mappings);
     }
 
-    @Override
-    public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
         super.writeBinary(writer, ver);
 
         assert mappings != null;
@@ -59,8 +74,9 @@ public class JdbcCachePartitionsResult extends JdbcResult {
             mappingGroup.writeBinary(writer, ver);
     }
 
-    @Override
-    public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
         super.readBinary(reader, ver);
         List<JdbcThinAffinityAwarenessMappingGroup> res = new ArrayList<>();
 

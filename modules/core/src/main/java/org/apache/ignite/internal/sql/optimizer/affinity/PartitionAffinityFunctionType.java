@@ -56,6 +56,12 @@ public enum PartitionAffinityFunctionType implements JdbcRawBinarylizable {
         return val;
     }
 
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
     @Nullable public static PartitionAffinityFunctionType fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }

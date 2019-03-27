@@ -90,7 +90,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
 
     /** Last reported affinity topology version. */
-    private AtomicReference<AffinityTopologyVersion> lastAffinityTopologyVersion = new AtomicReference<>();
+    private AtomicReference<AffinityTopologyVersion> lastAffinityTopVer = new AtomicReference<>();
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
@@ -230,19 +230,18 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         super.onDisconnected();
     }
 
-//    /**
-//     * Atomically check whether affinity topology version has changed since the last call and sets new version as a last.
-//     * @return New version, if it has changed since the last call.
-//     */
+    /**
+     * @return Retrieves current affinity topology version and sets it as a last.
+     */
     public AffinityTopologyVersion getAffinityTopologyVersion() {
         while (true) {
-            AffinityTopologyVersion oldVer = lastAffinityTopologyVersion.get();
+            AffinityTopologyVersion oldVer = lastAffinityTopVer.get();
             AffinityTopologyVersion newVer = ctx.cache().context().exchange().readyAffinityVersion();
 
             boolean changed = oldVer == null || oldVer.compareTo(newVer) < 0;
 
             if (changed) {
-                boolean success = lastAffinityTopologyVersion.compareAndSet(oldVer, newVer);
+                boolean success = lastAffinityTopVer.compareAndSet(oldVer, newVer);
 
                 if (!success)
                     continue;
@@ -252,15 +251,18 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         }
     }
 
+    /**
+     * @return Retrieves current affinity topology version and sets it as a last if it was changed, false otherwise.
+     */
     public AffinityTopologyVersion getAffinityTopologyVersionIfChanged() {
         while (true) {
-            AffinityTopologyVersion oldVer = lastAffinityTopologyVersion.get();
+            AffinityTopologyVersion oldVer = lastAffinityTopVer.get();
             AffinityTopologyVersion newVer = ctx.cache().context().exchange().readyAffinityVersion();
 
             boolean changed = oldVer == null || oldVer.compareTo(newVer) < 0;
 
             if (changed) {
-                boolean success = lastAffinityTopologyVersion.compareAndSet(oldVer, newVer);
+                boolean success = lastAffinityTopVer.compareAndSet(oldVer, newVer);
 
                 if (!success)
                     continue;

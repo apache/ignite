@@ -63,6 +63,7 @@ public final class AffinityCache {
 
     /**
      * Adds cache distribution related to the cache with specified cache id.
+     *
      * @param cacheId Cache Id.
      * @param distribution Cache partitions distribution.
      */
@@ -72,6 +73,7 @@ public final class AffinityCache {
 
     /**
      * Adds sql query with corresponding partion result descriptor.
+     *
      * @param sql Plain sql query.
      * @param partRes Partition result descriptor.
      */
@@ -81,6 +83,7 @@ public final class AffinityCache {
 
     /**
      * Retrieves partition result descriptor related to corresponding sql query.
+     *
      * @param sqlQry Plain sql query.
      * @return Partition result descriptor or null.
      */

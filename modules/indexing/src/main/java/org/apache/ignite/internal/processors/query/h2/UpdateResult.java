@@ -57,7 +57,7 @@ public final class UpdateResult {
     public UpdateResult(long cnt, Object[] errKeys) {
         this.cnt = cnt;
         this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
-        this.partRes = null;
+        partRes = null;
     }
 
     /**

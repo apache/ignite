@@ -977,6 +977,12 @@ public class JdbcThinConnection implements Connection {
         }
     }
 
+    /**
+     * Retrieve cache destribution for specified cache Id.
+     *
+     * @param cacheId Cache Id.
+     * @return Partitions cache distibution.
+     */
     private Map<Integer, UUID> retrieveCacheDistribution(int cacheId) {
         JdbcResponse res;
 
@@ -1384,6 +1390,7 @@ public class JdbcThinConnection implements Connection {
      * @param nodeIds Set of node's UUIDs.
      * @return Ignite endpoint to use for request/response transferring.
      */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
     private JdbcThinTcpIo cliIo(Set<UUID> nodeIds) {
         if (!bestEffortAffinity)
             return singleIo;

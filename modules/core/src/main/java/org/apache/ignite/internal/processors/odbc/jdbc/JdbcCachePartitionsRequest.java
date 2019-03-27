@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -24,14 +25,26 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
+/**
+ * Jdbc thin request for partiton distribution.
+ */
 public class JdbcCachePartitionsRequest extends JdbcRequest {
-
+    /** Cache ids. */
     private Set<Integer> cacheIds;
 
+    /**
+     * Default constructor.
+     */
     public JdbcCachePartitionsRequest() {
         super(CACHE_PARTITIONS);
     }
 
+    /**
+     * Constructor.
+     *
+     * @param cacheIds Cache ids.
+     */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public JdbcCachePartitionsRequest(Set<Integer> cacheIds) {
         super(CACHE_PARTITIONS);
 
@@ -42,23 +55,25 @@ public class JdbcCachePartitionsRequest extends JdbcRequest {
      * @return Cache id.
      */
     public Set<Integer> cacheIds() {
-        return cacheIds;
+        return Collections.unmodifiableSet(cacheIds);
     }
 
-    @Override
-    public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
         super.writeBinary(writer, ver);
 
         assert cacheIds != null;
         assert !cacheIds.isEmpty();
 
         writer.writeInt(cacheIds.size());
-        for (Integer cacheId: cacheIds)
+        for (Integer cacheId : cacheIds)
             writer.writeInt(cacheId);
     }
 
-    @Override
-    public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
         super.readBinary(reader, ver);
         int cacheIdsSize = reader.readInt();
 

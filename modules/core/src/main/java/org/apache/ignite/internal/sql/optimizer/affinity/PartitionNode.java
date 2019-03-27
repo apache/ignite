@@ -43,7 +43,8 @@ public interface PartitionNode {
 
 
     /**
-     * @return Cache name.
+     * @return First met cache name of an any <code>PartitionSingleNode</code>
+     * during <code>PartitionNode</code> tree traversal.
      */
     String cacheName();
 

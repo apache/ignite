@@ -30,6 +30,11 @@ public class PartitionClientContext {
     /** Mask to use in calculation when partitions count is power of 2. */
     private int mask;
 
+    /**
+     * Constructor.
+     *
+     * @param parts Partitions count.
+     */
     public PartitionClientContext(int parts) {
         assert parts <= CacheConfiguration.MAX_PARTITIONS_COUNT;
         assert parts > 0;

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -29,22 +30,44 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRawBinarylizable;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Contains cache partitions distributions with corresponding set of cache ids.
+ */
 public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizable {
 
+    /** Set of cache Ids. */
     private final Set<Integer> cacheIds = new HashSet<>();
 
+    /** Partitoins mappings. */
     private final Map<UUID, Set<Integer>> partitionsMappings;
 
+    /**
+     * Constructor.
+     */
     private JdbcThinAffinityAwarenessMappingGroup() {
         partitionsMappings = new HashMap<>();
     }
 
+    /**
+     * Constructor.
+     *
+     * @param cacheId Cache id.
+     * @param partitionsMappings Partitions mappings.
+     */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public JdbcThinAffinityAwarenessMappingGroup(@NotNull Integer cacheId, Map<UUID,
         @NotNull Set<Integer>> partitionsMappings) {
         cacheIds.add(cacheId);
         this.partitionsMappings = partitionsMappings;
     }
 
+    /**
+     * Tries to merge given partions mappings and corresponding cache id with already existing mappings.
+     *
+     * @param cacheId Cache id.
+     * @param partitionsMappings Partitions mappings.
+     * @return True if merged successfully, false otherwise.
+     */
     public boolean merge(int cacheId, Map<UUID, Set<Integer>> partitionsMappings) {
         if (cacheIds.contains(cacheId))
             return true;
@@ -57,6 +80,13 @@ public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizab
             return false;
     }
 
+    /**
+     * Reverts partitions mappings from the form 'node id -> set of partition ids' to the form 'partition id -> node
+     * id'. First form is more compact, so it's preffered in case of data transfering, second form is easier to use on
+     * client side, cause we mainly retrieve data using partition is as key.
+     *
+     * @return Reverted form of partitions mapping: partition id -> node id.
+     */
     public Map<Integer, UUID> revertMappings() {
         if (partitionsMappings == null)
             return null;
@@ -76,11 +106,12 @@ public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizab
      * @return Cache ids.
      */
     public Set<Integer> cacheIds() {
-        return cacheIds;
+        return Collections.unmodifiableSet(cacheIds);
     }
 
-    @Override
-    public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
         writer.writeInt(cacheIds.size());
 
         for (int cacheId : cacheIds)
@@ -103,11 +134,20 @@ public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizab
         }
     }
 
-    @Override
-    public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+        throws BinaryObjectException {
         // No-op.
     }
 
+    /**
+     * Reads <code>JdbcThinAffinityAwarenessMappingGroup</code> from provided reader.
+     *
+     * @param reader Binary object reader.
+     * @param ver Protocol version.
+     * @return Desirialized instance of <code>JdbcThinAffinityAwarenessMappingGroup</code>.
+     * @throws BinaryObjectException In case of error.
+     */
     public static JdbcThinAffinityAwarenessMappingGroup readGroup(BinaryReaderExImpl reader,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         JdbcThinAffinityAwarenessMappingGroup res = new JdbcThinAffinityAwarenessMappingGroup();
@@ -122,11 +162,11 @@ public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizab
         for (int i = 0; i < partitionsMappingsSize; i++) {
             UUID nodeId = reader.readUuid();
 
-            int partitionPerNodeSize = reader.readInt();
+            int partPerNodeSize = reader.readInt();
 
             Set<Integer> partitionsPerNode = new HashSet<>();
 
-            for (int j = 0; j < partitionPerNodeSize; j++)
+            for (int j = 0; j < partPerNodeSize; j++)
                 partitionsPerNode.add(reader.readInt());
 
             res.partitionsMappings.put(nodeId, partitionsPerNode);

@@ -95,7 +95,7 @@ public class PartitionResultMarshaler {
      * @return Deserialized partition node.
      * @throws BinaryObjectException In case of error.
      */
-    static PartitionNode readNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+    private static PartitionNode readNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         int nodeType = reader.readByte();
 
@@ -131,7 +131,7 @@ public class PartitionResultMarshaler {
      * @param node Partition node to serialize.
      * @throws BinaryObjectException In case of error.
      */
-    static void writeNode(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver, PartitionNode node)
+    private static void writeNode(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver, PartitionNode node)
         throws BinaryObjectException {
 
         if (node instanceof PartitionAllNode)
@@ -158,7 +158,8 @@ public class PartitionResultMarshaler {
      * @return Debinarized partition node.
      * @throws BinaryObjectException On error.
      */
-    public static PartitionConstantNode readConstantNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+    @SuppressWarnings("unused")
+    private static PartitionConstantNode readConstantNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         int part = reader.readInt();
 
@@ -179,7 +180,8 @@ public class PartitionResultMarshaler {
      * @param node Partition constant node to serialize.
      * @throws BinaryObjectException In case of error.
      */
-    public static void writeConstantNode(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver,
+    @SuppressWarnings("unused")
+    private static void writeConstantNode(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver,
         PartitionConstantNode node) throws BinaryObjectException {
         writer.writeByte(CONST_NODE);
 
@@ -200,7 +202,7 @@ public class PartitionResultMarshaler {
      * @return Debinarized partition composite node.
      * @throws BinaryObjectException On error.
      */
-    public static PartitionCompositeNode readCompositeNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+    private static PartitionCompositeNode readCompositeNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         PartitionNode left = readNode(reader, ver);
 
@@ -219,7 +221,7 @@ public class PartitionResultMarshaler {
      * @param node Partition composite node to serialize.
      * @throws BinaryObjectException In case of error.
      */
-    public static void writeCompositeNode(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver,
+    private static void writeCompositeNode(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver,
         PartitionCompositeNode node) throws BinaryObjectException {
         writer.writeByte(COMPOSITE_NODE);
 
@@ -238,7 +240,7 @@ public class PartitionResultMarshaler {
      * @return Debinarized partition group node.
      * @throws BinaryObjectException On error.
      */
-    public static PartitionGroupNode readGroupNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+    private static PartitionGroupNode readGroupNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         int siblingsCnt = reader.readInt();
 
@@ -272,7 +274,7 @@ public class PartitionResultMarshaler {
      * @param node Partition group node to serialize.
      * @throws BinaryObjectException In case of error.
      */
-    public static void writeGroupNode(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver,
+    private static void writeGroupNode(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver,
         PartitionGroupNode node) throws BinaryObjectException {
         writer.writeByte(GROUP_NODE);
 
@@ -298,7 +300,7 @@ public class PartitionResultMarshaler {
      * @return Debinarized parameter node.
      * @throws BinaryObjectException On error.
      */
-    public static PartitionParameterNode readParameterNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
+    private static PartitionParameterNode readParameterNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
 
         int idx = reader.readInt();
@@ -324,7 +326,8 @@ public class PartitionResultMarshaler {
      * @param node Partition parameter node to serialize.
      * @throws BinaryObjectException In case of error.
      */
-    public static void writeParameterNode(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver,
+    @SuppressWarnings("unused")
+    private static void writeParameterNode(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver,
         PartitionParameterNode node) throws BinaryObjectException {
         writer.writeByte(PARAM_NODE);
 
@@ -349,7 +352,8 @@ public class PartitionResultMarshaler {
      * @return Debinarized partition table affinity descriptor.
      * @throws BinaryObjectException On error.
      */
-    public static PartitionTableAffinityDescriptor readTableAffinityDescriptor(BinaryReaderExImpl reader,
+    @SuppressWarnings("unused")
+    private static PartitionTableAffinityDescriptor readTableAffinityDescriptor(BinaryReaderExImpl reader,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
 
         return new PartitionTableAffinityDescriptor(PartitionAffinityFunctionType.RENDEZVOUS, reader.readInt(),
