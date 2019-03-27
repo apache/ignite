@@ -26,11 +26,14 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 
 /**
- * Cache get request.
+ * Cache request.
  */
 class ClientCacheRequest extends ClientRequest {
-    /** Flag: keep binary. */
-    private static final byte FLAG_KEEP_BINARY = 1;
+    /** "Keep binary" flag mask. */
+    private static final byte KEEP_BINARY_FLAG_MASK = 0x01;
+
+    /** "Under transaction" flag mask. */
+    private static final byte TRANSACTIONAL_FLAG_MASK = 0x02;
 
     /** Cache ID. */
     private final int cacheId;
@@ -62,12 +65,21 @@ class ClientCacheRequest extends ClientRequest {
     }
 
     /**
-     *  Gets a value indicating whether keepBinary flag is set in this request.
+     * Gets a value indicating whether keepBinary flag is set in this request.
      *
      * @return keepBinary flag value.
      */
     protected boolean isKeepBinary() {
-        return (flags & FLAG_KEEP_BINARY) == FLAG_KEEP_BINARY;
+        return (flags & KEEP_BINARY_FLAG_MASK) != 0;
+    }
+
+    /**
+     * Gets a value indicating whether request was made under transaction.
+     *
+     * @return Flag value.
+     */
+    protected boolean isTransactional() {
+        return (flags & TRANSACTIONAL_FLAG_MASK) != 0;
     }
 
     /**

@@ -17,8 +17,16 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -27,11 +35,9 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnecti
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicLong;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THIN_MAX_ACTIVE_TX_PER_CONNECTION;
 
 /**
  * Thin Client connection context.
@@ -52,17 +58,25 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.4.0. Added: Affinity Awareness, IEP-23. */
     public static final ClientListenerProtocolVersion VER_1_4_0 = ClientListenerProtocolVersion.create(1, 4, 0);
 
+    /** Version 1.5.0. Added: Transactions support, IEP-34. */
+    public static final ClientListenerProtocolVersion VER_1_5_0 = ClientListenerProtocolVersion.create(1, 5, 0);
+
     /** Default version. */
-    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_4_0;
+    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_5_0;
 
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
+        VER_1_5_0,
         VER_1_4_0,
         VER_1_3_0,
         VER_1_2_0,
         VER_1_1_0,
         VER_1_0_0
     );
+
+    /** Active transactions limit. */
+    public static final int ACTIVE_TX_LIMIT = IgniteSystemProperties.getInteger(
+        IGNITE_THIN_MAX_ACTIVE_TX_PER_CONNECTION, 100);
 
     /** Message parser. */
     private ClientMessageParser parser;
@@ -84,6 +98,15 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
+
+    /** Tx id. */
+    private final AtomicInteger txIdSeq = new AtomicInteger();
+
+    /** Transactions by transaction id. */
+    private final Map<Integer, ClientTxContext> txs = new ConcurrentHashMap<>();
+
+    /** Active transactions count. */
+    private final AtomicInteger txsCnt = new AtomicInteger();
 
     /**
      * Ctor.
@@ -169,6 +192,8 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     @Override public void onDisconnected() {
         resReg.clean();
 
+        cleanupTxs();
+
         super.onDisconnected();
     }
 
@@ -215,5 +240,62 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
             return new ClientAffinityTopologyVersion(newVer, changed);
         }
+    }
+
+    /**
+     * Next transaction id for this connection.
+     */
+    public int nextTxId() {
+        int txId = txIdSeq.incrementAndGet();
+
+        return txId == 0 ? txIdSeq.incrementAndGet() : txId;
+    }
+
+    /**
+     * Transaction context by transaction id.
+     *
+     * @param txId Tx ID.
+     */
+    public ClientTxContext txContext(int txId) {
+        return txs.get(txId);
+    }
+
+    /**
+     * Add new transaction context to connection.
+     *
+     * @param txCtx Tx context.
+     */
+    public void addTxContext(ClientTxContext txCtx) {
+        if (txsCnt.incrementAndGet() > ACTIVE_TX_LIMIT) {
+            txsCnt.decrementAndGet();
+
+            throw new IgniteClientException(ClientStatus.TX_LIMIT_EXCEEDED, "Active transactions per connection limit " +
+                "(" + ACTIVE_TX_LIMIT + ") exceeded. To start a new transaction you need to wait for some of currently " +
+                "active transactions complete. To change the limit set up " + IGNITE_THIN_MAX_ACTIVE_TX_PER_CONNECTION +
+                " servers system property.");
+        }
+
+        txs.put(txCtx.txId(), txCtx);
+    }
+
+    /**
+     * Remove transaction context from connection.
+     *
+     * @param txId Tx ID.
+     */
+    public void removeTxContext(int txId) {
+        txs.remove(txId);
+
+        txsCnt.decrementAndGet();
+    }
+
+    /**
+     *
+     */
+    private void cleanupTxs() {
+        for (ClientTxContext txCtx : txs.values())
+            txCtx.close();
+
+        txs.clear();
     }
 }

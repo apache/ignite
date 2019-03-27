@@ -70,6 +70,7 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.platform.client.ClientFlag;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
@@ -78,6 +79,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_0_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_1_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_4_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
 
 /**
  * Implements {@link ClientChannel} over TCP.
@@ -85,6 +88,8 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
 class TcpClientChannel implements ClientChannel {
     /** Supported protocol versions. */
     private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(
+        V1_5_0,
+        V1_4_0,
         V1_2_0,
         V1_1_0, 
         V1_0_0
@@ -94,7 +99,7 @@ class TcpClientChannel implements ClientChannel {
     private static final long PAYLOAD_WAIT_TIMEOUT = 10L;
 
     /** Protocol version agreed with the server. */
-    private ProtocolVersion ver = V1_2_0;
+    private ProtocolVersion ver = V1_5_0;
 
     /** Channel. */
     private final Socket sock;
@@ -274,11 +279,24 @@ class TcpClientChannel implements ClientChannel {
         if (pendingReq == null)
             throw new ClientProtocolError(String.format("Unexpected response ID [%s]", resId));
 
-        int status;
+        int status = 0;
 
         BinaryInputStream resIn;
 
-        status = readInt();
+        if (ver.compareTo(V1_4_0) >= 0) {
+            short flags = readShort();
+
+            if ((flags & ClientFlag.AFFINITY_TOPOLOGY_CHANGED) != 0) {
+                // TODO: IGNITE-11898 Implement Best Effort Affinity for java thin client.
+                readLong(); // topVer.
+                readInt(); // minorTopVer.
+            }
+
+            if ((flags & ClientFlag.ERROR) != 0)
+                status = readInt();
+        }
+        else
+            status = readInt();
 
         int hdrSize = (int)(totalBytesRead - bytesReadOnStartReq);
 
@@ -391,10 +409,15 @@ class TcpClientChannel implements ClientChannel {
 
         BinaryInputStream res = new BinaryHeapInputStream(read(resSize));
 
-        if (!res.readBoolean()) { // success flag
-            ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
+        try (BinaryReaderExImpl r = new BinaryReaderExImpl(null, res, null, true)) {
+            if (res.readBoolean()) { // Success flag.
+                if (ver.compareTo(V1_4_0) >= 0)
+                    // TODO: IGNITE-11898 Implement Best Effort Affinity for java thin client.
+                    r.readUuid(); // Server node UUID.
+            }
+            else {
+                ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
 
-            try (BinaryReaderExImpl r = new BinaryReaderExImpl(null, res, null, true)) {
                 String err = r.readString();
 
                 int errCode = ClientStatus.FAILED;
@@ -416,15 +439,15 @@ class TcpClientChannel implements ClientChannel {
                         srvVer,
                         err
                     ));
-                else { // retry with server version
+                else { // Retry with server version.
                     ver = srvVer;
 
                     handshake(user, pwd);
                 }
             }
-            catch (IOException e) {
-                throw handleIOError(e);
-            }
+        }
+        catch (IOException e) {
+            throw handleIOError(e);
         }
     }
 

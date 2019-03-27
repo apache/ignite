@@ -89,6 +89,9 @@ public final class ClientConfiguration implements Serializable {
     /** @serial User password. */
     private String userPwd;
 
+    /** Tx config. */
+    private ClientTransactionConfiguration txCfg = new ClientTransactionConfiguration();
+
     /**
      * @return Host addresses.
      */
@@ -389,6 +392,26 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setSslContextFactory(Factory<SSLContext> newVal) {
         this.sslCtxFactory = newVal;
+
+        return this;
+    }
+
+    /**
+     * Gets transactions configuration.
+     *
+     * @return Transactions configuration.
+     */
+    public ClientTransactionConfiguration getTransactionConfiguration() {
+        return txCfg;
+    }
+
+    /**
+     * Sets transactions configuration.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setTransactionConfiguration(ClientTransactionConfiguration txCfg) {
+        this.txCfg = txCfg;
 
         return this;
     }

@@ -17,16 +17,24 @@
 
 package org.apache.ignite.client;
 
+import java.lang.management.ManagementFactory;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -40,11 +48,21 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.client.thin.ClientServerError;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -411,6 +429,369 @@ public class FunctionalTest {
             String.format("%s expected but no exception was received", ClientConnectionException.class.getName()),
             expEx
         );
+    }
+
+    /**
+     * Test transactions.
+     */
+    @Test
+    public void testTransactions() throws Exception {
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
+                .setName("cache")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            );
+
+            cache.put(0, "value0");
+            cache.put(1, "value1");
+
+            // Test nested transactions is not possible.
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                try (ClientTransaction tx1 = client.transactions().txStart()) {
+                    fail();
+                }
+                catch (ClientException expected) {
+                    // No-op.
+                }
+            }
+
+            // Test implicit rollback when transaction closed.
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                cache.put(1, "value2");
+            }
+
+            assertEquals("value1", cache.get(1));
+
+            // Test explicit rollback.
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                cache.put(1, "value2");
+
+                tx.rollback();
+            }
+
+            assertEquals("value1", cache.get(1));
+
+            // Test commit.
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                cache.put(1, "value2");
+
+                tx.commit();
+            }
+
+            assertEquals("value2", cache.get(1));
+
+            // Test end of already completed transaction.
+            ClientTransaction tx0 = client.transactions().txStart();
+
+            tx0.close();
+
+            try {
+                tx0.commit();
+
+                fail();
+            }
+            catch (ClientException expected) {
+                // No-op.
+            }
+
+            // Test end of outdated transaction.
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                try {
+                    tx0.commit();
+
+                    fail();
+                }
+                catch (ClientException expected) {
+                    // No-op.
+                }
+
+                tx.commit();
+            }
+
+            // Test transaction with a timeout.
+            long TX_TIMEOUT = 200L;
+
+            try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, TX_TIMEOUT)) {
+                long txStartedTime = U.currentTimeMillis();
+
+                cache.put(1, "value3");
+
+                while (txStartedTime + TX_TIMEOUT >= U.currentTimeMillis())
+                    U.sleep(100L);
+
+                try {
+                    cache.put(1, "value4");
+
+                    fail();
+                }
+                catch (ClientServerError expected) {
+                    // No-op.
+                }
+
+                try {
+                    tx.commit();
+
+                    fail();
+                }
+                catch (ClientServerError expected) {
+                    // No-op.
+                }
+            }
+
+            assertEquals("value2", cache.get(1));
+
+            cache.put(1, "value5");
+
+            // Test failover.
+            ObjectName mbeanName = U.makeMBeanName(ignite.name(), "Clients", ClientListenerProcessor.class.getSimpleName());
+
+            ClientProcessorMXBean mxBean = MBeanServerInvocationHandler.newProxyInstance(
+                ManagementFactory.getPlatformMBeanServer(), mbeanName, ClientProcessorMXBean.class, true);
+
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                cache.put(1, "value6");
+
+                mxBean.dropAllConnections();
+
+                try {
+                    cache.put(1, "value7");
+
+                    fail();
+                }
+                catch (ClientException expected) {
+                    // No-op.
+                }
+
+                // Start new transaction doesn't recover cache operations on failed channel.
+                try (ClientTransaction tx1 = client.transactions().txStart()) {
+                    fail();
+                }
+                catch (ClientException expected) {
+                    // No-op.
+                }
+
+                try {
+                    cache.get(1);
+
+                    fail();
+                }
+                catch (ClientException expected) {
+                    // No-op.
+                }
+
+                // Close outdated transaction doesn't recover cache operations on failed channel.
+                tx0.close();
+
+                try {
+                    cache.get(1);
+
+                    fail();
+                }
+                catch (ClientException expected) {
+                    // No-op.
+                }
+            }
+
+            assertEquals("value5", cache.get(1));
+
+            // Test concurrent transactions in different connections.
+            try (IgniteClient client1 = Ignition.startClient(getClientConfiguration())) {
+                ClientCache<Integer, String> cache1 = client1.cache("cache");
+
+                try (ClientTransaction tx = client.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
+                    cache.put(0, "value8");
+
+                    try (ClientTransaction tx1 = client1.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
+                        assertEquals("value8", cache.get(0));
+                        assertEquals("value0", cache1.get(0));
+
+                        cache1.put(1, "value9");
+
+                        assertEquals("value5", cache.get(1));
+                        assertEquals("value9", cache1.get(1));
+
+                        tx1.commit();
+
+                        assertEquals("value9", cache.get(1));
+                    }
+
+                    assertEquals("value0", cache1.get(0));
+
+                    tx.commit();
+
+                    assertEquals("value8", cache1.get(0));
+                }
+            }
+
+            // Check different types of cache operations.
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                // Operations: put, putAll, putIfAbsent.
+                cache.put(2, "value10");
+                cache.putAll(F.asMap(1, "value11", 3, "value12"));
+                cache.putIfAbsent(4, "value13");
+
+                // Operations: get, getAll, getAndPut, getAndRemove, getAndReplace.
+                assertEquals("value10", cache.get(2));
+                assertEquals(F.asMap(1, "value11", 2, "value10"),
+                    cache.getAll(new HashSet<>(Arrays.asList(1, 2))));
+                assertEquals("value13", cache.getAndPut(4, "value14"));
+                assertEquals("value14", cache.getAndReplace(4, "value15"));
+                assertEquals("value15", cache.getAndRemove(4));
+
+                // Operations: contains.
+                assertTrue(cache.containsKey(2));
+                assertFalse(cache.containsKey(4));
+
+                // Operations: replace.
+                cache.put(4, "");
+                assertTrue(cache.replace(4, "value16"));
+                assertTrue(cache.replace(4, "value16", "value17"));
+
+                // Operations: remove, removeAll
+                cache.putAll(F.asMap(5, "", 6, ""));
+                assertTrue(cache.remove(5));
+                assertTrue(cache.remove(4, "value17"));
+                cache.removeAll(new HashSet<>(Arrays.asList(3, 6)));
+                assertFalse(cache.containsKey(3));
+                assertFalse(cache.containsKey(6));
+
+                tx.rollback();
+            }
+
+            assertEquals(F.asMap(0, "value8", 1, "value9"),
+                cache.getAll(new HashSet<>(Arrays.asList(0, 1))));
+            assertFalse(cache.containsKey(2));
+
+            // Test concurrent transactions started by different threads.
+            try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                CyclicBarrier barrier = new CyclicBarrier(2);
+
+                cache.put(0, "value18");
+
+                Thread t = new Thread(() -> {
+                    try (ClientTransaction tx1 = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                        cache.put(1, "value19");
+
+                        barrier.await();
+
+                        assertEquals("value8", cache.get(0));
+
+                        barrier.await();
+
+                        tx1.commit();
+
+                        barrier.await();
+
+                        assertEquals("value18", cache.get(0));
+                    }
+                    catch (InterruptedException | BrokenBarrierException ignore) {
+                        // No-op.
+                    }
+                });
+
+                t.start();
+
+                barrier.await();
+
+                assertEquals("value9", cache.get(1));
+
+                barrier.await();
+
+                tx.commit();
+
+                barrier.await();
+
+                assertEquals("value19", cache.get(1));
+
+                t.join();
+            }
+
+            // Test transaction usage by different threads.
+            try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                cache.put(0, "value20");
+
+                Thread t = new Thread(() -> {
+                    // Implicit transaction started here.
+                    cache.put(1, "value21");
+
+                    assertEquals("value18", cache.get(0));
+
+                    try {
+                        // Transaction can't be commited by another thread.
+                        tx.commit();
+
+                        fail();
+                    }
+                    catch (ClientException expected) {
+                        // No-op.
+                    }
+
+                    // Transaction can be closed by another thread.
+                    tx.close();
+
+                    assertEquals("value18", cache.get(0));
+                });
+
+                t.start();
+
+                t.join();
+
+                assertEquals("value21", cache.get(1));
+
+                try {
+                    // Transaction can't be commited after another thread close this transaction.
+                    tx.commit();
+
+                    fail();
+                }
+                catch (ClientException expected) {
+                    // No-op.
+                }
+
+                assertEquals("value18", cache.get(0));
+
+                // Start implicit transaction after explicit transaction has been closed by another thread.
+                cache.put(0, "value22");
+
+                t = new Thread(() -> assertEquals("value22", cache.get(0)));
+
+                t.start();
+
+                t.join();
+
+                // New explicit transaction can be started after current transaction has been closed by another thread.
+                try (ClientTransaction tx1 = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)){
+                    cache.put(0, "value23");
+
+                    tx1.commit();
+                }
+
+                assertEquals("value23", cache.get(0));
+            }
+
+            // Test active transactions limit.
+            List<ClientTransaction> txs = new ArrayList<>(ClientConnectionContext.ACTIVE_TX_LIMIT);
+
+            for (int i = 0; i < ClientConnectionContext.ACTIVE_TX_LIMIT; i++) {
+                Thread t = new Thread(() -> txs.add(client.transactions().txStart()));
+
+                t.start();
+
+                t.join();
+            }
+
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                fail();
+            }
+            catch (ClientServerError e) {
+                assertEquals(ClientStatus.TX_LIMIT_EXCEEDED, e.getCode());
+            }
+
+            for (ClientTransaction tx : txs)
+                tx.close();
+        }
     }
 
     /** */

@@ -17,52 +17,35 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
+import org.apache.ignite.binary.BinaryRawReader;
 
 /**
- * Key set request.
+ * Cache data manipulation request.
  */
-public class ClientCacheKeysRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
-    /** Keys. */
-    private final Set<Object> keys;
+class ClientCacheDataRequest extends ClientCacheRequest {
+    /** Transaction ID. Only available if request was made under a transaction. */
+    private final int txId;
 
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    ClientCacheKeysRequest(BinaryRawReaderEx reader) {
+    ClientCacheDataRequest(BinaryRawReader reader) {
         super(reader);
 
-        keys = readSet(reader);
+        txId = isTransactional() ? reader.readInt() : 0;
     }
 
     /**
-     * Gets the set of keys.
-     *
-     * @return Keys.
+     * Gets transaction ID.
      */
-    public Set<Object> keys() {
-        return keys;
+    public int txId() {
+        return txId;
     }
 
-    /**
-     * Reads a set of objects.
-     *
-     * @param reader Reader.
-     * @return Set of objects.
-     */
-    private static Set<Object> readSet(BinaryRawReaderEx reader) {
-        int cnt = reader.readInt();
-
-        Set<Object> keys = new LinkedHashSet<>(cnt);
-
-        for (int i = 0; i < cnt; i++)
-            keys.add(reader.readObjectDetached());
-
-        return keys;
+    /** {@inheritDoc} */
+    @Override public boolean isTransactional() {
+        return super.isTransactional();
     }
 }

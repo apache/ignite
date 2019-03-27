@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.plugin.security.SecurityException;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_4_0;
@@ -38,7 +42,10 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     private final AuthorizationContext authCtx;
 
     /** Protocol version. */
-    ClientListenerProtocolVersion ver;
+    private final ClientListenerProtocolVersion ver;
+
+    /** Logger. */
+    private final IgniteLogger log;
 
     /**
      * Constructor.
@@ -53,11 +60,40 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         this.ctx = ctx;
         this.authCtx = authCtx;
         this.ver = ver;
+        log = ctx.kernalContext().log(getClass());
     }
 
     /** {@inheritDoc} */
     @Override public ClientListenerResponse handle(ClientListenerRequest req) {
         try {
+            if (req instanceof ClientTxAwareRequest) {
+                if (((ClientTxAwareRequest)req).isTransactional()) {
+                    int txId = ((ClientTxAwareRequest)req).txId();
+
+                    ClientTxContext txCtx = ctx.txContext(txId);
+
+                    if (txCtx != null) {
+                        try {
+                            txCtx.aquire();
+
+                            return ((ClientRequest)req).process(ctx);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw e.getCause() instanceof IgniteClientException ? (IgniteClientException)e.getCause() :
+                                new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
+                        }
+                        finally {
+                            try {
+                                txCtx.release();
+                            }
+                            catch (Exception e) {
+                                log.warning("Failed to release client transaction context", e);
+                            }
+                        }
+                    }
+                }
+            }
+
             return ((ClientRequest)req).process(ctx);
         }
         catch (SecurityException ex) {

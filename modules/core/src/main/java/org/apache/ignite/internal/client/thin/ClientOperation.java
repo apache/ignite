@@ -53,7 +53,9 @@ enum ClientOperation {
     /** Get binary type. */GET_BINARY_TYPE(3002),
     /** Register binary type name. */REGISTER_BINARY_TYPE_NAME(3001),
     /** Put binary type. */PUT_BINARY_TYPE(3003),
-    /** Get binary type name. */GET_BINARY_TYPE_NAME(3000);
+    /** Get binary type name. */GET_BINARY_TYPE_NAME(3000),
+    /** Start new transaction. */TX_START(4000),
+    /** End the transaction (commit or rollback). */TX_END(4001);
 
     /** Code. */
     private final int code;
