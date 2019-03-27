@@ -89,19 +89,19 @@ public class GridNearConsistencyGetWithRecoveryFuture extends GridDhtConsistency
      * Returns latest (by version) entry for each key with consistency violation.
      */
     private Map<KeyCacheObject, EntryGetResult> checkAndFix() {
-        Map<KeyCacheObject, EntryGetResult> newesMap = new HashMap<>();
+        Map<KeyCacheObject, EntryGetResult> newestMap = new HashMap<>();
         Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>();
 
         for (IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut : futs) {
             for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
                 EntryGetResult candidate = entry.getValue();
 
-                newesMap.putIfAbsent(entry.getKey(), candidate);
+                newestMap.putIfAbsent(entry.getKey(), candidate);
 
-                EntryGetResult newest = newesMap.get(entry.getKey());
+                EntryGetResult newest = newestMap.get(entry.getKey());
 
                 if (newest.version().compareTo(candidate.version()) < 0) {
-                    newesMap.put(entry.getKey(), candidate);
+                    newestMap.put(entry.getKey(), candidate);
                     fixedMap.put(entry.getKey(), candidate);
                 }
 
@@ -109,8 +109,6 @@ public class GridNearConsistencyGetWithRecoveryFuture extends GridDhtConsistency
                     fixedMap.put(entry.getKey(), newest);
             }
         }
-
-        assert !newesMap.isEmpty();
 
         // Todo event
 

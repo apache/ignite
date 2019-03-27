@@ -110,6 +110,32 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
     /**
      *
      */
+    protected static final Consumer<ConsistencyRecoveryData> GET_NULL = (data) -> {
+        IgniteCache<Integer, Integer> cache = data.cache;
+        Set<Integer> keys = data.data.keySet();
+        Boolean raw = data.raw;
+
+        assert keys.size() == 1;
+
+        for (Map.Entry<Integer, InconsistencyValuesMapping> entry : data.data.entrySet()) { // Once.
+            try {
+                Integer key = entry.getKey() * -1; // Negative.
+
+                Object res = raw ?
+                    cache.withConsistency().getEntry(key) :
+                    cache.withConsistency().get(key);
+
+                assertEquals(null, res);
+            }
+            catch (CacheException e) {
+                fail("Should not happen." + e);
+            }
+        }
+    };
+
+    /**
+     *
+     */
     protected static final Consumer<ConsistencyRecoveryData> ENSURE_FIXED = (data) -> {
         IgniteCache<Integer, Integer> cache = data.cache;
         Boolean raw = data.raw;

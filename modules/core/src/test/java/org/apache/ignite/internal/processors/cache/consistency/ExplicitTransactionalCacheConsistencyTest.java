@@ -61,6 +61,7 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
         for (Ignite node : G.allGrids()) {
             testGet(node, concurrency, isolation, 1, raw, false);
             testGetAllVariations(node, concurrency, isolation, raw);
+            testGetNull(node, concurrency, isolation, 1, raw);
         }
     }
 
@@ -113,5 +114,33 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
         testGet(initiator, concurrency, isolation, 3, raw, true); // equals to backups
         testGet(initiator, concurrency, isolation, 4, raw, true); // equals to backups + primary
         testGet(initiator, concurrency, isolation, 10, raw, true); // more than backups
+    }
+
+    /**
+     *
+     */
+    private void testGetNull(Ignite initiator,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
+        Integer cnt,
+        boolean raw) throws Exception {
+        prepareAndCheck(
+            initiator,
+            cnt,
+            raw,
+            (ConsistencyRecoveryData data) -> {
+                try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
+                    GET_NULL.accept(data);
+
+                    try {
+                        tx.commit();
+                    }
+                    catch (TransactionRollbackException e) {
+                        fail("Should not happen. " + e);
+                    }
+                }
+
+                GET_NULL.accept(data); // Checks (outside tx).
+            });
     }
 }

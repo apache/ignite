@@ -2648,9 +2648,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         // Consistency violation was found at current tx and fixed at another tx.
                         // Because of found violation entry was not finally marked as valid (!hasPreviousValue).
                         // Retrying get operation to get fixed value.
-                        if (!txEntry.hasPreviousValue()) {
+                        if (consistency && !txEntry.hasPreviousValue()) {
                             while (true) {
-                                assert consistency /* implicit retry on getXXX */ && (optimistic() || readCommitted());
+                                assert optimistic() || readCommitted();
 
                                 try {
                                     missed.put(key, txEntry.cached().version());

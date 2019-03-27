@@ -41,6 +41,7 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
         for (Ignite node : G.allGrids()) {
             testGet(node, raw);
             testGetAllVariations(node, raw);
+            testGetNull(node, raw);
         }
     }
 
@@ -80,6 +81,20 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
             (ConsistencyRecoveryData data) -> {
                 GETALL_CHECK_AND_FIX.accept(data);
                 ENSURE_FIXED.accept(data);
+            });
+    }
+
+    /**
+     *
+     */
+    private void testGetNull(Ignite initiator, boolean raw) throws Exception {
+        prepareAndCheck(
+            initiator,
+            1,
+            raw,
+            (ConsistencyRecoveryData data) -> {
+                GET_NULL.accept(data); // first attempt.
+                GET_NULL.accept(data); // second attempt.
             });
     }
 }
