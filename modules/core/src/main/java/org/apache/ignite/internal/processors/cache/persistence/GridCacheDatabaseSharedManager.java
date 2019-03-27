@@ -67,14 +67,13 @@ import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
+import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
@@ -3442,6 +3441,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                     }
                 }
+
+                // Final run after the cancellation.
+                if (checkpointsEnabled && !shutdownNow)
+                    doCheckpoint();
             }
             catch (Throwable t) {
                 err = t;
@@ -3458,18 +3461,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
-            }
 
-            // Final run after the cancellation.
-            if (checkpointsEnabled && !shutdownNow) {
-                try {
-                    doCheckpoint();
-
-                    scheduledCp.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
-                }
-                catch (Throwable e) {
-                    scheduledCp.cpFinishFut.onDone(e);
-                }
+                scheduledCp.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
             }
         }
 
