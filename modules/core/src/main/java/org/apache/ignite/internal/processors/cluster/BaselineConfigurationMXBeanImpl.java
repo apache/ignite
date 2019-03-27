@@ -34,7 +34,7 @@ public class BaselineConfigurationMXBeanImpl implements BaselineConfigurationMXB
      * @param ctx Context.
      */
     public BaselineConfigurationMXBeanImpl(GridKernalContext ctx) {
-        baselineConfiguration = ctx.cluster().get().baselineConfiguration();
+        baselineConfiguration = ctx.state().baselineConfiguration();
     }
 
     /** {@inheritDoc} */

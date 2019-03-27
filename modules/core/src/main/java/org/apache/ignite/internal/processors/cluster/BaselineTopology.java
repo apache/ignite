@@ -401,7 +401,7 @@ public class BaselineTopology implements Serializable {
      * @return {@code true} If it is new baseline topology.
      */
     public boolean isNewTopology(){
-        return lastBranchingPointType == BranchingPointType.NEW_BASELINE_TOPOLOGY;
+        return lastBranchingPointType == BranchingPointType.NEW_BASELINE_TOPOLOGY && id == 0;
     }
 
     /**

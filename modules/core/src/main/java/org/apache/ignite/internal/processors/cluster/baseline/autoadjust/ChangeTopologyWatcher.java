@@ -62,7 +62,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
     public ChangeTopologyWatcher(GridKernalContext ctx) {
         this.log = ctx.log(ChangeTopologyWatcher.class);
         this.cluster = ctx.cluster().get();
-        this.baselineConfiguration = cluster.baselineConfiguration();
+        this.baselineConfiguration = ctx.state().baselineConfiguration();
         this.exchangeManager = ctx.cache().context().exchange();
         this.stateProcessor = ctx.state();
         this.baselineAutoAdjustScheduler = new BaselineAutoAdjustScheduler(ctx.timeout(), new BaselineAutoAdjustExecutor(

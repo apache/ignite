@@ -42,7 +42,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  *
  */
 @GridCommonTest(group = "Kernal Self")
-public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
+public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_NAME = "TEST_NAME";
     /** */
@@ -365,9 +365,10 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
             System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
         }
 
+        //Auto-activation is expected.
         Ignite ignite0 = startGrids(2);
 
-        ignite0.cluster().active(true);
+        awaitPartitionMapExchange();
 
         Set<Object> initBaseline = ignite0.cluster().currentBaselineTopology().stream()
             .map(BaselineNode::consistentId)
