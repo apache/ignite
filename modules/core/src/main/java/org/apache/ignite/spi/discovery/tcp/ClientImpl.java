@@ -62,6 +62,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -204,10 +205,26 @@ class ClientImpl extends TcpDiscoveryImpl {
     private int joinCnt;
 
     /**
+     * Future to wait for client disconnect event before an attempt to reconnect.
+     *
+     * Otherwise, we can continue process events from the previous cluster topology when the client already connected to
+     * a new topology.
+     */
+    @GridToStringExclude
+    private volatile GridFutureAdapter evtDisconnectedFut = new GridFutureAdapter();
+
+    /**
      * @param adapter Adapter.
      */
     ClientImpl(TcpDiscoverySpi adapter) {
         super(adapter);
+
+        spi.ignite().events().localListen(evt -> {
+            if (((DiscoveryEvent)evt).eventNode().isLocal())
+                evtDisconnectedFut.onDone();
+
+            return true;
+        }, EVT_CLIENT_NODE_DISCONNECTED);
     }
 
     /** {@inheritDoc} */
@@ -1759,6 +1776,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                             throttleClientReconnect();
 
+                            evtDisconnectedFut.get();
+
                             tryJoin();
                         }
                     }
@@ -1888,6 +1907,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                             locNode.onClientDisconnected(newId);
 
+                            evtDisconnectedFut.get();
+
                             tryJoin();
                         }
                     }
@@ -1989,6 +2010,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             nodeAdded = false;
 
             delayDiscoData.clear();
+
+            evtDisconnectedFut = new GridFutureAdapter();
 
             notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
 
