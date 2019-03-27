@@ -20,6 +20,9 @@ package org.apache.ignite.examples.ml.selection.scoring;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.composition.CompositionUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -53,31 +56,32 @@ public class MultipleMetricsExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer();
+                SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer();
 
-            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-            IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            SVMLinearClassificationModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                featureExtractor,
-                lbExtractor
-            );
+                SVMLinearClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-            Map<String, Double> scores = Evaluator.evaluate(
-                dataCache,
-                mdl,
-                featureExtractor,
-                lbExtractor
-            ).toMap();
+                IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
+                IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
+                Map<String, Double> scores = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    featureExtractor,
+                    lbExtractor
+                ).toMap();
 
-            scores.forEach(
-                (metricName, score) -> System.out.println("\n>>>" + metricName + ": " + score)
-            );
+                scores.forEach(
+                    (metricName, score) -> System.out.println("\n>>>" + metricName + ": " + score)
+                );
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 }

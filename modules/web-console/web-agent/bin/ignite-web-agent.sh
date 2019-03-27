@@ -80,7 +80,7 @@ elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
         --add-modules=java.xml.bind \
         ${JVM_OPTS}"
 
-elif [ $version -eq 11 ] ; then
+elif [ $version -ge 11 ] ; then
     JVM_OPTS="\
         --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
         --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \

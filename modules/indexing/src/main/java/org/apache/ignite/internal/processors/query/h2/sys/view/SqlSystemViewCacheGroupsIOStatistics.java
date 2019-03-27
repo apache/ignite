@@ -40,9 +40,9 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
      * @param ctx Grid context.
      */
     public SqlSystemViewCacheGroupsIOStatistics(GridKernalContext ctx) {
-        super("LOCAL_CACHE_GROUPS_IO", "Local node IO statistics for cache groups", ctx, "GROUP_NAME",
-            newColumn("GROUP_ID", Value.INT),
-            newColumn("GROUP_NAME"),
+        super("LOCAL_CACHE_GROUPS_IO", "Local node IO statistics for cache groups", ctx, "CACHE_GROUP_NAME",
+            newColumn("CACHE_GROUP_ID", Value.INT),
+            newColumn("CACHE_GROUP_NAME"),
             newColumn("PHYSICAL_READS", Value.LONG),
             newColumn("LOGICAL_READS", Value.LONG)
         );
@@ -50,7 +50,7 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        SqlSystemViewColumnCondition nameCond = conditionForColumn("GROUP_NAME", first, last);
+        SqlSystemViewColumnCondition nameCond = conditionForColumn("CACHE_GROUP_NAME", first, last);
 
         Map<IoStatisticsHolderKey, IoStatisticsHolder> stats = ctx.ioStats().statistics(IoStatisticsType.CACHE_GROUP);
 

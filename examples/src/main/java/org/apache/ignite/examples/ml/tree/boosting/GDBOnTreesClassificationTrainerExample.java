@@ -24,6 +24,8 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
@@ -51,36 +53,40 @@ public class GDBOnTreesClassificationTrainerExample {
 
             // Create cache with training data.
             CacheConfiguration<Integer, double[]> trainingSetCfg = createCacheConfiguration();
-            IgniteCache<Integer, double[]> trainingSet = fillTrainingData(ignite, trainingSetCfg);
+            IgniteCache<Integer, double[]> trainingSet = null;
+            try {
+                trainingSet = fillTrainingData(ignite, trainingSetCfg);
 
-            // Create regression trainer.
-            DatasetTrainer<ModelsComposition, Double> trainer = new GDBBinaryClassifierOnTreesTrainer(1.0, 300, 2, 0.)
-                .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.1));
+                // Create regression trainer.
+                DatasetTrainer<ModelsComposition, Double> trainer = new GDBBinaryClassifierOnTreesTrainer(1.0, 300, 2, 0.)
+                    .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.1));
 
-            // Train decision tree model.
-            ModelsComposition mdl = trainer.fit(
-                ignite,
-                trainingSet,
-                (k, v) -> VectorUtils.of(v[0]),
-                (k, v) -> v[1]
-            );
+                // Train decision tree model.
+                ModelsComposition mdl = trainer.fit(
+                    ignite,
+                    trainingSet,
+                    new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+                );
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Valid answer\t|");
-            System.out.println(">>> ---------------------------------");
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> | Prediction\t| Valid answer\t|");
+                System.out.println(">>> ---------------------------------");
 
-            // Calculate score.
-            for (int x = -5; x < 5; x++) {
-                double predicted = mdl.predict(VectorUtils.of(x));
+                // Calculate score.
+                for (int x = -5; x < 5; x++) {
+                    double predicted = mdl.predict(VectorUtils.of(x));
 
-                System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.sin(x) < 0 ? 0.0 : 1.0);
+                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.sin(x) < 0 ? 0.0 : 1.0);
+                }
+
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> Count of trees = " + mdl.getModels().size());
+                System.out.println(">>> ---------------------------------");
+
+                System.out.println(">>> GDB classification trainer example completed.");
+            } finally {
+                trainingSet.destroy();
             }
-
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> Count of trees = " + mdl.getModels().size());
-            System.out.println(">>> ---------------------------------");
-
-            System.out.println(">>> GDB classification trainer example completed.");
         }
     }
 
@@ -102,7 +108,7 @@ public class GDBOnTreesClassificationTrainerExample {
      */
     @NotNull private static IgniteCache<Integer, double[]> fillTrainingData(Ignite ignite,
         CacheConfiguration<Integer, double[]> trainingSetCfg) {
-        IgniteCache<Integer, double[]> trainingSet = ignite.createCache(trainingSetCfg);
+        IgniteCache<Integer, double[]> trainingSet = ignite.getOrCreateCache(trainingSetCfg);
         for(int i = -50; i <= 50; i++) {
             double x = ((double)i) / 10.0;
             double y = Math.sin(x) < 0 ? 0.0 : 1.0;
