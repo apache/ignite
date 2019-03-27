@@ -280,7 +280,11 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * Implementation note: If this Prepared Statement is multi-statement or is not a select, {@code null} is returned.
+     */
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
@@ -342,7 +346,12 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         setArgument(paramIdx, x);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * Implementation note: If this prepared statement is a multi-statement, returned meta contains meta of parameters
+     * from the all statements.
+     */
     @Override public ParameterMetaData getParameterMetaData() throws SQLException {
         ensureNotClosed();
 

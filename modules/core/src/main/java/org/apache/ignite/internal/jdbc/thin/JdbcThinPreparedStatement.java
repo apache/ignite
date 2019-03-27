@@ -361,7 +361,12 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
         setArgument(paramIdx, x);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * 
+     * Implementation note: If this prepared statement is a multi-statement, returned meta contains meta of parameters
+     * from the all statements.
+     */
     @Override public ParameterMetaData getParameterMetaData() throws SQLException {
         ensureNotClosed();
 
