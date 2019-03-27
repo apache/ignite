@@ -1675,7 +1675,7 @@ public class GridSqlQuerySplitter {
         H2Utils.setupConnection(c, distributedJoins, enforceJoinOrder);
 
         try (PreparedStatement s = c.prepareStatement(qry)) {
-            h2.bindParameters(s, F.asList(params));
+            H2Utils.bindParameters(s, F.asList(params));
 
             return prepared(s);
         }

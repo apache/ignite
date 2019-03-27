@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
@@ -904,6 +905,8 @@ public class GridMapQueryExecutor {
 
                     boolean removeMapping = false;
 
+                    MapH2QueryInfo qryInfo = null;
+
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
                         String sql = qry.query(); Collection<Object> params0 = F.asList(qry.parameters(params));
@@ -924,11 +927,20 @@ public class GridMapQueryExecutor {
                             stmt = h2.prepareStatement(conn, sql, true);
                         }
 
-                        h2.bindParameters(stmt, params0);
+                        H2Utils.bindParameters(stmt, params0);
 
                         int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
 
-                        rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, opTimeout, qr.queryCancel(qryIdx));
+                        qryInfo = new MapH2QueryInfo(stmt, qry.query(), node, reqId, segmentId);
+
+                        rs = h2.executeSqlQueryWithTimer(
+                            stmt,
+                            conn,
+                            sql,
+                            params0,
+                            opTimeout,
+                            qr.queryCancel(qryIdx),
+                            qryInfo);
 
                         if (inTx) {
                             ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
