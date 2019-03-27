@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteLogger;
@@ -28,9 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.TestSecurityPluginConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
@@ -73,11 +70,7 @@ public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonA
         cfg.setDiscoverySpi(spi);
 
         cfg.setPluginConfigurations(
-            new TestSecurityPluginConfiguration() {
-                @Override public Function<GridKernalContext, GridSecurityProcessor> builder() {
-                    return TestReconnectProcessor::new;
-                }
-            }
+            (TestSecurityPluginConfiguration)TestReconnectProcessor::new
         );
 
         return cfg;

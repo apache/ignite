@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.security;
 
 import java.io.Serializable;
 import java.util.UUID;
-import java.util.function.Function;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
@@ -68,9 +66,9 @@ public class TestSecurityProcessorProvider implements PluginProvider {
     @SuppressWarnings("unchecked")
     @Override public @Nullable Object createComponent(PluginContext ctx, Class cls) {
         if (cls.isAssignableFrom(GridSecurityProcessor.class)) {
-            Function<GridKernalContext, GridSecurityProcessor> f = secProcBuilder(ctx);
+            TestSecurityPluginConfiguration cfg = secProcBuilder(ctx);
 
-            return f != null ? f.apply(((IgniteEx)ctx.grid()).context()) : null;
+            return cfg != null ? cfg.build(((IgniteEx)ctx.grid()).context()) : null;
         }
 
         return null;
@@ -81,13 +79,13 @@ public class TestSecurityProcessorProvider implements PluginProvider {
      *
      * @param ctx Context.
      */
-    private Function<GridKernalContext, GridSecurityProcessor> secProcBuilder(PluginContext ctx){
+    private TestSecurityPluginConfiguration secProcBuilder(PluginContext ctx){
         IgniteConfiguration igniteCfg = ctx.igniteConfiguration();
 
         if (igniteCfg.getPluginConfigurations() != null) {
             for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
                 if (pluginCfg instanceof TestSecurityPluginConfiguration)
-                    return ((TestSecurityPluginConfiguration)pluginCfg).builder();
+                    return (TestSecurityPluginConfiguration)pluginCfg;
             }
         }
 

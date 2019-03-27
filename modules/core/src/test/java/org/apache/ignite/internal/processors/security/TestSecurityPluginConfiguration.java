@@ -17,16 +17,17 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.util.function.Function;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.plugin.PluginConfiguration;
 
 /**
  * Grid security configuration for tests.
  */
+@FunctionalInterface
 public interface TestSecurityPluginConfiguration extends PluginConfiguration {
     /**
-     * Function thta produce GridSecurityProcessor.
+     * @param ctx GridKernalContext.
+     * @return GridSecurityProcessor.
      */
-    public Function<GridKernalContext, GridSecurityProcessor> builder();
+    public GridSecurityProcessor build(GridKernalContext ctx);
 }
