@@ -17,9 +17,6 @@
 
 package org.apache.ignite.examples.ml.util.generators;
 
-import java.util.UUID;
-import java.util.stream.DoubleStream;
-import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -27,6 +24,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDataset;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
@@ -38,6 +36,10 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.scalar.UniformRandomProducer;
+
+import java.util.UUID;
+import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 /**
  * Examples of using {@link DataStreamGenerator} methods for filling cache or creating local datasets.
@@ -68,7 +70,7 @@ public class DatasetCreationExamples {
         double meanFromLocDataset;
         try (Dataset<EmptyContext, SimpleDatasetData> dataset = generator.asDatasetBuilder(DATASET_SIZE, 10)
             .build(LearningEnvironmentBuilder.defaultBuilder(), new EmptyContextBuilder<>(),
-                new SimpleDatasetDataBuilder<>((k, v) -> k))) {
+                new SimpleDatasetDataBuilder<>(FeatureLabelExtractorWrapper.wrap((k, v) -> k)))) {
 
             meanFromLocDataset = dataset.compute(
                 data -> DoubleStream.of(data.getFeatures()).sum(),
@@ -82,15 +84,19 @@ public class DatasetCreationExamples {
         IgniteConfiguration configuration = new IgniteConfiguration().setPeerClassLoadingEnabled(true);
         try (Ignite ignite = Ignition.start(configuration)) {
             String cacheName = "TEST_CACHE";
-            IgniteCache<UUID, LabeledVector<Double>> withCustomKeyCache = ignite.getOrCreateCache(
-                new CacheConfiguration<UUID, LabeledVector<Double>>(cacheName)
-                    .setAffinity(new RendezvousAffinityFunction(false, 10))
-            );
+            IgniteCache<UUID, LabeledVector<Double>> withCustomKeyCache = null;
+            try {
+                withCustomKeyCache = ignite.getOrCreateCache(
+                    new CacheConfiguration<UUID, LabeledVector<Double>>(cacheName)
+                        .setAffinity(new RendezvousAffinityFunction(false, 10))
+                );
 
-            // DataStreamGenerator can fill cache with vectors as values and HashCodes/random UUID/custom keys.
-            generator.fillCacheWithVecUUIDAsKey(DATASET_SIZE, withCustomKeyCache);
-            meanFromCache = computeMean(ignite, withCustomKeyCache);
-            ignite.destroyCache(cacheName);
+                // DataStreamGenerator can fill cache with vectors as values and HashCodes/random UUID/custom keys.
+                generator.fillCacheWithVecUUIDAsKey(DATASET_SIZE, withCustomKeyCache);
+                meanFromCache = computeMean(ignite, withCustomKeyCache);
+            } finally {
+                ignite.destroyCache(cacheName);
+            }
         }
 
         // Results should be near to expected value.
@@ -135,7 +141,7 @@ public class DatasetCreationExamples {
         try (CacheBasedDataset<UUID, LabeledVector<Double>, EmptyContext, SimpleDatasetData> dataset =
                  builder.build(LearningEnvironmentBuilder.defaultBuilder(),
                      new EmptyContextBuilder<>(),
-                     new SimpleDatasetDataBuilder<>((k, v) -> v.features()))) {
+                     new SimpleDatasetDataBuilder<>(FeatureLabelExtractorWrapper.wrap((k, v) -> v.features())))) {
 
             result = dataset.compute(
                 data -> DoubleStream.of(data.getFeatures()).sum(),
