@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -466,7 +467,9 @@ public class GridDhtPartitionDemander {
                         + ", topVer=" + fut.topologyVersion() + ", parallelism=" + totalStripes + "]");
             }
 
-            int stripes = totalStripes;
+            int rmtTotalStripes = node.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE);
+
+            int stripes = rmtTotalStripes <= totalStripes ? rmtTotalStripes : totalStripes;
 
             final List<IgniteDhtDemandedPartitionsMap> stripePartitions = new ArrayList<>(stripes);
             for (int i = 0; i < stripes; i++)
@@ -485,7 +488,7 @@ public class GridDhtPartitionDemander {
             for (int i = 0; it.hasNext(); i++)
                 stripePartitions.get(i % stripes).addFull(it.next());
 
-            for (int stripe = 0; stripe < totalStripes; stripe++) {
+            for (int stripe = 0; stripe < stripes; stripe++) {
                 if (!stripePartitions.get(stripe).isEmpty()) {
                     // Create copy of demand message with new striped partitions map.
                     final GridDhtPartitionDemandMessage demandMsg = d.withNewPartitionsMap(stripePartitions.get(stripe));
