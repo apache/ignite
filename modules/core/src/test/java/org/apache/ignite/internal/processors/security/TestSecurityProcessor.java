@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,7 +30,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
@@ -142,16 +140,6 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
         for (TestSecurityData data : configuration().thinClientsSecData())
             PERMS.remove(data.credentials());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
-        super.onDisconnected(reconnectFut);
-
-        Consumer<GridKernalContext> c = cfg.disconnectedHnd();
-
-        if(c != null)
-            c.accept(ctx);
     }
 
     /**

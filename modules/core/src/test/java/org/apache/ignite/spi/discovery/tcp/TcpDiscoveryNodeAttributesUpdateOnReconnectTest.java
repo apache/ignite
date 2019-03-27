@@ -72,8 +72,8 @@ public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonA
 
         cfg.setPluginConfigurations(
             new TestSecurityPluginConfiguration()
+                .setSecurityProcessorClass(TestReconnectProcessor.class.getCanonicalName())
                 .setPermissions(SecurityPermissionSetBuilder.create().defaultAllowAll(true).build())
-                .disconnectedHnd(ctx -> ctx.addNodeAttribute("test", "2"))
         );
 
         return cfg;

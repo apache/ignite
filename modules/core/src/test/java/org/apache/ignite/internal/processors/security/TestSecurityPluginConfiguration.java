@@ -20,9 +20,6 @@ package org.apache.ignite.internal.processors.security;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.function.Consumer;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
@@ -42,9 +39,6 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
 
     /** Security processor class name. */
     private String secProcCls = DFLT_TEST_SECURITY_PROCESSOR;
-
-    /** Handler that will be invoked in {@link TestSecurityProcessor#onDisconnected(IgniteFuture)} method. */
-    private Consumer<GridKernalContext> disconnectedHnd;
 
     /**
      * Getting security permission set.
@@ -138,23 +132,6 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
      */
     public TestSecurityPluginConfiguration setSecurityProcessorClass(String secProcCls) {
         this.secProcCls = secProcCls;
-
-        return this;
-    }
-
-    /**
-     * @return Handler that will be invoked in {@link TestSecurityProcessor#onDisconnected(IgniteFuture)} method.
-     */
-    public Consumer<GridKernalContext> disconnectedHnd() {
-        return disconnectedHnd;
-    }
-
-    /**
-     * @param disconnectedHnd Handler that will be invoked in {@link TestSecurityProcessor#onDisconnected(IgniteFuture)}
-     * method.
-     */
-    public TestSecurityPluginConfiguration disconnectedHnd(Consumer<GridKernalContext> disconnectedHnd) {
-        this.disconnectedHnd = disconnectedHnd;
 
         return this;
     }
