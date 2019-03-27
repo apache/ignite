@@ -1194,6 +1194,17 @@ public interface GridCacheEntryEx {
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
+     * Apply entry history if not exists.
+     *
+     * @param entries Entries.
+     * @return {@code True} if initial value was set.
+     * @throws IgniteCheckedException, If failed.
+     * @throws GridCacheEntryRemovedException, If entry has been removed.
+     */
+    public boolean mvccPreloadEntry(List<GridCacheMvccEntryInfo> entries)
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
      * Touch this entry in its context's eviction manager.
      *
      */

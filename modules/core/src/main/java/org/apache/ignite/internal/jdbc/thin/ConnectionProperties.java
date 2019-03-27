@@ -19,6 +19,7 @@ package org.apache.ignite.internal.jdbc.thin;
 
 import java.sql.SQLException;
 import org.apache.ignite.internal.util.HostAndPortRange;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Provide access and manipulations with connection JDBC properties.
@@ -392,4 +393,16 @@ public interface ConnectionProperties {
      * @return User's password.
      */
     public String getPassword();
+
+    /**
+     * @return {@code True} if data page scan support is enabled for this connection, {@code false} if it's disabled
+     *     and {@code null} for server default.
+     */
+    @Nullable public Boolean isDataPageScanEnabled();
+
+    /**
+     * @param dataPageScanEnabled {@code True} if data page scan support is enabled for this connection,
+     *     if {@code false} then it's disabled, if {@code null} then server should use its default settings.
+     */
+    public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled);
 }

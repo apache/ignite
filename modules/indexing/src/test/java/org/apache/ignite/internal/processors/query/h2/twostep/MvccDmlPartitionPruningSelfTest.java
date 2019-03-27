@@ -21,14 +21,11 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for use partition pruning at the SELECT step of the UPDATE/DELETE statements execution.
  */
 @SuppressWarnings("deprecation")
-@RunWith(JUnit4.class)
 public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBaseTest {
     /** Rows count for test tables. */
     private static final int ROWS = 10;
