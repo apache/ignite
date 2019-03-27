@@ -20,11 +20,6 @@ package org.apache.ignite.internal.sql.optimizer.affinity;
 import java.util.Collection;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRawBinarylizable;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -33,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Partition extraction result.
  */
-public class PartitionResult implements JdbcRawBinarylizable {
+public class PartitionResult {
     /** Tree. */
     @GridToStringInclude
     private final PartitionNode tree;
@@ -108,41 +103,5 @@ public class PartitionResult implements JdbcRawBinarylizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionResult.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        writer.writeBoolean(tree != null);
-
-        if (tree != null)
-            tree.writeBinary(writer, ver);
-
-        aff.writeBinary(writer, ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        // No-op
-    }
-
-    /**
-     * Returns debinarized partition result.
-     *
-     * @param reader Binary reader.
-     * @param ver Protocol verssion.
-     * @return Debinarized partition result.
-     * @throws BinaryObjectException On error.
-     */
-    public static PartitionResult readResult(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-
-        PartitionNode tree = null;
-
-        if (reader.readBoolean())
-            tree = PartitionNode.readNode(reader, ver);
-
-        return new PartitionResult(tree, PartitionTableAffinityDescriptor.readTableAffinityDescriptor(reader, ver));
     }
 }

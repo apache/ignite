@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -33,11 +29,13 @@ public class PartitionConstantNode extends PartitionSingleNode {
     /**
      * Constructor.
      *
-     * @param tbl Table.
+     * @param alias Unique alias.
+     * @param cacheName Cache name.
+     * @param joinGrp Join group index.
      * @param part Partition.
      */
-    public PartitionConstantNode(PartitionTable tbl, int part) {
-        super(tbl);
+    public PartitionConstantNode(String alias, String cacheName, int joinGrp, int part) {
+        super(alias, cacheName, joinGrp);
 
         this.part = part;
     }
@@ -60,38 +58,5 @@ public class PartitionConstantNode extends PartitionSingleNode {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionConstantNode.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        writer.writeByte(CONST_NODE);
-
-        writer.writeInt(part);
-
-        tbl.writeBinary(writer, ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        // No-op.
-    }
-
-    /**
-     * Returns debinarized partition node.
-     *
-     * @param reader Binary reader.
-     * @param ver Protocol verssion.
-     * @return Debinarized partition node.
-     * @throws BinaryObjectException On error.
-     */
-    public static PartitionConstantNode readConstantNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        int part = reader.readInt();
-
-        PartitionTable tbl = PartitionTable.readTable(reader, ver);
-
-        return new PartitionConstantNode(tbl, part);
     }
 }

@@ -20,9 +20,6 @@ package org.apache.ignite.internal.sql.optimizer.affinity;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -31,18 +28,29 @@ import org.jetbrains.annotations.Nullable;
  * Node with a single partition.
  */
 public abstract class PartitionSingleNode implements PartitionNode {
-    /** Table descriptor. */
+    /** Alias used in the query. */
     @GridToStringExclude
-    // TODO: VO: Consider removing table from here. Usages suggests that only cache name, join group and alias are needed.
-    protected final PartitionTable tbl;
+    private final String alias;
+
+    /** Cache name. */
+    @GridToStringExclude
+    private final String cacheName;
+
+    /** Join group index. */
+    @GridToStringExclude
+    private int joinGrp;
 
     /**
      * Constructor.
      *
-     * @param tbl Table descriptor.
+     * @param alias Unique alias.
+     * @param cacheName Cache name.
+     * @param joinGrp Join group index.
      */
-    protected PartitionSingleNode(PartitionTable tbl) {
-        this.tbl = tbl;
+    protected PartitionSingleNode(String alias, String cacheName, int joinGrp) {
+        this.alias = alias;
+        this.cacheName = cacheName;
+        this.joinGrp = joinGrp;
     }
 
     /** {@inheritDoc} */
@@ -70,7 +78,21 @@ public abstract class PartitionSingleNode implements PartitionNode {
 
     /** {@inheritDoc} */
     @Override public int joinGroup() {
-        return tbl.joinGroup();
+        return joinGrp;
+    }
+
+    /**
+     * @return Alias.
+     */
+    public String alias() {
+        return alias;
+    }
+
+    /**
+     * @return Cache name.
+     */
+    @Override public String cacheName() {
+        return cacheName;
     }
 
     /**
@@ -78,19 +100,12 @@ public abstract class PartitionSingleNode implements PartitionNode {
      */
     public abstract int value();
 
-    /**
-     * @return Underlying table.
-     */
-    public PartitionTable table() {
-        return tbl;
-    }
-
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int hash = (constant() ? 1 : 0);
 
         hash = 31 * hash + value();
-        hash = 31 * hash + tbl.alias().hashCode();
+        hash = 31 * hash + alias.hashCode();
 
         return hash;
     }
@@ -106,34 +121,6 @@ public abstract class PartitionSingleNode implements PartitionNode {
         PartitionSingleNode other = (PartitionSingleNode)obj;
 
         return F.eq(constant(), other.constant()) && F.eq(value(), other.value()) &&
-            F.eq(tbl.alias(), other.tbl.alias());
-    }
-
-    /**
-     * Returns debinarized partition single node.
-     *
-     * @param reader Binary reader.
-     * @param ver Protocol verssion.
-     * @return Debinarized partition single node.
-     * @throws BinaryObjectException On error.
-     */
-    public static PartitionSingleNode readNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        int nodeType = reader.readByte();
-
-        switch (nodeType) {
-            case CONST_NODE:
-                return PartitionConstantNode.readConstantNode(reader, ver);
-
-            case PARAM_NODE:
-                return PartitionParameterNode.readParameterNode(reader, ver);
-
-            default:
-                throw new IllegalArgumentException("Partition node type " + nodeType + " is not valid signle node.");
-        }
-    }
-
-    @Override public String cacheName() {
-        return tbl.cacheName();
+            F.eq(alias, other.alias);
     }
 }

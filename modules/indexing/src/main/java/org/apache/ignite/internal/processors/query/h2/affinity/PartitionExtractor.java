@@ -621,13 +621,15 @@ public class PartitionExtractor {
                 tbl.cacheName()
             );
 
-            return new PartitionConstantNode(tbl0, part);
+            return new PartitionConstantNode(tbl0.alias(), tbl0.cacheName(), tbl0.joinGroup(), part);
         }
         else if (rightParam != null) {
             int colType = leftCol0.getType();
 
             return new PartitionParameterNode(
-                tbl0,
+                tbl0.alias(),
+                tbl0.cacheName(),
+                tbl0.joinGroup(),
                 partResolver,
                 rightParam.index(),
                 leftCol0.getType(),
@@ -816,7 +818,7 @@ public class PartitionExtractor {
         for (long i = leftLongVal; i <= rightLongVal; i++) {
             int part = partResolver.partition(i , leftCol.column().getType(), tbl0.cacheName());
 
-            parts.add(new PartitionConstantNode(tbl0, part));
+            parts.add(new PartitionConstantNode(tbl0.alias(), tbl0.cacheName(), tbl0.joinGroup(), part));
 
             if (parts.size() > maxPartsCntBetween)
                 return null;

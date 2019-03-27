@@ -17,18 +17,13 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Flat group of partitions.
@@ -119,46 +114,9 @@ public class PartitionGroupNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        writer.writeByte(GROUP_NODE);
-
-        writer.writeInt(siblings == null ? 0 : siblings.size());
-
-        for (PartitionSingleNode singleNode: siblings) {
-            singleNode.writeBinary(writer, ver);    
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        // No-op.
-    }
-
-    /**
-     * Returns debinarized partition group node.
-     *
-     * @param reader Binary reader.
-     * @param ver Protocol verssion.
-     * @return Debinarized partition group node.
-     * @throws BinaryObjectException On error.
-     */
-    public static PartitionGroupNode readGroupNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        int siblingsCnt =  reader.readInt();
-
-        Set<PartitionSingleNode> siblings = new HashSet<>(siblingsCnt);
-
-        for (int i = 0; i < siblingsCnt; i++)
-            siblings.add(PartitionSingleNode.readNode(reader, ver));
-
-        return new PartitionGroupNode(siblings);
-    }
-
     @Override public String cacheName() {
         if (siblings != null)
-            return siblings.iterator().next().tbl.cacheName();
+            return siblings.iterator().next().cacheName();
 
         return null;
     }

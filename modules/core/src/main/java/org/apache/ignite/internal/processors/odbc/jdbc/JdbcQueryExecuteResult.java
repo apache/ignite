@@ -24,6 +24,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionResult;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResultMarshaler;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -80,8 +81,8 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         super(QRY_EXEC);
 
         this.cursorId = cursorId;
-        this.last = true;
-        this.isQuery = false;
+        last = true;
+        isQuery = false;
         this.updateCnt = updateCnt;
         this.partRes = partRes;
     }
@@ -142,7 +143,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         writer.writeBoolean(partRes != null);
 
         if (partRes != null)
-            partRes.writeBinary(writer, ver);
+            PartitionResultMarshaler.marshal(writer, ver, partRes);
     }
 
     /** {@inheritDoc} */

@@ -19,70 +19,12 @@ package org.apache.ignite.internal.sql.optimizer.affinity;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRawBinarylizable;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Common node of partition tree.
  */
-public interface PartitionNode extends JdbcRawBinarylizable {
-
-    /** {@link PartitionAllNode} type. */
-    static final byte ALL_NODE = 1;
-
-    /** {@link PartitionCompositeNode} type. */
-    static final byte COMPOSITE_NODE = 2;
-
-    /** {@link PartitionConstantNode} type. */
-    static final byte CONST_NODE = 3;
-
-    /** {@link PartitionGroupNode} type. */
-    static final byte GROUP_NODE = 4;
-
-    /** {@link PartitionNoneNode} type. */
-    static final byte NONE_NODE = 5;
-
-    /** {@link PartitionParameterNode} type. */
-    static final byte PARAM_NODE = 6;
-
-    /**
-     * Returns debinarized partition node.
-     *
-     * @param reader Binary reader.
-     * @param ver Protocol verssion.
-     * @return Debinarized partition node.
-     * @throws BinaryObjectException On error.
-     */
-    static PartitionNode readNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        int nodeType = reader.readByte();
-
-        switch (nodeType) {
-            case ALL_NODE:
-                return PartitionAllNode.INSTANCE;
-
-            case COMPOSITE_NODE:
-                return PartitionCompositeNode.readCompositeNode(reader, ver);
-
-            case CONST_NODE:
-                return PartitionConstantNode.readConstantNode(reader, ver);
-
-            case GROUP_NODE:
-                return PartitionGroupNode.readGroupNode(reader, ver);
-
-            case NONE_NODE:
-                return PartitionNoneNode.INSTANCE;
-
-            case PARAM_NODE:
-                return PartitionParameterNode.readParameterNode(reader, ver);
-
-            default:
-                throw new IllegalArgumentException("Partition node type " + nodeType + " not supported.");
-        }
-    }
+public interface PartitionNode {
 
     /**
      * Get partitions.
@@ -100,6 +42,9 @@ public interface PartitionNode extends JdbcRawBinarylizable {
     int joinGroup();
 
 
+    /**
+     * @return Cache name.
+     */
     String cacheName();
 
     /**

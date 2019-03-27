@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResultMarshaler;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableAffinityDescriptor;
 
 public class JdbcThinPartitionResult extends PartitionResult {
@@ -46,15 +47,13 @@ public class JdbcThinPartitionResult extends PartitionResult {
     public static JdbcThinPartitionResult readResult(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
 
-        PartitionNode tree = null;
+        PartitionResult partRes = PartitionResultMarshaler.unmarshal(reader, ver);
 
-        if (reader.readBoolean())
-            tree = PartitionNode.readNode(reader, ver);
-
+        // TODO: 27.03.19 tmp, try to remove JdbcThinPartitionResult.
         return new JdbcThinPartitionResult(
-            tree,
-            PartitionTableAffinityDescriptor.readTableAffinityDescriptor(reader, ver),
-            tree != null ? GridCacheUtils.cacheId(tree.cacheName()) : null);
+            partRes.tree(),
+            partRes.affinity(),
+            partRes.tree() != null ? GridCacheUtils.cacheId(partRes.tree().cacheName()) : null);
     }
 
     /**

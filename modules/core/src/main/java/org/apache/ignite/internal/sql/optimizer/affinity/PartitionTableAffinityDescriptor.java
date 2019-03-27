@@ -18,18 +18,13 @@
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
 import java.io.Serializable;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRawBinarylizable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Affinity function descriptor. Used to compare affinity functions of two tables.
  */
-public class PartitionTableAffinityDescriptor implements Serializable, JdbcRawBinarylizable {
+public class PartitionTableAffinityDescriptor implements Serializable {
     /** */
     private static final long serialVersionUID = 1L;
 
@@ -94,6 +89,10 @@ public class PartitionTableAffinityDescriptor implements Serializable, JdbcRawBi
         return false;
     }
 
+    /**
+     *
+     * @return True if applicable to jdbc thin client side best effort affinity.
+     */
     public boolean isClientBestEffortAffinityApplicable() {
         return affFunc == PartitionAffinityFunctionType.RENDEZVOUS && !hasNodeFilter;
     }
@@ -108,34 +107,5 @@ public class PartitionTableAffinityDescriptor implements Serializable, JdbcRawBi
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionTableAffinityDescriptor.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        assert isClientBestEffortAffinityApplicable();
-
-        writer.writeInt(parts);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        // No-op.
-    }
-
-    /**
-     * Returns debinarized partition table affinity descriptor.
-     *
-     * @param reader Binary reader.
-     * @param ver Protocol verssion.
-     * @return Debinarized partition table affinity descriptor.
-     * @throws BinaryObjectException On error.
-     */
-    public static PartitionTableAffinityDescriptor readTableAffinityDescriptor(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
-
-        return new PartitionTableAffinityDescriptor(PartitionAffinityFunctionType.RENDEZVOUS, reader.readInt(),
-            false, null);
     }
 }

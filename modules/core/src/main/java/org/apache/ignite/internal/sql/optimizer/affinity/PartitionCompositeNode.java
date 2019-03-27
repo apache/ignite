@@ -17,19 +17,14 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Composite node which consists of two child nodes and a relation between them.
@@ -243,8 +238,8 @@ public class PartitionCompositeNode implements PartitionNode {
 
                 for (PartitionSingleNode curConst : consts) {
                     if (curTblAlias == null)
-                        curTblAlias = curConst.table().alias();
-                    else if (!F.eq(curTblAlias, curConst.table().alias())) {
+                        curTblAlias = curConst.alias();
+                    else if (!F.eq(curTblAlias, curConst.alias())) {
                         sameTbl = false;
 
                         break;
@@ -254,8 +249,8 @@ public class PartitionCompositeNode implements PartitionNode {
                 if (sameTbl) {
                     for (PartitionSingleNode curConst : rightConsts) {
                         if (curTblAlias == null)
-                            curTblAlias = curConst.table().alias();
-                        else if (!F.eq(curTblAlias, curConst.table().alias())) {
+                            curTblAlias = curConst.alias();
+                        else if (!F.eq(curTblAlias, curConst.alias())) {
                             sameTbl = false;
 
                             break;
@@ -358,7 +353,7 @@ public class PartitionCompositeNode implements PartitionNode {
             return left;
 
         // If both sides are constants from the same table and they are not equal, this is empty set.
-        if (left.constant() && right.constant() && F.eq(left.table().alias(), right.tbl.alias()))
+        if (left.constant() && right.constant() && F.eq(left.alias(), right.alias()))
             // X and Y -> NONE
             return PartitionNoneNode.INSTANCE;
 
@@ -394,48 +389,33 @@ public class PartitionCompositeNode implements PartitionNode {
         return new PartitionGroupNode(nodes);
     }
 
+    /**
+     * @return Left node.
+     */
+    public PartitionNode left() {
+        return left;
+    }
+
+    /**
+     * @return Right node.
+     */
+    public PartitionNode right() {
+        return right;
+    }
+
+    /**
+     * @return Operator.
+     */
+    public PartitionCompositeNodeOperator operator() {
+        return op;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionCompositeNode.class, this);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        writer.writeByte(COMPOSITE_NODE);
-
-        left.writeBinary(writer, ver);
-
-        right.writeBinary(writer, ver);
-
-        op.writeBinary(writer, ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        // No-op.
-    }
-
-    /**
-     * Returns debinarized partition composite node.
-     *
-     * @param reader Binary reader.
-     * @param ver Protocol verssion.
-     * @return Debinarized partition composite node.
-     * @throws BinaryObjectException On error.
-     */
-    public static PartitionCompositeNode readCompositeNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        PartitionNode left = PartitionNode.readNode(reader, ver);
-
-        PartitionNode right = PartitionNode.readNode(reader, ver);
-
-        PartitionCompositeNodeOperator op = PartitionCompositeNodeOperator.readOperator(reader, ver);
-
-        return new PartitionCompositeNode(left, right, op);
-    }
-
     @Override public String cacheName() {
         String leftCacheName = left.cacheName();
 

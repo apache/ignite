@@ -18,10 +18,6 @@
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -45,15 +41,18 @@ public class PartitionParameterNode extends PartitionSingleNode {
     /**
      * Constructor.
      *
-     * @param tbl Table descriptor.
+     * @param alias Unique alias.
+     * @param cacheName Cache name.
+     * @param joinGrp Join group index.
      * @param partRslvr Partition resolver.
      * @param idx Parameter index.
      * @param type Parameter data type.
      * @param mappedType Mapped parameter type to be used by thin clients.
      */
-    public PartitionParameterNode(PartitionTable tbl, PartitionResolver partRslvr, int idx, int type,
+    public PartitionParameterNode(String alias, String cacheName, int joinGrp, PartitionResolver partRslvr, int idx,
+        int type,
         PartitionParameterType mappedType) {
-        super(tbl);
+        super(alias, cacheName, joinGrp);
 
         this.partRslvr = partRslvr;
         this.idx = idx;
@@ -69,14 +68,14 @@ public class PartitionParameterNode extends PartitionSingleNode {
         Object arg = args[idx];
 
         if (cliCtx != null)
-            return cliCtx.partition(arg, mappedType, tbl.cacheName());
+            return cliCtx.partition(arg, mappedType, cacheName());
         else {
             assert partRslvr != null;
 
             return partRslvr.partition(
                 arg,
                 type,
-                tbl.cacheName()
+                cacheName()
             );
         }
     }
@@ -91,50 +90,23 @@ public class PartitionParameterNode extends PartitionSingleNode {
         return idx;
     }
 
+    /**
+     * @return Parameter data type.
+     */
+    public int type() {
+        return type;
+    }
+
+    /**
+     * @return Mapped parameter type.
+     */
+    public PartitionParameterType mappedType() {
+        return mappedType;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionParameterNode.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        writer.writeByte(PARAM_NODE);
-
-        writer.writeInt(idx);
-
-        writer.writeInt(type);
-
-        writer.writeInt(mappedType.ordinal());
-
-        tbl.writeBinary(writer, ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        // No-op.
-    }
-
-    /**
-     * Returns debinarized parameter node.
-     *
-     * @param reader Binary reader.
-     * @param ver Protocol verssion.
-     * @return Debinarized parameter node.
-     * @throws BinaryObjectException On error.
-     */
-    public static PartitionParameterNode readParameterNode(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-
-        int idx = reader.readInt();
-
-        int type = reader.readInt();
-
-        PartitionParameterType mappedType = PartitionParameterType.readParameterType(reader, ver);
-
-        PartitionTable tbl = PartitionTable.readTable(reader, ver);
-
-        return new PartitionParameterNode(tbl, null, idx, type, mappedType);
-    }
 }
