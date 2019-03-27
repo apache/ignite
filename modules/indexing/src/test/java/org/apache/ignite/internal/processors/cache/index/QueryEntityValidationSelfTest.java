@@ -193,6 +193,28 @@ public class QueryEntityValidationSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Check that we treat boxed and unboxed types for the same column.
+     */
+    @Test
+    public void testJdkTypeBoxedUnboxed() {
+        QueryEntity validateKeyEnt = new QueryEntity(int.class.getName(), "Employee")
+            .setTableName("")
+            .addQueryField("id", Integer.class.getName(), null)
+            .addQueryField("orgId", Integer.class.getName(), null)
+            .setKeyFieldName("id");
+
+        assertValidationSucceeds(validateKeyEnt);
+
+        QueryEntity validateValEnt = new QueryEntity("Person", int.class.getName())
+            .setTableName("PERSON")
+            .addQueryField("id", Integer.class.getName(), null)
+            .addQueryField("SSN", Integer.class.getName(), null)
+            .setValueFieldName("SSN");
+
+        assertValidationSucceeds(validateValEnt);
+    }
+
+    /**
      * @param e Entity to validate.
      * @param msg Expected exception message.
      */
@@ -208,6 +230,25 @@ public class QueryEntityValidationSelfTest extends AbstractIndexingCommonTest {
                 return null;
             }
         }, IgniteCheckedException.class, msg);
+    }
+
+    /**
+     * Check that validation of the specified correct QueryEntity succeeded.
+     * @param qe correct QueryEntity.
+     */
+    private void assertValidationSucceeds(QueryEntity qe) {
+       try {
+           CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
+
+           ccfg.setQueryEntities(Collections.singleton(qe));
+
+           grid(0).createCache(ccfg);
+
+       } catch (Exception validationExc) {
+           throw new AssertionError("Validation failed for the correct query entity: " + qe, validationExc);
+       }
+
+       grid(0).destroyCache(CACHE_NAME);
     }
 
     /**

@@ -1292,7 +1292,10 @@ public class QueryUtils {
             if (keyCls != null && isSqlType(keyCls) && !F.isEmpty(keyFieldName)) {
                 String keyColType = entity.getFields().get(keyFieldName);
 
-                if (!F.eq(keyType, keyColType))
+                // Boxed types should be equal
+                Class<?> keyColCls = U.box(U.classForName(keyColType, null, true));
+
+                if (!F.eq(keyCls, keyColCls))
                     throw new IgniteException("Explicitly specified key column " + keyFieldName +
                         " points at a type different from query entity SQL key type [entityKeyType=" + keyType +
                         ",keyColumnType=" + keyColType + ']');
@@ -1312,7 +1315,10 @@ public class QueryUtils {
             if (valCls != null && isSqlType(valCls) && !F.isEmpty(valFieldName)) {
                 String valColType = entity.getFields().get(valFieldName);
 
-                if (!F.eq(valType, valColType)) {
+                // Boxed types should be equal
+                Class<?> valColCls = U.box(U.classForName(valColType, null, true));
+
+                if (!F.eq(valCls, valColCls)) {
                     throw new IgniteException("Explicitly specified value column " + valFieldName +
                         " points at a type different from query entity SQL value type [entityValueType=" + valType +
                         ",valueColumnType=" + valColType + ']');
