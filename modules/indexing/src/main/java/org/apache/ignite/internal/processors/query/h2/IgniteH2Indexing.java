@@ -19,14 +19,11 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,6 +55,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.IgniteMBeansManager;
+import org.apache.ignite.internal.mxbean.SqlQueryMXBean;
+import org.apache.ignite.internal.mxbean.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -139,7 +139,6 @@ import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -279,6 +278,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** H2 Connection manager. */
     private ConnectionManager connMgr;
+
+    /** H2 Connection manager. */
+    private LongRunningQueryManager longRunningQryMgr;
 
     /**
      * @return Kernal context.
@@ -454,31 +456,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (log.isDebugEnabled())
             log.debug("Dropped H2 schema for index database: " + schema);
-    }
-
-    /**
-     * Binds object to prepared statement.
-     *
-     * @param stmt SQL statement.
-     * @param idx Index.
-     * @param obj Value to store.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj) throws IgniteCheckedException {
-        try {
-            if (obj == null)
-                stmt.setNull(idx, Types.VARCHAR);
-            else if (obj instanceof BigInteger)
-                stmt.setObject(idx, obj, Types.JAVA_OBJECT);
-            else if (obj instanceof BigDecimal)
-                stmt.setObject(idx, obj, Types.DECIMAL);
-            else
-                stmt.setObject(idx, obj);
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ", stmt=" +
-                stmt + ']', e);
-        }
     }
 
     /** {@inheritDoc} */
@@ -816,6 +793,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             checkSecurity(parser.cacheIds());
         }
 
+        final H2QueryInfo qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry);
+
         return new GridQueryFieldsResultAdapter(meta, null) {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
                 assert GridH2QueryContext.get() == null;
@@ -830,7 +809,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn = connMgr.detachThreadConnection();
 
                 try {
-                    ResultSet rs = executeSqlQueryWithTimer(stmt, conn, qry, params, timeout, cancel);
+                    ResultSet rs = executeSqlQueryWithTimer(stmt, conn, qry, params, timeout, cancel, qryInfo);
 
                     return new H2FieldsIterator(rs, detachedConn);
                 }
@@ -923,7 +902,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Prepared statement with set parameters.
      * @throws IgniteCheckedException If failed.
      */
-    private PreparedStatement preparedStatementWithParams(Connection conn, String sql, Collection<Object> params,
+    public PreparedStatement preparedStatementWithParams(Connection conn, String sql, Collection<Object> params,
         boolean useStmtCache) throws IgniteCheckedException {
         final PreparedStatement stmt;
 
@@ -934,7 +913,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
         }
 
-        bindParameters(stmt, params);
+        H2Utils.bindParameters(stmt, params);
 
         return stmt;
     }
@@ -1023,9 +1002,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public ResultSet executeSqlQueryWithTimer(Connection conn, String sql, @Nullable Collection<Object> params,
-        boolean useStmtCache, int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
+        boolean useStmtCache, int timeoutMillis, @Nullable GridQueryCancel cancel, final H2QueryInfo qryInfo)
+        throws IgniteCheckedException {
         return executeSqlQueryWithTimer(preparedStatementWithParams(conn, sql, params, useStmtCache),
-            conn, sql, params, timeoutMillis, cancel);
+            conn, sql, params, timeoutMillis, cancel, qryInfo);
     }
 
     /**
@@ -1037,58 +1017,37 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param params Parameters.
      * @param timeoutMillis Query timeout.
      * @param cancel Query cancel.
+     * @param qryInfo Query info to track long running queries.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    private ResultSet executeSqlQueryWithTimer(PreparedStatement stmt, Connection conn, String sql,
-        @Nullable Collection<Object> params, int timeoutMillis, @Nullable GridQueryCancel cancel)
+    public ResultSet executeSqlQueryWithTimer(PreparedStatement stmt, Connection conn, String sql,
+        @Nullable Collection<Object> params, int timeoutMillis, @Nullable GridQueryCancel cancel,
+        final H2QueryInfo qryInfo)
         throws IgniteCheckedException {
-        long start = U.currentTimeMillis();
+
+        if (qryInfo != null)
+            longRunningQryMgr.registerQuery(qryInfo);
 
         try {
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
 
-            long time = U.currentTimeMillis() - start;
-
-            long longQryExecTimeout = ctx.config().getLongQueryWarningTimeout();
-
-            if (time > longQryExecTimeout) {
-                ResultSet plan = executeSqlQuery(conn, preparedStatementWithParams(conn, "EXPLAIN " + sql,
-                    params, false), 0, null);
-
-                plan.next();
-
-                // Add SQL explain result message into log.
-                String msg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
-                    ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
-                    (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
-
-                LT.warn(log, msg);
-            }
+            if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout())
+                qryInfo.printLogMessage(log, connMgr, "Long running query is finished");
 
             return rs;
         }
-        catch (SQLException e) {
-            connMgr.onSqlException(conn);
+        catch (Throwable e) {
+            if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout()) {
+                qryInfo.printLogMessage(log, connMgr, "Long running query is finished with error: "
+                    + e.getMessage());
+            }
 
-            throw new IgniteCheckedException(e);
+            throw  e;
         }
-    }
-
-    /**
-     * Binds parameters to prepared statement.
-     *
-     * @param stmt Prepared statement.
-     * @param params Parameters collection.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void bindParameters(PreparedStatement stmt,
-        @Nullable Collection<Object> params) throws IgniteCheckedException {
-        if (!F.isEmpty(params)) {
-            int idx = 1;
-
-            for (Object arg : params)
-                bindObject(stmt, idx++, arg);
+        finally {
+            if (qryInfo != null)
+                longRunningQryMgr.unregisterQuery(qryInfo);
         }
     }
 
@@ -1618,7 +1577,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
        if (prepared.isQuery()) {
             try {
-                bindParameters(stmt, F.asList(args));
+                H2Utils.bindParameters(stmt, F.asList(args));
             }
             catch (IgniteCheckedException e) {
                 U.closeQuiet(stmt);
@@ -2248,6 +2207,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         connMgr = new ConnectionManager(ctx);
 
+        longRunningQryMgr = new LongRunningQueryManager(ctx);
+
         if (ctx == null) {
             // This is allowed in some tests.
             nodeId = UUID.randomUUID();
@@ -2506,6 +2467,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         cacheName2schema.clear();
 
         GridH2QueryContext.clearLocalNodeStop(nodeId);
+
+        longRunningQryMgr.stop();
 
         connMgr.stop();
 
@@ -2798,5 +2761,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException {
+        SqlQueryMXBean qryMXBean = new SqlQueryMXBeanImpl(ctx);
+
+        mbMgr.registerMBean("SQL Query", qryMXBean.getClass().getSimpleName(), qryMXBean, SqlQueryMXBean.class);
+    }
+
+    /**
+     * @return Long running queries manager.
+     */
+    public LongRunningQueryManager longRunningQueries() {
+        return longRunningQryMgr;
     }
 }
