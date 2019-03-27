@@ -20,14 +20,18 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -43,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileTransferManager;
@@ -56,22 +61,28 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.persistence.preload.GridPartitionUploadManager.persistenceRebalanceApplicable;
 import static org.apache.ignite.internal.processors.cache.persistence.preload.IgniteCachePreloadSharedManager.rebalanceThreadTopic;
-import static org.apache.ignite.internal.util.GridIntList.getAsIntList;
 
 /**
  *
  */
 public class GridPartitionDownloadManager {
     /** */
+    private static final String REBALANCE_CP_REASON = "Rebalance has been scheduled [grps=%s]";
+
+    /** */
     private static final Runnable NO_OP = () -> {};
 
     /** */
     private GridCacheSharedContext<?, ?> cctx;
+
+    /** */
+    private GridCacheDatabaseSharedManager dbMgr;
 
     /** */
     private final IgniteLogger log;
@@ -102,6 +113,8 @@ public class GridPartitionDownloadManager {
         assert cctx.pageStore() instanceof FilePageStoreManager : cctx.pageStore();
 
         this.cctx = cctx;
+
+        dbMgr = ((GridCacheDatabaseSharedManager) cctx.database());
 
         filePageStore = (FilePageStoreManager)cctx.pageStore();
 
@@ -164,7 +177,7 @@ public class GridPartitionDownloadManager {
         FileTransferManager<PartitionFileMetaInfo> source = null;
 
         int totalParts = rebFut.nodeAssigns.values().stream()
-            .mapToInt(GridIntList::size)
+            .mapToInt(Set::size)
             .sum();
 
         AffinityTopologyVersion topVer = rebFut.topVer;
@@ -332,10 +345,10 @@ public class GridPartitionDownloadManager {
      * @param assignsMap The map of cache groups assignments to process.
      * @return The map of cache assignments <tt>[group_order, [node, [group_id, partitions]]]</tt>
      */
-    private NavigableMap<Integer, Map<ClusterNode, Map<Integer, GridIntList>>> sliceNodeCacheAssignments(
+    private NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> sliceNodeCacheAssignments(
         Map<Integer, GridDhtPreloaderAssignments> assignsMap
     ) {
-        NavigableMap<Integer, Map<ClusterNode, Map<Integer, GridIntList>>> result = new TreeMap<>();
+        NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> result = new TreeMap<>();
 
         for (Map.Entry<Integer, GridDhtPreloaderAssignments> grpEntry : assignsMap.entrySet()) {
             int grpId = grpEntry.getKey();
@@ -351,10 +364,12 @@ public class GridPartitionDownloadManager {
 
                     result.get(grpOrderNo).putIfAbsent(node, new HashMap<>());
 
-                    GridIntList intParts = getAsIntList(grpAssigns.getValue().partitions().fullSet());
-
-                    if (!intParts.isEmpty())
-                        result.get(grpOrderNo).get(node).putIfAbsent(grpId, intParts);
+                    result.get(grpOrderNo)
+                        .get(node)
+                        .putIfAbsent(grpId,
+                            grpAssigns.getValue()
+                                .partitions()
+                                .fullSet());
                 }
             }
         }
@@ -374,7 +389,7 @@ public class GridPartitionDownloadManager {
         boolean force,
         long rebalanceId
     ) {
-        NavigableMap<Integer, Map<ClusterNode, Map<Integer, GridIntList>>> nodeOrderAssignsMap =
+        NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> nodeOrderAssignsMap =
             sliceNodeCacheAssignments(assignsMap);
 
         if (nodeOrderAssignsMap.isEmpty())
@@ -403,8 +418,8 @@ public class GridPartitionDownloadManager {
             // Clear the previous rebalance futures if exists.
             futMap.clear();
 
-            for (Map<ClusterNode, Map<Integer, GridIntList>> descNodeMap : nodeOrderAssignsMap.descendingMap().values()) {
-                for (Map.Entry<ClusterNode, Map<Integer, GridIntList>> assignEntry : descNodeMap.entrySet()) {
+            for (Map<ClusterNode, Map<Integer, Set<Integer>>> descNodeMap : nodeOrderAssignsMap.descendingMap().values()) {
+                for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> assignEntry : descNodeMap.entrySet()) {
                     RebalanceDownloadFuture rebFut = new RebalanceDownloadFuture(assignEntry.getKey().id(), rebalanceId,
                         assignEntry.getValue(), topVer);
 
@@ -459,32 +474,41 @@ public class GridPartitionDownloadManager {
 
                 U.log(log, "Start partitions preloading [from=" + node.id() + ", fut=" + rebFut + ']');
 
-                try {
-                    Map<Integer, GridIntList> assigns = rebFut.nodeAssigns;
+                final Map<Integer, Set<Integer>> assigns = rebFut.nodeAssigns;
 
-                    for (Integer grpId : assigns.keySet()) {
-                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+                IgniteInternalFuture<Boolean> req = cctx.preloadMgr()
+                    .addPartitionSwitchRequest(CacheDataStoreProxy.StorageMode.FULL, assigns);
 
-                        for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
-                            if (locPart.state() == MOVING)
-                                locPart.dataStore().storageMode(CacheDataStoreProxy.StorageMode.LOG_ONLY);
+                req.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                    @Override public void apply(IgniteInternalFuture fut) {
+                        try {
+                            if (rebFut.initReq.compareAndSet(false, true)) {
+                                GridPartitionCopyDemandMessage msg0 =
+                                    new GridPartitionCopyDemandMessage(rebFut.rebalanceId,
+                                        rebFut.topVer,
+                                        assigns.entrySet()
+                                            .stream()
+                                            .collect(Collectors.toMap(Map.Entry::getKey,
+                                                e -> GridIntList.getAsIntList(e.getValue()))));
+
+                                futMap.put(node.id(), rebFut);
+
+                                cctx.gridIO().sendToCustomTopic(node, rebalanceThreadTopic(), msg0, SYSTEM_POOL);
+                            }
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Error sending request for demanded cache partitions", e);
+
+                            rebFut.onDone(e);
+
+                            futMap.remove(node.id());
                         }
                     }
+                });
 
-                    GridPartitionCopyDemandMessage msg0 = new GridPartitionCopyDemandMessage(rebFut.rebalanceId,
-                        rebFut.topVer, assigns);
-
-                    futMap.put(node.id(), rebFut);
-
-                    cctx.gridIO().sendToCustomTopic(node, rebalanceThreadTopic(), msg0, SYSTEM_POOL);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Error sending request for demanded cache partitions", e);
-
-                    rebFut.onDone(e);
-
-                    futMap.remove(node.id());
-                }
+                // This is an optional step. The request will be completed on the next checkpoint occurs.
+                if (!req.isDone())
+                    dbMgr.wakeupForCheckpoint(String.format(REBALANCE_CP_REASON, assigns.keySet()));
             }
         };
     }
@@ -504,13 +528,16 @@ public class GridPartitionDownloadManager {
 
         /** */
         @GridToStringInclude
-        private Map<Integer, GridIntList> nodeAssigns;
+        private Map<Integer, Set<Integer>> nodeAssigns;
 
         /** */
         private AffinityTopologyVersion topVer;
 
         /** */
-        private Map<Integer, GridIntList> remaining;
+        private Map<Integer, Set<Integer>> remaining;
+
+        /** {@code True} if the initial demand request has been sent. */
+        private AtomicBoolean initReq = new AtomicBoolean();
 
         /**
          * Default constructor for the dummy future.
@@ -526,7 +553,7 @@ public class GridPartitionDownloadManager {
         public RebalanceDownloadFuture(
             UUID nodeId,
             long rebalanceId,
-            Map<Integer, GridIntList> nodeAssigns,
+            Map<Integer, Set<Integer>> nodeAssigns,
             AffinityTopologyVersion topVer
         ) {
             this.nodeId = nodeId;
@@ -536,8 +563,8 @@ public class GridPartitionDownloadManager {
 
             remaining = U.newHashMap(nodeAssigns.size());
 
-            for (Map.Entry<Integer, GridIntList> grpPartEntry : nodeAssigns.entrySet())
-                remaining.putIfAbsent(grpPartEntry.getKey(), grpPartEntry.getValue().copy());
+            for (Map.Entry<Integer, Set<Integer>> grpPartEntry : nodeAssigns.entrySet())
+                remaining.putIfAbsent(grpPartEntry.getKey(), new HashSet<>(grpPartEntry.getValue()));
         }
 
         /** {@inheritDoc} */
@@ -571,14 +598,14 @@ public class GridPartitionDownloadManager {
          * @throws IgniteCheckedException If fails.
          */
         public synchronized void markPartitionDone(int grpId, int partId) throws IgniteCheckedException {
-            GridIntList parts = remaining.get(grpId);
+             Set<Integer> parts = remaining.get(grpId);
 
             if (parts == null)
                 throw new IgniteCheckedException("Partition index incorrect [grpId=" + grpId + ", partId=" + partId + ']');
 
-            int partIdx = parts.removeValue(0, partId);
+            boolean success = parts.remove(partId);
 
-            assert partIdx >= 0;
+            assert success : "Partition not found: " + partId;
 
             if (parts.isEmpty())
                 remaining.remove(grpId);

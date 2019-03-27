@@ -17,19 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -41,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwar
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -53,39 +47,8 @@ import org.jetbrains.annotations.Nullable;
  *     modes of cache data storage (e.g. between <tt>FULL</tt> and <tt>LOG_ONLY</tt> mode) to guarantee the
  *     consistency for Checkpointer writes and async cache put operations.
  * </p>
- * <p>
- *     For instance, switching from <tt>FULL</tt> to <tt>LOG_ONLY</tt> mode:
- *     <ul>
- *         <li>there is no threads are holding the readLocks for <tt>LOG_ONLY</tt> mode;</li>
- *         <li>set current mode to the <tt>LOG_ONLY</tt>;</li>
- *         <li>each thread will update its local mode to the new one on the next storage usage;</li>
- *         <li>each thread which is currently using the storage holds the read lock;</li>
- *         <li>if thread finishes his action (put, invoke etc.) it releases the read lock;</li>
- *         <li>when there is no threads in the <tt>FULL</tt> mode left the switching is done;</li>
- *     </ul>
- * </p>
- * <p>
- *     <tt>Case 0:</tt> All async operations for the storage in LOG_ONLY mode must not touch pages in the durable
- *     PageMemory.
- * </p>
- * <p>
- *     <tt>Case 1:</tt> While the storage in transition state (threads are accessing both old and new modes) it must
- *     have all counters (e.g. partition counter, storage size, cache sizes counter) to be synchronized.
- * </p>
- * <p>
- *     <tt>Case 2:</tt> The switching storage mode and setting a new storage for the same mode simultaneously
- *     must be forbidden.
- * </p>
- * <p>
- *     <tt>Case 3:</tt> Thread switch its working storage mode on first access to it (if previously have no locks
- *     on it).
- * </p>
- *
  */
 public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
-    /** Shows that the usage counter cannot be used anymore. */
-    private static final long USAGE_DENIED = -1;
-
     /** */
     private final IgniteLogger log;
 
@@ -96,14 +59,8 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
     private final ConcurrentMap<StorageMode, IgniteCacheOffheapManager.CacheDataStore> storageMap =
         new ConcurrentHashMap<>(StorageMode.values().length);
 
-    /** The map of lock per each mode. The particular lock will prevent changing status to already used storage. */
-    private final EnumMap<StorageMode, ReentrantReadWriteLock> modeLockMap = new EnumMap<>(StorageMode.class);
-
     /** Currently used data storage state. <tt>FULL</tt> mode is used by default. */
-    private volatile StorageState currState;
-
-    /** The state for each thread which is locally using by itself. */
-    private final ThreadLocal<StorageState> threadState = ThreadLocal.withInitial(() -> currState);
+    private volatile StorageMode currMode = StorageMode.FULL;
 
     /**
      * @param primary The main storage to perform full cache operations.
@@ -123,168 +80,59 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
 
         storageMap.put(StorageMode.FULL, primary);
         storageMap.put(StorageMode.LOG_ONLY, secondary);
-
-        for (StorageMode mode : StorageMode.values())
-            modeLockMap.put(mode, new ReentrantReadWriteLock());
-
-        currState = new StorageState(StorageMode.FULL,
-            new TransitionStateFuture(StorageMode.FULL,
-                StorageMode.FULL,
-                new AtomicLong(),
-                new ReentrantReadWriteLock()));
-
-        // Immediately complete the initial future.
-        currState.transitionFut.onDone(true);
     }
 
     /** {@inheritDoc} */
     @Override public boolean storage(StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage) {
-        StorageState currState0 = currState;
-
         // The instance of currently active storage cannot be changed.
-        if (mode == currState0.mode)
+        if (mode == currMode)
             return false;
 
-        ReentrantReadWriteLock lock = modeLockMap.get(mode);
+        switch (mode) {
+            case FULL:
+                if (storageMap.get(StorageMode.LOG_ONLY) != null && !storageMap.get(StorageMode.LOG_ONLY).isEmpty())
+                    return false;
 
-        lock.writeLock().lock();
+                break;
 
-        try {
-            switch (mode) {
-                case FULL:
-                    if (storageMap.get(StorageMode.LOG_ONLY) != null && !storageMap.get(StorageMode.LOG_ONLY).isEmpty())
-                        return false;
+            case LOG_ONLY:
+                break;
 
-                    break;
-
-                case LOG_ONLY:
-                    break;
-
-                default:
-                    throw new IgniteException("Cache data storage cannot be set. The mode is unknown: " + mode);
-            }
-
-            if (activeStorage().updateCounter() != storage.updateCounter())
-                return false;
-
-            storageMap.put(mode, storage);
-
-            U.log(log, "The new instance of storage have been successfully set [mode=" + mode +
-                ", storage=" + storage + ']');
-
-            return true;
+            default:
+                throw new IgniteException("Cache data storage cannot be set. The mode is unknown: " + mode);
         }
-        finally {
-            lock.writeLock().unlock();
-        }
+
+        if (activeStorage().updateCounter() != storage.updateCounter())
+            return false;
+
+        storageMap.put(mode, storage);
+
+        U.log(log, "The new instance of storage have been successfully set [mode=" + mode +
+            ", storage=" + storage + ']');
+
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> storageMode(StorageMode mode) {
-        StorageState oldState = currState;
+    @Override public void storageMode(StorageMode mode) {
+        if (mode == currMode)
+            return;
+        
+        assert grp.shared().database().checkpointLockIsHeldByThread();
 
-        if (mode == oldState.mode)
-            return oldState.transitionFut;
-
-        ReentrantReadWriteLock lock = modeLockMap.get(mode);
-
-        lock.writeLock().lock();
-
-        try {
-            AtomicLong oldCnt = oldState.usageCnt;
-
-            U.log(log, "The storage usages [mode=" + oldState.mode + ", cnt=" + oldCnt.get() +
-                ", locks=" + modeLockMap.get(oldState.mode).getReadLockCount() + ']');
-
-            currState = new StorageState(mode,
-                new TransitionStateFuture(mode,
-                    oldState.mode,
-                    oldCnt,
-                    modeLockMap.get(oldState.mode)));
-
-            // The state have swithed. The old counter from now can be only decremented.
-            // Can safely check and perform the future completion.
-            if (oldCnt.get() == 0 && oldCnt.compareAndSet(0, USAGE_DENIED))
-                currState.transitionFut.tryDone(oldState.mode);
-
-            if (log.isDebugEnabled())
-                log.debug("The partition cache data storage is sheduled to switch to the new mode: " + mode);
-
-            return currState.transitionFut;
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
+        currMode = mode;
     }
 
     /** {@inheritDoc} */
     @Override public StorageMode storageMode() {
-        return currState.mode;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long usages(){
-        return currState.usageCnt.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void activeStorageReadLock() {
-        StorageState currState0 = currState;
-        StorageState locState = threadState.get();
-
-        ReentrantReadWriteLock lock = modeLockMap.get(locState.mode);
-
-        if (lock.getReadHoldCount() == 0) {
-            if (!locState.equals(currState0)) {
-                threadState.set(currState0);
-
-                locState = currState0;
-
-                lock = modeLockMap.get(currState0.mode);
-            }
-
-            lock.readLock().lock();
-
-            locState.usageCnt.updateAndGet(prev -> {
-                assert prev > USAGE_DENIED : "The counter is marked as finished by transition future";
-
-                return prev + 1;
-            });
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void activeStorageReadUnlock() {
-        StorageState locState = threadState.get();
-
-        ReentrantReadWriteLock lock = modeLockMap.get(locState.mode);
-
-        lock.readLock().unlock();
-
-        long next = locState.usageCnt.updateAndGet(prev -> {
-            assert (prev - 1) > USAGE_DENIED : "The counter is marked as finished by transition future";
-
-            return prev - 1;
-        });
-
-        if (next == 0)
-            currState.transitionFut.tryDone(locState.mode);
-    }
-
-    /**
-     * @return The currently active cache data storage.
-     */
-    private IgniteCacheOffheapManager.CacheDataStore activeStorageWithLock() {
-        activeStorageReadLock();
-
-        return activeStorage();
+        return currMode;
     }
 
     /**
      * @return The currently active cache data storage.
      */
     private IgniteCacheOffheapManager.CacheDataStore activeStorage() {
-        return storageMap.get(threadState.get().mode);
+        return storageMap.get(currMode);
     }
 
     /** {@inheritDoc} */
@@ -311,7 +159,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         long expireTime,
         @Nullable CacheDataRow oldRow
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().createRow(cctx, key, val, ver, expireTime, oldRow);
+        return activeStorage().createRow(cctx, key, val, ver, expireTime, oldRow);
     }
 
     /** {@inheritDoc} */
@@ -319,12 +167,12 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         GridCacheContext cctx,
         @Nullable List<MvccLinkAwareSearchRow> cleanupRows
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().cleanup(cctx, cleanupRows);
+        return activeStorage().cleanup(cctx, cleanupRows);
     }
 
     /** {@inheritDoc} */
     @Override public void updateTxState(GridCacheContext cctx, CacheSearchRow row) throws IgniteCheckedException {
-        activeStorageWithLock().updateTxState(cctx, row);
+        activeStorage().updateTxState(cctx, row);
     }
 
     /** {@inheritDoc} */
@@ -336,7 +184,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         long expireTime,
         @Nullable CacheDataRow oldRow
     ) throws IgniteCheckedException {
-        activeStorageWithLock().update(cctx, key, val, ver, expireTime, oldRow);
+        activeStorage().update(cctx, key, val, ver, expireTime, oldRow);
     }
 
     /** {@inheritDoc} */
@@ -349,7 +197,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         MvccVersion mvccVer,
         MvccVersion newMvccVer
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().mvccInitialValue(cctx, key, val, ver, expireTime, mvccVer, newMvccVer);
+        return activeStorage().mvccInitialValue(cctx, key, val, ver, expireTime, mvccVer, newMvccVer);
     }
 
     /** {@inheritDoc} */
@@ -358,7 +206,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         KeyCacheObject key,
         List<GridCacheMvccEntryInfo> hist
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().mvccApplyHistoryIfAbsent(cctx, key, hist);
+        return activeStorage().mvccApplyHistoryIfAbsent(cctx, key, hist);
     }
 
     /** {@inheritDoc} */
@@ -373,7 +221,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         byte mvccTxState,
         byte newMvccTxState
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().mvccUpdateRowWithPreloadInfo(cctx, key, val, ver, expireTime, mvccVer, newMvccVer, mvccTxState,
+        return activeStorage().mvccUpdateRowWithPreloadInfo(cctx, key, val, ver, expireTime, mvccVer, newMvccVer, mvccTxState,
             newMvccTxState);
     }
 
@@ -395,7 +243,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         boolean retVal,
         boolean keepBinary
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().mvccUpdate(cctx, key, val, ver, expireTime, mvccSnapshot, filter, entryProc, invokeArgs, primary,
+        return activeStorage().mvccUpdate(cctx, key, val, ver, expireTime, mvccSnapshot, filter, entryProc, invokeArgs, primary,
             needHist, noCreate, needOldVal, retVal, keepBinary);
     }
 
@@ -410,7 +258,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         boolean needOldVal,
         boolean retVal
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().mvccRemove(cctx, key, mvccSnapshot, filter, primary, needHistory, needOldVal, retVal);
+        return activeStorage().mvccRemove(cctx, key, mvccSnapshot, filter, primary, needHistory, needOldVal, retVal);
     }
 
     /** {@inheritDoc} */
@@ -419,12 +267,12 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         KeyCacheObject key,
         MvccSnapshot mvccSnapshot
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().mvccLock(cctx, key, mvccSnapshot);
+        return activeStorage().mvccLock(cctx, key, mvccSnapshot);
     }
 
     /** {@inheritDoc} */
     @Override public void mvccRemoveAll(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
-        activeStorageWithLock().mvccRemoveAll(cctx, key);
+        activeStorage().mvccRemoveAll(cctx, key);
     }
 
     /** {@inheritDoc} */
@@ -433,7 +281,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         KeyCacheObject key,
         IgniteCacheOffheapManager.OffheapInvokeClosure c
     ) throws IgniteCheckedException {
-        activeStorageWithLock().invoke(cctx, key, c);
+        activeStorage().invoke(cctx, key, c);
     }
 
     /** {@inheritDoc} */
@@ -445,17 +293,17 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         long expireTime,
         MvccVersion mvccVer
     ) throws IgniteCheckedException {
-        activeStorageWithLock().mvccApplyUpdate(cctx, key, val, ver, expireTime, mvccVer);
+        activeStorage().mvccApplyUpdate(cctx, key, val, ver, expireTime, mvccVer);
     }
 
     /** {@inheritDoc} */
     @Override public void remove(GridCacheContext cctx, KeyCacheObject key, int partId) throws IgniteCheckedException {
-        activeStorageWithLock().remove(cctx, key, partId);
+        activeStorage().remove(cctx, key, partId);
     }
 
     /** {@inheritDoc} */
     @Override public CacheDataRow find(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
-        return activeStorageWithLock().find(cctx, key);
+        return activeStorage().find(cctx, key);
     }
 
     /** {@inheritDoc} */
@@ -464,7 +312,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         KeyCacheObject key,
         Object x
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().mvccAllVersionsCursor(cctx, key, x);
+        return activeStorage().mvccAllVersionsCursor(cctx, key, x);
     }
 
     /** {@inheritDoc} */
@@ -473,7 +321,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         KeyCacheObject key,
         MvccSnapshot snapshot
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().mvccFind(cctx, key, snapshot);
+        return activeStorage().mvccFind(cctx, key, snapshot);
     }
 
     /** {@inheritDoc} */
@@ -481,29 +329,29 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         GridCacheContext cctx,
         KeyCacheObject key
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().mvccFindAllVersions(cctx, key);
+        return activeStorage().mvccFindAllVersions(cctx, key);
     }
 
     /** {@inheritDoc} */
     @Override public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException {
-        return activeStorageWithLock().cursor();
+        return activeStorage().cursor();
     }
 
     /** {@inheritDoc} */
     @Override public GridCursor<? extends CacheDataRow> cursor(Object x) throws IgniteCheckedException {
-        return activeStorageWithLock().cursor(x);
+        return activeStorage().cursor(x);
     }
 
     /** {@inheritDoc} */
     @Override public GridCursor<? extends CacheDataRow> cursor(
         MvccSnapshot mvccSnapshot
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().cursor(mvccSnapshot);
+        return activeStorage().cursor(mvccSnapshot);
     }
 
     /** {@inheritDoc} */
     @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId) throws IgniteCheckedException {
-        return activeStorageWithLock().cursor(cacheId);
+        return activeStorage().cursor(cacheId);
     }
 
     /** {@inheritDoc} */
@@ -511,7 +359,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         int cacheId,
         MvccSnapshot mvccSnapshot
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().cursor(cacheId, mvccSnapshot);
+        return activeStorage().cursor(cacheId, mvccSnapshot);
     }
 
     /** {@inheritDoc} */
@@ -520,7 +368,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         KeyCacheObject lower,
         KeyCacheObject upper
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().cursor(cacheId, lower, upper);
+        return activeStorage().cursor(cacheId, lower, upper);
     }
 
     /** {@inheritDoc} */
@@ -530,7 +378,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         KeyCacheObject upper,
         Object x
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().cursor(cacheId, lower, upper, x);
+        return activeStorage().cursor(cacheId, lower, upper, x);
     }
 
     /** {@inheritDoc} */
@@ -541,23 +389,23 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         Object x,
         MvccSnapshot snapshot
     ) throws IgniteCheckedException {
-        return activeStorageWithLock().cursor(cacheId, lower, upper, x, snapshot);
+        return activeStorage().cursor(cacheId, lower, upper, x, snapshot);
     }
 
     /** {@inheritDoc} */
     @Override public void destroy() throws IgniteCheckedException {
-        activeStorageWithLock().destroy();
+        activeStorage().destroy();
     }
 
     /** {@inheritDoc} */
     @Override public void clear(int cacheId) throws IgniteCheckedException {
-        activeStorageWithLock().clear(cacheId);
+        activeStorage().clear(cacheId);
     }
 
     /** {@inheritDoc} */
     @Override public RowStore rowStore() {
         // Checkpointer must always have assess to the original storage.
-        return activeStorageWithLock().rowStore();
+        return activeStorage().rowStore();
     }
 
     /** {@inheritDoc} */
@@ -567,12 +415,12 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
 
     /** {@inheritDoc} */
     @Override public PendingEntriesTree pendingTree() {
-        return activeStorageWithLock().pendingTree();
+        return activeStorage().pendingTree();
     }
 
     /** {@inheritDoc} */
     @Override public void preload() throws IgniteCheckedException {
-        activeStorageWithLock().preload();
+        activeStorage().preload();
     }
 
     /** {@inheritDoc} */
@@ -638,96 +486,5 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
     /** {@inheritDoc} */
     @Override public GridLongList finalizeUpdateCounters() {
         return activeStorage().finalizeUpdateCounters();
-    }
-
-    /**
-     *
-     */
-    private static class StorageState {
-        /** */
-        private final StorageMode mode;
-
-        /** */
-        private final AtomicLong usageCnt;
-
-        /** */
-        private final TransitionStateFuture transitionFut;
-
-        /**
-         * @param nextMode The mode of storage to be used.
-         * @param fut The future will complete when the transition to the aproppriate mode finished.
-         */
-        public StorageState(StorageMode nextMode, TransitionStateFuture fut) {
-            mode = nextMode;
-            usageCnt = new AtomicLong();
-            transitionFut = fut;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            StorageState state = (StorageState)o;
-
-            return mode == state.mode;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(mode);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class TransitionStateFuture extends GridFutureAdapter<Boolean> {
-        /** */
-        private final StorageMode nextMode;
-
-        /** */
-        private final StorageMode prevMode;
-
-        /** */
-        private final AtomicLong prevStateCnt;
-
-        /** */
-        private final ReentrantReadWriteLock prevStateLock;
-
-        /**
-         * @param nextMode The mode to switch storage to.
-         * @param prevMode The mode of storage to switch from.
-         * @param cnt The counter used by previous nextMode.
-         * @param lock The lock used by previous nextMode.
-         */
-        public TransitionStateFuture(
-            StorageMode nextMode,
-            StorageMode prevMode,
-            AtomicLong cnt,
-            ReentrantReadWriteLock lock
-        ) {
-            this.nextMode = nextMode;
-            this.prevMode = prevMode;
-            prevStateCnt = cnt;
-            prevStateLock = lock;
-        }
-
-        /**
-         * @param mode The mode to work with.
-         */
-        public void tryDone(StorageMode mode) {
-            if (isDone() || mode == nextMode)
-                return;
-
-            assert mode == prevMode;
-            assert prevStateCnt.get() == 0 || prevStateCnt.get() == USAGE_DENIED;
-            assert prevStateLock.getReadLockCount() == 0;
-
-            onDone(true);
-        }
     }
 }

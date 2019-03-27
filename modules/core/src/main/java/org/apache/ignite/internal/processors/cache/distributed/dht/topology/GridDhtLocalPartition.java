@@ -450,30 +450,20 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Set <tt>FULL</tt> {@link CacheDataStoreProxy.StorageMode} to the corresponding partition.
+     * Set {@link CacheDataStoreProxy.StorageMode} to the corresponding local partition storage.
      */
-    public void storageModeFull() {
-        if (state() == MOVING)
+    public void storageMode(CacheDataStoreProxy.StorageMode mode) {
+        if (state() != MOVING)
             return;
 
-        store.storageMode(CacheDataStoreProxy.StorageMode.FULL);
+        store.storageMode(mode);
     }
 
     /**
-     * Set <tt>LOG_ONLY</tt> {@link CacheDataStoreProxy.StorageMode} to the corresponding partition.
+     * @return The curretly active storage mode.
      */
-    public void storageModeLogOnly() {
-        if (state() == MOVING)
-            return;
-
-        store.storageMode(CacheDataStoreProxy.StorageMode.LOG_ONLY);
-    }
-
-    /**
-     * Relese the read lock on corresponding storage.
-     */
-    public void activeStorageReadUnlock() {
-        store.activeStorageReadUnlock();
+    public CacheDataStoreProxy.StorageMode storageMode() {
+        return store.storageMode();
     }
 
     /**
@@ -583,6 +573,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (grp.persistenceEnabled() && grp.walEnabled()) {
             synchronized (this) {
                 GridDhtPartitionState prevState = state();
+
+                assert storageMode() != CacheDataStoreProxy.StorageMode.FULL && toState != MOVING :
+                    "Storage mode FULL is only allowed for the MOVING partition state";
 
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 

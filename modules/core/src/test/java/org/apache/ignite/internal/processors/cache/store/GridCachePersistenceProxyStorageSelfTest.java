@@ -100,7 +100,7 @@ public class GridCachePersistenceProxyStorageSelfTest extends GridCommonAbstract
         for (int partId = 0; partId < partitions; partId++) {
             GridDhtLocalPartition part = top.localPartition(partId);
 
-            part.dataStore().storageMode(CacheDataStoreProxy.StorageMode.LOG_ONLY);
+            part.storageMode(CacheDataStoreProxy.StorageMode.LOG_ONLY);
         }
 
         for (int i = 1024; i < 2048; i++)

@@ -32,30 +32,14 @@ public interface CacheDataStoreProxy extends IgniteCacheOffheapManager.CacheData
 
     /**
      * @param mode The mode to switch to.
-     * @return The result future which compeletes when there is no threads using the old storage left.
      */
-    public IgniteInternalFuture<Boolean> storageMode(StorageMode mode);
+    public void storageMode(StorageMode mode);
 
     /**
      * @return The currently used storage mode. Some of the long-running threads will remain to use
      * the old mode until they finish.
      */
     public StorageMode storageMode();
-
-    /**
-     * @return The number of threads which are using corresponging storage mode.
-     */
-    public long usages();
-
-    /**
-     * Based on the currently active mode get the read lock on storage.
-     */
-    public void activeStorageReadLock();
-
-    /**
-     * Release the readLock for the mode used by thread its called.
-     */
-    public void activeStorageReadUnlock();
 
     /**
      *
