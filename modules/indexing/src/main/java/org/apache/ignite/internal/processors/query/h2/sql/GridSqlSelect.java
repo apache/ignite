@@ -415,9 +415,11 @@ public class GridSqlSelect extends GridSqlQuery {
     }
 
     /**
-     * @return Copy of this select.
+     * @return Copy of this select for SELECT FOR UPDATE specific tasks.
      */
-    public GridSqlSelect copy() {
+    public GridSqlSelect copySelectForUpdate() {
+        assert isForUpdate && !distinct && havingCol < 0 && grpCols == null; // Not supported by SFU.
+
         GridSqlSelect copy = new GridSqlSelect();
 
         copy.from(from())

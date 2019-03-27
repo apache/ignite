@@ -388,8 +388,8 @@ public class QueryParser {
             List<Integer> cacheIds = parser.cacheIds();
             Integer mvccCacheId = mvccCacheIdForSelect(parser.objectsMap());
 
-            String sqlQry = newQry.getSql();
-            String sqlQryForUpdate = null;
+            String forUpdateQryOutTx = null;
+            String forUpdateQryTx = null;
 
             boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
 
@@ -406,21 +406,21 @@ public class QueryParser {
                     throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
                         "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-                // We need a copy because we are going to change AST a bit.
-                GridSqlSelect sel = ((GridSqlSelect)selectStmt).copy();
+                // We need a copy because we are going to modify AST a bit. We do not want to modify original select.
+                GridSqlSelect sel = ((GridSqlSelect)selectStmt).copySelectForUpdate();
 
                 // Clear this flag to run it as a plain query.
                 sel.forUpdate(false);
 
                 // Remember sql string without FOR UPDATE clause.
-                sqlQry = sel.getSQL();
+                forUpdateQryOutTx = sel.getSQL();
 
                 GridSqlAlias keyCol = keyColumn(sel);
 
                 sel.addColumn(keyCol, true);
 
                 // Remember sql string without FOR UPDATE clause and with _key column.
-                sqlQryForUpdate = sel.getSQL();
+                forUpdateQryTx = sel.getSQL();
             }
 
             // Calculate if query is in fact can be executed locally.
@@ -448,7 +448,7 @@ public class QueryParser {
 
             try {
                 GridCacheTwoStepQuery twoStepQry = null;
-                GridCacheTwoStepQuery twoStepQryForUpdate = null;
+                GridCacheTwoStepQuery forUpdateTwoStepQry = null;
 
                 if (splitNeeded) {
                     twoStepQry = GridSqlQuerySplitter.split(
@@ -464,7 +464,7 @@ public class QueryParser {
 
                     // Prepare additional two-step query for FOR UPDATE case.
                     if (forUpdate) {
-                        twoStepQryForUpdate = GridSqlQuerySplitter.split(
+                        forUpdateTwoStepQry = GridSqlQuerySplitter.split(
                             connMgr.connectionForThread().connection(newQry.getSchema()),
                             prepared,
                             newQry.isCollocated(),
@@ -482,13 +482,13 @@ public class QueryParser {
                 QueryParserResultSelect select = new QueryParserResultSelect(
                     selectStmt,
                     twoStepQry,
-                    twoStepQryForUpdate,
+                    forUpdateTwoStepQry,
                     meta,
                     paramsCnt,
                     cacheIds,
                     mvccCacheId,
-                    sqlQry,
-                    sqlQryForUpdate
+                    forUpdateQryOutTx,
+                    forUpdateQryTx
                 );
 
                 return new QueryParserResult(

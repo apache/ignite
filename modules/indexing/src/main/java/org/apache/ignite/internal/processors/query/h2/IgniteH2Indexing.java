@@ -425,7 +425,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param filter Cache name and key filter.
      * @param mvccTracker Query tracker.
      * @param cancel Query cancel.
-     * @param forUpdate Flag whether execute FOR UPDATE statement or not.
+     * @param inTx Flag whether query executed in transaction..
      * @param timeout Timeout.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
@@ -437,13 +437,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final IndexingQueryFilter filter,
         MvccQueryTracker mvccTracker,
         GridQueryCancel cancel,
-        boolean forUpdate,
+        boolean inTx,
         int timeout
     ) throws IgniteCheckedException {
         assert !select.mvccEnabled() || mvccTracker != null;
-        assert !forUpdate || select.forUpdate(); // forUpdate == true can happen only for FOR UPDATE queries,
 
-        String qry = forUpdate ? select.sqlQueryForUpdate() : select.sqlQuery();
+        String qry;
+
+        if (select.forUpdate())
+            qry = inTx ? select.forUpdateQueryTx() : select.forUpdateQueryOutTx();
+        else
+            qry = qryDesc.sql();
 
         boolean mvccEnabled = mvccEnabled(kernalContext());
 
@@ -1166,7 +1170,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             MvccQueryTracker tracker = null;
             GridCacheContext mvccCctx = null;
 
-            boolean forUpdate = false;
+            boolean inTx = false;
 
             if (select.mvccEnabled()) {
                 mvccCctx = ctx.cache().context().cacheContext(select.mvccCacheId());
@@ -1185,7 +1189,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 checkActive(tx);
 
-                forUpdate = select.forUpdate() && tx != null;
+                inTx = tx != null;
 
                 tracker = MvccUtils.mvccTracker(mvccCctx, tx);
             }
@@ -1199,11 +1203,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 keepBinary,
                 tracker,
                 cancel,
-                forUpdate,
+                inTx,
                 timeout);
 
             // Execute SELECT FOR UPDATE if needed.
-            if (forUpdate)
+            if (select.forUpdate() && inTx)
                 iter = lockSelectedRows(iter, mvccCctx, timeout, qryParams.pageSize());
 
             QueryCursorImpl<List<?>> cursor = qryId != null
@@ -1277,7 +1281,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param keepBinary Whether binary objects must not be deserialized automatically.
      * @param mvccTracker MVCC tracker.
      * @param cancel Query cancel state holder.
-     * @param forUpdate Flag whether to execute FOR UPDATE statement.
+     * @param inTx Flag whether query is executed within transaction.
      * @param timeout Timeout.
      * @return Query result.
      */
@@ -1288,7 +1292,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean keepBinary,
         MvccQueryTracker mvccTracker,
         GridQueryCancel cancel,
-        boolean forUpdate,
+        boolean inTx,
         int timeout
     ) throws IgniteCheckedException {
         assert !select.mvccEnabled() || mvccTracker != null;
@@ -1297,7 +1301,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (select.splitNeeded()) {
             // Distributed query.
-            GridCacheTwoStepQuery twoStepQry = forUpdate ? select.twoStepQueryForUpdate() : select.twoStepQuery();
+            GridCacheTwoStepQuery twoStepQry = select.forUpdate() && inTx ?
+                select.forUpdateTwoStepQuery() : select.twoStepQuery();
 
             assert twoStepQry != null;
 
@@ -1308,7 +1313,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 keepBinary,
                 mvccTracker,
                 cancel,
-                forUpdate,
                 timeout
             );
         }
@@ -1323,7 +1327,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 filter,
                 mvccTracker,
                 cancel,
-                forUpdate,
+                inTx,
                 timeout
             );
 
@@ -1529,7 +1533,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 filter,
                 new StaticMvccQueryTracker(planCctx, mvccSnapshot),
                 cancel,
-                false,
+                true,
                 timeout
             );
 
@@ -1558,7 +1562,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param keepBinary Keep binary flag.
      * @param mvccTracker Query tracker.
      * @param cancel Cancel handler.
-     * @param forUpdate For update flag.
      * @param timeout Timeout.
      * @return Cursor representing distributed query result.
      */
@@ -1570,7 +1573,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final boolean keepBinary,
         MvccQueryTracker mvccTracker,
         final GridQueryCancel cancel,
-        boolean forUpdate,
         int timeout
     ) {
         // When explicit partitions are set, there must be an owning cache they should be applied to.
@@ -1621,8 +1623,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             qryParams.lazy(),
                             mvccTracker,
                             qryParams.dataPageScanEnabled(),
-                            qryParams.pageSize(),
-                            forUpdate
+                            qryParams.pageSize()
                         );
                     }
                     catch (Throwable e) {

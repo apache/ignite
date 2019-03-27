@@ -186,7 +186,8 @@ public class GridSqlQuerySplitter {
      * @param enforceJoinOrder Enforce join order.
      * @param locSplit Whether this is a split for local query.
      * @param idx Indexing.
-     * @param forUpdate For update flag. If {@code true}, the result query will contain additional _key column.
+     * @param appendKeyCol If {@code true}, the result query will contain additional _key column.
+     *                     Used in SELECT FOR UPDATE statements.
      * @return Two step query.
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
@@ -199,7 +200,7 @@ public class GridSqlQuerySplitter {
         boolean enforceJoinOrder,
         boolean locSplit,
         IgniteH2Indexing idx,
-        boolean forUpdate
+        boolean appendKeyCol
     ) throws SQLException, IgniteCheckedException {
         SplitterContext.set(distributedJoins);
 
@@ -212,7 +213,7 @@ public class GridSqlQuerySplitter {
                 enforceJoinOrder,
                 locSplit,
                 idx,
-                forUpdate
+                appendKeyCol
             );
         }
         finally {
@@ -228,7 +229,8 @@ public class GridSqlQuerySplitter {
      * @param enforceJoinOrder Enforce join order.
      * @param locSplit Whether this is a split for local query.
      * @param idx Indexing.
-     * @param forUpdate For update flag. If {@code true}, the result query will contain additional _key column.
+     * @param appendKeyCol If {@code true}, the result query will contain additional _key column.
+     *                     Used in SELECT FOR UPDATE statements.
      * @return Two step query.
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
@@ -241,7 +243,7 @@ public class GridSqlQuerySplitter {
         boolean enforceJoinOrder,
         boolean locSplit,
         IgniteH2Indexing idx,
-        boolean forUpdate
+        boolean appendKeyCol
     ) throws SQLException, IgniteCheckedException {
         // Here we will just do initial query parsing. Do not use optimized
         // subqueries because we do not have unique FROM aliases yet.
@@ -249,7 +251,7 @@ public class GridSqlQuerySplitter {
 
         boolean qryForUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
 
-        assert !forUpdate || qryForUpdate;
+        assert !appendKeyCol || qryForUpdate; // Additional key column is used only by SFU statements.
 
         String originalSql;
 
@@ -263,7 +265,7 @@ public class GridSqlQuerySplitter {
             sel.forUpdate(false);
 
             // Add _key column if needed.
-            if (forUpdate) {
+            if (appendKeyCol) {
                 GridSqlAlias keyCol = keyColumn(sel);
 
                 sel.addColumn(keyCol, true);

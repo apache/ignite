@@ -391,7 +391,6 @@ public class GridReduceQueryExecutor {
      * @param mvccTracker Query tracker.
      * @param dataPageScanEnabled If data page scan is enabled.
      * @param pageSize Page size.
-     * @param forUpdate For update query flag.
      * @return Rows iterator.
      */
     @SuppressWarnings({"BusyWait", "IfMayBeConditional"})
@@ -407,8 +406,7 @@ public class GridReduceQueryExecutor {
         boolean lazy,
         MvccQueryTracker mvccTracker,
         Boolean dataPageScanEnabled,
-        int pageSize,
-        boolean forUpdate
+        int pageSize
     ) {
         // If explicit partitions are set, but there are no real tables, ignore.
         if (!qry.hasCacheIds() && parts != null)
@@ -432,7 +430,7 @@ public class GridReduceQueryExecutor {
         List<GridCacheSqlQuery> mapQueries;
 
         if (singlePartMode)
-            mapQueries = prepareMapQueryForSinglePartition(qry, params, forUpdate);
+            mapQueries = prepareMapQueryForSinglePartition(qry, params);
         else {
             mapQueries = new ArrayList<>(qry.mapQueries().size());
 
@@ -1291,11 +1289,9 @@ public class GridReduceQueryExecutor {
      *
      * @param qry Two step query.
      * @param params Query parameters.
-     * @param forUpdate For update flag.
      * @return Updated map query list with one map query.
      */
-    private List<GridCacheSqlQuery> prepareMapQueryForSinglePartition(GridCacheTwoStepQuery qry, Object[] params,
-        boolean forUpdate) {
+    private List<GridCacheSqlQuery> prepareMapQueryForSinglePartition(GridCacheTwoStepQuery qry, Object[] params) {
         boolean hasSubQries = false;
 
         for (GridCacheSqlQuery mapQry : qry.mapQueries()) {

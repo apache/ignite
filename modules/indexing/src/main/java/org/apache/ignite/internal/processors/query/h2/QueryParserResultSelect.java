@@ -29,7 +29,7 @@ import java.util.List;
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class QueryParserResultSelect {
-    /** Statmement. */
+    /** Statement. */
     private GridSqlStatement stmt;
 
     /** Two-step query, or {@code} null if this result is for local query. */
@@ -44,7 +44,7 @@ public class QueryParserResultSelect {
      * is implicitly appended to query columns. This extra column is used to lock the selected rows.
      * This column is hidden from client.
      */
-    private final GridCacheTwoStepQuery twoStepQryForUpdate;
+    private final GridCacheTwoStepQuery forUpdateTwoStepQry;
 
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
     private final List<GridQueryFieldMetadata> meta;
@@ -59,48 +59,50 @@ public class QueryParserResultSelect {
     private final Integer mvccCacheId;
 
     /**
-     * Sql query with cleared "FOR UPDATE" statement. This string is used when executing query out of transaction.
+     * Sql query with cleared "FOR UPDATE" statement.
+     * This string is used when query is executed out of transaction.
      */
-    private final String sqlQry;
+    private final String forUpdateQryOutTx;
 
     /**
      * Sql query for update. Contains additional "_key" column.
      * This string is used when executing query within explicit transaction.
      */
-    private final String sqlQryForUpdate;
+    private final String forUpdateQryTx;
 
     /**
      * Constructor.
      *
      * @param stmt Statement.
      * @param twoStepQry Distributed query plan.
+     * @param forUpdateTwoStepQry FOR UPDATE query for execution within transaction.
      * @param meta Fields metadata.
      * @param paramsCnt Parameters count.
      * @param cacheIds Cache IDs.
      * @param mvccCacheId ID of the first MVCC cache.
-     * @param sqlQry Sql query string.
-     * @param sqlQryForUpdate Sql query FOR UPDATE version.
+     * @param forUpdateQryOutTx FOR UPDATE query string for execution out of transaction.
+     * @param forUpdateQryTx FOR UPDATE query string for execution within transaction.
      */
     public QueryParserResultSelect(
         GridSqlStatement stmt,
         @Nullable GridCacheTwoStepQuery twoStepQry,
-        @Nullable GridCacheTwoStepQuery twoStepQryForUpdate,
+        @Nullable GridCacheTwoStepQuery forUpdateTwoStepQry,
         List<GridQueryFieldMetadata> meta,
         int paramsCnt,
         List<Integer> cacheIds,
         @Nullable Integer mvccCacheId,
-        String sqlQry,
-        String sqlQryForUpdate
+        String forUpdateQryOutTx,
+        String forUpdateQryTx
     ) {
         this.stmt = stmt;
         this.twoStepQry = twoStepQry;
-        this.twoStepQryForUpdate = twoStepQryForUpdate;
+        this.forUpdateTwoStepQry = forUpdateTwoStepQry;
         this.meta = meta;
         this.paramsCnt = paramsCnt;
         this.cacheIds = cacheIds;
         this.mvccCacheId = mvccCacheId;
-        this.sqlQry = sqlQry;
-        this.sqlQryForUpdate = sqlQryForUpdate;
+        this.forUpdateQryOutTx = forUpdateQryOutTx;
+        this.forUpdateQryTx = forUpdateQryTx;
     }
 
     /**
@@ -120,8 +122,8 @@ public class QueryParserResultSelect {
     /**
      * @return Two-step query for update, or {@code} null if this result is for local query.
      */
-    @Nullable public GridCacheTwoStepQuery twoStepQueryForUpdate() {
-        return twoStepQryForUpdate;
+    @Nullable public GridCacheTwoStepQuery forUpdateTwoStepQuery() {
+        return forUpdateTwoStepQry;
     }
 
     /**
@@ -163,21 +165,21 @@ public class QueryParserResultSelect {
      * @return Whether this is FOR UPDATE query.
      */
     public boolean forUpdate() {
-        return sqlQryForUpdate != null;
+        return forUpdateQryTx != null;
     }
 
     /**
-     * @return Sql query.
+     * @return Sql FOR UPDATE query for execution out of transaction.
      */
-    public String sqlQuery() {
-        return sqlQry;
+    public String forUpdateQueryOutTx() {
+        return forUpdateQryOutTx;
     }
 
     /**
-     * @return Sql query FOR UPDATE.
+     * @return Sql FOR UPDATE query for execution within transaction.
      */
-    public String sqlQueryForUpdate() {
-        return sqlQryForUpdate;
+    public String forUpdateQueryTx() {
+        return forUpdateQryTx;
     }
 
     /**
