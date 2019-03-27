@@ -63,6 +63,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -902,8 +903,13 @@ public class JdbcThinConnection implements Connection {
 
                 // Partition result was requested.
                 if (reqPartRes && res.response() instanceof JdbcQueryExecuteResult) {
+                    PartitionResult partRes = ((JdbcQueryExecuteResult)res.response()).partitionResult();
+
                     affinityCache.addSqlQuery(((JdbcQueryExecuteRequest)req).sqlQuery(),
-                        (JdbcThinPartitionResult)((JdbcQueryExecuteResult)res.response()).partitionResult());
+                        new JdbcThinPartitionResultDescriptor(
+                            partRes,
+                            partRes.tree() != null ? GridCacheUtils.cacheId(partRes.tree().cacheName()) : null,
+                            new PartitionClientContext(partRes.affinity().parts())));
                 }
             }
 
@@ -944,20 +950,20 @@ public class JdbcThinConnection implements Connection {
 
         JdbcQueryExecuteRequest qry = (JdbcQueryExecuteRequest)req;
 
-        JdbcThinPartitionResult partRes = affinityCache.partitionResult(qry.sqlQuery());
+        JdbcThinPartitionResultDescriptor partResDesc = affinityCache.partitionResult(qry.sqlQuery());
 
-        if (partRes == null)
+        if (partResDesc == null)
             return null;
 
-        int[] parts = calculatePartitions(partRes, qry.arguments());
+        int[] parts = calculatePartitions(partResDesc, qry.arguments());
 
         if (parts == null || parts.length == 0)
             return null;
 
-        Map<Integer, UUID> cacheDistr = affinityCache.cacheDistribution(partRes.cacheId());
+        Map<Integer, UUID> cacheDistr = affinityCache.cacheDistribution(partResDesc.cacheId());
 
         if (cacheDistr == null)
-            cacheDistr = retrieveCacheDistribution(partRes.cacheId());
+            cacheDistr = retrieveCacheDistribution(partResDesc.cacheId());
 
         if (parts.length == 1)
             return Collections.singleton(cacheDistr.get(parts[0]));
@@ -1010,16 +1016,17 @@ public class JdbcThinConnection implements Connection {
     /**
      * Calculate partitions for the query.
      *
-     * @param derivedParts Derived partitions found during partition pruning.
+     * @param partResDesc Partition result descriptor.
      * @param args Arguments.
      * @return Calculated partitions or {@code null} if failed to calculate and there should be a broadcast.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
-    public static int[] calculatePartitions(PartitionResult derivedParts, Object[] args) {
+    public static int[] calculatePartitions(JdbcThinPartitionResultDescriptor partResDesc, Object[] args) {
+        PartitionResult derivedParts = partResDesc.partitionResult();
+
         if (derivedParts != null) {
             try {
-                Collection<Integer> realParts = derivedParts.tree().apply(
-                    new PartitionClientContext(derivedParts.affinity().parts()), args);
+                Collection<Integer> realParts = derivedParts.tree().apply(partResDesc.partitionClientContext(), args);
 
                 if (realParts == null)
                     return null;

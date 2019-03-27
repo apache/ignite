@@ -68,7 +68,7 @@ public class PartitionParameterNode extends PartitionSingleNode {
         Object arg = args[idx];
 
         if (cliCtx != null)
-            return cliCtx.partition(arg, mappedType, cacheName());
+            return cliCtx.partition(arg, mappedType);
         else {
             assert partRslvr != null;
 
@@ -108,5 +108,4 @@ public class PartitionParameterNode extends PartitionSingleNode {
     @Override public String toString() {
         return S.toString(PartitionParameterNode.class, this);
     }
-
 }

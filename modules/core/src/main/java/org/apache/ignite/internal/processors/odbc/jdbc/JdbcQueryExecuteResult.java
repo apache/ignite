@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionResult;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResultMarshaler;
@@ -166,7 +165,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         }
 
         if (reader.readBoolean())
-            partRes = JdbcThinPartitionResult.readResult(reader, ver);
+            partRes = PartitionResultMarshaler.unmarshal(reader, ver);
     }
 
     /**

@@ -44,13 +44,10 @@ public class PartitionClientContext {
      *
      * @param arg Argument.
      * @param typ Type.
-     * @param cacheName Cache name.
      * @return Partition or {@code null} if cannot be resolved.
      */
-    @Nullable public Integer partition(Object arg, @Nullable PartitionParameterType typ, String cacheName) {
+    @Nullable public Integer partition(Object arg, @Nullable PartitionParameterType typ) {
         Object key = PartitionDataTypeUtils.convert(arg, typ);
-
-        assert cacheName != null;
 
         if (mask >= 0) {
             int h;
