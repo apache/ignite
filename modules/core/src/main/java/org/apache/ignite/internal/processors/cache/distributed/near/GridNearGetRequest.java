@@ -399,13 +399,13 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
                 writer.incrementState();
 
-            case 14:
+            case 13:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 14:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -499,7 +499,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
                 reader.incrementState();
 
-            case 14:
+            case 13:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -507,7 +507,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
                 reader.incrementState();
 
-            case 15:
+            case 14:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
