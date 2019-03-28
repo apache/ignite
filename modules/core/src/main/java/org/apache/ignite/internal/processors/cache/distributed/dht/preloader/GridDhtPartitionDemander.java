@@ -469,8 +469,9 @@ public class GridDhtPartitionDemander {
                 parts = fut.remaining.get(node.id());
 
                 U.log(log, "Prepared rebalancing [grp=" + grp.cacheOrGroupName()
-                        + ", mode=" + cfg.getRebalanceMode() + ", supplier=" + node.id() + ", partitionsCount=" + parts.size()
-                        + ", topVer=" + fut.topologyVersion() + ", parallelism=" + rmtTotalStripes + "]");
+                    + ", mode=" + cfg.getRebalanceMode() + ", supplier=" + node.id() + ", partitionsCount=" + parts.size()
+                    + ", topVer=" + fut.topologyVersion() + ", localParallelism=" + locStripes
+                    + ", rmtParallelism=" + rmtStripes + ", parallelism=" + rmtTotalStripes + "]");
             }
 
             final List<IgniteDhtDemandedPartitionsMap> stripePartitions = new ArrayList<>(stripes);

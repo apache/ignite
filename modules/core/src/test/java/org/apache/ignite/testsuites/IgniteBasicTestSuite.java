@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRende
 import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTest;
 import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTestNoOptimization;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
-import org.apache.ignite.internal.processors.cache.CacheRebalanceConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
@@ -205,8 +204,6 @@ import org.junit.runners.Suite;
     TransactionIntegrityWithSystemWorkerDeathTest.class,
 
     AtomicOperationsInTxTest.class,
-
-    CacheRebalanceConfigValidationTest.class,
 
     ListeningTestLoggerTest.class,
 
