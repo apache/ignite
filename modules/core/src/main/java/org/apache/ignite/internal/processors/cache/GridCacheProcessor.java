@@ -632,27 +632,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "other cache types [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
                 ", cacheType=" + cacheType + "]");
 
-        // Make sure we do not use sql schema for system views.
-        if (ctx.query().moduleEnabled()) {
-            String schema = QueryUtils.normalizeSchemaName(cc.getName(), cc.getSqlSchema());
-
+        if (ctx.query().moduleEnabled())
             ctx.query().getIndexing().validateCacheConfiguration(cc);
-
-            // todo: move checks to indexing.
-            if (F.eq(schema, QueryUtils.SCHEMA_SYS)) {
-                if (cc.getSqlSchema() == null) {
-                    // Conflict on cache name.
-                    throw new IgniteCheckedException("SQL schema name derived from cache name is reserved (" +
-                        "please set explicit SQL schema name through CacheConfiguration.setSqlSchema() or choose " +
-                        "another cache name) [cacheName=" + cc.getName() + ", schemaName=" + cc.getSqlSchema() + "]");
-                }
-                else {
-                    // Conflict on schema name.
-                    throw new IgniteCheckedException("SQL schema name is reserved (please choose another one) [" +
-                        "cacheName=" + cc.getName() + ", schemaName=" + cc.getSqlSchema() + ']');
-                }
-            }
-        }
 
         if (cc.isEncryptionEnabled() && !ctx.clientNode()) {
             if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration())) {

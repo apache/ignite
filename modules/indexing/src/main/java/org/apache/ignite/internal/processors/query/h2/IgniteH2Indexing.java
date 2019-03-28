@@ -1766,6 +1766,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void validateCacheConfiguration(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
+        // Make sure we do not use sql schema for system views.
+        String schema = QueryUtils.normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
+
+        if (F.eq(schema, QueryUtils.SCHEMA_SYS)) {
+            if (ccfg.getSqlSchema() == null) {
+                // Conflict on cache name.
+                throw new IgniteCheckedException("SQL schema name derived from cache name is reserved (" +
+                    "please set explicit SQL schema name through CacheConfiguration.setSqlSchema() or choose " +
+                    "another cache name) [cacheName=" + ccfg.getName() + ", schemaName=" + ccfg.getSqlSchema() + "]");
+            }
+            else {
+                // Conflict on schema name.
+                throw new IgniteCheckedException("SQL schema name is reserved (please choose another one) [" +
+                    "cacheName=" + ccfg.getName() + ", schemaName=" + ccfg.getSqlSchema() + ']');
+            }
+        }
+
+        // Validate index name. We cannot validate it on the client node.
         if (!ctx.clientNode()) {
             boolean persistenceEnabled = CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration());
 
