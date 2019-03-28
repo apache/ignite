@@ -103,7 +103,7 @@ public class BinaryTypeRegistrationTest extends GridCommonAbstractTest {
         exec.shutdown();
         exec.awaitTermination(10, TimeUnit.SECONDS);
 
-        assertEquals(1, metadataUpdateProposedMessages.size());
+        assertEquals(metadataUpdateProposedMessages.toString(), 1, metadataUpdateProposedMessages.size());
     }
 
     /**
