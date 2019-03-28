@@ -42,6 +42,7 @@ public abstract class GridDhtConsistencyAbstractGetFuture extends GridFutureAdap
 
     /** Topology version. */
     protected final AffinityTopologyVersion topVer;
+
     /**
      *
      */
@@ -77,12 +78,12 @@ public abstract class GridDhtConsistencyAbstractGetFuture extends GridFutureAdap
 
         futs = new HashSet<>(mappings.size() - 1);
 
-        for (Map.Entry<ClusterNode, Collection<KeyCacheObject>> entry : mappings.entrySet()) {
+        for (Map.Entry<ClusterNode, Collection<KeyCacheObject>> mapping : mappings.entrySet()) {
             GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut = new GridPartitionedGetFuture<>(
                 ctx,
-                entry.getValue(),
+                mapping.getValue(),
                 readThrough,
-                false, // Always backup.
+                false, // Local get.
                 subjId,
                 taskName,
                 deserializeBinary,
@@ -94,7 +95,7 @@ public abstract class GridDhtConsistencyAbstractGetFuture extends GridFutureAdap
                 true,
                 txLbl,
                 mvccSnapshot,
-                entry.getKey()); // Explicit node instead of automated mapping.
+                mapping.getKey()); // Explicit node instead of automated mapping.
 
             fut.listen(this::onResult);
 

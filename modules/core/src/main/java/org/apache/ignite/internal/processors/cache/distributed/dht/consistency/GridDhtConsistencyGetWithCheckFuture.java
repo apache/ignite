@@ -77,11 +77,9 @@ public class GridDhtConsistencyGetWithCheckFuture extends GridDhtConsistencyAbst
             return;
 
         if (checkIsDone()) {
-            if (check())
+            if (isConsistent())
                 onDone(primaryFut.result());
             else {
-                // todo event ?
-
                 onDone(null,
                     new IgniteConsistencyViolationException("Distributed cache consistency violation detected."));
             }
@@ -103,7 +101,7 @@ public class GridDhtConsistencyGetWithCheckFuture extends GridDhtConsistencyAbst
     /**
      *
      */
-    private boolean check() {
+    private boolean isConsistent() {
         Map<KeyCacheObject, EntryGetResult> primaryRes = primaryFut.result();
 
         for (IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut : futs) {

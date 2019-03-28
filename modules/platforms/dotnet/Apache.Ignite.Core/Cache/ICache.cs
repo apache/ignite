@@ -124,6 +124,14 @@ namespace Apache.Ignite.Core.Cache
         ICache<TK, TV> WithAllowAtomicOpsInTx();
 
         /// <summary>
+        /// Gets cache with Consistency mode enabled.
+        /// Each explicit get operation will check data is consistent over the topology, each backup value
+        /// will be compared with primary and fixed in case consistency violation found.
+        /// </summary>
+        /// <returns>Cache instance with consistency mode enabled.</returns>
+        ICache<TK, TV> WithConsistency();
+
+        /// <summary>
         /// Executes <see cref="LocalLoadCache"/> on all cache nodes.
         /// </summary>
         /// <param name="p">
