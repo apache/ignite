@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheCon
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheWithoutCheckpointsTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDiscoDataHandlingInNewClusterTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
@@ -79,6 +80,9 @@ public class IgnitePdsTestSuite extends TestSuite {
 
         // Write throttling
         suite.addTestSuite(PagesWriteThrottleSmokeTest.class);
+
+        // Discovery data handling on node join and old cluster abnormal shutdown
+        suite.addTestSuite(IgnitePdsDiscoDataHandlingInNewClusterTest.class);
 
         // Metrics
         suite.addTestSuite(FillFactorMetricTest.class);
