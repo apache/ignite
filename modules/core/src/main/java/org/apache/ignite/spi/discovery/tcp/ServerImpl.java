@@ -976,6 +976,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     throw new IgniteSpiException(e);
                 }
 
+                msgWorker.nullifyDiscoData();
+
                 break;
             }
 
@@ -2680,6 +2682,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private long lastRingMsgTime;
 
+        /** */
+        private List<DiscoveryDataPacket> joiningNodesDiscoDataList;
+
+        /** */
+        private DiscoveryDataPacket gridDiscoveryData;
+
         /**
          */
         RingMessageWorker() {
@@ -2776,6 +2784,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Must be processed by IgniteSpiThread as well.
                 throw e;
             }
+        }
+
+        /** */
+        private void nullifyDiscoData() {
+            gridDiscoveryData = null;
+            joiningNodesDiscoDataList = null;
         }
 
         /**
@@ -4502,10 +4516,19 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     dataPacket.joiningNodeClient(msg.client());
 
-                    if (dataPacket.hasJoiningNodeData())
-                        spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                    if (dataPacket.hasJoiningNodeData()) {
+                        if (spiState == CONNECTED) {
+                            // Node already connected to the cluster can apply joining nodes' disco data immediately
+                            spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                    spi.collectExchangeData(dataPacket);
+                            if (!node.isDaemon())
+                                spi.collectExchangeData(dataPacket);
+                        }
+                        else if (spiState == CONNECTING)
+                            // Node joining to the cluster should postpone applying disco data of other joiners till
+                            // receiving gridDiscoData (when NodeAddFinished message arrives)
+                            joiningNodesDiscoDataList.add(dataPacket);
+                    }
 
                     processMessageFailedNodes(msg);
                 }
@@ -4516,8 +4539,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && locNodeId.equals(node.id())) {
-                DiscoveryDataPacket dataPacket;
-
                 synchronized (mux) {
                     if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
                         // Initialize topology.
@@ -4601,7 +4622,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (log.isDebugEnabled())
                                 log.debug("Restored topology from node added message: " + ring);
 
-                            dataPacket = msg.gridDiscoveryData();
+                            gridDiscoveryData = msg.gridDiscoveryData();
+
+                            joiningNodesDiscoDataList = new ArrayList<>();
 
                             topHist.clear();
                             topHist.putAll(msg.topologyHistory());
@@ -4632,10 +4655,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         return;
                     }
                 }
-
-                // Notify outside of synchronized block.
-                if (dataPacket != null)
-                    spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
                 processMessageFailedNodes(msg);
             }
@@ -4776,6 +4795,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     mux.notifyAll();
                 }
+
+                if (gridDiscoveryData != null)
+                    spi.onExchange(gridDiscoveryData, U.resolveClassLoader(spi.ignite().configuration()));
+
+                if (joiningNodesDiscoDataList != null) {
+                    for (DiscoveryDataPacket dataPacket : joiningNodesDiscoDataList)
+                        spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                }
+
+                nullifyDiscoData();
 
                 // Discovery manager must create local joined event before spiStart completes.
                 notifyDiscovery(EVT_NODE_JOINED, topVer, locNode);
