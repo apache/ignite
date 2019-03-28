@@ -1152,7 +1152,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     noResAddrs.remove(addr);
 
                     // Address is responsive, reset period start.
-                    noResStart = 0;
+                    if (res != RES_WAIT && res != RES_CONTINUE_JOIN)
+                        noResStart = 0;
 
                     switch (res) {
                         case RES_WAIT:
