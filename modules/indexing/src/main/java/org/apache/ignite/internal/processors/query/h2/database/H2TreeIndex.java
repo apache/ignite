@@ -197,7 +197,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         GridQueryTypeDescriptor typeDesc = table.rowDescriptor().type();
 
-        treeName = treeName(idxName, cctx.config(), typeDesc.typeId());
+        int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
+
+        treeName = treeName(idxName, cctx.config(), typeId);
 
         IndexColumnsInfo unwrappedColsInfo = new IndexColumnsInfo(unwrappedColsList, inlineSize);
 

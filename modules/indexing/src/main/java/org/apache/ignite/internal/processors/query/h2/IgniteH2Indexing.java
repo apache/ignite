@@ -1771,7 +1771,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (persistenceEnabled) {
                 for (QueryEntity entity : ccfg.getQueryEntities()) {
-                    int typeId = ctx.cacheObjects().typeId(entity.findValueType());
+                    // If binary marshaller is not used, we expect the worst case (longest int).
+                    int typeId = ctx.cacheObjects().isBinaryEnabled(ccfg) ?
+                        ctx.cacheObjects().typeId(entity.findValueType()) :
+                        Integer.MIN_VALUE;
 
                     for (QueryIndex index : entity.getIndexes())
                         H2TreeIndex.validatePdsIndexName(index.getName(), ccfg, typeId);

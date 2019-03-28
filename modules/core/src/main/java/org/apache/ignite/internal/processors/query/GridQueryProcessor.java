@@ -396,7 +396,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (op instanceof SchemaIndexCreateOperation) {
                     SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
 
-                    Integer typeId = findTypeId(ccfg.getQueryEntities(), op0.tableName());
+                    // If binary marshaller is not used, we expect the worst case (longest int).
+                    Integer typeId = ctx.cacheObjects().isBinaryEnabled(ccfg) ?
+                        findTypeId(ccfg.getQueryEntities(), op0.tableName()) :
+                        Integer.MIN_VALUE;
 
                     if (typeId == null)
                         msg.onError(new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, op0.tableName()));
