@@ -2901,6 +2901,21 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (!hasState(i, node.id(), OWNING))
                         return;
                 }
+
+                if (!grp.isReplicated()) {
+                    Set<UUID> diff = diffFromAffinity.get(i);
+
+                    if (diff != null) {
+                        for (UUID nodeId : diff) {
+                            if (hasState(i, nodeId, OWNING)) {
+                                ClusterNode node = ctx.discovery().node(nodeId);
+
+                                if (node != null && !affNodes.contains(node))
+                                    return;
+                            }
+                        }
+                    }
+                }
             }
 
             rebalancedTopVer = readyTopVer;
