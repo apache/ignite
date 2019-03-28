@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Impl
         public IgniteProductVersion GetVersion()
         {
             return Target.OutStream((int) Op.GetNodeVersion,
-                r => { return IgniteProductVersion.FromBinaryReader(r); });
+                r => { return new IgniteProductVersion(r); });
         }
 
         /** <inheritdoc /> */

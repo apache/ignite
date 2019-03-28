@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Tests.Common
         {
             IBinaryRawReader reader = SetUpRawBinaryReader();
 
-            IgniteProductVersion deserializedVersion = IgniteProductVersion.FromBinaryReader(reader);
+            IgniteProductVersion deserializedVersion = new IgniteProductVersion(reader);
 
             Assert.AreEqual(_defaultVersion, deserializedVersion);
         }

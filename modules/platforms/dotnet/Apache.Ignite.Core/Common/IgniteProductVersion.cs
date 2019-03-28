@@ -29,24 +29,7 @@ namespace Apache.Ignite.Core.Common
         /** Revision hash. */
         private readonly byte[] _revHash;
 
-        /// <summary>
-        /// Build a node version from <see cref="IBinaryRawReader"/>
-        /// </summary>
-        /// <param name="reader"><see cref="IBinaryRawReader"/></param>
-        /// <returns>Node version</returns>
-        public static IgniteProductVersion FromBinaryReader(IBinaryRawReader reader)
-        {
-            IgniteArgumentCheck.NotNull(reader, "reader");
-
-            var major = reader.ReadByte();
-            var minor = reader.ReadByte();
-            var maintenance = reader.ReadByte();
-            var revTs = reader.ReadLong();
-            var revHash = reader.ReadByteArray();
-
-            return new IgniteProductVersion(major, minor, maintenance, revTs, revHash);
-        }
-
+        
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -83,9 +66,24 @@ namespace Apache.Ignite.Core.Common
             _revTs = revTs;
             _revHash = revHash ?? new byte[20];
         }
-        
+
         /// <summary>
-        /// Major version number.
+        /// Constructor.
+        /// </summary>
+        /// <param name="reader"><see cref="IBinaryRawReader"/></param>
+        public IgniteProductVersion(IBinaryRawReader reader)
+        {
+            IgniteArgumentCheck.NotNull(reader, "reader");
+
+            _major = reader.ReadByte();
+            _minor = reader.ReadByte();
+            _maintenance = reader.ReadByte();
+            _revTs = reader.ReadLong();
+            _revHash = reader.ReadByteArray();
+        }
+
+        /// <summary>
+        /// Gets the major version number.
         /// </summary>
         public byte Major
         {
@@ -93,7 +91,7 @@ namespace Apache.Ignite.Core.Common
         }
 
         /// <summary>
-        /// Minor version number.
+        /// Gets the minor version number.
         /// </summary>
         public byte Minor
         {
@@ -101,7 +99,7 @@ namespace Apache.Ignite.Core.Common
         }
 
         /// <summary>
-        /// Maintenance version number.
+        /// Gets the maintenance version number.
         /// </summary>
         public byte Maintenance
         {
@@ -109,15 +107,15 @@ namespace Apache.Ignite.Core.Common
         }
 
         /// <summary>
-        /// Stage of development.
+        /// Gets the stage of development.
         /// </summary>
-        public String Stage
+        public string Stage
         {
             get { return _stage; }
         }
 
         /// <summary>
-        /// Revision timestamp.
+        /// Gets the revision timestamp.
         /// </summary>
         public long RevisionTimestamp
         {
@@ -125,7 +123,7 @@ namespace Apache.Ignite.Core.Common
         }
 
         /// <summary>
-        /// Revision hash.
+        /// Gets the revision hash.
         /// </summary>
         public byte[] RevisionHash
         {
@@ -133,7 +131,7 @@ namespace Apache.Ignite.Core.Common
         }
 
         /// <summary>
-        /// Release date.
+        /// Gets the release date.
         /// </summary>
         public DateTime ReleaseDate
         {
@@ -157,7 +155,7 @@ namespace Apache.Ignite.Core.Common
         {
             String revTsStr = ReleaseDate.ToString("yyyyMMdd");
 
-            return Major + "." + Minor + "." + Maintenance + "#" + revTsStr;
+            return string.Format("{0}.{1}.{2}#{3}", Major, Minor, Maintenance, revTsStr);
         }
         
         /** <inheritDoc /> */

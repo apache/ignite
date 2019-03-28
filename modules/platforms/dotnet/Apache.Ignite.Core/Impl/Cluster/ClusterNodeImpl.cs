@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             _isDaemon = reader.ReadBoolean();
             _isClient = reader.ReadBoolean();
             _consistentId = reader.ReadObject<object>();
-            _version = IgniteProductVersion.FromBinaryReader(reader);
+            _version = new IgniteProductVersion(reader);
 
             _metrics = reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
         }
