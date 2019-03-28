@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
@@ -252,8 +253,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
                 ignite,
                 cache,
                 split.getTrainFilter(),
-                preprocessor,
-                lbExtractor
+                FeatureLabelExtractorWrapper.wrap(preprocessor, lbExtractor) //TODO: IGNITE-11504
             );
 
             actualAccuracy.set(Evaluator.evaluate(

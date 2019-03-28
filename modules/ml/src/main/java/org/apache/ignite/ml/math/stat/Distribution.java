@@ -17,8 +17,9 @@
 
 package org.apache.ignite.ml.math.stat;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+
+import java.io.Serializable;
 
 /**
  * Interface for distributions.
@@ -26,12 +27,12 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 public interface Distribution extends Serializable {
     /**
      * @param x Vector.
-     * @return probability of vector.
+     * @return Probability of vector.
      */
     public double prob(Vector x);
 
     /**
-     * @return dimension of vector space.
+     * @return Dimension of vector space.
      */
     public int dimension();
 }
