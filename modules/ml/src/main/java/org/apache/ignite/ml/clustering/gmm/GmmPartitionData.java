@@ -17,20 +17,22 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Partition data for GMM algorithm. Unlike partition data for other algorithms this class aggregate probabilities of
@@ -65,10 +67,20 @@ class GmmPartitionData implements AutoCloseable {
     }
 
     /**
-     * @return all vectors from partition.
+     * Updates P(c|xi) values in partitions and compute dataset likelihood.
+     *
+     * @param dataset Dataset.
+     * @param clusterProbs Component probabilities.
+     * @param components Components.
+     * @return Dataset likelihood.
      */
-    public List<LabeledVector<Double>> getAllXs() {
-        return Collections.unmodifiableList(xs);
+    static double updatePcxiAndComputeLikelihood(Dataset<EmptyContext, GmmPartitionData> dataset, Vector clusterProbs,
+        List<MultivariateGaussianDistribution> components) {
+
+        return dataset.compute(
+            data -> updatePcxi(data, clusterProbs, components),
+            (left, right) -> asPrimitive(left) + asPrimitive(right)
+        );
     }
 
     /**
@@ -90,10 +102,10 @@ class GmmPartitionData implements AutoCloseable {
     }
 
     /**
-     * @return size of dataset partition.
+     * @return All vectors from partition.
      */
-    public int size() {
-        return pcxi.length;
+    public List<LabeledVector<Double>> getAllXs() {
+        return Collections.unmodifiableList(xs);
     }
 
     /** {@inheritDoc} */
@@ -104,12 +116,12 @@ class GmmPartitionData implements AutoCloseable {
     /**
      * Builder for GMM partition data.
      */
-    public static class Builder<K, V> implements PartitionDataBuilder<K, V, EmptyContext, GmmPartitionData> {
+    public static class Builder<K, V, C extends Serializable> implements PartitionDataBuilder<K, V, EmptyContext, GmmPartitionData> {
         /** Serial version uid. */
         private static final long serialVersionUID = 1847063348042022561L;
 
-        /** Extractor. */
-        private final FeatureLabelExtractor<K, V, Double> extractor;
+        /** Upsteam vectorizer. */
+        private final Vectorizer<K, V, C, Double> extractor;
 
         /** Count of components of mixture. */
         private final int countOfComponents;
@@ -120,7 +132,7 @@ class GmmPartitionData implements AutoCloseable {
          * @param extractor Extractor.
          * @param countOfComponents Count of components.
          */
-        public Builder(FeatureLabelExtractor<K, V, Double> extractor, int countOfComponents) {
+        public Builder(Vectorizer<K, V, C, Double> extractor, int countOfComponents) {
             this.extractor = extractor;
             this.countOfComponents = countOfComponents;
         }
@@ -169,20 +181,10 @@ class GmmPartitionData implements AutoCloseable {
     }
 
     /**
-     * Updates P(c|xi) values in partitions and compute dataset likelihood.
-     *
-     * @param dataset Dataset.
-     * @param clusterProbs Component probabilities.
-     * @param components Components.
-     * @return dataset likelihood.
+     * @return Size of dataset partition.
      */
-    static double updatePcxiAndComputeLikelihood(Dataset<EmptyContext, GmmPartitionData> dataset, Vector clusterProbs,
-        List<MultivariateGaussianDistribution> components) {
-
-        return dataset.compute(
-            data -> updatePcxi(data, clusterProbs, components),
-            (left, right) -> asPrimitive(left) + asPrimitive(right)
-        );
+    public int size() {
+        return pcxi.length;
     }
 
     /**

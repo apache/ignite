@@ -74,6 +74,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinMetadataSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMissingLongArrayResultsTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMultiStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
+import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementLeakTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinResultSetSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinSchemaCaseSelfTest;
@@ -226,7 +227,9 @@ import org.junit.runners.Suite;
 
     // Various commands.
     JdbcThinWalModeChangeSelfTest.class,
-    JdbcThinAuthenticateConnectionSelfTest.class
+    JdbcThinAuthenticateConnectionSelfTest.class,
+
+    JdbcThinPreparedStatementLeakTest.class,
 })
 public class IgniteJdbcDriverTestSuite {
 }

@@ -384,6 +384,8 @@ public class JdbcThinStatement implements Statement {
 
         try {
             closeResults();
+
+            conn.closeStatement(this);
         }
         finally {
             closed = true;
