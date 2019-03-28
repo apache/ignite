@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -793,7 +794,7 @@ public final class UpdatePlanBuilder {
         try {
             // Get a new prepared statement for derived select query.
             try (PreparedStatement stmt = conn.prepareStatement(selectQry)) {
-                idx.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
+                H2Utils.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
 
                 GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(conn,
                     GridSqlQueryParser.prepared(stmt),

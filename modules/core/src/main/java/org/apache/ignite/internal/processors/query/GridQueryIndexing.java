@@ -28,6 +28,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
@@ -351,4 +352,12 @@ public interface GridQueryIndexing {
      * @return Row cache cleaner.
      */
     public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
+
+    /**
+     * Register SQL JMX beans.
+     *
+     * @param mbMgr Ignite MXBean manager.
+     * @throws IgniteCheckedException On bean registration error.
+     */
+    void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException;
 }
