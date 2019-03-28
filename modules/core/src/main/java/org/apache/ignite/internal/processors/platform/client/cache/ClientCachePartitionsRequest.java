@@ -147,7 +147,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
     }
 
     /**
-     * Gets the cache for cache id.
+     * Gets the cache from cache descriptor.
      *
      * @param ctx Kernal context.
      * @param cacheDesc Cache descriptor.
