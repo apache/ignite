@@ -17,9 +17,6 @@
 
 package org.apache.ignite.ml.pipeline;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.IgniteModel;
@@ -31,6 +28,10 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A simple pipeline, which acts as a global trainer which produce a Pipeline Model.
@@ -151,6 +152,7 @@ public class Pipeline<K, V, R> {
             );
         });
 
+        //TODO: IGNITE-11481
         IgniteModel<Vector, Double> internalMdl = finalStage
             .fit(
                 datasetBuilder,
