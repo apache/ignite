@@ -59,7 +59,7 @@ import org.junit.Test;
  */
 public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implements Serializable {
     /** */
-    private boolean pds = false;
+    protected boolean pds = false;
 
     /** */
     private static class RoundRobinVariableSizeAffinityFunction implements AffinityFunction {

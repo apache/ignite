@@ -22,20 +22,22 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
+import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -48,74 +50,80 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
     /**
      *
      */
-    protected static final String GROUP_NAME = "group1";
+    private static final String GROUP_NAME = "group1";
 
     /**
      *
      */
-    protected static final String CACHE_NAME = "cache1";
+    private static final String CACHE_NAME = "cache1";
 
     /**
      *
      */
-    protected static final String OBJECT_NAME = "MyObject";
+    private static final String OBJECT_NAME = "MyObject";
 
     /**
      *
      */
-    protected static final String KEY_NAME = "id";
+    private static final String TABLE = "\"" + CACHE_NAME + "\"." + OBJECT_NAME;
 
     /**
      *
      */
-    protected static final String COLUMN1_NAME = "col1";
+    private static final String KEY_NAME = "id";
 
     /**
      *
      */
-    protected static final String COLUMN2_NAME = "col2";
+    private static final String COLUMN1_NAME = "col1";
+
+    /**
+     *
+     */
+    private static final String COLUMN2_NAME = "col2";
+
+    /**
+     *
+     */
+    private static final String COLUMN3_NAME = "col3";
+
+    /**
+     *
+     */
+    private static final String INDEX_NAME = "testindex001";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cacheCfg = new CacheConfiguration(CACHE_NAME)
-            .setGroupName(GROUP_NAME)
-            .setAtomicityMode(atomicityMode());
+        for (CacheConfiguration cacheCfg : cfg.getCacheConfiguration()) {
+            if (GROUP_NAME.equals(cacheCfg.getGroupName()) && CACHE_NAME.equals(cacheCfg.getName())) {
 
-        QueryEntity queryEntity = new QueryEntity(Long.class.getCanonicalName(), OBJECT_NAME);
+                QueryEntity queryEntity = new QueryEntity(Long.class.getCanonicalName(), OBJECT_NAME);
 
-        queryEntity.setKeyFieldName(KEY_NAME);
+                queryEntity.setKeyFieldName(KEY_NAME);
 
-        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+                LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-        fields.put(KEY_NAME, Long.class.getCanonicalName());
+                fields.put(KEY_NAME, Long.class.getCanonicalName());
 
-        fields.put(COLUMN1_NAME, Integer.class.getCanonicalName());
+                fields.put(COLUMN1_NAME, Integer.class.getCanonicalName());
 
-        fields.put(COLUMN2_NAME, String.class.getCanonicalName());
+                fields.put(COLUMN2_NAME, String.class.getCanonicalName());
 
-        queryEntity.setFields(fields);
+                queryEntity.setFields(fields);
 
-        ArrayList<QueryIndex> indexes = new ArrayList<>();
+                ArrayList<QueryIndex> indexes = new ArrayList<>();
 
-        indexes.add(new QueryIndex(COLUMN1_NAME));
+                indexes.add(new QueryIndex(COLUMN1_NAME));
 
-        indexes.add(new QueryIndex(COLUMN2_NAME));
+                indexes.add(new QueryIndex(COLUMN2_NAME));
 
-        queryEntity.setIndexes(indexes);
+                queryEntity.setIndexes(indexes);
 
-        cacheCfg.setQueryEntities(Collections.singletonList(queryEntity));
-
-        cfg.setCacheConfiguration(cacheCfg);
-
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)
-                .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
-                .setMetricsEnabled(true)
-            ).setMetricsEnabled(true)
-        );
+                cacheCfg.setQueryEntities(Collections.singletonList(queryEntity));
+            }
+        }
 
         return cfg;
     }
@@ -123,6 +131,8 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /**
@@ -130,7 +140,7 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
      */
     @Test
     public void testIndexRebuildCountPartitionsLeft() throws Exception {
-        cleanPersistenceDir();
+        pds = true;
 
         Ignite ignite = startGrid(0);
 
@@ -138,7 +148,7 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
 
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
 
-        for (int i = 0; i < 500_000; i++) {
+        for (int i = 0; i < 100_000; i++) {
             Long id = Long.valueOf(i);
 
             BinaryObjectBuilder o = ignite.binary().builder(OBJECT_NAME)
@@ -153,7 +163,9 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
 
         File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
-        Collection<File> indexBinFiles = FileUtils.listFiles(dir, FileFilterUtils.nameFileFilter("index.bin"), TrueFileFilter.TRUE);
+        IOFileFilter filter = FileFilterUtils.nameFileFilter("index.bin");
+
+        Collection<File> indexBinFiles = FileUtils.listFiles(dir, filter, TrueFileFilter.TRUE);
 
         for (File indexBin : indexBinFiles)
             U.delete(indexBin);
@@ -162,32 +174,64 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
 
         CacheGroupMetricsMXBean mxBean0Grp1 = mxBean(0, GROUP_NAME);
 
-        boolean stepStop = false;
+        Assert.assertTrue("Timeout wait start rebuild index",
+            GridTestUtils.waitForCondition(() -> mxBean0Grp1.getIndexBuildCountPartitionsLeft() > 0, 30_000)
+        );
 
-        int timeout = 30;
+        Assert.assertTrue("Timeout wait finished rebuild index",
+            GridTestUtils.waitForCondition(() -> mxBean0Grp1.getIndexBuildCountPartitionsLeft() == 0, 30_000)
+        );
+    }
 
-        while (!stepStop && timeout > 0) {
-            stepStop = mxBean0Grp1.getIndexBuildCountPartitionsLeft() > 0;
+    /**
+     * Test number of partitions need to finished create indexes.
+     */
+    @Test
+    public void testIndexCreateCountPartitionsLeft() throws Exception {
+        pds = true;
 
-            Thread.sleep(1000);
+        Ignite ignite = startGrid(0);
 
-            timeout--;
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
+
+        String addColumnSql = "ALTER TABLE " + TABLE + " ADD COLUMN " + COLUMN3_NAME + " BIGINT";
+
+        cache1.query(new SqlFieldsQuery(addColumnSql)).getAll();
+
+        for (int i = 0; i < 100_000; i++) {
+            Long id = Long.valueOf(i);
+
+            BinaryObjectBuilder o = ignite.binary().builder(OBJECT_NAME)
+                .setField(KEY_NAME, id)
+                .setField(COLUMN1_NAME, i / 2)
+                .setField(COLUMN2_NAME, "str" + Integer.toHexString(i))
+                .setField(COLUMN3_NAME, id * 10);
+
+            cache1.put(id, o.build());
         }
 
-        Assert.assertTrue("Timeout wait start rebuild index", stepStop);
+        CacheGroupMetricsMXBean mxBean0Grp1 = mxBean(0, GROUP_NAME);
 
-        stepStop = false;
+        GridTestUtils.runAsync(() -> {
+            String createIndexSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";
 
-        timeout = 30;
+            cache1.query(new SqlFieldsQuery(createIndexSql)).getAll();
 
-        while (!stepStop && timeout > 0) {
-            stepStop = mxBean0Grp1.getIndexBuildCountPartitionsLeft() == 0;
+            String selectIndexSql = "select * from information_schema.indexes where index_name='" + INDEX_NAME + "'";
 
-            Thread.sleep(1000);
+            List<List<?>> all = cache1.query(new SqlFieldsQuery(selectIndexSql)).getAll();
 
-            timeout--;
-        }
+            Assert.assertEquals("Index not found", 1, all.size());
+        });
 
-        Assert.assertTrue("Timeout wait finished rebuild index", stepStop);
+        Assert.assertTrue("Timeout wait start rebuild index",
+            GridTestUtils.waitForCondition(() -> mxBean0Grp1.getIndexBuildCountPartitionsLeft() > 0, 30_000)
+        );
+
+        Assert.assertTrue("Timeout wait finished rebuild index",
+            GridTestUtils.waitForCondition(() -> mxBean0Grp1.getIndexBuildCountPartitionsLeft() == 0, 30_000)
+        );
     }
 }
