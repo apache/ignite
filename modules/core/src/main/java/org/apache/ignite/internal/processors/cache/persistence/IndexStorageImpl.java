@@ -151,19 +151,6 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /**
-     * Mask cache index name.
-     *
-     * @param idxName Index name.
-     * @return Masked name.
-     */
-//    private String maskCacheIndexName(Integer cacheId, String idxName, int segment) {
-//        if (grpShared)
-//            idxName = Integer.toString(cacheId) + "_" + idxName;
-//
-//        return idxName + "%" + segment;
-//    }
-
-    /**
      *
      */
     private static class MetaTree extends BPlusTree<IndexItem, IndexItem> {

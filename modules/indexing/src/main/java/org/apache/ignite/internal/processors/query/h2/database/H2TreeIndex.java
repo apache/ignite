@@ -922,7 +922,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /**
-     * Create tree name
+     * Create tree name.
      *
      * @param idxName Index name.
      * @param ccfg Ccfg.
@@ -937,6 +937,12 @@ public class H2TreeIndex extends H2TreeIndexBase {
         return masked;
     }
 
+    /**
+     * Creates name of the segment (part of the index).
+     *
+     * @param treeName Tree name.
+     * @param segId id of the segment.
+     */
     public static String segmentName(String treeName, int segId) {
         return treeName + "%" + segId;
     }
