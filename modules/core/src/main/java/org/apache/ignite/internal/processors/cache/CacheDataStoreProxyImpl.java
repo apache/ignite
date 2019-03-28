@@ -53,7 +53,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
     private final IgniteLogger log;
 
     /** */
-    private final CacheGroupContext grp;
+    private final GridCacheSharedContext<?, ?> cctx;
 
     /** The map of all storages per each mode. */
     private final ConcurrentMap<StorageMode, IgniteCacheOffheapManager.CacheDataStore> storageMap =
@@ -67,14 +67,14 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
      * @param secondary The storage to handle only write operation in temporary mode.
      */
     public CacheDataStoreProxyImpl(
-        CacheGroupContext grp,
+        GridCacheSharedContext<?, ?> cctx,
         IgniteCacheOffheapManager.CacheDataStore primary,
         IgniteCacheOffheapManager.CacheDataStore secondary,
         IgniteLogger log
     ) {
         assert primary != null;
 
-        this.grp = grp;
+        this.cctx = cctx;
         this.log = log;
 
         storageMap.put(StorageMode.FULL, primary);
@@ -88,6 +88,9 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         // The instance of currently active storage cannot be changed.
         if (mode == currMode)
             return false;
+
+        assert cctx.database().checkpointLockIsHeldByThread() :
+            "Changing storage mode is allowed only under the checkpoint write lock";
 
         switch (mode) {
             case FULL:
@@ -119,7 +122,8 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
         if (mode == currMode)
             return;
         
-        assert grp.shared().database().checkpointLockIsHeldByThread();
+        assert cctx.database().checkpointLockIsHeldByThread() :
+            "Changing storage mode is allowed only under the checkpoint write lock";
 
         currMode = mode;
     }

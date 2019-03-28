@@ -55,6 +55,8 @@ public class PartitionUpdateCounter {
         initCntr = updateCntr;
 
         cntr.set(updateCntr);
+
+        queue.clear();
     }
 
     /**

@@ -20,11 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence.preload;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.processors.cache.CacheDataStoreTracker;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -56,29 +54,18 @@ public class CacheDataStoreDecanter extends CacheDataStoreAdapter {
     private final String name;
 
     /** */
-    private final CacheDataStoreTracker tracker;
-
-    /** */
     private final Queue<DataRecord> store = new ConcurrentLinkedQueue<>();
 
     /**
      * @param partId Partition id.
      */
-    public CacheDataStoreDecanter(CacheGroupContext grp, int partId, CacheDataStoreTracker tracker) {
+    public CacheDataStoreDecanter(CacheGroupContext grp, int partId) {
         assert grp.persistenceEnabled();
 
         this.grp = grp;
         this.partId = partId;
-        this.tracker = tracker;
 
         name = treeName(partId) + "-logging";
-    }
-
-    /**
-     * @return The appropriate data storage tracker.
-     */
-    private CacheDataStoreTracker tracker() {
-        return tracker;
     }
 
     /** {@inheritDoc} */
@@ -151,71 +138,6 @@ public class CacheDataStoreDecanter extends CacheDataStoreAdapter {
     @Override public PendingEntriesTree pendingTree() {
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long cacheSize(int cacheId) {
-        return tracker().cacheSize(cacheId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<Integer, Long> cacheSizes() {
-        return tracker().cacheSizes();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long fullSize() {
-        return tracker().fullSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isEmpty() {
-        return tracker().isEmpty();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void updateSize(int cacheId, long delta) {
-        tracker().updateSize(cacheId, delta);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long nextUpdateCounter() {
-        return tracker().nextUpdateCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long initialUpdateCounter() {
-        return tracker().initialUpdateCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void updateInitialCounter(long cntr) {
-        tracker().updateInitialCounter(cntr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getAndIncrementUpdateCounter(long delta) {
-        return tracker().getAndIncrementUpdateCounter(delta);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long updateCounter() {
-        return tracker().updateCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void updateCounter(long val) {
-        tracker().updateCounter(val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void updateCounter(long start, long delta) {
-        tracker().updateCounter(start, delta);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridLongList finalizeUpdateCounters() {
-        return tracker().finalizeUpdateCounters();
     }
 
     /**

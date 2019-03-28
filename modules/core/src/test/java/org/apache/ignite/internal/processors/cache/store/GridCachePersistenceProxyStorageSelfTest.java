@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.store;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -27,6 +31,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.CacheDataStoreProxy;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -37,9 +42,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -54,14 +60,20 @@ public class GridCachePersistenceProxyStorageSelfTest extends GridCommonAbstract
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)))
+            .setCacheConfiguration(new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                .setBackups(1)
+                .setAffinity(new RendezvousAffinityFunction(false)
+                    .setPartitions(4)))
             .setCommunicationSpi(new TestRecordingCommunicationSpi());
     }
 
     /**
      *
      */
-    @After
-    public void afterProxyTest() throws Exception {
+    @Before
+    public void beforeProxyTest() throws Exception {
         cleanPersistenceDir();
     }
 
@@ -74,13 +86,7 @@ public class GridCachePersistenceProxyStorageSelfTest extends GridCommonAbstract
 
         ignite0.cluster().active(true);
 
-        IgniteCache<Integer, byte[]> cache = ignite0.getOrCreateCache(
-            new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-                .setBackups(1)
-                .setAffinity(new RendezvousAffinityFunction(false)
-                    .setPartitions(4)));
+        ignite0.cluster().baselineAutoAdjustEnabled(false);
 
         loadData(ignite0, DEFAULT_CACHE_NAME, 100_000);
 
@@ -89,24 +95,22 @@ public class GridCachePersistenceProxyStorageSelfTest extends GridCommonAbstract
 
         dbMgr.wakeupForCheckpoint("save").get();
 
-        TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(ignite0);
-
-        spi0.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                return (msg instanceof GridDhtPartitionDemandMessage)
-                    && ((GridCacheGroupIdMessage)msg).groupId() == groupIdForCache(ignite0, DEFAULT_CACHE_NAME);
-            }
-        });
-
         IgniteEx ignite1 = startGrid(1);
 
         assertTrue(!ignite0.cluster().isBaselineAutoAdjustEnabled());
 
         ignite0.cluster().setBaselineTopology(ignite0.cluster().nodes());
 
-        System.out.println("start blocking");
+        TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(ignite1);
 
-        spi0.waitForBlocked();
+        spi1.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                return (msg instanceof GridDhtPartitionDemandMessage)
+                    && ((GridCacheGroupIdMessage)msg).groupId() == groupIdForCache(ignite0, DEFAULT_CACHE_NAME);
+            }
+        });
+
+        spi1.waitForBlocked();
 
         CacheGroupContext grp = ignite1.context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME));
 
@@ -114,13 +118,42 @@ public class GridCachePersistenceProxyStorageSelfTest extends GridCommonAbstract
 
         GridDhtPartitionTopology top = grp.topology();
 
+        Set<Integer> parts = new HashSet<>();
+
         for (int partId = 0; partId < partitions; partId++) {
             GridDhtLocalPartition part = top.localPartition(partId);
 
-            assert part.state() == MOVING;
-
-            part.storageMode(CacheDataStoreProxy.StorageMode.LOG_ONLY);
+            if (part.state() == MOVING)
+                parts.add(partId);
         }
+
+        assertFalse(parts.isEmpty());
+
+        Map<Integer, Set<Integer>> partMap = new HashMap<>();
+
+        partMap.put(CU.cacheId(DEFAULT_CACHE_NAME), parts);
+
+        IgniteInternalFuture<Boolean> fut = ignite1.context()
+            .cache()
+            .context()
+            .preloadMgr()
+            .addPartitionSwitchRequest(CacheDataStoreProxy.StorageMode.LOG_ONLY, partMap);
+
+        fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+            @Override public void apply(IgniteInternalFuture<Boolean> f) {
+                for (int partId = 0; partId < partitions; partId++) {
+                    GridDhtLocalPartition part = top.localPartition(partId);
+
+                    assert part.storageMode() == CacheDataStoreProxy.StorageMode.LOG_ONLY;
+                }
+            }
+        });
+
+        forceCheckpoint(ignite1);
+
+        fut.get();
+
+        IgniteCache<Integer, byte[]> cache = ignite0.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         for (int i = 1024; i < 2048; i++)
             cache.put(i, new byte[2000]);

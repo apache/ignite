@@ -51,7 +51,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY
  */
 public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapter {
     /** */
-    static final int REBALANCE_TOPIC_IDX = 0;
+    public static final int REBALANCE_TOPIC_IDX = 0;
 
     /** */
     private final boolean presistenceRebalanceEnabled;
@@ -191,7 +191,7 @@ public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapt
         CacheDataStoreProxy.StorageMode mode,
         Map<Integer, Set<Integer>> parts
     ) {
-        return switchMgr.addRequest(mode, parts);
+        return switchMgr.offerRequest(mode, parts);
     }
 
     /**
@@ -232,7 +232,7 @@ public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapt
                     }
                 }
 
-                rq.rqFut.onDone(true);
+                rq.rqFut.onDone();
             }
         }
 
@@ -251,13 +251,13 @@ public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapt
          * @param parts The set of partitions to change storage mode.
          * @return The future which will be completed when request is done.
          */
-        public IgniteInternalFuture<Boolean> addRequest(
+        public GridFutureAdapter<Boolean> offerRequest(
             CacheDataStoreProxy.StorageMode mode,
             Map<Integer, Set<Integer>> parts
         ) {
             SwitchModeRequest req = new SwitchModeRequest(mode, parts);
 
-            boolean offered = switchReqs.offer(new SwitchModeRequest(mode, parts));
+            boolean offered = switchReqs.offer(req);
 
             assert offered;
 
