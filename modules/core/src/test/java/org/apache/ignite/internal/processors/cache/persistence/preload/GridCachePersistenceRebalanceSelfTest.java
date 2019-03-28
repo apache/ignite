@@ -166,7 +166,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         TestRecordingCommunicationSpi.spi(ignite1)
             .blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
-                    return msg instanceof GridPartitionCopyDemandMessage;
+                    return msg instanceof GridPartitionBatchDemandMessage;
                 }
             });
 

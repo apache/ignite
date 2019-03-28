@@ -90,7 +90,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Sto
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.persistence.preload.IgniteCachePreloadSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePreloadSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -243,7 +243,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private ExchangeLatchManager latchMgr;
 
     /** */
-    private IgniteCachePreloadSharedManager preloadMgr;
+    private GridCachePreloadSharedManager preloadMgr;
 
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {

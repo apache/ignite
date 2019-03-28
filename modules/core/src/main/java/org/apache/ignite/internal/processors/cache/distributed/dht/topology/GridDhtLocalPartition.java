@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
@@ -357,7 +358,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        return store.isEmpty() && internalSize() == 0;
+        return dataStore().isEmpty() && internalSize() == 0;
     }
 
     /**
@@ -464,6 +465,25 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public CacheDataStoreProxy.StorageMode storageMode() {
         return store.storageMode();
+    }
+
+    /**
+     * @param mode The mode to associate with data storage instance.
+     * @param storage The cache data storage instance to set to.
+     */
+    public void storage(CacheDataStoreProxy.StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage) {
+        if (state() != MOVING)
+            return;
+
+        store.storage(mode, storage);
+    }
+
+    /**
+     * @param mode The storage mode.
+     * @return The storage intance for the given mode.
+     */
+    public IgniteCacheOffheapManager.CacheDataStore storage(CacheDataStoreProxy.StorageMode mode) {
+        return store.storage(mode);
     }
 
     /**
@@ -996,7 +1016,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Next update index.
      */
     public long nextUpdateCounter(int cacheId, AffinityTopologyVersion topVer, boolean primary, @Nullable Long primaryCntr) {
-        long nextCntr = store.nextUpdateCounter();
+        long nextCntr = dataStore().nextUpdateCounter();
 
         if (grp.sharedGroup())
             grp.onPartitionCounterUpdate(cacheId, id, primaryCntr != null ? primaryCntr : nextCntr, topVer, primary);
@@ -1021,28 +1041,28 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Current update counter.
      */
     public long updateCounter() {
-        return store.updateCounter();
+        return dataStore().updateCounter();
     }
 
     /**
      * @param val Update counter value.
      */
     public void updateCounter(long val) {
-        store.updateCounter(val);
+        dataStore().updateCounter(val);
     }
 
     /**
      * @return Initial update counter.
      */
     public long initialUpdateCounter() {
-        return store.initialUpdateCounter();
+        return dataStore().initialUpdateCounter();
     }
 
     /**
      * @param val Initial update counter value.
      */
     public void initialUpdateCounter(long val) {
-        store.updateInitialCounter(val);
+        dataStore().updateInitialCounter(val);
     }
 
     /**
@@ -1052,7 +1072,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Update counter value before update.
      */
     public long getAndIncrementUpdateCounter(long delta) {
-        return store.getAndIncrementUpdateCounter(delta);
+        return dataStore().getAndIncrementUpdateCounter(delta);
     }
 
     /**
@@ -1062,14 +1082,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param delta Delta.
      */
     public void updateCounter(long start, long delta) {
-         store.updateCounter(start, delta);
+         dataStore().updateCounter(start, delta);
     }
 
     /**
      * @return Total size of all caches.
      */
     public long fullSize() {
-        return store.fullSize();
+        return dataStore().fullSize();
     }
 
     /**
@@ -1409,7 +1429,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Even-length array of pairs [start, end] for each gap.
      */
     public GridLongList finalizeUpdateCounters() {
-        return store.finalizeUpdateCounters();
+        return dataStore().finalizeUpdateCounters();
     }
 
     /**

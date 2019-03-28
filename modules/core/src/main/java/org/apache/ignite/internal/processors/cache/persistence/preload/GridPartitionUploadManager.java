@@ -47,7 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.cache.persistence.preload.IgniteCachePreloadSharedManager.rebalanceThreadTopic;
+import static org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePreloadSharedManager.rebalanceThreadTopic;
 
 /**
  *
@@ -99,12 +99,12 @@ public class GridPartitionUploadManager {
         if (persistenceRebalanceApplicable(cctx)) {
             cctx.gridIO().addMessageListener(rebalanceThreadTopic(), new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                    if (msg instanceof GridPartitionCopyDemandMessage) {
+                    if (msg instanceof GridPartitionBatchDemandMessage) {
                         // Start to checkpoint and upload process.
                         lock.readLock().lock();
 
                         try {
-                            onDemandMessage0(nodeId, (GridPartitionCopyDemandMessage)msg, plc);
+                            onDemandMessage0(nodeId, (GridPartitionBatchDemandMessage)msg, plc);
                         }
                         finally {
                             lock.readLock().unlock();
@@ -138,7 +138,7 @@ public class GridPartitionUploadManager {
      * @param nodeId The nodeId request comes from.
      * @param msg Message containing rebalance request params.
      */
-    private void onDemandMessage0(UUID nodeId, GridPartitionCopyDemandMessage msg, byte plc) {
+    private void onDemandMessage0(UUID nodeId, GridPartitionBatchDemandMessage msg, byte plc) {
         if (msg.rebalanceId() < 0) // Demand node requested context cleanup.
             return;
 

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.CacheDataStoreProxy;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
@@ -49,7 +50,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY
 /**
  *
  */
-public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapter {
+public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter {
     /** */
     public static final int REBALANCE_TOPIC_IDX = 0;
 
@@ -68,7 +69,7 @@ public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapt
     /**
      * @param ktx Kernal context.
      */
-    public IgniteCachePreloadSharedManager(GridKernalContext ktx) {
+    public GridCachePreloadSharedManager(GridKernalContext ktx) {
         assert CU.isPersistenceEnabled(ktx.config()) :
             "Persistence must be enabled to preload any of cache partition files";
 
@@ -226,6 +227,12 @@ public class IgniteCachePreloadSharedManager extends GridCacheSharedManagerAdapt
                             continue;
 
                         //TODO invalidate partition
+
+                        IgniteCacheOffheapManager.CacheDataStore currStore = locPart.storage(locPart.storageMode());
+
+                        // Pre-init the new storage.
+                        locPart.storage(rq.nextMode)
+                            .init(currStore.fullSize(), currStore.updateCounter(), currStore.cacheSizes());
 
                         // Switching mode under the write lock.
                         locPart.storageMode(rq.nextMode);

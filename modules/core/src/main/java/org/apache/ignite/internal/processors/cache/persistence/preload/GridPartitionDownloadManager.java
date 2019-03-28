@@ -66,7 +66,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.persistence.preload.GridPartitionUploadManager.persistenceRebalanceApplicable;
-import static org.apache.ignite.internal.processors.cache.persistence.preload.IgniteCachePreloadSharedManager.rebalanceThreadTopic;
+import static org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePreloadSharedManager.rebalanceThreadTopic;
 
 /**
  *
@@ -483,8 +483,8 @@ public class GridPartitionDownloadManager {
                     @Override public void apply(IgniteInternalFuture fut) {
                         try {
                             if (rebFut.initReq.compareAndSet(false, true)) {
-                                GridPartitionCopyDemandMessage msg0 =
-                                    new GridPartitionCopyDemandMessage(rebFut.rebalanceId,
+                                GridPartitionBatchDemandMessage msg0 =
+                                    new GridPartitionBatchDemandMessage(rebFut.rebalanceId,
                                         rebFut.topVer,
                                         assigns.entrySet()
                                             .stream()

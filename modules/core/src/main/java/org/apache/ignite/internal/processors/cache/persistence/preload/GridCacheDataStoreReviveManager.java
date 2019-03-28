@@ -22,6 +22,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 /**
  *
  */
-public class IgniteCacheDataStoreReviveManager extends GridCacheSharedManagerAdapter {
+public class GridCacheDataStoreReviveManager extends GridCacheSharedManagerAdapter {
 
 }

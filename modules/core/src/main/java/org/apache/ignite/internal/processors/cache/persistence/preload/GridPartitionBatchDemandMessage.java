@@ -34,7 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * The demand request for partitions according to given assignments.
  */
-public class GridPartitionCopyDemandMessage implements Message {
+public class GridPartitionBatchDemandMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,7 +51,7 @@ public class GridPartitionCopyDemandMessage implements Message {
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridPartitionCopyDemandMessage() {
+    public GridPartitionBatchDemandMessage() {
         // No-op.
     }
 
@@ -59,7 +59,7 @@ public class GridPartitionCopyDemandMessage implements Message {
      * @param rebId Rebalance id for this node.
      * @param topVer Topology version.
      */
-    public GridPartitionCopyDemandMessage(
+    public GridPartitionBatchDemandMessage(
         long rebId,
         AffinityTopologyVersion topVer,
         Map<Integer, GridIntList> assigns0
@@ -170,7 +170,7 @@ public class GridPartitionCopyDemandMessage implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(GridPartitionCopyDemandMessage.class);
+        return reader.afterMessageRead(GridPartitionBatchDemandMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -190,6 +190,6 @@ public class GridPartitionCopyDemandMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridPartitionCopyDemandMessage.class, this);
+        return S.toString(GridPartitionBatchDemandMessage.class, this);
     }
 }

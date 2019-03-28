@@ -114,7 +114,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
-import org.apache.ignite.internal.processors.cache.persistence.preload.IgniteCachePreloadSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePreloadSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
@@ -3236,12 +3236,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgnitePageStoreManager pageStoreMgr = null;
         IgniteWriteAheadLogManager walMgr = null;
         IgniteBackupPageStoreManager storeBackupMgr = null;
-        IgniteCachePreloadSharedManager preloadMgr = null;
+        GridCachePreloadSharedManager preloadMgr = null;
 
 
         if (CU.isPersistenceEnabled(ctx.config()) && !ctx.clientNode()) {
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
-            preloadMgr = new IgniteCachePreloadSharedManager(ctx);
+            preloadMgr = new GridCachePreloadSharedManager(ctx);
 
             pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
 

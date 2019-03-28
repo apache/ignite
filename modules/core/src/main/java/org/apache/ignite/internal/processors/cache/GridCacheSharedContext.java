@@ -50,7 +50,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.preload.IgniteCachePreloadSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePreloadSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -128,7 +128,7 @@ public class GridCacheSharedContext<K, V> {
     private IgniteBackupPageStoreManager storeBackupMgr;
 
     /** Manager to preload cache partions. Can be {@code null} if presistence is not enabled. */
-    private IgniteCachePreloadSharedManager preloadMgr;
+    private GridCachePreloadSharedManager preloadMgr;
 
     /** Affinity manager. */
     private CacheAffinitySharedManager affMgr;
@@ -221,7 +221,7 @@ public class GridCacheSharedContext<K, V> {
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteBackupPageStoreManager storeBackupMgr,
-        IgniteCachePreloadSharedManager preloadMgr,
+        GridCachePreloadSharedManager preloadMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
@@ -466,7 +466,7 @@ public class GridCacheSharedContext<K, V> {
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteBackupPageStoreManager storeBackupMgr,
-        IgniteCachePreloadSharedManager preloadMgr,
+        GridCachePreloadSharedManager preloadMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
@@ -745,7 +745,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Cache preload manager. Return <tt>null</tt> if presistence disabled.
      */
-    public IgniteCachePreloadSharedManager preloadMgr() {
+    public GridCachePreloadSharedManager preloadMgr() {
         return preloadMgr;
     }
 

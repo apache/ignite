@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.processor.EntryProcessor;
@@ -40,6 +41,8 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * <p>
@@ -84,37 +87,20 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean storage(StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage) {
-        // The instance of currently active storage cannot be changed.
-        if (mode == currMode)
-            return false;
-
-        assert cctx.database().checkpointLockIsHeldByThread() :
-            "Changing storage mode is allowed only under the checkpoint write lock";
-
-        switch (mode) {
-            case FULL:
-                if (storageMap.get(StorageMode.LOG_ONLY) != null && !storageMap.get(StorageMode.LOG_ONLY).isEmpty())
-                    return false;
-
-                break;
-
-            case LOG_ONLY:
-                break;
-
-            default:
-                throw new IgniteException("Cache data storage cannot be set. The mode is unknown: " + mode);
-        }
-
-        if (activeStorage().updateCounter() != storage.updateCounter())
-            return false;
+    @Override public void storage(StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage) {
+        assert mode != currMode || cctx.database().checkpointLockIsHeldByThread() :
+            "Changing active storage is allowed only under the checkpoint write lock";
 
         storageMap.put(mode, storage);
 
         U.log(log, "The new instance of storage have been successfully set [mode=" + mode +
             ", storage=" + storage + ']');
+    }
 
-        return true;
+    /** {@inheritDoc} */
+    @Override public IgniteCacheOffheapManager.CacheDataStore storage(StorageMode mode) {
+        return ofNullable(storageMap.get(mode))
+            .orElseThrow(() -> new IgniteException("The storage doesn't exists for given mode: " + mode));
     }
 
     /** {@inheritDoc} */
@@ -123,7 +109,8 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
             return;
         
         assert cctx.database().checkpointLockIsHeldByThread() :
-            "Changing storage mode is allowed only under the checkpoint write lock";
+            "Changing mode is allowed only under the checkpoint write lock";
+        assert storageMap.get(mode) != null;
 
         currMode = mode;
     }

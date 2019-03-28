@@ -26,9 +26,14 @@ public interface CacheDataStoreProxy extends IgniteCacheOffheapManager.CacheData
     /**
      * @param mode The mode to associate with data storage instance.
      * @param storage The cache data storage instance to set to.
-     * @return <tt>true</tt> if the storage have been changed successfully.
      */
-    public boolean storage(StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage);
+    public void storage(StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage);
+
+    /**
+     * @param mode The storage mode.
+     * @return The storage intance for the given mode.
+     */
+    public IgniteCacheOffheapManager.CacheDataStore storage(StorageMode mode);
 
     /**
      * @param mode The mode to switch to.

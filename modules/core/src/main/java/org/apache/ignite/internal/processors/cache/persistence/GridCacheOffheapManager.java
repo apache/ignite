@@ -106,6 +106,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -178,7 +179,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         return new CacheDataStoreProxyImpl(grp.shared(),
             new GridCacheDataStore(p, exists),
-            new CacheDataStoreDecanter(grp, p),
+            new DecanterCacheDataStore(grp, p),
             log);
     }
 
@@ -1859,7 +1860,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes) {
-            throw new IllegalStateException("Should be never called.");
+            try {
+                // TODO add test when the storage is not inited at the current method called
+                CacheDataStore delegate0 = init0(true);
+
+                ofNullable(delegate0)
+                    .orElseThrow(() -> new IgniteCheckedException("The storage must be present at inital phase"));
+
+                assert delegate0.fullSize() == size;
+                assert delegate0.updateCounter() == updCntr;
+                assert ofNullable(cacheSizes).orElse(new HashMap<>()).equals(delegate0.cacheSizes());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /** {@inheritDoc} */
@@ -2473,7 +2487,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      *
      */
-    public static class CacheDataStoreDecanter extends AbstractCacheDataStore {
+    public static class DecanterCacheDataStore extends AbstractCacheDataStore {
         /** */
         private final Queue<DataRecord> store = new ConcurrentLinkedQueue<>();
 
@@ -2481,10 +2495,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @param grp Cache group context.
          * @param partId Partition id.
          */
-        public CacheDataStoreDecanter(CacheGroupContext grp, int partId) {
+        public DecanterCacheDataStore(CacheGroupContext grp, int partId) {
             super(grp, partId,treeName(partId) + "-logging");
 
             assert grp.persistenceEnabled();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(long size, long updCntr, Map<Integer, Long> cacheSizes) {
+            store.clear();
+            
+            super.init(size, updCntr, cacheSizes);
         }
 
         /** {@inheritDoc} */
@@ -2519,7 +2540,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 ver,
                 expireTime,
                 partId,
-                111
+                updateCounter()
             )));
 
             return dataRow;
