@@ -46,8 +46,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
@@ -63,12 +67,14 @@ import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
@@ -148,6 +154,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
+import org.apache.ignite.internal.util.GridReadOnlyArrayView;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.CountDownFuture;
@@ -221,6 +228,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private final boolean skipCheckpointOnNodeStop = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, false);
 
+    /**
+     * Starting from this number of dirty pages in checkpoint, array will be sorted with
+     * {@link Arrays#parallelSort(Comparable[])} in case of {@link CheckpointWriteOrder#SEQUENTIAL}.
+     */
+    private final int parallelSortThreshold = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.CHECKPOINT_PARALLEL_SORT_THRESHOLD, 512 * 1024);
+
     /** Checkpoint lock hold count. */
     private static final ThreadLocal<Integer> CHECKPOINT_LOCK_HOLD_COUNT = ThreadLocal.withInitial(() -> 0);
 
@@ -253,6 +267,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private static final String CHECKPOINT_RUNNER_THREAD_PREFIX = "checkpoint-runner";
+
+    /** This number of threads will be created and used for parallel sorting. */
+    private static final int PARALLEL_SORT_THREADS = Math.min(Runtime.getRuntime().availableProcessors(), 8);
 
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
@@ -840,6 +857,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override protected IgniteOutClosure<Long> freeSpaceProvider(final DataRegionConfiguration dataRegCfg) {
         if (!dataRegCfg.isPersistenceEnabled())
             return super.freeSpaceProvider(dataRegCfg);
@@ -860,6 +878,46 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 return freeSpace;
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override protected DataRegionMetricsProvider dataRegionMetricsProvider(final DataRegionConfiguration dataRegCfg) {
+        if (!dataRegCfg.isPersistenceEnabled())
+            return super.dataRegionMetricsProvider(dataRegCfg);
+
+        final String dataRegName = dataRegCfg.getName();
+
+        return new DataRegionMetricsProvider() {
+            @Override public long partiallyFilledPagesFreeSpace() {
+                long freeSpace = 0L;
+
+                for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
+                    if (!grpCtx.dataRegion().config().getName().equals(dataRegName))
+                        continue;
+
+                    assert grpCtx.offheap() instanceof GridCacheOffheapManager;
+
+                    freeSpace += ((GridCacheOffheapManager)grpCtx.offheap()).freeSpace();
+                }
+
+                return freeSpace;
+            }
+
+            @Override public long emptyDataPages() {
+                long emptyDataPages = 0L;
+
+                for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
+                    if (!grpCtx.dataRegion().config().getName().equals(dataRegName))
+                        continue;
+
+                    assert grpCtx.offheap() instanceof GridCacheOffheapManager;
+
+                    emptyDataPages += ((GridCacheOffheapManager)grpCtx.offheap()).emptyDataPages();
+                }
+
+                return emptyDataPages;
             }
         };
     }
@@ -4343,22 +4401,34 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * {@link DataStorageConfiguration#getCheckpointWriteOrder()}.
      *
      * @param cpPagesTuple Checkpoint pages tuple.
+     * @param threads Checkpoint runner threads.
      */
     private GridMultiCollectionWrapper<FullPageId> splitAndSortCpPagesIfNeeded(
         IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple,
         int threads
-    ) {
-        List<FullPageId> cpPagesList = new ArrayList<>(cpPagesTuple.get2());
+    ) throws IgniteCheckedException {
+        FullPageId[] pagesArr = new FullPageId[cpPagesTuple.get2()];
 
-        for (GridMultiCollectionWrapper<FullPageId> col : cpPagesTuple.get1()) {
-            for (int i = 0; i < col.collectionsSize(); i++)
-                cpPagesList.addAll(col.innerCollection(i));
+        int realPagesArrSize = 0;
+
+        for (GridMultiCollectionWrapper<FullPageId> colWrapper : cpPagesTuple.get1()) {
+            for (int i = 0; i < colWrapper.collectionsSize(); i++)
+                for (FullPageId page : colWrapper.innerCollection(i)) {
+                    if (realPagesArrSize == pagesArr.length)
+                        throw new AssertionError("Incorrect estimated dirty pages number: " + pagesArr.length);
+
+                    pagesArr[realPagesArrSize++] = page;
+                }
         }
 
-        if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL) {
-            FullPageId[] objects = cpPagesList.toArray(new FullPageId[cpPagesList.size()]);
+        FullPageId fakeMaxFullPageId = new FullPageId(Long.MAX_VALUE, Integer.MAX_VALUE);
 
-            Arrays.parallelSort(objects, new Comparator<FullPageId>() {
+        // Some pages may have been replaced, need to fill end of array with fake ones to prevent NPE during sort.
+        for (int i = realPagesArrSize; i < pagesArr.length; i++)
+            pagesArr[i] = fakeMaxFullPageId;
+
+        if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL) {
+            Comparator<FullPageId> cmp = new Comparator<FullPageId>() {
                 @Override public int compare(FullPageId o1, FullPageId o2) {
                     int cmp = Long.compare(o1.groupId(), o2.groupId());
                     if (cmp != 0)
@@ -4367,9 +4437,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     return Long.compare(PageIdUtils.effectivePageId(o1.pageId()),
                         PageIdUtils.effectivePageId(o2.pageId()));
                 }
-            });
+            };
 
-            cpPagesList = Arrays.asList(objects);
+            if (pagesArr.length >= parallelSortThreshold)
+                parallelSortInIsolatedPool(pagesArr, cmp);
+            else
+                Arrays.sort(pagesArr, cmp);
         }
 
         int pagesSubLists = threads == 1 ? 1 : threads * 4;
@@ -4378,16 +4451,51 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Collection[] pagesSubListArr = new Collection[pagesSubLists];
 
         for (int i = 0; i < pagesSubLists; i++) {
-            int totalSize = cpPagesList.size();
+            int from = (int)((long)realPagesArrSize * i / pagesSubLists);
 
-            int from = totalSize * i / (pagesSubLists);
+            int to = (int)((long)realPagesArrSize * (i + 1) / pagesSubLists);
 
-            int to = totalSize * (i + 1) / (pagesSubLists);
-
-            pagesSubListArr[i] = cpPagesList.subList(from, to);
+            pagesSubListArr[i] = new GridReadOnlyArrayView(pagesArr, from, to);
         }
 
         return new GridMultiCollectionWrapper<FullPageId>(pagesSubListArr);
+    }
+
+    /**
+     * Performs parallel sort in isolated fork join pool.
+     *
+     * @param pagesArr Pages array.
+     * @param cmp Cmp.
+     */
+    private static void parallelSortInIsolatedPool(
+        FullPageId[] pagesArr,
+        Comparator<FullPageId> cmp
+    ) throws IgniteCheckedException {
+        ForkJoinPool.ForkJoinWorkerThreadFactory factory = new ForkJoinPool.ForkJoinWorkerThreadFactory() {
+            @Override public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+                ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+
+                worker.setName("checkpoint-pages-sorter-" + worker.getPoolIndex());
+
+                return worker;
+            }
+        };
+
+        ForkJoinPool forkJoinPool = new ForkJoinPool(PARALLEL_SORT_THREADS + 1, factory, null, false);
+
+        ForkJoinTask sortTask = forkJoinPool.submit(() -> Arrays.parallelSort(pagesArr, cmp));
+
+        try {
+            sortTask.get();
+        }
+        catch (InterruptedException e) {
+            throw new IgniteInterruptedCheckedException(e);
+        }
+        catch (ExecutionException e) {
+            throw new IgniteCheckedException("Failed to perform pages array parallel sort", e.getCause());
+        }
+
+        forkJoinPool.shutdown();
     }
 
     /** Pages write task */

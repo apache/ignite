@@ -21,12 +21,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl.GroupAllocationTracker;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTracker {
     /** */
-    private final IgniteOutClosure<Long> freeSpaceProvider;
+    private final DataRegionMetricsProvider dataRegionMetricsProvider;
 
     /** */
     private final LongAdder totalAllocatedPages = new LongAdder();
@@ -105,9 +105,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     /**
      * @param memPlcCfg DataRegionConfiguration.
      */
-    public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg, @Nullable IgniteOutClosure<Long> freeSpaceProvider) {
+    public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg,
+                                 @Nullable DataRegionMetricsProvider dataRegionMetricsProvider) {
         this.memPlcCfg = memPlcCfg;
-        this.freeSpaceProvider = freeSpaceProvider;
+        this.dataRegionMetricsProvider = dataRegionMetricsProvider;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -124,6 +125,11 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
         return totalAllocatedPages.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalUsedPages() {
+        return getTotalAllocatedPages() - dataRegionMetricsProvider.emptyDataPages();
     }
 
     /** {@inheritDoc} */
@@ -161,10 +167,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public float getPagesFillFactor() {
-        if (!metricsEnabled || freeSpaceProvider == null)
+        if (!metricsEnabled || dataRegionMetricsProvider == null)
             return 0;
 
-        long freeSpace = freeSpaceProvider.apply();
+        long freeSpace = dataRegionMetricsProvider.partiallyFilledPagesFreeSpace();
 
         long totalAllocated = getPageSize() * totalAllocatedPages.longValue();
 

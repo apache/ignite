@@ -17,18 +17,19 @@
 
 package org.apache.ignite.ml.knn;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /** Tests behaviour of ANNClassificationTest. */
 public class ANNClassificationTest extends TrainerTest {
@@ -54,8 +55,7 @@ public class ANNClassificationTest extends TrainerTest {
         NNClassificationModel mdl = trainer.fit(
             cacheMock,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
@@ -84,24 +84,21 @@ public class ANNClassificationTest extends TrainerTest {
         ANNClassificationModel originalMdl = (ANNClassificationModel) trainer.fit(
             cacheMock,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
 
         ANNClassificationModel updatedOnSameDataset = (ANNClassificationModel) trainer.update(originalMdl,
             cacheMock, parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
 
         ANNClassificationModel updatedOnEmptyDataset = (ANNClassificationModel) trainer.update(originalMdl,
             new HashMap<Integer, double[]>(), parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
