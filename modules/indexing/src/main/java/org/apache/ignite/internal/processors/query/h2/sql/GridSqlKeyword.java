@@ -18,14 +18,15 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.Collections;
+import org.h2.command.dml.Update;
 import org.h2.expression.ValueExpression;
 
 /** Keyword (like DEFAULT). */
 public final class GridSqlKeyword extends GridSqlElement {
     /**
      * Default update value - analogous to H2.
+     *
      * @see ValueExpression#getDefault()
-     * @see GridSqlQueryParser#parseUpdate()
      */
     public static final GridSqlKeyword DEFAULT = new GridSqlKeyword("DEFAULT");
 
