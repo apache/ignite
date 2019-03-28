@@ -159,10 +159,10 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
 
             assertEquals(F.asList(
                 Collections.singletonList("SELECT\n" +
-                    "    ID\n" +
-                    "FROM \"" + DEFAULT_CACHE_NAME + "\".PERSON\n" +
-                    "    /* \"" + DEFAULT_CACHE_NAME + "\".IDX: ID = 5 */\n" +
-                    "WHERE ID = 5")
+                    "    \"ID\"\n" +
+                    "FROM \"" + DEFAULT_CACHE_NAME + "\".\"PERSON\"\n" +
+                    "    /* " + DEFAULT_CACHE_NAME + ".IDX: ID = 5 */\n" +
+                    "WHERE \"ID\" = 5")
             ), locRes);
         }
 
@@ -221,10 +221,10 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
 
             assertEquals(F.asList(
                 Collections.singletonList("SELECT\n" +
-                    "    ID\n" +
-                    "FROM \"" + DEFAULT_CACHE_NAME + "\".PERSON\n" +
-                    "    /* \"" + DEFAULT_CACHE_NAME + "\".PERSON.__SCAN_ */\n" +
-                    "WHERE ID = 5")
+                    "    \"ID\"\n" +
+                    "FROM \"" + DEFAULT_CACHE_NAME + "\".\"PERSON\"\n" +
+                    "    /* " + DEFAULT_CACHE_NAME + ".PERSON.__SCAN_ */\n" +
+                    "WHERE \"ID\" = 5")
             ), locRes);
         }
 

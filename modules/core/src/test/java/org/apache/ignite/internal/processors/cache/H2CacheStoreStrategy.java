@@ -81,7 +81,7 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         Server srv = null;
 
         try {
-            srv = Server.createTcpServer().start();
+            srv = Server.createTcpServer("-ifNotExists").start();
 
             port = srv.getPort();
 

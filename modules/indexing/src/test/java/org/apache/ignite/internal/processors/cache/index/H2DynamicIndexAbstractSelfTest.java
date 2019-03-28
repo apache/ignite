@@ -97,7 +97,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
                 Collections.singletonList("SELECT\n" +
                     "    \"id\"\n" +
                     "FROM \"cache\".\"ValueClass\"\n" +
-                    "    /* \"cache\".\"idx_1\": \"field1\" = 'A' */\n" +
+                    "    /* cache.idx_1: field1 = 'A' */\n" +
                     "WHERE \"field1\" = 'A'")
             ), locRes);
         }
@@ -173,7 +173,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
                 Collections.singletonList("SELECT\n" +
                     "    \"id\"\n" +
                     "FROM \"cache\".\"ValueClass\"\n" +
-                    "    /* \"cache\".\"ValueClass\".__SCAN_ */\n" +
+                    "    /* cache.ValueClass.__SCAN_ */\n" +
                     "WHERE \"field1\" = 'A'")
             ), locRes);
         }

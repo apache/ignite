@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.h2.jdbc.JdbcSQLException;
+import org.h2.jdbc.JdbcSQLSyntaxErrorException;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
@@ -449,7 +450,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
             run("ALTER TABLE test DROP COLUMN IF EXISTS a");
 
-            assertThrowsAnyCause("ALTER TABLE test DROP COLUMN a", JdbcSQLException.class, "Column \"A\" not found");
+            assertThrowsAnyCause("ALTER TABLE test DROP COLUMN a", JdbcSQLSyntaxErrorException.class, "Column \"A\" not found");
         }
         finally {
             run("DROP TABLE IF EXISTS test");
@@ -514,7 +515,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         try {
             run("CREATE TABLE test (id INT PRIMARY KEY, a INT)");
 
-            assertThrowsAnyCause("ALTER TABLE test DROP COLUMN b", JdbcSQLException.class, "Column \"B\" not found");
+            assertThrowsAnyCause("ALTER TABLE test DROP COLUMN b", JdbcSQLSyntaxErrorException.class, "Column \"B\" not found");
         }
         finally {
             run("DROP TABLE IF EXISTS test");
@@ -527,7 +528,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      */
     @Test
     public void testDropColumnNonExistingTable() throws Exception {
-        assertThrowsAnyCause("ALTER TABLE nosuchtable DROP COLUMN a", JdbcSQLException.class,
+        assertThrowsAnyCause("ALTER TABLE nosuchtable DROP COLUMN a", JdbcSQLSyntaxErrorException.class,
             "Table \"NOSUCHTABLE\" not found");
     }
 
@@ -696,7 +697,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
             "(2, 2, 'New York')");
 
         assertThrowsAnyCause("SELECT state_name FROM \"City\".City",
-            JdbcSQLException.class, "Column \"STATE_NAME\" not found");
+            JdbcSQLSyntaxErrorException.class, "Column \"STATE_NAME\" not found");
 
         List<List<?>> res = run(cache, "SELECT _key, id, name FROM \"City\".City WHERE id = 1");
 

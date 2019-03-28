@@ -313,12 +313,12 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("explain select * from Person where id = 1"));
         List<List<?>> results = cursor.getAll();
         assertEquals(1, results.size());
-        assertTrue(((String)results.get(0).get(0)).contains("\"_key_PK_proxy\""));
+        assertTrue(((String)results.get(0).get(0)).contains("_key_PK_proxy"));
 
         cursor = cache.query(new SqlFieldsQuery("explain select * from Person where _key = 1"));
         results = cursor.getAll();
         assertEquals(1, results.size());
-        assertTrue(((String)results.get(0).get(0)).contains("\"_key_PK\""));
+        assertTrue(((String)results.get(0).get(0)).contains("_key_PK"));
     }
 
     /** */

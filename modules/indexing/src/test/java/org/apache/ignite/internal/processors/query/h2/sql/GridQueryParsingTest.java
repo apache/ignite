@@ -807,7 +807,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
             assertNotNull(val);
 
             assertEquals(col.getValue().columnName(), val.columnName());
-            assertEquals(col.getValue().column().getType(), val.column().getType());
+            assertEquals(col.getValue().column().getType().getValueType(), val.column().getType().getValueType());
         }
 
         assertEquals(exp.ifNotExists(), actual.ifNotExists());
@@ -885,7 +885,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
             GridSqlColumn col = actual.columns()[i];
 
             assertEquals(expCol.columnName(), col.columnName());
-            assertEquals(expCol.column().getType(), col.column().getType());
+            assertEquals(expCol.column().getType().getValueType(), col.column().getType().getValueType());
         }
 
         assertEquals(exp.ifNotExists(), actual.ifNotExists());

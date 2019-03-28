@@ -228,10 +228,10 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
     @Test
     public void testSelectForUpdateWithGroupings() {
         assertQueryThrows("select count(*) from person for update",
-            "SELECT FOR UPDATE with aggregates and/or GROUP BY is not supported.");
+            "FOR UPDATE is not allowed in DISTINCT or grouped select");
 
         assertQueryThrows("select lastName, count(*) from person group by lastName for update",
-            "SELECT FOR UPDATE with aggregates and/or GROUP BY is not supported.");
+            "FOR UPDATE is not allowed in DISTINCT or grouped select");
     }
 
     /**
