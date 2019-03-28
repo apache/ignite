@@ -65,7 +65,7 @@ export default class {
     }
 
     change(item) {
-        this.agentMgr.switchCluster(this.cluster)
+        this.agentMgr.switchCluster(item)
             .then(() => this.cluster = item)
             .catch((err) => {
                 if (!(err instanceof CancellationError))

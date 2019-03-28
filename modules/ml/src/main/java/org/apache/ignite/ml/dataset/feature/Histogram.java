@@ -37,20 +37,20 @@ public interface Histogram<T, H extends Histogram<T, H>> extends Serializable {
 
     /**
      *
-     * @return bucket ids.
+     * @return Bucket ids.
      */
     public Set<Integer> buckets();
 
     /**
      *
      * @param bucketId Bucket id.
-     * @return value in according to bucket id.
+     * @return Value in according to bucket id.
      */
     public Optional<Double> getValue(Integer bucketId);
 
     /**
      * @param other Other histogram.
-     * @return sum of this and other histogram.
+     * @return Sum of this and other histogram.
      */
     public H plus(H other);
 
@@ -58,7 +58,7 @@ public interface Histogram<T, H extends Histogram<T, H>> extends Serializable {
      * Compares histogram with other and returns true if they are equals
      *
      * @param other Other histogram.
-     * @return true if histograms are equal.
+     * @return True if histograms are equal.
      */
     public boolean isEqualTo(H other);
 }
