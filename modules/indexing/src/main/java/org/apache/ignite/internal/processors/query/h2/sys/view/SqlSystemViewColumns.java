@@ -65,7 +65,6 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
             newColumn("DISPLAY_SIZE", Value.INT),
             newColumn("PRECISION", Value.INT),
             newColumn("SCALE", Value.INT),
-            newColumn("PRIMARY_KEY", Value.BOOLEAN),
             newColumn("AFFINITY_KEY", Value.BOOLEAN)
         );
 
@@ -121,7 +120,6 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
                     col.getDisplaySize(),
                     col.getPrecision(),
                     col.getScale(),
-                    tbl.rowDescriptor().isColumnKeyProperty(col.getColumnId() - QueryUtils.DEFAULT_COLUMNS_COUNT),
                     affCol != null && F.eq(col.getColumnId(), affCol.column.getColumnId()),
                 };
 
