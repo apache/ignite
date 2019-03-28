@@ -35,6 +35,7 @@ import org.apache.ignite.internal.encryption.EncryptedCacheNodeJoinTest;
 import org.apache.ignite.internal.encryption.EncryptedCachePreconfiguredRestartTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
+import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
@@ -87,6 +88,8 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(EncryptedCacheNodeJoinTest.class));
         suite.addTest(new JUnit4TestAdapter(EncryptedCacheRestartTest.class));
         suite.addTest(new JUnit4TestAdapter(EncryptedCachePreconfiguredRestartTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(SingleNodePersistenceSslTest.class));
 
         return suite;
     }
