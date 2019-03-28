@@ -61,7 +61,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridNearConsistencyGetWithRecoveryFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridConsistencyGetWithRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
@@ -2375,7 +2375,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
 
                         if (consistency) {
-                            GridNearConsistencyGetWithRecoveryFuture fut = new GridNearConsistencyGetWithRecoveryFuture(
+                            GridConsistencyGetWithRecoveryFuture fut = new GridConsistencyGetWithRecoveryFuture(
                                 topVer,
                                 cacheCtx,
                                 keys,
@@ -2596,12 +2596,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     if (val != null) {
                         if (consistency) {
-                            if (txEntry.op() != READ)
-                                throw new IgniteCheckedException(
-                                    "Consistency-get operation can not be performed after update operation.");
-                            else
-                                throw new IgniteCheckedException(
-                                    "Some values were read from explicit transaction's cache due to isolation mode. " +
+                            throw new IgniteCheckedException((txEntry.op() != READ) ?
+                                "Consistency-get operation can not be performed after update operation " +
+                                    "inside the same transaction." :
+                                "Some values were read from explicit transaction's cache due to isolation mode. " +
                                     "Consistency-get operation should always use non-cached values. " +
                                     "It should be performed as a first get operation at " +
                                     "REPEATABLE_READ or SERIALIZABLE transactions. ");
@@ -3356,6 +3354,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture<>();
         }
         catch (IgniteCheckedException e) {
+            setRollbackOnly();
+
             return new GridFinishedFuture<>(e);
         }
     }
@@ -4693,12 +4693,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         return new GridEmbeddedFuture<>(
             new C2<Void, Exception, Map<K, V>>() {
                 @Override public Map<K, V> apply(Void v, Exception e) {
-                    if (e != null) {
-                        if (!(e instanceof IgniteConsistencyViolationException))
-                            setRollbackOnly();
-
+                    if (e != null)
                         throw new GridClosureException(e);
-                    }
 
                     if (isRollbackOnly()) {
                         if (timedOut())

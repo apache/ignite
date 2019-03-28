@@ -31,14 +31,14 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 /**
  * Checks data consistency. Checks that each backup value equals to primary value.
  */
-public class GridDhtConsistencyGetWithCheckFuture extends GridDhtConsistencyAbstractGetFuture {
+public class GridConsistencyGetWithCheckFuture extends GridConsistencyAbstractGetFuture {
     /** Primary node's (current) get future. */
     private final IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> primaryFut;
 
     /**
      *
      */
-    public GridDhtConsistencyGetWithCheckFuture(
+    public GridConsistencyGetWithCheckFuture(
         AffinityTopologyVersion topVer,
         IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> primaryFut,
         GridCacheContext cctx,

@@ -32,11 +32,11 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 /**
  *
  */
-public class GridNearConsistencyGetWithRecoveryFuture extends GridDhtConsistencyAbstractGetFuture {
+public class GridConsistencyGetWithRecoveryFuture extends GridConsistencyAbstractGetFuture {
     /**
      *
      */
-    public GridNearConsistencyGetWithRecoveryFuture(
+    public GridConsistencyGetWithRecoveryFuture(
         AffinityTopologyVersion topVer,
         GridCacheContext ctx,
         Collection<KeyCacheObject> keys,

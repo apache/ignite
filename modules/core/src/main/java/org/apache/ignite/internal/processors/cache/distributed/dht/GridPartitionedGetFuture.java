@@ -59,7 +59,6 @@ import org.jetbrains.annotations.Nullable;
  * Colocated get future.
  */
 public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> {
-
     /** Transaction label. */
     protected final String txLbl;
 
@@ -348,16 +347,15 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         }
 
         // Try to read key localy if we can.
-        if (premapped == null && !consistency && tryLocalGet(key, part, topVer, affNodes, locVals))
+        if (tryLocalGet(key, part, topVer, affNodes, locVals))
             return false;
 
         Set<ClusterNode> invalidNodeSet = getInvalidNodes(part, topVer);
 
-        assert premapped == null || !invalidNodeSet.contains(premapped);
-
         // Get remote node for request for this key.
-        ClusterNode node = (premapped != null) ? premapped :
-            cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap, consistency);
+        ClusterNode node = premapped == null ?
+            cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap, consistency) :
+            premapped;
 
         // Failed if none remote node found.
         if (node == null) {
@@ -415,7 +413,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
         boolean fastLocGet = !cctx.mvccEnabled() &&
             (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.reserveForFastLocalGet(part, topVer);
+            cctx.reserveForFastLocalGet(part, topVer) &&
+            !consistency && // not an initial get-with-consistency which should read value from primary.
+            premapped == null; // not a subsequent get-with-consistency which should read value from explicit backup.
 
         if (fastLocGet) {
             try {

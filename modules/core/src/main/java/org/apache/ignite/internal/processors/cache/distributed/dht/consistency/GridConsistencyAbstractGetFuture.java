@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 /**
  *
  */
-public abstract class GridDhtConsistencyAbstractGetFuture extends GridFutureAdapter<Map<KeyCacheObject, EntryGetResult>> {
+public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter<Map<KeyCacheObject, EntryGetResult>> {
     /** Backup node's get futures. */
     protected final Collection<GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs;
 
@@ -46,7 +46,7 @@ public abstract class GridDhtConsistencyAbstractGetFuture extends GridFutureAdap
     /**
      *
      */
-    protected GridDhtConsistencyAbstractGetFuture(
+    protected GridConsistencyAbstractGetFuture(
         AffinityTopologyVersion topVer,
         GridCacheContext<KeyCacheObject, EntryGetResult> ctx,
         Collection<KeyCacheObject> keys,

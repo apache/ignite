@@ -59,7 +59,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdat
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridDhtConsistencyGetWithCheckFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridConsistencyGetWithCheckFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
@@ -830,7 +830,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (!consistency)
             return fut;
         else {
-            GridDhtConsistencyGetWithCheckFuture cFut = new GridDhtConsistencyGetWithCheckFuture(
+            GridConsistencyGetWithCheckFuture cFut = new GridConsistencyGetWithCheckFuture(
                 topVer,
                 fut,
                 ctx,
@@ -1034,9 +1034,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     return;
                 }
                 catch (IgniteConsistencyViolationException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Consistency violation detected during processing get request: " + req);
-
                     res = new GridNearSingleGetResponse(ctx.cacheId(),
                         req.futureId(),
                         req.topologyVersion(),
@@ -1121,9 +1118,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     return;
                 }
                 catch (IgniteConsistencyViolationException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Consistency violation detected during processing get request: " + req);
-
                     res.error(e);
                 }
                 catch (IgniteCheckedException e) {
