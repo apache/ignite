@@ -912,8 +912,12 @@ public class JdbcThinConnection implements Connection {
                         affinityCache.addSqlQuery(((JdbcQueryExecuteRequest)req).sqlQuery(),
                             new JdbcThinPartitionResultDescriptor(
                                 partRes,
-                                partRes.tree() != null ? GridCacheUtils.cacheId(partRes.tree().cacheName()) : null,
-                                new PartitionClientContext(partRes.affinity().parts())));
+                                (partRes != null && partRes.tree() != null) ?
+                                    GridCacheUtils.cacheId(partRes.tree().cacheName()) :
+                                    -1,
+                                partRes != null ?
+                                    new PartitionClientContext(partRes.affinity().parts()) :
+                                    null));
                     }
                 }
 
