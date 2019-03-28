@@ -132,6 +132,16 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean getTxOwnerDumpRequestsAllowed() {
+        return ctx.config().getTransactionConfiguration().getTxOwnerDumpRequestsAllowed();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTxOwnerDumpRequestsAllowed(boolean allowed) {
+        ctx.grid().context().cache().setTxOwnerDumpRequestsAllowed(allowed);
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TransactionsMXBeanImpl.class, this);
     }

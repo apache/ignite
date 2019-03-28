@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,11 +40,14 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -60,6 +64,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -117,9 +122,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -171,6 +179,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** Last partition refresh. */
     private final AtomicLong lastRefresh = new AtomicLong(-1);
+
+    /** */
+    private final ActionLimiter<IgniteInternalTx> ltrDumpLimiter = new ActionLimiter<>(1);
 
     /** */
     @GridToStringInclude
@@ -1955,14 +1966,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (curTime - tx.startTime() > timeout) {
                     found = true;
 
-                    if (warnings.canAddMessage()) {
-                        warnings.add(">>> Transaction [startTime=" + formatTime(tx.startTime()) +
-                            ", curTime=" + formatTime(curTime) + ", tx=" + tx + ']');
-                    }
-                    else
-                        warnings.incTotal();
+                    if (ltrDumpLimiter.allowAction(tx))
+                        dumpLongRunningTransaction(tx, curTime, warnings);
                 }
             }
+
+            ltrDumpLimiter.trim();
 
             warnings.printToLog();
         }
@@ -2025,6 +2034,58 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         return found;
+    }
+
+    /**
+     * Dumps long running transaction. If transaction is active and is not near, sends compute request
+     * to near node to get the stack trace of transaction owner thread.
+     *
+     * @param tx Transaction.
+     * @param curTime Current time.
+     * @param warnings Warnings Group.
+     */
+    private void dumpLongRunningTransaction(IgniteInternalTx tx, long curTime, WarningsGroup warnings) {
+        if (warnings.canAddMessage()) {
+            warnings.add(">>> Transaction [startTime=" + formatTime(tx.startTime()) +
+                ", curTime=" + formatTime(curTime) + ", tx=" + tx + ']');
+        }
+        else
+            warnings.incTotal();
+
+        U.warn(diagnosticLog, "Found long running transaction [startTime=" + formatTime(tx.startTime()) +
+                ", curTime=" + formatTime(curTime) + ", tx=" + tx + ']');
+
+        Ignite ignite = cctx.kernalContext().grid();
+
+        boolean txOwnerDumpAllowed = ignite.configuration()
+            .getTransactionConfiguration()
+            .getTxOwnerDumpRequestsAllowed();
+
+        if (txOwnerDumpAllowed && !tx.near() && tx.state() == TransactionState.ACTIVE) {
+            Collection<UUID> masterNodeIds = tx.masterNodeIds();
+
+            if (masterNodeIds.size() == 1) {
+                UUID nearNodeId = masterNodeIds.iterator().next();
+
+                long txOwnerThreadId = tx.threadId();
+
+                IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(nearNodeId));
+
+                try {
+                    compute
+                        .callAsync(new FetchActiveTxOwnerTraceClosure(txOwnerThreadId))
+                        .listen(new IgniteInClosure<IgniteFuture<String>>() {
+                            @Override public void apply(IgniteFuture<String> strIgniteFut) {
+                                String traceDump = strIgniteFut.get();
+
+                                U.warn(diagnosticLog, traceDump);
+                            }
+                        });
+                } catch (Exception e) {
+                    U.warn(diagnosticLog, "Could not receive dump from transaction owner near node: " + e.getMessage());
+                }
+            }
+        }
     }
 
     /**
@@ -3481,6 +3542,54 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 for (String message : messages)
                     U.warn(log, message);
             }
+        }
+    }
+
+    /**
+     * Class to limit action count for unique objects.
+     */
+    private static class ActionLimiter<T> {
+        /** */
+        private final int limit;
+
+        /** */
+        private final ConcurrentMap<T, AtomicInteger> actionsCnt = new ConcurrentHashMap<>();
+
+        /** */
+        private final Set<T> activeObjects = new GridConcurrentHashSet<>();
+
+        /**
+         * @param limit Limit.
+         */
+        private ActionLimiter(int limit) {
+            this.limit = limit;
+        }
+
+        /**
+         * Shows if action is allowed for the given object.
+         *
+         * @param obj object.
+         */
+        boolean allowAction(T obj) {
+            activeObjects.add(obj);
+
+            AtomicInteger cnt = actionsCnt.get(obj);
+
+            if (cnt != null)
+                cnt.incrementAndGet();
+            else
+                actionsCnt.put(obj, new AtomicInteger(1));
+
+            return (!actionsCnt.containsKey(obj) || actionsCnt.get(obj).get() <= limit);
+        }
+
+        /**
+         * Removes old objects from limiter's internal storage.
+         */
+        void trim() {
+            actionsCnt.keySet().removeIf(key -> !activeObjects.contains(key));
+
+            activeObjects.clear();
         }
     }
 }

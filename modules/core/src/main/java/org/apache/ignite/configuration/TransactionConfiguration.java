@@ -57,6 +57,14 @@ public class TransactionConfiguration implements Serializable {
     /** Transaction timeout on partition map synchronization. */
     public static final long TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE = 0;
 
+    /**
+     * Default value for {@link TransactionConfiguration#txOwnerDumpRequestsAllowed } parameter, which
+     * shows if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread.
+     */
+    public static final boolean TX_OWNER_DUMP_REQUESTS_ALLOWED = true;
+
     /** Default timeout before starting deadlock detection. */
     public static final long DFLT_DEADLOCK_TIMEOUT = 10_000;
 
@@ -80,6 +88,13 @@ public class TransactionConfiguration implements Serializable {
      * Volatile in order to be changed dynamically.
      */
     private volatile long txTimeoutOnPartitionMapExchange = TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE;
+
+    /**
+     * Shows if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread.
+     */
+    private volatile boolean txOwnerDumpRequestsAllowed = TX_OWNER_DUMP_REQUESTS_ALLOWED;
 
     /** Timeout before starting deadlock detection. */
     private long deadlockTimeout = DFLT_DEADLOCK_TIMEOUT;
@@ -124,6 +139,7 @@ public class TransactionConfiguration implements Serializable {
         tmLookupClsName = cfg.getTxManagerLookupClassName();
         txManagerFactory = cfg.getTxManagerFactory();
         useJtaSync = cfg.isUseJtaSynchronization();
+        txOwnerDumpRequestsAllowed = cfg.getTxOwnerDumpRequestsAllowed();
     }
 
     /**
@@ -458,5 +474,30 @@ public class TransactionConfiguration implements Serializable {
             transients.add("deadlockTimeout");
 
         return transients.isEmpty() ? null : transients.toArray(new String[transients.size()]);
+    }
+
+    /**
+     * Sets if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread.
+     *
+     * @return <code>true</code> if allowed, <code>false</code> otherwise.
+     */
+    public boolean getTxOwnerDumpRequestsAllowed() {
+        return txOwnerDumpRequestsAllowed;
+    }
+
+    /**
+     * Sets if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread.
+     *
+     * @param allowed whether allowed
+     * @return {@code this} for chaining
+     */
+    public TransactionConfiguration setTxOwnerDumpRequestsAllowed(boolean allowed) {
+        txOwnerDumpRequestsAllowed = allowed;
+
+        return this;
     }
 }
