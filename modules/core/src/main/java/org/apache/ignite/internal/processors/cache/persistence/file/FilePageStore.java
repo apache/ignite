@@ -347,11 +347,13 @@ public class FilePageStore implements PageStore {
             if (inited) {
                 long newSize = Math.max(pageSize, fileIO.size() - headerSize());
 
-                long delta = newSize - allocated.getAndSet(newSize);
+                assert newSize % pageSize == 0 : "pageSize=" + pageSize + ", newSize=" + newSize;
 
-                assert delta % pageSize == 0 : "pageSize=" + pageSize + ", newSize=" + newSize + ", delta=" + delta;
+                int oldPagesCnt = pages();
 
-                allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
+                allocated.set(newSize);
+
+                allocatedTracker.updateTotalAllocatedPages(pages() - oldPagesCnt);
             }
 
             recover = false;
