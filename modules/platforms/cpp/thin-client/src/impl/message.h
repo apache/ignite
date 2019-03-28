@@ -694,7 +694,7 @@ namespace ignite
                     if (!IsAffinityTopologyChanged())
                         return 0;
 
-                    return &ver;
+                    return &topologyVersion;
                 }
 
                 /**
@@ -725,7 +725,7 @@ namespace ignite
                 int16_t flags;
 
                 /** Affinity topology version. */
-                AffinityTopologyVersion ver;
+                AffinityTopologyVersion topologyVersion;
 
                 /** Request processing status. */
                 int32_t status;

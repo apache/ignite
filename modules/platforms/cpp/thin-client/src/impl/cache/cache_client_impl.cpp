@@ -68,7 +68,7 @@ namespace ignite
                         }
                         else
                         {
-                            const Guid& guid= affinityInfo.Get()->GetNodeGuid(key);
+                            const Guid& guid = affinityInfo.Get()->GetNodeGuid(key);
 
                             router0.SyncMessage(req, rsp, guid);
                         }

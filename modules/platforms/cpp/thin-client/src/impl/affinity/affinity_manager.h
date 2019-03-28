@@ -50,7 +50,7 @@ namespace ignite
                      *
                      * @param ver Affinity topology version.
                      */
-                    void UpdateAffinity(AffinityTopologyVersion ver);
+                    void UpdateAffinity(const AffinityTopologyVersion& ver);
 
                     /**
                      * Update affinity.
@@ -58,7 +58,7 @@ namespace ignite
                      * @param groups Affinity awareness groups.
                      * @param ver Affinity topology version.
                      */
-                    void UpdateAffinity(const std::vector<AffinityAwarenessGroup>& groups, AffinityTopologyVersion ver);
+                    void UpdateAffinity(const std::vector<AffinityAwarenessGroup>& groups, const AffinityTopologyVersion& ver);
 
                     /**
                      * Get affinity mapping for the cache.

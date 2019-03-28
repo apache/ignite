@@ -31,18 +31,18 @@ namespace ignite
                     // No-op.
                 }
 
-                void AffinityManager::UpdateAffinity(AffinityTopologyVersion ver)
+                void AffinityManager::UpdateAffinity(const AffinityTopologyVersion& ver)
                 {
                     if (topologyVersion >= ver)
                         return;
 
-                    SP_CacheAffinityMap empty;
+                    SP_CacheAffinityMap empty(new CacheAffinityMap);
 
                     SetNewAffinity(ver, empty);
                 }
 
-                void AffinityManager::UpdateAffinity(const std::vector<AffinityAwarenessGroup>& groups, 
-                    AffinityTopologyVersion ver)
+                void AffinityManager::UpdateAffinity(const std::vector<AffinityAwarenessGroup>& groups,
+                    const AffinityTopologyVersion& ver)
                 {
                     if (topologyVersion > ver)
                         return;

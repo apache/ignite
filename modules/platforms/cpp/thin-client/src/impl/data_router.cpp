@@ -98,7 +98,7 @@ namespace ignite
                                 common::concurrent::CsLockGuard lock(channelsMutex);
 
                                 // Insertion takes place if no channel with the GUID is already present.
-                                std::pair<ChannelsGuidMap::iterator, bool> res = 
+                                std::pair<ChannelsGuidMap::iterator, bool> res =
                                     channels.insert(std::make_pair(newNode.GetGuid(), channel));
 
                                 bool inserted = res.second;

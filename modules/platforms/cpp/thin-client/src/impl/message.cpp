@@ -101,11 +101,7 @@ namespace ignite
                     flags = reader.ReadInt16();
 
                     if (IsAffinityTopologyChanged())
-                    {
-                        AffinityTopologyVersion topVer;
-
-                        topVer.Read(reader);
-                    }
+                        topologyVersion.Read(reader);
 
                     if (!IsFailure())
                     {
@@ -172,8 +168,6 @@ namespace ignite
 
             void CachePartitionsResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
             {
-                AffinityTopologyVersion topologyVersion;
-
                 topologyVersion.Read(reader);
 
                 int32_t groupsNum = reader.ReadInt32();
