@@ -289,7 +289,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request.
      * @return Request handling result.
      */
-    ClientListenerResponse doHandle(JdbcRequest req) {
+    JdbcResponse doHandle(JdbcRequest req) {
         if (!busyLock.enterBusy())
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                 "Failed to handle JDBC request because node is stopping.");
@@ -359,7 +359,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Ordered batch request.
      * @return Response.
      */
-    private ClientListenerResponse dispatchBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
+    private JdbcResponse dispatchBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
         if (!cliCtx.isStreamOrdered())
             executeBatchOrdered(req);
         else {
@@ -382,7 +382,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             if (req.isLastStreamBatch())
                 cliCtx.waitTotalProcessedOrderedRequests(req.order());
 
-            JdbcResponse resp = (JdbcResponse)executeBatch(req);
+            JdbcResponse resp = executeBatch(req);
 
             if (resp.response() instanceof JdbcBatchExecuteResult) {
                 resp = new JdbcResponse(
@@ -407,7 +407,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request object with a batch of a file received from client.
      * @return Response to send to the client.
      */
-    private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
+    private JdbcResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
         if (connCtx.kernalContext() == null)
             return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: "
                 + req.cursorId() + ". Bulk load session may have been reclaimed due to timeout.");
@@ -862,7 +862,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private ClientListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
+    private JdbcResponse executeBatch(JdbcBatchExecuteRequest req) {
         GridQueryCancel cancel = null;
 
         // Skip request register check for ORDERED batches (JDBC streams)
@@ -1088,7 +1088,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private ClientListenerResponse getIndexesMeta(JdbcMetaIndexesRequest req) {
+    private JdbcResponse getIndexesMeta(JdbcMetaIndexesRequest req) {
         try {
             Collection<JdbcIndexMeta> idxInfos = meta.getIndexesMeta(req.schemaName(), req.tableName());
 
@@ -1106,7 +1106,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private ClientListenerResponse getParametersMeta(JdbcMetaParamsRequest req) {
+    private JdbcResponse getParametersMeta(JdbcMetaParamsRequest req) {
         try {
             ParameterMetaData paramMeta = connCtx.kernalContext().query().prepareNativeStatement(
                 req.schemaName(), req.sql()).getParameterMetaData();
@@ -1133,7 +1133,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private ClientListenerResponse getPrimaryKeys(JdbcMetaPrimaryKeysRequest req) {
+    private JdbcResponse getPrimaryKeys(JdbcMetaPrimaryKeysRequest req) {
         try {
             Collection<JdbcPrimaryKeyMeta> pkMeta = meta.getPrimaryKeys(req.schemaName(), req.tableName());
 
@@ -1151,7 +1151,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private ClientListenerResponse getSchemas(JdbcMetaSchemasRequest req) {
+    private JdbcResponse getSchemas(JdbcMetaSchemasRequest req) {
         try {
             String schemaPtrn = req.schemaName();
 

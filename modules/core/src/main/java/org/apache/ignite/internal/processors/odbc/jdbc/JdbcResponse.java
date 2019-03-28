@@ -105,6 +105,13 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
         return activeTx;
     }
 
+    /**
+     * @param activeTx Sets active transaction flag.
+     */
+    public void activeTransaction(boolean activeTx) {
+        this.activeTx = activeTx;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(JdbcResponse.class, this, "status", status(), "err", error());

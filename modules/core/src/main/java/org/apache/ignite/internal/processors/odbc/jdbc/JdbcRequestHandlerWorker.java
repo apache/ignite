@@ -86,7 +86,9 @@ class JdbcRequestHandlerWorker extends GridWorker {
                 GridFutureAdapter<ClientListenerResponse> fut = req.get2();
 
                 try {
-                    ClientListenerResponse res = hnd.doHandle(req.get1());
+                    JdbcResponse res = hnd.doHandle(req.get1());
+
+                    res.activeTransaction(ctx.cache().context().tm().inUserTx());
 
                     fut.onDone(res);
                 }
@@ -100,7 +102,7 @@ class JdbcRequestHandlerWorker extends GridWorker {
             try {
                 ctx.query().getIndexing().onClientDisconnect();
             }
-            catch (Exception e) {
+            catch (Exception ignored) {
                 // No-op.
             }
 
