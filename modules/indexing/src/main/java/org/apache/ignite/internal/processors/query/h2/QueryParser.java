@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
@@ -383,45 +384,10 @@ public class QueryParser {
             // Parse SELECT.
             GridSqlQueryParser parser = new GridSqlQueryParser(false);
 
-            GridSqlStatement selectStmt = parser.parse(prepared);
+            GridSqlQuery selectStmt = (GridSqlQuery)parser.parse(prepared);
 
             List<Integer> cacheIds = parser.cacheIds();
             Integer mvccCacheId = mvccCacheIdForSelect(parser.objectsMap());
-
-            String forUpdateQryOutTx = null;
-            String forUpdateQryTx = null;
-
-            boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
-
-            if (forUpdate) {
-                // We have checked above that it's not an UNION query, so it's got to be SELECT.
-                assert selectStmt instanceof GridSqlSelect;
-
-                // Check FOR UPDATE invariants: only one table, MVCC is there.
-                if (cacheIds.size() != 1)
-                    throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
-                        "that involve single transactional cache.");
-
-                if (mvccCacheId == null)
-                    throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
-                        "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-                // We need a copy because we are going to modify AST a bit. We do not want to modify original select.
-                GridSqlSelect sel = ((GridSqlSelect)selectStmt).copySelectForUpdate();
-
-                // Clear this flag to run it as a plain query.
-                sel.forUpdate(false);
-
-                // Remember sql string without FOR UPDATE clause.
-                forUpdateQryOutTx = sel.getSQL();
-
-                GridSqlAlias keyCol = keyColumn(sel);
-
-                sel.addColumn(keyCol, true);
-
-                // Remember sql string without FOR UPDATE clause and with _key column.
-                forUpdateQryTx = sel.getSQL();
-            }
 
             // Calculate if query is in fact can be executed locally.
             boolean loc = qry.isLocal();
@@ -447,34 +413,74 @@ public class QueryParser {
             boolean splitNeeded = !loc || locSplit;
 
             try {
-                GridCacheTwoStepQuery twoStepQry = null;
+                String forUpdateQryOutTx = null;
+                String forUpdateQryTx = null;
                 GridCacheTwoStepQuery forUpdateTwoStepQry = null;
 
-                if (splitNeeded) {
-                    twoStepQry = GridSqlQuerySplitter.split(
-                        connMgr.connectionForThread().connection(newQry.getSchema()),
-                        prepared,
-                        newQry.isCollocated(),
-                        newQry.isDistributedJoins(),
-                        newQry.isEnforceJoinOrder(),
-                        locSplit,
-                        idx,
-                        false
-                    );
+                boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
+
+                // SELECT FOR UPDATE case handling. We need to create extra queries with appended _key
+                // column to be able to lock selected rows further.
+                if (forUpdate) {
+                    // We have checked above that it's not an UNION query, so it's got to be SELECT.
+                    assert selectStmt instanceof GridSqlSelect;
+
+                    // Check FOR UPDATE invariants: only one table, MVCC is there.
+                    if (cacheIds.size() != 1)
+                        throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
+                            "that involve single transactional cache.");
+
+                    if (mvccCacheId == null)
+                        throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
+                            "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+                    // We need a copy because we are going to modify AST a bit. We do not want to modify original select.
+                    GridSqlSelect selForUpdate = ((GridSqlSelect)selectStmt).copySelectForUpdate();
+
+                    // Clear forUpdate flag to run it as a plain query.
+                    selForUpdate.forUpdate(false);
+                    ((GridSqlSelect)selectStmt).forUpdate(false);
+
+                    // Remember sql string without FOR UPDATE clause.
+                    forUpdateQryOutTx = selForUpdate.getSQL();
+
+                    GridSqlAlias keyCol = keyColumn(selForUpdate);
+
+                    selForUpdate.addColumn(keyCol, true);
+
+                    // Remember sql string without FOR UPDATE clause and with _key column.
+                    forUpdateQryTx = selForUpdate.getSQL();
 
                     // Prepare additional two-step query for FOR UPDATE case.
-                    if (forUpdate) {
+                    if (splitNeeded) {
                         forUpdateTwoStepQry = GridSqlQuerySplitter.split(
                             connMgr.connectionForThread().connection(newQry.getSchema()),
-                            prepared,
+                            selForUpdate,
+                            forUpdateQryTx,
                             newQry.isCollocated(),
                             newQry.isDistributedJoins(),
                             newQry.isEnforceJoinOrder(),
                             locSplit,
                             idx,
-                            true
+                            paramsCnt
                         );
                     }
+                }
+
+                GridCacheTwoStepQuery twoStepQry = null;
+
+                if (splitNeeded) {
+                    twoStepQry = GridSqlQuerySplitter.split(
+                        connMgr.connectionForThread().connection(newQry.getSchema()),
+                        selectStmt,
+                        newQry.getSql(),
+                        newQry.isCollocated(),
+                        newQry.isDistributedJoins(),
+                        newQry.isEnforceJoinOrder(),
+                        locSplit,
+                        idx,
+                        paramsCnt
+                    );
                 }
 
                 List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());

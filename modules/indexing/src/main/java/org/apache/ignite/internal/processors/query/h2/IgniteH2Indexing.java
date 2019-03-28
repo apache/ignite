@@ -425,7 +425,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param filter Cache name and key filter.
      * @param mvccTracker Query tracker.
      * @param cancel Query cancel.
-     * @param inTx Flag whether query executed in transaction..
+     * @param inTx Flag whether the query is executed in transaction.
      * @param timeout Timeout.
      * @return Query result.
      * @throws IgniteCheckedException If failed.

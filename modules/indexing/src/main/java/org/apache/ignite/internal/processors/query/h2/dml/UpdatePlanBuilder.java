@@ -66,6 +66,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
+import org.h2.command.Prepared;
 import org.h2.table.Column;
 
 /**
@@ -892,15 +893,19 @@ public final class UpdatePlanBuilder {
         try (Connection conn = idx.connections().connectionNoCache(planKey.schemaName())) {
             // Get a new prepared statement for derived select query.
             try (PreparedStatement stmt = conn.prepareStatement(selectQry)) {
+                Prepared prep = GridSqlQueryParser.prepared(stmt);
+                GridSqlQuery selectStmt = (GridSqlQuery)new GridSqlQueryParser(false).parse(prep);
+
                 GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(
                     conn,
-                    GridSqlQueryParser.prepared(stmt),
+                    selectStmt,
+                    selectQry,
                     planKey.collocated(),
                     planKey.distributedJoins(),
                     planKey.enforceJoinOrder(),
                     false,
                     idx,
-                    false
+                    prep.getParameters().size()
                 );
 
                 boolean distributed =

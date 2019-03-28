@@ -180,40 +180,42 @@ public class GridSqlQuerySplitter {
 
     /**
      * @param conn Connection.
-     * @param prepared Prepared.
+     * @param qry Query.
+     * @param originalSql Original SQL query string.
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
      * @param distributedJoins If distributed joins enabled.
      * @param enforceJoinOrder Enforce join order.
      * @param locSplit Whether this is a split for local query.
      * @param idx Indexing.
-     * @param appendKeyCol If {@code true}, the result query will contain additional _key column.
-     *                     Used in SELECT FOR UPDATE statements.
+     * @param paramsCnt Parameters count.
      * @return Two step query.
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
      */
     public static GridCacheTwoStepQuery split(
         Connection conn,
-        Prepared prepared,
+        GridSqlQuery qry,
+        String originalSql,
         boolean collocatedGrpBy,
         boolean distributedJoins,
         boolean enforceJoinOrder,
         boolean locSplit,
         IgniteH2Indexing idx,
-        boolean appendKeyCol
+        int paramsCnt
     ) throws SQLException, IgniteCheckedException {
         SplitterContext.set(distributedJoins);
 
         try {
             return split0(
                 conn,
-                prepared,
+                qry,
+                originalSql,
                 collocatedGrpBy,
                 distributedJoins,
                 enforceJoinOrder,
                 locSplit,
                 idx,
-                appendKeyCol
+                paramsCnt
             );
         }
         finally {
@@ -223,65 +225,32 @@ public class GridSqlQuerySplitter {
 
     /**
      * @param conn Connection.
-     * @param prepared Prepared.
+     * @param qry Query.
+     * @param originalSql Original SQL query string.
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
      * @param distributedJoins If distributed joins enabled.
      * @param enforceJoinOrder Enforce join order.
      * @param locSplit Whether this is a split for local query.
      * @param idx Indexing.
-     * @param appendKeyCol If {@code true}, the result query will contain additional _key column.
-     *                     Used in SELECT FOR UPDATE statements.
+     * @param paramsCnt Parameters count.
      * @return Two step query.
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    public static GridCacheTwoStepQuery split0(
+    private static GridCacheTwoStepQuery split0(
         Connection conn,
-        Prepared prepared,
+        GridSqlQuery qry,
+        String originalSql,
         boolean collocatedGrpBy,
         boolean distributedJoins,
         boolean enforceJoinOrder,
         boolean locSplit,
         IgniteH2Indexing idx,
-        boolean appendKeyCol
+        int paramsCnt
     ) throws SQLException, IgniteCheckedException {
-        // Here we will just do initial query parsing. Do not use optimized
-        // subqueries because we do not have unique FROM aliases yet.
-        GridSqlQuery qry = GridSqlQueryParser.parseQuery(prepared, false);
-
-        boolean qryForUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
-
-        assert !appendKeyCol || qryForUpdate; // Additional key column is used only by SFU statements.
-
-        String originalSql;
-
-        // Prepare query
-        if (qryForUpdate) {
-            assert qry instanceof GridSqlSelect; // Select for update in unions is not supported.
-
-            GridSqlSelect sel = (GridSqlSelect)qry;
-
-            // Always clear FOR UPDATE flag.
-            sel.forUpdate(false);
-
-            // Add _key column if needed.
-            if (appendKeyCol) {
-                GridSqlAlias keyCol = keyColumn(sel);
-
-                sel.addColumn(keyCol, true);
-            }
-
-            // Sql string with cleared FOR UPDATE clause.
-            originalSql = qry.getSQL();
-        }
-        else
-            originalSql = prepared.getSQL();
-
         final boolean explain = qry.explain();
 
         qry.explain(false);
-
-        int paramsCnt = F.isEmpty(prepared.getParameters()) ? 0 : prepared.getParameters().size();
 
         GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(
             paramsCnt,
@@ -333,7 +302,7 @@ public class GridSqlQuerySplitter {
         // Setup resulting two step query and return it.
         return new GridCacheTwoStepQuery(
             originalSql,
-            prepared.getParameters().size(),
+            paramsCnt,
             splitter.tbls,
             splitter.rdcSqlQry,
             splitter.mapSqlQrys,
