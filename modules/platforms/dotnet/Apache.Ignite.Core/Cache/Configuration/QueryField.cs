@@ -146,10 +146,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             get { return _fieldTypeName; }
             set
             {
-                // Try to convert to boxed type if value is a primitive 
-                string boxedType = JavaTypes.GetJavaTypeName(value);
-                
-                _fieldTypeName = boxedType ?? value;
+                _fieldTypeName = value;
                 _type = null;
             }
         }
