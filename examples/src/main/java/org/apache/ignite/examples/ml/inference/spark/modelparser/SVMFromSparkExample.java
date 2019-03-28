@@ -50,36 +50,41 @@ public class SVMFromSparkExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+            IgniteCache<Integer, Object[]> dataCache = null;
+            try {
+                dataCache = TitanicUtils.readPassengers(ignite);
 
-            IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
-                double[] data = new double[] {(double)v[0], (double)v[5], (double)v[6]};
-                data[0] = Double.isNaN(data[0]) ? 0 : data[0];
-                data[1] = Double.isNaN(data[1]) ? 0 : data[1];
-                data[2] = Double.isNaN(data[2]) ? 0 : data[2];
+                IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
+                    double[] data = new double[] {(double)v[0], (double)v[5], (double)v[6]};
+                    data[0] = Double.isNaN(data[0]) ? 0 : data[0];
+                    data[1] = Double.isNaN(data[1]) ? 0 : data[1];
+                    data[2] = Double.isNaN(data[2]) ? 0 : data[2];
 
-                return VectorUtils.of(data);
-            };
+                    return VectorUtils.of(data);
+                };
 
-            IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
+                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
 
-            SVMLinearClassificationModel mdl = (SVMLinearClassificationModel)SparkModelParser.parse(
-                SPARK_MDL_PATH,
-                SupportedSparkModels.LINEAR_SVM
-            );
+                SVMLinearClassificationModel mdl = (SVMLinearClassificationModel)SparkModelParser.parse(
+                    SPARK_MDL_PATH,
+                    SupportedSparkModels.LINEAR_SVM
+                );
 
-            System.out.println(">>> SVM: " + mdl);
+                System.out.println(">>> SVM: " + mdl);
 
-            double accuracy = Evaluator.evaluate(
-                dataCache,
-                mdl,
-                featureExtractor,
-                lbExtractor,
-                new Accuracy<>()
-            );
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    featureExtractor,
+                    lbExtractor,
+                    new Accuracy<>()
+                );
 
-            System.out.println("\n>>> Accuracy " + accuracy);
-            System.out.println("\n>>> Test Error " + (1 - accuracy));
+                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Test Error " + (1 - accuracy));
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 }

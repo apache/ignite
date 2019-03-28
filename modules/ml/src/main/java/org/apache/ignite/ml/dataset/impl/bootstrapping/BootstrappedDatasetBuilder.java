@@ -17,17 +17,20 @@
 
 package org.apache.ignite.ml.dataset.impl.bootstrapping;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import org.apache.commons.math3.distribution.PoissonDistribution;
 import org.apache.commons.math3.random.Well19937c;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
+
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  * Builder for bootstrapped dataset. Bootstrapped dataset consist of several subsamples created in according to random
@@ -58,10 +61,7 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
      * @param samplesCnt Samples count.
      * @param subsampleSize Subsample size.
      */
-    public BootstrappedDatasetBuilder(FeatureLabelExtractor<K, V, Double> extractor,
-        int samplesCnt,
-        double subsampleSize) {
-
+    public <C extends Serializable> BootstrappedDatasetBuilder(Vectorizer<K, V, C, Double> extractor, int samplesCnt, double subsampleSize) {
         this.extractor = extractor;
         this.samplesCnt = samplesCnt;
         this.subsampleSize = subsampleSize;
