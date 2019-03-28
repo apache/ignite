@@ -304,9 +304,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     private ClusterProcessor cluster;
 
-    /**
-     *
-     */
+    /** */
     @GridToStringExclude
     private CompressionProcessor compressProc;
 
@@ -395,6 +393,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private WorkersRegistry workersRegistry;
 
     /** */
+    @GridToStringExclude
+    private LongJVMPauseDetector pauseDetector;
+
+    /** */
     private Thread.UncaughtExceptionHandler hnd;
 
     /** */
@@ -471,6 +473,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param plugins Plugin providers.
      * @param workerRegistry Worker registry.
      * @param hnd Default uncaught exception handler used by thread pools.
+     * @param pauseDetector Long JVM pause detector.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -497,7 +500,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         List<PluginProvider> plugins,
         IgnitePredicate<String> clsFilter,
         WorkersRegistry workerRegistry,
-        Thread.UncaughtExceptionHandler hnd
+        Thread.UncaughtExceptionHandler hnd,
+        LongJVMPauseDetector pauseDetector
     ) {
         assert grid != null;
         assert cfg != null;
@@ -524,6 +528,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.customExecSvcs = customExecSvcs;
         this.workersRegistry = workerRegistry;
         this.hnd = hnd;
+        this.pauseDetector = pauseDetector;
 
         marshCtx = new MarshallerContextImpl(plugins, clsFilter);
 
@@ -968,6 +973,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridPerformanceSuggestions performance() {
         return perf;
+    }
+
+    /** {@inheritDoc} */
+    @Override public LongJVMPauseDetector longJvmPauseDetector() {
+        return pauseDetector;
     }
 
     /** {@inheritDoc} */
