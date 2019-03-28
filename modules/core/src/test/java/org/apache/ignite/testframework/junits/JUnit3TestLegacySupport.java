@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework.junits;
 
 import junit.framework.Assert; // IMPL NOTE some old tests expect inherited deprecated assertions.
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.runners.model.Statement;
