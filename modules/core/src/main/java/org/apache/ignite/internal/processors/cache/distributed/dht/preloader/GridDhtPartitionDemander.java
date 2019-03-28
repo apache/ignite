@@ -448,12 +448,18 @@ public class GridDhtPartitionDemander {
 
         final CacheConfiguration cfg = grp.config();
 
-        int totalStripes = ctx.gridConfig().getRebalanceThreadPoolSize();
+        int locStripes = ctx.gridConfig().getRebalanceThreadPoolSize();
 
         for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assignments.entrySet()) {
             final ClusterNode node = e.getKey();
 
             GridDhtPartitionDemandMessage d = e.getValue();
+
+            Integer rmtStripes = node.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE);
+
+            int rmtTotalStripes = rmtStripes != null && rmtStripes <= locStripes ? rmtStripes : locStripes;
+
+            int stripes = rmtTotalStripes;
 
             final IgniteDhtDemandedPartitionsMap parts;
             synchronized (fut) { // Synchronized to prevent consistency issues in case of parallel cancellation.
@@ -464,12 +470,8 @@ public class GridDhtPartitionDemander {
 
                 U.log(log, "Prepared rebalancing [grp=" + grp.cacheOrGroupName()
                         + ", mode=" + cfg.getRebalanceMode() + ", supplier=" + node.id() + ", partitionsCount=" + parts.size()
-                        + ", topVer=" + fut.topologyVersion() + ", parallelism=" + totalStripes + "]");
+                        + ", topVer=" + fut.topologyVersion() + ", parallelism=" + rmtTotalStripes + "]");
             }
-
-            int rmtTotalStripes = node.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE);
-
-            int stripes = rmtTotalStripes <= totalStripes ? rmtTotalStripes : totalStripes;
 
             final List<IgniteDhtDemandedPartitionsMap> stripePartitions = new ArrayList<>(stripes);
             for (int i = 0; i < stripes; i++)
@@ -488,7 +490,7 @@ public class GridDhtPartitionDemander {
             for (int i = 0; it.hasNext(); i++)
                 stripePartitions.get(i % stripes).addFull(it.next());
 
-            for (int stripe = 0; stripe < stripes; stripe++) {
+            for (int stripe = 0; stripe < rmtTotalStripes; stripe++) {
                 if (!stripePartitions.get(stripe).isEmpty()) {
                     // Create copy of demand message with new striped partitions map.
                     final GridDhtPartitionDemandMessage demandMsg = d.withNewPartitionsMap(stripePartitions.get(stripe));
