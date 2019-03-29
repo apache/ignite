@@ -1097,6 +1097,22 @@ public class DmlStatementsProcessor {
         return updateSqlFields(schemaName, c, GridSqlQueryParser.prepared(stmt), fldsQry, local, filter, cancel);
     }
 
+    /** Remove updater for compatibility with < 2.7.0. Must not be moved around to keep at anonymous position 4. */
+    private static final IgniteInClosure<MutableEntry<Object, Object>> RMV_OLD =
+        new IgniteInClosure<MutableEntry<Object, Object>>() {
+            @Override public void apply(MutableEntry<Object, Object> e) {
+                e.remove();
+            }
+        };
+
+    /** Remove updater. Must not be moved around to keep at anonymous position 5. */
+    private static final IgniteInClosure<MutableEntry<Object, Object>> RMV =
+        new IgniteInClosure<MutableEntry<Object, Object>>() {
+            @Override public void apply(MutableEntry<Object, Object> e) {
+                e.remove();
+            }
+        };
+
     /**
      * @param schema Schema name.
      * @param conn Connection.
@@ -1300,14 +1316,6 @@ public class DmlStatementsProcessor {
             return null; // To leave out only erroneous keys - nulls are skipped on results' processing.
         }
     }
-
-    /** */
-    private static IgniteInClosure<MutableEntry<Object, Object>> RMV = new IgniteInClosure<MutableEntry<Object, Object>>() {
-        /** {@inheritDoc} */
-        @Override public void apply(MutableEntry<Object, Object> e) {
-            e.remove();
-        }
-    };
 
     /**
      *
