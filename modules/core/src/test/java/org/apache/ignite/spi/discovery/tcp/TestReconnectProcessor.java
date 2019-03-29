@@ -42,13 +42,10 @@ import org.jetbrains.annotations.Nullable;
  * Updates node attributes on disconnect.
  */
 public class TestReconnectProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
-    /** Enabled flag. */
-    public static boolean enabled;
-
     /**
      * @param ctx Kernal context.
      */
-    protected TestReconnectProcessor(GridKernalContext ctx) {
+    public TestReconnectProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

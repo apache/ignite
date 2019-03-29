@@ -166,9 +166,9 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
-import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorImpl;
+import org.apache.ignite.internal.processors.security.IgniteSecurityImpl;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
-import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
+import org.apache.ignite.internal.processors.security.NoOpIgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
@@ -1308,12 +1308,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * @param prc GridSecurityProcessor from plugin context or null.
-     * @return IgniteSecurityProcessor.
+     * @return IgniteSecurity.
      */
     private GridProcessor igniteSecurityProcessor(GridSecurityProcessor prc) {
         return prc != null && prc.enabled()
-            ? new IgniteSecurityProcessorImpl(ctx, prc)
-            : new NoOpIgniteSecurityProcessor(ctx);
+            ? new IgniteSecurityImpl(ctx, prc)
+            : new NoOpIgniteSecurity(ctx);
     }
 
     /**

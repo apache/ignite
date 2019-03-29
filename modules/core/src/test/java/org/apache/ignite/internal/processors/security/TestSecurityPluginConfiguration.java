@@ -17,30 +17,17 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.plugin.PluginConfiguration;
+
 /**
- *
+ * Grid security configuration for tests.
  */
-public class OperationSecurityContext implements AutoCloseable {
-    /** Ignite Security. */
-    private final IgniteSecurity proc;
-
-    /** Security context. */
-    private final SecurityContext secCtx;
-
+@FunctionalInterface
+public interface TestSecurityPluginConfiguration extends PluginConfiguration {
     /**
-     * @param proc Ignite Security.
-     * @param secCtx Security context.
+     * @param ctx GridKernalContext.
+     * @return GridSecurityProcessor.
      */
-    OperationSecurityContext(IgniteSecurity proc, SecurityContext secCtx) {
-        assert proc != null;
-        assert secCtx != null || !proc.enabled();
-
-        this.proc = proc;
-        this.secCtx = secCtx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        proc.withContext(secCtx);
-    }
+    public GridSecurityProcessor build(GridKernalContext ctx);
 }
