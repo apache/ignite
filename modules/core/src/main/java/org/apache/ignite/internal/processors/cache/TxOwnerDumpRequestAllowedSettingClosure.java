@@ -20,10 +20,15 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
+/**
+ * Closure that is sent on all server nodes in order to change transaction configuration parameter
+ * that allows or disallows dump requests from local to near nodes while detection long running
+ * transactions.
+ */
 public class TxOwnerDumpRequestAllowedSettingClosure implements IgniteRunnable {
     /** */
     private static final long serialVersionUID = 0L;
-    
+
     /** */
     private final boolean allowed;
 
