@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -29,6 +30,7 @@ import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import org.apache.ignite.IgniteSystemProperties;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
 import static org.apache.ignite.internal.util.IgniteUtils.jdkVersion;
@@ -109,10 +111,54 @@ public abstract class GridUnsafe {
             : new UnsafeDirectBufferCleaner();
 
     /** JavaNioAccess object. */
-    private static final Object JAVA_NIO_ACCESS_OBJ = javaNioAccessObject();
+    @Nullable private static final Object JAVA_NIO_ACCESS_OBJ;
 
     /** JavaNioAccess#newDirectByteBuffer method. */
-    private static final Method NEW_DIRECT_BUF_MTD = newDirectBufferMethod();
+    @Nullable private static Method NEW_DIRECT_BUF_MTD;
+
+
+    @Nullable private static final Constructor<?> NEW_DIRECT_BUF_CONSTRUCTOR;
+
+    static {
+        NEW_DIRECT_BUF_CONSTRUCTOR = newDirectBufferCtor();
+
+        Object nioAccessObj = null;
+        try {
+            nioAccessObj = javaNioAccessObject();
+
+            NEW_DIRECT_BUF_MTD = newDirectBufferMethod(nioAccessObj);
+        }
+        catch (Exception e) {
+            nioAccessObj = null;
+
+            NEW_DIRECT_BUF_MTD = null;
+
+            if (majorJavaVersion(jdkVersion()) > 11) {
+                newDirectBufferCtor();
+            }
+            else
+                throw e;
+        } finally {
+            JAVA_NIO_ACCESS_OBJ = nioAccessObj;
+        }
+    }
+
+    private static Constructor<?> newDirectBufferCtor() {
+        try {
+            ByteBuffer direct = ByteBuffer.allocateDirect(1);
+
+            final Constructor<?> constructor =
+                direct.getClass().getDeclaredConstructor(long.class, int.class);
+
+            constructor.setAccessible(true);
+
+            return constructor;
+        } catch (NoSuchMethodException e) {
+            return null;
+        } catch (SecurityException e) {
+            return null;
+        }
+    }
 
     /**
      * Ensure singleton.
@@ -127,6 +173,19 @@ public abstract class GridUnsafe {
      * @return Byte buffer wrapping the given memory.
      */
     public static ByteBuffer wrapPointer(long ptr, int len) {
+        try {
+            return (ByteBuffer) NEW_DIRECT_BUF_CONSTRUCTOR.newInstance(ptr, len);
+        }
+        catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            new RuntimeException("JavaNioAccess#newDirectByteBuffer() method is unavailable."
+                + FeatureChecker.JAVA_VER_SPECIFIC_WARN, e);
+            //todo check presence
+
+            return wrapPointer2(ptr, len);
+        }
+    }
+
+    @NotNull private static ByteBuffer wrapPointer2(long ptr, int len) {
         try {
             ByteBuffer buf = (ByteBuffer)NEW_DIRECT_BUF_MTD.invoke(JAVA_NIO_ACCESS_OBJ, ptr, len, null);
 
@@ -1461,13 +1520,14 @@ public abstract class GridUnsafe {
      * Returns reference to {@code JavaNioAccess.newDirectByteBuffer} method
      * from private API for corresponding Java version.
      *
+     * @param nioAccessObj Java NIO access object.
      * @return Reference to {@code JavaNioAccess.newDirectByteBuffer} method
      * @throws RuntimeException If getting access to the private API is failed.
      */
-    private static Method newDirectBufferMethod() {
+    private static Method newDirectBufferMethod(Object nioAccessObj) {
 
         try {
-            Class<?> cls = JAVA_NIO_ACCESS_OBJ.getClass();
+            Class<?> cls = nioAccessObj.getClass();
 
             Method mtd = cls.getMethod("newDirectByteBuffer", long.class, int.class, Object.class);
 
