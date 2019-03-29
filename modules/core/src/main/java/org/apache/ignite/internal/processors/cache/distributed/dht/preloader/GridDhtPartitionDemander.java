@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -455,9 +456,10 @@ public class GridDhtPartitionDemander {
 
             GridDhtPartitionDemandMessage d = e.getValue();
 
-            Integer rmtStripes = node.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE);
+            int rmtStripes = Optional.ofNullable((Integer) node.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE))
+                .orElse(1);
 
-            int rmtTotalStripes = rmtStripes != null && rmtStripes <= locStripes ? rmtStripes : locStripes;
+            int rmtTotalStripes = rmtStripes <= locStripes ? rmtStripes : locStripes;
 
             int stripes = rmtTotalStripes;
 
