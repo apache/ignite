@@ -456,7 +456,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
         finally {
             // Cleanup pending futures.
-            onCoordinatorFailed(curCrd.nodeId());
+            MvccCoordinator curCrd0 = curCrd;
+
+            if (curCrd0.nodeId() != null) //Skip if coordinator is unassigned or disconnected.
+                onCoordinatorFailed(curCrd0.nodeId());
         }
     }
 

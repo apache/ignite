@@ -23,12 +23,13 @@ import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+
+import java.io.Serializable;
 
 /**
  * Use mean value of errors for estimating error on dataset.
@@ -36,7 +37,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public class MeanAbsValueConvergenceChecker<K,V> extends ConvergenceChecker<K,V> {
+public class MeanAbsValueConvergenceChecker<K, V, C extends Serializable> extends ConvergenceChecker<K, V, C> {
     /** Serial version uid. */
     private static final long serialVersionUID = 8534776439755210864L;
 
@@ -47,19 +48,17 @@ public class MeanAbsValueConvergenceChecker<K,V> extends ConvergenceChecker<K,V>
      * @param externalLbToInternalMapping External label to internal mapping.
      * @param loss Loss.
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      */
     public MeanAbsValueConvergenceChecker(long sampleSize, IgniteFunction<Double, Double> externalLbToInternalMapping,
-        Loss loss, DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor,
-        double precision) {
+        Loss loss, DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> vectorizer, double precision) {
 
-        super(sampleSize, externalLbToInternalMapping, loss, datasetBuilder, featureExtractor, lbExtractor, precision);
+        super(sampleSize, externalLbToInternalMapping, loss, datasetBuilder, vectorizer, precision);
     }
 
     /** {@inheritDoc} */
-    @Override public Double computeMeanErrorOnDataset(Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset,
+    @Override public Double computeMeanErrorOnDataset(
+        Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset,
         ModelsComposition mdl) {
 
         IgniteBiTuple<Double, Long> sumAndCnt = dataset.compute(
@@ -67,7 +66,7 @@ public class MeanAbsValueConvergenceChecker<K,V> extends ConvergenceChecker<K,V>
             this::reduce
         );
 
-        if(sumAndCnt == null || sumAndCnt.getValue() == 0)
+        if (sumAndCnt == null || sumAndCnt.getValue() == 0)
             return Double.NaN;
         return sumAndCnt.getKey() / sumAndCnt.getValue();
     }
@@ -79,15 +78,16 @@ public class MeanAbsValueConvergenceChecker<K,V> extends ConvergenceChecker<K,V>
      * @param part Partition.
      * @return Tuple (sum of errors, count of rows)
      */
-    private IgniteBiTuple<Double, Long> computeStatisticOnPartition(ModelsComposition mdl, FeatureMatrixWithLabelsOnHeapData part) {
+    private IgniteBiTuple<Double, Long> computeStatisticOnPartition(ModelsComposition mdl,
+        FeatureMatrixWithLabelsOnHeapData part) {
         Double sum = 0.0;
 
-        for(int i = 0; i < part.getFeatures().length; i++) {
+        for (int i = 0; i < part.getFeatures().length; i++) {
             double error = computeError(VectorUtils.of(part.getFeatures()[i]), part.getLabels()[i], mdl);
             sum += Math.abs(error);
         }
 
-        return new IgniteBiTuple<>(sum, (long) part.getLabels().length);
+        return new IgniteBiTuple<>(sum, (long)part.getLabels().length);
     }
 
     /**
@@ -95,7 +95,7 @@ public class MeanAbsValueConvergenceChecker<K,V> extends ConvergenceChecker<K,V>
      *
      * @param left Left.
      * @param right Right.
-     * @return merged value.
+     * @return Merged value.
      */
     private IgniteBiTuple<Double, Long> reduce(IgniteBiTuple<Double, Long> left, IgniteBiTuple<Double, Long> right) {
         if (left == null) {

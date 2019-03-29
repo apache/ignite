@@ -48,7 +48,7 @@ public class BucketMeta implements Serializable {
      * Returns bucket id for feature value.
      *
      * @param val Value.
-     * @return bucket id.
+     * @return Bucket id.
      */
     public int getBucketId(Double val) {
         if(featureMeta.isCategoricalFeature())
@@ -61,7 +61,7 @@ public class BucketMeta implements Serializable {
      * Returns mean value by bucket id.
      *
      * @param bucketId Bucket id.
-     * @return mean value of feature.
+     * @return Mean value of feature.
      */
     public double bucketIdToValue(int bucketId) {
         if(featureMeta.isCategoricalFeature())

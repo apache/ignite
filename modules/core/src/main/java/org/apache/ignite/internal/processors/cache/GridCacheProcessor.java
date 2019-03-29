@@ -227,6 +227,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final boolean IGNITE_ALLOW_START_CACHES_IN_PARALLEL =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL, true);
 
+    /** */
+    private final boolean keepStaticCacheConfiguration = IgniteSystemProperties.getBoolean(
+        IgniteSystemProperties.IGNITE_KEEP_STATIC_CACHE_CONFIGURATION);
+
     /** Shared cache context. */
     private GridCacheSharedContext<?, ?> sharedCtx;
 
@@ -895,10 +899,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void addStoredCache(Map<String, CacheInfo> caches, StoredCacheData cacheData, String cacheName,
         CacheType cacheType, boolean isStaticalyConfigured) {
-        if (!cacheType.userCache())
-            stopSeq.addLast(cacheName);
-        else
-            stopSeq.addFirst(cacheName);
+        if (!caches.containsKey(cacheName)) {
+            if (!cacheType.userCache())
+                stopSeq.addLast(cacheName);
+            else
+                stopSeq.addFirst(cacheName);
+        }
 
         caches.put(cacheName, new CacheInfo(cacheData, cacheType, cacheData.sql(), 0, isStaticalyConfigured));
     }
@@ -929,19 +935,37 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             Map<String, StoredCacheData> storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
 
             if (!F.isEmpty(storedCaches)) {
+                List<String> skippedConfigs = new ArrayList<>();
+
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
                     String cacheName = storedCacheData.config().getName();
 
-                    //Ignore stored caches if it already added by static config(static config has higher priority).
+                    CacheType type = cacheType(cacheName);
+
                     if (!caches.containsKey(cacheName))
-                        addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), false);
+                        // No static cache - add the configuration.
+                        addStoredCache(caches, storedCacheData, cacheName, type, false);
                     else {
+                        // A static cache with the same name already exists.
                         CacheConfiguration cfg = caches.get(cacheName).cacheData().config();
                         CacheConfiguration cfgFromStore = storedCacheData.config();
 
                         validateCacheConfigurationOnRestore(cfg, cfgFromStore);
+
+                        if (!keepStaticCacheConfiguration) {
+                            addStoredCache(caches, storedCacheData, cacheName, type, false);
+
+                            if (type == CacheType.USER)
+                                skippedConfigs.add(cacheName);
+                        }
                     }
                 }
+
+                if (!F.isEmpty(skippedConfigs))
+                    U.warn(log, "Static configuration for the following caches will be ignored because a persistent " +
+                        "cache with the same name already exist (see " +
+                        "https://apacheignite.readme.io/docs/cache-configuration for more information): " +
+                        skippedConfigs);
             }
         }
     }
@@ -1586,7 +1610,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheCompressionManager compressMgr = new CacheCompressionManager();
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
-        CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled()) ? new GridCacheEvictionManager() : new CacheOffheapEvictionManager();
+        CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled())
+            ? new GridCacheEvictionManager()
+            : new CacheOffheapEvictionManager();
         GridCacheQueryManager qryMgr = queryManager(cfg);
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
         CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
@@ -4682,6 +4708,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return max;
+    }
+
+    /**
+     * @return Keep static cache configuration flag. If {@code true}, static cache configuration will override
+     * configuration persisted on disk.
+     */
+    public boolean keepStaticCacheConfiguration() {
+        return keepStaticCacheConfiguration;
     }
 
     /**
