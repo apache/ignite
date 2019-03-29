@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.primitives.vector.storage;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
 
 /**
@@ -89,13 +90,28 @@ public class VectorViewStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public <T extends Serializable> T getRaw(int i) {
+        return sto.getRaw(off + i);
+    }
+
+    /** {@inheritDoc} */
     @Override public void set(int i, double v) {
         sto.set(off + i, v);
     }
 
     /** {@inheritDoc} */
+    @Override public <T extends Serializable> void setRaw(int i, T v) {
+        sto.setRaw(off + i, v);
+    }
+
+    /** {@inheritDoc} */
     @Override public double[] data() {
         return sto.data();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Serializable[] rawData() {
+        return sto.rawData();
     }
 
     /** {@inheritDoc} */
@@ -121,6 +137,11 @@ public class VectorViewStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return sto.isArrayBased();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isNumeric() {
+        return sto.isNumeric();
     }
 
     /** {@inheritDoc} */

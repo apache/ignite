@@ -17,12 +17,12 @@
 
 package org.apache.ignite.ml.math.primitives.vector.storage;
 
-import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
+import it.unimi.dsi.fastutil.ints.IntArraySet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.math.StorageConstants;
@@ -34,11 +34,9 @@ import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
 public class SparseVectorStorage implements VectorStorage, StorageConstants {
     /** */
     private int size;
-    /** */
-    private int acsMode;
 
     /** Actual map storage. */
-    private Map<Integer, Double> sto;
+    private Map<Integer, Serializable> sto;
 
     /**
      *
@@ -48,54 +46,21 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
     }
 
     /** */
-    public SparseVectorStorage(Map<Integer, Double> map, boolean cp) {
-        assert map.size() > 0;
+    public SparseVectorStorage(Map<Integer, ? extends Serializable> map, boolean cp) {
+        assert !map.isEmpty();
 
         this.size = map.size();
-
-        if (map instanceof Int2DoubleRBTreeMap)
-            acsMode = SEQUENTIAL_ACCESS_MODE;
-        else if (map instanceof Int2DoubleOpenHashMap)
-            acsMode = RANDOM_ACCESS_MODE;
-        else
-            acsMode = UNKNOWN_STORAGE_MODE;
-
-        if (cp)
-            switch (acsMode) {
-                case SEQUENTIAL_ACCESS_MODE:
-                    sto = new Int2DoubleRBTreeMap(map);
-                case RANDOM_ACCESS_MODE:
-                    sto = new Int2DoubleOpenHashMap(map);
-                    break;
-                default:
-                    sto = new HashMap<>(map);
-            }
-        else
-            sto = map;
+        sto = new HashMap<>(map);
     }
 
     /**
      * @param size Vector size.
-     * @param acsMode Access mode.
      */
-    public SparseVectorStorage(int size, int acsMode) {
+    public SparseVectorStorage(int size) {
         assert size > 0;
-        assertAccessMode(acsMode);
 
         this.size = size;
-        this.acsMode = acsMode;
-
-        if (acsMode == SEQUENTIAL_ACCESS_MODE)
-            sto = new Int2DoubleRBTreeMap();
-        else
-            sto = new Int2DoubleOpenHashMap();
-    }
-
-    /**
-     * @return Vector elements access mode.
-     */
-    public int getAccessMode() {
-        return acsMode;
+        this.sto = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -105,7 +70,16 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
 
     /** {@inheritDoc} */
     @Override public double get(int i) {
-        return sto.getOrDefault(i, 0.0);
+        Serializable obj = sto.get(i);
+        if (obj == null)
+            return 0.0;
+
+        return ((Number)obj).doubleValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Serializable> T getRaw(int i) {
+        return (T)sto.get(i);
     }
 
     /** {@inheritDoc} */
@@ -114,13 +88,19 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
             sto.put(i, v);
         else if (sto.containsKey(i))
             sto.remove(i);
+    }
 
+    /** {@inheritDoc} */
+    @Override public <T extends Serializable> void setRaw(int i, T v) {
+        if (v == null)
+            sto.remove(i);
+        else
+            sto.put(i, v);
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
-        out.writeInt(acsMode);
         out.writeObject(sto);
     }
 
@@ -128,13 +108,12 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
     @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
-        acsMode = in.readInt();
-        sto = (Map<Integer, Double>)in.readObject();
+        sto = (Map<Integer, Serializable>)in.readObject();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
-        return acsMode == SEQUENTIAL_ACCESS_MODE;
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -158,12 +137,27 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isNumeric() {
+        return sto.values().stream().allMatch(v -> v instanceof Number) || sto.isEmpty();
+    }
+
+    /** {@inheritDoc} */
     @Override public double[] data() {
+        if (!isNumeric())
+            throw new ClassCastException("Vector has not only numeric values.");
+
         double[] data = new double[size];
 
-        sto.forEach((idx, val) -> data[idx] = val);
+        sto.forEach((idx, val) -> data[idx] = ((Number)val).doubleValue());
 
         return data;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Serializable[] rawData() {
+        Serializable[] res = new Serializable[size];
+        sto.forEach((i, v) -> res[i] = v);
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -176,14 +170,13 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
 
         SparseVectorStorage that = (SparseVectorStorage)o;
 
-        return size == that.size && acsMode == that.acsMode && (sto != null ? sto.equals(that.sto) : that.sto == null);
+        return size == that.size && (sto != null ? sto.equals(that.sto) : that.sto == null);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = size;
 
-        res = 31 * res + acsMode;
         res = 31 * res + (sto != null ? sto.hashCode() : 0);
 
         return res;
@@ -191,6 +184,6 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
 
     /** */
     public IntSet indexes() {
-        return (IntSet)sto.keySet();
+        return new IntArraySet(sto.keySet());
     }
 }

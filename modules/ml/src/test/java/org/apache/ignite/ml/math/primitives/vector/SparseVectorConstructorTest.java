@@ -19,7 +19,6 @@ package org.apache.ignite.ml.math.primitives.vector;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 import org.junit.Test;
 
@@ -36,25 +35,21 @@ public class SparseVectorConstructorTest {
     @Test(expected = AssertionError.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
-            new SparseVector(-1, 1).size());
+            new SparseVector(-1).size());
     }
 
     /** */
     @Test(expected = AssertionError.class)
     public void zeroSizeTest() {
         assertEquals("0 size.", IMPOSSIBLE_SIZE,
-            new SparseVector(0, 1).size());
+            new SparseVector(0).size());
     }
 
     /** */
     @Test
     public void primitiveTest() {
         assertEquals("1 size, random access.", 1,
-            new SparseVector(1, StorageConstants.RANDOM_ACCESS_MODE).size());
-
-        assertEquals("1 size, sequential access.", 1,
-            new SparseVector(1, StorageConstants.SEQUENTIAL_ACCESS_MODE).size());
-
+            new SparseVector(1).size());
     }
 
     /** */

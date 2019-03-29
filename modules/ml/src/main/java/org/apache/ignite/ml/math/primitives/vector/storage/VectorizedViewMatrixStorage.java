@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.primitives.vector.storage;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import org.apache.ignite.ml.math.exceptions.IndexException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
@@ -158,6 +159,11 @@ public class VectorizedViewMatrixStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isNumeric() {
+        return parent.isNumeric();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
     }
@@ -191,5 +197,19 @@ public class VectorizedViewMatrixStorage implements VectorStorage {
         colStride = in.readInt();
 
         size = getSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Serializable> T getRaw(int i) {
+        Double v = parent.get(row + i * rowStride, col + i * colStride);
+        return (T) v;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Serializable> void setRaw(int i, T v) {
+        if(!(v instanceof Number))
+            throw new IllegalStateException("Matriсes don't support non-Number values");
+
+        parent.set(row + i * rowStride, col + i * colStride, ((Number) v).doubleValue());
     }
 }

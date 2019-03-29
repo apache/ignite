@@ -70,20 +70,8 @@ public class VectorAttributesTest {
 
     /** */
     @Test
-    public void isSequentialAccessTest() {
-        assertAttribute("isSequentialAccess");
-    }
-
-    /** */
-    @Test
     public void guidTest() {
         assertAttribute("guidNotNull");
-    }
-
-    /** */
-    @Test
-    public void isRandomAccessTest() {
-        assertAttribute("isRandomAccess");
     }
 
     /** */
@@ -174,7 +162,7 @@ public class VectorAttributesTest {
 
         /** */
         SparseLocalVectorSequentialAccess(int size) {
-            super(size, SEQUENTIAL_ACCESS_MODE);
+            super(size);
         }
     }
 
@@ -187,7 +175,7 @@ public class VectorAttributesTest {
 
         /** */
         SparseLocalVectorRandomAccess(int size) {
-            super(size, RANDOM_ACCESS_MODE);
+            super(size);
         }
     }
 }
