@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -55,7 +56,7 @@ class ClientCacheAffinityAwarenessGroup
     private HashSet<Integer> cacheGroupIds;
 
     /** Descriptor of the associated caches. */
-    private HashMap<Integer, DynamicCacheDescriptor> cacheDescs;
+    private HashMap<Integer, CacheConfiguration> cacheCfgs;
 
     /**
      * @param ctx Connection context.
@@ -66,11 +67,14 @@ class ClientCacheAffinityAwarenessGroup
         AffinityTopologyVersion affVer) {
         proc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
 
-        applicable = isApplicable(cacheDesc);
-        partitionsMap = !applicable ? null : getPartitionsMap(ctx, cacheDesc, affVer);
+        int cacheId = cacheDesc.cacheId();
+        CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
-        cacheDescs = new HashMap<>();
-        cacheDescs.put(cacheDesc.cacheId(), cacheDesc);
+        applicable = isApplicable(ccfg);
+        partitionsMap = !applicable ? null : getPartitionsMap(ctx, cacheId, affVer);
+
+        cacheCfgs = new HashMap<>();
+        cacheCfgs.put(cacheId, ccfg);
 
         cacheGroupIds = new HashSet<>();
         cacheGroupIds.add(cacheDesc.groupId());
@@ -83,7 +87,7 @@ class ClientCacheAffinityAwarenessGroup
      */
     public boolean tryMerge(ClientCacheAffinityAwarenessGroup another) {
         if (isCompatible(another)) {
-            cacheDescs.putAll(another.cacheDescs);
+            cacheCfgs.putAll(another.cacheCfgs);
             cacheGroupIds.addAll(another.cacheGroupIds);
 
             return true;
@@ -113,12 +117,10 @@ class ClientCacheAffinityAwarenessGroup
     }
 
     /**
-     * @param cacheDesc Cache descriptor.
+     * @param ccfg Cache configuration.
      * @return True if cache is applicable for affinity awareness optimisation.
      */
-    private boolean isApplicable(DynamicCacheDescriptor cacheDesc) {
-        CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
-
+    private boolean isApplicable(CacheConfiguration ccfg) {
         // Partition could be extracted only from PARTITIONED caches.
         if (ccfg.getCacheMode() != CacheMode.PARTITIONED)
             return false;
@@ -148,15 +150,15 @@ class ClientCacheAffinityAwarenessGroup
     public void write(BinaryRawWriter writer) {
         writer.writeBoolean(applicable);
 
-        writer.writeInt(cacheDescs.size());
+        writer.writeInt(cacheCfgs.size());
 
-        for (DynamicCacheDescriptor desc: cacheDescs.values()) {
-            writer.writeInt(desc.cacheId());
+        for (Map.Entry<Integer, CacheConfiguration> entry: cacheCfgs.entrySet()) {
+            writer.writeInt(entry.getKey());
 
             if (!applicable)
                 continue;
 
-            CacheConfiguration ccfg = desc.cacheConfiguration();
+            CacheConfiguration ccfg = entry.getValue();
             CacheKeyConfiguration[] keyCfgs = ccfg.getKeyConfiguration();
 
             if (keyCfgs == null) {
@@ -196,13 +198,13 @@ class ClientCacheAffinityAwarenessGroup
     /**
      * Get partition map for a cache.
      * @param ctx Connection context.
-     * @param cacheDesc Cache descriptor.
+     * @param cacheId Cache ID.
      * @return Partitions mapping for cache.
      */
-    private static HashMap<UUID, Set<Integer>> getPartitionsMap(ClientConnectionContext ctx,
-        DynamicCacheDescriptor cacheDesc, AffinityTopologyVersion affVer) {
+    private static HashMap<UUID, Set<Integer>> getPartitionsMap(ClientConnectionContext ctx, int cacheId,
+        AffinityTopologyVersion affVer) {
 
-        GridCacheContext cacheContext = ctx.kernalContext().cache().context().cacheContext(cacheDesc.cacheId());
+        GridCacheContext cacheContext = ctx.kernalContext().cache().context().cacheContext(cacheId);
         AffinityAssignment assignment = cacheContext.affinity().assignment(affVer);
         Set<ClusterNode> nodes = assignment.primaryPartitionNodes();
 
