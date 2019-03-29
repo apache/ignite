@@ -21,18 +21,28 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.CacheConsistencyViolationEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 
 /**
  *
  */
 public class GridConsistencyGetWithRecoveryFuture extends GridConsistencyAbstractGetFuture {
+    /** Context. */
+    GridCacheContext ctx;
+
     /**
      *
      */
@@ -62,6 +72,8 @@ public class GridConsistencyGetWithRecoveryFuture extends GridConsistencyAbstrac
             txLbl,
             mvccSnapshot,
             false);
+
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -77,7 +89,7 @@ public class GridConsistencyGetWithRecoveryFuture extends GridConsistencyAbstrac
      *
      */
     private boolean checkIsDone() {
-        for (IgniteInternalFuture fut : futs) {
+        for (IgniteInternalFuture fut : futs.values()) {
             if (!fut.isDone())
                 return false;
         }
@@ -92,26 +104,94 @@ public class GridConsistencyGetWithRecoveryFuture extends GridConsistencyAbstrac
         Map<KeyCacheObject, EntryGetResult> newestMap = new HashMap<>();
         Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>();
 
-        for (IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut : futs) {
+        for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
             for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
+                KeyCacheObject key = entry.getKey();
+
                 EntryGetResult candidate = entry.getValue();
 
-                newestMap.putIfAbsent(entry.getKey(), candidate);
+                newestMap.putIfAbsent(key, candidate);
 
-                EntryGetResult newest = newestMap.get(entry.getKey());
+                EntryGetResult newest = newestMap.get(key);
 
                 if (newest.version().compareTo(candidate.version()) < 0) {
-                    newestMap.put(entry.getKey(), candidate);
-                    fixedMap.put(entry.getKey(), candidate);
+                    newestMap.put(key, candidate);
+                    fixedMap.put(key, candidate);
                 }
 
                 if (newest.version().compareTo(candidate.version()) > 0)
-                    fixedMap.put(entry.getKey(), newest);
+                    fixedMap.put(key, newest);
             }
         }
 
-        // Todo event
+        recordConsistencyViolation(fixedMap);
 
         return fixedMap;
+    }
+
+    /**
+     * @param fixedMap Fixed map.
+     */
+    private void recordConsistencyViolation(Map<KeyCacheObject, EntryGetResult> fixedMap) {
+        if (fixedMap.isEmpty())
+            return;
+
+        Map<Object, Object> consistentMap = new HashMap<>();
+
+        for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fixedMap.entrySet()) {
+            KeyCacheObject key = entry.getKey();
+            CacheObject val = entry.getValue().value();
+
+            ctx.addResult(
+                consistentMap,
+                key,
+                val,
+                false,
+                false,
+                true,
+                false,
+                null,
+                0,
+                0);
+        }
+
+        Map<UUID, Map<Object, Object>> inconsistentMap = new HashMap<>();
+
+        for (Map.Entry<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> pair : futs.entrySet()) {
+            ClusterNode node = pair.getKey();
+
+            GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut = pair.getValue();
+
+            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
+                KeyCacheObject key = entry.getKey();
+                CacheObject val = entry.getValue().value();
+
+                inconsistentMap.computeIfAbsent(node.id(), id -> new HashMap<>());
+
+                Map<Object, Object> map = inconsistentMap.get(node.id());
+
+                ctx.addResult(
+                    map,
+                    key,
+                    val,
+                    false,
+                    false,
+                    true,
+                    false,
+                    null,
+                    0,
+                    0);
+            }
+        }
+
+        GridEventStorageManager evtMgr = ctx.gridEvents();
+
+        if (evtMgr.isRecordable(EVT_CONSISTENCY_VIOLATION))
+            evtMgr.record(new CacheConsistencyViolationEvent(
+                ctx.discovery().localNode(),
+                "Consistency violation detected.",
+                inconsistentMap,
+                consistentMap));
+
     }
 }

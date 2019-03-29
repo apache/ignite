@@ -90,7 +90,7 @@ public class GridConsistencyGetWithCheckFuture extends GridConsistencyAbstractGe
      *
      */
     private boolean checkIsDone() {
-        for (IgniteInternalFuture fut : futs) {
+        for (IgniteInternalFuture fut : futs.values()) {
             if (!fut.isDone())
                 return false;
         }
@@ -104,7 +104,7 @@ public class GridConsistencyGetWithCheckFuture extends GridConsistencyAbstractGe
     private boolean isConsistent() {
         Map<KeyCacheObject, EntryGetResult> primaryRes = primaryFut.result();
 
-        for (IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut : futs) {
+        for (IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut : futs.values()) {
             Map<KeyCacheObject, EntryGetResult> backupRes = fut.result();
 
             for (Map.Entry<KeyCacheObject, EntryGetResult> entry : backupRes.entrySet()) {

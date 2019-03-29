@@ -864,6 +864,19 @@ public interface EventType {
     public static final int EVT_WAL_SEGMENT_COMPACTED = 134;
 
     /**
+     * Built-in event type: Cache consistency violation detected.
+     * <p>
+     * Fired for each consistency violation incident.
+     * <p>
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheConsistencyViolationEvent
+     */
+    public static final int EVT_CONSISTENCY_VIOLATION = 135;
+
+    /**
      * All checkpoint events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.

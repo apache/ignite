@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
  */
 public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter<Map<KeyCacheObject, EntryGetResult>> {
     /** Backup node's get futures. */
-    protected final Collection<GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs;
+    protected final Map<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs;
 
     /** Topology version. */
     protected final AffinityTopologyVersion topVer;
@@ -66,7 +66,7 @@ public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter
 
         for (KeyCacheObject key : keys) {
             Collection<ClusterNode> nodes = backups ?
-                ctx.affinity().backupsByKey(key, topVer):
+                ctx.affinity().backupsByKey(key, topVer) :
                 ctx.affinity().nodesByKey(key, topVer);
 
             for (ClusterNode node : nodes) {
@@ -76,7 +76,7 @@ public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter
             }
         }
 
-        futs = new HashSet<>(mappings.size() - 1);
+        futs = new HashMap<>(mappings.size() - 1);
 
         for (Map.Entry<ClusterNode, Collection<KeyCacheObject>> mapping : mappings.entrySet()) {
             GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut = new GridPartitionedGetFuture<>(
@@ -99,7 +99,7 @@ public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter
 
             fut.listen(this::onResult);
 
-            futs.add(fut);
+            futs.put(mapping.getKey(), fut);
         }
     }
 
@@ -107,7 +107,7 @@ public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter
      *
      */
     public void init() {
-        for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs)
+        for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values())
             fut.init(topVer);
     }
 

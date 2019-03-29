@@ -24,14 +24,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheConsistencyViolationEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
@@ -41,16 +45,22 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 
 /**
  *
  */
 public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTest {
+    /** Events. */
+    private static ConcurrentLinkedDeque<CacheConsistencyViolationEvent> evtDeq = new ConcurrentLinkedDeque<>();
+
     /**
      *
      */
@@ -71,6 +81,8 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                     cache.withConsistency().get(key);
 
                 assertEquals(latest, res);
+
+                checkEvent(data);
             }
             catch (CacheException e) {
                 fail("Should not happen." + e);
@@ -101,6 +113,8 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                 for (Map.Entry<Integer, Integer> entry : res.entrySet())
                     assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
             }
+
+            checkEvent(data);
         }
         catch (CacheException e) {
             fail("Should not happen." + e);
@@ -172,16 +186,36 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(7);
+        Ignite ignite = startGrids(7); // Server nodes.
 
         grid(0).getOrCreateCache(cacheConfiguration());
 
         client = true;
 
-        startGrid(G.allGrids().size() + 1);
-        startGrid(G.allGrids().size() + 1);
+        startGrid(G.allGrids().size() + 1); // Client node 1.
+        startGrid(G.allGrids().size() + 1); // Client node 2.
+
+        final IgniteEvents evts = ignite.events();
+
+        evts.remoteListen(null,
+            (IgnitePredicate<Event>)e -> {
+                assert e instanceof CacheConsistencyViolationEvent;
+
+                evtDeq.add((CacheConsistencyViolationEvent)e);
+
+                return true;
+            },
+            EVT_CONSISTENCY_VIOLATION);
 
         awaitPartitionMapExchange();
+    }
+
+    /**
+     *
+     */
+    @Before
+    public void before() {
+        evtDeq.clear();
     }
 
     /** {@inheritDoc} */
@@ -214,6 +248,30 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         cfg.setClientMode(client);
 
         return cfg;
+    }
+
+    /**
+     *
+     */
+    private static void checkEvent(ConsistencyRecoveryData data) {
+        Map<Object, Object> fixed = new HashMap<>();
+
+        while (!evtDeq.isEmpty()) {
+            CacheConsistencyViolationEvent evt = evtDeq.remove();
+
+            fixed.putAll(evt.getFixedMap()); // Optimistic transactions will produce per key fixes.
+        }
+
+        for (Map.Entry<Integer, InconsistencyValuesMapping> entry : data.data.entrySet()) {
+            Integer key = entry.getKey();
+            Integer latest = entry.getValue().latest;
+
+            assertEquals(latest, fixed.get(key));
+        }
+
+        assertEquals(data.data.size(), fixed.size());
+
+        assertTrue(evtDeq.isEmpty());
     }
 
     /**
