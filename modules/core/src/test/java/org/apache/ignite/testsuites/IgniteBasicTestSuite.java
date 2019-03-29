@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemor
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTest;
 import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTestNoOptimization;
-import org.apache.ignite.internal.processors.cache.CacheRebalanceConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
@@ -59,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClassNam
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRequestsMappingOnMissTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestoreTest;
+import org.apache.ignite.internal.processors.cache.RebalanceWithDifferentThreadPoolSizeTest;
 import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
@@ -228,7 +228,7 @@ public class IgniteBasicTestSuite {
 
         suite.addTest(new JUnit4TestAdapter(AtomicOperationsInTxTest.class));
 
-        suite.addTest(new JUnit4TestAdapter(CacheRebalanceConfigValidationTest.class));
+        suite.addTest(new JUnit4TestAdapter(RebalanceWithDifferentThreadPoolSizeTest.class));
 
         suite.addTest(new JUnit4TestAdapter(ListeningTestLoggerTest.class));
 
