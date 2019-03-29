@@ -570,6 +570,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         if (ctx.config().getCommunicationFailureResolver() != null)
             ctx.resource().injectGeneric(ctx.config().getCommunicationFailureResolver());
 
+        // Shared reference between DiscoverySpiListener and DiscoverySpiDataExchange.
+        AtomicReference<IgniteFuture<?>> lastStateChangeEvtLsnrFutRef = new AtomicReference<>();
+
         spi.setListener(new DiscoverySpiListener() {
             private long gridStartTime;
 
@@ -602,7 +605,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 });
 
-                return new IgniteFutureImpl<>(notificationFut);
+                IgniteFuture<?> fut = new IgniteFutureImpl<>(notificationFut);
+
+                //TODO could be optimized with more specific conditions.
+                switch (type) {
+                    case EVT_NODE_JOINED:
+                    case EVT_NODE_LEFT:
+                    case EVT_NODE_FAILED:
+                        if (!CU.isPersistenceEnabled(ctx.config()))
+                            lastStateChangeEvtLsnrFutRef.set(fut);
+
+                        break;
+
+                    case EVT_DISCOVERY_CUSTOM_EVT:
+                        lastStateChangeEvtLsnrFutRef.set(fut);
+                }
+
+                return fut;
             }
 
             /**
@@ -900,6 +919,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         c.collectJoiningNodeData(dataBag);
                 }
                 else {
+                    IgniteFuture<?> lastStateChangeEvtLsnrFut = lastStateChangeEvtLsnrFutRef.get();
+
+                    if (lastStateChangeEvtLsnrFut != null) {
+                        try {
+                            lastStateChangeEvtLsnrFut.get();
+                        }
+                        finally {
+                            // Guaranteed to be invoked in the same thread as DiscoverySpiListener#onDiscovery.
+                            // No additional synchronization for reference is required.
+                            lastStateChangeEvtLsnrFutRef.set(null);
+                        }
+                    }
+
                     for (GridComponent c : ctx.components())
                         c.collectGridNodeData(dataBag);
                 }
