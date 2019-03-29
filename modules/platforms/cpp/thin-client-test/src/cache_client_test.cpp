@@ -859,6 +859,7 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsRebalance)
 {
     StartNode("node1");
     StartNode("node2");
+    StartNode("node3");
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
@@ -873,22 +874,21 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsRebalance)
 
     for (int64_t i = 1; i < 1000; ++i)
         cache.Put(ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
-    
+
     for (int64_t i = 1; i < 1000; ++i)
     {
         int64_t val;
         LocalPeek(cache, ignite::common::LexicalCast<std::string>(i * 39916801), val);
-    
+
         BOOST_REQUIRE_EQUAL(val, i * 5039);
     }
 
-    StartNode("node3");
+    ignite::Ignition::Stop("node3", true);
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
-    // Warm-up
-    for (int64_t i = 1; i < 100; ++i)
-        cache.Get(ignite::common::LexicalCast<std::string>(i * 39916801));
+    for (int64_t i = 1; i < 1000; ++i)
+        cache.Put(ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
 
     for (int64_t i = 1; i < 1000; ++i)
     {
