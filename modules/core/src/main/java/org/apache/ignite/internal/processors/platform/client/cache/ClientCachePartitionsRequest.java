@@ -62,7 +62,10 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         // As a fisrt step, get a set of mappings that we need to return.
         // To do that, check if any of the caches listed in request can be grouped.
         for (int cacheId : cacheIds) {
-            DynamicCacheDescriptor cacheDesc = ClientCacheRequest.cacheDescriptor(ctx, cacheId);
+            DynamicCacheDescriptor cacheDesc = ctx.kernalContext().cache().cacheDescriptor(cacheId);
+
+            if (cacheDesc == null)
+                continue;
 
             ClientCacheAffinityAwarenessGroup currentMapping =
                 tryMakeAffinityAwarenessGroup(ctx, affinityVer.getVersion(), cacheDesc);
