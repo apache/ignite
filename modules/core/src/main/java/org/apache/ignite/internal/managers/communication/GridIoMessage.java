@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.communication;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 
+import java.util.UUID;
 import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -67,6 +68,9 @@ public class GridIoMessage implements Message {
     /** Message. */
     private Message msg;
 
+    /** Security subject id that will be used during message processing on an remote node. */
+    private UUID secSubjId;
+
     /**
      * No-op constructor to support {@link Externalizable} interface.
      * This constructor is not meant to be used for other purposes.
@@ -76,6 +80,7 @@ public class GridIoMessage implements Message {
     }
 
     /**
+     * @param secSubjId Security subject id.
      * @param plc Policy.
      * @param topic Communication topic.
      * @param topicOrd Topic ordinal value.
@@ -85,6 +90,7 @@ public class GridIoMessage implements Message {
      * @param skipOnTimeout Whether message can be skipped on timeout.
      */
     public GridIoMessage(
+        UUID secSubjId,
         byte plc,
         Object topic,
         int topicOrd,
@@ -97,6 +103,7 @@ public class GridIoMessage implements Message {
         assert topicOrd <= Byte.MAX_VALUE;
         assert msg != null;
 
+        this.secSubjId = secSubjId;
         this.plc = plc;
         this.msg = msg;
         this.topic = topic;
@@ -111,6 +118,13 @@ public class GridIoMessage implements Message {
      */
     byte policy() {
         return plc;
+    }
+
+    /**
+     * @return Security subject id.
+     */
+    UUID secSubjId() {
+        return secSubjId;
     }
 
     /**
@@ -222,24 +236,30 @@ public class GridIoMessage implements Message {
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeBoolean("skipOnTimeout", skipOnTimeout))
+                if (!writer.writeUuid("secSubjId", secSubjId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeLong("timeout", timeout))
+                if (!writer.writeBoolean("skipOnTimeout", skipOnTimeout))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByteArray("topicBytes", topicBytes))
+                if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
             case 6:
+                if (!writer.writeByteArray("topicBytes", topicBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
                 if (!writer.writeInt("topicOrd", topicOrd))
                     return false;
 
@@ -283,7 +303,7 @@ public class GridIoMessage implements Message {
                 reader.incrementState();
 
             case 3:
-                skipOnTimeout = reader.readBoolean("skipOnTimeout");
+                secSubjId = reader.readUuid("secSubjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -291,7 +311,7 @@ public class GridIoMessage implements Message {
                 reader.incrementState();
 
             case 4:
-                timeout = reader.readLong("timeout");
+                skipOnTimeout = reader.readBoolean("skipOnTimeout");
 
                 if (!reader.isLastRead())
                     return false;
@@ -299,7 +319,7 @@ public class GridIoMessage implements Message {
                 reader.incrementState();
 
             case 5:
-                topicBytes = reader.readByteArray("topicBytes");
+                timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
                     return false;
@@ -307,6 +327,14 @@ public class GridIoMessage implements Message {
                 reader.incrementState();
 
             case 6:
+                topicBytes = reader.readByteArray("topicBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
                 topicOrd = reader.readInt("topicOrd");
 
                 if (!reader.isLastRead())
@@ -326,7 +354,7 @@ public class GridIoMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /**
