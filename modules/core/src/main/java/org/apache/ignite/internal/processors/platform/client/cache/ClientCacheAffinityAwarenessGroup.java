@@ -67,7 +67,7 @@ class ClientCacheAffinityAwarenessGroup
         proc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
 
         applicable = isApplicable(cacheDesc);
-        partitionsMap = getPartitionsMap(ctx, cacheDesc, affVer);
+        partitionsMap = !applicable ? null : getPartitionsMap(ctx, cacheDesc, affVer);
 
         cacheDescs = new HashMap<>();
         cacheDescs.put(cacheDesc.cacheId(), cacheDesc);
