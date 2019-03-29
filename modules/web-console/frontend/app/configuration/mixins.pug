@@ -209,6 +209,24 @@ mixin list-java-class-field(label, model, name, items)
         if block
             block
 
+mixin list-java-identifier-field(label, model, name, placeholder, items)
+    +form-field__text({
+        label,
+        model,
+        name,
+        required: true,
+        placeholder
+    })(
+        java-identifier='true'
+
+        ignite-unique=items
+        ignite-form-field-input-autofocus='true'
+    )
+        +form-field__error({ error: 'javaIdentifier', message: `${ label } is invalid Java identifier!` })
+
+        if block
+            block
+
 mixin list-url-field(label, model, name, items)
     +form-field__text({
         label,
@@ -371,13 +389,14 @@ mixin list-pair-edit({ items, keyLbl, valLbl, itemName, itemsName })
                 label-multiple=itemsName
             )
 
-mixin form-field__dialect({ label, model, name, required, tip, genericDialectName, placeholder })
+mixin form-field__dialect({ label, model, name, required, tip, genericDialectName, placeholder, change })
     +form-field__dropdown({
         label,
         model,
         name,
         required,
         placeholder,
+        change,
         options: '[\
                 {value: "Generic", label: "' + genericDialectName + '"},\
                 {value: "Oracle", label: "Oracle"},\
