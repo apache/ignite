@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.DataInput;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileFilter;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -139,6 +141,7 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory.LATEST_SERIALIZER_VERSION;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 
 /**
@@ -1104,35 +1107,103 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      *
      * @return The absolute indices of min and max archived files.
      */
-    private IgniteBiTuple<Long, Long> scanMinMaxArchiveIndices() {
-        TreeSet<Long> archiveIndices = new TreeSet<>();
+    private IgniteBiTuple<Long, Long> scanMinMaxArchiveIndices() throws IgniteCheckedException {
+        TreeMap<Long, FileDescriptor> archiveIndices = new TreeMap<>();
 
         for (File file : walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
             try {
                 long idx = Long.parseLong(file.getName().substring(0, 16));
 
-                archiveIndices.add(idx);
+                archiveIndices.put(idx, null);
             }
             catch (NumberFormatException | IndexOutOfBoundsException ignore) {
                 // No-op.
             }
         }
 
-        if (archiveIndices.isEmpty())
-            return null;
-        else {
-            Long min = archiveIndices.first();
-            Long max = archiveIndices.last();
+        if (archiveIndices.isEmpty()) {
+            //return null;
+            for (File file : walWorkDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
+                FileDescriptor desc = readFileDescriptor(file, ioFactory);
 
-            if (max - min == archiveIndices.size() - 1)
-                return F.t(min, max); // Short path.
-
-            for (Long idx : archiveIndices.descendingSet()) {
-                if (!archiveIndices.contains(idx - 1))
-                    return F.t(idx, max);
+                if (desc != null)
+                    archiveIndices.put(desc.idx(), desc);
             }
 
-            throw new IllegalStateException("Should never happen if TreeSet is valid.");
+            if (!archiveIndices.isEmpty()) {
+                FileDescriptor first = archiveIndices.firstEntry().getValue();
+                FileDescriptor last = archiveIndices.lastEntry().getValue();
+
+                if (first.idx() != last.idx()) {
+                    File origFile = first.file();
+
+                    String name = FileDescriptor.fileName(first.idx());
+
+                    File dstTmpFile = new File(walArchiveDir, name + FilePageStoreManager.TMP_SUFFIX);
+
+                    File dstFile = new File(walArchiveDir, name);
+
+                    try {
+                        Files.copy(origFile.toPath(), dstTmpFile.toPath());
+
+                        Files.move(dstTmpFile.toPath(), dstFile.toPath());
+                    }
+                    catch (IOException e) {
+                      return null;
+                    }
+
+                    return F.t(first.idx(), first.idx());
+                }
+            }
+            else
+                return null;
+        }
+
+        Long min = archiveIndices.navigableKeySet().first();
+        Long max = archiveIndices.navigableKeySet().last();
+
+        if (max - min == archiveIndices.size() - 1)
+            return F.t(min, max); // Short path.
+
+        for (Long idx : archiveIndices.descendingKeySet()) {
+            if (!archiveIndices.keySet().contains(idx - 1))
+                return F.t(idx, max);
+        }
+
+        throw new IllegalStateException("Should never happen if TreeSet is valid.");
+    }
+
+    /**
+     * @param file File to read.
+     * @param ioFactory IO factory.
+     */
+    private FileDescriptor readFileDescriptor(File file, FileIOFactory ioFactory) {
+        FileDescriptor ds = new FileDescriptor(file);
+
+        try (
+            SegmentIO fileIO = ds.toIO(ioFactory);
+            ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
+        ) {
+            final DataInput in = segmentFileInputFactory.createFileInput(fileIO, buf);
+
+            // Header record must be agnostic to the serializer version.
+            final int type = in.readUnsignedByte();
+
+            if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE) {
+                if (log.isInfoEnabled())
+                    log.info("Reached logical end of the segment for file " + file);
+
+                return null;
+            }
+
+            FileWALPointer ptr = readPosition(in);
+
+            return new FileDescriptor(file, ptr.index());
+        }
+        catch (IOException e) {
+            U.warn(log, "Failed to scan index from file [" + file + "]. Skipping this file during iteration", e);
+
+            return null;
         }
     }
 
