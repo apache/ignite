@@ -389,13 +389,14 @@ mixin list-pair-edit({ items, keyLbl, valLbl, itemName, itemsName })
                 label-multiple=itemsName
             )
 
-mixin form-field__dialect({ label, model, name, required, tip, genericDialectName, placeholder })
+mixin form-field__dialect({ label, model, name, required, tip, genericDialectName, placeholder, change })
     +form-field__dropdown({
         label,
         model,
         name,
         required,
         placeholder,
+        change,
         options: '[\
                 {value: "Generic", label: "' + genericDialectName + '"},\
                 {value: "Oracle", label: "Oracle"},\
