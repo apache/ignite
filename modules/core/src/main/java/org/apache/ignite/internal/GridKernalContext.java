@@ -465,6 +465,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public DataStructuresProcessor dataStructures();
 
     /**
+     * Gets long JVM pause detector.
+     *
+     * @return Long JVM pause detector.
+     */
+    public LongJVMPauseDetector longJvmPauseDetector();
+
+    /**
      * Checks whether this node is invalid due to a critical error or not.
      *
      * @return {@code True} if this node is invalid, {@code false} otherwise.

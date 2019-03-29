@@ -34,6 +34,7 @@ import IgniteMavenGenerator from './generator/Maven.service';
 import IgniteGeneratorProperties from './generator/Properties.service';
 import IgniteReadmeGenerator from './generator/Readme.service';
 import IgniteCustomGenerator from './generator/Custom.service';
+import IgniteArtifactVersionUtils from './generator/ArtifactVersionChecker.service';
 
 
 // Ignite events groups.
@@ -55,4 +56,5 @@ export default angular
     .service('IgniteReadmeGenerator', IgniteReadmeGenerator)
     .service('IgniteDockerGenerator', IgniteDockerGenerator)
     .service('IgniteMavenGenerator', IgniteMavenGenerator)
-    .service('IgniteCustomGenerator', IgniteCustomGenerator);
+    .service('IgniteCustomGenerator', IgniteCustomGenerator)
+    .service('IgniteArtifactVersionUtils', IgniteArtifactVersionUtils);
