@@ -37,7 +37,9 @@ include /app/helpers/jade/mixins
         genericDialectName: 'Generic JDBC dialect',
         placeholder: 'Choose JDBC dialect'
     })
-
+.pc-form-grid-col-60(ng-if='$ctrl.Clusters.requiresProprietaryDrivers($checkpointSPI.JDBC)')
+    a.link-success(ng-href='{{ $ctrl.Clusters.JDBCDriverURL($checkpointSPI.JDBC) }}' target='_blank')
+        | Download JDBC drivers?
 .pc-form-grid-col-60
     +form-field__java-class({
         label: 'Listener:',
