@@ -226,6 +226,7 @@ module.exports.factory = function(mongoose) {
                     type: String,
                     enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
                 },
+                implementationVersion: String,
                 batchSize: Number,
                 maximumPoolSize: Number,
                 maximumWriteAttempts: Number,
