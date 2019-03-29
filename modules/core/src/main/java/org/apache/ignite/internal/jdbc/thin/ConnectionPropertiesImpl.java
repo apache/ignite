@@ -189,6 +189,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Whether data page scan for queries is allowed. If not specified, server defines the default behaviour.",
         null, false);
 
+    /** Best effort affinity flag. */
+    private BooleanProperty jdbcThinBestEffortAffinityEnabled = new BooleanProperty(
+        "jdbcThinBestEffortAffinityEnabled",
+        "Whether jdbc thin best effort affinity is enabled.",
+        false, false);
+
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
@@ -198,7 +204,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory,
         user, passwd,
-        dataPageScanEnabled
+        dataPageScanEnabled,
+        jdbcThinBestEffortAffinityEnabled
     };
 
     /** {@inheritDoc} */
@@ -502,6 +509,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled) {
         this.dataPageScanEnabled.setValue(dataPageScanEnabled);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Boolean isJdbcThinBestEffortAffinityEnabled() {
+        return jdbcThinBestEffortAffinityEnabled.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setJdbcThinBestEffortAffinityEnabled(@Nullable Boolean jdbcThinBestEffortAffinityEnabled) {
+        this.jdbcThinBestEffortAffinityEnabled.setValue(jdbcThinBestEffortAffinityEnabled);
     }
 
     /**

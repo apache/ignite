@@ -120,9 +120,7 @@ public class JdbcThinConnection implements Connection {
     private static final AtomicLong IDX_GEN = new AtomicLong();
 
     /** Best effort affinity enabled flag. */
-    // TODO: 13.02.19 IGNITE-11309 JDBC Thin: add flag or property to disable best effort affinity
-    @SuppressWarnings("unused")
-    private static boolean bestEffortAffinity = true;
+    private final boolean bestEffortAffinity;
 
     /** Statements modification mutex. */
     private final Object stmtsMux = new Object();
@@ -209,6 +207,8 @@ public class JdbcThinConnection implements Connection {
         schema = JdbcUtils.normalizeSchema(connProps.getSchema());
 
         timer = new Timer("query-timeout-timer");
+
+        bestEffortAffinity = connProps.isJdbcThinBestEffortAffinityEnabled();
 
         ensureConnected();
     }
