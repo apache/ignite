@@ -135,31 +135,4 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
         return false;
     }
-
-    /**
-     * Gets the cache for cache id.
-     *
-     * @param ctx Kernal context.
-     * @param cacheId Cache id.
-     * @return Cache.
-     */
-    static IgniteCache cache(ClientConnectionContext ctx, int cacheId) {
-        DynamicCacheDescriptor cacheDesc = ClientCacheRequest.cacheDescriptor(ctx, cacheId);
-
-        return cache(ctx, cacheDesc);
-    }
-
-    /**
-     * Gets the cache from cache descriptor.
-     *
-     * @param ctx Kernal context.
-     * @param cacheDesc Cache descriptor.
-     * @return Cache.
-     */
-    static IgniteCache cache(ClientConnectionContext ctx, DynamicCacheDescriptor cacheDesc) {
-        String cacheName = cacheDesc.cacheName();
-
-        return ctx.kernalContext().grid().cache(cacheName);
-    }
-
 }
