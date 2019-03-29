@@ -27,6 +27,9 @@ import java.lang.management.ThreadMXBean;
  */
 public class FetchActiveTxOwnerTraceClosure implements IgniteCallable<String> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final long txOwnerThreadId;
 
     /** */

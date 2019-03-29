@@ -22,6 +22,9 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 
 public class TxOwnerDumpRequestAllowedSettingClosure implements IgniteRunnable {
     /** */
+    private static final long serialVersionUID = 0L;
+    
+    /** */
     private final boolean allowed;
 
     /**
