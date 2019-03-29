@@ -28,6 +28,23 @@ public class ClientFlag {
         // No-op.
     }
 
+    /**
+     * @return Flags for response message.
+     * @param error Error flag.
+     * @param topologyChanged Affinity topology changed flag.
+     */
+    public static short makeFlags(boolean error, boolean topologyChanged) {
+        short flags = 0;
+
+        if (error)
+            flags |= ClientFlag.ERROR;
+
+        if (topologyChanged)
+            flags |= ClientFlag.AFFINITY_TOPOLOGY_CHANGED;
+
+        return flags;
+    }
+
     /** Error flag. */
     public static final short ERROR = 1;
 

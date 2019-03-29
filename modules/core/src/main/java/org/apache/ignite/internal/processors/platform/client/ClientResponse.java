@@ -83,7 +83,7 @@ public class ClientResponse extends ClientListenerResponse {
         if (ver.compareTo(VER_1_3_0) >= 0) {
             boolean error = status() != ClientStatus.SUCCESS;
 
-            short flags = makeFlags(error, affinityVer.isChanged());
+            short flags = ClientFlag.makeFlags(error, affinityVer.isChanged());
 
             writer.writeShort(flags);
 
@@ -118,22 +118,5 @@ public class ClientResponse extends ClientListenerResponse {
      */
     public long requestId() {
         return reqId;
-    }
-
-    /**
-     * @return Flags for response message.
-     * @param error Error flag.
-     * @param topologyChanged Affinity topology changed flag.
-     */
-    private static short makeFlags(boolean error, boolean topologyChanged) {
-        short flags = 0;
-
-        if (error)
-            flags |= ClientFlag.ERROR;
-
-        if (topologyChanged)
-            flags |= ClientFlag.AFFINITY_TOPOLOGY_CHANGED;
-
-        return flags;
     }
 }
