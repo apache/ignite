@@ -41,18 +41,34 @@ public class PartitionParameterNode extends PartitionSingleNode {
     /**
      * Constructor.
      *
-     * @param alias Unique alias.
-     * @param cacheName Cache name.
-     * @param joinGrp Join group index.
+     * @param tbl Table descriptor.
      * @param partRslvr Partition resolver.
      * @param idx Parameter index.
      * @param type Parameter data type.
      * @param mappedType Mapped parameter type to be used by thin clients.
      */
-    public PartitionParameterNode(String alias, String cacheName, int joinGrp, PartitionResolver partRslvr, int idx,
-        int type,
+    public PartitionParameterNode(PartitionTable tbl, PartitionResolver partRslvr, int idx, int type,
         PartitionParameterType mappedType) {
-        super(alias, cacheName, joinGrp);
+        super(tbl);
+
+        this.partRslvr = partRslvr;
+        this.idx = idx;
+        this.type = type;
+        this.mappedType = mappedType;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param cacheName Cache name.
+     * @param partRslvr Partition resolver.
+     * @param idx Parameter index.
+     * @param type Parameter data type.
+     * @param mappedType Mapped parameter type to be used by thin clients.
+     */
+    public PartitionParameterNode(String cacheName, PartitionResolver partRslvr, int idx, int type,
+        PartitionParameterType mappedType) {
+        super(cacheName);
 
         this.partRslvr = partRslvr;
         this.idx = idx;

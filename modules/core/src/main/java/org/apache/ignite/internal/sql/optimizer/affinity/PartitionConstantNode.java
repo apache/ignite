@@ -29,13 +29,22 @@ public class PartitionConstantNode extends PartitionSingleNode {
     /**
      * Constructor.
      *
-     * @param alias Unique alias.
-     * @param cacheName Cache name.
-     * @param joinGrp Join group index.
+     * @param tbl Table.
      * @param part Partition.
      */
-    public PartitionConstantNode(String alias, String cacheName, int joinGrp, int part) {
-        super(alias, cacheName, joinGrp);
+    public PartitionConstantNode(PartitionTable tbl, int part) {
+        super(tbl);
+
+        this.part = part;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param cacheName Cache name.
+     */
+    protected PartitionConstantNode(String cacheName, int part) {
+        super(cacheName);
 
         this.part = part;
     }

@@ -230,6 +230,7 @@ public class WebConsoleConfigurationSelfTest {
         binaryTypeCfgProps.add("nameMapper");
         binaryTypeCfgProps.add("serializer");
         binaryTypeCfgProps.add("enum");
+        binaryTypeCfgProps.add("enumValues");
         metadata.put(BinaryTypeConfiguration.class, new MetadataInfo(binaryTypeCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> sharedFsCheckpointProps = new HashSet<>();

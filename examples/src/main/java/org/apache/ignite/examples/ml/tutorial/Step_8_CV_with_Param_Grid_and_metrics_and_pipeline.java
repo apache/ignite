@@ -22,19 +22,16 @@ import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
-import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.pipeline.Pipeline;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.cv.CrossValidationResult;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
 import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
@@ -66,7 +63,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html</p>
  */
-public class Step_8_CV_with_Param_Grid_and_metrics {
+public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
     /** Run example. */
     public static void main(String[] args) {
         System.out.println();
@@ -78,54 +75,44 @@ public class Step_8_CV_with_Param_Grid_and_metrics {
 
                 // Defines first preprocessor that extracts features from an upstream data.
                 // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare" .
-                IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                    = (k, v) -> new Object[] {v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+                IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
+                    double[] data = new double[]{
+                        (double) v[0],
+                        (double) v[4],
+                        (double) v[5],
+                        (double) v[6],
+                        (double) v[8],
+                    };
+                    data[0] = Double.isNaN(data[0]) ? 0 : data[0];
+                    data[1] = Double.isNaN(data[1]) ? 0 : data[1];
+                    data[2] = Double.isNaN(data[2]) ? 0 : data[2];
+                    data[3] = Double.isNaN(data[3]) ? 0 : data[3];
+                    data[4] = Double.isNaN(data[4]) ? 0 : data[4];
 
-                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
+                    return VectorUtils.of(data);
+                };
+
+
+                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
                 TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
                     .split(0.75);
 
-                IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
-                    .withEncoderType(EncoderType.STRING_ENCODER)
-                    .withEncodedFeature(1)
-                    .withEncodedFeature(6) // <--- Changed index here.
-                    .fit(ignite,
-                        dataCache,
-                        featureExtractor
-                    );
-
-                IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
-                    .fit(ignite,
-                        dataCache,
-                        strEncoderPreprocessor
-                    );
-
-                IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
-                    .fit(
-                        ignite,
-                        dataCache,
-                        imputingPreprocessor
-                    );
-
-                IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
-                    .withP(2)
-                    .fit(
-                        ignite,
-                        dataCache,
-                        minMaxScalerPreprocessor
-                    );
+                Pipeline<Integer, Object[], Vector> pipeline = new Pipeline<Integer, Object[], Vector>()
+                    .addFeatureExtractor(featureExtractor)
+                    .addLabelExtractor(lbExtractor)
+                    .addPreprocessingTrainer(new ImputerTrainer<Integer, Object[]>())
+                    .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Object[]>())
+                    .addTrainer(new DecisionTreeClassificationTrainer(5, 0));
 
                 // Tune hyperparams with K-fold Cross-Validation on the split training set.
-
-                DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
 
                 CrossValidation<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()
                     .addHyperParam("maxDeep", new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
-                    .addHyperParam("minImpurityDecrease", new Double[] {0.0, 0.25, 0.5});
+                    .addHyperParam("minImpurityDecrease", new Double[]{0.0, 0.25, 0.5});
 
                 BinaryClassificationMetrics metrics = (BinaryClassificationMetrics) new BinaryClassificationMetrics()
                     .withNegativeClsLb(0.0)
@@ -133,12 +120,11 @@ public class Step_8_CV_with_Param_Grid_and_metrics {
                     .withMetric(BinaryClassificationMetricValues::accuracy);
 
                 CrossValidationResult crossValidationRes = scoreCalculator.score(
-                    trainerCV,
+                    pipeline,
                     metrics,
                     ignite,
                     dataCache,
                     split.getTrainFilter(),
-                    normalizationPreprocessor,
                     lbExtractor,
                     3,
                     paramGrid
@@ -146,10 +132,6 @@ public class Step_8_CV_with_Param_Grid_and_metrics {
 
                 System.out.println("Train with maxDeep: " + crossValidationRes.getBest("maxDeep")
                     + " and minImpurityDecrease: " + crossValidationRes.getBest("minImpurityDecrease"));
-
-                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer()
-                    .withMaxDeep(crossValidationRes.getBest("maxDeep"))
-                    .withMinImpurityDecrease(crossValidationRes.getBest("minImpurityDecrease"));
 
                 System.out.println(crossValidationRes);
 
@@ -160,31 +142,7 @@ public class Step_8_CV_with_Param_Grid_and_metrics {
                 crossValidationRes.getScoringBoard().forEach((hyperParams, score)
                     -> System.out.println("Score " + Arrays.toString(score) + " for hyper params " + hyperParams));
 
-                // Train decision tree model.
-                DecisionTreeNode bestMdl = trainer.fit(
-                    ignite,
-                    dataCache,
-                    split.getTrainFilter(),
-                    FeatureLabelExtractorWrapper.wrap(normalizationPreprocessor, lbExtractor) //TODO: IGNITE-11581
-                );
-
-                System.out.println("\n>>> Trained model: " + bestMdl);
-
-                double accuracy = Evaluator.evaluate(
-                    dataCache,
-                    split.getTestFilter(),
-                    bestMdl,
-                    normalizationPreprocessor,
-                    lbExtractor,
-                    new Accuracy<>()
-                );
-
-                System.out.println("\n>>> Accuracy " + accuracy);
-                System.out.println("\n>>> Test Error " + (1 - accuracy));
-
-                System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
-            }
-            catch (FileNotFoundException e) {
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
         }
