@@ -27,6 +27,7 @@ import IgniteIGFSDefaults from './defaults/IGFS.service';
 import JavaTypes from '../../../services/JavaTypes.service';
 import VersionService from 'app/services/Version.service';
 
+import _ from 'lodash';
 import isNil from 'lodash/isNil';
 import {nonNil, nonEmpty} from 'app/utils/lodashMixins';
 
@@ -469,7 +470,8 @@ export default class IgniteConfigurationGenerator {
                 .emptyBeanProperty('idMapper')
                 .emptyBeanProperty('nameMapper')
                 .emptyBeanProperty('serializer')
-                .intProperty('enum');
+                .boolProperty('enum')
+                .mapProperty('enumValues', _.map(type.enumValues, (v, idx) => ({name: v, value: idx})), 'enumValues');
 
             if (typeCfg.nonEmpty())
                 typeCfgs.push(typeCfg);
