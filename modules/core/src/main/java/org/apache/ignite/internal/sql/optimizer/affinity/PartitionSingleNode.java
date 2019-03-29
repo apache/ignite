@@ -28,29 +28,32 @@ import org.jetbrains.annotations.Nullable;
  * Node with a single partition.
  */
 public abstract class PartitionSingleNode implements PartitionNode {
-    /** Alias used in the query. */
+    /** Table descriptor. */
     @GridToStringExclude
-    private final String alias;
+    protected final PartitionTable tbl;
 
     /** Cache name. */
     @GridToStringExclude
-    private final String cacheName;
-
-    /** Join group index. */
-    @GridToStringExclude
-    private int joinGrp;
+    protected final String cacheName;
 
     /**
      * Constructor.
      *
-     * @param alias Unique alias.
-     * @param cacheName Cache name.
-     * @param joinGrp Join group index.
+     * @param tbl Table descriptor.
      */
-    protected PartitionSingleNode(String alias, String cacheName, int joinGrp) {
-        this.alias = alias;
+    protected PartitionSingleNode(PartitionTable tbl) {
+        this.tbl = tbl;
+        cacheName = tbl.cacheName();
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param cacheName Cache name.
+     */
+    protected PartitionSingleNode(String cacheName) {
+        tbl = null;
         this.cacheName = cacheName;
-        this.joinGrp = joinGrp;
     }
 
     /** {@inheritDoc} */
@@ -78,14 +81,7 @@ public abstract class PartitionSingleNode implements PartitionNode {
 
     /** {@inheritDoc} */
     @Override public int joinGroup() {
-        return joinGrp;
-    }
-
-    /**
-     * @return Alias.
-     */
-    public String alias() {
-        return alias;
+        return tbl.joinGroup();
     }
 
     /**
@@ -100,12 +96,21 @@ public abstract class PartitionSingleNode implements PartitionNode {
      */
     public abstract int value();
 
+    /**
+     * @return Underlying table.
+     */
+    public PartitionTable table() {
+        return tbl;
+    }
+
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int hash = (constant() ? 1 : 0);
 
         hash = 31 * hash + value();
-        hash = 31 * hash + alias.hashCode();
+
+        if (tbl != null)
+            hash = 31 * hash + tbl.alias().hashCode();
 
         return hash;
     }
@@ -121,6 +126,6 @@ public abstract class PartitionSingleNode implements PartitionNode {
         PartitionSingleNode other = (PartitionSingleNode)obj;
 
         return F.eq(constant(), other.constant()) && F.eq(value(), other.value()) &&
-            F.eq(alias, other.alias);
+            F.eq(tbl.alias(), other.tbl.alias());
     }
 }

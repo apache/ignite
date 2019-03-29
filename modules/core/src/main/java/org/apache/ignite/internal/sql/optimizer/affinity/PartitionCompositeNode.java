@@ -238,8 +238,8 @@ public class PartitionCompositeNode implements PartitionNode {
 
                 for (PartitionSingleNode curConst : consts) {
                     if (curTblAlias == null)
-                        curTblAlias = curConst.alias();
-                    else if (!F.eq(curTblAlias, curConst.alias())) {
+                        curTblAlias = curConst.table().alias();
+                    else if (!F.eq(curTblAlias, curConst.table().alias())) {
                         sameTbl = false;
 
                         break;
@@ -249,8 +249,8 @@ public class PartitionCompositeNode implements PartitionNode {
                 if (sameTbl) {
                     for (PartitionSingleNode curConst : rightConsts) {
                         if (curTblAlias == null)
-                            curTblAlias = curConst.alias();
-                        else if (!F.eq(curTblAlias, curConst.alias())) {
+                            curTblAlias = curConst.table().alias();
+                        else if (!F.eq(curTblAlias, curConst.table().alias())) {
                             sameTbl = false;
 
                             break;
@@ -353,7 +353,7 @@ public class PartitionCompositeNode implements PartitionNode {
             return left;
 
         // If both sides are constants from the same table and they are not equal, this is empty set.
-        if (left.constant() && right.constant() && F.eq(left.alias(), right.alias()))
+        if (left.constant() && right.constant() && F.eq(left.table().alias(), right.table().alias()))
             // X and Y -> NONE
             return PartitionNoneNode.INSTANCE;
 
