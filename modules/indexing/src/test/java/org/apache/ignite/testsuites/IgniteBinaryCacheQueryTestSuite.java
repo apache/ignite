@@ -197,6 +197,7 @@ import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
+import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessorTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingInMemSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingOffheapSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildSelfTest;
@@ -277,7 +278,7 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(DynamicIndexClientBasicSelfTest.class));
 
         // H2 tests.
-
+        suite.addTest(new JUnit4TestAdapter(DmlStatementsProcessorTest.class));
         suite.addTest(new JUnit4TestAdapter(GridH2IndexingInMemSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridH2IndexingOffheapSelfTest.class));
 
