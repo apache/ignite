@@ -693,23 +693,23 @@ public class StripedExecutor implements ExecutorService {
                     if (r != null)
                         return r;
 
-                    if(others != null) {
-                        int len = others.length;
-                        int init = ThreadLocalRandom.current().nextInt(len);
-                        int cur = init;
-
-                        while (true) {
-                            if(cur != idx) {
-                                Deque<Runnable> queue = (Deque<Runnable>) ((StripeConcurrentQueue) others[cur]).queue;
-
-                                if(queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (r = queue.pollLast()) != null)
-                                    return r;
-                            }
-
-                            if ((cur = (cur + 1) % len) == init)
-                                break;
-                        }
-                    }
+//                    if(others != null) {
+//                        int len = others.length;
+//                        int init = ThreadLocalRandom.current().nextInt(len);
+//                        int cur = init;
+//
+//                        while (true) {
+//                            if(cur != idx) {
+//                                Deque<Runnable> queue = (Deque<Runnable>) ((StripeConcurrentQueue) others[cur]).queue;
+//
+//                                if(queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (r = queue.pollLast()) != null)
+//                                    return r;
+//                            }
+//
+//                            if ((cur = (cur + 1) % len) == init)
+//                                break;
+//                        }
+//                    }
 
                     LockSupport.park();
 
@@ -729,12 +729,12 @@ public class StripedExecutor implements ExecutorService {
             if (parked)
                 LockSupport.unpark(thread);
 
-            if(others != null && queueSize() > IGNITE_TASKS_STEALING_THRESHOLD) {
-                for (Stripe other : others) {
-                    if(((StripeConcurrentQueue)other).parked)
-                        LockSupport.unpark(other.thread);
-                }
-            }
+//            if(others != null && queueSize() > IGNITE_TASKS_STEALING_THRESHOLD) {
+//                for (Stripe other : others) {
+//                    if(((StripeConcurrentQueue)other).parked)
+//                        LockSupport.unpark(other.thread);
+//                }
+//            }
         }
 
         /** {@inheritDoc} */
