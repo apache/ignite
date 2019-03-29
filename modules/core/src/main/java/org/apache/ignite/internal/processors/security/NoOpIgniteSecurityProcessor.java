@@ -34,12 +34,12 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.security.IgniteSecurityImpl.ATTR_GRID_SEC_PROC_CLASS;
+import static org.apache.ignite.internal.processors.security.IgniteSecurityProcessor.ATTR_GRID_SEC_PROC_CLASS;
 
 /**
  * No operation Ignite Security Processor.
  */
-public class NoOpIgniteSecurity implements IgniteSecurity, GridProcessor {
+public class NoOpIgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** */
     private static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's ignite security processor class " +
         "is not equal to remote node's ignite security processor class " +
@@ -54,7 +54,7 @@ public class NoOpIgniteSecurity implements IgniteSecurity, GridProcessor {
     /**
      * @param ctx Grid kernal context.
      */
-    public NoOpIgniteSecurity(GridKernalContext ctx) {
+    public NoOpIgniteSecurityProcessor(GridKernalContext ctx) {
         this.ctx = ctx;
     }
 
