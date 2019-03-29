@@ -2404,13 +2404,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
 //        exec.execute(stripe, () -> {
             // WA for avoid assert check in PageMemory, that current thread hold chpLock.
-            CHECKPOINT_LOCK_HOLD_COUNT.set(1);
+//            CHECKPOINT_LOCK_HOLD_COUNT.set(1);
 
             try {
                 run.run();
             }
             finally {
-                CHECKPOINT_LOCK_HOLD_COUNT.set(0);
+//                CHECKPOINT_LOCK_HOLD_COUNT.set(0);
 
                 semaphore.release();
             }
