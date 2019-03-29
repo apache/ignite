@@ -96,6 +96,9 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
+        cfg.setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2");
+
+
         return cfg;
     }
 
@@ -522,7 +525,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org", "metaTest", "dep", "PUBLIC"));
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org", "metaTest", "dep", "PUBLIC", "IGNITE", "PREDEFINED_CLIENT_SCHEMA"));
 
             Set<String> schemas = new HashSet<>();
 
