@@ -199,7 +199,6 @@ public class TestPreparedStatement extends TestDb {
         testColumnMetaDataWithEquals(conn);
         testColumnMetaDataWithIn(conn);
         testValueResultSet(conn);
-        testMultipleStatements(conn);
         conn.close();
         testPreparedStatementWithLiteralsNone();
         testPreparedStatementWithIndexedParameterAndLiteralsNone();
@@ -1757,33 +1756,6 @@ public class TestPreparedStatement extends TestDb {
                 }
             }
         }
-    }
-
-    private void testMultipleStatements(Connection conn) throws SQLException {
-        assertThrows(ErrorCode.CANNOT_MIX_INDEXED_AND_UNINDEXED_PARAMS, conn).prepareStatement("SELECT ?; SELECT ?1");
-        assertThrows(ErrorCode.CANNOT_MIX_INDEXED_AND_UNINDEXED_PARAMS, conn).prepareStatement("SELECT ?1; SELECT ?");
-        Statement stmt = conn.createStatement();
-        stmt.execute("CREATE TABLE TEST (ID IDENTITY, V INT)");
-        PreparedStatement ps = conn.prepareStatement("INSERT INTO TEST(V) VALUES ?; INSERT INTO TEST(V) VALUES ?");
-        ps.setInt(1, 1);
-        ps.setInt(2, 2);
-        ps.executeUpdate();
-        ps = conn.prepareStatement("INSERT INTO TEST(V) VALUES ?2; INSERT INTO TEST(V) VALUES ?1;");
-        ps.setInt(1, 3);
-        ps.setInt(2, 4);
-        ps.executeUpdate();
-        try (ResultSet rs = stmt.executeQuery("SELECT V FROM TEST ORDER BY ID")) {
-            assertTrue(rs.next());
-            assertEquals(1, rs.getInt(1));
-            assertTrue(rs.next());
-            assertEquals(2, rs.getInt(1));
-            assertTrue(rs.next());
-            assertEquals(4, rs.getInt(1));
-            assertTrue(rs.next());
-            assertEquals(3, rs.getInt(1));
-            assertFalse(rs.next());
-        }
-        stmt.execute("DROP TABLE TEST");
     }
 
 }

@@ -8,7 +8,6 @@ package org.h2.command;
 import java.util.ArrayList;
 
 import org.h2.engine.Session;
-import org.h2.expression.Parameter;
 import org.h2.expression.ParameterInterface;
 import org.h2.result.ResultInterface;
 
@@ -17,43 +16,26 @@ import org.h2.result.ResultInterface;
  */
 class CommandList extends Command {
 
-    private CommandContainer command;
-    private final ArrayList<Prepared> commands;
-    private final ArrayList<Parameter> parameters;
-    private String remaining;
-    private Command remainingCommand;
+    private final Command command;
+    private final String remaining;
 
-    CommandList(Session session, String sql, CommandContainer command, ArrayList<Prepared> commands,
-            ArrayList<Parameter> parameters, String remaining) {
+    CommandList(Session session, String sql, Command c, String remaining) {
         super(session, sql);
-        this.command = command;
-        this.commands = commands;
-        this.parameters = parameters;
+        this.command = c;
         this.remaining = remaining;
     }
 
     @Override
     public ArrayList<? extends ParameterInterface> getParameters() {
-        return parameters;
+        return command.getParameters();
     }
 
     private void executeRemaining() {
-        for (Prepared prepared : commands) {
-            prepared.prepare();
-            if (prepared.isQuery()) {
-                prepared.query(0);
-            } else {
-                prepared.update();
-            }
-        }
-        if (remaining != null) {
-            remainingCommand = session.prepareLocal(remaining);
-            remaining = null;
-            if (remainingCommand.isQuery()) {
-                remainingCommand.query(0);
-            } else {
-                remainingCommand.update();
-            }
+        Command remainingCommand = session.prepareLocal(remaining);
+        if (remainingCommand.isQuery()) {
+            remainingCommand.query(0);
+        } else {
+            remainingCommand.update();
         }
     }
 
@@ -74,17 +56,6 @@ class CommandList extends Command {
         ResultInterface result = command.query(maxrows);
         executeRemaining();
         return result;
-    }
-
-    @Override
-    public void stop() {
-        command.stop();
-        for (Prepared prepared : commands) {
-            CommandContainer.clearCTE(session, prepared);
-        }
-        if (remainingCommand != null) {
-            remainingCommand.stop();
-        }
     }
 
     @Override

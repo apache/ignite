@@ -185,11 +185,4 @@ public class CommandContainer extends Command {
         return prepared.getType();
     }
 
-    /**
-     * Clean up any associated CTE.
-     */
-    void clearCTE() {
-        clearCTE(session, prepared);
-    }
-
 }
