@@ -877,6 +877,30 @@ public interface EventType {
     public static final int EVT_CONSISTENCY_VIOLATION = 135;
 
     /**
+     * Built-in event type: Cluster activation state changed.
+     * <p>
+     * Fired when cluster activated.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see ClusterActivationEvent
+     */
+    public static final int EVT_CLUSTER_ACTIVATED = 140;
+
+    /**
+     * Built-in event type: Cluster activation state changed.
+     * <p>
+     * Fired when cluster deactivated.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see ClusterActivationEvent
+     */
+    public static final int EVT_CLUSTER_DEACTIVATED = 141;
+
+    /**
      * All checkpoint events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.

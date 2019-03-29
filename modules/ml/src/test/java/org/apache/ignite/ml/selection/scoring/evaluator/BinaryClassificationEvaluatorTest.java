@@ -18,6 +18,8 @@
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -49,16 +51,14 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
-        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
 
         NNClassificationModel mdl = trainer.fit(
-            cacheMock,
-            parts,
-            featureExtractor,
-            lbExtractor
+            cacheMock, parts,
+            new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(3);
 
+        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
+        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
         double score = Evaluator.evaluate(cacheMock, mdl, featureExtractor, lbExtractor, new Accuracy<>());
 
         assertEquals(0.9839357429718876, score, 1e-12);
@@ -76,8 +76,6 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
-        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
 
         TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
             .split(0.75);
@@ -86,10 +84,11 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
             cacheMock,
             split.getTrainFilter(),
             parts,
-            featureExtractor,
-            lbExtractor
+            new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(3);
 
+        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
+        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
         double score = Evaluator.evaluate(cacheMock, mdl, featureExtractor, lbExtractor, new Accuracy<>());
 
         assertEquals(0.9, score, 1);

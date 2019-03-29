@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -38,7 +40,7 @@ import org.junit.Test;
 /**
  *
  */
-public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstractTest {
+public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractTest {
     /** */
     private static final String NODE_1_CONS_ID = "node01";
 
@@ -49,7 +51,19 @@ public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstr
     private static final String NODE_3_CONS_ID = "node03";
 
     /** */
-    private static final String STATIC_CACHE_NAME = "staticCache";
+    private static final String NODE_4_DIFF_STATIC_CONFIG = "node04_diff_config";
+
+    /** */
+    private static final String CLIENT_WITH_DIFF_CONFIG = "clientWithDiffConfig";
+
+    /** */
+    private static final String STATIC_CACHE_NAME_1 = "staticCache1";
+
+    /** */
+    private static final String STATIC_CACHE_NAME_2 = "staticCache2";
+
+    /** */
+    private static final String STATIC_CACHE_NAME_3 = "staticCache3";
 
     /** */
     private static final String DYNAMIC_CACHE_NAME_1 = "dynamicCache1";
@@ -116,14 +130,26 @@ public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstr
             );
         }
 
-        CacheConfiguration staticCacheCfg = new CacheConfiguration(STATIC_CACHE_NAME)
+        if (igniteInstanceName.equals(NODE_4_DIFF_STATIC_CONFIG) || igniteInstanceName.equals(CLIENT_WITH_DIFF_CONFIG))
+            cfg.setCacheConfiguration(
+                prepareStaticCacheCfg(STATIC_CACHE_NAME_1),
+                prepareStaticCacheCfg(STATIC_CACHE_NAME_2)
+            );
+        else
+            cfg.setCacheConfiguration(
+                prepareStaticCacheCfg(STATIC_CACHE_NAME_1),
+                prepareStaticCacheCfg(STATIC_CACHE_NAME_3)
+            );
+
+        return cfg;
+    }
+
+    /** */
+    private CacheConfiguration prepareStaticCacheCfg(String cacheName) {
+        return new CacheConfiguration(cacheName)
             .setGroupName(GROUP_WITH_STATIC_CACHES)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setNodeFilter(nodeFilter);
-
-        cfg.setCacheConfiguration(staticCacheCfg);
-
-        return cfg;
     }
 
     /**
@@ -135,31 +161,50 @@ public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstr
      * See related ticket <a href="https://issues.apache.org/jira/browse/IGNITE-10878">IGNITE-10878</a>.
      */
     @Test
-    public void testNewClusterFiltersDiscoveryDataReceivedFromStoppedCluster() throws Exception {
+    public void testNewClusterIgnoresDiscoDataFromStopped_SameStaticConfig() throws Exception {
         IgniteEx ig0 = startGrid(NODE_1_CONS_ID);
 
         prepareDynamicCaches(ig0);
 
         IgniteEx ig1 = startGrid(NODE_2_CONS_ID);
 
-        verifyCachesAndGroups(ig1);
+        verifyCachesAndGroups(ig1, Arrays.asList(new String[] {STATIC_CACHE_NAME_1, STATIC_CACHE_NAME_3}));
 
         IgniteEx ig2 = startGrid(NODE_3_CONS_ID);
 
-        verifyCachesAndGroups(ig2);
+        verifyCachesAndGroups(ig2, Arrays.asList(new String[] {STATIC_CACHE_NAME_1, STATIC_CACHE_NAME_3}));
 
         IgniteEx client = startGrid("client01");
 
-        verifyCachesAndGroups(client);
+        verifyCachesAndGroups(client, Arrays.asList(new String[] {STATIC_CACHE_NAME_1, STATIC_CACHE_NAME_3}));
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testNewClusterIgnoresDiscoDataFromStopped_DifferentStaticConfig() throws Exception {
+        IgniteEx ig0 = startGrid(NODE_1_CONS_ID);
+
+        prepareDynamicCaches(ig0);
+
+        IgniteEx ig1 = startGrid(NODE_4_DIFF_STATIC_CONFIG);
+
+        verifyCachesAndGroups(ig1, Arrays.asList(new String[] {STATIC_CACHE_NAME_1, STATIC_CACHE_NAME_2}));
+
+        IgniteEx client = startGrid(CLIENT_WITH_DIFF_CONFIG);
+
+        verifyCachesAndGroups(client, Arrays.asList(new String[] {STATIC_CACHE_NAME_1, STATIC_CACHE_NAME_2}));
     }
 
     /** */
-    private void verifyCachesAndGroups(IgniteEx ignite) {
+    private void verifyCachesAndGroups(IgniteEx ignite, Collection<String> cacheNames) {
         Map<String, DynamicCacheDescriptor> caches = ignite.context().cache().cacheDescriptors();
 
-        assertEquals(2, caches.size());
-        caches.keySet().contains(GridCacheUtils.UTILITY_CACHE_NAME);
-        caches.keySet().contains(STATIC_CACHE_NAME);
+        assertEquals(cacheNames.size() + 1, caches.size());
+        assertTrue(caches.keySet().contains(GridCacheUtils.UTILITY_CACHE_NAME));
+        assertTrue(caches.keySet().containsAll(cacheNames));
 
         Map<Integer, CacheGroupDescriptor> groups = ignite.context().cache().cacheGroupDescriptors();
 

@@ -17,9 +17,6 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
@@ -28,17 +25,21 @@ import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueCo
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.jetbrains.annotations.NotNull;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Learning strategy for gradient boosting.
@@ -82,38 +83,35 @@ public class GDBLearningStrategy {
      * model based on gradient of loss-function for current models composition.
      *
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @return list of learned models.
+     * @param vectorizer Upstream vectorizer.
+     * @return List of learned models.
      */
-    public <K, V> List<IgniteModel<Vector, Double>> learnModels(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    public <K, V, C extends Serializable> List<IgniteModel<Vector, Double>> learnModels(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> vectorizer) {
 
-        return update(null, datasetBuilder, featureExtractor, lbExtractor);
+        return update(null, datasetBuilder, vectorizer);
     }
 
     /**
-     * Gets state of model in arguments, compare it with training parameters of trainer and if they are fit then
-     * trainer updates model in according to new data and return new model. In other case trains new model.
+     * Gets state of model in arguments, compare it with training parameters of trainer and if they are fit then trainer
+     * updates model in according to new data and return new model. In other case trains new model.
      *
      * @param mdlToUpdate Learned model.
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated models list.
      */
-    public <K,V> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+    public <K, V, C extends Serializable> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
+        DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> vectorizer) {
         if (trainerEnvironment == null)
             throw new IllegalStateException("Learning environment builder is not set.");
 
         List<IgniteModel<Vector, Double>> models = initLearningState(mdlToUpdate);
 
-        ConvergenceChecker<K, V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
-            externalLbToInternalMapping, loss, datasetBuilder, featureExtractor, lbExtractor);
+        ConvergenceChecker<K, V, C> convCheck = checkConvergenceStgyFactory.create(sampleSize,
+            externalLbToInternalMapping, loss, datasetBuilder, vectorizer);
 
         DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
         for (int i = 0; i < cntOfIterations; i++) {
@@ -124,11 +122,12 @@ public class GDBLearningStrategy {
             if (convCheck.isConverged(envBuilder, datasetBuilder, currComposition))
                 break;
 
-            FeatureLabelExtractor<K, V, Double> extractor = new FeatureLabelExtractor<K, V, Double>() {
+            Vectorizer<K, V, C, Double> extractor = new Vectorizer.VectorizerAdapter<K, V, C, Double>() {
                 /** {@inheritDoc} */
                 @Override public LabeledVector<Double> extract(K k, V v) {
-                    Vector features = featureExtractor.apply(k, v);
-                    Double realAnswer = externalLbToInternalMapping.apply(lbExtractor.apply(k, v));
+                    LabeledVector<Double> labeledVector = vectorizer.extract(k, v);
+                    Vector features = labeledVector.features();
+                    Double realAnswer = externalLbToInternalMapping.apply(labeledVector.label());
                     Double mdlAnswer = currComposition.predict(features);
                     return new LabeledVector<>(features, -loss.gradient(sampleSize, realAnswer, mdlAnswer));
                 }
@@ -147,16 +146,16 @@ public class GDBLearningStrategy {
      * Restores state of already learned model if can and sets learning parameters according to this state.
      *
      * @param mdlToUpdate Model to update.
-     * @return list of already learned models.
+     * @return List of already learned models.
      */
     @NotNull protected List<IgniteModel<Vector, Double>> initLearningState(GDBTrainer.GDBModel mdlToUpdate) {
         List<IgniteModel<Vector, Double>> models = new ArrayList<>();
-        if(mdlToUpdate != null) {
+        if (mdlToUpdate != null) {
             models.addAll(mdlToUpdate.getModels());
-            WeightedPredictionsAggregator aggregator = (WeightedPredictionsAggregator) mdlToUpdate.getPredictionsAggregator();
+            WeightedPredictionsAggregator aggregator = (WeightedPredictionsAggregator)mdlToUpdate.getPredictionsAggregator();
             meanLbVal = aggregator.getBias();
             compositionWeights = new double[models.size() + cntOfIterations];
-            for(int i = 0; i < models.size(); i++)
+            for (int i = 0; i < models.size(); i++)
                 compositionWeights[i] = aggregator.getWeights()[i];
         }
         else
