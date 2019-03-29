@@ -2266,7 +2266,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         new IgniteSpiThread(igniteInstanceName, commWorker.name(), log) {
             @Override protected void body() {
-                commWorker.run();
+                try {
+                    log.info("Start communication spi");
+
+                    commWorker.run();
+                }
+                catch (Throwable throwable) {
+                    log.error("Error during communication worker : ", throwable);
+
+                    throw throwable;
+                }
             }
         }.start();
 
