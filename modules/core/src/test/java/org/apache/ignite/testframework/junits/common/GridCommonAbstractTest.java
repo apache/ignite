@@ -1090,23 +1090,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is primary.
      */
     protected List<Integer> findKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom, final int type) {
-        return findKeys(null, cache, cnt, startFrom, type);
-    }
-
-    /**
-     * @param node Node.
-     * @param cache Cache.
-     * @param cnt Keys count.
-     * @param startFrom Start value for keys search.
-     * @return Collection of keys for which given cache is primary.
-     */
-    protected List<Integer> findKeys(@Nullable ClusterNode node, IgniteCache<?, ?> cache,
-        final int cnt, final int startFrom, final int type) {
         assert cnt > 0 : cnt;
 
         final List<Integer> found = new ArrayList<>(cnt);
 
-        final ClusterNode node0 = node != null ? node : localNode(cache);
+        final ClusterNode locNode = localNode(cache);
 
         final Affinity<Integer> aff = (Affinity<Integer>)affinity(cache);
 
@@ -1119,11 +1107,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                         boolean ok;
 
                         if (type == 0)
-                            ok = aff.isPrimary(node0, key);
+                            ok = aff.isPrimary(locNode, key);
                         else if (type == 1)
-                            ok = aff.isBackup(node0, key);
+                            ok = aff.isBackup(locNode, key);
                         else if (type == 2)
-                            ok = !aff.isPrimaryOrBackup(node0, key);
+                            ok = !aff.isPrimaryOrBackup(locNode, key);
                         else {
                             fail();
 

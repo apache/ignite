@@ -140,7 +140,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     /** {@inheritDoc} */
     @Override public RegisterStatus register(UUID nodeId, UUID routineId, final GridKernalContext ctx)
         throws IgniteCheckedException {
-        ctx.io().addUserMessageListener(topic, pred, nodeId);
+        ctx.io().addUserMessageListener(topic, pred);
 
         return RegisterStatus.REGISTERED;
     }
