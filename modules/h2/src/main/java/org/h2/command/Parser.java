@@ -1190,7 +1190,7 @@ public class Parser {
             } while (readIfMore(true));
             read(EQUAL);
             Expression expression = readExpression();
-            if (columns.size() == 1 && expression.getType().getValueType() != Value.ROW) {
+            if (columns.size() == 1 && (expression.getType() == null || expression.getType().getValueType() != Value.ROW)) {
                 // the expression is parsed as a simple value
                 command.setAssignment(columns.get(0), expression);
             } else {
