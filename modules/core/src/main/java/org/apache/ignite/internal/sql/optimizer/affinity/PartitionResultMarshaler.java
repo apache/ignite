@@ -163,13 +163,9 @@ public class PartitionResultMarshaler {
         throws BinaryObjectException {
         int part = reader.readInt();
 
-        String alias = reader.readString();
-
         String cacheName = reader.readString();
 
-        int joinGrp = reader.readInt();
-
-        return new PartitionConstantNode(alias, cacheName, joinGrp, part);
+        return new PartitionConstantNode(cacheName, part);
     }
 
     /**
@@ -187,11 +183,7 @@ public class PartitionResultMarshaler {
 
         writer.writeInt(node.value());
 
-        writer.writeString(node.alias());
-
         writer.writeString(node.cacheName());
-
-        writer.writeInt(node.joinGroup());
     }
 
     /**
@@ -309,13 +301,9 @@ public class PartitionResultMarshaler {
 
         PartitionParameterType mappedType = PartitionParameterType.readParameterType(reader, ver);
 
-        String alias = reader.readString();
-
         String cacheName = reader.readString();
 
-        int joinGrp = reader.readInt();
-
-        return new PartitionParameterNode(alias, cacheName, joinGrp, null, idx, type, mappedType);
+        return new PartitionParameterNode(cacheName, null, idx, type, mappedType);
     }
 
     /**
@@ -337,11 +325,7 @@ public class PartitionResultMarshaler {
 
         writer.writeInt(node.mappedType().ordinal());
 
-        writer.writeString(node.alias());
-
         writer.writeString(node.cacheName());
-
-        writer.writeInt(node.joinGroup());
     }
 
     /**

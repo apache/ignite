@@ -122,7 +122,7 @@ public class JdbcThinConnection implements Connection {
     /** Best effort affinity enabled flag. */
     // TODO: 13.02.19 IGNITE-11309 JDBC Thin: add flag or property to disable best effort affinity
     @SuppressWarnings("unused")
-    private static boolean bestEffortAffinity = true;
+    private static boolean bestEffortAffinity;
 
     /** Statements modification mutex. */
     private final Object stmtsMux = new Object();
