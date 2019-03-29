@@ -172,6 +172,38 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Test schemas system view.
+     * @throws Exception in case of failure.
+     */
+    @Test
+    public void testSchemasView() throws Exception {
+        IgniteEx srv = startGrid(getConfiguration().setSqlSchemas("PREDIFINED_SCHEMA_1"));
+
+        IgniteEx client = startGrid(getConfiguration().setClientMode(true).setIgniteInstanceName("CLIENT").setSqlSchemas("PREDIFINED_SCHEMA_2"));
+
+        srv.createCache(cacheConfiguration("TST1"));
+
+        String schemasSql = "SELECT * FROM IGNITE.SCHEMAS";
+
+        List<List<?>> srvNodeSchemas = execSql(schemasSql);
+
+        List<List<?>> clientNodeSchemas = execSql(client, schemasSql);
+
+        String[] expSchemasSrv = new String[] {"PREDIFINED_SCHEMA_1", "IGNITE", "PUBLIC", "TST1"};
+
+        String[] schemasSrv = srvNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).toArray(String[]::new);
+
+        Assert.assertArrayEquals(expSchemasSrv, schemasSrv);
+
+        String[] expSchemasCli = new String[] {"PREDIFINED_SCHEMA_2", "IGNITE", "PUBLIC", "TST1"};
+
+        String[] schemasCli = clientNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).toArray(String[]::new);
+
+        Assert.assertArrayEquals(expSchemasCli, schemasCli);
+    }
+
+
+    /**
      * Test indexes system view.
      *
      * @throws Exception in case of failure.
