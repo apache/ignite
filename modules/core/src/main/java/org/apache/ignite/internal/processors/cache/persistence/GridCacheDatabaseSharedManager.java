@@ -2232,6 +2232,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             int groupId = pageSnapshot.fullPageId().groupId();
                             int partId = partId(pageSnapshot.fullPageId().pageId());
 
+                            if (skipRemovedIndexUpdates(groupId, partId))
+                                break;
+
                             stripedApplyPage((pageMem) -> {
                                     try {
                                         applyPageSnapshot(pageMem, pageSnapshot);
@@ -2298,6 +2301,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             int groupId = pageDelta.groupId();
                             int partId = partId(pageDelta.pageId());
+
+                            if (skipRemovedIndexUpdates(groupId, partId))
+                                break;
 
                             stripedApplyPage((pageMem) -> {
                                 try {
@@ -2518,6 +2524,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * @param grpId Group id.
+     * @param partId Partition id.
+     */
+    private boolean skipRemovedIndexUpdates(int grpId, int partId) {
+        return (partId == PageIdAllocator.INDEX_PARTITION) && !storeMgr.hasIndexStore(grpId);
+    }
+
+    /**
      * Obtains PageMemory reference from cache descriptor instead of cache context.
      *
      * @param grpId Cache group id.
@@ -2688,6 +2702,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             stripedApply(() -> {
                                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+                                if (skipRemovedIndexUpdates(cacheCtx.groupId(), PageIdAllocator.INDEX_PARTITION))
+                                    cctx.kernalContext().query().markAsRebuildNeeded(cacheCtx);
 
                                 try {
                                     applyUpdate(cacheCtx, dataEntry);
