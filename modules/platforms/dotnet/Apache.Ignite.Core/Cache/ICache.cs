@@ -85,6 +85,11 @@ namespace Apache.Ignite.Core.Cache
         bool IsKeepBinary { get; }
 
         /// <summary>
+        /// Gets a value indicating whether to consistency should be checked and fixed if necessary.
+        /// </summary>
+        bool IsConsistency { get; }
+
+        /// <summary>
         /// Gets a value indicating whether to allow use atomic operations in transactions.
         /// </summary>
         bool IsAllowAtomicOpsInTx { get; }
