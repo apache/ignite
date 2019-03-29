@@ -36,7 +36,7 @@ import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
  *
  * This preprocessor can transform multiple columns which indices are handled during training process.
  *
- * Each one-hot encoded binary vector adds its cells to the end of the current feature vector.
+ * Each one-hot encoded binary vector adds its cells to the end of the current feature vector according the order of handled categorial features.
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
