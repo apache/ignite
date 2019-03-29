@@ -187,6 +187,7 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
@@ -2179,10 +2180,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             int grpId = pageRec.fullPageId().groupId();
 
                             long pageId = pageRec.fullPageId().pageId();
+                            int partId = partId(pageId);
 
                             PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
 
                             if (pageMem == null)
+                                break;
+
+
+                            if (skipRemovedIndexUpdates(grpId, partId))
                                 break;
 
                             long page = pageMem.acquirePage(grpId, pageId, true);
@@ -2249,10 +2255,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             int grpId = r.groupId();
 
                             long pageId = r.pageId();
+                            int partId = partId(pageId);
 
                             PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
 
                             if (pageMem == null)
+                                break;
+
+                            if (skipRemovedIndexUpdates(grpId, partId))
                                 break;
 
                             // Here we do not require tag check because we may be applying memory changes after
@@ -2303,6 +2313,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         cpHistory.initialize(retreiveHistory());
 
         return restoreBinaryState;
+    }
+
+    /**
+     * @param grpId Group id.
+     * @param partId Partition id.
+     */
+    private boolean skipRemovedIndexUpdates(int grpId, int partId) {
+        return (partId == PageIdAllocator.INDEX_PARTITION) && !storeMgr.hasIndexStore(grpId);
     }
 
     /**
@@ -2469,6 +2487,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 continue;
 
                             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+                            if (skipRemovedIndexUpdates(cacheDesc.groupId(), PageIdAllocator.INDEX_PARTITION))
+                                cctx.kernalContext().query().markAsRebuildNeeded(cacheCtx);
 
                             applyUpdate(cacheCtx, dataEntry);
 

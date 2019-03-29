@@ -286,6 +286,13 @@ public interface GridQueryIndexing {
     public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
 
     /**
+     * Mark as rebuild needed for the given cache.
+     *
+     * @param cctx Cache context.
+     */
+    void markAsRebuildNeeded(GridCacheContext cctx);
+
+    /**
      * Returns backup filter.
      *
      * @param topVer Topology version.
