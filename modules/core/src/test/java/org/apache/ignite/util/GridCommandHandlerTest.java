@@ -441,9 +441,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertTrue(i != -1);
 
-        String crdStr = outStr.substring(i);
+        String crdStr = outStr.substring(i).trim();
 
-        return crdStr.substring(0, crdStr.indexOf('\n'));
+        return crdStr.substring(0, crdStr.indexOf('\n')).trim();
     }
 
     /**
@@ -1368,107 +1368,131 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * Common method for idle_verify tests with multiple options.
      *
-     * @param outputExpected expected dump output
-     * @param cmdExpected expected command built from command line arguments
-     * @param args command handler arguments
      * @throws Exception if failed
      */
-    public void testCacheIdleVerifyDumpMultipleOptionsCommon(String outputExpected, String cmdExpected, String... args)
+    @Test
+    public void testCacheIdleVerifyMultipleOptions()
             throws Exception {
         IgniteEx ignite = (IgniteEx)startGrids(2);
 
         ignite.cluster().active(true);
 
-        int parts = 32;
-
         ignite.createCache(new CacheConfiguration<>()
-                .setAffinity(new RendezvousAffinityFunction(false, parts))
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
                 .setGroupName("shared_grp")
                 .setBackups(1)
                 .setName(DEFAULT_CACHE_NAME));
 
         ignite.createCache(new CacheConfiguration<>()
-                .setAffinity(new RendezvousAffinityFunction(false, parts))
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
                 .setGroupName("shared_grp")
                 .setBackups(1)
                 .setName(DEFAULT_CACHE_NAME + "_second"));
 
         ignite.createCache(new CacheConfiguration<>()
-                .setAffinity(new RendezvousAffinityFunction(false, parts))
+                .setAffinity(new RendezvousAffinityFunction(false, 64))
                 .setBackups(1)
                 .setName(DEFAULT_CACHE_NAME + "_third"));
 
         ignite.createCache(new CacheConfiguration<>()
-                .setAffinity(new RendezvousAffinityFunction(false, parts))
+                .setAffinity(new RendezvousAffinityFunction(false, 128))
                 .setBackups(1)
                 .setName("wrong_cache"));
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute(args));
+        testCacheIdleVerifyMultipleRunWithDump(
+            true,
+            "idle_verify check has finished, found 100 partitions",
+            "idle_verify task args were following: --cache-filter SYSTEM --exclude-caches wrong.* ",
+            "--cache", "idle_verify", "--dump", "--cache-filter", "SYSTEM", "--exclude-caches", "wrong.*"
+        );
+        testCacheIdleVerifyMultipleRunWithDump(
+            true,
+            "idle_verify check has finished, found 96 partitions",
+            null,
+            "--cache", "idle_verify", "--dump", ".*", "--exclude-caches", "wrong.*"
+        );
+        testCacheIdleVerifyMultipleRunWithDump(
+            true,
+            "idle_verify check has finished, found 32 partitions",
+            null,
+            "--cache", "idle_verify", "--dump", "shared.*", "--cache-filter", "ALL"
+        );
+        testCacheIdleVerifyMultipleRunWithDump(
+            true,
+            "idle_verify check has finished, found 160 partitions",
+            null,
+            "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
+        );
+
+        testCacheIdleVerifyMultipleRunWithDump(
+            true,
+            "idle_verify check has finished, found 160 partitions",
+            null,
+            "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
+        );
+        testCacheIdleVerifyMultipleRunWithDump(
+            true,
+            "idle_verify check has finished, found 160 partitions",
+            null,
+            "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
+        );
+        testCacheIdleVerifyMultipleRunWithDump(
+            true,
+            "idle_verify failed on 2 nodes.",
+            null,
+            "--cache", "idle_verify", "--exclude-caches", ".*"
+        );
+        testCacheIdleVerifyMultipleRunWithDump(
+            false,
+            "idle_verify failed on 2 nodes.",
+            null,
+            "--cache", "idle_verify", "--dump", "--exclude-caches", "["
+        );
+        testCacheIdleVerifyMultipleRunWithDump(
+            true,
+            null,
+            null,
+            "--cache", "idle_verify", ".*", "--exclude-caches", "wrong-.*"
+        );
+    }
+
+    /**
+     * Runs idle_verify with specified arguments and checks the dump if dump option was present.
+     *
+     * @param exitOk whether CommandHandler should exit without errors
+     * @param outputExp expected dump output
+     * @param cmdExp expected command built from command line arguments
+     * @param args command handler arguments
+     * @throws IOException if some of file operations failed
+     */
+    private void testCacheIdleVerifyMultipleRunWithDump(
+        boolean exitOk,
+        String outputExp,
+        String cmdExp,
+        String... args
+    ) throws IOException {
+        testOut.reset();
+
+        assertEquals(exitOk, EXIT_CODE_OK == execute(args));
 
         Matcher fileNameMatcher = dumpFileNameMatcher();
 
         if (fileNameMatcher.find()) {
-            String dump = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+            Path filePath = Paths.get(fileNameMatcher.group(1));
+
+            String dump = new String(Files.readAllBytes(filePath));
+
+            Files.delete(filePath);
 
             System.out.println(dump);
 
-            assertTrue(dump.contains(outputExpected));
+            assertTrue(dump.contains(outputExp));
 
-            if (cmdExpected != null)
-                assertTrue(dump.contains(cmdExpected));
+            if (cmdExp != null)
+                assertTrue(dump.contains(cmdExp));
         }
-    }
-
-    /** */
-    @Test
-    public void testCacheIdleVerifyDumpMultipleOptions1() throws Exception {
-        testCacheIdleVerifyDumpMultipleOptionsCommon(
-                "idle_verify check has finished, found 100 partitions",
-                "idle_verify task args were following: --cache-filter SYSTEM --exclude-caches wrong-.* ",
-                "--cache", "idle_verify", "--dump", "--cache-filter", "SYSTEM", "--exclude-caches", "wrong-.*"
-        );
-    }
-
-    /** */
-    @Test
-    public void testCacheIdleVerifyDumpMultipleOptions2() throws Exception {
-        testCacheIdleVerifyDumpMultipleOptionsCommon(
-                "idle_verify check has finished, found 96 partitions",
-                null,
-                "--cache", "idle_verify", "--dump", ".*", "--exclude-caches", "wrong-.*"
-        );
-    }
-
-    /** */
-    @Test
-    public void testCacheIdleVerifyDumpMultipleOptions3() throws Exception {
-        testCacheIdleVerifyDumpMultipleOptionsCommon(
-                "idle_verify check has finished, found 32 partitions",
-                null,
-                "--cache", "idle_verify", "--dump", "shared.*", "--cache-filter", "ALL"
-        );
-    }
-
-    /** */
-    @Test
-    public void testCacheIdleVerifyDumpMultipleOptions4() throws Exception {
-        testCacheIdleVerifyDumpMultipleOptionsCommon(
-                "idle_verify check has finished, found 64 partitions",
-                null,
-                "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
-        );
-    }
-
-    /** Fail test when no caches match the filter. */
-    @Test
-    public void testCacheIdleVerifyDumpMultipleOptionsFail() throws Exception {
-        testCacheIdleVerifyDumpMultipleOptionsCommon(
-                "idle_verify failed on 2 nodes.",
-                null,
-                "--cache", "idle_verify", "--dump", "--exclude-caches", ".*"
-        );
     }
 
     /**

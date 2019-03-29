@@ -422,17 +422,17 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 for (String excluded : arg.getExcludeCaches())
                     excludedNamesPatterns.add(Pattern.compile(excluded));
 
-                boolean excludeSystemCaches;
+                boolean excludeSysCaches;
 
                 if (arg instanceof VisorIdleVerifyDumpTaskArg) {
                     CacheFilterEnum filter = ((VisorIdleVerifyDumpTaskArg) arg).getCacheFilterEnum();
 
-                    excludeSystemCaches = !(filter == CacheFilterEnum.SYSTEM);
+                    excludeSysCaches = !(filter == CacheFilterEnum.SYSTEM);
                 } else
-                    excludeSystemCaches = true;
+                    excludeSysCaches = true;
 
                 cachesToFilter.removeIf(grp ->
-                    (grp.systemCache() && excludeSystemCaches)
+                    (grp.systemCache() && excludeSysCaches)
                         || grp.isLocal()
                         || doesGrpMatchOneOfPatterns(grp, excludedNamesPatterns)
                 );
@@ -455,31 +455,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                 cachesToFilter.removeIf(grp -> !doesGrpMatchOneOfPatterns(grp, cacheNamesPatterns));
             }
-        }
-
-        /**
-         * Gets filtered group ids.
-         */
-        private Set<Integer> getCacheGroupIds() {
-            Collection<CacheGroupContext> groups = ignite.context().cache().cacheGroups();
-
-            Set<Integer> grpIds = new HashSet<>();
-
-            if (F.isEmpty(arg.getExcludeCaches())) {
-                for (CacheGroupContext grp : groups) {
-                    if (!grp.systemCache() && !grp.isLocal())
-                        grpIds.add(grp.groupId());
-                }
-
-                return grpIds;
-            }
-
-            for (CacheGroupContext grp : groups) {
-                if (!grp.systemCache() && !grp.isLocal() && !isGrpExcluded(grp))
-                    grpIds.add(grp.groupId());
-            }
-
-            return grpIds;
         }
 
         /**
@@ -518,48 +493,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
 
             return false;
-        }
-
-        /**
-         * @param grp Group.
-         */
-        private boolean isGrpExcluded(CacheGroupContext grp) {
-            if (arg.getExcludeCaches().contains(grp.name()))
-                return true;
-
-            for (GridCacheContext cacheCtx : grp.caches()) {
-                if (arg.getExcludeCaches().contains(cacheCtx.name()))
-                    return true;
-            }
-
-            return false;
-        }
-
-        /**
-         * Checks and throw exception if caches was missed.
-         *
-         * @param missingCaches Missing caches.
-         */
-        private void handlingMissedCaches(Set<String> missingCaches) {
-            if (missingCaches.isEmpty())
-                return;
-
-            SB strBuilder = new SB("The following caches do not exist");
-
-            if (onlySpecificCaches()) {
-                VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
-
-                strBuilder.a(" or do not match to the given filter [").a(vdta.getCacheFilterEnum()).a("]: ");
-            }
-            else
-                strBuilder.a(": ");
-
-            for (String name : missingCaches)
-                strBuilder.a(name).a(", ");
-
-            strBuilder.d(strBuilder.length() - 2, strBuilder.length());
-
-            throw new IgniteException(strBuilder.toString());
         }
 
         /**
