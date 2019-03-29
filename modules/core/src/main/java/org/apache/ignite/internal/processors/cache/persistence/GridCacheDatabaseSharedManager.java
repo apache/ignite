@@ -2402,7 +2402,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             throw new IgniteInterruptedException(e);
         }
 
-        exec.execute(stripe, () -> {
+//        exec.execute(stripe, () -> {
             // WA for avoid assert check in PageMemory, that current thread hold chpLock.
             CHECKPOINT_LOCK_HOLD_COUNT.set(1);
 
@@ -2414,7 +2414,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 semaphore.release();
             }
-        });
+//        });
     }
 
     /**
@@ -2888,7 +2888,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // Inner collection index.
             int innerIdx = i;
 
-            exec.execute(stripeIdx, () -> {
+//            exec.execute(stripeIdx, () -> {
                 // Local buffer for write pages.
                 ByteBuffer writePageBuf = ByteBuffer.allocateDirect(pageSize());
 
@@ -2939,7 +2939,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     writePagesError.compareAndSet(null, e);
                 }
-            });
+//            });
         }
 
         // Await completion all write tasks.
