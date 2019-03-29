@@ -2279,6 +2279,35 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
         }.start();
 
+        new IgniteSpiThread(igniteInstanceName, commWorker.name() + "-watcher", log) {
+            @Override protected void body() {
+                try {
+                    while (true) {
+                        try {
+                            Thread.sleep(5000);
+                        }
+                        catch (InterruptedException ex) {
+                            break;
+                        }
+
+                        Thread runner = commWorker.runner();
+                        if(runner != null) {
+                            log.warning("Dump Communication ");
+                            U.dumpThread(runner, log);
+                        }
+                        else
+                            log.warning("Communication Runner is null");
+                    }
+                }
+                catch (Throwable throwable) {
+                    log.error("Error during watcher communication worker : ", throwable);
+
+                    throw throwable;
+                }
+            }
+        }.start();
+
+
         // Ack start.
         if (log.isDebugEnabled())
             log.debug(startInfo());
