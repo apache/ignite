@@ -14,6 +14,7 @@ Building on Linux With Autotools
 Common Requirements:
 
  * GCC, g++, autotools, automake, and libtool must be installed
+ * OpenSSL, 1.0 or later
  * Java Development Kit (JDK) must be installed: https://java.com/en/download/index.jsp
  * JAVA_HOME environment variable must be set pointing to Java installation directory.
  * IGNITE_HOME environment variable must be set to Ignite installation directory.
