@@ -1379,6 +1379,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param mvccTracker MVCC tracker.
      * @param cancel Cancel.
      * @return Fields query.
+     * @throws IgniteCheckedException On error.
      */
     private QueryCursorImpl<List<?>> executeSelectForDml(
         String schema,
@@ -1418,6 +1419,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param mvccTracker MVCC tracker.
      * @param cancel Query cancel state holder.
      * @return Query result.
+     * @throws IgniteCheckedException On error.
      */
     private Iterable<List<?>> executeSelect0(
         QueryDescriptor qryDesc,
@@ -2570,7 +2572,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }, cancel);
         }
 
-        int pageSize = loc ? 0 : qryParams.pageSize();
+//        int pageSize = loc ? 0 : qryParams.pageSize();
+
+        int pageSize = loc ? 0 : qryParams.updateBatchSize();
 
         return DmlUtils.processSelectResult(plan, cur, pageSize);
     }

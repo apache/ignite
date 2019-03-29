@@ -226,6 +226,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testSqlHints() throws Exception {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
             assertHints(conn, false, false, false, false, false, false);
+            assertNull(io(conn).connectionProperties().isDataPageScanEnabled());
+            assertNull(io(conn).connectionProperties().getUpdateBatchSize());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true")) {
@@ -255,6 +257,17 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true&" +
             "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true&skipReducerOnUpdate=true")) {
             assertHints(conn, true, true, true, true, true, true);
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?dataPageScanEnabled=true")) {
+            assertTrue(io(conn).connectionProperties().isDataPageScanEnabled());
+        }
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?dataPageScanEnabled=false")) {
+            assertFalse(io(conn).connectionProperties().isDataPageScanEnabled());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?updateBatchSize=28")) {
+            assertEquals(28, (int)io(conn).connectionProperties().getUpdateBatchSize());
         }
     }
 
@@ -293,6 +306,18 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             "enforceJoinOrder=true;collocated=true;replicatedOnly=true;lazy=true;skipReducerOnUpdate=true")) {
             assertHints(conn, true, true, true, true, true, true);
         }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;dataPageScanEnabled=true")) {
+            assertTrue(io(conn).connectionProperties().isDataPageScanEnabled());
+        }
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;dataPageScanEnabled=false")) {
+            assertFalse(io(conn).connectionProperties().isDataPageScanEnabled());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;updateBatchSize=28")) {
+            assertEquals(28, (int)io(conn).connectionProperties().getUpdateBatchSize());
+        }
+
     }
 
     /**

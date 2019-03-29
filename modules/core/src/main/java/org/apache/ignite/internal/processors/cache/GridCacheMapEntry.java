@@ -33,6 +33,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.eviction.EvictableEntry;
@@ -4978,7 +4979,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void lockEntry() {
-        lock.lock();
+        try {
+            lock.lockInterruptibly();
+        }
+        catch (InterruptedException e) {
+            throw new IgniteInterruptedException(e);
+        }
     }
 
     /** {@inheritDoc} */

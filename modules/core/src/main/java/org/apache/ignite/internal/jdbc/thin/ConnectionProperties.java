@@ -405,4 +405,18 @@ public interface ConnectionProperties {
      *     if {@code false} then it's disabled, if {@code null} then server should use its default settings.
      */
     public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled);
+
+    /**
+     * @return update internal bach size. Set to 1 to prevent deadlock on update where keys sequence are different in
+     *      several concurrent updates.
+     */
+    @Nullable public Integer getUpdateBatchSize();
+
+    /**
+     * @param updateBatchSize update internal bach size. Set to 1 to prevent deadlock on update where keys sequence are different in
+     *      several concurrent updates..
+     * @throws SQLException On error.
+     */
+    public void setUpdateBatchSize(@Nullable Integer updateBatchSize) throws SQLException ;
+
 }

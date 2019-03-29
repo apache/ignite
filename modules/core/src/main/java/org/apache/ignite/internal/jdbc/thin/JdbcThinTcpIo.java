@@ -85,8 +85,11 @@ public class JdbcThinTcpIo {
     /** Version 2.8.0. */
     private static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
+    /** Version 2.8.0. */
+    private static final ClientListenerProtocolVersion VER_2_8_1 = ClientListenerProtocolVersion.create(2, 8, 0);
+
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_1;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -351,6 +354,13 @@ public class JdbcThinTcpIo {
 
         if (ver.compareTo(VER_2_8_0) >= 0)
             writer.writeByte(nullableBooleanToByte(connProps.isDataPageScanEnabled()));
+
+        if (ver.compareTo(VER_2_8_1) >= 0) {
+            writer.writeBoolean(connProps.getUpdateBatchSize() != null);
+
+            if (connProps.getUpdateBatchSize() != null)
+                writer.writeInt(connProps.getUpdateBatchSize());
+        }
 
         if (!F.isEmpty(connProps.getUsername())) {
             assert ver.compareTo(VER_2_5_0) >= 0 : "Authentication is supported since 2.5";

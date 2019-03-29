@@ -62,8 +62,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.8.0: adds query id in order to implement cancel feature.*/
     static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
+    /** Version 2.8.1: adds updateBatchSize.*/
+    static final ClientListenerProtocolVersion VER_2_8_1 = ClientListenerProtocolVersion.create(2, 8, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_1;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -88,6 +91,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_8_1);
         SUPPORTED_VERS.add(VER_2_8_0);
         SUPPORTED_VERS.add(VER_2_7_0);
         SUPPORTED_VERS.add(VER_2_5_0);
@@ -102,7 +106,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
      *  @param ctx Kernal Context.
      * @param ses Session.
      * @param busyLock Shutdown busy lock.
-     * @param connId
+     * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
      */
     public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
@@ -168,6 +172,13 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         if (ver.compareTo(VER_2_8_0) >= 0)
             dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
 
+        Integer updateBatchSize = null;
+
+        if (ver.compareTo(VER_2_8_1) >= 0) {
+            if (reader.readBoolean())
+                updateBatchSize = reader.readInt();
+        }
+
         if (ver.compareTo(VER_2_5_0) >= 0) {
             String user = null;
             String passwd = null;
@@ -202,7 +213,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler = new JdbcRequestHandler(ctx, busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode,
-            dataPageScanEnabled, actx, ver);
+            dataPageScanEnabled, updateBatchSize, actx, ver);
 
         handler.start();
     }
