@@ -96,7 +96,12 @@ const DFLT_CLUSTER = {
     binary: {
         compactFooter: true,
         typeConfigurations: {
-            enum: false
+            enum: false,
+            enumValues: {
+                keyClsName: 'java.lang.String',
+                valClsName: 'java.lang.Integer',
+                entries: []
+            }
         }
     },
     collision: {

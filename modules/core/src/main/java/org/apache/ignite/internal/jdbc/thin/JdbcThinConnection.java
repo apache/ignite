@@ -41,10 +41,13 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -144,7 +147,7 @@ public class JdbcThinConnection implements Connection {
     private volatile boolean connected;
 
     /** Tracked statements to close on disconnect. */
-    private final ArrayList<JdbcThinStatement> stmts = new ArrayList<>();
+    private final Set<JdbcThinStatement> stmts = Collections.newSetFromMap(new IdentityHashMap<>());
 
     /** Query timeout timer */
     private final Timer timer;
@@ -437,6 +440,12 @@ public class JdbcThinConnection implements Connection {
             streamState = null;
         }
 
+        synchronized (stmtsMux) {
+            stmts.clear();
+        }
+
+        SQLException err = null;
+
         closed = true;
 
         if (bestEffortAffinity) {
@@ -453,6 +462,9 @@ public class JdbcThinConnection implements Connection {
         }
 
         timer.cancel();
+
+        if (err != null)
+            throw err;
     }
 
     /** {@inheritDoc} */
@@ -1004,6 +1016,15 @@ public class JdbcThinConnection implements Connection {
         }
 
         timer.cancel();
+    }
+
+    /**
+     * @param stmt Statement to close.
+     */
+    void closeStatement(JdbcThinStatement stmt) {
+        synchronized (stmtsMux) {
+            stmts.remove(stmt);
+        }
     }
 
     /**
