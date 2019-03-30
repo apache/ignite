@@ -139,6 +139,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestValidationSql()
         {
+#pragma warning disable 618
             // 1. No sql.
             Assert.Throws<ArgumentException>(() =>
                 { Cache().Query(new SqlQuery(typeof(QueryPerson), null)); });
@@ -146,6 +147,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // 2. No type.
             Assert.Throws<ArgumentException>(() =>
                 { Cache().Query(new SqlQuery((string)null, "age >= 50")); });
+#pragma warning restore 618
         }
 
         /// <summary>
@@ -184,7 +186,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Cache().Put(1, new QueryPerson("Petrov", 40));
             Cache().Put(1, new QueryPerson("Sidorov", 50));
 
+#pragma warning disable 618
             SqlQuery qry = new SqlQuery(typeof(QueryPerson), "age >= 20");
+#pragma warning restore 618
 
             // 1. Test GetAll().
             using (IQueryCursor<ICacheEntry<int, QueryPerson>> cursor = Cache().Query(qry))
@@ -212,6 +216,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [SuppressMessage("ReSharper", "UnusedVariable")]
         public void TestEnumerator()
         {
+#pragma warning disable 618
             Cache().Put(1, new QueryPerson("Ivanov", 30));
             Cache().Put(2, new QueryPerson("Petrov", 40));
             Cache().Put(3, new QueryPerson("Sidorov", 50));
@@ -219,7 +224,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // 1. Empty result set.
             using (IQueryCursor<ICacheEntry<int, QueryPerson>> cursor =
-                    Cache().Query(new SqlQuery(typeof(QueryPerson), "age = 100")))
+                Cache().Query(new SqlQuery(typeof(QueryPerson), "age = 100")))
             {
                 IEnumerator<ICacheEntry<int, QueryPerson>> e = cursor.GetEnumerator();
 
@@ -251,6 +256,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // 4. Page size if less than result set.
             qry.PageSize = 2;
             CheckEnumeratorQuery(qry);
+#pragma warning restore 618
         }
 
         /// <summary>
