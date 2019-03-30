@@ -44,7 +44,6 @@ namespace Apache.Ignite.Core.Common
 
         /** Revision hash. */
         private readonly byte[] _revHash;
-
         
         /// <summary>
         /// Constructor.
@@ -59,7 +58,6 @@ namespace Apache.Ignite.Core.Common
         {
             // No-op.
         }
-
 
         /// <summary>
         /// Constructor.

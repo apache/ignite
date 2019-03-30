@@ -240,8 +240,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IgniteProductVersion GetVersion()
         {
-            return Target.OutStream((int) Op.GetNodeVersion,
-                r => { return new IgniteProductVersion(r); });
+            return Target.OutStream((int) Op.GetNodeVersion, r => new IgniteProductVersion(r));
         }
 
         /** <inheritdoc /> */
