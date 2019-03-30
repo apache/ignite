@@ -38,6 +38,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -97,9 +98,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /** */
     private static IgniteConfiguration cfg;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -134,8 +132,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         cfg.setCacheKeyConfiguration(arrayHashCfg);
 
         GridCacheBinaryObjectsAbstractSelfTest.cfg = cfg;
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -1229,17 +1225,14 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
     /**
      * There is test for cases when Array used as cache key
-     * The issue with primitive arrys as key has been fixed whenever multidementional arrays will couse exception
+     * The issue with primitive arrays as key has been fixed whenever multidimensional arrays will cause exception
      */
     private void testPrimitiveArrayAsCacheKey(boolean withClient) throws Exception {
-//        IgniteConfiguration cfg = new IgniteConfiguration();
+        Ignite srv = startGrid("server");
 
-        Ignite srv = startGrid(1);
+        Ignition.setClientMode(true);
 
-//        Ignition.setClientMode(true);
-        client = true;
-
-        Ignite ignite = withClient ? startGrid(2) : srv;
+        Ignite ignite = withClient ? startGrid("client") : srv;
 
         Object[] testIdx = new Object[]{
             new byte[]{1, 0, 1},
@@ -1255,9 +1248,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             new KeyCacheObjectImpl(new byte[]{1, 0, 1}, null, 1));
 
         assertEquals (new KeyCacheObjectImpl(testIdx[1], null, 1),
-            new KeyCacheObjectImpl(new int[]{1, 2, 3}, null,1));
+            new KeyCacheObjectImpl(new int[]{1, 2, 3}, null, 1));
 
-        assertEquals (new KeyCacheObjectImpl(testIdx[2],null, 1),
+        assertEquals (new KeyCacheObjectImpl(testIdx[2], null, 1),
             new KeyCacheObjectImpl(new boolean[]{true, true, false}, null, 1));
 
         assertEquals (new KeyCacheObjectImpl(testIdx[3], null, 1),
@@ -1284,6 +1277,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         try {
             new KeyCacheObjectImpl(new char[][]{{'a'}, {'b'}}, null, 1).hashCode();
+
             throw new AssertionError("Exception wasn't catched");
         }catch (IgniteException ignored){
             //No-op
