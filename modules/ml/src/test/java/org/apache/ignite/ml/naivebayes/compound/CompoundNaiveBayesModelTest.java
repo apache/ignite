@@ -116,17 +116,38 @@ public class CompoundNaiveBayesModelTest {
 
     @Test /** */
     public void testPredictGausAndDiscrete() {
-        double first = 1;
-        double second = 2;
         double[][][] probabilities = new double[][][] {
-            {{.5, .5}, {.2, .3, .5}, {2. / 3., 1. / 3.}, {.4, .1, .5}, {.5, .5}},
-            {{0, 1}, {1. / 7, 2. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 3. / 7, 2. / 7}, {4. / 7, 3. / 7,}}
+            {{-1}, {-1}, {-1}, {.5, .5}, {.2, .3, .5}, {2. / 3., 1. / 3.}, {.4, .1, .5}, {.5, .5}},
+            {{-1}, {-1}, {-1}, {0, 1}, {1. / 7, 2. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 3. / 7, 2. / 7}, {4. / 7, 3. / 7,}}
         };
+        double[] classProbabilities = new double[] {.5, .5};
+        double[] labels = {LABEL_1, LABEL_2};
 
-        double[] classProbabilities = new double[] {6. / 13, 7. / 13};
-        double[][] thresholds = new double[][] {{.5}, {.2, .7}, {.5}, {.5, 1.5}, {.5}};
-        DiscreteNaiveBayesModel mdl = new DiscreteNaiveBayesModel(probabilities, classProbabilities, new double[] {first, second}, thresholds, new DiscreteNaiveBayesSumsHolder());
+        double[][] thresholds = new double[][] {{-1}, {-1}, {-1}, {.5}, {.5}, {.5}, {.5}, {.5}};
+        DiscreteNaiveBayesModel discreteModel = new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, thresholds, null);
 
+        double[][] means = new double[][] {
+            {5.855, 176.25, 11.25},
+            {5.4175, 132.5, 7.5},
+        };
+        double[][] variances = new double[][] {
+            {3.5033E-2, 1.2292E2, 9.1667E-1},
+            {9.7225E-2, 5.5833E2, 1.6667},
+        };
+        GaussianNaiveBayesModel gaussianModel =
+            new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, null);
 
+        CompoundNaiveBayesModel model = CompoundNaiveBayesModel.builder()
+            .wirhPriorProbabilities(classProbabilities)
+            .withLabels(labels)
+            .withGaussianModel(gaussianModel)
+            .withGaussianSkipFuture(f -> f >= 2)
+            .withDiscreteModel(discreteModel)
+            .withDiscreteSkipFuture(f -> f <= 2)
+            .build();
+
+        Vector observation = VectorUtils.of(6, 130, 8, 2, 0, 1, 2, 0);
+
+        assertEquals(LABEL_2, model.predict(observation), 0.0001);
     }
 }
