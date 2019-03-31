@@ -3,17 +3,18 @@ package org.apache.ignite.ml.naivebayes.compound;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.junit.Before;
 
 /** Test for {@link CompoundNaiveBayesTrainer} */
-public class CompoundNaiveBayesTrainerTest  extends TrainerTest {
+public class CompoundNaiveBayesTrainerTest extends TrainerTest {
 
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
-    /** The first label*/
+    /** The first label */
     private static final double LABEL_1 = 1.;
 
-    /** The second label*/
+    /** The second label */
     private static final double LABEL_2 = 2.;
 
     private static final Map<Integer, double[]> data = new HashMap<>();
@@ -36,5 +37,13 @@ public class CompoundNaiveBayesTrainerTest  extends TrainerTest {
 
     }
 
+    /** */
+    private CompoundNaiveBayesTrainer trainer;
+
+    /** Initialization {@code CompoundNaiveBayesTrainer}. */
+    @Before
+    public void createTrainer() {
+        trainer = new CompoundNaiveBayesTrainer();
+    }
 
 }
