@@ -33,10 +33,10 @@ public class CompoundNaiveBayesModelTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
-    /** */
+    /** The first label*/
     private static final double LABEL_1 = 1.;
 
-    /** */
+    /** The second label*/
     private static final double LABEL_2 = 2.;
 
     private static final Map<Integer, double[]> data = new HashMap<>();
@@ -85,7 +85,7 @@ public class CompoundNaiveBayesModelTest {
             .withGaussianModel(gaussianModel)
             .build();
 
-        assertEquals(second, model.predict(observation), 0.0001);
+        assertEquals(second, model.predict(observation), PRECISION);
     }
 
     @Test /** */
@@ -111,7 +111,7 @@ public class CompoundNaiveBayesModelTest {
             .withDiscreteModel(discreteModel)
             .build();
 
-        assertEquals(second, model.predict(observation), 0.0001);
+        assertEquals(second, model.predict(observation), PRECISION);
     }
 
     @Test /** */
@@ -148,6 +148,6 @@ public class CompoundNaiveBayesModelTest {
 
         Vector observation = VectorUtils.of(6, 130, 8, 2, 0, 1, 2, 0);
 
-        assertEquals(LABEL_2, model.predict(observation), 0.0001);
+        assertEquals(LABEL_2, model.predict(observation), PRECISION);
     }
 }
