@@ -27,6 +27,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
@@ -34,15 +43,55 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Simple partition counter tests.
+ * Basic partition counter tests.
  */
 public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
+    /** Cache. */
+    public static final String CACHE = "cache_group_4_118_";
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setPersistenceEnabled(true)
+                    .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+            )
+            .setWalMode(WALMode.LOG_ONLY)
+            .setWalSegmentSize(8 * 1024 * 1024);
+
+        cfg.setDataStorageConfiguration(memCfg);
+
+        cfg.setCacheConfiguration(new CacheConfiguration(CACHE).
+            setAffinity(new RendezvousAffinityFunction(false, 1)).
+            setCacheMode(CacheMode.REPLICATED).
+            setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        cleanPersistenceDir();
+    }
+
     /**
      * Create new counter.
      * @return Counter.
      */
     protected PartitionUpdateCounter newCounter() {
-        return new PartitionUpdateCounterImpl(log);
+        return new PartitionUpdateCounterImpl();
     }
 
     /**
@@ -247,6 +296,32 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         assertEquals(10, gap[1]);
 
         assertFalse(iter.hasNext());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testWithPersistentNode() throws Exception {
+        try {
+            IgniteEx grid0 = startGrid(0);
+            grid0.cluster().active(true);
+
+            grid0.cluster().baselineAutoAdjustEnabled(false);
+
+            grid0.cache(CACHE).put(0, 0);
+
+            startGrid(1);
+
+            grid0.cluster().setBaselineTopology(2);
+
+            awaitPartitionMapExchange();
+
+            grid0.cache(CACHE).put(1, 1);
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**

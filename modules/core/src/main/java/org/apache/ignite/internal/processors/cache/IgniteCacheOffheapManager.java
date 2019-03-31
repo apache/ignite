@@ -648,6 +648,7 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * @param val Update counter.
+         * TODO FIXME this is called only during rebalance, need to rename to reflect such fact.
          */
         void updateCounter(long val);
 

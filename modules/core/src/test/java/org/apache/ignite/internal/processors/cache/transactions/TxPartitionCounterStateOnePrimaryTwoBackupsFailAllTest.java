@@ -346,7 +346,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
             PartitionUpdateCounterImpl cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, node.name());
 
-            assertTrue(cntr.gaps().isEmpty());
+            assertTrue(cntr.sequential());
         }
     }
 }

@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,26 +66,6 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
 
     /** Initial counter points to last sequential update after recovery. */
     private long initCntr;
-
-    /** TODO FIXME remove. */
-    private int partId;
-
-    /** */
-    private CacheGroupContext grp;
-
-    /**
-     * @param log Logger.
-     */
-    public PartitionUpdateCounterImpl(IgniteLogger log) {
-        this.log = log;
-    }
-
-    public PartitionUpdateCounterImpl(IgniteLogger log, int partId,
-        CacheGroupContext grp) {
-        this.log = log;
-        this.partId = partId;
-        this.grp = grp;
-    }
 
     /**
      * @param initUpdCntr Initial update counter.
@@ -163,11 +142,8 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     @Override public synchronized boolean update(long start, long delta) {
         long cur = cntr.get(), next;
 
-        if (cur > start) {
-            log.warning("Stale update counter task [partId=" + partId + ", cur=" + cur + ", start=" + start + ", delta=" + delta + ']');
-
+        if (cur > start)
             return false;
-        }
 
         if (cur < start) {
             // Try merge with adjacent gaps in sequence.
@@ -215,6 +191,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         }
 
         while (true) {
+            // TODO FIXME CAS not needed.
             boolean res = cntr.compareAndSet(cur, next = start + delta);
 
             assert res;
@@ -307,16 +284,10 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
      * @param delta Delta.
      */
     @Override public long reserve(long delta) {
-        long cntr = this.cntr.get();
-
-        long newCntr = reserveCntr.getAndAdd(delta);
-
-        assert newCntr >= cntr : "Update counter behind reserve counter: cntr=" + cntr + ", reserveCntr=" + newCntr + ", partId=" + partId;
-
-        return newCntr;
+        return reserveCntr.getAndAdd(delta);
     }
 
-    public long next(long delta) {
+    @Override public long next(long delta) {
         return cntr.getAndAdd(delta);
     }
 
@@ -391,8 +362,8 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         }
     }
 
-    // TODO make private.
-    public TreeSet<Item> gaps() {
+    /** */
+    private TreeSet<Item> gaps() {
         return queue;
     }
 
@@ -409,7 +380,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     /**
      * Update counter task. Update from start value by delta value.
      */
-    public static class Item implements Comparable<Item> {
+    private static class Item implements Comparable<Item> {
         /** */
         private long start;
 
