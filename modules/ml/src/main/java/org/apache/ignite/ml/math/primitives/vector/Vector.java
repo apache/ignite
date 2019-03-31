@@ -434,7 +434,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return This vector.
      * @throws IndexException Throw if index is out of bounds.
      */
-    public <T extends Serializable> Vector setRaw(int idx, T val);
+    public Vector setRaw(int idx, Serializable val);
 
     /**
      * Sets value without checking for index boundaries.
@@ -443,7 +443,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param val Value to set.
      * @return This vector.
      */
-    public <T extends Serializable> Vector setRawX(int idx, T val);
+    public Vector setRawX(int idx, Serializable val);
 
     /**
      * Increments value at given index without checking for index boundaries.

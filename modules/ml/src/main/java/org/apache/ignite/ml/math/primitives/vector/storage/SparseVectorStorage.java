@@ -91,7 +91,7 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends Serializable> void setRaw(int i, T v) {
+    @Override public void setRaw(int i, Serializable v) {
         if (v == null)
             sto.remove(i);
         else

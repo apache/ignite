@@ -57,7 +57,7 @@ public interface VectorStorage extends Externalizable, StorageOpsMetrics, Destro
      * @param i Vector element index.
      * @param v Value to set at given index.
      */
-    public <T extends Serializable> void setRaw(int i, T v);
+    public void setRaw(int i, Serializable v);
 
     /**
      * Gets underlying array if {@link StorageOpsMetrics#isArrayBased()} returns {@code true} and all values

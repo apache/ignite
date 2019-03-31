@@ -100,7 +100,7 @@ public class VectorViewStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends Serializable> void setRaw(int i, T v) {
+    @Override public void setRaw(int i, Serializable v) {
         sto.setRaw(off + i, v);
     }
 

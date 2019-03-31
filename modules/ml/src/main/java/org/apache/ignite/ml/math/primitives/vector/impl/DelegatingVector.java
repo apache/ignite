@@ -302,12 +302,12 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends Serializable> Vector setRaw(int idx, T val) {
+    @Override public Vector setRaw(int idx, Serializable val) {
         return dlg.setRaw(idx, val);
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends Serializable> Vector setRawX(int idx, T val) {
+    @Override public Vector setRawX(int idx, Serializable val) {
         return dlg.setRawX(idx, val);
     }
 

@@ -127,10 +127,12 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
+     * Sets serializable value.
+     *
      * @param i Index.
      * @param v Value.
      */
-    protected <T extends Serializable> void storageSetRaw(int i, T v) {
+    protected void storageSetRaw(int i, Serializable v) {
         ensureReadOnly();
 
         sto.setRaw(i, v);
@@ -149,6 +151,8 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
+     * Gets serializable value from storage and casts it to targe type T.
+     *
      * @param i Index.
      * @return Value.
      */
@@ -343,7 +347,7 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends Serializable> Vector setRaw(int idx, T val) {
+    @Override public Vector setRaw(int idx, Serializable val) {
         checkIndex(idx);
 
         storageSetRaw(idx, val);
@@ -352,7 +356,7 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends Serializable> Vector setRawX(int idx, T val) {
+    @Override public Vector setRawX(int idx, Serializable val) {
         storageSetRaw(idx, val);
 
         return this;

@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.math.primitives.vector.storage;
 
 import java.io.Serializable;
-import java.lang.reflect.Field;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -31,11 +30,10 @@ public class DenseVectorStorageTest extends AbstractStorageTest {
     /** {@inheritDoc} */
     @Override protected boolean isNumericVector(VectorStorage storage) {
         try {
-            Field f = storage.getClass().getDeclaredField("data");
-            f.setAccessible(true);
-            double[] arr = (double[]) f.get(storage);
+            double[] arr = ((DenseVectorStorage)storage).getData();
             return storage.isNumeric() && (arr != null || !isRaw(storage));
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -43,11 +41,10 @@ public class DenseVectorStorageTest extends AbstractStorageTest {
     /** {@inheritDoc} */
     @Override protected boolean isRaw(VectorStorage storage) {
         try {
-            Field f = storage.getClass().getDeclaredField("rawData");
-            f.setAccessible(true);
-            Serializable[] arr = (Serializable[]) f.get(storage);
+            Serializable[] arr = ((DenseVectorStorage) storage).getRawData();
             return arr != null;
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
