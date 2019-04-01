@@ -17,12 +17,12 @@
 
 package org.apache.ignite.ml.tree.performance;
 
-import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.performance.MnistMLPTestUtil;
@@ -32,6 +32,8 @@ import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressor;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import java.io.IOException;
 
 /**
  * Tests {@link DecisionTreeClassificationTrainer} on the MNIST dataset that require to start the whole Ignite
@@ -81,8 +83,10 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
         DecisionTreeNode mdl = trainer.fit(
             ignite,
             trainingSet,
-            (k, v) -> VectorUtils.of(v.getPixels()),
-            (k, v) -> (double) v.getLabel()
+            FeatureLabelExtractorWrapper.wrap(
+                (k, v) -> VectorUtils.of(v.getPixels()),
+                (k, v) -> (double)v.getLabel()
+            )
         );
 
         int correctAnswers = 0;

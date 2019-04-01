@@ -38,9 +38,12 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
@@ -130,7 +133,7 @@ public class JdbcThinConnection implements Connection {
     private boolean connected;
 
     /** Tracked statements to close on disconnect. */
-    private final ArrayList<JdbcThinStatement> stmts = new ArrayList<>();
+    private final Set<JdbcThinStatement> stmts = Collections.newSetFromMap(new IdentityHashMap<>());
 
     /** Query timeout timer */
     private final Timer timer;
@@ -398,11 +401,20 @@ public class JdbcThinConnection implements Connection {
             streamState = null;
         }
 
+        synchronized (stmtsMux) {
+            stmts.clear();
+        }
+
+        SQLException err = null;
+
         closed = true;
 
         cliIo.close();
 
         timer.cancel();
+
+        if (err != null)
+            throw err;
     }
 
     /** {@inheritDoc} */
@@ -758,6 +770,7 @@ public class JdbcThinConnection implements Connection {
      * @param req Request.
      * @return Server response.
      * @throws SQLException On any error.
+     * @param <R> Result type.
      */
     <R extends JdbcResult> R sendRequest(JdbcRequest req) throws SQLException {
         return sendRequest(req, null);
@@ -769,6 +782,7 @@ public class JdbcThinConnection implements Connection {
      * @param stmt Jdbc thin statement.
      * @return Server response.
      * @throws SQLException On any error.
+     * @param <R> Result type.
      */
     <R extends JdbcResult> R sendRequest(JdbcRequest req, JdbcThinStatement stmt) throws SQLException {
         ensureConnected();
@@ -887,6 +901,15 @@ public class JdbcThinConnection implements Connection {
         }
 
         timer.cancel();
+    }
+
+    /**
+     * @param stmt Statement to close.
+     */
+    void closeStatement(JdbcThinStatement stmt) {
+        synchronized (stmtsMux) {
+            stmts.remove(stmt);
+        }
     }
 
     /**
@@ -1081,9 +1104,10 @@ public class JdbcThinConnection implements Connection {
                             break;
                         }
                     }
-
-                    if (resp.status() != ClientListenerResponse.STATUS_SUCCESS)
+                    else if (resp.status() != ClientListenerResponse.STATUS_SUCCESS)
                         err = new SQLException(resp.error(), IgniteQueryErrorCode.codeToSqlState(resp.status()));
+                    else
+                        assert false : "Invalid response: " + resp;
                 }
             }
             catch (Exception e) {

@@ -14,20 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite;
 
-package org.apache.ignite.internal.jdbc2;
-
-import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 
 /**
- * Test to check JDBC2 driver behavior when cache specified in connection string does not have any query entities.
+ * This interface provides calculated metrics for data region.
  */
-public class JdbcDefaultNoOpCacheTest extends org.apache.ignite.jdbc.JdbcDefaultNoOpCacheTest {
-    /** Ignite configuration URL. */
-    private static final String CFG_URL = "modules/clients/src/test/config/jdbc-config.xml";
+public interface DataRegionMetricsProvider {
+    /**
+     * Calculates free space of partially filled pages for this data region. It does not include
+     * empty data pages.
+     *
+     * @return free space in bytes.
+     */
+    public long partiallyFilledPagesFreeSpace();
 
-    /** {@inheritDoc} */
-    protected String getUrl() {
-        return CFG_URL_PREFIX + "cache=noop@" + CFG_URL;
-    }
+    /**
+     * Calculates empty data pages count for region. It counts only totally free pages that
+     * can be reused (e. g. pages that are contained in reuse bucket of free list).
+     *
+     * @return empty data pages count.
+     */
+    public long emptyDataPages();
 }

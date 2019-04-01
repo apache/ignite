@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
+import javax.cache.CacheException;
 import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -26,14 +27,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -121,6 +119,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_SCHEMA_UPDATE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.BINARY_PROC;
+import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
 
 /**
  * Binary processor implementation.
@@ -211,7 +210,10 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, ctx, log);
 
             BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
-                @Override public void addMeta(int typeId, BinaryType newMeta, boolean failIfUnregistered) throws BinaryObjectException {
+                @Override public void addMeta(
+                    int typeId,
+                    BinaryType newMeta,
+                    boolean failIfUnregistered) throws BinaryObjectException {
                     assert newMeta != null;
                     assert newMeta instanceof BinaryTypeImpl;
 
@@ -220,7 +222,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
                         BinaryMetadata oldMeta = holder != null ? holder.metadata() : null;
 
-                        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, ((BinaryTypeImpl)newMeta).metadata());
+                        BinaryMetadata mergedMeta = mergeMetadata(oldMeta, ((BinaryTypeImpl)newMeta).metadata());
 
                         if (oldMeta != mergedMeta)
                             metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
@@ -230,7 +232,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
                     BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
 
-                    CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(binaryCtx), failIfUnregistered);
+                    CacheObjectBinaryProcessorImpl.this.addMeta(
+                        typeId,
+                        newMeta0.wrap(binaryCtx),
+                        failIfUnregistered
+                    );
                 }
 
                 @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
@@ -527,36 +533,25 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
 
+        if (failIfUnregistered) {
+            failIfUnregistered(typeId, newMeta0);
+
+            return;
+        }
+
         try {
-            BinaryMetadataHolder metaHolder = metadataLocCache.get(typeId);
+            GridFutureAdapter<MetadataUpdateResult> fut = transport.requestMetadataUpdate(newMeta0);
 
-            BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
-
-            Set<Integer> changedSchemas = new LinkedHashSet<>();
-
-            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0, changedSchemas);
-
-            if (mergedMeta == oldMeta) {
-                // Metadata locally is up-to-date. Waiting for updating metadata in an entire cluster, if necessary.
-                if (metaHolder.pendingVersion() != metaHolder.acceptedVersion()) {
-                    GridFutureAdapter<MetadataUpdateResult> fut =
-                        transport.awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
-
-                    if (failIfUnregistered && !fut.isDone())
-                        throw new UnregisteredBinaryTypeException(typeId, fut);
-
-                    fut.get();
+            if (fut == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Metadata update was skipped [typeId=" + typeId
+                        + ", typeName=" + newMeta.typeName() + ']');
                 }
 
                 return;
             }
 
-            if (failIfUnregistered)
-                throw new UnregisteredBinaryTypeException(typeId, mergedMeta);
-
             long t0 = System.nanoTime();
-
-            GridFutureAdapter<MetadataUpdateResult> fut = transport.requestMetadataUpdate(mergedMeta);
 
             MetadataUpdateResult res = fut.get();
 
@@ -565,9 +560,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
                 log.debug("Completed metadata update [typeId=" + typeId +
                     ", typeName=" + newMeta.typeName() +
-                    ", changedSchemas=" + changedSchemas +
                     ", waitTime=" + MILLISECONDS.convert(System.nanoTime() - t0, NANOSECONDS) + "ms" +
-                    ", holder=" + metaHolder +
                     ", fut=" + fut +
                     ", tx=" + CU.txString(tx) +
                     ']');
@@ -591,6 +584,32 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         }
     }
 
+    /**
+     * Throw specific exception if given binary metadata is unregistered.
+     *
+     * @param typeId Type id.
+     * @param newMeta0 Expected binary metadata.
+     */
+    private void failIfUnregistered(int typeId, BinaryMetadata newMeta0) {
+        BinaryMetadataHolder metaHolder = metadataLocCache.get(typeId);
+
+        BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
+
+        BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta0);
+
+        if (mergedMeta != oldMeta)
+            throw new UnregisteredBinaryTypeException(typeId, mergedMeta);
+
+        if (metaHolder.pendingVersion() == metaHolder.acceptedVersion())
+            return;
+
+        // Metadata locally is up-to-date. Waiting for updating metadata in an entire cluster, if necessary.
+        GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
+
+        if (!fut.isDone())
+            throw new UnregisteredBinaryTypeException(typeId, fut);
+    }
+
     /** {@inheritDoc} */
     @Override public void addMetaLocally(int typeId, BinaryType newMeta) throws BinaryObjectException {
         assert newMeta != null;
@@ -603,7 +622,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
 
         try {
-            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
+            BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta0);
 
             if (!ctx.clientNode())
                 metadataFileStore.mergeAndWriteMetadata(mergedMeta);
@@ -747,7 +766,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 // Last resort waiting.
                 U.warn(log,
                     "Schema is missing while no metadata updates are in progress " +
-                        "(will wait for schema update within timeout defined by IGNITE_BINARY_META_UPDATE_TIMEOUT system property)" +
+                        "(will wait for schema update within timeout defined by " + IGNITE_WAIT_SCHEMA_UPDATE + " system property)" +
                         " [typeId=" + typeId
                         + ", missingSchemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
@@ -1275,7 +1294,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 continue;
 
             try {
-                BinaryUtils.mergeMetadata(locMeta, rmtMeta);
+                mergeMetadata(locMeta, rmtMeta);
             }
             catch (Exception e) {
                 String locMsg = "Exception was thrown when merging binary metadata from node %s: %s";
@@ -1334,7 +1353,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 BinaryMetadata newMeta = metaEntry.getValue().metadata();
                 BinaryMetadata localMeta = localMetaHolder.metadata();
 
-                BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(localMeta, newMeta);
+                BinaryMetadata mergedMeta = mergeMetadata(localMeta, newMeta);
 
                 if (mergedMeta != localMeta) {
                     //put mergedMeta to local cache and store to disk

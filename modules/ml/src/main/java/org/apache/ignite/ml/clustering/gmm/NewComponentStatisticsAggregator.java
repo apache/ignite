@@ -17,11 +17,12 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
-import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+
+import java.io.Serializable;
 
 /**
  * Class for aggregate statistics for finding new mean for GMM.
@@ -86,7 +87,7 @@ public class NewComponentStatisticsAggregator implements Serializable {
      * @param maxXsProb Max likelihood between all xs.
      * @param maxProbDivergence Max probability divergence between maximum value and others.
      * @param currentModel Current model.
-     * @return aggregated statistics for new mean.
+     * @return Aggregated statistics for new mean.
      */
     static NewComponentStatisticsAggregator computeNewMean(Dataset<EmptyContext, GmmPartitionData> dataset,
         double maxXsProb, double maxProbDivergence, GmmModel currentModel) {
@@ -104,7 +105,7 @@ public class NewComponentStatisticsAggregator implements Serializable {
      * @param maxXsProb Max xs prob.
      * @param maxProbDivergence Max prob divergence.
      * @param currentModel Current model.
-     * @return aggregator for partition.
+     * @return Aggregator for partition.
      */
     static NewComponentStatisticsAggregator computeNewMeanMap(GmmPartitionData data, double maxXsProb,
         double maxProbDivergence, GmmModel currentModel) {
@@ -141,7 +142,7 @@ public class NewComponentStatisticsAggregator implements Serializable {
      *
      * @param left Left argument of reduce.
      * @param right Right argument of reduce.
-     * @return sum of aggregators.
+     * @return Sum of aggregators.
      */
     static NewComponentStatisticsAggregator computeNewMeanReduce(NewComponentStatisticsAggregator left,
         NewComponentStatisticsAggregator right) {
@@ -157,7 +158,7 @@ public class NewComponentStatisticsAggregator implements Serializable {
 
     /**
      * @param other Other aggregator.
-     * @return sum of aggregators.
+     * @return Sum of aggregators.
      */
     NewComponentStatisticsAggregator plus(NewComponentStatisticsAggregator other) {
         return new NewComponentStatisticsAggregator(

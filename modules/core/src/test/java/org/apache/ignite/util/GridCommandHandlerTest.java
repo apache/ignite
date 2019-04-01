@@ -126,6 +126,7 @@ import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -206,6 +207,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         System.setOut(sysOut);
 
+        log.info("----------------------------------------");
         if (testOut != null)
             System.out.println(testOut.toString());
     }
@@ -586,7 +588,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that baseline autoadjustment settings update works via control.sh
+     * Test that baseline auto_adjustment settings update works via control.sh
      *
      * @throws Exception If failed.
      */
@@ -604,8 +606,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute(
             "--baseline",
-            "autoadjust",
+            "auto_adjust",
             "enable",
+            "timeout",
             Long.toString(timeout + 1)
         ));
 
@@ -613,21 +616,26 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(timeout + 1, cl.baselineAutoAdjustTimeout());
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "autoadjust", "disable"));
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "disable"));
 
         assertFalse(cl.isBaselineAutoAdjustEnabled());
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "autoadjust"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "auto_adjust"));
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "autoadjust", "true"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "auto_adjust", "true"));
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "autoadjust", "enable", "x"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "auto_adjust", "enable", "x"));
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "autoadjust", "disable", "x"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "auto_adjust", "disable", "x"));
+
+        log.info("================================================");
+        System.out.println(testOut.toString());
+
+        log.info("================================================");
     }
 
     /**
-     * Test that updating of baseline autoadjustment settings via control.sh actually influence cluster's baseline.
+     * Test that updating of baseline auto_adjustment settings via control.sh actually influence cluster's baseline.
      *
      * @throws Exception If failed.
      */
@@ -637,7 +645,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "autoadjust", "enable", "2000"));
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "enable", "timeout", "2000"));
 
         assertEquals(3, ignite.cluster().currentBaselineTopology().size());
 
@@ -645,13 +653,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(3, ignite.cluster().currentBaselineTopology().size());
 
-        Thread.sleep(3000L);
+        assertTrue(waitForCondition(() -> ignite.cluster().currentBaselineTopology().size() == 2, 10000));
 
         Collection<BaselineNode> baselineNodesAfter = ignite.cluster().currentBaselineTopology();
 
-        assertEquals(2, baselineNodesAfter.size());
-
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "autoadjust", "disable"));
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "disable"));
 
         stopGrid(1);
 
@@ -666,7 +672,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that updating of baseline autoadjustment settings via control.sh actually influence cluster's baseline.
+     * Test that updating of baseline auto_adjustment settings via control.sh actually influence cluster's baseline.
      *
      * @throws Exception If failed.
      */
@@ -676,7 +682,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "autoadjust", "enable", "2000"));
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "enable", "timeout", "2000"));
 
         assertEquals(1, ignite.cluster().currentBaselineTopology().size());
 
@@ -684,13 +690,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(1, ignite.cluster().currentBaselineTopology().size());
 
-        Thread.sleep(3000L);
+        assertEquals(EXIT_CODE_OK, execute("--baseline"));
+
+        assertTrue(waitForCondition(() -> ignite.cluster().currentBaselineTopology().size() == 2, 10000));
 
         Collection<BaselineNode> baselineNodesAfter = ignite.cluster().currentBaselineTopology();
 
-        assertEquals(2, baselineNodesAfter.size());
-
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "autoadjust", "disable"));
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "disable"));
 
         startGrid(2);
 
@@ -1045,7 +1051,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             Collection<IgniteInternalTx> txs = ((IgniteEx)ignite).context().cache().context().tm().activeTransactions();
 
-            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     for (IgniteInternalTx tx : txs)
                         if (!tx.local()) {
