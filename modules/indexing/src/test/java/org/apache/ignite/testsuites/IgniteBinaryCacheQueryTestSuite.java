@@ -219,6 +219,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryDistributedJoinsTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.ParameterTypeInferenceTest;
+import org.apache.ignite.internal.processors.query.h2.sql.SqlUnsupportedSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.AndOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.BetweenOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.DmlSelectPartitionPruningSelfTest;
@@ -298,6 +299,7 @@ import org.junit.runners.Suite;
     GridQueryParsingTest.class,
     IgniteCacheSqlQueryErrorSelfTest.class,
     IgniteCacheSqlDmlErrorSelfTest.class,
+    SqlUnsupportedSelfTest.class,
 
     // Config.
     IgniteCacheDuplicateEntityConfigurationSelfTest.class,
