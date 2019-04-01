@@ -10,34 +10,25 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class PartitionUpdateCounterDebug extends PartitionUpdateCounterImpl {
-    /**
-     *
-     */
+    /** */
     private IgniteLogger log;
 
-    /**
-     *
-     */
+    /** */
     private int partId;
 
-    /**
-     *
-     */
+    /** */
     private CacheGroupContext grp;
 
-    /**
-     *
-     */
+    /** */
     private int filterGrpId;
 
     /**
-     * @param log Logger.
-     * @param partId Part id.
      * @param grp Group.
+     * @param partId Part id.
      * @param filterGrpId Filter group id.
      */
-    public PartitionUpdateCounterDebug(IgniteLogger log, int partId, CacheGroupContext grp, int filterGrpId) {
-        this.log = log;
+    public PartitionUpdateCounterDebug(CacheGroupContext grp, int partId, int filterGrpId) {
+        this.log = grp.shared().logger(getClass());
         this.partId = partId;
         this.grp = grp;
         this.filterGrpId = filterGrpId;

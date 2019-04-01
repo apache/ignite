@@ -195,13 +195,16 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         assertEquals(reserveCntr.sum(), pc.get());
     }
 
+    /**
+     * Test logic for handling gaps limit.
+     */
     @Test
     public void testMaxGaps() {
         PartitionUpdateCounter pc = newCounter();
 
         int i;
         for (i = 1; i <= PartitionUpdateCounterImpl.MAX_GAPS; i++)
-            pc.update(i*3, i*3 + 1);
+            pc.update(i * 3, i * 3 + 1);
 
         i++;
         try {
@@ -230,6 +233,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         pc.update(65, 2);
 
         Iterator<long[]> it = pc.iterator();
+
         it.next();
 
         assertFalse(it.hasNext());
