@@ -124,6 +124,7 @@
                 <configuration>
                     <instructions>
                         <Fragment-Host>org.apache.ignite.ignite-core</Fragment-Host>
+                        <Import-Package>!org.apache.ignite.osgi.classloaders,*</Import-Package>
                     </instructions>
                 </configuration>
             </plugin>
