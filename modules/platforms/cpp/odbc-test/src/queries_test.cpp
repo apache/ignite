@@ -1619,7 +1619,7 @@ BOOST_AUTO_TEST_CASE(TestErrorMessage)
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
 
     std::string error = GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt);
-    std::string pattern = "42000: Table \"B\" not found; SQL statement:\nSELECT a FROM B";
+    std::string pattern = "42000: Failed to parse query. Table \"B\" not found; SQL statement:\nSELECT a FROM B";
 
     if (error.substr(0, pattern.size()) != pattern)
         BOOST_FAIL("'" + error + "' does not match '" + pattern + "'");
