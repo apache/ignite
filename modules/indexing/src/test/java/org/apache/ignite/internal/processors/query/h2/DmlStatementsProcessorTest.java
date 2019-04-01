@@ -26,7 +26,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * Ensures that abstart classes of entry modifiers are compatible with old versions.
+ * Ensures that anonymous classes of entry modifiers are compatible with old versions.
  */
 public class DmlStatementsProcessorTest {
     /**
@@ -92,6 +92,7 @@ public class DmlStatementsProcessorTest {
     /**
      * Checks that remove-closure is available by anonymous class position.
      */
+    @SuppressWarnings("unchecked")
     private void checkRemoveClosureByAnonymousPosition(int position) throws Exception {
         Class<?> cls = Class.forName(DmlStatementsProcessor.class.getName() + "$" + position);
 
