@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
@@ -1050,7 +1051,25 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @param val Update counter value. Invoke only from
+     * @return {@code True} if partition is not empty.
+     */
+    public boolean notEmpty() {
+        PartitionUpdateCounter cntr = store.partUpdateCounter();
+
+        return cntr != null && cntr.notEmpty();
+    }
+
+    /**
+     * @return {@code True} if partition has no missed updates.
+     */
+    public boolean hasNoMissedUpdates() {
+        PartitionUpdateCounter cntr = store.partUpdateCounter();
+
+        return cntr == null || cntr.sequential();
+    }
+
+    /**
+     * @param val Update counter value.
      */
     public void updateCounter(long val) {
 //        if (id() == 0 && group().groupId() == CU.cacheId("default"))

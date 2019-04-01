@@ -454,10 +454,17 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         return this.cntr.get() == cntr.cntr.get();
     }
 
+    /** {@inheritDoc} */
     @Override public long reserved() {
         return reserveCntr.get();
     }
 
+    /** {@inheritDoc} */
+    @Override public synchronized boolean notEmpty() {
+        return get() > 0 || !sequential();
+    }
+
+    /** {@inheritDoc} */
     @Override public Iterator<long[]> iterator() {
         return F.iterator(queue.iterator(), item -> {
             return new long[] {item.start, item.delta};
