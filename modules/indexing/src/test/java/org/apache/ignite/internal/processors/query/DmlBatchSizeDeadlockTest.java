@@ -21,15 +21,14 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.X;
@@ -38,7 +37,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
- * Tests for local query execution in lazy mode.
+ * Tests DML deadlock with different update batch size.
  */
 public class DmlBatchSizeDeadlockTest extends AbstractIndexingCommonTest {
     /** Keys count. */
@@ -47,55 +46,49 @@ public class DmlBatchSizeDeadlockTest extends AbstractIndexingCommonTest {
     /** Test time to run. */
     private static final int TEST_TIME = 20_000;
 
-    /** Update batch size. */
-    private int updateBatchSize = 1;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         startGrid();
-
-        IgniteCache<Long, Long> c = grid().createCache(new CacheConfiguration<Long, Long>()
-            .setName("test")
-            .setSqlSchema("TEST")
-//            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Long.class)
-                .setTableName("test")
-                .addQueryField("id", Long.class.getName(), null)
-                .addQueryField("val", Long.class.getName(), null)
-                .setKeyFieldName("id")
-                .setValueFieldName("val")
-            ))
-            .setAffinity(new RendezvousAffinityFunction(false, 10)));
-
-        for (long i = 0; i < KEY_CNT; ++i)
-            c.put(i, i);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        log.info("+++ STOP");
         stopAllGrids();
-
 
         super.afterTest();
     }
 
     /**
-     * Test local query execution.
-     *
      * @throws IgniteCheckedException On error.
      */
     @Test
-    public void testDeadlockOnDml() throws IgniteCheckedException {
+    public void testDeadlockOnDmlAtomic() throws IgniteCheckedException {
+        checkDeadlockOnDml(CacheAtomicityMode.ATOMIC);
+    }
+
+    /**
+     * @throws IgniteCheckedException On error.
+     */
+    @Test
+    public void testDeadlockOnDmlTransactional() throws IgniteCheckedException {
+        checkDeadlockOnDml(CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /**
+     * @param mode Atomicity mode.
+     * @throws IgniteCheckedException On failed.
+     */
+    public void checkDeadlockOnDml(CacheAtomicityMode mode) throws IgniteCheckedException {
+        IgniteCache<Long, Long> cache = createCache(mode);
+
         final long tEnd = U.currentTimeMillis() + TEST_TIME;
 
         final IgniteInternalFuture futAsc = GridTestUtils.runAsync(() -> {
             while (U.currentTimeMillis() < tEnd) {
                 try {
                     sql("UPDATE test SET val = 2 ORDER BY id ASC");
-                    log.info("+++ ASC");
                 }
                 catch (Exception e) {
                     IgniteSQLException esql = X.cause(e, IgniteSQLException.class);
@@ -112,7 +105,6 @@ public class DmlBatchSizeDeadlockTest extends AbstractIndexingCommonTest {
                 while (U.currentTimeMillis() < tEnd) {
                     try {
                         sql("UPDATE test SET val = 3 ORDER BY id DESC");
-                        log.info("+++ DESC");
                     }
                     catch (Exception e) {
                         IgniteSQLException esql = X.cause(e, IgniteSQLException.class);
@@ -125,8 +117,6 @@ public class DmlBatchSizeDeadlockTest extends AbstractIndexingCommonTest {
             }
         });
 
-        final IgniteCache<Long, Long> cache = grid().cache("test");
-
         final IgniteInternalFuture futCache = GridTestUtils.runAsync(() -> {
             while (U.currentTimeMillis() < tEnd) {
                 Map<Long, Long> map = new LinkedHashMap();
@@ -135,8 +125,6 @@ public class DmlBatchSizeDeadlockTest extends AbstractIndexingCommonTest {
                     map.put(i, i);
 
                 cache.putAll(map);
-
-                log.info("+++ CACHE");
             }
         });
 
@@ -154,6 +142,30 @@ public class DmlBatchSizeDeadlockTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * @param mode Cache atomicity mode.
+     * @return Created test cache.
+     */
+    private IgniteCache<Long, Long> createCache(CacheAtomicityMode mode) {
+        IgniteCache<Long, Long> c = grid().createCache(new CacheConfiguration<Long, Long>()
+            .setName("test")
+            .setSqlSchema("TEST")
+            .setAtomicityMode(mode)
+            .setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Long.class)
+                .setTableName("test")
+                .addQueryField("id", Long.class.getName(), null)
+                .addQueryField("val", Long.class.getName(), null)
+                .setKeyFieldName("id")
+                .setValueFieldName("val")
+            ))
+            .setAffinity(new RendezvousAffinityFunction(false, 10)));
+
+        for (long i = 0; i < KEY_CNT; ++i)
+            c.put(i, i);
+
+        return c;
+    }
+
+    /**
      * @param sql SQL query.
      * @param args Query parameters.
      * @return Results cursor.
@@ -161,7 +173,7 @@ public class DmlBatchSizeDeadlockTest extends AbstractIndexingCommonTest {
     private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
         return grid().context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setSchema("TEST")
-            .setUpdateBatchSize(updateBatchSize)
+            .setUpdateBatchSize(1)
             .setArgs(args), false);
     }
 }

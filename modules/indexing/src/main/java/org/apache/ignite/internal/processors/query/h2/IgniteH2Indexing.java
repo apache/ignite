@@ -2572,9 +2572,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }, cancel);
         }
 
-//        int pageSize = loc ? 0 : qryParams.pageSize();
-
-        int pageSize = loc ? 0 : qryParams.updateBatchSize();
+        int pageSize = qryParams.updateBatchSize();
 
         return DmlUtils.processSelectResult(plan, cur, pageSize);
     }
