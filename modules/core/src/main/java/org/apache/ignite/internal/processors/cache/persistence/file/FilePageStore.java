@@ -24,6 +24,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -96,6 +97,8 @@ public class FilePageStore implements PageStore {
 
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
+    public static ConcurrentHashMap<String, Long> pageStorage = new ConcurrentHashMap<>();
 
     /**
      * @param file File.
@@ -347,7 +350,7 @@ public class FilePageStore implements PageStore {
             if (inited) {
                 long newSize = Math.max(pageSize, fileIO.size() - headerSize());
 
-                assert newSize % pageSize == 0 : "pageSize=" + pageSize + ", newSize=" + newSize;
+                assert newSize % pageSize == 0 : "pageSize=" + pageSize + ", newSize=" + newSize + ", allocated=" + allocated.get() + ", file=" + cfgFile.getAbsolutePath() + ", pageCount=" + pageStorage.get(cfgFile.getAbsolutePath());
 
                 int oldPagesCnt = pages();
 
@@ -712,7 +715,12 @@ public class FilePageStore implements PageStore {
     @Override public long allocatePage() throws IgniteCheckedException {
         init();
 
-        return allocPage() / pageSize;
+        long l = allocPage() / pageSize;
+
+        if(!recover)
+            pageStorage.put(cfgFile.getAbsolutePath(), allocated.get());
+
+        return l;
     }
 
     /**
