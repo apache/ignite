@@ -37,6 +37,7 @@ import java.sql.Types;
 import java.util.Date;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -982,6 +983,39 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
                 }
             },
             SQLException.class, "Parameter type is unsupported");
+    }
+
+    /**
+     * Check that delete works in prepared statement.
+     */
+    @Test
+    public void testDeletePreparedStatement() throws Exception{
+        try (Statement util = conn.createStatement()) {
+            util.executeUpdate("DROP TABLE IF EXISTS TESTTABLE");
+
+            util.executeUpdate("CREATE TABLE TESTTABLE (\n" +
+                "    \"ID\" NUMBER(19,0),\n" +
+                "    \"VALUE\" VARCHAR2(255 CHAR),\n" +
+                "    PRIMARY KEY (ID)\n" +
+                ") WITH \"template=replicated,cache_name=testtable\"");
+
+            util.executeUpdate(
+                "INSERT INTO testtable VALUES (1, 'this row should be deleted'), (2, 'but this should not')");
+        }
+
+        grid(0).cache("testtable").query(new SqlFieldsQuery("delete from testtable where id = ?").setArgs(1)).getAll();
+
+//        try (PreparedStatement del = conn.prepareStatement("DELETE FROM TESTTABLE WHERE ID = ?")){
+//            del.setInt(1, 1);
+//
+//            del.executeUpdate();
+//        }
+
+        try (Statement util = conn.createStatement()) {
+            try (ResultSet select = util.executeQuery("SELECT * FROM TESTTABLE WHERE ID = 1")) {
+                assertFalse("Records with id = 1 should be deleted!", select.next());
+            }
+        }
     }
 
     /**
