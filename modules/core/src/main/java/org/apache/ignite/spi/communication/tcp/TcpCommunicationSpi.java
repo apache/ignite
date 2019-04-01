@@ -2293,6 +2293,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         Thread runner = commWorker.runner();
                         if(runner != null) {
                             log.warning("Dump Communication ");
+
+                            StackTraceElement[] trace = runner.getStackTrace();
+
+                            StringBuilder builder = new StringBuilder();
+                            for (StackTraceElement element : trace) {
+                                builder.append(element.toString()).append('\n');
+                            }
+
+                            log.warning(builder.toString());
+
                             U.dumpThread(runner, log);
                         }
                         else
@@ -4393,6 +4403,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     blockingSectionBegin();
 
+                    log.info("Await idleConnTimeout " + idleConnTimeout);
                     try {
                         disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
                     }
