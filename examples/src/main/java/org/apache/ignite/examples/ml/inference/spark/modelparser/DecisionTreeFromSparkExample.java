@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ml.tutorial.TitanicUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -40,7 +41,8 @@ import java.io.FileNotFoundException;
  */
 public class DecisionTreeFromSparkExample {
     /** Path to Spark DT model. */
-    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/dt";
+    public static final String SPARK_MDL_PATH = IgniteUtils.resolveIgnitePath("examples/src/main/resources/models/spark/serialized/dt")
+        .toPath().toAbsolutePath().toString();
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
@@ -50,36 +52,41 @@ public class DecisionTreeFromSparkExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+            IgniteCache<Integer, Object[]> dataCache = null;
+            try {
+                dataCache = TitanicUtils.readPassengers(ignite);
 
-            IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
-                double[] data = new double[] {(double)v[0], (double)v[5], (double)v[6]};
-                data[0] = Double.isNaN(data[0]) ? 0 : data[0];
-                data[1] = Double.isNaN(data[1]) ? 0 : data[1];
-                data[2] = Double.isNaN(data[2]) ? 0 : data[2];
+                IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
+                    double[] data = new double[] {(double)v[0], (double)v[5], (double)v[6]};
+                    data[0] = Double.isNaN(data[0]) ? 0 : data[0];
+                    data[1] = Double.isNaN(data[1]) ? 0 : data[1];
+                    data[2] = Double.isNaN(data[2]) ? 0 : data[2];
 
-                return VectorUtils.of(data);
-            };
+                    return VectorUtils.of(data);
+                };
 
-            IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
+                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
 
-            DecisionTreeNode mdl = (DecisionTreeNode)SparkModelParser.parse(
-                SPARK_MDL_PATH,
-                SupportedSparkModels.DECISION_TREE
-            );
+                DecisionTreeNode mdl = (DecisionTreeNode)SparkModelParser.parse(
+                    SPARK_MDL_PATH,
+                    SupportedSparkModels.DECISION_TREE
+                );
 
-            System.out.println(">>> DT: " + mdl);
+                System.out.println(">>> DT: " + mdl);
 
-            double accuracy = Evaluator.evaluate(
-                dataCache,
-                mdl,
-                featureExtractor,
-                lbExtractor,
-                new Accuracy<>()
-            );
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    featureExtractor,
+                    lbExtractor,
+                    new Accuracy<>()
+                );
 
-            System.out.println("\n>>> Accuracy " + accuracy);
-            System.out.println("\n>>> Test Error " + (1 - accuracy));
+                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Test Error " + (1 - accuracy));
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 }

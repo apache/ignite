@@ -224,11 +224,9 @@ public class JdbcMetadataInfo {
     public SortedSet<String> getSchemasMeta(String schemaNamePtrn) {
         SortedSet<String> schemas = new TreeSet<>(); // to have values sorted.
 
-        for (String cacheName : ctx.cache().publicCacheNames()) {
-            for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                if (matches(table.schemaName(), schemaNamePtrn))
-                    schemas.add(table.schemaName());
-            }
+        for (String schema : ctx.query().getIndexing().schemasNames()) {
+            if (matches(schema, schemaNamePtrn))
+                schemas.add(schema);
         }
 
         return schemas;

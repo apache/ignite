@@ -20,6 +20,7 @@ package org.apache.ignite.examples.ml.tutorial;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -52,7 +53,7 @@ public class Step_1_Read_and_Learn {
                 IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
                 IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
-                    double[] data = new double[]{(double) v[0], (double) v[5], (double) v[6]};
+                    double[] data = new double[] {(double)v[0], (double)v[5], (double)v[6]};
                     data[0] = Double.isNaN(data[0]) ? 0 : data[0];
                     data[1] = Double.isNaN(data[1]) ? 0 : data[1];
                     data[2] = Double.isNaN(data[2]) ? 0 : data[2];
@@ -60,15 +61,17 @@ public class Step_1_Read_and_Learn {
                     return VectorUtils.of(data);
                 };
 
-                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
+                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
 
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                 DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    featureExtractor, // "pclass", "sibsp", "parch"
-                    lbExtractor
+                    FeatureLabelExtractorWrapper.wrap( //TODO: IGNITE-11581
+                        featureExtractor, // "pclass", "sibsp", "parch"
+                        lbExtractor
+                    )
                 );
 
                 System.out.println("\n>>> Trained model: " + mdl);

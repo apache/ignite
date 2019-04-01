@@ -17,15 +17,16 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Statistics aggregator for mean values and cluster probabilities computing.
@@ -64,14 +65,14 @@ class MeanWithClusterProbAggregator implements Serializable {
     }
 
     /**
-     * @return compute mean value by aggregated data.
+     * @return Compute mean value by aggregated data.
      */
     public Vector mean() {
         return weightedXsSum.divide(pcxiSum);
     }
 
     /**
-     * @return compute cluster probability by aggreated data.
+     * @return Compute cluster probability by aggreated data.
      */
     public double clusterProb() {
         return pcxiSum / rowCount;
@@ -192,14 +193,14 @@ class MeanWithClusterProbAggregator implements Serializable {
         }
 
         /**
-         * @return clusters probabilities.
+         * @return Clusters probabilities.
          */
         public Vector clusterProbabilities() {
             return clusterProbs;
         }
 
         /**
-         * @return means.
+         * @return Means.
          */
         public List<Vector> means() {
             return means;
