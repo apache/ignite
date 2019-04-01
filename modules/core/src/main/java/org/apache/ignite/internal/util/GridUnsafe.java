@@ -129,7 +129,7 @@ public abstract class GridUnsafe {
 
         Constructor<?> directBufCtor = null;
 
-        if (majorJavaVersion(jdkVersion()) < 12) {
+        if (majorJavaVersion(jdkVersion()) < 8) {
             // for old java prefer Java NIO & Shared Secrets obect init way
             try {
                 nioAccessObj = javaNioAccessObject();
