@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.ReduceH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedUpdateRun;
@@ -819,12 +821,21 @@ public class GridReduceQueryExecutor {
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
-                            ResultSet res = h2.executeSqlQueryWithTimer(r.connection(),
+                            Collection<Object> params0 = F.asList(rdc.parameters(params));
+
+                            final PreparedStatement stmt = h2.preparedStatementWithParams(r.connection(), rdc.query(),
+                                params0, false);
+
+                            ReduceH2QueryInfo qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(), qryReqId);
+
+                            ResultSet res = h2.executeSqlQueryWithTimer(stmt, r.connection(),
                                 rdc.query(),
                                 F.asList(rdc.parameters(params)),
                                 timeoutMillis,
                                 cancel,
-                                dataPageScanEnabled);
+                                dataPageScanEnabled,
+                                qryInfo
+                                );
 
                             resIter = new H2FieldsIterator(res, mvccTracker, false, detachedConn);
 
@@ -1104,6 +1115,7 @@ public class GridReduceQueryExecutor {
      * @param nodes Nodes to check periodically if they alive.
      * @param cancel Query cancel.
      * @throws IgniteInterruptedCheckedException If interrupted.
+     * @throws QueryCancelledException On query cancel.
      */
     private void awaitAllReplies(ReduceQueryRun r, Collection<ClusterNode> nodes, GridQueryCancel cancel)
         throws IgniteInterruptedCheckedException, QueryCancelledException {
@@ -1171,7 +1183,7 @@ public class GridReduceQueryExecutor {
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
             ResultSet rs =
-                h2.executeSqlQueryWithTimer(c, "SELECT PLAN FROM " + mergeTableIdentifier(i), null, 0, null, null);
+                h2.executeSqlQueryWithTimer(c, "SELECT PLAN FROM " + mergeTableIdentifier(i), null, 0, null, null, null);
 
             lists.add(F.asList(getPlan(rs)));
         }
@@ -1191,7 +1203,7 @@ public class GridReduceQueryExecutor {
             F.asList(rdc.parameters(params)),
             0,
             null,
-            null);
+            null, null);
 
         lists.add(F.asList(getPlan(rs)));
 
