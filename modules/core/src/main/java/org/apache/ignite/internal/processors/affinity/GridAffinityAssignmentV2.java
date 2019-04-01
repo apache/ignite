@@ -142,7 +142,7 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
             ClusterNode curPrimary = !currentOwners.isEmpty() ? currentOwners.get(0) : null;
             ClusterNode idealPrimary = !idealOwners.isEmpty() ? idealOwners.get(0) : null;
 
-            if (curPrimary != null && (idealPrimary == null || !curPrimary.equals(idealPrimary)))
+            if (curPrimary != null && !curPrimary.equals(idealPrimary))
                 primariesDifferentToIdeal.add(p);
         }
 

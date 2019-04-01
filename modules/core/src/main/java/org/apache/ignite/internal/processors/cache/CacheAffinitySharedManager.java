@@ -1645,7 +1645,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         final Map<Integer, Map<Integer, List<Long>>> diff = new ConcurrentHashMap<>();
 
-        final Collection<ClusterNode> aliveNodes = fut.context().events().discoveryCache().serverNodes();
+        final Set<ClusterNode> aliveNodes = new HashSet<>(fut.context().events().discoveryCache().serverNodes());
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
@@ -1672,7 +1672,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 GridDhtPartitionTopology top = grpHolder.topology(fut.context().events().discoveryCache());
 
                 BitSet processedPartitions = new BitSet(curAssignment.size());
-                Set<Integer> partitionsWithChangedPrimary = grpHolder.affinity().partitionPrimariesDifferentToIdeal(affTopVer);
 
                 Map<Integer, List<Long>> cacheAffinityDiff = new HashMap<>();
 
@@ -1683,68 +1682,28 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         if (curOwners.isEmpty())
                             continue;
 
-                        List<ClusterNode> newOwners = null;
-
                         List<ClusterNode> idealOwners = idealAssignment.assignment().get(p);
 
-                        if (idealOwners.isEmpty()) {
-                            newOwners = curOwners.stream().filter(aliveNodes::contains).collect(Collectors.toList());
+                        List<ClusterNode> newOwners = null;
 
-                            if (!newOwners.isEmpty()) {
-                                newAssignment.set(p, newOwners);
-
-                                List<Long> clusterNodesAsOrder = newOwners.stream()
-                                    .map(NODE_TO_ORDER::apply)
-                                    .collect(Collectors.toList());
-
-                                cacheAffinityDiff.put(p, clusterNodesAsOrder);
-                            }
-
-                            processedPartitions.set(p);
-
-                            continue;
-                        }
-
-                        ClusterNode curPrimary = curOwners.get(0);
-
-                        if (curPrimary.equals(leftNode)) {
-                            // Try to use first node in new ideal assignment, in other case try to find any owner.
-                            ClusterNode idealOwner = idealOwners.get(0);
-
-                            if (top.partitionState(idealOwner.id(), p) != GridDhtPartitionState.OWNING) {
-                                for (ClusterNode node : idealOwners) {
-                                    if (top.partitionState(node.id(), p) == GridDhtPartitionState.OWNING) {
-                                        idealOwner = node;
-
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (!idealOwner.equals(idealOwners.get(0))) {
-                                newOwners = latePrimaryAssignment(grpHolder.aff,
-                                    p,
-                                    idealOwner,
-                                    idealOwners,
-                                    waitRebalanceInfo);
-
-                                processedPartitions.set(p);
-                            }
-                        }
-                        else {
-                            // In this case primary is already other node, preserve current ownership.
-                            if (!curOwners.get(0).equals(idealOwners.get(0))) {
-                                newOwners = latePrimaryAssignment(
-                                    grpHolder.aff,
-                                    p,
-                                    curOwners.get(0),
-                                    idealOwners,
-                                    waitRebalanceInfo
-                                );
-
-                                processedPartitions.set(p);
-                            }
-                        }
+                        if (idealOwners.isEmpty())
+                            newOwners = selectCurrentAliveOwners(aliveNodes, curOwners);
+                        else if (curOwners.get(0).equals(leftNode))
+                            newOwners = selectPrimaryTopologyOwnerFromIdealAssignment(
+                                grpHolder.aff,
+                                p,
+                                top,
+                                idealOwners,
+                                waitRebalanceInfo
+                            );
+                        else if (!curOwners.get(0).equals(idealOwners.get(0)))
+                            newOwners = latePrimaryAssignment(
+                                grpHolder.aff,
+                                p,
+                                curOwners.get(0),
+                                idealOwners,
+                                waitRebalanceInfo
+                            );
 
                         if (newOwners != null) {
                             newAssignment.set(p, newOwners);
@@ -1754,10 +1713,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                                 .collect(Collectors.toList());
 
                             cacheAffinityDiff.put(p, clusterNodesAsOrder);
+
+                            processedPartitions.set(p);
                         }
                     }
                 }
 
+                Set<Integer> partitionsWithChangedPrimary = grpHolder.affinity().partitionPrimariesDifferentToIdeal(affTopVer);
+
+                // We need to re-check partitions for further correct late affinity assignment
+                // where primary node is not as in ideal assignment.
                 for (int p : partitionsWithChangedPrimary) {
                     if (processedPartitions.get(p))
                         continue;
@@ -1771,45 +1736,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     List<ClusterNode> newOwners = null;
 
-                    if (idealOwners.isEmpty()) {
-                        newOwners = curOwners.stream().filter(aliveNodes::contains).collect(Collectors.toList());
-
-                        if (!newOwners.isEmpty()) {
-                            newAssignment.set(p, newOwners);
-
-                            List<Long> clusterNodesAsOrder = newOwners.stream()
-                                .map(NODE_TO_ORDER::apply)
-                                .collect(Collectors.toList());
-
-                            cacheAffinityDiff.put(p, clusterNodesAsOrder);
-                        }
-
-                        continue;
-                    }
-
-                    if (!aliveNodes.contains(curOwners.get(0))) {
-                        // Try to use first node in new ideal assignment, in other case try to find any owner.
-                        ClusterNode idealOwner = idealOwners.get(0);
-
-                        if (top.partitionState(idealOwner.id(), p) != GridDhtPartitionState.OWNING) {
-                            for (ClusterNode node : idealOwners) {
-                                if (top.partitionState(node.id(), p) == GridDhtPartitionState.OWNING) {
-                                    idealOwner = node;
-
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!idealOwner.equals(idealOwners.get(0))) {
-                            newOwners = latePrimaryAssignment(grpHolder.aff,
-                                p,
-                                idealOwner,
-                                idealOwners,
-                                waitRebalanceInfo);
-                        }
-                    }
-                    else if (!curOwners.get(0).equals(idealOwners.get(0))) {
+                    if (idealOwners.isEmpty())
+                        newOwners = selectCurrentAliveOwners(aliveNodes, curOwners);
+                    else if (!aliveNodes.contains(curOwners.get(0)))
+                        newOwners = selectPrimaryTopologyOwnerFromIdealAssignment(
+                            grpHolder.aff,
+                            p,
+                            top,
+                            idealOwners,
+                            waitRebalanceInfo
+                        );
+                    else if (!curOwners.get(0).equals(idealOwners.get(0)))
+                        // Current distribution was already not ideal. Preserve it for late affinity assignment.
                         newOwners = latePrimaryAssignment(
                             grpHolder.aff,
                             p,
@@ -1817,7 +1755,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             idealOwners,
                             waitRebalanceInfo
                         );
-                    }
 
                     if (newOwners != null) {
                         newAssignment.set(p, newOwners);
@@ -1852,6 +1789,69 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         return CacheGroupAffinityMessage.createAffinityDiffMessages(diff);
+    }
+
+    /**
+     * Selects current alive owners for some partition as affinity distribution.
+     *
+     * @param aliveNodes Alive cluster nodes.
+     * @param curOwners  Current affinity owners for some partition.
+     *
+     * @return List of current alive affinity owners.
+     *         {@code null} if affinity owners should be inherited from ideal assignment as is.
+     */
+    private @Nullable List<ClusterNode> selectCurrentAliveOwners(
+        Set<ClusterNode> aliveNodes,
+        List<ClusterNode> curOwners
+    ) {
+        List<ClusterNode> aliveCurOwners = curOwners.stream().filter(aliveNodes::contains).collect(Collectors.toList());
+
+        return !aliveCurOwners.isEmpty() ? aliveCurOwners : null;
+    }
+
+    /**
+     * Selects a node from ideal assignment that holds {@code OWNING} status for given partition as affinity primary.
+     * Other nodes from ideal assignment are selected as backups.
+     *
+     * @param aff               Affinity assignment cache.
+     * @param partition         Partition number.
+     * @param topology          Partition topology for cache.
+     * @param idealOwners       Ideal affinity distribution for given partition.
+     * @param waitRebalanceInfo Wait rebalance info for late affinity assignment.
+
+     * @return List of affinity owners where first node is primary and holds {@code OWNING} partition status.
+     *         {@code null} if affinity owners should be inherited from ideal assignment as is.
+     */
+    private @Nullable List<ClusterNode> selectPrimaryTopologyOwnerFromIdealAssignment(
+        GridAffinityAssignmentCache aff,
+        int partition,
+        GridDhtPartitionTopology topology,
+        List<ClusterNode> idealOwners,
+        WaitRebalanceInfo waitRebalanceInfo
+    ) {
+        ClusterNode newPrimary = idealOwners.get(0);
+
+        if (topology.partitionState(newPrimary.id(), partition) != GridDhtPartitionState.OWNING) {
+            for (ClusterNode node : idealOwners) {
+                if (topology.partitionState(node.id(), partition) == GridDhtPartitionState.OWNING) {
+                    newPrimary = node;
+
+                    break;
+                }
+            }
+        }
+
+        // If primary by ideal assignment is already topology owner, no need to change affinity for that partition.
+        if (newPrimary.equals(idealOwners.get(0)))
+            return null;
+
+        // In other case re-select primary with late affinity assignment.
+        return latePrimaryAssignment(
+            aff,
+            partition,
+            newPrimary,
+            idealOwners,
+            waitRebalanceInfo);
     }
 
     /**
