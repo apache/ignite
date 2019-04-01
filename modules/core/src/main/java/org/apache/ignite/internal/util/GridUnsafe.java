@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 import static org.apache.ignite.internal.util.IgniteUtils.jdkVersion;
 import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
@@ -114,7 +115,7 @@ public abstract class GridUnsafe {
     @Nullable private static final Object JAVA_NIO_ACCESS_OBJ;
 
     /** JavaNioAccess#newDirectByteBuffer method. */
-    @Nullable private static Method NEW_DIRECT_BUF_MTD;
+    @Nullable private static final Method NEW_DIRECT_BUF_MTD;
 
 
     @Nullable private static final Constructor<?> NEW_DIRECT_BUF_CONSTRUCTOR;
@@ -123,29 +124,32 @@ public abstract class GridUnsafe {
         NEW_DIRECT_BUF_CONSTRUCTOR = newDirectBufferCtor();
 
         Object nioAccessObj = null;
+        Method directBufMtd = null;
         try {
             nioAccessObj = javaNioAccessObject();
 
-            NEW_DIRECT_BUF_MTD = newDirectBufferMethod(nioAccessObj);
+            directBufMtd = newDirectBufferMethod(nioAccessObj);
         }
         catch (Exception e) {
             nioAccessObj = null;
-
-            NEW_DIRECT_BUF_MTD = null;
+            directBufMtd = null;
 
             if (majorJavaVersion(jdkVersion()) > 11) {
-                newDirectBufferCtor();
+                Constructor<?> constructor = newDirectBufferCtor();
+
             }
             else
                 throw e;
-        } finally {
+        }
+        finally {
             JAVA_NIO_ACCESS_OBJ = nioAccessObj;
+            NEW_DIRECT_BUF_MTD = directBufMtd;
         }
     }
 
     private static Constructor<?> newDirectBufferCtor() {
         try {
-            ByteBuffer direct = ByteBuffer.allocateDirect(1);
+            ByteBuffer direct = ByteBuffer.allocateDirect(1).order(NATIVE_BYTE_ORDER);
 
             final Constructor<?> constructor =
                 direct.getClass().getDeclaredConstructor(long.class, int.class);
@@ -174,7 +178,9 @@ public abstract class GridUnsafe {
      */
     public static ByteBuffer wrapPointer(long ptr, int len) {
         try {
-            return (ByteBuffer) NEW_DIRECT_BUF_CONSTRUCTOR.newInstance(ptr, len);
+            Object newDirectBuf = NEW_DIRECT_BUF_CONSTRUCTOR.newInstance(ptr, len);
+
+            return ((ByteBuffer)newDirectBuf).order(NATIVE_BYTE_ORDER);
         }
         catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             new RuntimeException("JavaNioAccess#newDirectByteBuffer() method is unavailable."
@@ -185,6 +191,11 @@ public abstract class GridUnsafe {
         }
     }
 
+    /**
+     * @param ptr Pointer to wrap.
+     * @param len Memory location length.
+     * @return Byte buffer wrapping the given memory.
+     */
     @NotNull private static ByteBuffer wrapPointer2(long ptr, int len) {
         try {
             ByteBuffer buf = (ByteBuffer)NEW_DIRECT_BUF_MTD.invoke(JAVA_NIO_ACCESS_OBJ, ptr, len, null);
