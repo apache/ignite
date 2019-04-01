@@ -1219,6 +1219,8 @@ public class GridSqlQueryParser {
         // Process key wrapping.
         Boolean wrapKey = res.wrapKey();
 
+        final boolean wrapKey0;
+
         if (wrapKey != null && !wrapKey) {
             if (keyColsNum > 1) {
                 throw new IgniteSQLException(PARAM_WRAP_KEY + " cannot be false when composite primary key exists.",
@@ -1229,11 +1231,10 @@ public class GridSqlQueryParser {
                 throw new IgniteSQLException(PARAM_WRAP_KEY + " cannot be false when " + PARAM_KEY_TYPE + " is set.",
                     IgniteQueryErrorCode.PARSING);
             }
+
+            wrapKey0 = false;
         }
-
-        final boolean wrapKey0;
-
-        if (!F.isEmpty(res.keyTypeName())) {
+        else if (!F.isEmpty(res.keyTypeName())) {
             Class<?> c = U.isJdkOrUnboxedPrimitive(res.keyTypeName()) ?
                 U.classForName(res.keyTypeName(), null, true) : null;
 

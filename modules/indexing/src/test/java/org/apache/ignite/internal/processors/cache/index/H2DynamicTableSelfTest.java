@@ -33,9 +33,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteCache;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
@@ -132,7 +132,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute("DROP TABLE IF EXISTS PUBLIC.\"City\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"NameTest\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"BackupTest\"");
-        execute("DROP TABLE IF EXISTS PUBLIC.\"Ints\"");
+        execute("DROP TABLE IF EXISTS PUBLIC.TEST_TABLE");
 
         execute("DROP TABLE IF EXISTS PUBLIC.QP_CUSTOM");
         execute("DROP TABLE IF EXISTS PUBLIC.QP_DEFAULT");
@@ -361,7 +361,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @Test
     public void testRedundantKeyAndValueTypeNames() throws Exception {
-        execute("CREATE TABLE Ints(k int primary key, v int) WITH \"key_type=java.lang.Integer," +
+        execute("CREATE TABLE TEST_TABLE(k int primary key, v int) WITH \"key_type=java.lang.Integer," +
             "value_type=java.lang.Integer,cache_name=ints\"");
 
         IgniteCache<Integer, Integer> cache = client().cache("ints");
@@ -376,7 +376,32 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         assertEquals(Integer.class.getName(), e.getValueType());
 
-        execute("INSERT INTO Ints(k, v) values(1, 2)");
+        execute("INSERT INTO TEST_TABLE(k, v) values(1, 2)");
+
+        assertEquals(2, (int)cache.get(1));
+    }
+
+    /**
+     * Test that wrap_key/value=true is ignored if key/value_type is sql type.
+     */
+    @Test
+    public void testWrappingIgnoredIfSqlType() throws Exception {
+        execute("CREATE TABLE TEST_TABLE(k int primary key, v int) WITH \"wrap_key=true, key_type=java.lang.Integer," +
+            "wrap_value=true, value_type=java.lang.Integer,cache_name=ints\"");
+
+        IgniteCache<Integer, Integer> cache = client().cache("ints");
+
+        CacheConfiguration conf = cache.getConfiguration(CacheConfiguration.class);
+
+        assertEquals(1, conf.getQueryEntities().size());
+
+        QueryEntity e = (QueryEntity)conf.getQueryEntities().iterator().next();
+
+        assertEquals(Integer.class.getName(), e.getKeyType());
+
+        assertEquals(Integer.class.getName(), e.getValueType());
+
+        execute("INSERT INTO TEST_TABLE(k, v) values(1, 2)");
 
         assertEquals(2, (int)cache.get(1));
     }
@@ -1448,6 +1473,18 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         assertDdlCommandThrows("create table a (id int, x varchar, c long, primary key(id)) with \"wrap_value=false\"",
             "WRAP_VALUE cannot be false when multiple non-primary key columns exist.");
+    }
+
+    /**
+     * Test that when key or value has more than one column, it can't be of jdk type.
+     */
+    @Test
+    public void testWrappingAlwaysOffWithJdkTypes() {
+        assertDdlCommandThrows("create table a (id int, x varchar, c long, primary key(id, c)) with \"key_type=java.lang.Integer\"",
+            "KEY_TYPE may not point at SQL type when multiple key columns are defined.");
+
+        assertDdlCommandThrows("create table a (id int, x varchar, c long, primary key(id)) with \"value_type=java.lang.Integer\"",
+            "VALUE_TYPE may not point at SQL type when multiple value columns are defined.");
     }
 
     /**
