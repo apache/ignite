@@ -51,6 +51,7 @@
                         </goals>
                         <configuration>
                             <excludeTransitive>false</excludeTransitive>
+                            <excludeScope>provided</excludeScope>
                         </configuration>
                     </execution>
                 </executions>
