@@ -919,18 +919,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         c.collectJoiningNodeData(dataBag);
                 }
                 else {
-                    IgniteFuture<?> lastStateChangeEvtLsnrFut = lastStateChangeEvtLsnrFutRef.get();
-
-                    if (lastStateChangeEvtLsnrFut != null) {
-                        try {
-                            lastStateChangeEvtLsnrFut.get();
-                        }
-                        finally {
-                            // Guaranteed to be invoked in the same thread as DiscoverySpiListener#onDiscovery.
-                            // No additional synchronization for reference is required.
-                            lastStateChangeEvtLsnrFutRef.set(null);
-                        }
-                    }
+                    waitForLastStateChangeEventFuture();
 
                     for (GridComponent c : ctx.components())
                         c.collectGridNodeData(dataBag);
@@ -974,6 +963,34 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             if (data != null)
                                 c.onJoiningNodeDataReceived(data);
                         }
+                    }
+                }
+            }
+
+            /** */
+            private void waitForLastStateChangeEventFuture() {
+                IgniteFuture<?> lastStateChangeEvtLsnrFut = lastStateChangeEvtLsnrFutRef.get();
+
+                if (lastStateChangeEvtLsnrFut != null) {
+                    Thread currThread = Thread.currentThread();
+
+                    GridWorker worker = currThread instanceof IgniteDiscoveryThread
+                        ? ((IgniteDiscoveryThread)currThread).worker()
+                        : null;
+
+                    if (worker != null)
+                        worker.blockingSectionBegin();
+
+                    try {
+                        lastStateChangeEvtLsnrFut.get();
+                    }
+                    finally {
+                        // Guaranteed to be invoked in the same thread as DiscoverySpiListener#onDiscovery.
+                        // No additional synchronization for reference is required.
+                        lastStateChangeEvtLsnrFutRef.set(null);
+
+                        if (worker != null)
+                            worker.blockingSectionEnd();
                     }
                 }
             }
@@ -2698,9 +2715,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** */
     private class DiscoveryMessageNotifierThread extends IgniteThread implements IgniteDiscoveryThread {
+        /** */
+        private final GridWorker worker;
+
         /** {@inheritDoc} */
         public DiscoveryMessageNotifierThread(GridWorker worker) {
             super(worker);
+
+            this.worker = worker;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridWorker worker() {
+            return worker;
         }
     }
 

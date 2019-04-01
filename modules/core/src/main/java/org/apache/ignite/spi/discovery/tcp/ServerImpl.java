@@ -4636,16 +4636,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (dataPacket.hasJoiningNodeData())
                         spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                    if (!node.isDaemon()) {
-                        blockingSectionBegin();
-
-                        try {
-                            spi.collectExchangeData(dataPacket);
-                        }
-                        finally {
-                            blockingSectionEnd();
-                        }
-                    }
+                    if (!node.isDaemon())
+                        spi.collectExchangeData(dataPacket);
 
                     processMessageFailedNodes(msg);
                 }
@@ -7447,6 +7439,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         private MessageWorkerDiscoveryThread(GridWorker worker, IgniteLogger log) {
             super(worker, log);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridWorker worker() {
+            return worker;
         }
     }
 
