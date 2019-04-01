@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.ArrayList;
 import java.util.Map;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;

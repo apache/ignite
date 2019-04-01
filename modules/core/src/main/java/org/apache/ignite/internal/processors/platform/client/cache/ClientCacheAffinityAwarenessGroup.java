@@ -41,13 +41,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 /**
  * Partition mapping associated with the group of caches.
  */
-class ClientCacheAffinityAwarenessGroup
-{
+class ClientCacheAffinityAwarenessGroup {
     /** Binary processor. */
     CacheObjectBinaryProcessorImpl proc;
-
-    /** Flag that shows whether mapping is applicable for affinity awareness optimisation. */
-    private final boolean applicable;
 
     /** Partitions map for caches. */
     private final HashMap<UUID, Set<Integer>> partitionsMap;
@@ -70,7 +66,7 @@ class ClientCacheAffinityAwarenessGroup
         int cacheId = cacheDesc.cacheId();
         CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
-        applicable = isApplicable(ccfg);
+        boolean applicable = isApplicable(ccfg);
         partitionsMap = !applicable ? null : getPartitionsMap(ctx, cacheId, affVer);
 
         cacheCfgs = new HashMap<>();
@@ -103,8 +99,8 @@ class ClientCacheAffinityAwarenessGroup
      */
     private boolean isCompatible(ClientCacheAffinityAwarenessGroup another) {
         // All unapplicable caches go to the same single group, so they are all compatible one to another.
-        if (!applicable)
-            return !another.applicable;
+        if (partitionsMap == null || another.partitionsMap == null)
+            return partitionsMap == another.partitionsMap;
 
         // Checking groups for fast results. If cache group sets intersect then mappings are the same.
         for (int cacheGroupId : another.cacheGroupIds) {
@@ -120,7 +116,7 @@ class ClientCacheAffinityAwarenessGroup
      * @param ccfg Cache configuration.
      * @return True if cache is applicable for affinity awareness optimisation.
      */
-    private boolean isApplicable(CacheConfiguration ccfg) {
+    private static boolean isApplicable(CacheConfiguration ccfg) {
         // Partition could be extracted only from PARTITIONED caches.
         if (ccfg.getCacheMode() != CacheMode.PARTITIONED)
             return false;
@@ -148,14 +144,14 @@ class ClientCacheAffinityAwarenessGroup
      * @param writer Writer.
      */
     public void write(BinaryRawWriter writer) {
-        writer.writeBoolean(applicable);
+        writer.writeBoolean(partitionsMap != null);
 
         writer.writeInt(cacheCfgs.size());
 
         for (Map.Entry<Integer, CacheConfiguration> entry: cacheCfgs.entrySet()) {
             writer.writeInt(entry.getKey());
 
-            if (!applicable)
+            if (partitionsMap == null)
                 continue;
 
             CacheConfiguration ccfg = entry.getValue();
@@ -178,7 +174,7 @@ class ClientCacheAffinityAwarenessGroup
             }
         }
 
-        if (!applicable)
+        if (partitionsMap == null)
             return;
 
         writer.writeInt(partitionsMap.size());
