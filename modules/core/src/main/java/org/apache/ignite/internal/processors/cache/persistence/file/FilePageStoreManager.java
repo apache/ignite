@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.NotNull;
@@ -88,6 +90,54 @@ import static java.util.Objects.requireNonNull;
  * File page store manager.
  */
 public class FilePageStoreManager extends GridCacheSharedManagerAdapter implements IgnitePageStoreManager {
+    /**
+     * Synchronization wrapper for long operations that should be executed asynchronously
+     * and operations that can not be executed in parallel with long operation. Uses {@link ReadWriteLock}
+     * to provide such synchronization scenario.
+     */
+    protected static class LongOperationAsyncExecutor {
+        /** */
+        private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+
+        /**
+         * Executes long operation in dedicated thread. Uses write lock as such operations can't run
+         * simultaneously.
+         *
+         * @param runnable long operation
+         */
+        public void async(Runnable runnable) {
+            Thread asyncTask = new Thread(() -> {
+                readWriteLock.writeLock().lock();
+                try {
+                    runnable.run();
+                }
+                finally {
+                    readWriteLock.writeLock().unlock();
+                }
+            });
+            asyncTask.start();
+        }
+
+        /**
+         * Executes closure that can't run in parallel with long operation that is executed by
+         * {@link LongOperationAsyncExecutor#async}. Uses read lock as such closures can run in parallel with
+         * each other.
+         *
+         * @param closure closure.
+         * @param <T> return type.
+         * @return value that is returned by {@param closure}.
+         */
+        public <T> T afterAsyncCompletion(IgniteOutClosure<T> closure) {
+            readWriteLock.readLock().lock();
+            try {
+                return closure.apply();
+            }
+            finally {
+                readWriteLock.readLock().unlock();
+            }
+        }
+    }
+
     /** File suffix. */
     public static final String FILE_SUFFIX = ".bin";
 
@@ -164,6 +214,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     private final GridStripedReadWriteLock initDirLock =
         new GridStripedReadWriteLock(Math.max(Runtime.getRuntime().availableProcessors(), 8));
+
+    /** */
+    private final LongOperationAsyncExecutor cleanupAsyncExecutor = new LongOperationAsyncExecutor();
 
     /**
      * @param ctx Kernal context.
@@ -272,15 +325,24 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             .filter(e -> cacheGrpPred.test(e.getKey()))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        IgniteCheckedException ex = shutdown(filteredStores.values(), cleanFiles);
-
-        if (ex != null)
-            U.error(log, "Failed to gracefully stop page store managers", ex);
-
         idxCacheStores.entrySet().removeIf(e -> cacheGrpPred.test(e.getKey()));
 
-        U.log(log, "Cleanup cache stores [total=" + filteredStores.keySet().size() +
-            ", left=" + idxCacheStores.size() + ", cleanFiles=" + cleanFiles + ']');
+        Runnable doShutdown = () -> {
+            IgniteCheckedException ex = shutdown(filteredStores.values(), cleanFiles);
+
+            if (ex != null)
+                U.error(log, "Failed to gracefully stop page store managers", ex);
+
+            U.log(log, "Cleanup cache stores [total=" + filteredStores.keySet().size() +
+                ", left=" + idxCacheStores.size() + ", cleanFiles=" + cleanFiles + ']');
+        };
+
+        if (cleanFiles) {
+            cleanupAsyncExecutor.async(doShutdown);
+
+            U.log(log, "Cache stores cleanup started asynchronously");
+        } else
+            doShutdown.run();
     }
 
     /** {@inheritDoc} */
@@ -350,7 +412,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 cctx.cacheContext(cacheId) != null && cctx.cacheContext(cacheId).config().isEncryptionEnabled()
             );
 
-            CacheStoreHolder old = idxCacheStores.put(cacheId, holder);
+            CacheStoreHolder old = cleanupAsyncExecutor.afterAsyncCompletion(() -> idxCacheStores.put(cacheId, holder));
 
             assert old == null : "Non-null old store holder for cacheId: " + cacheId;
         }
@@ -365,7 +427,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (!idxCacheStores.containsKey(grpId)) {
             CacheStoreHolder holder = initForCache(grpDesc, cacheData.config());
 
-            CacheStoreHolder old = idxCacheStores.put(grpId, holder);
+            CacheStoreHolder old = cleanupAsyncExecutor.afterAsyncCompletion(() -> idxCacheStores.put(grpId, holder));
 
             assert old == null : "Non-null old store holder for cache: " + cacheData.config().getName();
         }
@@ -387,7 +449,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 dataRegion.memoryMetrics(),
                 false);
 
-            CacheStoreHolder old = idxCacheStores.put(grpId, holder);
+            CacheStoreHolder old = cleanupAsyncExecutor.afterAsyncCompletion(() -> idxCacheStores.put(grpId, holder));
 
             assert old == null : "Non-null old store holder for metastorage";
         }
@@ -1083,23 +1145,25 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     private CacheStoreHolder getHolder(int grpId) throws IgniteCheckedException {
         try {
-            return idxCacheStores.computeIfAbsent(grpId, (key) -> {
-                CacheGroupDescriptor gDesc = cctx.cache().cacheGroupDescriptors().get(grpId);
+            return cleanupAsyncExecutor.afterAsyncCompletion(
+                () -> idxCacheStores.computeIfAbsent(grpId, (key) -> {
+                    CacheGroupDescriptor gDesc = cctx.cache().cacheGroupDescriptors().get(grpId);
 
-                CacheStoreHolder holder0 = null;
+                    CacheStoreHolder holder0 = null;
 
-                if (gDesc != null) {
-                    if (CU.isPersistentCache(gDesc.config(), cctx.gridConfig().getDataStorageConfiguration())) {
-                        try {
-                            holder0 = initForCache(gDesc, gDesc.config());
-                        } catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
+                    if (gDesc != null) {
+                        if (CU.isPersistentCache(gDesc.config(), cctx.gridConfig().getDataStorageConfiguration())) {
+                            try {
+                                holder0 = initForCache(gDesc, gDesc.config());
+                            } catch (IgniteCheckedException e) {
+                                throw new IgniteException(e);
+                            }
                         }
                     }
-                }
 
-                return holder0;
-            });
+                    return holder0;
+                })
+            );
         } catch (IgniteException ex) {
             if (X.hasCause(ex, IgniteCheckedException.class))
                 throw ex.getCause(IgniteCheckedException.class);
