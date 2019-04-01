@@ -42,9 +42,6 @@ namespace Apache.Ignite.Core.Common
         /** Revision timestamp. */
         private readonly long _revTs;
 
-        /** Revision hash. */
-        private readonly byte[] _revHash;
-        
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -53,8 +50,8 @@ namespace Apache.Ignite.Core.Common
         /// <param name="maintenance">Maintenance version number.</param>
         /// <param name="revTs">Revision timestamp.</param>
         /// <param name="revHash">Revision hash.</param>
-        public IgniteProductVersion(byte major, byte minor, byte maintenance, long revTs, byte[] revHash)
-            : this(major, minor, maintenance, "", revTs, revHash)
+        public IgniteProductVersion(byte major, byte minor, byte maintenance, long revTs)
+            : this(major, minor, maintenance, "", revTs)
         {
             // No-op.
         }
@@ -68,17 +65,13 @@ namespace Apache.Ignite.Core.Common
         /// <param name="stage">Stage of development.</param>
         /// <param name="revTs">Revision timestamp.</param>
         /// <param name="revHash">Revision hash.</param>
-        public IgniteProductVersion(byte major, byte minor, byte maintenance, String stage, long revTs, byte[] revHash)
+        public IgniteProductVersion(byte major, byte minor, byte maintenance, String stage, long revTs)
         {
-            if (revHash != null && revHash.Length != 20)
-                throw new ArgumentException("Invalid length for SHA1 hash (must be 20): " + revHash.Length);
-
             _major = major;
             _minor = minor;
             _maintenance = maintenance;
             _stage = stage;
             _revTs = revTs;
-            _revHash = revHash ?? new byte[20];
         }
 
         /// <summary>
@@ -93,7 +86,6 @@ namespace Apache.Ignite.Core.Common
             _minor = reader.ReadByte();
             _maintenance = reader.ReadByte();
             _revTs = reader.ReadLong();
-            _revHash = reader.ReadByteArray();
         }
 
         /// <summary>
@@ -134,15 +126,6 @@ namespace Apache.Ignite.Core.Common
         public long RevisionTimestamp
         {
             get { return _revTs; }
-        }
-
-        /// <summary>
-        /// Gets the revision hash.
-        /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public byte[] RevisionHash
-        {
-            get { return _revHash;}
         }
 
         /// <summary>
@@ -188,6 +171,8 @@ namespace Apache.Ignite.Core.Common
         /** <inheritDoc /> */
         public int CompareTo(IgniteProductVersion other)
         {
+            IgniteArgumentCheck.NotNull(other, "other");
+
             // NOTE: Unknown version is less than any other version.
             int res = Major.CompareTo(other.Major);
 

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Common
 {
     using System;
     using System.IO;
+    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
@@ -36,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Common
         public void SetUp()
         {
             var timeStamp = new DateTime(2018, 1, 1).Ticks / 1000;
-            _defaultVersion = new IgniteProductVersion(2, 5, 7, timeStamp, new byte[20]);
+            _defaultVersion = new IgniteProductVersion(2, 5, 7, timeStamp);
         }
 
         [Test]
@@ -61,7 +62,6 @@ namespace Apache.Ignite.Core.Tests.Common
                 writer.WriteByte(_defaultVersion.Minor);
                 writer.WriteByte(_defaultVersion.Maintenance);
                 writer.WriteLong(_defaultVersion.RevisionTimestamp);
-                writer.WriteByteArray(_defaultVersion.RevisionHash);
 
                 stream.Seek(0, SeekOrigin.Begin);
 
@@ -82,12 +82,41 @@ namespace Apache.Ignite.Core.Tests.Common
         }
 
         [Test]
-        public void TestIgniteGetVersionMethod()
+        public void TestLocalNodeGetVersion()
         {
-            using (IIgnite ignite = Ignition.Start())
+            using (IIgnite ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                var version = ignite.GetVersion();
-                Assert.AreNotEqual(0, version.Major);
+                IgniteProductVersion nodeVersion = ignite.GetCluster().GetLocalNode().Version;
+
+                Assert.GreaterOrEqual(nodeVersion.Major, 2);
+                Assert.GreaterOrEqual(nodeVersion.Minor, 0);
+                Assert.GreaterOrEqual(nodeVersion.Maintenance, 0);
+            }
+        }
+
+        [Test]
+        public void TestIgniteGetVersionAndNodeVersionAreEqual()
+        {
+            using (IIgnite ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                IgniteProductVersion version = ignite.GetVersion();
+                IgniteProductVersion nodeVersion = ignite.GetCluster().GetLocalNode().Version;
+
+                Assert.AreEqual(version, nodeVersion);
+            }
+        }
+
+        [Test]
+        public void TestClientVersionIsMoreOrEqualsServerNodeVersion()
+        {
+            using (IIgnite ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                IgniteProductVersion version = ignite.GetVersion();
+
+                Version clientVer = Assembly.GetExecutingAssembly().GetName().Version;
+                var expectedVersion = new IgniteProductVersion((byte) clientVer.Major, (byte) clientVer.Minor, (byte) clientVer.Build, 0);
+
+                Assert.IsTrue(expectedVersion.CompareTo(version) >= 0);
             }
         }
     }
