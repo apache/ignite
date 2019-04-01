@@ -1086,7 +1086,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         for (CacheDataStore store : partDataStores.values()) {
             assert store instanceof GridCacheDataStore;
 
-            CacheFreeListImpl freeList = ((GridCacheDataStore)store).freeList;
+            DefaultFreeList freeList = ((GridCacheDataStore)store).freeList;
 
             if (freeList == null)
                 continue;
@@ -1214,8 +1214,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public CacheDataRow next() {
             if (next == null)
                 throw new NoSuchElementException();
-
-            long cntr = next.partitionCounter();
 
             CacheDataRow val = new DataEntryRow(next);
 

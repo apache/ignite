@@ -1439,7 +1439,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
-            pCntr = new PartitionUpdateCounterDebug(grp, partId, 2011481551);
+            pCntr = new PartitionUpdateCounterDebug(grp, partId, 0);
         }
 
         /**

@@ -3464,7 +3464,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 minVer.compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0);
 
             // Lost partition detection should be done after message is prepared or in case of IGNORE policy
-            // lost partitions will be moved to OWNING state and after what send to other nodes resulting in wrong calculation.
+            // lost partitions will be moved to OWNING state and after what send to other nodes resulting in
+            // wrong lost state calculation.
             if (firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT && exchCtx.events().hasServerLeft())
                 detectLostPartitions(resTopVer);
 
