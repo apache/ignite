@@ -17,24 +17,26 @@
 
 package org.apache.ignite.ml.composition.bagging;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.combinators.parallel.TrainersParallelComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.AdaptableDatasetTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 import org.apache.ignite.ml.util.Utils;
+
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Trainer encapsulating logic of bootstrap aggregating (bagging).
@@ -148,15 +150,15 @@ public class BaggedTrainer<L> extends
 
 
     /** {@inheritDoc} */
-    @Override public <K, V> BaggedModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+    @Override public <K, V, C extends Serializable> BaggedModel fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor) {
         IgniteModel<Vector, Double> fit = getTrainer().fit(datasetBuilder, extractor);
         return new BaggedModel(fit);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> BaggedModel update(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+    @Override public <K, V, C extends Serializable> BaggedModel update(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor) {
         IgniteModel<Vector, Double> updated = getTrainer().update(mdl.model(), datasetBuilder, extractor);
         return new BaggedModel(updated);
     }
@@ -189,8 +191,8 @@ public class BaggedTrainer<L> extends
      * @param mdl Model.
      * @return Updated model.
      */
-    @Override protected <K, V> BaggedModel updateModel(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+    @Override protected <K, V, C extends Serializable> BaggedModel updateModel(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor) {
         // Should be never called.
         throw new IllegalStateException();
     }
