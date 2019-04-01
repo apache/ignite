@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.result.Row;
 import org.h2.value.Value;
 
 /**
@@ -51,6 +52,14 @@ public class H2PlainRowSingle extends H2Row {
         assert idx == 0 : idx;
 
         this.v = v;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasSharedData(Row other) {
+        if (other.getClass() == H2PlainRowSingle.class)
+            return v == ((H2PlainRowSingle) other).v;
+
+        return false;
     }
 
     /** {@inheritDoc} */

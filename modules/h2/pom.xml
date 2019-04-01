@@ -72,16 +72,19 @@
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
             <version>5.5.5</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
             <version>5.5.5</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
             <version>5.5.5</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -297,14 +300,15 @@
                     </dependencies>
                   </plugin>
             -->
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.0</version>
                 <configuration>
-                    <includes>
-                        <include>TestAllJunit.java</include>
-                    </includes>
+                    <excludes>
+                        <exclude>TestAllJunit.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 

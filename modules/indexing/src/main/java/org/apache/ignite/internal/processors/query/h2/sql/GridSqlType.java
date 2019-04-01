@@ -21,6 +21,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.expression.Expression;
 import org.h2.table.Column;
+import org.h2.value.TypeInfo;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
 import org.h2.value.ValueDouble;
@@ -93,10 +94,13 @@ public final class GridSqlType {
      * @return Type.
      */
     public static GridSqlType fromColumn(Column c) {
-        if (c.getName() != null)
-            c = new Column(null, c.getType(), c.getPrecision(), c.getScale(), c.getDisplaySize());
+        TypeInfo type = c.getType();
 
-        return new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(), c.getCreateSQL());
+        if (c.getName() != null)
+            c = new Column(null, type);
+
+        return new GridSqlType(type.getValueType(), type.getScale(),
+            type.getPrecision(), type.getDisplaySize(), c.getCreateSQL());
     }
 
     /**
@@ -104,10 +108,10 @@ public final class GridSqlType {
      * @return Type.
      */
     public static GridSqlType fromExpression(Expression e) {
-        if (e.getType() == Value.UNKNOWN)
+        if (e.getType().getValueType() == Value.UNKNOWN)
             return UNKNOWN;
 
-        return fromColumn(new Column(null, e.getType(), e.getPrecision(), e.getScale(), e.getDisplaySize()));
+        return fromColumn(new Column(null, e.getType()));
     }
 
     /**

@@ -32,7 +32,7 @@ import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
 import org.h2.engine.Session;
-import org.h2.expression.Comparison;
+import org.h2.expression.condition.Comparison;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionColumn;
 import org.h2.index.IndexCondition;
@@ -386,7 +386,7 @@ public final class CollocationModel {
             if (F.isEmpty(tf.getIndexConditions())) {
                 throw new CacheException("Failed to prepare distributed join query: " +
                     "join condition does not use index [joinedCache=" + tbl.cacheName() +
-                    ", plan=" + tf.getSelect().getPlanSQL() + ']');
+                    ", plan=" + tf.getSelect().getPlanSQL(false) + ']');
             }
         }
 

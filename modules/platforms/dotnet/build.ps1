@@ -87,7 +87,7 @@ param (
     [ValidateSet("Release", "Debug")]
     [string]$configuration="Release",
     [string]$mavenOpts="-U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true",
-	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target",
+	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\h2\target,modules\spring\target",
     [string]$asmDirs="",
     [string]$nugetPath="",
 	[string]$version=""
@@ -145,7 +145,7 @@ $libsDir = "$PSScriptRoot\bin\libs"
 mkdir -Force $libsDir; del -Force $libsDir\*.*
 
 ls $jarDirs.Split(',') *.jar -recurse `
-   -include "ignite-core*","ignite-indexing*","ignite-shmem*","ignite-spring*","lucene*","h2*","cache-api*","commons-*","spring*" `
+   -include "ignite-core*","ignite-indexing*","ignite-shmem*","ignite-spring*","lucene*","ignite-h2*","cache-api*","commons-*","spring*" `
    -exclude "*-sources*","*-javadoc*","*-tests*","*optional*" `
    | % { copy -Force $_ $libsDir }
    

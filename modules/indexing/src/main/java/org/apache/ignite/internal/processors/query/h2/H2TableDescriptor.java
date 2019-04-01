@@ -418,7 +418,7 @@ public class H2TableDescriptor {
             );
         }
         else if (idxDesc.type() == QueryIndexType.GEOSPATIAL)
-            return H2Utils.createSpatialIndex(tbl, idxDesc.name(), cols.toArray(new IndexColumn[0]));
+            return H2Utils.createSpatialIndex(tbl, idxDesc.name(), cols.toArray(H2Utils.EMPTY_COLUMNS));
 
         throw new IllegalStateException("Index type: " + idxDesc.type());
     }

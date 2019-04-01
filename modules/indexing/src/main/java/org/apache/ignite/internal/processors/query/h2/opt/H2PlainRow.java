@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.result.Row;
+import org.h2.result.RowImpl;
 import org.h2.value.Value;
 
 /**
@@ -62,6 +64,14 @@ public class H2PlainRow extends H2Row {
     /** {@inheritDoc} */
     @Override public boolean indexSearchRow() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasSharedData(Row other) {
+        if (other.getClass() == H2PlainRow.class)
+            return vals == ((H2PlainRow) other).vals;
+
+        return false;
     }
 
     /** {@inheritDoc} */

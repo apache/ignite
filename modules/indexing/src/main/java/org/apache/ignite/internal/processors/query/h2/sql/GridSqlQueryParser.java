@@ -57,6 +57,7 @@ import org.h2.command.ddl.DefineCommand;
 import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
 import org.h2.command.ddl.SchemaCommand;
+import org.h2.command.dml.CommandWithValues;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Explain;
 import org.h2.command.dml.Insert;
@@ -68,26 +69,30 @@ import org.h2.command.dml.SelectUnion;
 import org.h2.command.dml.Update;
 import org.h2.engine.Constants;
 import org.h2.engine.FunctionAlias;
-import org.h2.expression.Aggregate;
 import org.h2.expression.Alias;
-import org.h2.expression.CompareLike;
-import org.h2.expression.Comparison;
-import org.h2.expression.ConditionAndOr;
-import org.h2.expression.ConditionExists;
-import org.h2.expression.ConditionIn;
-import org.h2.expression.ConditionInConstantSet;
-import org.h2.expression.ConditionInSelect;
-import org.h2.expression.ConditionNot;
+import org.h2.expression.BinaryOperation;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionColumn;
 import org.h2.expression.ExpressionList;
-import org.h2.expression.Function;
-import org.h2.expression.JavaFunction;
-import org.h2.expression.Operation;
+import org.h2.expression.IntervalOperation;
 import org.h2.expression.Parameter;
 import org.h2.expression.Subquery;
-import org.h2.expression.TableFunction;
+import org.h2.expression.UnaryOperation;
 import org.h2.expression.ValueExpression;
+import org.h2.expression.aggregate.AbstractAggregate;
+import org.h2.expression.aggregate.Aggregate;
+import org.h2.expression.aggregate.AggregateType;
+import org.h2.expression.condition.CompareLike;
+import org.h2.expression.condition.Comparison;
+import org.h2.expression.condition.ConditionAndOr;
+import org.h2.expression.condition.ConditionExists;
+import org.h2.expression.condition.ConditionIn;
+import org.h2.expression.condition.ConditionInConstantSet;
+import org.h2.expression.condition.ConditionInSelect;
+import org.h2.expression.condition.ConditionNot;
+import org.h2.expression.function.Function;
+import org.h2.expression.function.JavaFunction;
+import org.h2.expression.function.TableFunction;
 import org.h2.index.ViewIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.result.SortOrder;
@@ -155,13 +160,13 @@ public class GridSqlQueryParser {
     private static final Getter<SelectUnion, Boolean> UNION_IS_FOR_UPDATE = getter(SelectUnion.class, "isForUpdate");
 
     /** */
-    private static final Getter<Operation, Operation.OpType> OPERATION_TYPE = getter(Operation.class, "opType");
+    private static final Getter<BinaryOperation, BinaryOperation.OpType> OPERATION_TYPE = getter(BinaryOperation.class, "opType");
 
     /** */
-    private static final Getter<Operation, Expression> OPERATION_LEFT = getter(Operation.class, "left");
+    private static final Getter<BinaryOperation, Expression> OPERATION_LEFT = getter(BinaryOperation.class, "left");
 
     /** */
-    private static final Getter<Operation, Expression> OPERATION_RIGHT = getter(Operation.class, "right");
+    private static final Getter<BinaryOperation, Expression> OPERATION_RIGHT = getter(BinaryOperation.class, "right");
 
     /** */
     private static final Getter<Comparison, Integer> COMPARISON_TYPE = getter(Comparison.class, "compareType");
@@ -236,21 +241,17 @@ public class GridSqlQueryParser {
     private static final Getter<CompareLike, Boolean> REGEXP_CL = getter(CompareLike.class, "regexp");
 
     /** */
-    private static final Getter<Aggregate, Boolean> DISTINCT = getter(Aggregate.class, "distinct");
+    private static final Getter<AbstractAggregate, Boolean> DISTINCT = getter(AbstractAggregate.class, "distinct");
 
     /** */
-    private static final Getter<Aggregate, Aggregate.AggregateType> TYPE = getter(Aggregate.class, "type");
+    private static final Getter<Aggregate, AggregateType> TYPE = getter(Aggregate.class, "aggregateType");
 
     /** */
-    private static final Getter<Aggregate, Expression> ON = getter(Aggregate.class, "on");
-
-    /** */
-    private static final Getter<Aggregate, Expression> GROUP_CONCAT_SEPARATOR = getter(Aggregate.class,
-        "groupConcatSeparator");
+    private static final Getter<AbstractAggregate, Expression[]> ABSTRACT_AGGREGATE_ARGS = getter(AbstractAggregate.class, "args");
 
     /** */
     private static final Getter<Aggregate, ArrayList<SelectOrderBy>> GROUP_CONCAT_ORDER_LIST = getter(Aggregate.class,
-        "groupConcatOrderList");
+        "orderByList");
 
     /** */
     private static final Getter<RangeTable, Expression> RANGE_MIN = getter(RangeTable.class, "min");
@@ -262,7 +263,7 @@ public class GridSqlQueryParser {
     private static final Getter<FunctionTable, Expression> FUNC_EXPR = getter(FunctionTable.class, "functionExpr");
 
     /** */
-    private static final Getter<TableFunction, Column[]> FUNC_TBL_COLS = getter(TableFunction.class, "columnList");
+    private static final Getter<TableFunction, Column[]> FUNC_TBL_COLS = getter(TableFunction.class, "columns");
 
     /** */
     private static final Getter<JavaFunction, FunctionAlias> FUNC_ALIAS = getter(JavaFunction.class, "functionAlias");
@@ -274,7 +275,7 @@ public class GridSqlQueryParser {
     private static final Getter<JdbcPreparedStatement, Command> COMMAND = getter(JdbcPreparedStatement.class, "command");
 
     /** */
-    private static final Getter<SelectUnion, SortOrder> UNION_SORT = getter(SelectUnion.class, "sort");
+    private static final Getter<Query, SortOrder> QUERY_SORT = getter(Query.class, "sort");
 
     /** */
     private static final Getter<Explain, Prepared> EXPLAIN_COMMAND = getter(Explain.class, "command");
@@ -289,7 +290,7 @@ public class GridSqlQueryParser {
     private static final Getter<Merge, Column[]> MERGE_KEYS = getter(Merge.class, "keys");
 
     /** */
-    private static final Getter<Merge, List<Expression[]>> MERGE_ROWS = getter(Merge.class, "valuesExpressionList");
+    private static final Getter<CommandWithValues, List<Expression[]>> COMMAND_WITH_VALUES_VALS_EXPRESSIONS = getter(CommandWithValues.class, "valuesExpressionList");
 
     /** */
     private static final Getter<Merge, Query> MERGE_QUERY = getter(Merge.class, "query");
@@ -299,9 +300,6 @@ public class GridSqlQueryParser {
 
     /** */
     private static final Getter<Insert, Column[]> INSERT_COLUMNS = getter(Insert.class, "columns");
-
-    /** */
-    private static final Getter<Insert, List<Expression[]>> INSERT_ROWS = getter(Insert.class, "list");
 
     /** */
     private static final Getter<Insert, Query> INSERT_QUERY = getter(Insert.class, "query");
@@ -391,8 +389,12 @@ public class GridSqlQueryParser {
         getter(CommandWithColumns.class, "constraintCommands");
 
     /** */
-    private static final Getter<CommandWithColumns, IndexColumn[]> CREATE_TABLE_PK =
-        getter(CommandWithColumns.class, "pkColumns");
+    private static final Getter<CommandWithColumns, AlterTableAddConstraint> CREATE_TABLE_PK =
+        getter(CommandWithColumns.class, "primaryKey");
+
+    /** */
+    private static final Getter<AlterTableAddConstraint, IndexColumn[]> ALTER_TABLE_ADD_CONSTRAINT_INDEX_COLUMNS =
+        getter(AlterTableAddConstraint.class, "indexColumns");
 
     /** */
     private static final Getter<CreateTable, Boolean> CREATE_TABLE_IF_NOT_EXISTS = getter(CreateTable.class,
@@ -589,7 +591,11 @@ public class GridSqlQueryParser {
 
     /** */
     private static Command extractCommand(PreparedStatement stmt) {
-        return COMMAND.get((JdbcPreparedStatement)stmt);
+        try {
+            return COMMAND.get(stmt.unwrap(JdbcPreparedStatement.class));
+        } catch (SQLException e) {
+            throw new IgniteSQLException(e);
+        }
     }
 
     /**
@@ -757,7 +763,8 @@ public class GridSqlQueryParser {
 
         h2ObjToGridObj.put(select, res);
 
-        res.distinct(select.isDistinct());
+        // TODO: IGNITE-14890: Check and fix if select.isStandartDistinct() is needed here.
+        res.distinct(select.isAnyDistinct());
 
         Expression where = CONDITION.get(select);
         res.where(parseExpression(where, true));
@@ -919,7 +926,7 @@ public class GridSqlQueryParser {
 
         res.keys(keys);
 
-        List<Expression[]> srcRows = MERGE_ROWS.get(merge);
+        List<Expression[]> srcRows = COMMAND_WITH_VALUES_VALS_EXPRESSIONS.get(merge);
         if (!srcRows.isEmpty()) {
             List<GridSqlElement[]> rows = new ArrayList<>(srcRows.size());
             for (Expression[] srcRow : srcRows) {
@@ -977,7 +984,7 @@ public class GridSqlQueryParser {
 
         res.columns(cols);
 
-        List<Expression[]> srcRows = INSERT_ROWS.get(insert);
+        List<Expression[]> srcRows = COMMAND_WITH_VALUES_VALS_EXPRESSIONS.get(insert);
         if (!srcRows.isEmpty()) {
             List<GridSqlElement[]> rows = new ArrayList<>(srcRows.size());
             for (Expression[] srcRow : srcRows) {
@@ -1230,7 +1237,9 @@ public class GridSqlQueryParser {
                 IgniteQueryErrorCode.PARSING);
         }
 
-        IndexColumn[] pkIdxCols = CREATE_TABLE_PK.get(createTbl);
+        AlterTableAddConstraint pk = CREATE_TABLE_PK.get(createTbl);
+
+        IndexColumn[] pkIdxCols = ALTER_TABLE_ADD_CONSTRAINT_INDEX_COLUMNS.get(pk);
 
         if (F.isEmpty(pkIdxCols))
             throw new AssertionError("No PRIMARY KEY columns specified");
@@ -1390,7 +1399,7 @@ public class GridSqlQueryParser {
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_DEFAULT:
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_NOT_NULL:
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_RENAME:
-                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_NULL:
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_DROP_NOT_NULL:
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_SELECTIVITY:
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_VISIBILITY:
                         stmtName = "ALTER COLUMN";
@@ -1434,8 +1443,8 @@ public class GridSqlQueryParser {
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
 
-            DataType colType = DataType.getDataType(col.getType());
-            DataType dfltType = DataType.getDataType(col.getDefaultExpression().getType());
+            DataType colType = DataType.getDataType(col.getType().getValueType());
+            DataType dfltType = DataType.getDataType(col.getDefaultExpression().getType().getValueType());
 
             if ((DataType.isStringType(colType.type) && !DataType.isStringType(dfltType.type))
                 || (DataType.supportsAdd(colType.type) && !DataType.supportsAdd(dfltType.type))) {
@@ -2059,7 +2068,7 @@ public class GridSqlQueryParser {
         res.limit(parseExpression(union.getLimit(), false));
         res.offset(parseExpression(union.getOffset(), false));
 
-        processSortOrder(UNION_SORT.get(union), res);
+        processSortOrder(QUERY_SORT.get(union), res);
 
         h2ObjToGridObj.put(union, res);
 
@@ -2133,7 +2142,7 @@ public class GridSqlQueryParser {
      * @param opType H2 operation type.
      * @return Ignite operation type.
      */
-    private static GridSqlOperationType mapOperationType(Operation.OpType opType) {
+    private static GridSqlOperationType mapOperationType(BinaryOperation.OpType opType) {
         switch (opType) {
             case CONCAT:
                 return GridSqlOperationType.CONCAT;
@@ -2150,16 +2159,43 @@ public class GridSqlQueryParser {
             case DIVIDE:
                 return GridSqlOperationType.DIVIDE;
 
-            case NEGATE:
-                // NB: Was set to null in original code for some reason; left unchanged during 1.4.197 migration.
-                return null;
-
             case MODULUS:
                 return GridSqlOperationType.MODULUS;
 
             default:
                 throw new IllegalStateException("Unsupported operation type: " + opType);
         }
+    }
+
+    /**
+     * Map operation type.
+     *
+     * @param opType H2 operation type.
+     * @return Ignite operation type.
+     */
+    private static GridSqlOperationType mapOperationType(IntervalOperation.IntervalOpType opType) {
+        //TODO: GG-14890: Fix handle interval op types.
+        throw new IllegalStateException("Unsupported operation type: " + opType);
+
+        /*switch (opType) {
+            case INTERVAL_PLUS_INTERVAL:
+            case DATETIME_PLUS_INTERVAL:
+                return GridSqlOperationType.PLUS;
+
+            case DATETIME_MINUS_DATETIME:
+            case INTERVAL_MINUS_INTERVAL:
+            case DATETIME_MINUS_INTERVAL:
+                return GridSqlOperationType.MINUS;
+
+            case INTERVAL_MULTIPLY_NUMERIC:
+                return GridSqlOperationType.MULTIPLY;
+
+            case INTERVAL_DIVIDE_NUMERIC:
+                return GridSqlOperationType.DIVIDE;
+
+            default:
+                throw new IllegalStateException("Unsupported operation type: " + opType);
+        }*/
     }
 
     /**
@@ -2187,21 +2223,22 @@ public class GridSqlQueryParser {
             return expression == ValueExpression.getDefault() ? GridSqlKeyword.DEFAULT :
                 new GridSqlConst(expression.getValue(null));
 
-        if (expression instanceof Operation) {
-            Operation operation = (Operation)expression;
+        if (expression instanceof BinaryOperation) {
+            BinaryOperation operation = (BinaryOperation)expression;
 
-            Operation.OpType type = OPERATION_TYPE.get(operation);
+            BinaryOperation.OpType type = OPERATION_TYPE.get(operation);
 
-            if (type == Operation.OpType.NEGATE) {
-                assert OPERATION_RIGHT.get(operation) == null;
-
-                return new GridSqlOperation(GridSqlOperationType.NEGATE,
-                    parseExpression(OPERATION_LEFT.get(operation), calcTypes));
-            }
 
             return new GridSqlOperation(mapOperationType(type),
                 parseExpression(OPERATION_LEFT.get(operation), calcTypes),
                 parseExpression(OPERATION_RIGHT.get(operation), calcTypes));
+        }
+
+        if (expression instanceof UnaryOperation) {
+            UnaryOperation operation = (UnaryOperation)expression;
+
+            return new GridSqlOperation(GridSqlOperationType.NEGATE,
+                parseExpression(operation.getSubexpression(0), calcTypes));
         }
 
         if (expression instanceof Comparison) {
@@ -2361,26 +2398,27 @@ public class GridSqlQueryParser {
             return new GridSqlParameter(((Parameter)expression).getIndex());
 
         if (expression instanceof Aggregate) {
-            Aggregate.AggregateType type = TYPE.get((Aggregate)expression);
+            AggregateType type = TYPE.get((Aggregate)expression);
 
             if (GridSqlAggregateFunction.isValidType(type)) {
                 GridSqlAggregateFunction res = new GridSqlAggregateFunction(
                     DISTINCT.get((Aggregate)expression), type);
 
-                Expression on = ON.get((Aggregate)expression);
+                Expression[] args = ABSTRACT_AGGREGATE_ARGS.get((Aggregate)expression);
 
-                if (on != null)
-                    res.addChild(parseExpression(on, calcTypes));
+                if (!F.isEmpty(args))
+                    res.addChild(parseExpression(args[0], calcTypes));
 
+                if (res.type == GridSqlFunctionType.GROUP_CONCAT) {
                 ArrayList<SelectOrderBy> orders = GROUP_CONCAT_ORDER_LIST.get((Aggregate)expression);
 
                 if (!F.isEmpty(orders))
                     parseGroupConcatOrder(res, orders, calcTypes);
 
-                Expression separator = GROUP_CONCAT_SEPARATOR.get((Aggregate)expression);
-
-                if (separator!= null)
-                    res.setGroupConcatSeparator(parseExpression(separator, calcTypes));
+                    if (args.length > 1) {
+                        res.setGroupConcatSeparator(parseExpression(args[1], calcTypes));
+                    }
+                }
 
                 return res;
             }
@@ -2389,7 +2427,17 @@ public class GridSqlQueryParser {
         if (expression instanceof ExpressionList) {
             Expression[] exprs = EXPR_LIST.get((ExpressionList)expression);
 
-            GridSqlArray res = new GridSqlArray(exprs.length);
+            GridSqlElement res;
+
+            int type = ((ExpressionList)expression).getType().getValueType();
+
+            if (type == Value.ROW)
+                res = new GridSqlValueRow(exprs.length);
+            else {
+                assert type == Value.ARRAY;
+
+                res = new GridSqlArray(exprs.length);
+            }
 
             for (Expression expr : exprs)
                 res.addChild(parseExpression(expr, calcTypes));
@@ -2447,7 +2495,8 @@ public class GridSqlQueryParser {
             SelectOrderBy o = orders.get(i);
 
             grpConcatOrderExpression[i] = parseExpression(o.expression, calcTypes);
-            grpConcatOrderDesc[i] = o.descending;
+            //TODO: GG-14890: Create ticket for support new sort orders.
+            grpConcatOrderDesc[i] = (o.sortType & SortOrder.DESCENDING) > 0;
         }
 
         f.setGroupConcatOrder(grpConcatOrderExpression, grpConcatOrderDesc);

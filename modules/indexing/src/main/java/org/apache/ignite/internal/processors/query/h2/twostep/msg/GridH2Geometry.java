@@ -60,7 +60,7 @@ public class GridH2Geometry extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2Geometry(Value val) {
-        assert val.getType() == Value.GEOMETRY : val.getType();
+        assert val.getType().getValueType() == Value.GEOMETRY : val.getType();
 
         b = val.getBytesNoCopy();
     }

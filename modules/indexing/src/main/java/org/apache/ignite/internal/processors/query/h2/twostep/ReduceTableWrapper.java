@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import javax.cache.CacheException;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
 import org.h2.index.Index;
@@ -70,8 +71,8 @@ public class ReduceTableWrapper extends Table {
     /**
      * @return Inner table.
      */
-    private Table innerTable() {
-        Table t = tbl.get();
+    public ReduceTable innerTable() {
+        ReduceTable t = tbl.get();
 
         if (t == null)
             throw new CacheException("Table `" + getName() + "` can be accessed only within Ignite query context.");
@@ -91,8 +92,8 @@ public class ReduceTableWrapper extends Table {
 
     /** {@inheritDoc} */
     @Override public PlanItem getBestPlanItem(Session session, int[] masks, TableFilter[] filters, int filter,
-        SortOrder sortOrder, HashSet<Column> cols) {
-        return innerTable().getBestPlanItem(session, masks, filters, filter, sortOrder, cols);
+        SortOrder sortOrder, AllColumnsForPlan allColumnsSet) {
+        return innerTable().getBestPlanItem(session, masks, filters, filter, sortOrder, allColumnsSet);
     }
 
     /** {@inheritDoc} */

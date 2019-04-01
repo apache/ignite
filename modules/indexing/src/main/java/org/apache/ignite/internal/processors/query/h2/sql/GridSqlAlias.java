@@ -69,7 +69,7 @@ public class GridSqlAlias extends GridSqlElement {
         return (X)el;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc}  */
     @Override public String getSQL() {
         SB b = new SB();
 
@@ -77,13 +77,13 @@ public class GridSqlAlias extends GridSqlElement {
 
         boolean tbl = child instanceof GridSqlTable;
 
-        b.a(tbl ? ((GridSqlTable)child).getBeforeAliasSql() : child.getSQL());
+        b.a(tbl ? ((GridSqlTable)child).getBeforeAliasSql(true) : child.getSQL());
 
         b.a(useAs ? " AS " : " ");
-        b.a(Parser.quoteIdentifier(alias));
+        Parser.quoteIdentifier(b.impl(), alias, true);
 
         if (tbl)
-            b.a(((GridSqlTable)child).getAfterAliasSQL());
+            b.a(((GridSqlTable)child).getAfterAliasSQL(true));
 
         return b.toString();
     }

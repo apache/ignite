@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
 /**
@@ -143,16 +142,17 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
     /**
      * @param buff Statement builder.
      */
-    protected void getSortLimitSQL(StatementBuilder buff) {
+    protected void getSortLimitSQL(StringBuilder buff) {
         if (!sort.isEmpty()) {
             buff.append("\nORDER BY ");
 
             int visibleCols = visibleColumns();
 
-            buff.resetCount();
+            for (int i = 0; i < sort.size(); i++) {
+                GridSqlSortColumn col = sort.get(i);
 
-            for (GridSqlSortColumn col : sort) {
-                buff.appendExceptFirst(", ");
+                if (i > 0)
+                    buff.append(", ");
 
                 int idx = col.column();
 
@@ -182,11 +182,23 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
             }
         }
 
-        if (limit != null)
-            buff.append(" LIMIT ").append(StringUtils.unEnclose(limit.getSQL()));
+        if (offset != null) {
+            String count = StringUtils.unEnclose(offset.getSQL());
+            buff.append(" OFFSET ").append(count).append("1".equals(count) ? " ROW" : " ROWS");
+        }
 
-        if (offset != null)
-            buff.append(" OFFSET ").append(StringUtils.unEnclose(offset.getSQL()));
+        if (limit != null) {
+            buff.append(" FETCH ").append(offset != null ? "NEXT" : "FIRST");
+
+            String count = StringUtils.unEnclose(limit.getSQL());
+
+            if ("1".equals(count))
+                buff.append(" ROW");
+            else
+                buff.append(' ').append(count).append(" ROWS");
+
+            buff.append(" ONLY");
+        }
     }
 
     /**

@@ -675,7 +675,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                         try {
                             colTypes.add(Class.forName(DataType.getTypeClassName(DataType
-                                .convertSQLTypeToValueType(rs.getInt("DATA_TYPE")))));
+                                .convertSQLTypeToValueType(rs.getInt("DATA_TYPE")), false)));
                         }
                         catch (ClassNotFoundException e) {
                             throw new AssertionError(e);
@@ -1537,7 +1537,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                     while (colsRs.next())
                         resCols.put(colsRs.getString("COLUMN_NAME"),
                             DataType.getTypeClassName(DataType.convertSQLTypeToValueType(colsRs
-                                .getShort("DATA_TYPE"))));
+                                .getShort("DATA_TYPE")), false));
                 }
 
                 try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM T")) {

@@ -44,7 +44,7 @@ public class GridH2Bytes extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2Bytes(Value val) {
-        assert val.getType() == Value.BYTES : val.getType();
+        assert val.getType().getValueType() == Value.BYTES : val.getType();
 
         b = val.getBytesNoCopy();
     }

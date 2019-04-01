@@ -69,8 +69,8 @@ public class ReduceTable extends TableBase {
      * @param idx Index.
      * @return Scan index.
      */
-    public static H2ScanIndex<ReduceIndex> createScanIndex(ReduceIndex idx) {
-        return new H2ScanIndex<>(idx);
+    public static H2ScanIndex<ReduceIndex> createScanIndex(ReduceIndex idx, ReduceTable tbl) {
+        return new H2ScanIndex<>(idx, tbl, "_SCAN_" + idx.getName());
     }
 
     /** {@inheritDoc} */
@@ -106,7 +106,7 @@ public class ReduceTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public void addRow(Session session, Row row) {
-        throw DbException.getUnsupportedException("addRow");
+        // Noop.
     }
 
     /** {@inheritDoc} */

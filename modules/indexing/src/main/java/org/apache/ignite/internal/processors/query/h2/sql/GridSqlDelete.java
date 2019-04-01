@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
 /** */
@@ -52,7 +51,7 @@ public class GridSqlDelete extends GridSqlStatement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");
+        StringBuilder buff = new StringBuilder(explain() ? "EXPLAIN " : "");
         buff.append("DELETE")
             .append("\nFROM ")
             .append(from.getSQL());

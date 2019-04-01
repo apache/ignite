@@ -99,17 +99,25 @@ public class GridSqlColumn extends GridSqlElement {
         return tblAlias;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc}  */
     @Override public String getSQL() {
-        String sql = Parser.quoteIdentifier(colName);
+        StringBuilder sb = new StringBuilder();
 
-        if (tblAlias != null)
-            sql = Parser.quoteIdentifier(tblAlias) + "." + sql;
+        if (schema != null) {
+            Parser.quoteIdentifier(sb, schema, true);
 
-        if (schema != null)
-            sql = Parser.quoteIdentifier(schema) + "." + sql;
+            sb.append(".");
+        }
 
-        return sql;
+        if (tblAlias != null) {
+            Parser.quoteIdentifier(sb, tblAlias, true);
+
+            sb.append(".");
+        }
+
+        Parser.quoteIdentifier(sb, colName, true);
+
+        return sb.toString();
     }
 
     /**
@@ -139,14 +147,14 @@ public class GridSqlColumn extends GridSqlElement {
      * @return Precision.
      */
     public int precision() {
-        return (int) col.getPrecision();
+        return (int) col.getType().getPrecision();
     }
 
     /**
      * @return Scale.
      */
     public int scale() {
-        return col.getScale();
+        return col.getType().getScale();
     }
 
     /**

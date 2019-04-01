@@ -73,25 +73,25 @@ public class GridSqlTable extends GridSqlElement {
         this.tbl = tbl instanceof GridH2Table ? (GridH2Table)tbl : null;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc}  */
     @Override public String getSQL() {
-        return getBeforeAliasSql() + getAfterAliasSQL();
+        return getBeforeAliasSql(true) + getAfterAliasSQL(true);
     }
 
     /**
      * @return SQL for the table before alias.
      */
-    public String getBeforeAliasSql() {
+    public String getBeforeAliasSql(boolean alwaysQuote) {
         if (schema == null)
-            return Parser.quoteIdentifier(tblName);
+            return Parser.quoteIdentifier(tblName, alwaysQuote);
 
-        return Parser.quoteIdentifier(schema) + '.' + Parser.quoteIdentifier(tblName);
+        return Parser.quoteIdentifier(schema, alwaysQuote) + '.' + Parser.quoteIdentifier(tblName, alwaysQuote);
     }
 
     /**
      * @return SQL for the table after alias.
      */
-    public String getAfterAliasSQL() {
+    public String getAfterAliasSQL(boolean alwaysQuote) {
         if (useIndexes == null)
             return "";
 
@@ -107,7 +107,7 @@ public class GridSqlTable extends GridSqlElement {
             else
                 b.a(", ");
 
-            b.a(Parser.quoteIdentifier(idx));
+            b.a(Parser.quoteIdentifier(idx, alwaysQuote));
         }
 
         b.a(')');

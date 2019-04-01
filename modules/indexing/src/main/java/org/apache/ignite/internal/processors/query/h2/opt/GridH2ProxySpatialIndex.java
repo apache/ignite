@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-
+import java.util.List;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
@@ -25,12 +26,8 @@ import org.h2.index.SpatialIndex;
 import org.h2.index.SpatialTreeIndex;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
-
-import java.util.HashSet;
-import java.util.List;
 
 /**
  * Allows to have 'free' spatial index for alias columns
@@ -53,7 +50,7 @@ public class GridH2ProxySpatialIndex extends GridH2ProxyIndex implements Spatial
 
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
-        SortOrder sortOrder, HashSet<Column> cols) {
+        SortOrder sortOrder, AllColumnsForPlan cols) {
         return SpatialTreeIndex.getCostRangeIndex(masks, columns) / 10;
     }
 

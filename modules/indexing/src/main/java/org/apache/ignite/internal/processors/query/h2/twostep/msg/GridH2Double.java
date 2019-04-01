@@ -42,7 +42,7 @@ public class GridH2Double extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2Double(Value val) {
-        assert val.getType() == Value.DOUBLE : val.getType();
+        assert val.getType().getValueType() == Value.DOUBLE : val.getType();
 
         x = val.getDouble();
     }

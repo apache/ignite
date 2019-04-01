@@ -98,7 +98,7 @@ public class DmlUtils {
 
             if (val instanceof Date && LocalDateTimeUtils.LOCAL_DATE == expCls) {
                 return LocalDateTimeUtils.valueToLocalDate(ValueDate.fromDateValue(
-                    DateTimeUtils.dateValueFromDate(((Date)val).getTime())));
+                    DateTimeUtils.dateValueFromLocalMillis(((Date)val).getTime())));
             }
 
             if (val instanceof Time && LocalDateTimeUtils.LOCAL_TIME == expCls)

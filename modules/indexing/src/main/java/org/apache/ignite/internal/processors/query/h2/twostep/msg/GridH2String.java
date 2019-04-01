@@ -42,9 +42,9 @@ public class GridH2String extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2String(Value val) {
-        assert val.getType() == Value.STRING ||
-            val.getType() == Value.STRING_FIXED ||
-            val.getType() == Value.STRING_IGNORECASE : val.getType();
+        assert val.getType().getValueType() == Value.STRING ||
+            val.getType().getValueType() == Value.STRING_FIXED ||
+            val.getType().getValueType() == Value.STRING_IGNORECASE : val.getType();
 
         x = val.getString();
     }

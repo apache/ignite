@@ -111,6 +111,9 @@ public class H2Utils {
     public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META =
         Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
 
+    /** */
+    public static final IndexColumn[] EMPTY_COLUMNS = new IndexColumn[0];
+
     /** Spatial index class name. */
     private static final String SPATIAL_IDX_CLS =
         "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
@@ -951,7 +954,7 @@ public class H2Utils {
                 keyCols.add(idxCol);
         }
 
-        return keyCols.toArray(new IndexColumn[0]);
+        return keyCols.toArray(EMPTY_COLUMNS);
     }
 
 }

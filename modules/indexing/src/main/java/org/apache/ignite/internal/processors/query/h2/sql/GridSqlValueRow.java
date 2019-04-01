@@ -17,30 +17,34 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import org.h2.expression.ValueExpression;
 
-/** Keyword (like DEFAULT). */
-public final class GridSqlKeyword extends GridSqlElement {
+/**
+ * SQL Array: (1, 2, ?, 'abc')
+ */
+public class GridSqlValueRow extends GridSqlElement {
     /**
-     * Default update value - analogous to H2.
-     *
-     * @see ValueExpression#getDefault()
+     * @param size Array size.
      */
-    public static final GridSqlKeyword DEFAULT = new GridSqlKeyword("DEFAULT");
-
-    /** Keyword to return as SQL. */
-    private final String keyword;
-
-    /** */
-    private GridSqlKeyword(String keyword) {
-        super(Collections.<GridSqlAst>emptyList());
-
-        this.keyword = keyword;
+    public GridSqlValueRow(int size) {
+        super(size == 0 ? Collections.<GridSqlAst>emptyList() : new ArrayList<GridSqlAst>(size));
     }
 
     /** {@inheritDoc}  */
     @Override public String getSQL() {
-        return keyword;
+        if (size() == 0)
+            return "ROW ()";
+
+        StringBuilder buff = new StringBuilder("ROW (");
+
+        for (int i = 0; i < size(); i++) {
+            if (i > 0)
+                buff.append(", ");
+
+            buff.append(child(i).getSQL());
+        }
+
+        return buff.append(')').toString();
     }
 }

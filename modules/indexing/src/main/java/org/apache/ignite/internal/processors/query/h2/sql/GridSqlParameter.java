@@ -35,7 +35,7 @@ public class GridSqlParameter extends GridSqlElement {
         this.idx = idx;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc}  */
     @Override public String getSQL() {
         return "?" + (idx + 1);
     }

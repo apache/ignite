@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
 /**
@@ -133,15 +131,21 @@ public class GridSqlSelect extends GridSqlQuery {
         return cols.get(col);
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc}  */
     @Override public String getSQL() {
-        StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN SELECT" : "SELECT");
+        StringBuilder buff = new StringBuilder(explain() ? "EXPLAIN SELECT" : "SELECT");
 
         if (distinct)
             buff.append(" DISTINCT");
 
-        for (GridSqlAst expression : columns(true)) {
-            buff.appendExceptFirst(",");
+        List<GridSqlAst> columns = columns(true);
+
+        for (int i = 0; i < columns.size(); i++) {
+            GridSqlAst expression = columns.get(i);
+
+            if (i > 0)
+                buff.append(",");
+
             buff.append('\n');
             buff.append(expression.getSQL());
         }
@@ -155,12 +159,11 @@ public class GridSqlSelect extends GridSqlQuery {
         if (grpCols != null) {
             buff.append("\nGROUP BY ");
 
-            buff.resetCount();
+            for (int i = 0; i < grpCols.length; i++) {
+                if (i > 0)
+                    buff.append(", ");
 
-            for (int grpCol : grpCols) {
-                buff.appendExceptFirst(", ");
-
-                addAlias(buff, cols.get(grpCol));
+                addAlias(buff, cols.get(grpCols[i]));
             }
         }
 
@@ -209,7 +212,7 @@ public class GridSqlSelect extends GridSqlQuery {
      * @param buff Statement builder.
      * @param exp Alias expression.
      */
-    private static void addAlias(StatementBuilder buff, GridSqlAst exp) {
+    private static void addAlias(StringBuilder buff, GridSqlAst exp) {
         exp = GridSqlAlias.unwrap(exp);
 
         buff.append(StringUtils.unEnclose(exp.getSQL()));

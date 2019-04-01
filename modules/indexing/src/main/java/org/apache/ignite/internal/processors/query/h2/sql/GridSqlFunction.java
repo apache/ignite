@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Parser;
-import org.h2.util.StatementBuilder;
 import org.h2.value.ValueString;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CASE;
@@ -87,12 +86,15 @@ public class GridSqlFunction extends GridSqlElement {
         this(schema, TYPE_MAP.get(name), name);
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc}  */
     @Override public String getSQL() {
-        StatementBuilder buff = new StatementBuilder();
+        StringBuilder buff = new StringBuilder();
 
-        if (schema != null)
-            buff.append(Parser.quoteIdentifier(schema)).append('.');
+        if (schema != null) {
+            Parser.quoteIdentifier(buff, schema, true);
+
+            buff.append('.');
+        }
 
         // We don't need to quote identifier as long as H2 never does so with function names when generating plan SQL.
         // On the other hand, quoting identifiers that also serve as keywords (like CURRENT_DATE() and CURRENT_DATE)
@@ -138,13 +140,14 @@ public class GridSqlFunction extends GridSqlElement {
 
             case TABLE:
                 for (int i = 0; i < size(); i++) {
-                    buff.appendExceptFirst(", ");
+                    if (i > 0)
+                        buff.append(", ");
 
                     GridSqlElement e = child(i);
 
                     // id int = ?, name varchar = ('aaa', 'bbb')
-                    buff.append(Parser.quoteIdentifier(((GridSqlAlias)e).alias()))
-                        .append(' ')
+                    Parser.quoteIdentifier(buff, ((GridSqlAlias)e).alias(), true);
+                    buff.append(' ')
                         .append(e.resultType().sql())
                         .append('=')
                         .append(e.child().getSQL());
@@ -154,7 +157,9 @@ public class GridSqlFunction extends GridSqlElement {
 
             default:
                 for (int i = 0; i < size(); i++) {
-                    buff.appendExceptFirst(", ");
+                    if (i > 0)
+                        buff.append(", ");
+
                     buff.append(child(i).getSQL());
                 }
         }

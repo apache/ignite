@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -28,14 +27,15 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 
@@ -66,17 +66,19 @@ public final class ReduceIndexUnsorted extends ReduceIndex {
 
     /**
      * @param ctx Context.
+     * @param fakeTbl Fake reduce table.
      * @return Dummy index instance.
      */
-    public static ReduceIndexUnsorted createDummy(GridKernalContext ctx) {
-        return new ReduceIndexUnsorted(ctx);
+    public static ReduceIndexUnsorted createDummy(GridKernalContext ctx, Table fakeTbl) {
+        return new ReduceIndexUnsorted(ctx, fakeTbl);
     }
 
     /**
      * @param ctx Context.
+     * @param fakeTbl Fake reduce table.
      */
-    private ReduceIndexUnsorted(GridKernalContext ctx) {
-        super(ctx);
+    private ReduceIndexUnsorted(GridKernalContext ctx, Table fakeTbl) {
+        super(ctx, fakeTbl);
     }
 
     /** {@inheritDoc} */
@@ -118,7 +120,8 @@ public final class ReduceIndexUnsorted extends ReduceIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+    public double getCost(Session session, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
+        AllColumnsForPlan allColumnsSet) {
         return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, true, allColumnsSet);
     }
 

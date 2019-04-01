@@ -42,7 +42,7 @@ public class GridH2Integer extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2Integer(Value val) {
-        assert val.getType() == Value.INT : val.getType();
+        assert val.getType().getValueType() == Value.INT : val.getType();
 
         x = val.getInt();
     }

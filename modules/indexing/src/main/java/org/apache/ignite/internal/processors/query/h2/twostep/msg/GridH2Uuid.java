@@ -45,7 +45,7 @@ public class GridH2Uuid extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2Uuid(Value val) {
-        assert val.getType() == Value.UUID : val.getType();
+        assert val.getType().getValueType() == Value.UUID : val.getType();
 
         ValueUuid uuid = (ValueUuid)val;
 

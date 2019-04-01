@@ -631,7 +631,7 @@ public class GridReduceQueryExecutor {
                     fakeTable(r.connection(), tblIdx++).innerTable(tbl);
                 }
                 else
-                    idx = ReduceIndexUnsorted.createDummy(ctx);
+                    idx = ReduceIndexUnsorted.createDummy(ctx, fakeTable(r.connection(), tblIdx++));
 
                 // If the query has only replicated tables, we have to run it on a single node only.
                 if (!mapQry.isPartitioned()) {
@@ -1322,15 +1322,8 @@ public class GridReduceQueryExecutor {
                         // to string.
                         col0 = new Column(alias, Value.STRING);
                     }
-                    else {
-                        col0 = new Column(
-                            alias,
-                            type.type(),
-                            type.precision(),
-                            type.scale(),
-                            type.displaySize()
-                        );
-                    }
+                    else
+                        col0 = new Column(alias, type.type());
 
                     cols.add(col0);
                 }
@@ -1356,7 +1349,7 @@ public class GridReduceQueryExecutor {
                 ReduceIndexSorted sortedMergeIdx = new ReduceIndexSorted(ctx, tbl, MERGE_INDEX_SORTED,
                     GridSqlSortColumn.toIndexColumns(tbl, sortCols));
 
-                idxs.add(ReduceTable.createScanIndex(sortedMergeIdx));
+                idxs.add(ReduceTable.createScanIndex(sortedMergeIdx, tbl));
                 idxs.add(sortedMergeIdx);
             }
             else

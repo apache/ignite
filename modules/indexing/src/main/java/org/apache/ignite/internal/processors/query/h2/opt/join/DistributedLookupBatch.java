@@ -254,6 +254,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
      */
     private boolean equal(Value v1, Value v2) {
         return v1 == v2 || (v1 != null && v2 != null &&
+            v1 != ValueNull.INSTANCE && v2 != ValueNull.INSTANCE &&
             v1.compareTypeSafe(v2, idx.getDatabase().getCompareMode()) == 0);
     }
 

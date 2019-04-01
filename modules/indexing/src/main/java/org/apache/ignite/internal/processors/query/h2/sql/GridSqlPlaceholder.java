@@ -38,7 +38,7 @@ public class GridSqlPlaceholder extends GridSqlElement {
         this.sql = sql;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc}  */
     @Override public String getSQL() {
         return sql;
     }

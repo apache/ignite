@@ -54,7 +54,7 @@ public class GridSqlConst extends GridSqlElement {
         return val;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc}  */
     @Override public String getSQL() {
         return val.getSQL();
     }

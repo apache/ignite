@@ -626,7 +626,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @return Comparison result.
      */
     public int compareValues(Value v1, Value v2) {
-        return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
+        return v1 == v2 ? 0 : table.compareValues(v1, v2);
     }
 
     /**
