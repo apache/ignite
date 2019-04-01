@@ -208,7 +208,7 @@ public class JdbcThinConnection implements Connection {
 
         timer = new Timer("query-timeout-timer");
 
-        bestEffortAffinity = connProps.isJdbcThinBestEffortAffinityEnabled();
+        bestEffortAffinity = connProps.isBestEffortAffinityEnabled();
 
         ensureConnected();
     }

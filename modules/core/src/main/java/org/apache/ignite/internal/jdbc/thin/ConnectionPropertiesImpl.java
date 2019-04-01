@@ -190,8 +190,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         null, false);
 
     /** Best effort affinity flag. */
-    private BooleanProperty jdbcThinBestEffortAffinityEnabled = new BooleanProperty(
-        "jdbcThinBestEffortAffinityEnabled",
+    private BooleanProperty bestEffortAffinityEnabled = new BooleanProperty(
+        "bestEffortAffinityEnabled",
         "Whether jdbc thin best effort affinity is enabled.",
         false, false);
 
@@ -205,7 +205,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslTrustAll, sslFactory,
         user, passwd,
         dataPageScanEnabled,
-        jdbcThinBestEffortAffinityEnabled
+        bestEffortAffinityEnabled
     };
 
     /** {@inheritDoc} */
@@ -512,13 +512,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable Boolean isJdbcThinBestEffortAffinityEnabled() {
-        return jdbcThinBestEffortAffinityEnabled.value();
+    @Override public boolean isBestEffortAffinityEnabled() {
+        return bestEffortAffinityEnabled.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setJdbcThinBestEffortAffinityEnabled(@Nullable Boolean jdbcThinBestEffortAffinityEnabled) {
-        this.jdbcThinBestEffortAffinityEnabled.setValue(jdbcThinBestEffortAffinityEnabled);
+    @Override public void setBestEffortAffinityEnabled(boolean bestEffortAffinityEnabled) {
+        this.bestEffortAffinityEnabled.setValue(bestEffortAffinityEnabled);
     }
 
     /**

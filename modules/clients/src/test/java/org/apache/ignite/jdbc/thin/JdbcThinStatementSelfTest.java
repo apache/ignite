@@ -44,8 +44,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
     private String url = bestEffortAffinity ?
-        "jdbc:ignite:thin://127.0.0.1:10800..10802" :
-        "jdbc:ignite:thin://127.0.0.1";
+        "jdbc:ignite:thin://127.0.0.1:10800..10802?bestEffortAffinityEnabled=true" :
+        "jdbc:ignite:thin://127.0.0.1?bestEffortAffinityEnabled=false";
 
     /** Nodes count. */
     private int nodesCnt = bestEffortAffinity ? 4 : 3;

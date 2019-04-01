@@ -410,12 +410,11 @@ public interface ConnectionProperties {
      * @return {@code True} if jdbc thin best effort affinity is enabled for this connection,
      * {@code false} if it's disabled.
      */
-    @Nullable public Boolean isJdbcThinBestEffortAffinityEnabled();
+    public boolean isBestEffortAffinityEnabled();
 
     /**
-     * @param jdbcThinBestEffortAffinityEnabled {@code True} if jdbc thin best effort affinity is enabled
-     * for this connection, if {@code false} then it's disabled, if {@code null} then server should use
-     * its default settings.
+     * @param bestEffortAffinityEnabled {@code True} if jdbc thin best effort affinity is enabled
+     * for this connection, if {@code false} then it's disabled.
      */
-    public void setJdbcThinBestEffortAffinityEnabled(@Nullable Boolean jdbcThinBestEffortAffinityEnabled);
+    public void setBestEffortAffinityEnabled(boolean bestEffortAffinityEnabled);
 }
