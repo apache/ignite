@@ -89,7 +89,7 @@ public class DenseVectorStorage implements VectorStorage {
         if (data == null) {
             data = new double[rawData.length];
             for (int i = 0; i < rawData.length; i++)
-                data[i] = rawData[i] == null ? 0.0 : ((Number)rawData[i]).doubleValue();
+                data[i] = rawData[i] == null ? 0.0 : ((Number)rawData[i]).doubleValue(); //TODO: IGNITE-11664
             rawData = null;
         }
     }
@@ -117,7 +117,7 @@ public class DenseVectorStorage implements VectorStorage {
 
         Serializable v = rawData[i];
         if (v == null)
-            return 0.0;
+            return 0.0; //TODO: IGNITE-11664
         else
             return ((Number)rawData[i]).doubleValue();
     }

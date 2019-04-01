@@ -72,7 +72,7 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
     @Override public double get(int i) {
         Serializable obj = sto.get(i);
         if (obj == null)
-            return 0.0;
+            return 0.0; //TODO: IGNITE-11664
 
         return ((Number)obj).doubleValue();
     }
@@ -86,7 +86,7 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
     @Override public void set(int i, double v) {
         if (v != 0.0)
             sto.put(i, v);
-        else if (sto.containsKey(i))
+        else if (sto.containsKey(i)) //TODO: IGNITE-11664
             sto.remove(i);
     }
 
