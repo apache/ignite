@@ -2052,16 +2052,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         else
             warnings.incTotal();
 
-        U.warn(diagnosticLog, "Found long running transaction [startTime=" + formatTime(tx.startTime()) +
-                ", curTime=" + formatTime(curTime) + ", tx=" + tx + ']');
-
         Ignite ignite = cctx.kernalContext().grid();
 
         boolean txOwnerDumpAllowed = ignite.configuration()
             .getTransactionConfiguration()
             .getTxOwnerDumpRequestsAllowed();
 
-        if (txOwnerDumpAllowed && !tx.near() && tx.state() == TransactionState.ACTIVE) {
+        if (txOwnerDumpAllowed && tx.local() && tx.state() == TransactionState.ACTIVE) {
             Collection<UUID> masterNodeIds = tx.masterNodeIds();
 
             if (masterNodeIds.size() == 1) {
@@ -2076,9 +2073,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         .callAsync(new FetchActiveTxOwnerTraceClosure(txOwnerThreadId))
                         .listen(new IgniteInClosure<IgniteFuture<String>>() {
                             @Override public void apply(IgniteFuture<String> strIgniteFut) {
-                                String traceDump = strIgniteFut.get();
+                                String traceDump = null;
 
-                                U.warn(diagnosticLog, traceDump);
+                                try {
+                                    traceDump = strIgniteFut.get();
+                                } catch (Exception e) {
+                                    U.warn(
+                                        diagnosticLog,
+                                        "Could not get thread dump from transaction owner near node: " + e.getMessage()
+                                    );
+                                }
+
+                                if (traceDump != null)
+                                    U.warn(diagnosticLog, traceDump);
                             }
                         });
                 } catch (Exception e) {
@@ -3552,10 +3559,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /** */
         private final int limit;
 
-        /** */
+        /**
+         * Internal storage of objects and counters for each of object.
+         */
         private final ConcurrentMap<T, AtomicInteger> actionsCnt = new ConcurrentHashMap<>();
 
-        /** */
+        /**
+         * Set of active objects.
+         */
         private final Set<T> activeObjects = new GridConcurrentHashSet<>();
 
         /**
@@ -3566,7 +3577,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /**
-         * Shows if action is allowed for the given object.
+         * Shows if action is allowed for the given object. Adds this object to internal set of active
+         * objects that are still in use.
          *
          * @param obj object.
          */
@@ -3584,7 +3596,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /**
-         * Removes old objects from limiter's internal storage.
+         * Removes old objects from limiter's internal storage. All objects that are contained in internal
+         * storage but not in set of active objects, are assumed as 'old'.
          */
         void trim() {
             actionsCnt.keySet().removeIf(key -> !activeObjects.contains(key));

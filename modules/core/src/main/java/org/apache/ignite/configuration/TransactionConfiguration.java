@@ -63,7 +63,7 @@ public class TransactionConfiguration implements Serializable {
      * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
      * owner thread.
      */
-    public static final boolean TX_OWNER_DUMP_REQUESTS_ALLOWED = true;
+    public static final boolean DFLT_TX_OWNER_DUMP_REQUESTS_ALLOWED = true;
 
     /** Default timeout before starting deadlock detection. */
     public static final long DFLT_DEADLOCK_TIMEOUT = 10_000;
@@ -94,7 +94,7 @@ public class TransactionConfiguration implements Serializable {
      * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
      * owner thread.
      */
-    private volatile boolean txOwnerDumpRequestsAllowed = TX_OWNER_DUMP_REQUESTS_ALLOWED;
+    private volatile boolean txOwnerDumpRequestsAllowed = DFLT_TX_OWNER_DUMP_REQUESTS_ALLOWED;
 
     /** Timeout before starting deadlock detection. */
     private long deadlockTimeout = DFLT_DEADLOCK_TIMEOUT;

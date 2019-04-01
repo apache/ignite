@@ -63,8 +63,14 @@ public class FetchActiveTxOwnerTraceClosure implements IgniteCallable<String> {
     private StackTraceElement[] getStackTrace() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
 
-        ThreadInfo threadInfo = threadMXBean.getThreadInfo(txOwnerThreadId, Integer.MAX_VALUE);
+        ThreadInfo threadInfo;
 
-        return threadInfo.getStackTrace();
+        try {
+            threadInfo = threadMXBean.getThreadInfo(txOwnerThreadId, Integer.MAX_VALUE);
+        } catch (SecurityException | IllegalArgumentException e) {
+            threadInfo = null;
+        }
+
+        return threadInfo == null ? new StackTraceElement[0] : threadInfo.getStackTrace();
     }
 }

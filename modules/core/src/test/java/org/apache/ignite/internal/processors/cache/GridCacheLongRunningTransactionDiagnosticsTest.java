@@ -113,7 +113,7 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
      * @throws Exception if grids start failed.
      */
     @Test
-    public void lrt() throws Exception {
+    public void testLrt() throws Exception {
         startGridsMultiThreaded(2);
 
         imitateLongTransaction(true);
@@ -126,7 +126,7 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
      * @throws Exception if grids start failed.
      */
     @Test
-    public void changeSetting() throws Exception {
+    public void testLrtChangeSetting() throws Exception {
         startGridsMultiThreaded(2);
 
         TransactionsMXBean tMXBean0 = txMXBean(0);
