@@ -29,10 +29,10 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
 
 import static org.apache.ignite.internal.util.IgniteUtils.jdkVersion;
 import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
@@ -111,57 +111,76 @@ public abstract class GridUnsafe {
             ? new ReflectiveDirectBufferCleaner()
             : new UnsafeDirectBufferCleaner();
 
-    /** JavaNioAccess object. */
+    /** JavaNioAccess object. If {@code null} then {@link #NEW_DIRECT_BUF_CONSTRUCTOR} should be available. */
     @Nullable private static final Object JAVA_NIO_ACCESS_OBJ;
 
-    /** JavaNioAccess#newDirectByteBuffer method. */
+    /** JavaNioAccess#newDirectByteBuffer method. Ususally {@code null} if {@link #JAVA_NIO_ACCESS_OBJ} is null. */
     @Nullable private static final Method NEW_DIRECT_BUF_MTD;
 
-
+    /**
+     * New direct buffer class constructor obtained and tested using reflection. If {@code null} then both {@link
+     * #JAVA_NIO_ACCESS_OBJ} and {@link #NEW_DIRECT_BUF_MTD} should ba not null.
+     */
     @Nullable private static final Constructor<?> NEW_DIRECT_BUF_CONSTRUCTOR;
 
     static {
-        NEW_DIRECT_BUF_CONSTRUCTOR = newDirectBufferCtor();
-
         Object nioAccessObj = null;
         Method directBufMtd = null;
-        try {
-            nioAccessObj = javaNioAccessObject();
 
-            directBufMtd = newDirectBufferMethod(nioAccessObj);
-        }
-        catch (Exception e) {
-            nioAccessObj = null;
-            directBufMtd = null;
+        Constructor<?> directBufCtor = null;
 
-            if (majorJavaVersion(jdkVersion()) > 11) {
-                Constructor<?> constructor = newDirectBufferCtor();
-
+        if (majorJavaVersion(jdkVersion()) < 12) {
+            // for old java prefer Java NIO & Shared Secrets obect init way
+            try {
+                nioAccessObj = javaNioAccessObject();
+                directBufMtd = newDirectBufferMethod(nioAccessObj);
             }
-            else
-                throw e;
+            catch (Exception e) {
+                nioAccessObj = null;
+                directBufMtd = null;
+
+                try {
+                    directBufCtor = createAndTestNewDirectBufferCtor();
+                }
+                catch (Exception eFallback) {
+                    eFallback.printStackTrace();
+
+                    e.addSuppressed(eFallback);
+
+                    throw e; // fallback was not suceefull
+                }
+
+                if (directBufCtor == null)
+                    throw e;
+            }
         }
-        finally {
-            JAVA_NIO_ACCESS_OBJ = nioAccessObj;
-            NEW_DIRECT_BUF_MTD = directBufMtd;
+        else {
+            try {
+                directBufCtor = createAndTestNewDirectBufferCtor();
+            }
+            catch (Exception e) {
+                directBufCtor = null;
+
+                try {
+                    nioAccessObj = javaNioAccessObject();
+                    directBufMtd = newDirectBufferMethod(nioAccessObj);
+                }
+                catch (Exception eFallback) {
+                    eFallback.printStackTrace();
+
+                    e.addSuppressed(eFallback);
+
+                    throw e; //fallback to shared secrets failed.
+                }
+
+                if (nioAccessObj == null || directBufCtor == null)
+                    throw e;
+            }
         }
-    }
 
-    private static Constructor<?> newDirectBufferCtor() {
-        try {
-            ByteBuffer direct = ByteBuffer.allocateDirect(1).order(NATIVE_BYTE_ORDER);
-
-            final Constructor<?> constructor =
-                direct.getClass().getDeclaredConstructor(long.class, int.class);
-
-            constructor.setAccessible(true);
-
-            return constructor;
-        } catch (NoSuchMethodException e) {
-            return null;
-        } catch (SecurityException e) {
-            return null;
-        }
+        JAVA_NIO_ACCESS_OBJ = nioAccessObj;
+        NEW_DIRECT_BUF_MTD = directBufMtd;
+        NEW_DIRECT_BUF_CONSTRUCTOR = directBufCtor;
     }
 
     /**
@@ -177,17 +196,29 @@ public abstract class GridUnsafe {
      * @return Byte buffer wrapping the given memory.
      */
     public static ByteBuffer wrapPointer(long ptr, int len) {
+        if (NEW_DIRECT_BUF_MTD != null && JAVA_NIO_ACCESS_OBJ != null)
+            return wrapPointerJavaNio(ptr, len);
+        else if (NEW_DIRECT_BUF_CONSTRUCTOR != null)
+            return wrapPointerDirectBufCtor(ptr, len, NEW_DIRECT_BUF_CONSTRUCTOR);
+        else
+            throw new RuntimeException("All cases of newDirectByteBuffer() creation failed" + FeatureChecker.JAVA_VER_SPECIFIC_WARN);
+    }
+
+    /**
+     * @param ptr Pointer to wrap.
+     * @param len Memory location length.
+     * @param constructor Constructor to use.
+     * @return Byte buffer wrapping the given memory.
+     */
+    @NotNull private static ByteBuffer wrapPointerDirectBufCtor(long ptr, int len, Constructor<?> constructor) {
         try {
-            Object newDirectBuf = NEW_DIRECT_BUF_CONSTRUCTOR.newInstance(ptr, len);
+            Object newDirectBuf = constructor.newInstance(ptr, len);
 
             return ((ByteBuffer)newDirectBuf).order(NATIVE_BYTE_ORDER);
         }
-        catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            new RuntimeException("JavaNioAccess#newDirectByteBuffer() method is unavailable."
+        catch (ReflectiveOperationException e) {
+            throw new RuntimeException("DirectByteBuffer#constructor is unavailable."
                 + FeatureChecker.JAVA_VER_SPECIFIC_WARN, e);
-            //todo check presence
-
-            return wrapPointer2(ptr, len);
         }
     }
 
@@ -196,7 +227,7 @@ public abstract class GridUnsafe {
      * @param len Memory location length.
      * @return Byte buffer wrapping the given memory.
      */
-    @NotNull private static ByteBuffer wrapPointer2(long ptr, int len) {
+    @NotNull private static ByteBuffer wrapPointerJavaNio(long ptr, int len) {
         try {
             ByteBuffer buf = (ByteBuffer)NEW_DIRECT_BUF_MTD.invoke(JAVA_NIO_ACCESS_OBJ, ptr, len, null);
 
@@ -1558,6 +1589,50 @@ public abstract class GridUnsafe {
 
         return javaVer < 9 ? "sun" : "jdk.internal";
     }
+
+
+    /**
+     * Create and test contructor for DirectByteBuffer. Test is simple wrap of one object
+     */
+    @NotNull
+    private static Constructor<?> createAndTestNewDirectBufferCtor() {
+        Constructor<?> ctorCandidate = createNewDirectBufferCtor();
+
+        int l = 1;
+        long ptr = UNSAFE.allocateMemory(l);
+
+        try {
+            ByteBuffer buf = wrapPointerDirectBufCtor(ptr, l, ctorCandidate);
+
+            A.ensure(buf.isDirect(), "Buffer expected to be direct, internal error during #wrapPointerDirectBufCtor()");
+        }
+        finally {
+            UNSAFE.freeMemory(ptr);
+        }
+
+        return ctorCandidate;
+    }
+
+
+    /**
+     * Simply create some instance of Direct Byte Buffer and try to get declared constructor.
+     */
+    @NotNull
+    private static Constructor<?> createNewDirectBufferCtor() {
+        try {
+            ByteBuffer direct = ByteBuffer.allocateDirect(1).order(NATIVE_BYTE_ORDER);
+
+            Constructor<?> constructor = direct.getClass().getDeclaredConstructor(long.class, int.class);
+
+            constructor.setAccessible(true);
+
+            return constructor;
+        }
+        catch (NoSuchMethodException | SecurityException e) {
+            throw new RuntimeException("Unable to set up byte buffer creation using reflections :" + e.getMessage(), e);
+        }
+    }
+
 
     /**
      * @param obj Object.
