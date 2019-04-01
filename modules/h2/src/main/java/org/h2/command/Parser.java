@@ -3535,39 +3535,34 @@ public class Parser {
             break;
         }
         case Function.TRIM: {
-            int flags;
-            boolean needFrom = false;
+            Expression space = null;
             if (readIf("LEADING")) {
-                flags = Function.TRIM_LEADING;
-                needFrom = true;
-            } else if (readIf("TRAILING")) {
-                flags = Function.TRIM_TRAILING;
-                needFrom = true;
-            } else {
-                needFrom = readIf("BOTH");
-                flags = Function.TRIM_LEADING | Function.TRIM_TRAILING;
-            }
-            Expression p0, space = null;
-            function.setFlags(flags);
-            if (needFrom) {
+                function = Function.getFunction(database, "LTRIM");
                 if (!readIf(FROM)) {
                     space = readExpression();
                     read(FROM);
                 }
-                p0 = readExpression();
-            } else {
-                if (readIf(FROM)) {
-                    p0 = readExpression();
-                } else {
-                    p0 = readExpression();
-                    if (readIf(FROM)) {
-                        space = p0;
-                        p0 = readExpression();
-                    }
+            }
+            else if (readIf("TRAILING")) {
+                function = Function.getFunction(database, "RTRIM");
+                if (!readIf(FROM)) {
+                    space = readExpression();
+                    read(FROM);
                 }
             }
-            if (!needFrom && space == null && readIf(COMMA)) {
+            else if (readIf("BOTH")) {
+                if (!readIf(FROM)) {
+                    space = readExpression();
+                    read(FROM);
+                }
+            }
+            Expression p0 = readExpression();
+            if (readIf(COMMA)) {
                 space = readExpression();
+            }
+            else if (readIf(FROM)) {
+                space = p0;
+                p0 = readExpression();
             }
             function.setParameter(0, p0);
             if (space != null) {

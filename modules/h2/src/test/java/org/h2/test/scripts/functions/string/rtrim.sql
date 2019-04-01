@@ -14,6 +14,3 @@ select rtrim(null) en, '>' || rtrim('a') || '<' ea, '>' || rtrim(' a ') || '<' e
 > ---- --- ----
 > null >a< > a<
 > rows: 1
-
-select rtrim() from dual;
-> exception INVALID_PARAMETER_COUNT_2

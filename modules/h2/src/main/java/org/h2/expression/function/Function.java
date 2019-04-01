@@ -153,16 +153,6 @@ public class Function extends Expression implements FunctionCall {
      */
     public static final int H2VERSION = 231;
 
-    /**
-     * The flags for TRIM(LEADING ...) function.
-     */
-    public static final int TRIM_LEADING = 1;
-
-    /**
-     * The flags for TRIM(TRAILING ...) function.
-     */
-    public static final int TRIM_TRAILING = 2;
-
     protected static final int VAR_ARGS = -1;
 
     private static final HashMap<String, FunctionInfo> FUNCTIONS = new HashMap<>(256);
@@ -172,7 +162,6 @@ public class Function extends Expression implements FunctionCall {
 
     protected final FunctionInfo info;
     private ArrayList<Expression> varArgs;
-    private int flags;
     protected TypeInfo type;
 
     private final Database database;
@@ -582,24 +571,6 @@ public class Function extends Expression implements FunctionCall {
             }
             args[index] = param;
         }
-    }
-
-    /**
-     * Set the flags for this function.
-     *
-     * @param flags the flags to set
-     */
-    public void setFlags(int flags) {
-        this.flags = flags;
-    }
-
-    /**
-     * Returns the flags.
-     *
-     * @return the flags
-     */
-    public int getFlags() {
-        return flags;
     }
 
     @Override
@@ -1372,7 +1343,7 @@ public class Function extends Expression implements FunctionCall {
             break;
         case TRIM:
             result = ValueString.get(StringUtils.trim(v0.getString(),
-                    (flags & TRIM_LEADING) != 0, (flags & TRIM_TRAILING) != 0, v1 == null ? " " : v1.getString()),
+                    true, true, v1 == null ? " " : v1.getString()),
                     database.getMode().treatEmptyStringsAsNull);
             break;
         case RTRIM:
@@ -2631,21 +2602,6 @@ public class Function extends Expression implements FunctionCall {
             builder.append('(');
         }
         switch (info.type) {
-        case TRIM: {
-            switch (flags) {
-            case TRIM_LEADING:
-                builder.append("LEADING ");
-                break;
-            case TRIM_TRAILING:
-                builder.append("TRAILING ");
-                break;
-            }
-            if (args.length > 1) {
-                args[1].getSQL(builder, alwaysQuote).append(" FROM ");
-            }
-            args[0].getSQL(builder, alwaysQuote);
-            break;
-        }
         case CAST: {
             args[0].getSQL(builder, alwaysQuote).append(" AS ").append(new Column(null, type).getCreateSQL());
             break;

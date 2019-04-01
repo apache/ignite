@@ -1259,6 +1259,9 @@ select * from test;
 drop table test;
 > ok
 
+select rtrim() from dual;
+> exception INVALID_PARAMETER_COUNT_2
+
 CREATE TABLE TEST(ID INT PRIMARY KEY, LABEL CHAR(20), LOOKUP CHAR(30));
 > ok
 
@@ -3267,6 +3270,12 @@ select (select id from test where 1=0) from test;
 
 drop table test;
 > ok
+
+select TRIM(' ' FROM '  abc   ') from dual;
+> 'abc'
+> -----
+> abc
+> rows: 1
 
 create table test(id int primary key, a boolean);
 > ok
