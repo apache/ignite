@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,6 +42,7 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
@@ -1231,12 +1231,31 @@ public class GridSqlQueryParser {
             }
         }
 
-        boolean wrapKey0 = (res.wrapKey() != null && res.wrapKey()) || !F.isEmpty(res.keyTypeName()) || keyColsNum > 1;
+        final boolean wrapKey0;
+
+        if (!F.isEmpty(res.keyTypeName())) {
+            Class<?> c = U.isJdkOrUnboxedPrimitive(res.keyTypeName()) ?
+                U.classForName(res.keyTypeName(), null, true) : null;
+
+            if (c != null && QueryUtils.isSqlType(c)) {
+                if (keyColsNum != 1)
+                    throw new IgniteSQLException(PARAM_KEY_TYPE + " may not point at SQL type " +
+                        "when multiple key columns are defined.", IgniteQueryErrorCode.PARSING);
+
+                wrapKey0 = false;
+            }
+            else
+                wrapKey0 = true;
+        }
+        else // Let's evaluate flag without honoring type name.
+            wrapKey0 = (res.wrapKey() != null && res.wrapKey()) || keyColsNum > 1;
 
         res.wrapKey(wrapKey0);
 
         // Process value wrapping.
         Boolean wrapVal = res.wrapValue();
+
+        final boolean wrapVal0;
 
         if (wrapVal != null && !wrapVal) {
             if (valColsNum > 1) {
@@ -1249,14 +1268,32 @@ public class GridSqlQueryParser {
                     IgniteQueryErrorCode.PARSING);
             }
 
-            res.wrapValue(false);
+            wrapVal0 = false;
+        }
+        else if (!F.isEmpty(res.valueTypeName())) {
+            Class<?> c = U.isJdkOrUnboxedPrimitive(res.valueTypeName()) ?
+                U.classForName(res.valueTypeName(), null, true) : null;
+
+            if (c != null && QueryUtils.isSqlType(c)) {
+                if (valColsNum != 1)
+                    throw new IgniteSQLException(PARAM_VAL_TYPE + " may not point at SQL type " +
+                        "when multiple value columns are defined.", IgniteQueryErrorCode.PARSING);
+
+                wrapVal0 = false;
+            }
+            else
+                wrapVal0 = true;
         }
         else
-            res.wrapValue(true); // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
+            wrapVal0 = true; // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
 
-        if (!F.isEmpty(res.valueTypeName()) && F.eq(res.keyTypeName(), res.valueTypeName()))
+        res.wrapValue(wrapVal0);
+
+        if (!F.isEmpty(res.valueTypeName()) && !U.isJdkOrUnboxedPrimitive(res.valueTypeName()) &&
+            F.eq(res.keyTypeName(), res.valueTypeName())) {
             throw new IgniteSQLException("Key and value type names " +
                 "should be different for CREATE TABLE: " + res.valueTypeName(), IgniteQueryErrorCode.PARSING);
+        }
 
         if (res.affinityKey() == null) {
             LinkedHashSet<String> pkCols0 = res.primaryKeyColumns();

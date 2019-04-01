@@ -151,11 +151,12 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestQueryEntityValidation()
         {
-            var cacheCfg = new CacheConfiguration("cache1", new QueryEntity(typeof(uint), typeof(ulong))
+            var cacheCfg = new CacheConfiguration("cache1", new QueryEntity(typeof(uint), typeof(UnsignedTypes))
             {
                 Fields = new[]
                 {
-                    new QueryField("myField", typeof(ushort))
+                    new QueryField("UnsignedLong", typeof(ulong)),
+                    new QueryField("UnsignedShort", typeof(ushort))
                 }
             });
 
@@ -178,35 +179,41 @@ namespace Apache.Ignite.Core.Tests.Log
 
                 Assert.AreEqual(6, warns.Count);
 
-                Assert.AreEqual("Validating cache configuration 'cache1', QueryEntity 'java.lang.Integer:java.lang." +
-                                "Long': Type 'System.UInt32' maps to Java type 'java.lang.Integer' using unchecked " +
-                                "conversion. This may cause issues in SQL queries. You can use 'System.Int32' " +
-                                "instead to achieve direct mapping.", warns[0]);
+                Assert.AreEqual(
+                    "Validating cache configuration 'cache1', QueryEntity 'java.lang.Integer:Apache.Ignite" +
+                    ".Core.Tests.Log.CustomLoggerTest+UnsignedTypes': Type 'System.UInt32' maps to Java type " +
+                    "'java.lang.Integer' using unchecked conversion. This may cause issues in SQL queries. You can use " +
+                    "'System.Int32' instead to achieve direct mapping.", warns[0]);
 
-                Assert.AreEqual("Validating cache configuration 'cache1', QueryEntity 'java.lang.Integer:java.lang." +
-                                "Long': Type 'System.UInt64' maps to Java type 'java.lang.Long' using unchecked " +
-                                "conversion. This may cause issues in SQL queries. You can use 'System.Int64' " +
-                                "instead to achieve direct mapping.", warns[1]);
+                Assert.AreEqual(
+                    "Validating cache configuration 'cache1', QueryEntity 'java.lang.Integer:Apache.Ignite.Core" +
+                    ".Tests.Log.CustomLoggerTest+UnsignedTypes', QueryField 'UnsignedLong': Type 'System.UInt64' maps " +
+                    "to Java type 'java.lang.Long' using unchecked conversion. This may cause issues in SQL queries. " +
+                    "You can use 'System.Int64' instead to achieve direct mapping.", warns[1]);
 
-                Assert.AreEqual("Validating cache configuration 'cache1', QueryEntity 'java.lang.Integer:java.lang." +
-                                "Long', QueryField 'myField': Type 'System.UInt16' maps to Java type 'java.lang." +
-                                "Short' using unchecked conversion. This may cause issues in SQL queries. You " +
-                                "can use 'System.Int16' instead to achieve direct mapping.", warns[2]);
+                Assert.AreEqual(
+                    "Validating cache configuration 'cache1', QueryEntity 'java.lang.Integer:Apache.Ignite.Core" +
+                    ".Tests.Log.CustomLoggerTest+UnsignedTypes', QueryField 'UnsignedShort': Type 'System.UInt16' maps " +
+                    "to Java type 'java.lang.Short' using unchecked conversion. This may cause issues in SQL queries. " +
+                    "You can use 'System.Int16' instead to achieve direct mapping.", warns[2]);
 
-                Assert.AreEqual("Validating cache configuration 'cache2', QueryEntity 'java.lang.Integer:java.lang." +
-                                "Long': Type 'System.UInt32' maps to Java type 'java.lang.Integer' using unchecked " +
-                                "conversion. This may cause issues in SQL queries. You can use 'System.Int32' " +
-                                "instead to achieve direct mapping.", warns[3]);
+                Assert.AreEqual(
+                    "Validating cache configuration 'cache2', QueryEntity 'java.lang.Integer:Apache.Ignite.Core" +
+                    ".Tests.Log.CustomLoggerTest+UnsignedTypes': Type 'System.UInt32' maps to Java type 'java.lang." +
+                    "Integer' using unchecked conversion. This may cause issues in SQL queries. You can use 'System.Int32' " +
+                    "instead to achieve direct mapping.", warns[3]);
 
-                Assert.AreEqual("Validating cache configuration 'cache2', QueryEntity 'java.lang.Integer:java.lang." +
-                                "Long': Type 'System.UInt64' maps to Java type 'java.lang.Long' using unchecked " +
-                                "conversion. This may cause issues in SQL queries. You can use 'System.Int64' " +
-                                "instead to achieve direct mapping.", warns[4]);
+                Assert.AreEqual(
+                    "Validating cache configuration 'cache2', QueryEntity 'java.lang.Integer:Apache.Ignite.Core" +
+                    ".Tests.Log.CustomLoggerTest+UnsignedTypes', QueryField 'UnsignedLong': Type 'System.UInt64' maps to" +
+                    " Java type 'java.lang.Long' using unchecked conversion. This may cause issues in SQL queries. You " +
+                    "can use 'System.Int64' instead to achieve direct mapping.", warns[4]);
 
-                Assert.AreEqual("Validating cache configuration 'cache2', QueryEntity 'java.lang.Integer:java.lang." +
-                                "Long', QueryField 'myField': Type 'System.UInt16' maps to Java type 'java.lang." +
-                                "Short' using unchecked conversion. This may cause issues in SQL queries. You " +
-                                "can use 'System.Int16' instead to achieve direct mapping.", warns[5]);
+                Assert.AreEqual(
+                    "Validating cache configuration 'cache2', QueryEntity 'java.lang.Integer:Apache.Ignite." +
+                    "Core.Tests.Log.CustomLoggerTest+UnsignedTypes', QueryField 'UnsignedShort': Type 'System.UInt16' " +
+                    "maps to Java type 'java.lang.Short' using unchecked conversion. This may cause issues in SQL " +
+                    "queries. You can use 'System.Int16' instead to achieve direct mapping.", warns[5]);
             }
         }
 
@@ -448,6 +455,22 @@ namespace Apache.Ignite.Core.Tests.Log
             {
                 throw new ArithmeticException("Error in func.");
             }
+        }
+        
+        /// <summary>
+        /// Value type that contains unsigned numeric fields. Need to test log warnings about type conversion.
+        /// </summary>
+        private class UnsignedTypes
+        {
+            /// <summary>
+            /// Unsigned long field.
+            /// </summary>
+            private ulong UnsignedLong { get; set;}
+
+            /// <summary>
+            /// Unsigned short field.
+            /// </summary>
+            private ushort UnsignedShort { get; set; }
         }
     }
 }

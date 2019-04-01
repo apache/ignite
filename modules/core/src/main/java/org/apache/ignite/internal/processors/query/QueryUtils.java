@@ -1272,6 +1272,60 @@ public class QueryUtils {
                 ", valFieldName=" + valFieldName + "]");
         }
 
+        // This is how many entries in QueryEntity#fields correspond to key.
+        int keyFldsNum = !F.isEmpty(keyFieldName) ? 1 : (entity.getKeyFields() != null ?
+            entity.getKeyFields().size() : 0);
+
+        // This is how many entries in QueryEntity#fields correspond to value.
+        int valFldsNum = !F.isEmpty(valFieldName) ? 1 : entity.getFields().size() - keyFldsNum;
+
+        boolean flatVal = valFldsNum == 0 || !F.isEmpty(valFieldName);
+
+        String keyType = entity.getKeyType();
+
+        if (!F.isEmpty(keyType) && U.isJdkOrUnboxedPrimitive(keyType)) {
+            if (!F.isEmpty(entity.getKeyFields()))
+                throw new IgniteException("Key type may not point at JDK type when multiple key columns are defined.");
+
+            Class<?> keyCls = U.box(U.classForName(keyType, null, true));
+
+            if (keyCls != null && isSqlType(keyCls) && !F.isEmpty(keyFieldName)) {
+                String keyColType = entity.getFields().get(keyFieldName);
+
+                // Boxed types should be equal
+                Class<?> keyColCls = U.box(U.classForName(keyColType, null, true));
+
+                if (!F.eq(keyCls, keyColCls))
+                    throw new IgniteException("Explicitly specified key column " + keyFieldName +
+                        " points at a type different from query entity SQL key type [entityKeyType=" + keyType +
+                        ",keyColumnType=" + keyColType + ']');
+            }
+        }
+
+        String valType = entity.getValueType();
+
+        if (!F.isEmpty(valType) && U.isJdkOrUnboxedPrimitive(valType)) {
+            if (!flatVal) {
+                throw new IgniteException("Value type may not point at JDK type " +
+                    "when multiple value columns are defined.");
+            }
+
+            Class<?> valCls = U.box(U.classForName(valType, null, true));
+
+            if (valCls != null && isSqlType(valCls) && !F.isEmpty(valFieldName)) {
+                String valColType = entity.getFields().get(valFieldName);
+
+                // Boxed types should be equal
+                Class<?> valColCls = U.box(U.classForName(valColType, null, true));
+
+                if (!F.eq(valCls, valColCls)) {
+                    throw new IgniteException("Explicitly specified value column " + valFieldName +
+                        " points at a type different from query entity SQL value type [entityValueType=" + valType +
+                        ",valueColumnType=" + valColType + ']');
+                }
+            }
+        }
+
         Collection<QueryIndex> idxs = entity.getIndexes();
 
         if (!F.isEmpty(idxs)) {

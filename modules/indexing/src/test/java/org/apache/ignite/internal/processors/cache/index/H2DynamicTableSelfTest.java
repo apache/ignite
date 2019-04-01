@@ -33,9 +33,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCache;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
@@ -132,6 +132,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute("DROP TABLE IF EXISTS PUBLIC.\"City\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"NameTest\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"BackupTest\"");
+        execute("DROP TABLE IF EXISTS PUBLIC.\"Ints\"");
 
         execute("DROP TABLE IF EXISTS PUBLIC.QP_CUSTOM");
         execute("DROP TABLE IF EXISTS PUBLIC.QP_DEFAULT");
@@ -352,6 +353,32 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @Test
     public void testPlainKey() throws Exception {
         doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.FULL_SYNC);
+    }
+
+    /**
+     * Test that repeating type names for key and value types are simply ignored if they match those of inferred types.
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testRedundantKeyAndValueTypeNames() throws Exception {
+        execute("CREATE TABLE Ints(k int primary key, v int) WITH \"key_type=java.lang.Integer," +
+            "value_type=java.lang.Integer,cache_name=ints\"");
+
+        IgniteCache<Integer, Integer> cache = client().cache("ints");
+
+        CacheConfiguration conf = cache.getConfiguration(CacheConfiguration.class);
+
+        assertEquals(1, conf.getQueryEntities().size());
+
+        QueryEntity e = (QueryEntity)conf.getQueryEntities().iterator().next();
+
+        assertEquals(Integer.class.getName(), e.getKeyType());
+
+        assertEquals(Integer.class.getName(), e.getValueType());
+
+        execute("INSERT INTO Ints(k, v) values(1, 2)");
+
+        assertEquals(2, (int)cache.get(1));
     }
 
     /**

@@ -19,36 +19,48 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * A test for {@link QueryEntity} initialization with incorrect query field name
+ * A test for {@link QueryEntity} initialization with incorrect query entity configuration if {@link QueryClassProperty}
+ * is used.
  */
-public class IncorrectQueryEntityTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
+public class IncorrectQueryEntityForClassPropertyTest extends GridCommonAbstractTest {
+    /**
+     * Cretates incorrect configuration to test {@link QueryUtils#buildClassProperty(Class, Class, String, Class, Map,
+     * boolean, CacheObjectContext)}. Non-binary marshaller is required to do this.
+     */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setMarshaller(new OptimizedMarshaller());
+
         CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
 
-        QueryEntity queryEntity = new QueryEntity(Object.class.getName(), Object.class.getName());
+        // Use string keyType to avoid checks on the client side.
+        QueryEntity queryEntity = new QueryEntity("SomeKeyClass", "java.lang.Long");
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-        fields.put("exceptionOid", Object.class.getName());
+        fields.put("someFieldName", Object.class.getName());
 
         queryEntity.setFields(fields);
 
         Set<String> keyFields = new HashSet<>();
 
-        keyFields.add("exceptionOid");
+        keyFields.add("someFieldName");
 
         queryEntity.setKeyFields(keyFields);
 
@@ -66,15 +78,10 @@ public class IncorrectQueryEntityTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectQueryField() throws Exception {
-        try {
-            startGrid();
-        }
-        catch (Exception exception) {
-            if (!exception.getMessage().contains(
-                QueryUtils.propertyInitializationExceptionMessage(
-                    Object.class, Object.class, "exceptionOid", Object.class)))
-                fail("property initialization exception must be thrown, but got " + exception.getMessage());
-        }
+        String expMsg = QueryUtils.propertyInitializationExceptionMessage(
+            Object.class, Long.class, "someFieldName", Object.class);
+
+        GridTestUtils.assertThrows(log(), this::startGrid, IgniteCheckedException.class, expMsg);
     }
 
     /** {@inheritDoc} */

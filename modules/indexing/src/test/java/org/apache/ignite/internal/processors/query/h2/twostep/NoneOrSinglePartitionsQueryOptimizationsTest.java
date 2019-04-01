@@ -96,7 +96,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
         QueryEntity entity = new QueryEntity(Integer.class, JoinSqlTestHelper.Organization.class);
 
         entity.setKeyFieldName("ID");
-        entity.getFields().put("ID", String.class.getName());
+        entity.getFields().put("ID", Integer.class.getName());
 
         return Collections.singletonList(entity);
     }
@@ -108,7 +108,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
         QueryEntity entity = new QueryEntity(Integer.class, JoinSqlTestHelper.Person.class);
 
         entity.setKeyFieldName("ID");
-        entity.getFields().put("ID", String.class.getName());
+        entity.getFields().put("ID", Integer.class.getName());
 
         return Collections.singletonList(entity);
     }

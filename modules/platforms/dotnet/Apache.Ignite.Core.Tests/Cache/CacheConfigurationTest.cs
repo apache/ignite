@@ -623,12 +623,12 @@ namespace Apache.Ignite.Core.Tests.Cache
                     new QueryEntity
                     {
                         KeyTypeName = "Integer",
-                        ValueTypeName = "java.lang.String",
+                        ValueTypeName = "CustomObject",
                         TableName = "Table1",
                         Fields = new[]
                         {
                             new QueryField("length", typeof(int)), 
-                            new QueryField("name", typeof(string)) {IsKeyField = true, DefaultValue = "defName"},
+                            new QueryField("name", typeof(string)) {DefaultValue = "defName"},
                             new QueryField("location", typeof(string)) {NotNull = true},
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
@@ -733,13 +733,13 @@ namespace Apache.Ignite.Core.Tests.Cache
                     new QueryEntity
                     {
                         KeyTypeName = "Integer",
-                        ValueTypeName = "java.lang.String",
+                        ValueTypeName = "CustomObject",
                         TableName = "MyTable",
                         Fields = new[]
                         {
                             new QueryField("length", typeof(int)) {DefaultValue = -1}, 
                             new QueryField("name", typeof(string)), 
-                            new QueryField("location", typeof(string)) {IsKeyField = true}
+                            new QueryField("location", typeof(string))
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
                         Indexes = new[]
