@@ -351,10 +351,12 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBaselineAutoAdjustDisableByDefaultBecauseNotNewCluster() throws Exception {
+        //It emulate working cluster before auto-adjust feature was available.
         System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
         try {
             Ignite ignite0 = startGrids(2);
 
+            //This activation guarantee that baseline would be set.
             ignite0.cluster().active(true);
 
             ignite0.cluster().baselineAutoAdjustTimeout(0);
@@ -365,7 +367,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
             System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
         }
 
-        //Auto-activation is expected.
+        //Auto-activation is expected. Not first activation should be detected.
         Ignite ignite0 = startGrids(2);
 
         awaitPartitionMapExchange();
@@ -376,6 +378,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
+        //Should nothing happened because auto-adjust should be disable due to activation is not first.
         assertFalse(waitForCondition(
             () -> !initBaseline.equals(
                 ignite0.cluster().currentBaselineTopology().stream()

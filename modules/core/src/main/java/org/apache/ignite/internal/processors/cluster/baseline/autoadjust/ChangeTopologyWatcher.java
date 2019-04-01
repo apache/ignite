@@ -125,17 +125,17 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
     /**
      * @return Statistic of baseline auto-adjust.
      */
-    public BaselineAutoAdjustStatistic getStatistic() {
+    public BaselineAutoAdjustStatus getStatus() {
         synchronized (this) {
             if (lastBaselineData.isAdjusted())
-                return BaselineAutoAdjustStatistic.notScheduled();
+                return BaselineAutoAdjustStatus.notScheduled();
 
             long timeToLastTask = baselineAutoAdjustScheduler.lastScheduledTaskTime();
 
             if (timeToLastTask <= 0)
-                return BaselineAutoAdjustStatistic.inProgress();
+                return BaselineAutoAdjustStatus.inProgress();
 
-            return BaselineAutoAdjustStatistic.scheduled(timeToLastTask);
+            return BaselineAutoAdjustStatus.scheduled(timeToLastTask);
         }
     }
 }

@@ -57,7 +57,7 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
-import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatistic;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -1425,8 +1425,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /**
      * @return Statistic of baseline auto-adjust.
      */
-    public BaselineAutoAdjustStatistic baselineAutoAdjustStatistic(){
-        return changeTopologyWatcher.getStatistic();
+    public BaselineAutoAdjustStatus baselineAutoAdjustStatus(){
+        return changeTopologyWatcher.getStatus();
     }
 
     /**

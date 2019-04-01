@@ -65,7 +65,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionInteg
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureSerializationTest;
-import org.apache.ignite.internal.processors.cluster.BaselineConfigurationMXBeanTest;
+import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanTest;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationInMemoryTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
@@ -217,7 +217,7 @@ import org.junit.runners.Suite;
     // In-memory Distributed MetaStorage.
     DistributedMetaStorageTest.class,
     DistributedConfigurationInMemoryTest.class,
-    BaselineConfigurationMXBeanTest.class,
+    BaselineAutoAdjustMXBeanTest.class,
 
     ConsistentIdImplicitlyExplicitlyTest.class,
 

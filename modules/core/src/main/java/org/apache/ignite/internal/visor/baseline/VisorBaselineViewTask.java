@@ -19,7 +19,7 @@ package org.apache.ignite.internal.visor.baseline;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatistic;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -63,7 +63,7 @@ public class VisorBaselineViewTask extends VisorOneNodeTask<Void, VisorBaselineT
                 cluster.baselineAutoAdjustTimeout()
             );
 
-            BaselineAutoAdjustStatistic adjustStatistic = cluster.baselineAutoAdjustStatistic();
+            BaselineAutoAdjustStatus adjustStatus = cluster.baselineAutoAdjustStatus();
 
             return new VisorBaselineTaskResult(
                 ignite.cluster().active(),
@@ -71,8 +71,8 @@ public class VisorBaselineViewTask extends VisorOneNodeTask<Void, VisorBaselineT
                 cluster.currentBaselineTopology(),
                 cluster.forServers().nodes(),
                 autoAdjustSettings,
-                adjustStatistic.getBaselineAdjustTimeout(),
-                adjustStatistic.getTaskState() == BaselineAutoAdjustStatistic.TaskState.IN_PROGRESS
+                adjustStatus.getTimeUntilAutoAdjust(),
+                adjustStatus.getTaskState() == BaselineAutoAdjustStatus.TaskState.IN_PROGRESS
             );
         }
 

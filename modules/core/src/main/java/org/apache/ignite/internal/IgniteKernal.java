@@ -136,7 +136,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBean
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
-import org.apache.ignite.internal.processors.cluster.BaselineConfigurationMXBeanImpl;
+import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanImpl;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
@@ -209,7 +209,7 @@ import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.mxbean.BaselineConfigurationMXBean;
+import org.apache.ignite.mxbean.BaselineAutoAdjustMXBean;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.DataStorageMXBean;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
@@ -4409,8 +4409,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             registerMBean("DataStorage", dataStorageMXBean.getClass().getSimpleName(), dataStorageMXBean, DataStorageMXBean.class);
 
             // Baseline configuration
-            BaselineConfigurationMXBean baselineConfigurationMXBean = new BaselineConfigurationMXBeanImpl(ctx);
-            registerMBean("Baseline", baselineConfigurationMXBean.getClass().getSimpleName(), baselineConfigurationMXBean, BaselineConfigurationMXBean.class);
+            BaselineAutoAdjustMXBean baselineAutoAdjustMXBean = new BaselineAutoAdjustMXBeanImpl(ctx);
+            registerMBean("Baseline", baselineAutoAdjustMXBean.getClass().getSimpleName(), baselineAutoAdjustMXBean, BaselineAutoAdjustMXBean.class);
 
             // Executors
             registerExecutorMBean("GridUtilityCacheExecutor", utilityCachePool);
