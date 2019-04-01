@@ -98,13 +98,9 @@ public class DmlBatchSender {
         throws IgniteCheckedException {
         assert key != null;
         assert proc != null;
-
-        ClusterNode node = cctx.affinity().primaryByKey(key, AffinityTopologyVersion.NONE);
-
-        if (node == null)
-            throw new IgniteCheckedException("Failed to map key to node.");
-
         assert rowNum < cntPerRow.length;
+
+        ClusterNode node = primaryNodeByKey(key);
 
         UUID nodeId = node.id();
 
@@ -124,6 +120,20 @@ public class DmlBatchSender {
 
         if (batch.size() >= size)
             sendBatch(batch);
+    }
+
+    /**
+     * @param key Key.
+     * @return Primary node for given key.
+     * @throws IgniteCheckedException If primary node is not found.
+     */
+    public ClusterNode primaryNodeByKey(Object key) throws IgniteCheckedException {
+        ClusterNode node = cctx.affinity().primaryByKey(key, AffinityTopologyVersion.NONE);
+
+        if (node == null)
+            throw new IgniteCheckedException("Failed to map key to node.");
+
+        return node;
     }
 
     /**
