@@ -85,9 +85,11 @@ export default class CacheEditFormController {
             {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
         ];
     }
+
     $onDestroy() {
         this.subscription.unsubscribe();
     }
+
     $onChanges(changes) {
         if (
             'cache' in changes && get(this.clonedCache, '_id') !== get(this.cache, '_id')
@@ -105,17 +107,25 @@ export default class CacheEditFormController {
             this.igfsIDs = (changes.igfss.currentValue || []).map((i) => i._id);
         }
     }
+
     getValuesToCompare() {
         return [this.cache, this.clonedCache].map(this.Caches.normalize);
     }
+
     save(download) {
         if (this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
         this.onSave({$event: {cache: cloneDeep(this.clonedCache), download}});
     }
+
     reset = (forReal) => forReal ? this.clonedCache = cloneDeep(this.cache) : void 0;
+
     confirmAndReset() {
         return this.IgniteConfirm.confirm('Are you sure you want to undo all changes for current cache?')
         .then(this.reset);
+    }
+
+    clearImplementationVersion(storeFactory) {
+        delete storeFactory.implementationVersion;
     }
 }

@@ -1056,7 +1056,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      * Calculates free space of all partition data stores - number of bytes available for use in allocated pages.
      *
-     * @return Tuple (numenator, denominator).
+     * @return free space size in bytes.
      */
     long freeSpace() {
         long freeSpace = 0;
@@ -1073,6 +1073,28 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         return freeSpace;
+    }
+
+    /**
+     * Calculates empty data pages of all partition data stores.
+     *
+     * @return empty data pages count.
+     */
+    long emptyDataPages() {
+        long emptyDataPages = 0;
+
+        for (CacheDataStore store : partDataStores.values()) {
+            assert store instanceof GridCacheDataStore;
+
+            CacheFreeListImpl freeList = ((GridCacheDataStore)store).freeList;
+
+            if (freeList == null)
+                continue;
+
+            emptyDataPages += freeList.emptyDataPages();
+        }
+
+        return emptyDataPages;
     }
 
     /**

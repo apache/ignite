@@ -33,7 +33,6 @@ import org.junit.Test;
  * Test expose SPATIAL indexes through SQL system view INDEXES.
  */
 public class H2IndexesSystemViewTest extends GridCommonAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         return super.getConfiguration().setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME));
@@ -41,6 +40,7 @@ public class H2IndexesSystemViewTest extends GridCommonAbstractTest {
 
     /**
      * Test indexes system view.
+     *
      * @throws Exception in case of failure.
      */
     @Test
@@ -62,10 +62,10 @@ public class H2IndexesSystemViewTest extends GridCommonAbstractTest {
         Assert.assertEquals(srvNodeIndexes.toString(), clientNodeNodeIndexes.toString());
 
         String[][] expectedResults = {
-            {"PUBLIC", "AFF_CACHE", "IDX_GEO_1", "\"GEOM\" ASC", "SPATIAL", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
-            {"PUBLIC", "AFF_CACHE", "__SCAN_", "null", "SCAN", "false", "false", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
-            {"PUBLIC", "AFF_CACHE", "_key_PK", "\"ID1\" ASC", "BTREE", "true", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "5"},
-            {"PUBLIC", "AFF_CACHE", "_key_PK_hash", "\"ID1\" ASC", "HASH", "false", "true", "-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "null"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "IDX_GEO_1", "SPATIAL", "\"GEOM\" ASC", "false", "false", "null"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "__SCAN_", "SCAN", "null", "false", "false", "null"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC", "true", "true", "5"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC", "false", "true", "null"},
         };
 
         for (int i = 0; i < srvNodeIndexes.size(); i++) {

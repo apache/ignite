@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.examples.ml.util.DatasetHelper;
 import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -49,24 +50,29 @@ public class BinarizationExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Binarization example started.");
 
-            IgniteCache<Integer, Person> persons = createCache(ignite);
+            IgniteCache<Integer, Person> persons = null;
+            try {
+                persons = createCache(ignite);
 
-            // Defines first preprocessor that extracts features from an upstream data.
-            IgniteBiFunction<Integer, Person, Vector> featureExtractor = (k, v) -> VectorUtils.of(
-                v.getAge()
-            );
+                // Defines first preprocessor that extracts features from an upstream data.
+                IgniteBiFunction<Integer, Person, Vector> featureExtractor = (k, v) -> VectorUtils.of(
+                    v.getAge()
+                );
 
-            // Defines second preprocessor that normalizes features.
-            IgniteBiFunction<Integer, Person, Vector> preprocessor = new BinarizationTrainer<Integer, Person>()
-                .withThreshold(40)
-                .fit(ignite, persons, featureExtractor);
+                // Defines second preprocessor that normalizes features.
+                IgniteBiFunction<Integer, Person, Vector> preprocessor = new BinarizationTrainer<Integer, Person>()
+                    .withThreshold(40)
+                    .fit(ignite, persons, featureExtractor);
 
-            // Creates a cache based simple dataset containing features and providing standard dataset API.
-            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, preprocessor)) {
-                new DatasetHelper(dataset).describe();
+                // Creates a cache based simple dataset containing features and providing standard dataset API.
+                try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, FeatureLabelExtractorWrapper.wrap(preprocessor))) {
+                    new DatasetHelper(dataset).describe();
+                }
+
+                System.out.println(">>> Binarization example completed.");
+            } finally {
+                persons.destroy();
             }
-
-            System.out.println(">>> Binarization example completed.");
         }
     }
 

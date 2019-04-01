@@ -2176,6 +2176,10 @@ public class IgnitionEx {
                     "on start?) [segPlc=" + segPlc + ", wait=false]");
             }
 
+            if (CU.isPersistenceEnabled(cfg) && myCfg.getConsistentId() == null)
+                U.warn(log, "Consistent ID is not set, it is recommended to set consistent ID for production " +
+                    "clusters (use IgniteConfiguration.setConsistentId property)");
+
             myCfg.setTransactionConfiguration(myCfg.getTransactionConfiguration() != null ?
                 new TransactionConfiguration(myCfg.getTransactionConfiguration()) : null);
 
