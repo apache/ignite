@@ -580,7 +580,6 @@ public class GridMapQueryExecutor {
                         Prepared p = GridSqlQueryParser.prepared(stmt);
 
                         if (GridSqlQueryParser.isForUpdateQuery(p)) {
-                            //TODO: GG-14890: Check if 'alwaysQuote' should be true or not.
                             sql = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(p, inTx);
                             stmt = h2.connections().prepareStatement(connWrp.connection(), sql);
                         }

@@ -763,7 +763,6 @@ public class GridSqlQueryParser {
 
         h2ObjToGridObj.put(select, res);
 
-        // TODO: IGNITE-14890: Check and fix if select.isStandartDistinct() is needed here.
         res.distinct(select.isAnyDistinct());
 
         Expression where = CONDITION.get(select);
@@ -2168,37 +2167,6 @@ public class GridSqlQueryParser {
     }
 
     /**
-     * Map operation type.
-     *
-     * @param opType H2 operation type.
-     * @return Ignite operation type.
-     */
-    private static GridSqlOperationType mapOperationType(IntervalOperation.IntervalOpType opType) {
-        //TODO: GG-14890: Fix handle interval op types.
-        throw new IllegalStateException("Unsupported operation type: " + opType);
-
-        /*switch (opType) {
-            case INTERVAL_PLUS_INTERVAL:
-            case DATETIME_PLUS_INTERVAL:
-                return GridSqlOperationType.PLUS;
-
-            case DATETIME_MINUS_DATETIME:
-            case INTERVAL_MINUS_INTERVAL:
-            case DATETIME_MINUS_INTERVAL:
-                return GridSqlOperationType.MINUS;
-
-            case INTERVAL_MULTIPLY_NUMERIC:
-                return GridSqlOperationType.MULTIPLY;
-
-            case INTERVAL_DIVIDE_NUMERIC:
-                return GridSqlOperationType.DIVIDE;
-
-            default:
-                throw new IllegalStateException("Unsupported operation type: " + opType);
-        }*/
-    }
-
-    /**
      * @param expression Expression.
      * @param calcTypes Calculate types for all the expressions.
      * @return Parsed expression.
@@ -2495,7 +2463,6 @@ public class GridSqlQueryParser {
             SelectOrderBy o = orders.get(i);
 
             grpConcatOrderExpression[i] = parseExpression(o.expression, calcTypes);
-            //TODO: GG-14890: Create ticket for support new sort orders.
             grpConcatOrderDesc[i] = (o.sortType & SortOrder.DESCENDING) > 0;
         }
 

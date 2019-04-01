@@ -53,7 +53,6 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
             case COUNT:
                 return COUNT;
 
-            // TODO: GG-14890: Create ticket to rename GROUP_CONCAT operation.
             case LISTAGG:
                 return GROUP_CONCAT;
 

@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-
 import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Database;
 import org.h2.engine.DbObject;

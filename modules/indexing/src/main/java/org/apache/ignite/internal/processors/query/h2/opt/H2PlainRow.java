@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.result.Row;
-import org.h2.result.RowImpl;
 import org.h2.value.Value;
 
 /**
