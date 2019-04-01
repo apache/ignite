@@ -17,32 +17,39 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.pagemem.wal.IgnitePartitionCatchUpLog;
+
 /**
  *
  */
-public interface CacheDataStoreProxy extends IgniteCacheOffheapManager.CacheDataStore {
+public interface CacheDataStoreEx extends IgniteCacheOffheapManager.CacheDataStore {
     /**
      * @param mode The mode to associate with data storage instance.
      * @param storage The cache data storage instance to set to.
      */
-    public void storage(StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage);
+    public void store(StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage);
 
     /**
      * @param mode The storage mode.
      * @return The storage intance for the given mode.
      */
-    public IgniteCacheOffheapManager.CacheDataStore storage(StorageMode mode);
+    public IgniteCacheOffheapManager.CacheDataStore store(StorageMode mode);
 
     /**
      * @param mode The mode to switch to.
      */
-    public void storageMode(StorageMode mode);
+    public void storeMode(StorageMode mode);
 
     /**
      * @return The currently used storage mode. Some of the long-running threads will remain to use
      * the old mode until they finish.
      */
-    public StorageMode storageMode();
+    public StorageMode storeMode();
+
+    /**
+     * @return The storage is used to expose temporary cache data rows when the <tt>LOG_ONLY</tt> mode is active.
+     */
+    public IgnitePartitionCatchUpLog catchLog();
 
     /**
      *

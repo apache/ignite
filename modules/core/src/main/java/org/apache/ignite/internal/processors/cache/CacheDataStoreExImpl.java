@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.pagemem.wal.IgnitePartitionCatchUpLog;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -46,17 +46,20 @@ import static java.util.Optional.ofNullable;
 
 /**
  * <p>
- *     This is the CacheDataStoreProxy implementation. The main purpose is hot switching between different
+ *     This is the CacheDataStoreEx implementation. The main purpose is hot switching between different
  *     modes of cache data storage (e.g. between <tt>FULL</tt> and <tt>LOG_ONLY</tt> mode) to guarantee the
  *     consistency for Checkpointer writes and async cache put operations.
  * </p>
  */
-public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
+public class CacheDataStoreExImpl implements CacheDataStoreEx {
     /** */
     private final IgniteLogger log;
 
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
+
+    /** */
+    private final IgnitePartitionCatchUpLog catchLog;
 
     /** The map of all storages per each mode. */
     private final ConcurrentMap<StorageMode, IgniteCacheOffheapManager.CacheDataStore> storageMap =
@@ -69,16 +72,18 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
      * @param primary The main storage to perform full cache operations.
      * @param secondary The storage to handle only write operation in temporary mode.
      */
-    public CacheDataStoreProxyImpl(
+    public CacheDataStoreExImpl(
         GridCacheSharedContext<?, ?> cctx,
         IgniteCacheOffheapManager.CacheDataStore primary,
         IgniteCacheOffheapManager.CacheDataStore secondary,
+        IgnitePartitionCatchUpLog catchLog,
         IgniteLogger log
     ) {
         assert primary != null;
 
         this.cctx = cctx;
         this.log = log;
+        this.catchLog = catchLog;
 
         storageMap.put(StorageMode.FULL, primary);
 
@@ -87,7 +92,7 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
     }
 
     /** {@inheritDoc} */
-    @Override public void storage(StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage) {
+    @Override public void store(StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage) {
         assert mode != currMode || cctx.database().checkpointLockIsHeldByThread() :
             "Changing active storage is allowed only under the checkpoint write lock";
 
@@ -98,13 +103,13 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCacheOffheapManager.CacheDataStore storage(StorageMode mode) {
+    @Override public IgniteCacheOffheapManager.CacheDataStore store(StorageMode mode) {
         return ofNullable(storageMap.get(mode))
             .orElseThrow(() -> new IgniteException("The storage doesn't exists for given mode: " + mode));
     }
 
     /** {@inheritDoc} */
-    @Override public void storageMode(StorageMode mode) {
+    @Override public void storeMode(StorageMode mode) {
         if (mode == currMode)
             return;
         
@@ -116,8 +121,13 @@ public class CacheDataStoreProxyImpl implements CacheDataStoreProxy {
     }
 
     /** {@inheritDoc} */
-    @Override public StorageMode storageMode() {
+    @Override public StorageMode storeMode() {
         return currMode;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgnitePartitionCatchUpLog catchLog() {
+        return catchLog;
     }
 
     /**

@@ -1205,8 +1205,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public final CacheDataStoreProxy createCacheDataStore(int p) throws IgniteCheckedException {
-        CacheDataStoreProxy dataStore;
+    @Override public final CacheDataStoreEx createCacheDataStore(int p) throws IgniteCheckedException {
+        CacheDataStoreEx dataStore;
 
         partStoreLock.lock(p);
 
@@ -1229,7 +1229,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @return Cache data store.
      * @throws IgniteCheckedException If failed.
      */
-    protected CacheDataStoreProxy createCacheDataStore0(int p)
+    protected CacheDataStoreEx createCacheDataStore0(int p)
         throws IgniteCheckedException {
         final long rootPage = allocateForTree();
 
@@ -1245,12 +1245,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             rootPage,
             true);
 
-        return new CacheDataStoreProxyImpl(grp.shared(),
+        return new CacheDataStoreExImpl(grp.shared(),
             new CacheDataStoreImpl(grp,
                 p,
                 idxName,
                 rowStore,
                 dataTree),
+            null,
             null,
             log);
     }

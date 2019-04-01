@@ -41,7 +41,7 @@ import org.apache.ignite.internal.managers.communication.GridIoChannelListener;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheDataStoreProxy;
+import org.apache.ignite.internal.processors.cache.CacheDataStoreEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
@@ -108,8 +108,10 @@ public class GridPartitionDownloadManager {
         log = ktx.log(getClass());
     }
 
-    /** */
-    public void start0(GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
+    /**
+     * @param cctx Cache shared context.
+     */
+    void start0(GridCacheSharedContext<?, ?> cctx) {
         assert cctx.pageStore() instanceof FilePageStoreManager : cctx.pageStore();
 
         this.cctx = cctx;
@@ -140,8 +142,10 @@ public class GridPartitionDownloadManager {
         }
     }
 
-    /** */
-    public void stop0(boolean cancel) {
+    /**
+     * @param cancel <tt>true</tt> to cancel all pending tasks.
+     */
+    void stop0(boolean cancel) {
         lock.writeLock().lock();
 
         try {
@@ -212,6 +216,7 @@ public class GridPartitionDownloadManager {
                     GridDhtLocalPartition part = grp.topology().localPartition(partId, topVer, true);
 
                     assert part != null;
+                    assert part.storageMode() == CacheDataStoreEx.StorageMode.LOG_ONLY;
 
                     if (part.state() == MOVING) {
                         boolean reserved = part.reserve();
@@ -251,7 +256,7 @@ public class GridPartitionDownloadManager {
 
                             // TODO Rebuild indexes by partition
 
-                            // TODO Owning partition here, but must own on switch from temp-WAl
+                            // TODO Register owning partition listener here to own it on checkpoint done
                             // There is no need to check grp.localWalEnabled() as for the partition
                             // file transfer process it has no meaning. We always apply this partiton
                             // without any records to the WAL.
@@ -477,7 +482,7 @@ public class GridPartitionDownloadManager {
                 final Map<Integer, Set<Integer>> assigns = rebFut.nodeAssigns;
 
                 IgniteInternalFuture<Boolean> switchFut = cctx.preloadMgr()
-                    .switchPartitionsMode(CacheDataStoreProxy.StorageMode.FULL, assigns);
+                    .switchPartitionsMode(CacheDataStoreEx.StorageMode.FULL, assigns);
 
                 switchFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                     @Override public void apply(IgniteInternalFuture fut) {

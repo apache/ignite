@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.cache.persistence.preload;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.IgnitePartitionCatchUpLog;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -38,41 +40,65 @@ import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 /**
  *
  */
-public class GridCacheDataStorePumpManager extends GridCacheSharedManagerAdapter {
+public class GridCacheDataStorePumpManager {
+    /** */
+    private final IgniteLogger log;
+
     /** */
     private final Object mux = new Object();
 
     /** The list of cache data storages to sync their states. */
-    private final Queue<IgnitePartitionCatchUpLog> walStores = new ConcurrentLinkedQueue<>();
+    private final Queue<IgnitePartitionCatchUpLog> catchQueue = new ConcurrentLinkedQueue<>();
 
     /** */
-    private StorePumpWorker pumpWorker;
+    private GridCacheSharedContext<?, ?> cctx;
 
-    /** {@inheritDoc} */
-    @Override protected void onKernalStop0(boolean cancel) {
+    /** */
+    private StoragePumpWorker pumpWorker;
+
+    /**
+     * @param ktx Kernel context.
+     */
+    public GridCacheDataStorePumpManager(GridKernalContext ktx) {
+        assert CU.isPersistenceEnabled(ktx.config());
+
+        log = ktx.log(GridCacheDataStorePumpManager.class);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    void start0(GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
+        this.cctx = cctx;
+    }
+
+    /**
+     * @param cancel Cancel flag.
+     */
+    void stop0(boolean cancel) {
         synchronized (mux) {
             stopStorePumpWorker();
         }
     }
 
     /**
-     * @param storage The storage to start work with.
+     * @param src The src to start work with.
      */
-    public void startLogPush(IgnitePartitionCatchUpLog storage) {
+    public void registerPumpSource(IgnitePartitionCatchUpLog src) {
         synchronized (mux) {
             if (pumpWorker == null)
                 startStorePumpWorker();
-        }
 
-        walStores.add(storage);
+            catchQueue.add(src);
+        }
     }
 
     /**
-     * @param storage The storage instance to stop handling.
+     * @param src The src instance to stop handling.
      */
-    public void stopLogPush(IgnitePartitionCatchUpLog storage) {
+    public void unregisterPumpSource(IgnitePartitionCatchUpLog src) {
         synchronized (mux) {
-            if (walStores.isEmpty())
+            if (catchQueue.isEmpty())
                 stopStorePumpWorker();
         }
     }
@@ -81,7 +107,7 @@ public class GridCacheDataStorePumpManager extends GridCacheSharedManagerAdapter
      * Start cache data store pump worker thread.
      */
     private void startStorePumpWorker() {
-        pumpWorker = new StorePumpWorker();
+        pumpWorker = new StoragePumpWorker();
 
         new IgniteThread(pumpWorker).start();
     }
@@ -101,9 +127,9 @@ public class GridCacheDataStorePumpManager extends GridCacheSharedManagerAdapter
     /**
      *
      */
-    private class StorePumpWorker extends GridWorker {
+    private class StoragePumpWorker extends GridWorker {
         /** */
-        public StorePumpWorker() {
+        public StoragePumpWorker() {
             super(cctx.igniteInstanceName(),
                 "rebalance-store-pump-worker",
                 cctx.kernalContext().log(GridCacheDataStorePumpManager.class),
@@ -120,7 +146,7 @@ public class GridCacheDataStorePumpManager extends GridCacheSharedManagerAdapter
 
                 IgnitePartitionCatchUpLog catchLog;
 
-                while ((catchLog = walStores.poll()) != null && !isCancelled()) {
+                while ((catchLog = catchQueue.poll()) != null && !isCancelled()) {
                     updateHeartbeat();
 
                     WALIterator iter = catchLog.replay();
@@ -130,9 +156,9 @@ public class GridCacheDataStorePumpManager extends GridCacheSharedManagerAdapter
                         (entry) -> true);
 
                     assert catchLog.catched();
-                }
 
-                onIdle();
+                    unregisterPumpSource(catchLog);
+                }
             }
             catch (IgniteCheckedException e) {
                 log.error("An error during processing storage temporary entries", e);

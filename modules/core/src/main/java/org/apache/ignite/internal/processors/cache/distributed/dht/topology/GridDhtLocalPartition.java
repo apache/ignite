@@ -37,9 +37,10 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.pagemem.wal.IgnitePartitionCatchUpLog;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheDataStoreProxy;
+import org.apache.ignite.internal.processors.cache.CacheDataStoreEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapImpl;
@@ -159,7 +160,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** */
     @GridToStringExclude
-    private volatile CacheDataStoreProxy store;
+    private volatile CacheDataStoreEx store;
 
     /** Set if failed to move partition to RENTING state due to reservations, to be checked when
      * reservation is released. */
@@ -451,39 +452,46 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Set {@link CacheDataStoreProxy.StorageMode} to the corresponding local partition storage.
+     * Set {@link CacheDataStoreEx.StorageMode} to the corresponding local partition storage.
      */
-    public void storageMode(CacheDataStoreProxy.StorageMode mode) {
+    public void storageMode(CacheDataStoreEx.StorageMode mode) {
         if (state() != MOVING)
             return;
 
-        store.storageMode(mode);
+        store.storeMode(mode);
     }
 
     /**
      * @return The curretly active storage mode.
      */
-    public CacheDataStoreProxy.StorageMode storageMode() {
-        return store.storageMode();
+    public CacheDataStoreEx.StorageMode storageMode() {
+        return store.storeMode();
     }
 
     /**
      * @param mode The mode to associate with data storage instance.
      * @param storage The cache data storage instance to set to.
      */
-    public void storage(CacheDataStoreProxy.StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage) {
+    public void storage(CacheDataStoreEx.StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage) {
         if (state() != MOVING)
             return;
 
-        store.storage(mode, storage);
+        store.store(mode, storage);
     }
 
     /**
      * @param mode The storage mode.
      * @return The storage intance for the given mode.
      */
-    public IgniteCacheOffheapManager.CacheDataStore storage(CacheDataStoreProxy.StorageMode mode) {
-        return store.storage(mode);
+    public IgniteCacheOffheapManager.CacheDataStore storage(CacheDataStoreEx.StorageMode mode) {
+        return store.store(mode);
+    }
+
+    /**
+     * @return The storage is used to expose temporary cache data rows when the <tt>LOG_ONLY</tt> mode is active.
+     */
+    public IgnitePartitionCatchUpLog storeCatchLog() {
+        return store.catchLog();
     }
 
     /**
@@ -594,7 +602,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             synchronized (this) {
                 GridDhtPartitionState prevState = state();
 
-                assert storageMode() == CacheDataStoreProxy.StorageMode.FULL || toState == MOVING :
+                assert storageMode() == CacheDataStoreEx.StorageMode.FULL || toState == MOVING :
                     "Storage mode FULL is only allowed for the MOVING partition state";
 
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));

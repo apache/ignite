@@ -51,8 +51,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheDataStoreProxy;
-import org.apache.ignite.internal.processors.cache.CacheDataStoreProxyImpl;
+import org.apache.ignite.internal.processors.cache.CacheDataStoreEx;
+import org.apache.ignite.internal.processors.cache.CacheDataStoreExImpl;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -171,15 +171,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDataStoreProxy createCacheDataStore0(int p) throws IgniteCheckedException {
+    @Override protected CacheDataStoreEx createCacheDataStore0(int p) throws IgniteCheckedException {
         if (ctx.database() instanceof GridCacheDatabaseSharedManager)
             ((GridCacheDatabaseSharedManager) ctx.database()).cancelOrWaitPartitionDestroy(grp.groupId(), p);
 
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
 
-        return new CacheDataStoreProxyImpl(grp.shared(),
+        IgnitePartitionCatchUpLog catchLog = new InMemoryPartitionCatchUpLog(grp);
+
+        return new CacheDataStoreExImpl(grp.shared(),
             new GridCacheDataStore(p, exists),
-            new ExposureCacheDataStore(grp, p),
+            new ExposureCacheDataStore(grp, p, catchLog),
+            catchLog,
             log);
     }
 
@@ -2495,10 +2498,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @param grp Cache group context.
          * @param partId Partition id.
          */
-        public ExposureCacheDataStore(CacheGroupContext grp, int partId) {
+        public ExposureCacheDataStore(CacheGroupContext grp, int partId, IgnitePartitionCatchUpLog catchLog) {
             super(grp, partId,treeName(partId) + "-logging");
 
-            catchLog = new InMemoryPartitionCatchUpLog(grp);
+            this.catchLog = catchLog;
 
             assert grp.persistenceEnabled();
         }

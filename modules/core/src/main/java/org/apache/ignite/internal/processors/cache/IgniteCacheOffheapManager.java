@@ -136,7 +136,7 @@ public interface IgniteCacheOffheapManager {
      * @return Data store.
      * @throws IgniteCheckedException If failed.
      */
-    public CacheDataStoreProxy createCacheDataStore(int p) throws IgniteCheckedException;
+    public CacheDataStoreEx createCacheDataStore(int p) throws IgniteCheckedException;
 
     /**
      * @return Iterable over all existing cache data stores.

@@ -32,7 +32,7 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheDataStoreProxy;
+import org.apache.ignite.internal.processors.cache.CacheDataStoreEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -66,6 +66,9 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     /** */
     private PartitionSwitchModeManager switchMgr;
 
+    /** */
+    private GridCacheDataStorePumpManager pumpMgr;
+
     /**
      * @param ktx Kernal context.
      */
@@ -75,6 +78,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
         downloadMgr = new GridPartitionDownloadManager(ktx);
         uploadMgr = new GridPartitionUploadManager(ktx);
+        pumpMgr = new GridCacheDataStorePumpManager(ktx);
 
         presistenceRebalanceEnabled = IgniteSystemProperties.getBoolean(
             IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED, false);
@@ -91,6 +95,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     @Override protected void start0() throws IgniteCheckedException {
         downloadMgr.start0(cctx);
         uploadMgr.start0(cctx);
+        pumpMgr.start0(cctx);
 
         ((GridCacheDatabaseSharedManager) cctx.database()).addCheckpointListener(
             switchMgr = new PartitionSwitchModeManager(cctx));
@@ -100,6 +105,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     @Override protected void stop0(boolean cancel) {
         downloadMgr.stop0(cancel);
         uploadMgr.stop0(cancel);
+        pumpMgr.stop0(cancel);
 
         ((GridCacheDatabaseSharedManager) cctx.database()).removeCheckpointListener(switchMgr);
     }
@@ -176,11 +182,17 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     *
      * @return The instantiated upload mamanger.
      */
     public GridPartitionUploadManager upload() {
         return uploadMgr;
+    }
+
+    /**
+     * @return The cache data storage pump manager.
+     */
+    public GridCacheDataStorePumpManager pump() {
+        return pumpMgr;
     }
 
     /**
@@ -189,7 +201,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
      * @return The future which will be completed when request is done.
      */
     public IgniteInternalFuture<Boolean> switchPartitionsMode(
-        CacheDataStoreProxy.StorageMode mode,
+        CacheDataStoreEx.StorageMode mode,
         Map<Integer, Set<Integer>> parts
     ) {
         return switchMgr.offerSwitchRequest(mode, parts);
@@ -259,7 +271,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
          * @return The future which will be completed when request is done.
          */
         public GridFutureAdapter<Boolean> offerSwitchRequest(
-            CacheDataStoreProxy.StorageMode mode,
+            CacheDataStoreEx.StorageMode mode,
             Map<Integer, Set<Integer>> parts
         ) {
             SwitchModeRequest req = new SwitchModeRequest(mode, parts);
@@ -277,7 +289,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
      */
     private static class SwitchModeRequest {
         /** The storage mode to switch to. */
-        private final CacheDataStoreProxy.StorageMode nextMode;
+        private final CacheDataStoreEx.StorageMode nextMode;
 
         /** The map of cache groups and corresponding partition to switch mode to. */
         private final Map<Integer, Set<Integer>> parts;
@@ -290,7 +302,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
          * @param parts The partitions to switch mode to.
          */
         public SwitchModeRequest(
-            CacheDataStoreProxy.StorageMode nextMode,
+            CacheDataStoreEx.StorageMode nextMode,
             Map<Integer, Set<Integer>> parts
         ) {
             this.nextMode = nextMode;

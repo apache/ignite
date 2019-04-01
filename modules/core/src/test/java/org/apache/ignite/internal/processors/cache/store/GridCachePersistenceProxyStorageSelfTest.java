@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.CacheDataStoreProxy;
+import org.apache.ignite.internal.processors.cache.CacheDataStoreEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
@@ -137,14 +137,14 @@ public class GridCachePersistenceProxyStorageSelfTest extends GridCommonAbstract
             .cache()
             .context()
             .preloadMgr()
-            .switchPartitionsMode(CacheDataStoreProxy.StorageMode.LOG_ONLY, partMap);
+            .switchPartitionsMode(CacheDataStoreEx.StorageMode.LOG_ONLY, partMap);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
             @Override public void apply(IgniteInternalFuture<Boolean> f) {
                 for (int partId = 0; partId < partitions; partId++) {
                     GridDhtLocalPartition part = top.localPartition(partId);
 
-                    assert part.storageMode() == CacheDataStoreProxy.StorageMode.LOG_ONLY;
+                    assert part.storageMode() == CacheDataStoreEx.StorageMode.LOG_ONLY;
                 }
             }
         });

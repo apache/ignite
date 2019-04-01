@@ -89,9 +89,9 @@ public class GridPartitionUploadManager {
     }
 
     /**
-     *
+     * @param cctx Cache shared context.
      */
-    public void start0(GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
+    void start0(GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
         this.cctx = cctx;
 
         backupMgr = cctx.storeBackup();
@@ -115,8 +115,10 @@ public class GridPartitionUploadManager {
         }
     }
 
-    /** */
-    public void stop0(boolean cancel) {
+    /**
+     * @param cancel <tt>true</tt> to cancel all pending tasks.
+     */
+    void stop0(boolean cancel) {
         lock.writeLock().lock();
 
         try {
