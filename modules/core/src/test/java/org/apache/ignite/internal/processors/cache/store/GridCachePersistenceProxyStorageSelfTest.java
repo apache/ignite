@@ -137,7 +137,7 @@ public class GridCachePersistenceProxyStorageSelfTest extends GridCommonAbstract
             .cache()
             .context()
             .preloadMgr()
-            .addPartitionSwitchRequest(CacheDataStoreProxy.StorageMode.LOG_ONLY, partMap);
+            .switchPartitionsMode(CacheDataStoreProxy.StorageMode.LOG_ONLY, partMap);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
             @Override public void apply(IgniteInternalFuture<Boolean> f) {

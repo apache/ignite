@@ -2496,6 +2496,95 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * @param it WalIterator.
+     * @param recPredicate Wal record filter.
+     * @param entryPredicate Entry filter.
+     */
+    public void applyUpdates(
+        WALIterator it,
+        IgniteBiPredicate<WALPointer, WALRecord> recPredicate,
+        IgnitePredicate<DataEntry> entryPredicate
+    ) {
+        if (it == null)
+            return;
+
+        while (it.hasNext()) {
+            IgniteBiTuple<WALPointer, WALRecord> next = it.next();
+
+            WALRecord rec = next.get2();
+
+            if (!recPredicate.apply(next.get1(), rec))
+                break;
+
+            applyWALRecord(rec, entryPredicate);
+        }
+    }
+
+    /**
+     * @param rec The WAL record to process.
+     * @param entryPredicate An entry filter to apply.
+     */
+    public void applyWALRecord(WALRecord rec, IgnitePredicate<DataEntry> entryPredicate) {
+        switch (rec.type()) {
+            case MVCC_DATA_RECORD:
+            case DATA_RECORD:
+                checkpointReadLock();
+
+                try {
+                    DataRecord dataRec = (DataRecord)rec;
+
+                    for (DataEntry dataEntry : dataRec.writeEntries()) {
+                        if (entryPredicate.apply(dataEntry)) {
+                            checkpointReadLock();
+
+                            try {
+                                int cacheId = dataEntry.cacheId();
+
+                                GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+                                if (cacheCtx != null)
+                                    applyUpdate(cacheCtx, dataEntry);
+                                else if (log != null)
+                                    log.warning("Cache is not started. Updates cannot be applied " +
+                                        "[cacheId=" + cacheId + ']');
+                            }
+                            finally {
+                                checkpointReadUnlock();
+                            }
+                        }
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+                finally {
+                    checkpointReadUnlock();
+                }
+
+                break;
+
+            case MVCC_TX_RECORD:
+                checkpointReadLock();
+
+                try {
+                    MvccTxRecord txRecord = (MvccTxRecord)rec;
+
+                    byte txState = convertToTxState(txRecord.state());
+
+                    cctx.coordinators().updateState(txRecord.mvccVersion(), txState, true);
+                }
+                finally {
+                    checkpointReadUnlock();
+                }
+
+                break;
+
+            default:
+                // Skip other records.
+        }
+    }
+
+    /**
      * Apply update from some iterator and with specific filters.
      *
      * @param it WalIterator.
@@ -2511,72 +2600,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return;
 
         cctx.walState().runWithOutWAL(() -> {
-            while (it.hasNext()) {
-                IgniteBiTuple<WALPointer, WALRecord> next = it.next();
-
-                WALRecord rec = next.get2();
-
-                if (!recPredicate.apply(next.get1(), rec))
-                    break;
-
-                switch (rec.type()) {
-                    case MVCC_DATA_RECORD:
-                    case DATA_RECORD:
-                        checkpointReadLock();
-
-                        try {
-                            DataRecord dataRec = (DataRecord)rec;
-
-                            for (DataEntry dataEntry : dataRec.writeEntries()) {
-                                if (entryPredicate.apply(dataEntry)) {
-                                    checkpointReadLock();
-
-                                    try {
-                                        int cacheId = dataEntry.cacheId();
-
-                                        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
-
-                                        if (cacheCtx != null)
-                                            applyUpdate(cacheCtx, dataEntry);
-                                        else if (log != null)
-                                            log.warning("Cache is not started. Updates cannot be applied " +
-                                                "[cacheId=" + cacheId + ']');
-                                    }
-                                    finally {
-                                        checkpointReadUnlock();
-                                    }
-                                }
-                            }
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-                        finally {
-                            checkpointReadUnlock();
-                        }
-
-                        break;
-
-                    case MVCC_TX_RECORD:
-                        checkpointReadLock();
-
-                        try {
-                            MvccTxRecord txRecord = (MvccTxRecord)rec;
-
-                            byte txState = convertToTxState(txRecord.state());
-
-                            cctx.coordinators().updateState(txRecord.mvccVersion(), txState, true);
-                        }
-                        finally {
-                            checkpointReadUnlock();
-                        }
-
-                        break;
-
-                    default:
-                        // Skip other records.
-                }
-            }
+            applyUpdates(it, recPredicate, entryPredicate);
         });
     }
 

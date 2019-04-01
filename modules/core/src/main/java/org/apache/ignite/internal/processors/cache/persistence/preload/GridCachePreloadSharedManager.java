@@ -188,11 +188,11 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
      * @param parts The set of partitions to change storage mode.
      * @return The future which will be completed when request is done.
      */
-    public IgniteInternalFuture<Boolean> addPartitionSwitchRequest(
+    public IgniteInternalFuture<Boolean> switchPartitionsMode(
         CacheDataStoreProxy.StorageMode mode,
         Map<Integer, Set<Integer>> parts
     ) {
-        return switchMgr.offerRequest(mode, parts);
+        return switchMgr.offerSwitchRequest(mode, parts);
     }
 
     /**
@@ -258,7 +258,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
          * @param parts The set of partitions to change storage mode.
          * @return The future which will be completed when request is done.
          */
-        public GridFutureAdapter<Boolean> offerRequest(
+        public GridFutureAdapter<Boolean> offerSwitchRequest(
             CacheDataStoreProxy.StorageMode mode,
             Map<Integer, Set<Integer>> parts
         ) {

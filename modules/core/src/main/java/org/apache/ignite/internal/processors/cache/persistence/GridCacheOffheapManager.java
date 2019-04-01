@@ -24,9 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,6 +39,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.pagemem.wal.IgnitePartitionCatchUpLog;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -87,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.InMemoryPartitionCatchUpLog;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
@@ -179,7 +179,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         return new CacheDataStoreProxyImpl(grp.shared(),
             new GridCacheDataStore(p, exists),
-            new DecanterCacheDataStore(grp, p),
+            new ExposureCacheDataStore(grp, p),
             log);
     }
 
@@ -2487,24 +2487,31 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      *
      */
-    public static class DecanterCacheDataStore extends AbstractCacheDataStore {
+    public static class ExposureCacheDataStore extends AbstractCacheDataStore {
         /** */
-        private final Queue<DataRecord> store = new ConcurrentLinkedQueue<>();
+        private final IgnitePartitionCatchUpLog catchLog;
 
         /**
          * @param grp Cache group context.
          * @param partId Partition id.
          */
-        public DecanterCacheDataStore(CacheGroupContext grp, int partId) {
+        public ExposureCacheDataStore(CacheGroupContext grp, int partId) {
             super(grp, partId,treeName(partId) + "-logging");
+
+            catchLog = new InMemoryPartitionCatchUpLog(grp);
 
             assert grp.persistenceEnabled();
         }
 
         /** {@inheritDoc} */
         @Override public void init(long size, long updCntr, Map<Integer, Long> cacheSizes) {
-            store.clear();
-            
+            try {
+                catchLog.clear();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+
             super.init(size, updCntr, cacheSizes);
         }
 
@@ -2531,7 +2538,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             DataRow dataRow = makeDataRow(key, val, ver, expireTime, cctx.cacheId());
 
             // Log to the temporary store.
-            store.add(new DataRecord(new DataEntry(
+            catchLog.log(new DataRecord(new DataEntry(
                 cctx.cacheId(),
                 key,
                 val,

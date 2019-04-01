@@ -476,10 +476,10 @@ public class GridPartitionDownloadManager {
 
                 final Map<Integer, Set<Integer>> assigns = rebFut.nodeAssigns;
 
-                IgniteInternalFuture<Boolean> req = cctx.preloadMgr()
-                    .addPartitionSwitchRequest(CacheDataStoreProxy.StorageMode.FULL, assigns);
+                IgniteInternalFuture<Boolean> switchFut = cctx.preloadMgr()
+                    .switchPartitionsMode(CacheDataStoreProxy.StorageMode.FULL, assigns);
 
-                req.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                switchFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                     @Override public void apply(IgniteInternalFuture fut) {
                         try {
                             if (rebFut.initReq.compareAndSet(false, true)) {
@@ -507,7 +507,7 @@ public class GridPartitionDownloadManager {
                 });
 
                 // This is an optional step. The request will be completed on the next checkpoint occurs.
-                if (!req.isDone())
+                if (!switchFut.isDone())
                     dbMgr.wakeupForCheckpoint(String.format(REBALANCE_CP_REASON, assigns.keySet()));
             }
         };
