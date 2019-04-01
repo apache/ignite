@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class FailureProcessor extends GridProcessorAdapter {
     /** Value of the system property that enables threads dumping on failure. */
     private static final boolean IGNITE_DUMP_THREADS_ON_FAILURE =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, true);
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, false);
 
     /** Ignite. */
     private final Ignite ignite;

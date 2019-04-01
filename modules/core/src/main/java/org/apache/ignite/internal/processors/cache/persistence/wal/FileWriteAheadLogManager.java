@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.FileChannel;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.sql.Time;
@@ -43,7 +44,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
@@ -128,6 +128,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
@@ -139,6 +140,7 @@ import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory.LATEST_SERIALIZER_VERSION;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
@@ -1114,63 +1116,92 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             try {
                 long idx = Long.parseLong(file.getName().substring(0, 16));
 
-                archiveIndices.put(idx, null);
-            }
-            catch (NumberFormatException | IndexOutOfBoundsException ignore) {
-                // No-op.
-            }
-        }
-
-        if (archiveIndices.isEmpty()) {
-            //return null;
-            for (File file : walWorkDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
                 FileDescriptor desc = readFileDescriptor(file, ioFactory);
 
-                if (desc != null)
-                    archiveIndices.put(desc.idx(), desc);
-            }
-
-            if (!archiveIndices.isEmpty()) {
-                FileDescriptor first = archiveIndices.firstEntry().getValue();
-                FileDescriptor last = archiveIndices.lastEntry().getValue();
-
-                if (first.idx() != last.idx()) {
-                    File origFile = first.file();
-
-                    String name = FileDescriptor.fileName(first.idx());
-
-                    File dstTmpFile = new File(walArchiveDir, name + FilePageStoreManager.TMP_SUFFIX);
-
-                    File dstFile = new File(walArchiveDir, name);
-
-                    try {
-                        Files.copy(origFile.toPath(), dstTmpFile.toPath());
-
-                        Files.move(dstTmpFile.toPath(), dstFile.toPath());
-                    }
-                    catch (IOException e) {
-                      return null;
-                    }
-
-                    return F.t(first.idx(), first.idx());
+                if (desc != null) {
+                    if (desc.idx() == idx)
+                        archiveIndices.put(desc.idx(), desc);
                 }
+                else
+                    log.warning("Skip file, failed read file header " + file);
             }
-            else
-                return null;
+            catch (NumberFormatException | IndexOutOfBoundsException ignore) {
+                log.warning("Skip file " + file);
+            }
         }
 
-        Long min = archiveIndices.navigableKeySet().first();
-        Long max = archiveIndices.navigableKeySet().last();
+        if (!archiveIndices.isEmpty()) {
+            Long min = archiveIndices.navigableKeySet().first();
+            Long max = archiveIndices.navigableKeySet().last();
 
-        if (max - min == archiveIndices.size() - 1)
-            return F.t(min, max); // Short path.
+            if (max - min == archiveIndices.size() - 1)
+                return F.t(min, max); // Short path.
 
-        for (Long idx : archiveIndices.descendingKeySet()) {
-            if (!archiveIndices.keySet().contains(idx - 1))
-                return F.t(idx, max);
+            // Try to find min and max if we have skipped range semgnets in archive. Find firs gap.
+            for (Long idx : archiveIndices.descendingKeySet()) {
+                if (!archiveIndices.keySet().contains(idx - 1))
+                    return F.t(idx, max);
+            }
+
+            throw new IllegalStateException("Should never happen if archiveIndices TreeMap is valid.");
         }
 
-        throw new IllegalStateException("Should never happen if TreeSet is valid.");
+        // If WAL archive is empty, try to find last not archived segment in work directory and copy to WAL archive.
+        TreeMap<Long, FileDescriptor> workIndices = new TreeMap<>();
+
+        for (File file : walWorkDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
+            FileDescriptor desc = readFileDescriptor(file, ioFactory);
+
+            if (desc != null)
+                workIndices.put(desc.idx(), desc);
+        }
+
+        if (!workIndices.isEmpty()) {
+            FileDescriptor first = workIndices.firstEntry().getValue();
+            FileDescriptor last = workIndices.lastEntry().getValue();
+
+            if (first.idx() != last.idx()) {
+                File origFile = first.file();
+
+                String archivedSegmentName = FileDescriptor.fileName(first.idx());
+
+                File dstTmpFile = new File(walArchiveDir, FileDescriptor.fileName(first.idx()) + TMP_SUFFIX);
+
+                File dstFile = new File(walArchiveDir, archivedSegmentName);
+
+                // Copy min segment from work directory to archive.
+                try (FileChannel src = FileChannel.open(origFile.toPath(), READ);
+                     FileChannel dest = FileChannel.open(dstTmpFile.toPath(), CREATE_NEW, WRITE)
+                ) {
+                    long size = src.size();
+                    long pos = 0;
+
+                    do {
+                        long bytes = src.transferTo(pos, size, dest);
+
+                        if (bytes < 0)
+                            break;
+
+                        pos += bytes;
+                    }
+                    while (pos < size);
+
+                    Files.move(dstTmpFile.toPath(), dstFile.toPath());
+
+                    dest.force(true);
+                }
+                catch (IOException e) {
+                    throw new StorageException("Failed to archive WAL segment [" +
+                        "srcFile=" + origFile.getAbsolutePath() +
+                        ", dstFile=" + dstTmpFile.getAbsolutePath() + ']', e);
+                }
+
+                // Use copied segment as min archived segment.
+                return F.t(first.idx(), first.idx());
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -1201,7 +1232,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return new FileDescriptor(file, ptr.index());
         }
         catch (IOException e) {
-            U.warn(log, "Failed to scan index from file [" + file + "]. Skipping this file during iteration", e);
+            U.warn(log, "Failed to read file header [" + file + "]. Skipping this file", e);
 
             return null;
         }
@@ -1547,7 +1578,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (log.isDebugEnabled())
             log.debug("Creating new file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
-        File tmp = new File(file.getParent(), file.getName() + FilePageStoreManager.TMP_SUFFIX);
+        File tmp = new File(file.getParent(), file.getName() + TMP_SUFFIX);
 
         formatFile(tmp);
 
@@ -1870,14 +1901,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          *
          * @param absIdx Absolute index to archive.
          */
-        private SegmentArchiveResult archiveSegment(long absIdx) throws StorageException {
+        public SegmentArchiveResult archiveSegment(long absIdx) throws StorageException {
             long segIdx = absIdx % dsCfg.getWalSegments();
 
             File origFile = new File(walWorkDir, FileDescriptor.fileName(segIdx));
 
             String name = FileDescriptor.fileName(absIdx);
 
-            File dstTmpFile = new File(walArchiveDir, name + FilePageStoreManager.TMP_SUFFIX);
+            File dstTmpFile = new File(walArchiveDir, name + TMP_SUFFIX);
 
             File dstFile = new File(walArchiveDir, name);
 
@@ -2108,7 +2139,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     deleteObsoleteRawSegments();
 
                     File tmpZip = new File(walArchiveDir, FileDescriptor.fileName(segIdx)
-                            + FilePageStoreManager.ZIP_SUFFIX + FilePageStoreManager.TMP_SUFFIX);
+                            + FilePageStoreManager.ZIP_SUFFIX + TMP_SUFFIX);
 
                     File zip = new File(walArchiveDir, FileDescriptor.fileName(segIdx) + FilePageStoreManager.ZIP_SUFFIX);
 
@@ -2296,7 +2327,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress)
                             + FilePageStoreManager.ZIP_SUFFIX);
                         File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress)
-                            + FilePageStoreManager.TMP_SUFFIX);
+                            + TMP_SUFFIX);
                         File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
 
                         try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
