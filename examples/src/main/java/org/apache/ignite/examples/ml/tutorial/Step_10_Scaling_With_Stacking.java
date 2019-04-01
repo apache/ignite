@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.composition.stacking.StackedModel;
 import org.apache.ignite.ml.composition.stacking.StackedVectorDatasetTrainer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -106,7 +107,7 @@ public class Step_10_Scaling_With_Stacking {
 
                 LogisticRegressionSGDTrainer aggregator = new LogisticRegressionSGDTrainer()
                     .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                        SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg));
+                        SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG));
 
                 StackedModel<Vector, Vector, Double, LogisticRegressionModel> mdl =
                     new StackedVectorDatasetTrainer<>(aggregator)
@@ -116,8 +117,7 @@ public class Step_10_Scaling_With_Stacking {
                     .fit(
                         ignite,
                         dataCache,
-                        normalizationPreprocessor,
-                        lbExtractor
+                        FeatureLabelExtractorWrapper.wrap(normalizationPreprocessor, lbExtractor) //TODO: IGNITE-11581
                     );
 
                 System.out.println("\n>>> Trained model: " + mdl);

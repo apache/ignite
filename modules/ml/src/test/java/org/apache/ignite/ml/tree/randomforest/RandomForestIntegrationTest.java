@@ -17,9 +17,6 @@
 
 package org.apache.ignite.ml.tree.randomforest;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -28,9 +25,12 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Random;
 
 /**
  * Tests for {@link RandomForestTrainer}.
@@ -86,11 +86,7 @@ public class RandomForestIntegrationTest extends GridCommonAbstractTest {
             .withAmountOfTrees(5)
             .withFeaturesCountSelectionStrgy(x -> 2);
 
-        ModelsComposition mdl = trainer.fit(
-            ignite, data,
-            (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
-            (k, v) -> v[v.length - 1]
-        );
+        ModelsComposition mdl = trainer.fit(ignite, data, new ArraysVectorizer<Integer>().labeled(1));
 
         assertTrue(mdl.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
         assertEquals(5, mdl.getModels().size());

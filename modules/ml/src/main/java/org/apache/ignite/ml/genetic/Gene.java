@@ -17,8 +17,9 @@
 
 package org.apache.ignite.ml.genetic;
 
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Represents the discrete parts of a potential solution (ie: Chromosome)
@@ -55,7 +56,7 @@ public class Gene {
     }
 
     /**
-     * @return value for Gene
+     * @return Value for Gene
      */
     public Object getVal() {
         return val;
