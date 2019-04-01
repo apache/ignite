@@ -89,9 +89,7 @@ public class DenseVectorStorage implements VectorStorage {
         if (data == null) {
             data = new double[rawData.length];
             for (int i = 0; i < rawData.length; i++)
-                data[i] = rawData[i] == null ?
-                    Double.NaN :
-                    ((Number)rawData[i]).doubleValue();
+                data[i] = rawData[i] == null ? 0.0 : ((Number)rawData[i]).doubleValue();
             rawData = null;
         }
     }
@@ -190,7 +188,7 @@ public class DenseVectorStorage implements VectorStorage {
             return true;
 
         for (int i = 0; i < rawData.length; i++) {
-            if (!(rawData[i] instanceof Number))
+            if (rawData[i] != null && !(rawData[i] instanceof Number))
                 return false;
         }
 
