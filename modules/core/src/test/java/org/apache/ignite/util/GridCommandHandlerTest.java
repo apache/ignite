@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -115,6 +116,7 @@ import org.junit.Test;
 
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
+import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -276,7 +278,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @return Result of execution.
      */
     protected int execute(String... args) {
-        return execute(new ArrayList<>(Arrays.asList(args)));
+        return execute(new ArrayList<>(asList(args)));
     }
 
     /**
@@ -310,7 +312,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @return Result of execution
      */
     protected int execute(CommandHandler hnd, String... args) {
-        ArrayList<String> args0 = new ArrayList<>(Arrays.asList(args));
+        ArrayList<String> args0 = new ArrayList<>(asList(args));
 
         // Add force to avoid interactive confirmation
         args0.add(CMD_AUTO_CONFIRMATION);
@@ -1211,7 +1213,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertTrue(testOut.toString().contains("no conflicts have been found"));
 
-        HashSet<Integer> clearKeys = new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6));
+        HashSet<Integer> clearKeys = new HashSet<>(asList(1, 2, 3, 4, 5, 6));
 
         ignite.context().cache().cache(DEFAULT_CACHE_NAME).clearLocallyAll(clearKeys, true, true, true);
 
@@ -1371,7 +1373,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @throws Exception if failed
      */
     @Test
-    public void testCacheIdleVerifyMultipleOptions()
+    public void testCacheIdleVerifyMultipleCacheFilterOptions()
             throws Exception {
         IgniteEx ignite = (IgniteEx)startGrids(2);
 
@@ -1401,58 +1403,58 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        testCacheIdleVerifyMultipleRunWithDump(
+        testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, found 100 partitions",
             "idle_verify task args were following: --cache-filter SYSTEM --exclude-caches wrong.* ",
             "--cache", "idle_verify", "--dump", "--cache-filter", "SYSTEM", "--exclude-caches", "wrong.*"
         );
-        testCacheIdleVerifyMultipleRunWithDump(
+        testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, found 96 partitions",
             null,
             "--cache", "idle_verify", "--dump", ".*", "--exclude-caches", "wrong.*"
         );
-        testCacheIdleVerifyMultipleRunWithDump(
+        testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, found 32 partitions",
             null,
             "--cache", "idle_verify", "--dump", "shared.*", "--cache-filter", "ALL"
         );
-        testCacheIdleVerifyMultipleRunWithDump(
+        testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, found 160 partitions",
             null,
             "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
         );
 
-        testCacheIdleVerifyMultipleRunWithDump(
+        testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, found 160 partitions",
             null,
             "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
         );
-        testCacheIdleVerifyMultipleRunWithDump(
+        testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, found 160 partitions",
             null,
             "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
         );
-        testCacheIdleVerifyMultipleRunWithDump(
+        testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify failed on 2 nodes.",
             null,
             "--cache", "idle_verify", "--exclude-caches", ".*"
         );
-        testCacheIdleVerifyMultipleRunWithDump(
+        testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             false,
-            "idle_verify failed on 2 nodes.",
+            "Invalid cache name regexp",
             null,
             "--cache", "idle_verify", "--dump", "--exclude-caches", "["
         );
-        testCacheIdleVerifyMultipleRunWithDump(
+        testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            null,
+            "idle_verify check has finished, no conflicts have been found.",
             null,
             "--cache", "idle_verify", ".*", "--exclude-caches", "wrong-.*"
         );
@@ -1467,7 +1469,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @param args command handler arguments
      * @throws IOException if some of file operations failed
      */
-    private void testCacheIdleVerifyMultipleRunWithDump(
+    private void testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
         boolean exitOk,
         String outputExp,
         String cmdExp,
@@ -1475,24 +1477,38 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     ) throws IOException {
         testOut.reset();
 
-        assertEquals(exitOk, EXIT_CODE_OK == execute(args));
+        Set<String> argsSet = new HashSet<>(asList(args));
 
-        Matcher fileNameMatcher = dumpFileNameMatcher();
+        int exitCode = execute(args);
 
-        if (fileNameMatcher.find()) {
-            Path filePath = Paths.get(fileNameMatcher.group(1));
+        assertEquals(exitOk, EXIT_CODE_OK == exitCode);
 
-            String dump = new String(Files.readAllBytes(filePath));
+        if (exitCode == EXIT_CODE_OK) {
+            Matcher fileNameMatcher = dumpFileNameMatcher();
 
-            Files.delete(filePath);
+            if (fileNameMatcher.find()) {
+                assertTrue(argsSet.contains("--dump"));
 
-            System.out.println(dump);
+                Path filePath = Paths.get(fileNameMatcher.group(1));
 
-            assertTrue(dump.contains(outputExp));
+                String dump = new String(Files.readAllBytes(filePath));
 
-            if (cmdExp != null)
-                assertTrue(dump.contains(cmdExp));
-        }
+                Files.delete(filePath);
+
+                System.out.println(dump);
+
+                assertTrue(dump.contains(outputExp));
+
+                if (cmdExp != null)
+                    assertTrue(dump.contains(cmdExp));
+            }
+            else {
+                assertFalse(argsSet.contains("--dump"));
+
+                assertTrue(testOut.toString().contains(outputExp));
+            }
+        } else
+            assertTrue(testOut.toString().contains(outputExp));
     }
 
     /**

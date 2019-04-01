@@ -248,7 +248,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         if (taskArg.getCacheFilterEnum() != null) {
             result.append(CACHE_FILTER);
             result.append(" ");
-            result.append(taskArg.getCacheFilterEnum().toString());
+            result.append(taskArg.getCacheFilterEnum());
             result.append(" ");
         }
 
