@@ -1114,6 +1114,18 @@ public interface EventType {
     };
 
     /**
+     * All cluster activation events. This array can be directly passed into
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
+     * subscribe to all cloud events.
+     *
+     * @see ClusterActivationEvent
+     */
+    public static final int[] EVTS_CLUSTER_ACTIVATION = {
+        EVT_CLUSTER_ACTIVATED,
+        EVT_CLUSTER_DEACTIVATED
+    };
+
+    /**
      * All Ignite events (<b>including</b> metric update event).
      */
     public static final int[] EVTS_ALL = U.gridEvents();

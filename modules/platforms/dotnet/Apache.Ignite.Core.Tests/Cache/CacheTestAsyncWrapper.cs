@@ -78,6 +78,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public bool IsConsistency
+        {
+            get { return _cache.IsConsistency; }
+        }
+
+        /** <inheritDoc /> */
         public bool IsAllowAtomicOpsInTx {
             get { return _cache.IsAllowAtomicOpsInTx; }
         }
@@ -104,6 +110,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         public ICache<TK, TV> WithAllowAtomicOpsInTx()
         {
             return _cache.WithAllowAtomicOpsInTx().WrapAsync();
+        }
+
+        /** <inheritDoc /> */
+        public ICache<TK, TV> WithConsistency()
+        {
+            return _cache.WithConsistency().WrapAsync();
         }
 
         /** <inheritDoc /> */

@@ -107,6 +107,8 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public bool IsKeepBinary { get; private set; }
+            
+            public bool IsConsistency { get; private set; }
 
             public bool IsAllowAtomicOpsInTx { get; private set; }
 
@@ -126,6 +128,11 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public ICache<int, int> WithAllowAtomicOpsInTx()
+            {
+                throw new NotImplementedException();
+            }
+
+            public ICache<int, int> WithConsistency()
             {
                 throw new NotImplementedException();
             }
