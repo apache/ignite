@@ -173,7 +173,7 @@ public class MvccUtils {
      * @return TxState
      * @see TxState
      */
-    private static byte state(MvccProcessor proc, long mvccCrd, long mvccCntr, int mvccOpCntr) {
+    public static byte state(MvccProcessor proc, long mvccCrd, long mvccCntr, int mvccOpCntr) {
         if (compare(INITIAL_VERSION, mvccCrd, mvccCntr, mvccOpCntr) == 0)
             return TxState.COMMITTED; // Initial version is always committed;
 
@@ -550,7 +550,7 @@ public class MvccUtils {
      * @return {@code True} if version is valid.
      */
     public static boolean mvccVersionIsValid(long crdVer, long cntr) {
-        return crdVer > MVCC_CRD_COUNTER_NA && cntr != MVCC_COUNTER_NA;
+        return crdVer > MVCC_CRD_COUNTER_NA && cntr > MVCC_COUNTER_NA;
     }
 
     /**
@@ -788,16 +788,17 @@ public class MvccUtils {
     /**
      * Initialises MVCC filter and returns MVCC query tracker if needed.
      * @param cctx Cache context.
-     * @param startTx Start transaction flag.
+     * @param autoStartTx Start transaction flag.
      * @return MVCC query tracker.
      * @throws IgniteCheckedException If failed.
      */
-    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean startTx) throws IgniteCheckedException {
+    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean autoStartTx)
+        throws IgniteCheckedException {
         assert cctx != null && cctx.mvccEnabled();
 
         GridNearTxLocal tx = tx(cctx.kernalContext());
 
-        if (tx == null && startTx)
+        if (tx == null && autoStartTx)
             tx = txStart(cctx, 0);
 
         return mvccTracker(cctx, tx);

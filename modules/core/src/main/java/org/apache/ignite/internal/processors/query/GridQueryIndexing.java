@@ -21,6 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -31,7 +32,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -85,14 +85,16 @@ public interface GridQueryIndexing {
      * @param cliCtx Client context.
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts Whether an exception should be thrown for multiple statements query.
-     * @param tracker Query tracker.
-     * @param registerAsNewQry {@code true} In case it's new query which should be registered as running query,
-     * {@code false} otherwise.
      * @return Cursor.
      */
-    public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-        SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
-        GridQueryCancel cancel, boolean registerAsNewQry);
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(
+        String schemaName,
+        SqlFieldsQuery qry,
+        SqlClientContext cliCtx,
+        boolean keepBinary,
+        boolean failOnMultipleStmts,
+        GridQueryCancel cancel
+    );
 
     /**
      * Execute an INSERT statement using data streamer as receiver.
@@ -285,6 +287,13 @@ public interface GridQueryIndexing {
     public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
 
     /**
+     * Mark as rebuild needed for the given cache.
+     *
+     * @param cctx Cache context.
+     */
+    void markAsRebuildNeeded(GridCacheContext cctx);
+
+    /**
      * Returns backup filter.
      *
      * @param topVer Topology version.
@@ -336,6 +345,13 @@ public interface GridQueryIndexing {
      * @return Schema name. Should not be null since we should not fail for an invalid cache name.
      */
     public String schema(String cacheName);
+
+    /**
+     * Gets database schemas names.
+     *
+     * @return Schema names.
+     */
+    public Set<String> schemasNames();
 
     /**
      * Check if passed statement is insert statement eligible for streaming, throw an {@link IgniteSQLException} if not.

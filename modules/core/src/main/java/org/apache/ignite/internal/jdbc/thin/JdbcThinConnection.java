@@ -38,9 +38,12 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
@@ -50,6 +53,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -63,7 +67,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -130,7 +133,7 @@ public class JdbcThinConnection implements Connection {
     private boolean connected;
 
     /** Tracked statements to close on disconnect. */
-    private final ArrayList<JdbcThinStatement> stmts = new ArrayList<>();
+    private final Set<JdbcThinStatement> stmts = Collections.newSetFromMap(new IdentityHashMap<>());
 
     /** Query timeout timer */
     private final Timer timer;
@@ -148,7 +151,7 @@ public class JdbcThinConnection implements Connection {
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
-        schema = normalizeSchema(connProps.getSchema());
+        schema = JdbcUtils.normalizeSchema(connProps.getSchema());
 
         cliIo = new JdbcThinTcpIo(connProps);
 
@@ -398,11 +401,20 @@ public class JdbcThinConnection implements Connection {
             streamState = null;
         }
 
+        synchronized (stmtsMux) {
+            stmts.clear();
+        }
+
+        SQLException err = null;
+
         closed = true;
 
         cliIo.close();
 
         timer.cancel();
+
+        if (err != null)
+            throw err;
     }
 
     /** {@inheritDoc} */
@@ -689,7 +701,7 @@ public class JdbcThinConnection implements Connection {
     @Override public void setSchema(String schema) throws SQLException {
         ensureNotClosed();
 
-        this.schema = normalizeSchema(schema);
+        this.schema = JdbcUtils.normalizeSchema(schema);
     }
 
     /** {@inheritDoc} */
@@ -758,6 +770,7 @@ public class JdbcThinConnection implements Connection {
      * @param req Request.
      * @return Server response.
      * @throws SQLException On any error.
+     * @param <R> Result type.
      */
     <R extends JdbcResult> R sendRequest(JdbcRequest req) throws SQLException {
         return sendRequest(req, null);
@@ -769,6 +782,7 @@ public class JdbcThinConnection implements Connection {
      * @param stmt Jdbc thin statement.
      * @return Server response.
      * @throws SQLException On any error.
+     * @param <R> Result type.
      */
     <R extends JdbcResult> R sendRequest(JdbcRequest req, JdbcThinStatement stmt) throws SQLException {
         ensureConnected();
@@ -890,23 +904,12 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
-     * Normalize schema name. If it is quoted - unquote and leave as is, otherwise - convert to upper case.
-     *
-     * @param schemaName Schema name.
-     * @return Normalized schema name.
+     * @param stmt Statement to close.
      */
-    private static String normalizeSchema(String schemaName) {
-        if (F.isEmpty(schemaName))
-            return QueryUtils.DFLT_SCHEMA;
-
-        String res;
-
-        if (schemaName.startsWith("\"") && schemaName.endsWith("\""))
-            res = schemaName.substring(1, schemaName.length() - 1);
-        else
-            res = schemaName.toUpperCase();
-
-        return res;
+    void closeStatement(JdbcThinStatement stmt) {
+        synchronized (stmtsMux) {
+            stmts.remove(stmt);
+        }
     }
 
     /**
@@ -1101,9 +1104,10 @@ public class JdbcThinConnection implements Connection {
                             break;
                         }
                     }
-
-                    if (resp.status() != ClientListenerResponse.STATUS_SUCCESS)
+                    else if (resp.status() != ClientListenerResponse.STATUS_SUCCESS)
                         err = new SQLException(resp.error(), IgniteQueryErrorCode.codeToSqlState(resp.status()));
+                    else
+                        assert false : "Invalid response: " + resp;
                 }
             }
             catch (Exception e) {

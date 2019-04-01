@@ -55,7 +55,10 @@ module.exports.factory = function(mongoose) {
     // Install passport plugin.
     Account.plugin(passportMongo, {
         usernameField: 'email', limitAttempts: true, lastLoginField: 'lastLogin',
-        usernameLowerCase: true
+        usernameLowerCase: true,
+        errorMessages: {
+            UserExistsError: 'A user with the given email is already registered'
+        }
     });
 
     const transform = (doc, ret) => {
@@ -223,6 +226,7 @@ module.exports.factory = function(mongoose) {
                     type: String,
                     enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
                 },
+                implementationVersion: String,
                 batchSize: Number,
                 maximumPoolSize: Number,
                 maximumWriteAttempts: Number,
@@ -587,7 +591,8 @@ module.exports.factory = function(mongoose) {
                 idMapper: String,
                 nameMapper: String,
                 serializer: String,
-                enum: Boolean
+                enum: Boolean,
+                enumValues: [String]
             }],
             compactFooter: Boolean
         },

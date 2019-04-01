@@ -40,7 +40,10 @@ public enum IgniteFeatures {
     DISTRIBUTED_METASTORAGE(2),
 
     /** Data paket compression. */
-    DATA_PACKET_COMPRESSION(3);
+    DATA_PACKET_COMPRESSION(3),
+
+    /** Support of different rebalance size for nodes.  */
+    DIFFERENT_REBALANCE_POOL_SIZE(4);
 
     /**
      * Unique feature identifier.
