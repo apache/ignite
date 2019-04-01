@@ -46,7 +46,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -2090,9 +2089,9 @@ public final class GridTestUtils {
 
     public static class SqlTestFunctions {
         /** Sleep milliseconds. */
-        public static volatile long sleepMs = 0;
+        public static volatile long sleepMs;
         /** Fail flag. */
-        public static volatile boolean fail = false;
+        public static volatile boolean fail;
 
         /**
          * Do sleep {@code sleepMs} milliseconds
@@ -2100,13 +2099,21 @@ public final class GridTestUtils {
          * @return amount of milliseconds to sleep
          */
         @QuerySqlFunction
+        @SuppressWarnings("BusyWait")
         public static long sleep() {
-            try {
-                Thread.sleep(sleepMs);
+            long end = System.currentTimeMillis() + sleepMs;
+
+            long remainTime =sleepMs;
+
+            do {
+                try {
+                    Thread.sleep(remainTime);
+                }
+                catch (InterruptedException ignored) {
+                    // No-op
+                }
             }
-            catch (InterruptedException ignored) {
-                // No-op
-            }
+            while ((remainTime = end - System.currentTimeMillis()) > 0);
 
             return sleepMs;
         }
@@ -2122,6 +2129,20 @@ public final class GridTestUtils {
                 throw new IllegalArgumentException();
             else
                 return 0;
+        }
+
+        /**
+         * Function do sleep {@code sleepMs} milliseconds and do fail in case of {@code fail} is true, return 0 otherwise.
+         *
+         * @return amount of milliseconds to sleep in case of {@code fail} is false, fail otherwise.
+         */
+        @QuerySqlFunction
+        public static long sleep_and_can_fail() {
+            long sleep = sleep();
+
+            can_fail();
+
+            return sleep;
         }
     }
 }

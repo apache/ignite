@@ -105,6 +105,32 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                     name: 'enum',
                                     tip: 'Flag indicating that this type is the enum'
                                 })
+                            .pc-form-grid-col-60(ng-if='$item.enum')
+                                mixin enum-values
+                                    .ignite-form-field
+                                        -let items = '$item.enumValues'
+
+                                        list-editable(
+                                            ng-model=items
+                                            name='enumValues'
+                                            list-editable-cols=`::[{name: "Enum values:"}]`
+                                        )
+                                            list-editable-item-view {{ $item }}
+
+                                            list-editable-item-edit
+                                                +list-java-identifier-field('Value', '$item', '"value"', 'Enter Enum value', '$item.$item.enumValues')
+                                                    +form-field__error({error: 'igniteUnique', message: 'Value already configured!'})
+
+                                            list-editable-no-items
+                                                list-editable-add-item-button(
+                                                    add-item=`$editLast((${items} = ${items} || []).push(''))`
+                                                    label-single='enum value'
+                                                    label-multiple='enum values'
+                                                )
+
+                                - var form = '$parent.$parent.form'
+                                +enum-values
+                                - var form = '$parent.form'
 
                         list-editable-no-items
                             list-editable-add-item-button(

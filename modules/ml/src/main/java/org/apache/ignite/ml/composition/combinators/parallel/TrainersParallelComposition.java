@@ -17,30 +17,29 @@
 
 package org.apache.ignite.ml.composition.combinators.parallel;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.environment.parallelism.Promise;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * This class represents a parallel composition of trainers.
- * Parallel composition of trainers is a trainer itself which trains a list of trainers with same
- * input and output. Training is done in following manner:
+ * This class represents a parallel composition of trainers. Parallel composition of trainers is a trainer itself which
+ * trains a list of trainers with same input and output. Training is done in following manner:
  * <pre>
  *     1. Independently train all trainers on the same dataset and get a list of models.
  *     2. Combine models produced in step (1) into a {@link ModelsParallelComposition}.
  * </pre>
- * Updating is made in a similar fashion.
- * Like in other trainers combinators we avoid to include type of contained trainers in type parameters
- * because otherwise compositions of compositions would have a relatively complex generic type which will
- * reduce readability.
+ * Updating is made in a similar fashion. Like in other trainers combinators we avoid to include type of contained
+ * trainers in type parameters because otherwise compositions of compositions would have a relatively complex generic
+ * type which will reduce readability.
  *
  * @param <I> Type of trainers inputs.
  * @param <O> Type of trainers outputs.
@@ -72,7 +71,8 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
      * @param <L> Type of input of labels.
      * @return Parallel composition of trainers contained in a given list.
      */
-    public static <I, O, M extends IgniteModel<I, O>, T extends DatasetTrainer<M, L>, L> TrainersParallelComposition<I, O, L> of(List<T> trainers) {
+    public static <I, O, M extends IgniteModel<I, O>, T extends DatasetTrainer<M, L>, L> TrainersParallelComposition<I, O, L> of(
+        List<T> trainers) {
         List<DatasetTrainer<IgniteModel<I, O>, L>> trs =
             trainers.stream().map(CompositionUtils::unsafeCoerce).collect(Collectors.toList());
 
@@ -80,12 +80,10 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteModel<I, List<O>> fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+    @Override public <K, V, C extends Serializable> IgniteModel<I, List<O>> fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor) {
         List<IgniteSupplier<IgniteModel<I, O>>> tasks = trainers.stream()
-            .map(tr -> (IgniteSupplier<IgniteModel<I, O>>)(() -> tr.fit(datasetBuilder,
-                CompositionUtils.asFeatureExtractor(extractor),
-                CompositionUtils.asLabelExtractor(extractor))))
+            .map(tr -> (IgniteSupplier<IgniteModel<I, O>>)(() -> tr.fit(datasetBuilder, extractor)))
             .collect(Collectors.toList());
 
         List<IgniteModel<I, O>> mdls = environment.parallelismStrategy().submit(tasks).stream()
@@ -96,8 +94,9 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteModel<I, List<O>> update(IgniteModel<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+    @Override public <K, V, C extends Serializable> IgniteModel<I, List<O>> update(IgniteModel<I, List<O>> mdl,
+        DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor) {
         ModelsParallelComposition<I, O> typedMdl = (ModelsParallelComposition<I, O>)mdl;
 
         assert typedMdl.submodels().size() == trainers.size();
@@ -105,9 +104,7 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
 
         for (int i = 0; i < trainers.size(); i++) {
             int j = i;
-            tasks.add(() -> trainers.get(j).update(typedMdl.submodels().get(j), datasetBuilder,
-                CompositionUtils.asFeatureExtractor(extractor),
-                CompositionUtils.asLabelExtractor(extractor)));
+            tasks.add(() -> trainers.get(j).update(typedMdl.submodels().get(j), datasetBuilder, extractor));
         }
 
         List<IgniteModel<I, O>> mdls = environment.parallelismStrategy().submit(tasks).stream()
@@ -118,10 +115,8 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
     }
 
     /**
-     * This method is never called, instead of constructing logic of update from
-     * {@link DatasetTrainer#isUpdateable} and
-     * {@link DatasetTrainer#updateModel}
-     * in this class we explicitly override update method.
+     * This method is never called, instead of constructing logic of update from {@link DatasetTrainer#isUpdateable} and
+     * {@link DatasetTrainer#updateModel} in this class we explicitly override update method.
      *
      * @param mdl Model.
      * @return True if current critical for training parameters correspond to parameters from last training.
@@ -132,16 +127,16 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
     }
 
     /**
-     * This method is never called, instead of constructing logic of update from
-     * {@link DatasetTrainer#isUpdateable(IgniteModel)} and
-     * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, IgniteBiFunction, IgniteBiFunction)}
+     * This method is never called, instead of constructing logic of update from {@link
+     * DatasetTrainer#isUpdateable(IgniteModel)} and {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, Vectorizer)}
      * in this class we explicitly override update method.
      *
      * @param mdl Model.
      * @return Updated model.
      */
-    @Override protected <K, V> IgniteModel<I, List<O>> updateModel(IgniteModel<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+    @Override protected <K, V, C extends Serializable> IgniteModel<I, List<O>> updateModel(IgniteModel<I, List<O>> mdl,
+        DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor) {
         // Never called.
         throw new IllegalStateException();
     }

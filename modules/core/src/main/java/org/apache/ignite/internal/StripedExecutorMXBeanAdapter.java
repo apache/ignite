@@ -32,7 +32,7 @@ public class StripedExecutorMXBeanAdapter implements StripedExecutorMXBean {
     /**
      * @param exec Executor service
      */
-    StripedExecutorMXBeanAdapter(StripedExecutor exec) {
+    public StripedExecutorMXBeanAdapter(StripedExecutor exec) {
         assert exec != null;
 
         this.exec = exec;

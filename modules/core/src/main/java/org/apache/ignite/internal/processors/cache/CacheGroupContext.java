@@ -739,7 +739,11 @@ public class CacheGroupContext {
         if (!isRecoveryMode()) {
             aff.cancelFutures(new IgniteCheckedException("Failed to wait for topology update, node is stopping."));
 
-            preldr.onKernalStop();
+            // This may happen if an exception is occurred on node start and we stop a node in the middle of the start
+            // procedure. It is safe to do a null-check here because preldr may be created only in exchange-worker
+            // thread which is stopped by the time this method is invoked.
+            if (preldr != null)
+                preldr.onKernalStop();
         }
 
         offheapMgr.onKernalStop();

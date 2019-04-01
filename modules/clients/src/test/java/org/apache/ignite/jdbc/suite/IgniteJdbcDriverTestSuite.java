@@ -74,6 +74,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinMetadataSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMissingLongArrayResultsTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMultiStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
+import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementLeakTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinResultSetSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinSchemaCaseSelfTest;
@@ -127,7 +128,6 @@ import org.junit.runners.Suite;
     org.apache.ignite.internal.jdbc2.JdbcEmptyCacheSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcLocalCachesSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcNoDefaultCacheTest.class,
-    org.apache.ignite.internal.jdbc2.JdbcDefaultNoOpCacheTest.class,
     org.apache.ignite.internal.jdbc2.JdbcMergeStatementSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcBinaryMarshallerMergeStatementSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcUpdateStatementSelfTest.class,
@@ -227,7 +227,9 @@ import org.junit.runners.Suite;
 
     // Various commands.
     JdbcThinWalModeChangeSelfTest.class,
-    JdbcThinAuthenticateConnectionSelfTest.class
+    JdbcThinAuthenticateConnectionSelfTest.class,
+
+    JdbcThinPreparedStatementLeakTest.class,
 })
 public class IgniteJdbcDriverTestSuite {
 }
