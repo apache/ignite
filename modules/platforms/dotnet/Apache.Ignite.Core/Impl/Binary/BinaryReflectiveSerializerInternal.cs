@@ -142,18 +142,31 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var fields = ReflectionUtils.GetAllFields(type).Where(x => !x.IsNotSerialized).ToList();
 
-            var fieldsSet = new HashSet<string>();
+            IDictionary<int, string> idMap = new Dictionary<int, string>();
 
             foreach (FieldInfo field in fields)
             {
                 string fieldName = BinaryUtils.CleanFieldName(field.Name);
 
-                if (fieldsSet.Contains(fieldName))
+                int fieldId = BinaryUtils.FieldId(typeId, fieldName, converter, idMapper);
+
+                if (idMap.ContainsKey(fieldId))
                 {
-                    throw new BinaryObjectException(string.Format("Type '{0}' contains more then one field with name '{1}' declared.", type.Name, fieldName));
+                    string existingFieldName = idMap[fieldId];
+                    string baseClassName = field.DeclaringType != null ? field.DeclaringType.Name : null;
+                    var msg = string.Format("{0} derives from {1} and hides field {2} from the base class. " +
+                                            "Ignite can not serialize two fields with the same name.", type.Name, baseClassName, fieldName);
+
+                    if (fieldName != existingFieldName)
+                    {
+                        msg = string.Format("Ignite resolved two fields {0} and {1} to the same fieldId {2}. Probably " +
+                                            "there is an issue with the custom field mapper.", fieldName, existingFieldName, fieldId);
+                    }
+
+                    throw new BinaryObjectException(msg);
                 }
 
-                fieldsSet.Add(fieldName);
+                idMap[fieldId] = fieldName;
             }
 
             fields.Sort(Compare);
