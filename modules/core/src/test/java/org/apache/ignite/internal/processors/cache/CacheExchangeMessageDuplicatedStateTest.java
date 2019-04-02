@@ -368,12 +368,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
             // Do not start cache on coordinator.
-            try {
-                return node.order() > 1;
-            }
-            catch (UnsupportedOperationException ignore) {
-                return false;
-            }
+            return node.order() > 1;
         }
     }
 }
