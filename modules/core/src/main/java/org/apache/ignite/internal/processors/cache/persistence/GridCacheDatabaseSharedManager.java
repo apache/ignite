@@ -67,6 +67,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
@@ -80,6 +81,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -167,10 +169,14 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static java.nio.file.StandardOpenOption.READ;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 
 /**
@@ -197,21 +203,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE = 2 * GB;
 
     /** Skip sync. */
-    private final boolean skipSync = IgniteSystemProperties.getBoolean(IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC);
+    private final boolean skipSync = getBoolean(IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC);
 
     /** */
     private boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
 
     /** */
-    private final int walRebalanceThreshold = IgniteSystemProperties.getInteger(
-        IGNITE_PDS_WAL_REBALANCE_THRESHOLD, 500_000);
+    private final int walRebalanceThreshold = getInteger(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, 500_000);
 
     /** Value of property for throttling policy override. */
     private final String throttlingPolicyOverride = IgniteSystemProperties.getString(
         IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED);
 
     /** */
-    private final boolean skipCheckpointOnNodeStop = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, false);
+    private final boolean skipCheckpointOnNodeStop = getBoolean(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, false);
 
     /**
      * Starting from this number of dirty pages in checkpoint, array will be sorted with
@@ -867,6 +872,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override protected IgniteOutClosure<Long> freeSpaceProvider(final DataRegionConfiguration dataRegCfg) {
         if (!dataRegCfg.isPersistenceEnabled())
             return super.freeSpaceProvider(dataRegCfg);
@@ -887,6 +893,46 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 return freeSpace;
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override protected DataRegionMetricsProvider dataRegionMetricsProvider(final DataRegionConfiguration dataRegCfg) {
+        if (!dataRegCfg.isPersistenceEnabled())
+            return super.dataRegionMetricsProvider(dataRegCfg);
+
+        final String dataRegName = dataRegCfg.getName();
+
+        return new DataRegionMetricsProvider() {
+            @Override public long partiallyFilledPagesFreeSpace() {
+                long freeSpace = 0L;
+
+                for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
+                    if (!grpCtx.dataRegion().config().getName().equals(dataRegName))
+                        continue;
+
+                    assert grpCtx.offheap() instanceof GridCacheOffheapManager;
+
+                    freeSpace += ((GridCacheOffheapManager)grpCtx.offheap()).freeSpace();
+                }
+
+                return freeSpace;
+            }
+
+            @Override public long emptyDataPages() {
+                long emptyDataPages = 0L;
+
+                for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
+                    if (!grpCtx.dataRegion().config().getName().equals(dataRegName))
+                        continue;
+
+                    assert grpCtx.offheap() instanceof GridCacheOffheapManager;
+
+                    emptyDataPages += ((GridCacheOffheapManager)grpCtx.offheap()).emptyDataPages();
+                }
+
+                return emptyDataPages;
             }
         };
     }
@@ -2994,6 +3040,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     @SuppressWarnings("NakedNotify")
     public class Checkpointer extends GridWorker {
+        /** Checkpoint started log message format. */
+        private static final String CHECKPOINT_STARTED_LOG_FORMAT = "Checkpoint started [checkpointId=%s, startPtr=%s," +
+            " checkpointBeforeLockTime=%dms, checkpointLockWait=%dms, checkpointListenersExecuteTime=%dms, " +
+            "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, %s pages=%d, reason='%s']";
+
         /** Temporary write buffer. */
         private final ByteBuffer tmpWriteBuf;
 
@@ -3009,6 +3060,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private long lastCpTs;
 
+        /** Pause detector. */
+        private final LongJVMPauseDetector pauseDetector;
+
+        /** Long JVM pause threshold. */
+        private final int longJvmPauseThreshold =
+            getInteger(IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD, DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD);
+
         /**
          * @param gridName Grid name.
          * @param name Thread name.
@@ -3022,6 +3080,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             tmpWriteBuf = ByteBuffer.allocateDirect(pageSize());
 
             tmpWriteBuf.order(ByteOrder.nativeOrder());
+
+            pauseDetector = cctx.kernalContext().longJvmPauseDetector();
         }
 
         /**
@@ -3635,12 +3695,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 GridMultiCollectionWrapper<FullPageId> cpPages = splitAndSortCpPagesIfNeeded(cpPagesTuple);
 
-                if (printCheckpointStats)
-                    if (log.isInfoEnabled())
-                        log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, " +
-                                "checkpointBeforeLockTime=%dms, checkpointLockWait=%dms, " +
-                                "checkpointListenersExecuteTime=%dms, checkpointLockHoldTime=%dms, " +
-                                "walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
+                if (printCheckpointStats && log.isInfoEnabled()) {
+                    long possibleJvmPauseDur = possibleLongJvmPauseDuration(tracker);
+
+                    log.info(
+                        String.format(
+                            CHECKPOINT_STARTED_LOG_FORMAT,
                             cpRec.checkpointId(),
                             cp.checkpointMark(),
                             tracker.beforeLockDuration(),
@@ -3648,9 +3708,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tracker.listenersExecuteDuration(),
                             tracker.lockHoldDuration(),
                             tracker.walCpRecordFsyncDuration(),
+                            possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms," : "",
                             cpPages.size(),
-                            curr.reason)
-                        );
+                            curr.reason
+                        )
+                    );
+                }
 
                 return new Checkpoint(cp, cpPages, curr);
             }
@@ -3672,6 +3735,31 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 return new Checkpoint(null, new GridMultiCollectionWrapper<>(new Collection[0]), curr);
             }
+        }
+
+        /**
+         * @param tracker Checkpoint metrics tracker.
+         * @return Duration of possible JVM pause, if it was detected, or {@code -1} otherwise.
+         */
+        private long possibleLongJvmPauseDuration(CheckpointMetricsTracker tracker) {
+            if (LongJVMPauseDetector.enabled()) {
+                if (tracker.lockWaitDuration() + tracker.lockHoldDuration() > longJvmPauseThreshold) {
+                    long now = System.currentTimeMillis();
+
+                    // We must get last wake up time before search possible pause in events map.
+                    long wakeUpTime = pauseDetector.getLastWakeUpTime();
+
+                    IgniteBiTuple<Long, Long> lastLongPause = pauseDetector.getLastLongPause();
+
+                    if (lastLongPause != null && tracker.checkpointStartTime() < lastLongPause.get1())
+                        return lastLongPause.get2();
+
+                    if (now - wakeUpTime > longJvmPauseThreshold)
+                        return now - wakeUpTime;
+                }
+            }
+
+            return -1L;
         }
 
         /**

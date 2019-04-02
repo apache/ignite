@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheCon
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheWithoutCheckpointsTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDiscoDataHandlingInNewClusterTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
@@ -40,6 +41,8 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryNoStoreLeakTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSmokeTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.UsedPagesMetricTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.UsedPagesMetricTestPersistence;
 import org.apache.ignite.internal.processors.cache.persistence.wal.CpTriggeredWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ExplicitWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBufferTest;
@@ -80,8 +83,13 @@ public class IgnitePdsTestSuite extends TestSuite {
         // Write throttling
         suite.addTestSuite(PagesWriteThrottleSmokeTest.class);
 
+        // Discovery data handling on node join and old cluster abnormal shutdown
+        suite.addTestSuite(IgnitePdsDiscoDataHandlingInNewClusterTest.class);
+
         // Metrics
         suite.addTestSuite(FillFactorMetricTest.class);
+        suite.addTestSuite(UsedPagesMetricTest.class);
+        suite.addTestSuite(UsedPagesMetricTestPersistence.class);
 
         // Binary meta tests.
         suite.addTestSuite(IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest.class);

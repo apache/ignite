@@ -14,29 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite;
 
-package org.apache.ignite.client;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 /**
- * Tests for Java thin client.
+ * This interface provides calculated metrics for data region.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    ClientConfigurationTest.class,
-    ClientCacheConfigurationTest.class,
-    FunctionalTest.class,
-    IgniteBinaryTest.class,
-    LoadTest.class,
-    ReliabilityTest.class,
-    SecurityTest.class,
-    FunctionalQueryTest.class,
-    IgniteBinaryQueryTest.class,
-    SslParametersTest.class,
-    ConnectionTest.class
-})
-public class ClientTestSuite {
-    // No-op.
+public interface DataRegionMetricsProvider {
+    /**
+     * Calculates free space of partially filled pages for this data region. It does not include
+     * empty data pages.
+     *
+     * @return free space in bytes.
+     */
+    public long partiallyFilledPagesFreeSpace();
+
+    /**
+     * Calculates empty data pages count for region. It counts only totally free pages that
+     * can be reused (e. g. pages that are contained in reuse bucket of free list).
+     *
+     * @return empty data pages count.
+     */
+    public long emptyDataPages();
 }

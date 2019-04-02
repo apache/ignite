@@ -65,13 +65,13 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
 
         AffinityTopologyVersion topVer = new AffinityTopologyVersion(1, 0);
         HistoryAffinityAssignment lateAssign =
-            new HistoryAffinityAssignment(new GridAffinityAssignmentV2(topVer, curr, ideal), 1);
+            new HistoryAffinityAssignmentImpl(new GridAffinityAssignmentV2(topVer, curr, ideal), 1);
 
         assertEquals("Late", curr, lateAssign.assignment());
         assertEquals("Ideal late", ideal, lateAssign.idealAssignment());
 
         HistoryAffinityAssignment idealAssign = new
-            HistoryAffinityAssignment(new GridAffinityAssignmentV2(topVer, ideal, ideal), 1);
+            HistoryAffinityAssignmentImpl(new GridAffinityAssignmentV2(topVer, ideal, ideal), 1);
 
         assertSame(idealAssign.assignment(), idealAssign.idealAssignment());
 

@@ -226,6 +226,7 @@ module.exports.factory = function(mongoose) {
                     type: String,
                     enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
                 },
+                implementationVersion: String,
                 batchSize: Number,
                 maximumPoolSize: Number,
                 maximumWriteAttempts: Number,
@@ -588,7 +589,8 @@ module.exports.factory = function(mongoose) {
                 idMapper: String,
                 nameMapper: String,
                 serializer: String,
-                enum: Boolean
+                enum: Boolean,
+                enumValues: [String]
             }],
             compactFooter: Boolean
         },
