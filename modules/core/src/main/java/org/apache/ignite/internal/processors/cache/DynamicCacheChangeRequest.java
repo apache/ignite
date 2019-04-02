@@ -100,6 +100,8 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Encryption key. */
     @Nullable private byte[] encKey;
 
+    private CacheConfigurationEnrichment cacheCfgEnrichment;
+
     /**
      * @param reqId Unique request ID.
      * @param cacheName Cache stop name.
@@ -467,5 +469,13 @@ public class DynamicCacheChangeRequest implements Serializable {
             ", destroy=" + destroy +
             ", disabledAfterStart" + disabledAfterStart +
             ']';
+    }
+
+    public CacheConfigurationEnrichment getCacheCfgEnrichment() {
+        return cacheCfgEnrichment;
+    }
+
+    public void setCacheCfgEnrichment(CacheConfigurationEnrichment cacheCfgEnrichment) {
+        this.cacheCfgEnrichment = cacheCfgEnrichment;
     }
 }

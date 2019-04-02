@@ -48,6 +48,9 @@ public class StoredCacheData implements Serializable {
     /** SQL flag - {@code true} if cache was created with {@code CREATE TABLE}. */
     private boolean sql;
 
+    /** */
+    private CacheConfigurationEnrichment cacheCfgEnrichment;
+
     /**
      * Constructor.
      *
@@ -102,6 +105,16 @@ public class StoredCacheData implements Serializable {
         this.sql = sql;
 
         return this;
+    }
+
+    public StoredCacheData cacheCfgEnrichment(CacheConfigurationEnrichment ccfgEnrichment) {
+        this.cacheCfgEnrichment = ccfgEnrichment;
+
+        return this;
+    }
+
+    public CacheConfigurationEnrichment cacheCfgEnrichment() {
+        return cacheCfgEnrichment;
     }
 
     /** {@inheritDoc} */

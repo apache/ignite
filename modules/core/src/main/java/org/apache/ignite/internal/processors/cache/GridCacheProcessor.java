@@ -154,6 +154,7 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -872,6 +873,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheData.sql(sql);
 
+        CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+
+        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(cfg);
+
+        cacheData.config(splitCfg.get1());
+        cacheData.cacheCfgEnrichment(splitCfg.get2());
+
         if (GridCacheUtils.isCacheTemplateName(cacheName))
             templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
         else {
@@ -939,6 +947,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 List<String> skippedConfigs = new ArrayList<>();
 
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
+                    // Backward compatibility for old stored caches data.
+                    if (storedCacheData.cacheCfgEnrichment() == null) {
+                        storedCacheData = new StoredCacheData(storedCacheData.config());
+
+                        CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+
+                        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(storedCacheData.config());
+
+                        storedCacheData.config(splitCfg.get1());
+                        storedCacheData.cacheCfgEnrichment(splitCfg.get2());
+                    }
+
                     String cacheName = storedCacheData.config().getName();
 
                     CacheType type = cacheType(cacheName);
@@ -1361,8 +1381,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public void initQueryStructuresForNotStartedCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
         QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
-
-        CacheObjectContext coCtx = cacheDesc.cacheObjectContext(ctx.cacheObjects());
 
         GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc);
 
@@ -2175,7 +2193,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     startCacheInfo,
                     cacheInfo -> {
                         prepareCacheStart(
-                            cacheInfo.getCacheDescriptor().cacheConfiguration(),
                             cacheInfo.getCacheDescriptor(),
                             cacheInfo.getReqNearCfg(),
                             cacheInfo.getExchangeTopVer(),
@@ -2205,7 +2222,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         startCacheInfo,
                         cacheInfo -> {
                             GridCacheContext cacheCtx = prepareCacheContext(
-                                cacheInfo.getCacheDescriptor().cacheConfiguration(),
                                 cacheInfo.getCacheDescriptor(),
                                 cacheInfo.getReqNearCfg(),
                                 cacheInfo.getExchangeTopVer(),
@@ -2287,7 +2303,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param startCfg Cache configuration to use.
      * @param desc Cache descriptor.
      * @param reqNearCfg Near configuration if specified for client cache start request.
      * @param exchTopVer Current exchange version.
@@ -2296,14 +2311,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void prepareCacheStart(
-        CacheConfiguration startCfg,
         DynamicCacheDescriptor desc,
         @Nullable NearCacheConfiguration reqNearCfg,
         AffinityTopologyVersion exchTopVer,
         boolean disabledAfterStart,
         boolean clientCache
     ) throws IgniteCheckedException {
-        GridCacheContext cacheCtx = prepareCacheContext(startCfg, desc, reqNearCfg, exchTopVer, disabledAfterStart);
+        desc.enrich(sharedCtx);
+
+        GridCacheContext cacheCtx = prepareCacheContext(desc, reqNearCfg, exchTopVer, disabledAfterStart);
 
         if (cacheCtx.isRecoveryMode())
             finishRecovery(exchTopVer, cacheCtx);
@@ -2321,7 +2337,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Preparing cache context to start.
      *
-     * @param startCfg Cache configuration to use.
      * @param desc Cache descriptor.
      * @param reqNearCfg Near configuration if specified for client cache start request.
      * @param exchTopVer Current exchange version.
@@ -2331,12 +2346,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException if failed.
      */
     private GridCacheContext prepareCacheContext(
-        CacheConfiguration startCfg,
         DynamicCacheDescriptor desc,
         @Nullable NearCacheConfiguration reqNearCfg,
         AffinityTopologyVersion exchTopVer,
         boolean disabledAfterStart
     ) throws IgniteCheckedException {
+        desc.enrich(sharedCtx);
+
+        CacheConfiguration startCfg = desc.cacheConfiguration();
+
         if (caches.containsKey(startCfg.getName())) {
             GridCacheAdapter<?, ?> existingCache = caches.get(startCfg.getName());
 
@@ -2633,6 +2651,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private GridCacheContext<?, ?> startCacheInRecoveryMode(
         DynamicCacheDescriptor desc
     ) throws IgniteCheckedException {
+        desc.enrich(sharedCtx);
+
         CacheConfiguration cfg = desc.cacheConfiguration();
 
         CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
@@ -2773,6 +2793,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion exchTopVer,
         boolean recoveryMode
     ) throws IgniteCheckedException {
+        desc.enrich(sharedCtx);
+
         CacheConfiguration cfg = new CacheConfiguration(desc.config());
 
         String memPlcName = cfg.getDataRegionName();

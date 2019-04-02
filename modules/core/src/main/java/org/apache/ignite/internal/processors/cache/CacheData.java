@@ -64,6 +64,8 @@ public class CacheData implements Serializable {
     /** Flags added for future usage. */
     private final long flags;
 
+    private final CacheConfigurationEnrichment cacheCfgEnrichment;
+
     /**
      * @param cacheCfg Cache configuration.
      * @param cacheId Cache ID.
@@ -87,7 +89,9 @@ public class CacheData implements Serializable {
         boolean staticCfg,
         boolean sql,
         boolean template,
-        long flags) {
+        long flags,
+        CacheConfigurationEnrichment cacheCfgEnrichment
+    ) {
         assert cacheCfg != null;
         assert rcvdFrom != null : cacheCfg.getName();
         assert deploymentId != null : cacheCfg.getName();
@@ -105,6 +109,7 @@ public class CacheData implements Serializable {
         this.sql = sql;
         this.template = template;
         this.flags = flags;
+        this.cacheCfgEnrichment = cacheCfgEnrichment;
     }
 
     /**
@@ -182,6 +187,10 @@ public class CacheData implements Serializable {
      */
     public long flags() {
         return flags;
+    }
+
+    public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
+        return cacheCfgEnrichment;
     }
 
     /** {@inheritDoc} */

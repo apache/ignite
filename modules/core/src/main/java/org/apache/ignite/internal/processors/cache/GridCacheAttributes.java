@@ -46,12 +46,25 @@ public class GridCacheAttributes implements Serializable {
     /** Cache configuration. */
     private CacheConfiguration ccfg;
 
+    /** Cache configuration enrichment. */
+    private CacheConfigurationEnrichment enrichment;
+
+
     /**
      * @param cfg Cache configuration.
      *
      */
     public GridCacheAttributes(CacheConfiguration cfg) {
-        ccfg = cfg;
+        this.ccfg = cfg;
+    }
+
+    /**
+     * @param cfg Cache configuration.
+     *
+     */
+    public GridCacheAttributes(CacheConfiguration cfg, CacheConfigurationEnrichment enrichment) {
+        this.ccfg = cfg;
+        this.enrichment = enrichment;
     }
 
     /**
@@ -199,6 +212,9 @@ public class GridCacheAttributes implements Serializable {
      * @return Store class name.
      */
     public String storeFactoryClassName() {
+        if (enrichment != null)
+            return enrichment.getFieldClassName("storeFactory");
+
         return className(ccfg.getCacheStoreFactory());
     }
 

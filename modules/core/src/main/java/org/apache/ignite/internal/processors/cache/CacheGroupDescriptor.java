@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -54,7 +55,7 @@ public class CacheGroupDescriptor {
 
     /** */
     @GridToStringExclude
-    private final CacheConfiguration<?, ?> cacheCfg;
+    private volatile CacheConfiguration<?, ?> cacheCfg;
 
     /** */
     @GridToStringInclude
@@ -71,6 +72,10 @@ public class CacheGroupDescriptor {
 
     /** Pending WAL change requests. */
     private final LinkedList<WalStateProposeMessage> walChangeReqs;
+
+    private final CacheConfigurationEnrichment cacheCfgEnrichment;
+
+    private volatile boolean isConfigurationEnriched;
 
     /**
      * @param cacheCfg Cache configuration.
@@ -95,7 +100,9 @@ public class CacheGroupDescriptor {
         Map<String, Integer> caches,
         boolean persistenceEnabled,
         boolean walEnabled,
-        @Nullable Collection<WalStateProposeMessage> walChangeReqs) {
+        @Nullable Collection<WalStateProposeMessage> walChangeReqs,
+        CacheConfigurationEnrichment cacheCfgEnrichment
+    ) {
         assert cacheCfg != null;
         assert grpId != 0;
 
@@ -109,6 +116,7 @@ public class CacheGroupDescriptor {
         this.persistenceEnabled = persistenceEnabled;
         this.walEnabled = walEnabled;
         this.walChangeReqs = walChangeReqs == null ? new LinkedList<>() : new LinkedList<>(walChangeReqs);
+        this.cacheCfgEnrichment = cacheCfgEnrichment;
     }
 
     /**
@@ -329,5 +337,25 @@ public class CacheGroupDescriptor {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(grpId);
+    }
+
+    public CacheConfigurationEnrichment cacheConfigEnrichment() {
+        return cacheCfgEnrichment;
+    }
+
+    public boolean isConfigurationEnriched() {
+        return cacheCfgEnrichment == null || isConfigurationEnriched;
+    }
+
+    public void enrich(GridCacheSharedContext cctx) {
+        if (CU.isUtilityCache(cacheOrGroupName()))
+            return;
+
+        if (isConfigurationEnriched())
+            return;
+
+        cacheCfg = CacheConfigurationEnricher.enrich(cctx, cacheCfg, cacheCfgEnrichment);
+
+        isConfigurationEnriched = true;
     }
 }

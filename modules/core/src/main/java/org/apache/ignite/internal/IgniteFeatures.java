@@ -43,7 +43,9 @@ public enum IgniteFeatures {
     DATA_PACKET_COMPRESSION(3),
 
     /** Support of different rebalance size for nodes.  */
-    DIFFERENT_REBALANCE_POOL_SIZE(4);
+    DIFFERENT_REBALANCE_POOL_SIZE(4),
+
+    CACHE_CONFIGURATIONS_EXCHANGE_V2(5);
 
     /**
      * Unique feature identifier.

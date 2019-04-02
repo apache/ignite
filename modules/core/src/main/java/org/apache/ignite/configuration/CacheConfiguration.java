@@ -245,6 +245,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private CacheWriteSynchronizationMode writeSync;
 
     /** */
+    @SerializeSeparately
     private Factory storeFactory;
 
     /** */
