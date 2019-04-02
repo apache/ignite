@@ -65,13 +65,13 @@ import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
-import static org.apache.ignite.internal.processors.cache.persistence.preload.GridPartitionUploadManager.persistenceRebalanceApplicable;
+import static org.apache.ignite.internal.processors.cache.persistence.preload.PartitionUploadManager.persistenceRebalanceApplicable;
 import static org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePreloadSharedManager.rebalanceThreadTopic;
 
 /**
  *
  */
-public class GridPartitionDownloadManager {
+public class PartitionDownloadManager {
     /** */
     private static final String REBALANCE_CP_REASON = "Rebalance has been scheduled [grps=%s]";
 
@@ -102,7 +102,7 @@ public class GridPartitionDownloadManager {
     /**
      * @param ktx Kernal context to process.
      */
-    public GridPartitionDownloadManager(GridKernalContext ktx) {
+    public PartitionDownloadManager(GridKernalContext ktx) {
         assert CU.isPersistenceEnabled(ktx.config());
 
         log = ktx.log(getClass());
@@ -520,7 +520,7 @@ public class GridPartitionDownloadManager {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridPartitionDownloadManager.class, this);
+        return S.toString(PartitionDownloadManager.class, this);
     }
 
     /** */

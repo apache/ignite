@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -34,14 +33,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheDataStoreEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_REBALANCE;
@@ -58,10 +52,10 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     private final boolean presistenceRebalanceEnabled;
 
     /** */
-    private GridPartitionDownloadManager downloadMgr;
+    private PartitionDownloadManager downloadMgr;
 
     /** */
-    private GridPartitionUploadManager uploadMgr;
+    private PartitionUploadManager uploadMgr;
 
     /** */
     private PartitionSwitchModeManager switchMgr;
@@ -76,8 +70,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         assert CU.isPersistenceEnabled(ktx.config()) :
             "Persistence must be enabled to preload any of cache partition files";
 
-        downloadMgr = new GridPartitionDownloadManager(ktx);
-        uploadMgr = new GridPartitionUploadManager(ktx);
+        downloadMgr = new PartitionDownloadManager(ktx);
+        uploadMgr = new PartitionUploadManager(ktx);
         pumpMgr = new GridCacheDataStorePumpManager(ktx);
 
         presistenceRebalanceEnabled = IgniteSystemProperties.getBoolean(
@@ -177,14 +171,14 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     /**
      * @return The instantiated download manager.
      */
-    public GridPartitionDownloadManager download() {
+    public PartitionDownloadManager download() {
         return downloadMgr;
     }
 
     /**
      * @return The instantiated upload mamanger.
      */
-    public GridPartitionUploadManager upload() {
+    public PartitionUploadManager upload() {
         return uploadMgr;
     }
 
@@ -205,108 +199,5 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         Map<Integer, Set<Integer>> parts
     ) {
         return switchMgr.offerSwitchRequest(mode, parts);
-    }
-
-    /**
-     *
-     */
-    private static class PartitionSwitchModeManager implements DbCheckpointListener {
-        /** */
-        private final GridCacheSharedContext<?, ?> cctx;
-
-        /** */
-        private final ConcurrentLinkedQueue<SwitchModeRequest> switchReqs = new ConcurrentLinkedQueue<>();
-
-        /**
-         * @param cctx Shared context.
-         */
-        public PartitionSwitchModeManager(GridCacheSharedContext<?, ?> cctx) {
-            this.cctx = cctx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
-            SwitchModeRequest rq;
-
-            while ((rq = switchReqs.poll()) != null) {
-                for (Map.Entry<Integer, Set<Integer>> e : rq.parts.entrySet()) {
-                    CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
-
-                    for (Integer partId : e.getValue()) {
-                        GridDhtLocalPartition locPart = grp.topology().localPartition(partId);
-
-                        if (locPart.storageMode() == rq.nextMode)
-                            continue;
-
-                        //TODO invalidate partition
-
-                        IgniteCacheOffheapManager.CacheDataStore currStore = locPart.storage(locPart.storageMode());
-
-                        // Pre-init the new storage.
-                        locPart.storage(rq.nextMode)
-                            .init(currStore.fullSize(), currStore.updateCounter(), currStore.cacheSizes());
-
-                        // Switching mode under the write lock.
-                        locPart.storageMode(rq.nextMode);
-                    }
-                }
-
-                rq.rqFut.onDone();
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /**
-         * @param mode The storage mode to switch to.
-         * @param parts The set of partitions to change storage mode.
-         * @return The future which will be completed when request is done.
-         */
-        public GridFutureAdapter<Boolean> offerSwitchRequest(
-            CacheDataStoreEx.StorageMode mode,
-            Map<Integer, Set<Integer>> parts
-        ) {
-            SwitchModeRequest req = new SwitchModeRequest(mode, parts);
-
-            boolean offered = switchReqs.offer(req);
-
-            assert offered;
-
-            return req.rqFut;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class SwitchModeRequest {
-        /** The storage mode to switch to. */
-        private final CacheDataStoreEx.StorageMode nextMode;
-
-        /** The map of cache groups and corresponding partition to switch mode to. */
-        private final Map<Integer, Set<Integer>> parts;
-
-        /** The future will be completed when the request has been processed. */
-        private final GridFutureAdapter<Boolean> rqFut = new GridFutureAdapter<>();
-
-        /**
-         * @param nextMode The mode to set to.
-         * @param parts The partitions to switch mode to.
-         */
-        public SwitchModeRequest(
-            CacheDataStoreEx.StorageMode nextMode,
-            Map<Integer, Set<Integer>> parts
-        ) {
-            this.nextMode = nextMode;
-            this.parts = parts;
-        }
     }
 }

@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.preload.Gr
 /**
  *
  */
-public class GridPartitionUploadManager {
+public class PartitionUploadManager {
     /** */
     private GridCacheSharedContext<?, ?> cctx;
 
@@ -71,7 +71,7 @@ public class GridPartitionUploadManager {
     /**
      * @param ktx Kernal context to process.
      */
-    public GridPartitionUploadManager(GridKernalContext ktx) {
+    public PartitionUploadManager(GridKernalContext ktx) {
         assert CU.isPersistenceEnabled(ktx.config());
 
         cctx = ktx.cache().context();
@@ -206,7 +206,7 @@ public class GridPartitionUploadManager {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridPartitionUploadManager.class, this);
+        return S.toString(PartitionUploadManager.class, this);
     }
 
     /** */
