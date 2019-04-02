@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.math;
 
-import java.util.Arrays;
-import java.util.function.BiPredicate;
 import org.apache.ignite.ml.math.exceptions.NonSquareMatrixException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
@@ -28,6 +26,9 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.function.BiPredicate;
 
 /** Tests for BLAS operations (all operations are only available for local matrices and vectors). */
 public class BlasTest {
@@ -296,7 +297,7 @@ public class BlasTest {
      * Create a sparse vector from array.
      *
      * @param arr Array with vector elements.
-     * @return sparse local on-heap vector.
+     * @return Sparse local on-heap vector.
      */
     private static SparseVector sparseFromArray(double[] arr) {
         SparseVector res = new SparseVector(2, StorageConstants.RANDOM_ACCESS_MODE);
@@ -312,7 +313,7 @@ public class BlasTest {
      *
      * @param a Matrix a.
      * @param b Vector b
-     * @return true if vectors are equal element-wise, false otherwise.
+     * @return True if vectors are equal element-wise, false otherwise.
      */
     private static boolean elementsEqual(Vector a, Vector b) {
         int n = b.size();
@@ -331,7 +332,7 @@ public class BlasTest {
      * @param rows Rows number in the target matrix.
      * @param acsMode column or row major mode.
      * @param p bipredicate to filter entities by.
-     * @return dense local on-heap matrix.
+     * @return Dense local on-heap matrix.
      */
     private static DenseMatrix fromVector(DenseVector v, int rows, int acsMode,
         BiPredicate<Integer, Integer> p) {

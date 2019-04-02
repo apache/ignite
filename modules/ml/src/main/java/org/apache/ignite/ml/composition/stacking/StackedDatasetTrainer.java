@@ -17,14 +17,12 @@
 
 package org.apache.ignite.ml.composition.stacking;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.combinators.parallel.ModelsParallelComposition;
 import org.apache.ignite.ml.composition.combinators.parallel.TrainersParallelComposition;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -34,7 +32,11 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.AdaptableDatasetTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * {@link DatasetTrainer} encapsulating stacking technique for model training.
@@ -230,15 +232,15 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> StackedModel<IS, IA, O, AM> fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+    @Override public <K, V, C extends Serializable> StackedModel<IS, IA, O, AM> fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, L> extractor) {
 
         return new StackedModel<>(getTrainer().fit(datasetBuilder, extractor));
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> StackedModel<IS, IA, O, AM> update(StackedModel<IS, IA, O, AM> mdl,
-        DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, L> extractor) {
+    @Override public <K, V, C extends Serializable> StackedModel<IS, IA, O, AM> update(StackedModel<IS, IA, O, AM> mdl,
+        DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor) {
 
         return new StackedModel<>(getTrainer().update(mdl, datasetBuilder, extractor));
     }
@@ -347,15 +349,15 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
     /**
      * This method is never called, instead of constructing logic of update from
      * {@link DatasetTrainer#isUpdateable(IgniteModel)} and
-     * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, IgniteBiFunction, IgniteBiFunction)}
+     * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, Vectorizer)}
      * in this class we explicitly override update method.
      *
      * @param mdl Model.
      * @return Updated model.
      */
-    @Override protected <K, V> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
+    @Override protected <K, V, C extends Serializable> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+        Vectorizer<K, V, C, L> extractor) {
         // This method is never called, we override "update" instead.
         throw new IllegalStateException();
     }
