@@ -113,8 +113,11 @@ public class RunningQueryManager {
         GridRunningQueryInfo qry = runs.remove(qryId);
 
         //We need to collect query history only for SQL queries.
-        if (qry != null && isSqlQuery(qry))
+        if (qry != null && isSqlQuery(qry)) {
+            qry.runningFuture().onDone();
+
             qryHistTracker.collectMetrics(qry, failed);
+        }
     }
 
     /**

@@ -36,12 +36,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.cache.CacheException;
-import org.apache.ignite.Ignite;
-import org.junit.Assert;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -62,8 +62,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -509,17 +509,21 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
     /**
      * Trying to kill already killed query. No exceptions expected.
+     *
+     * @throws Exception If failed.
      */
     @Test
-    public void testKillAlreadyKilledQuery() {
+    public void testKillAlreadyKilledQuery() throws Exception {
         testKillAlreadyKilledQuery(false);
     }
 
     /**
      * Trying to kill already killed query. No exceptions expected.
+     *
+     * @throws Exception If failed.
      */
     @Test
-    public void testAsyncKillAlreadyKilledQuery() {
+    public void testAsyncKillAlreadyKilledQuery() throws Exception {
         testKillAlreadyKilledQuery(true);
     }
 
@@ -527,15 +531,14 @@ public class KillQueryTest extends GridCommonAbstractTest {
      * Trying to kill already killed query. No exceptions expected.
      *
      * @param async execute cancellation in ASYNC mode.
+     * @throws Exception If failed.
      */
-    private void testKillAlreadyKilledQuery(boolean async) {
+    private void testKillAlreadyKilledQuery(boolean async) throws Exception {
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery("select * from Integer"));
 
         List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query().runningQueries(-1);
-
-        runningQueries.forEach(r -> System.out.println(r.query()));
 
         GridRunningQueryInfo runQryInfo = runningQueries.get(0);
 
@@ -543,11 +546,22 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> reqCache = igniteForKillRequest.cache(DEFAULT_CACHE_NAME);
 
-        reqCache.query(killQry);
+        IgniteInternalFuture killFut = GridTestUtils.runAsync(() -> reqCache.query(killQry));
 
-        reqCache.query(killQry);
+        GridTestUtils.assertThrows(log,
+            () -> cur.iterator().next(),
+            QueryCancelledException.class,
+            "The query was cancelled while executing");
+
+        killFut.get(CHECK_RESULT_TIMEOUT);
+
+        GridTestUtils.assertThrows(log,
+            () -> reqCache.query(killQry),
+            CacheException.class,
+            "Failed to cancel query due to query doesn't exist");
 
         cur.close();
+
     }
 
     /**
@@ -635,11 +649,13 @@ public class KillQueryTest extends GridCommonAbstractTest {
         try (Statement anotherStatment = conn.createStatement()) {
             anotherStatment.setFetchSize(1);
 
-            ResultSet rs = anotherStatment.executeQuery("select * from Integer");
+            String sql = "select * from Integer";
+
+            ResultSet rs = anotherStatment.executeQuery(sql);
 
             assert rs.next();
 
-            IgniteInternalFuture cancelRes = cancel(3, async);
+            IgniteInternalFuture cancelRes = cancel(3, async, sql);
 
             GridTestUtils.assertThrows(log, () -> {
                 // Executes multiple long running query
@@ -686,11 +702,13 @@ public class KillQueryTest extends GridCommonAbstractTest {
         try (Statement stmt2 = conn.createStatement()) {
             stmt2.setFetchSize(1);
 
-            ResultSet rs = stmt2.executeQuery("SELECT * from Integer");
+            String sql = "SELECT * from Integer";
+
+            ResultSet rs = stmt2.executeQuery(sql);
 
             Assert.assertTrue(rs.next());
 
-            IgniteInternalFuture cancelRes = cancel(2, async);
+            IgniteInternalFuture cancelRes = cancel(2, async, sql);
 
             GridTestUtils.assertThrows(log, () -> {
                 stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
@@ -762,7 +780,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
      *
      * @return <code>IgniteInternalFuture</code> to check whether exception was thrown.
      */
-    private IgniteInternalFuture cancel(int expQryNum, boolean async) {
+    private IgniteInternalFuture cancel(int expQryNum, boolean async, String... skypSqls ) {
         return GridTestUtils.runAsync(() -> {
             try {
                 TestSQLFunctions.cancelLatch.await();
@@ -772,10 +790,11 @@ public class KillQueryTest extends GridCommonAbstractTest {
                 List<IgniteInternalFuture> res = new ArrayList<>();
 
                 for (GridRunningQueryInfo runningQuery : runningQueries) {
-                    res.add(GridTestUtils.runAsync(() -> {
-                            igniteForKillRequest.cache(DEFAULT_CACHE_NAME).query(createKillQuery(runningQuery.globalQueryId(), async));
-                        }
-                    ));
+                    if (Stream.of(skypSqls).noneMatch((skipSql -> runningQuery.query().equals(skipSql))))
+                        res.add(GridTestUtils.runAsync(() -> {
+                                igniteForKillRequest.cache(DEFAULT_CACHE_NAME).query(createKillQuery(runningQuery.globalQueryId(), async));
+                            }
+                        ));
                 }
 
                 doSleep(500);

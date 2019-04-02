@@ -290,11 +290,9 @@ public class CommandProcessor {
      * @param node Cluster node.
      */
     private void onQueryKillRequest(GridQueryKillRequest msg, ClusterNode node) {
-        long qryId = msg.nodeQryId();
+        final long qryId = msg.nodeQryId();
 
         String err = null;
-
-        boolean snd = false;
 
         GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().runningQueryInfo(qryId);
 
@@ -305,40 +303,44 @@ public class CommandProcessor {
             err = "Query can't be cancelled due to such queries don't support cancellation " +
                 "[nodeId=" + ctx.localNodeId() + ",qryId=" + qryId + "]";
 
-        if (msg.asyncResponse()) {
-            snd = idx.send(GridTopic.TOPIC_QUERY,
-                GridTopic.TOPIC_QUERY.ordinal(),
-                Collections.singleton(node),
-                new GridQueryKillResponse(msg.requestId(), err),
-                null,
-                locNodeMsgHnd,
-                GridIoPolicy.QUERY_POOL,
-                false);
-        }
+        if (msg.asyncResponse() || err != null)
+            sendKillResponse(msg, node, err);
 
-        try {
-            if (err == null)
+        if (err == null) {
+            try {
                 runningQryInfo.cancel();
-        }
-        catch (Exception e) {
-            err = e.toString();
+            } catch (Exception e){
+                sendKillResponse(msg, node, e.getMessage());
 
-            U.warn(log, "Error during query cancelation: [qryId=" + qryId + "]", e);
+                return ;
+            }
+
+            if (!msg.asyncResponse()) {
+                runningQryInfo.runningFuture().listen((f) -> {
+                    sendKillResponse(msg, node, f.result());
+                });
+            }
         }
 
-        if (!msg.asyncResponse()) {
-            snd = idx.send(GridTopic.TOPIC_QUERY,
-                GridTopic.TOPIC_QUERY.ordinal(),
-                Collections.singleton(node),
-                new GridQueryKillResponse(msg.requestId(), err),
-                null,
-                locNodeMsgHnd,
-                GridIoPolicy.QUERY_POOL,
-                false);
-        }
+    }
+
+    /**
+     * @param msg Kill request message.
+     * @param node Initial kill request node.
+     * @param err Error message
+     */
+    private void sendKillResponse(GridQueryKillRequest msg, ClusterNode node, @Nullable String err) {
+        boolean snd = idx.send(GridTopic.TOPIC_QUERY,
+            GridTopic.TOPIC_QUERY.ordinal(),
+            Collections.singleton(node),
+            new GridQueryKillResponse(msg.requestId(), err),
+            null,
+            locNodeMsgHnd,
+            GridIoPolicy.MANAGEMENT_POOL,
+            false);
 
         if (!snd)
-            U.warn(log, "Resposne on query cancellation wasn't send back: [qryId=" + qryId + "]");
+            U.warn(log, "Resposne on query cancellation wasn't send back: [qryId=" + msg.nodeQryId() + "]");
     }
 
     /**
@@ -454,7 +456,7 @@ public class CommandProcessor {
                     new GridQueryKillRequest(reqId, cmd.nodeQueryId(), cmd.async()),
                     null,
                     locNodeMsgHnd,
-                    GridIoPolicy.QUERY_POOL,
+                    GridIoPolicy.MANAGEMENT_POOL,
                     false
                 );
 
