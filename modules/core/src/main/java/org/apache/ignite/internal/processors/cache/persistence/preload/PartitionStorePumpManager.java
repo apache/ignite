@@ -42,7 +42,7 @@ import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 /**
  *
  */
-public class GridCacheDataStorePumpManager {
+public class PartitionStorePumpManager {
     /** */
     private final IgniteLogger log;
 
@@ -62,10 +62,10 @@ public class GridCacheDataStorePumpManager {
     /**
      * @param ktx Kernel context.
      */
-    public GridCacheDataStorePumpManager(GridKernalContext ktx) {
+    public PartitionStorePumpManager(GridKernalContext ktx) {
         assert CU.isPersistenceEnabled(ktx.config());
 
-        log = ktx.log(GridCacheDataStorePumpManager.class);
+        log = ktx.log(PartitionStorePumpManager.class);
     }
 
     /**
@@ -140,7 +140,7 @@ public class GridCacheDataStorePumpManager {
         public StoragePumpWorker() {
             super(cctx.igniteInstanceName(),
                 "rebalance-store-pump-worker",
-                cctx.kernalContext().log(GridCacheDataStorePumpManager.class),
+                cctx.kernalContext().log(PartitionStorePumpManager.class),
                 cctx.kernalContext().workersRegistry());
         }
 

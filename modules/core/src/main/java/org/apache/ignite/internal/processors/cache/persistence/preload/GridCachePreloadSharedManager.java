@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.preload;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -105,7 +104,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     private PartitionSwitchModeManager switchMgr;
 
     /** */
-    private GridCacheDataStorePumpManager pumpMgr;
+    private PartitionStorePumpManager pumpMgr;
 
     /**
      * @param ktx Kernal context.
@@ -116,7 +115,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
         downloadMgr = new PartitionDownloadManager(ktx);
         uploadMgr = new PartitionUploadManager(ktx);
-        pumpMgr = new GridCacheDataStorePumpManager(ktx);
+        pumpMgr = new PartitionStorePumpManager(ktx);
 
         presistenceRebalanceEnabled = IgniteSystemProperties.getBoolean(
             IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED, false);
@@ -508,7 +507,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     /**
      * @return The cache data storage pump manager.
      */
-    public GridCacheDataStorePumpManager pump() {
+    public PartitionStorePumpManager pump() {
         return pumpMgr;
     }
 
