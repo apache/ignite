@@ -275,8 +275,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      */
     private void startDataRegions() {
+        boolean lazyMemoryAllocation = cctx.isLazyMemoryAllocation();
+
         for (DataRegion region : dataRegionMap.values()) {
-            region.pageMemory().start();
+            if (!lazyMemoryAllocation)
+                region.pageMemory().start();
 
             region.evictionTracker().start();
         }
