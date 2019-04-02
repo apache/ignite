@@ -2053,7 +2053,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // can't write header without that condition.
             WALPointer lastReadPointer = logicalState.lastReadRecordPointer();
 
-            walTail = lastReadPointer.equals(CheckpointStatus.NULL_PTR) ? null : lastReadPointer;
+            walTail = tailPointer(lastReadPointer.equals(CheckpointStatus.NULL_PTR) ? null : lastReadPointer);
 
             cctx.wal().onDeActivate(kctx);
         }
@@ -2116,6 +2116,31 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * Calculates tail pointer for WAL at the end of logical recovery.
+     *
+     * @param from Start replay WAL from.
+     * @return Tail pointer.
+     * @throws IgniteCheckedException If failed.
+     */
+    private WALPointer tailPointer(WALPointer from) throws IgniteCheckedException {
+        WALIterator it = cctx.wal().replay(from);
+
+        try {
+            while (it.hasNextX()) {
+                IgniteBiTuple<WALPointer, WALRecord> rec = it.nextX();
+
+                if (rec == null)
+                    break;
+            }
+        }
+        finally {
+            it.close();
+        }
+
+        return it.lastRead().map(WALPointer::next).orElse(null);
+    }
+
+    /**
      * Called when all partitions have been fully restored and pre-created on node start.
      *
      * Starts checkpointing process and initiates first checkpoint.
@@ -2154,6 +2179,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         WALPointer recPtr = status.endPtr;
 
         boolean apply = status.needRestoreMemory();
+
+        if(!CheckpointStatus.NULL_PTR.equals(status.startPtr))
+            cctx.wal().read(status.startPtr);
 
         if (apply) {
             if (finalizeState)

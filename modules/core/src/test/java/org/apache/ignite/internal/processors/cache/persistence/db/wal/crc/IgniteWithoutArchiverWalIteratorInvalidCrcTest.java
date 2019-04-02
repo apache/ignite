@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal.crc;
 import java.io.File;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -28,13 +29,19 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.PHYSICAL;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 
 /** */
 public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAbstractTest {
@@ -76,24 +83,6 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
-
-        ignite = startGrid(0);
-
-        ignite.cluster().active(true);
-
-        IgniteCache<Integer, byte[]> cache = ignite.cache(DEFAULT_CACHE_NAME);
-
-        byte[] val = new byte[VALUE_SIZE];
-
-        // Fill value with random data.
-        random.nextBytes(val);
-
-        // Amount of values that's enough to fill working dir at least twice.
-        int insertingCnt = 2 * WAL_SEGMENT_SIZE * WAL_SEGMENTS / VALUE_SIZE;
-        for (int i = 0; i < insertingCnt; i++)
-            cache.put(i, val);
-
-        ignite.cluster().active(false);
     }
 
     /** {@inheritDoc} */
@@ -103,10 +92,35 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
         cleanPersistenceDir();
     }
 
-    /** */
+    /**
+     *  A logical record was corrupted or just doesn't exist because the end of wal is reached, after start checkpoint without end.
+     *  -----||------||----X----> OR ----X----->
+     *  We recover all before it, and start the node.
+     */
     @Test
-    public void nodeShouldStartIfOldWalRecordCorrupted() throws Exception {
+    @WithSystemProperty(key = GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
+    public void nodeShouldStartIfLogicalRecordCorruptedAfterCheckpointOrWalStart() throws Exception {
+        startNodeAndPopulate();
+
         stopGrid(0);
+
+        // The node should.
+
+        IgniteEx ex = startGrid(0);
+
+        ex.cluster().active(true);
+    }
+
+    /**
+     *  Binary record was corrupted, before start last checkpoint without end.
+     *  -----||--X---||--------->
+     *  Node can't start.
+     */
+    @Test
+    public void nodeShouldStartIfBinaryRecordCorruptedBeforeEndCheckpoint() throws Exception {
+        startNodeAndPopulate();
+
+        stopGrid(0, true);
 
         IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
 
@@ -116,17 +130,31 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
 
         List<FileDescriptor> walFiles = getWalFiles(walDir, iterFactory);
 
-        FileDescriptor penultimateWalFile = walFiles.get(walFiles.size() - 2);
+        FileDescriptor lastWalFile = walFiles.get(walFiles.size() - 1);
 
-        WalTestUtils.corruptWalSegmentFile(penultimateWalFile, iterFactory, random);
+        List<FileWALPointer> checkpoints = WalTestUtils.getPointers(lastWalFile, iterFactory, CHECKPOINT_RECORD);
 
-        startGrid(0);
+        List<FileWALPointer> binary = WalTestUtils.getPointers(lastWalFile, iterFactory, PHYSICAL).stream()
+            .filter(p -> p.fileOffset() < checkpoints.get(checkpoints.size() - 1).fileOffset())
+            .collect(Collectors.toList());
+
+        FileWALPointer pointer = binary.get(binary.size() - 1);
+
+        WalTestUtils.corruptWalSegmentFile(lastWalFile, pointer);
+
+        GridTestUtils.assertThrows(log, () -> startGrid(0), Exception.class, null);
     }
 
-    /** */
+    /**
+     *  Last start checkpoint record was corrupted.
+     *  -----||------|X|-------->
+     *  We stop the node.
+     */
     @Test
-    public void nodeShouldStartIfTailRecordCorrupted() throws Exception {
-        stopGrid(0);
+    public void nodeShouldNotStartIfLastCheckpointRecordCorrupted() throws Exception {
+        startNodeAndPopulate();
+
+        stopGrid(0, true);
 
         IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
 
@@ -142,7 +170,26 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
 
         WalTestUtils.corruptWalSegmentFile(lastWalFile, iterFactory, corruptLastRecord);
 
-        startGrid(0);
+        GridTestUtils.assertThrows(log, () -> startGrid(0), Exception.class, null);
+    }
+
+    /** */
+    private void startNodeAndPopulate() throws Exception {
+        ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Integer, byte[]> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        byte[] val = new byte[VALUE_SIZE];
+
+        // Fill value with random data.
+        random.nextBytes(val);
+
+        // Amount of values that's enough to fill working dir at least twice.
+        int insertingCnt = 2 * WAL_SEGMENT_SIZE * WAL_SEGMENTS / VALUE_SIZE;
+        for (int i = 0; i < insertingCnt; i++)
+            cache.put(i, val);
     }
 
      /**

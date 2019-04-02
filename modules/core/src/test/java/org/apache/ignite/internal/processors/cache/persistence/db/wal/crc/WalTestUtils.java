@@ -45,6 +45,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 public class WalTestUtils {
     /**
      * Put zero CRC in one of records for the specified segment.
+     *
      * @param desc WAL segment descriptor.
      * @param iterFactory Iterator factory for segment iterating.
      * @param random Random generator, If it is null, returns a last element position.
@@ -61,7 +62,7 @@ public class WalTestUtils {
 
         try (WALIterator it = iterFactory.iterator(desc.file())) {
             for (IgniteBiTuple<WALPointer, WALRecord> tuple : it)
-                pointers.add((FileWALPointer) tuple.get1());
+                pointers.add((FileWALPointer)tuple.get1());
         }
 
         // Should have a previous record to return and another value before that to ensure that "lastReadPtr"
@@ -69,6 +70,23 @@ public class WalTestUtils {
         int idxCorrupted = random != null ? 2 + random.nextInt(pointers.size() - 2) : pointers.size() - 1;
 
         FileWALPointer pointer = pointers.get(idxCorrupted);
+
+        corruptWalSegmentFile(desc, pointer);
+
+        return pointers.get(idxCorrupted - 1);
+    }
+
+    /**
+     * Put zero CRC in one of records for the specified segment.
+     *
+     * @param desc WAL segment descriptor.
+     * @param pointer WAL pointer.
+     */
+    public static void corruptWalSegmentFile(
+        FileDescriptor desc,
+        FileWALPointer pointer
+    ) throws IOException {
+
         int crc32Off = pointer.fileOffset() + pointer.length() - CRC_SIZE;
 
         ByteBuffer zeroCrc32 = allocate(CRC_SIZE); // Has 0 value by default.
@@ -79,7 +97,51 @@ public class WalTestUtils {
 
             io.force(true);
         }
+    }
 
-        return pointers.get(idxCorrupted - 1);
+    /**
+     * @param desc Wal segment.
+     * @param iterFactory Iterator factory.
+     * @param recordType filter by RecordType
+     * @return List of pointers.
+     */
+    public static List<FileWALPointer> getPointers(
+        FileDescriptor desc,
+        IgniteWalIteratorFactory iterFactory,
+        WALRecord.RecordType recordType
+    ) throws IgniteCheckedException {
+        List<FileWALPointer> cpPointers = new ArrayList<>();
+
+        try (WALIterator it = iterFactory.iterator(desc.file())) {
+            for (IgniteBiTuple<WALPointer, WALRecord> tuple : it) {
+                if (recordType.equals(tuple.get2().type()))
+                    cpPointers.add((FileWALPointer)tuple.get1());
+            }
+        }
+
+        return cpPointers;
+    }
+
+    /**
+     * @param desc Wal segment.
+     * @param iterFactory Iterator factory.
+     * @param recordPurpose Filter by RecordPurpose
+     * @return List of pointers.
+     */
+    public static List<FileWALPointer> getPointers(
+        FileDescriptor desc,
+        IgniteWalIteratorFactory iterFactory,
+        WALRecord.RecordPurpose recordPurpose
+    ) throws IgniteCheckedException {
+        List<FileWALPointer> cpPointers = new ArrayList<>();
+
+        try (WALIterator it = iterFactory.iterator(desc.file())) {
+            for (IgniteBiTuple<WALPointer, WALRecord> tuple : it) {
+                if (recordPurpose.equals(tuple.get2().type().purpose()))
+                    cpPointers.add((FileWALPointer)tuple.get1());
+            }
+        }
+
+        return cpPointers;
     }
 }
