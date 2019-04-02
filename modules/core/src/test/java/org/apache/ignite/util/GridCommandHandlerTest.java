@@ -1211,6 +1211,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
+        log.info(testOut.toString());
+
         assertTrue(testOut.toString().contains("no conflicts have been found"));
 
         HashSet<Integer> clearKeys = new HashSet<>(asList(1, 2, 3, 4, 5, 6));
@@ -1495,7 +1497,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                 Files.delete(filePath);
 
-                System.out.println(dump);
+                log.info(dump);
 
                 assertTrue(dump.contains(outputExp));
 
@@ -1504,6 +1506,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             }
             else {
                 assertFalse(argsSet.contains("--dump"));
+
+                log.info(testOut.toString());
 
                 assertTrue(testOut.toString().contains(outputExp));
             }
@@ -1571,6 +1575,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+            log.info(dumpWithConflicts);
 
             assertTrue(dumpWithConflicts.contains("found 2 conflict partitions: [counterConflicts=1, hashConflicts=1]"));
         }
