@@ -3094,7 +3094,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
                         if (preloadMgr != null)
-                            r = preloadMgr.download().addNodeAssignments(assignsMap, resVer, forcePreload, cnt);
+                            r = preloadMgr.addNodeAssignments(assignsMap, resVer, forcePreload, cnt);
 
                         for (Integer order : orderMap.descendingKeySet()) {
                             for (Integer grpId : orderMap.get(order)) {
