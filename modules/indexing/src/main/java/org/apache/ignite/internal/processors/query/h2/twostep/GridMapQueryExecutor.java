@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
@@ -560,6 +561,8 @@ public class GridMapQueryExecutor {
                     boolean removeMapping = false;
                     ResultSet rs = null;
 
+                    MapH2QueryInfo qryInfo = null;
+
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
                         String sql = qry.query();
@@ -585,6 +588,8 @@ public class GridMapQueryExecutor {
 
                         int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
 
+                        qryInfo = new MapH2QueryInfo(stmt, qry.query(), node, reqId, segmentId);
+
                         rs = h2.executeSqlQueryWithTimer(
                             stmt,
                             connWrp.connection(),
@@ -592,7 +597,8 @@ public class GridMapQueryExecutor {
                             params0,
                             opTimeout,
                             qryResults.queryCancel(qryIdx),
-                            dataPageScanEnabled);
+                            dataPageScanEnabled,
+                            qryInfo);
 
                         if (inTx) {
                             ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(

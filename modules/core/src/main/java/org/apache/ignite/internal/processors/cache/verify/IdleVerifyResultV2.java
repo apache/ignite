@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -50,15 +51,19 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Counter conflicts. */
+    @GridToStringInclude
     private Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts;
 
     /** Hash conflicts. */
+    @GridToStringInclude
     private Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts;
 
     /** Moving partitions. */
+    @GridToStringInclude
     private Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions;
 
     /** Exceptions. */
+    @GridToStringInclude
     private Map<ClusterNode, Exception> exceptions;
 
     /**

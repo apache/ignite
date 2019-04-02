@@ -20,6 +20,7 @@ package org.apache.ignite.ml.regressions.logistic;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -34,10 +35,10 @@ import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 /**
@@ -47,8 +48,8 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
     /** Update strategy. */
     private UpdatesStrategy updatesStgy = new UpdatesStrategy<>(
         new SimpleGDUpdateCalculator(0.2),
-        SimpleGDParameterUpdate::sumLocal,
-        SimpleGDParameterUpdate::avg
+        SimpleGDParameterUpdate.SUM_LOCAL,
+        SimpleGDParameterUpdate.AVG
     );
 
     /** Max number of iteration. */
@@ -64,19 +65,18 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
     private long seed = 1234L;
 
     /** {@inheritDoc} */
-    @Override public <K, V> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override public <K, V, C extends Serializable> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
+    @Override protected <K, V, C extends Serializable> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+        Vectorizer<K, V, C, Double> extractor) {
 
         IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
-        IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
 
         IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
             Integer cols = dataset.compute(data -> {
@@ -109,14 +109,14 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
             seed
         ).withEnvironmentBuilder(envBuilder);
 
-        IgniteBiFunction<K, V, double[]> lbExtractorWrapper = (k, v) -> new double[] {lbExtractor.apply(k, v)};
         MultilayerPerceptron mlp;
+        Vectorizer<K, V, C, double[]> vectorizer = extractor.map(lv -> lv.features().labeled(new double[] {lv.label()}));
         if (mdl != null) {
             mlp = restoreMLPState(mdl);
-            mlp = trainer.update(mlp, datasetBuilder, featureExtractor, lbExtractorWrapper);
+            mlp = trainer.update(mlp, datasetBuilder, vectorizer);
         }
         else
-            mlp = trainer.fit(datasetBuilder, featureExtractor, lbExtractorWrapper);
+            mlp = trainer.fit(datasetBuilder, vectorizer);
 
         double[] params = mlp.parameters().getStorage().data();
 
