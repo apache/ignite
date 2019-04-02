@@ -1048,7 +1048,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override String valueObject() {
-            return String.valueOf(val);
+            return val != null ? String.valueOf(val) : null;
         }
 
         /**
