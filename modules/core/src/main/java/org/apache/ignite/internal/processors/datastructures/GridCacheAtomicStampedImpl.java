@@ -92,8 +92,8 @@ public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureP
 
             return stmp.get();
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -102,8 +102,13 @@ public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureP
         checkRemoved();
 
         try {
-            if (ctx.dataStructures().knownType(val) && ctx.dataStructures().knownType(stamp))
-                cacheView.invoke(key, new StampedSetEntryProcessor<>(val, stamp));
+            if (ctx.dataStructures().knownType(val) && ctx.dataStructures().knownType(stamp)) {
+                EntryProcessorResult res = cacheView.invoke(key, new StampedSetEntryProcessor<>(val, stamp));
+
+                assert res != null;
+
+                res.get();
+            }
             else {
                 CU.retryTopologySafe(new Callable<Void>() {
                     @Override public Void call() throws Exception {
@@ -123,11 +128,8 @@ public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureP
                 });
             }
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -170,11 +172,8 @@ public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureP
                 });
             }
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -186,12 +185,12 @@ public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureP
             GridCacheAtomicStampedValue<T, S> stmp = cacheView.get(key);
 
             if (stmp == null)
-                throw new IgniteCheckedException("Failed to find atomic stamped with given name: " + name);
+                throw new IgniteException("Failed to find atomic stamped with given name: " + name);
 
             return stmp.stamp();
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -207,8 +206,8 @@ public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureP
 
             return stmp.value();
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 

@@ -140,7 +140,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         IgniteLogger oldLog = GridTestUtils.getFieldValue(spi, "log");
 
         try {
-            GridTestUtils.setFieldValue(spi, "log", log);
+            GridTestUtils.setFieldValue(spi.longRunningQueries(), "log", log);
 
             String sql = "select sum(x) FROM SYSTEM_RANGE(?, ?)";
 
@@ -166,7 +166,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             assertTrue(res.contains("/* PUBLIC.RANGE_INDEX */"));
         }
         finally {
-            GridTestUtils.setFieldValue(spi, "log", oldLog);
+            GridTestUtils.setFieldValue(spi.longRunningQueries(), "log", oldLog);
         }
     }
 }

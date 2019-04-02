@@ -23,10 +23,12 @@ import IgniteClusterDefaults from './defaults/Cluster.service';
 import IgniteEventGroups from './defaults/Event-groups.service';
 import IgniteCacheDefaults from './defaults/Cache.service';
 import IgniteIGFSDefaults from './defaults/IGFS.service';
+import ArtifactVersionChecker from './ArtifactVersionChecker.service';
 
 import JavaTypes from '../../../services/JavaTypes.service';
 import VersionService from 'app/services/Version.service';
 
+import _ from 'lodash';
 import isNil from 'lodash/isNil';
 import {nonNil, nonEmpty} from 'app/utils/lodashMixins';
 
@@ -35,6 +37,9 @@ const cacheDflts = new IgniteCacheDefaults();
 const igfsDflts = new IgniteIGFSDefaults();
 const javaTypes = new JavaTypes(clusterDflts, cacheDflts, igfsDflts);
 const versionService = new VersionService();
+
+// Pom dependency information.
+import POM_DEPENDENCIES from 'app/data/pom-dependencies.json';
 
 export default class IgniteConfigurationGenerator {
     static eventGrps = new IgniteEventGroups();
@@ -141,7 +146,7 @@ export default class IgniteConfigurationGenerator {
         return DFLT_DIALECTS[dialect] || 'Unknown database: ' + (dialect || 'Choose JDBC dialect');
     }
 
-    static dataSourceBean(id, dialect) {
+    static dataSourceBean(id, dialect, available, storeDeps, implementationVersion) {
         let dsBean;
 
         switch (dialect) {
@@ -169,7 +174,13 @@ export default class IgniteConfigurationGenerator {
 
                 break;
             case 'MySQL':
-                dsBean = new Bean('com.mysql.jdbc.jdbc2.optional.MysqlDataSource', id, {})
+                const dep = storeDeps
+                    ? _.find(storeDeps, (d) => d.name === dialect)
+                    : _.first(ArtifactVersionChecker.latestVersions(this._getArtifact({dialect, implementationVersion}, available)));
+
+                const ver = parseInt(dep.version.split('.')[0], 10);
+
+                dsBean = new Bean(ver < 8 ? 'com.mysql.jdbc.jdbc2.optional.MysqlDataSource' : 'com.mysql.cj.jdbc.MysqlDataSource', id, {})
                     .property('URL', `${id}.jdbc.url`, 'jdbc:mysql://[host]:[port]/[database]');
 
                 break;
@@ -277,7 +288,7 @@ export default class IgniteConfigurationGenerator {
                 if (ipFinder.includes('dataSourceBean', 'dialect')) {
                     const id = ipFinder.valueOf('dataSourceBean');
 
-                    ipFinder.dataSource(id, 'dataSource', this.dataSourceBean(id, ipFinder.valueOf('dialect')));
+                    ipFinder.dataSource(id, 'dataSource', this.dataSourceBean(id, ipFinder.valueOf('dialect'), available));
                 }
 
                 break;
@@ -413,8 +424,50 @@ export default class IgniteConfigurationGenerator {
         }, available);
     }
 
+    /**
+     * Get dependency artifact for specified datasource.
+     *
+     * @param source Datasource.
+     * @param available Function to check version availability.
+     * @return {Array<{{name: String, version: String}}>} Array of accordance datasource artifacts.
+     */
+    static _getArtifact(source, available) {
+        const deps = _.get(POM_DEPENDENCIES, source.dialect);
+
+        if (!deps)
+            return [];
+
+        const extractVersion = (version) => {
+            return _.isArray(version) ? _.find(version, (v) => available(v.range)).version : version;
+        };
+
+        return _.map(_.castArray(deps), ({version}) => {
+            return ({
+                name: source.dialect,
+                version: source.implementationVersion || extractVersion(version)
+            });
+        });
+    }
+
     static clusterCaches(cluster, caches, igfss, available, client, cfg = this.igniteConfigurationBean(cluster)) {
-        const ccfgs = _.map(caches, (cache) => this.cacheConfiguration(cache, available));
+        const usedDataSourceVersions = [];
+
+        if (cluster.discovery.kind === 'Jdbc')
+            usedDataSourceVersions.push(...this._getArtifact(cluster.discovery.Jdbc, available));
+
+        _.forEach(cluster.checkpointSpi, (spi) => {
+            if (spi.kind === 'JDBC')
+                usedDataSourceVersions.push(...this._getArtifact(spi.JDBC, available));
+        });
+
+        _.forEach(caches, (cache) => {
+            if (_.get(cache, 'cacheStoreFactory.kind'))
+                usedDataSourceVersions.push(...this._getArtifact(cache.cacheStoreFactory[cache.cacheStoreFactory.kind], available));
+        });
+
+        const useDeps = _.uniqWith(ArtifactVersionChecker.latestVersions(usedDataSourceVersions), _.isEqual);
+
+        const ccfgs = _.map(caches, (cache) => this.cacheConfiguration(cache, available, useDeps));
 
         if (!client) {
             _.forEach(igfss, (igfs) => {
@@ -469,7 +522,8 @@ export default class IgniteConfigurationGenerator {
                 .emptyBeanProperty('idMapper')
                 .emptyBeanProperty('nameMapper')
                 .emptyBeanProperty('serializer')
-                .intProperty('enum');
+                .boolProperty('enum')
+                .mapProperty('enumValues', _.map(type.enumValues, (v, idx) => ({name: v, value: idx})), 'enumValues');
 
             if (typeCfg.nonEmpty())
                 typeCfgs.push(typeCfg);
@@ -749,7 +803,7 @@ export default class IgniteConfigurationGenerator {
                     const id = jdbcBean.valueOf('dataSourceBean');
                     const dialect = _.get(spi.JDBC, 'dialect');
 
-                    jdbcBean.dataSource(id, 'dataSource', this.dataSourceBean(id, dialect));
+                    jdbcBean.dataSource(id, 'dataSource', this.dataSourceBean(id, dialect, available));
 
                     if (!_.isEmpty(jdbcBean.valueOf('user'))) {
                         jdbcBean.stringProperty('user')
@@ -2148,7 +2202,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate cache store group.
-    static cacheStore(cache, domains, available, ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheStore(cache, domains, available, deps, ccfg = this.cacheConfigurationBean(cache)) {
         const kind = _.get(cache, 'cacheStoreFactory.kind');
 
         if (kind && cache.cacheStoreFactory[kind]) {
@@ -2163,7 +2217,7 @@ export default class IgniteConfigurationGenerator {
 
                     const jdbcId = bean.valueOf('dataSourceBean');
 
-                    bean.dataSource(jdbcId, 'dataSourceBean', this.dataSourceBean(jdbcId, storeFactory.dialect))
+                    bean.dataSource(jdbcId, 'dataSourceBean', this.dataSourceBean(jdbcId, storeFactory.dialect, available, deps, storeFactory.implementationVersion))
                         .beanProperty('dialect', new EmptyBean(this.dialectClsName(storeFactory.dialect)));
 
                     bean.intProperty('batchSize')
@@ -2208,7 +2262,7 @@ export default class IgniteConfigurationGenerator {
                     if (bean.valueOf('connectVia') === 'DataSource') {
                         const blobId = bean.valueOf('dataSourceBean');
 
-                        bean.dataSource(blobId, 'dataSourceBean', this.dataSourceBean(blobId, storeFactory.dialect));
+                        bean.dataSource(blobId, 'dataSourceBean', this.dataSourceBean(blobId, storeFactory.dialect, available, deps));
                     }
                     else {
                         ccfg.stringProperty('connectionUrl')
@@ -2394,12 +2448,12 @@ export default class IgniteConfigurationGenerator {
         ccfg.collectionProperty('qryEntities', 'queryEntities', qryEntities, 'org.apache.ignite.cache.QueryEntity');
     }
 
-    static cacheConfiguration(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheConfiguration(cache, available, deps = [], ccfg = this.cacheConfigurationBean(cache)) {
         this.cacheGeneral(cache, available, ccfg);
         this.cacheAffinity(cache, available, ccfg);
         this.cacheMemory(cache, available, ccfg);
         this.cacheQuery(cache, cache.domains, available, ccfg);
-        this.cacheStore(cache, cache.domains, available, ccfg);
+        this.cacheStore(cache, cache.domains, available, deps, ccfg);
 
         const igfs = _.get(cache, 'nodeFilter.IGFS.instance');
         this.cacheNodeFilter(cache, igfs ? [igfs] : [], ccfg);

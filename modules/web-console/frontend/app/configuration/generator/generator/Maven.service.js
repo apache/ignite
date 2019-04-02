@@ -15,13 +15,16 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 import StringBuilder from './StringBuilder';
+import ArtifactVersionChecker from './ArtifactVersionChecker.service';
 import VersionService from 'app/services/Version.service';
 
-const versionService = new VersionService();
-
-// Java built-in class names.
+// Pom dependency information.
 import POM_DEPENDENCIES from 'app/data/pom-dependencies.json';
+
+const versionService = new VersionService();
 
 /**
  * Pom file generation entry point.
@@ -38,22 +41,26 @@ export default class IgniteMavenGenerator {
         sb.append(`<${tag}>${val}</${tag}>`);
     }
 
-    addDependency(deps, groupId, artifactId, version, jar) {
-        deps.push({groupId, artifactId, version, jar});
+    addComment(sb, comment) {
+        sb.append(`<!-- ${comment} -->`);
     }
 
-    pickDependency(acc, key, dfltVer, igniteVer) {
+    addDependency(deps, groupId, artifactId, version, jar, link) {
+        deps.push({groupId, artifactId, version, jar, link});
+    }
+
+    _extractVersion(igniteVer, version) {
+        return _.isArray(version) ? _.find(version, (v) => versionService.since(igniteVer, v.range)).version : version;
+    }
+
+    pickDependency(acc, key, dfltVer, igniteVer, storedVer) {
         const deps = POM_DEPENDENCIES[key];
 
         if (_.isNil(deps))
             return;
 
-        const extractVersion = (version) => {
-            return _.isArray(version) ? _.find(version, (v) => versionService.since(igniteVer, v.range)).version : version;
-        };
-
-        _.forEach(_.castArray(deps), ({groupId, artifactId, version, jar}) => {
-            this.addDependency(acc, groupId || 'org.apache.ignite', artifactId, extractVersion(version) || dfltVer, jar);
+        _.forEach(_.castArray(deps), ({groupId, artifactId, version, jar, link}) => {
+            this.addDependency(acc, groupId || 'org.apache.ignite', artifactId, storedVer || this._extractVersion(igniteVer, version) || dfltVer, jar, link);
         });
     }
 
@@ -91,6 +98,9 @@ export default class IgniteMavenGenerator {
                 this.addProperty(sb, 'scope', 'system');
                 this.addProperty(sb, 'systemPath', '${project.basedir}/jdbc-drivers/' + dep.jar);
             }
+
+            if (dep.link)
+                this.addComment(sb, `You may download JDBC driver from: ${dep.link}`);
 
             sb.endBlock('</dependency>');
         });
@@ -152,7 +162,7 @@ export default class IgniteMavenGenerator {
      */
     storeFactoryDependency(deps, storeFactory, igniteVer) {
         if (storeFactory.dialect && (!storeFactory.connectVia || storeFactory.connectVia === 'DataSource'))
-            this.pickDependency(deps, storeFactory.dialect, null, igniteVer);
+            this.pickDependency(deps, storeFactory.dialect, null, igniteVer, storeFactory.implementationVersion);
     }
 
     collectDependencies(cluster, targetVer) {
@@ -208,7 +218,7 @@ export default class IgniteMavenGenerator {
         if (cluster.logger && cluster.logger.kind)
             this.pickDependency(deps, cluster.logger.kind, igniteVer);
 
-        return _.uniqWith(deps.concat(...storeDeps), _.isEqual);
+        return _.uniqWith(deps.concat(ArtifactVersionChecker.latestVersions(storeDeps)), _.isEqual);
     }
 
     /**
