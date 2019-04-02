@@ -433,7 +433,6 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         checkQuery("insert into Person(name) values(null)");
         checkQuery("insert into Person() values()");
         checkQuery("insert into Person(name) values(null), (null)");
-        checkQuery("insert into Person(name) values(null),");
         checkQuery("insert into Person(name, parentName) values(null, null), (?, ?)");
         checkQuery("insert into Person(old, name) values(5, 'John',), (6, 'Jack')");
         checkQuery("insert into Person(old, name) values(5 * 3, null,)");
@@ -443,7 +442,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         checkQuery("insert into Person(old, name, parentName) values" +
             "(2016 - 1828, CONCAT('Leo', 'Tolstoy'), CONCAT(?, 'Tolstoy'))," +
             "(?, 'AlexanderPushkin', null)," +
-            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), null),");
+            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), null)");
         checkQuery("insert into Person(date, old, name, parentName, addrId) values " +
             "('20160112', 1233, 'Ivan Ivanov', 'Peter Ivanov', 123)");
         checkQuery("insert into Person(date, old, name, parentName, addrId) values " +
