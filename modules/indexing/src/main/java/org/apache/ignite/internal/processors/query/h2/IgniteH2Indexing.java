@@ -1294,6 +1294,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) throws IgniteCheckedException {
         assert !select.mvccEnabled() || mvccTracker != null;
 
+        if (ctx.security().enabled())
+            checkSecurity(select.cacheIds());
+
         Iterable<List<?>> iter;
 
         if (select.splitNeeded()) {
