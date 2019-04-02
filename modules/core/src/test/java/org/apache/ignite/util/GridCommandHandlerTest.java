@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -1149,10 +1148,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
      */
     @Test
-    public void testCacheHelp() throws Exception {
+    public void testCacheHelp() {
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "help"));
@@ -1171,10 +1169,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
      */
     @Test
-    public void testCorrectCacheOptionsNaming() throws Exception {
+    public void testCorrectCacheOptionsNaming() {
         Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
 
         for (CacheCommand cmd : CacheCommand.values()) {
@@ -1184,10 +1181,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
      */
     @Test
-    public void testHelp() throws Exception {
+    public void testHelp() {
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--help"));
@@ -1201,7 +1197,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheIdleVerify() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(2);
+        IgniteEx ignite = startGrids(2);
 
         ignite.cluster().active(true);
 
@@ -1211,9 +1207,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        log.info(testOut.toString());
-
-        assertTrue(testOut.toString().contains("no conflicts have been found"));
+        assertContains(testOut.toString(), "no conflicts have been found");
 
         HashSet<Integer> clearKeys = new HashSet<>(asList(1, 2, 3, 4, 5, 6));
 
@@ -1221,7 +1215,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertTrue(testOut.toString().contains("conflict partitions"));
+        assertContains(testOut.toString(), "conflict partitions");
     }
 
     /**
@@ -1231,7 +1225,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheIdleVerifyTwoConflictTypes() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(2);
+        IgniteEx ignite = startGrids(2);
 
         ignite.cluster().active(true);
 
@@ -1261,7 +1255,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheIdleVerifyDumpSkipZerosUpdateCounters() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(2);
+        IgniteEx ignite = startGrids(2);
 
         ignite.cluster().active(true);
 
@@ -1318,7 +1312,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheIdleVerifyDump() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
@@ -1377,7 +1371,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     @Test
     public void testCacheIdleVerifyMultipleCacheFilterOptions()
             throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(2);
+        IgniteEx ignite = startGrids(2);
 
         ignite.cluster().active(true);
 
@@ -1407,7 +1401,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found 100 partitions",
+            "idle_verify check has finished",
             "idle_verify task args were following: --cache-filter SYSTEM --exclude-caches wrong.* ",
             "--cache", "idle_verify", "--dump", "--cache-filter", "SYSTEM", "--exclude-caches", "wrong.*"
         );
@@ -1497,22 +1491,36 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                 Files.delete(filePath);
 
-                log.info(dump);
-
-                assertTrue(dump.contains(outputExp));
+                assertContains(dump, outputExp);
 
                 if (cmdExp != null)
-                    assertTrue(dump.contains(cmdExp));
+                    assertContains(dump, cmdExp);
             }
             else {
                 assertFalse(argsSet.contains("--dump"));
 
-                log.info(testOut.toString());
-
-                assertTrue(testOut.toString().contains(outputExp));
+                assertContains(testOut.toString(), outputExp);
             }
         } else
-            assertTrue(testOut.toString().contains(outputExp));
+            assertContains(testOut.toString(), outputExp);
+    }
+
+    /**
+     * Checks that string {@param str} contains substring {@param substr}. Logs both strings
+     * and throws {@link java.lang.AssertionError}, if not.
+     *
+     * @param str string
+     * @param substr substring
+     */
+    private void assertContains(String str, String substr) {
+        try {
+            assertTrue(str.contains(substr));
+        } catch (AssertionError e) {
+            log.warning(String.format("String does not contain substring: '%s':", substr));
+            log.warning("String:");
+            log.warning(str);
+            throw e;
+        }
     }
 
     /**
@@ -1545,7 +1553,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheIdleVerifyDumpForCorruptedData() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
@@ -2034,7 +2042,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertTrue(testOut.toString().contains("no conflicts have been found"));
+        assertContains(testOut.toString(), "no conflicts have been found");
 
         startGrid(2);
 
@@ -2042,7 +2050,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertTrue(testOut.toString().contains("MOVING partitions"));
+        assertContains(testOut.toString(), "MOVING partitions");
     }
 
     /**
