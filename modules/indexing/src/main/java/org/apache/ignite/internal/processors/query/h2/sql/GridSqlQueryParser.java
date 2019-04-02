@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1434,7 +1435,7 @@ public class GridSqlQueryParser {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
-        checkTypeSupported(col.getType(), "[colName=" + col.getName() + ']');
+        checkTypeSupported(col.getType().getValueType(), "[colName=" + col.getName() + ']');
 
         if (col.getDefaultExpression() != null) {
             if (!col.getDefaultExpression().isConstant()) {
@@ -2339,7 +2340,7 @@ public class GridSqlQueryParser {
             }
 
             if (f.getFunctionType() == Function.CAST || f.getFunctionType() == Function.CONVERT) {
-                checkTypeSupported(f.getType(), "[expSql=" + f.getSQL() + ']');
+                checkTypeSupported(f.getType().getValueType(), "[expSql=" + f.getSQL(false) + ']');
 
                 res.resultType(fromExpression(f));
             }
