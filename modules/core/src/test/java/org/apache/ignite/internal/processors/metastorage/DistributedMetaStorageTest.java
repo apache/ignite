@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
