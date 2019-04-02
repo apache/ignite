@@ -21,6 +21,8 @@ import org.apache.ignite.internal.processors.cache.AtomicCacheAffinityConfigurat
 import org.apache.ignite.internal.processors.cache.consistency.ExplicitTransactionalCacheConsistencyTest;
 import org.apache.ignite.internal.processors.cache.consistency.ImplicitTransactionalCacheConsistencyTest;
 import org.apache.ignite.internal.processors.cache.consistency.OperationRestrictionsCacheConsistencyTest;
+import org.apache.ignite.internal.processors.cache.consistency.ReplicatedExplicitTransactionalCacheConsistencyTest;
+import org.apache.ignite.internal.processors.cache.consistency.ReplicatedImplicitTransactionalCacheConsistencyTest;
 import org.apache.ignite.internal.processors.cache.consistency.SingleBackupExplicitTransactionalCacheConsistencyTest;
 import org.apache.ignite.internal.processors.cache.consistency.SingleBackupImplicitTransactionalCacheConsistencyTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueCleanupSelfTest;
@@ -193,8 +195,12 @@ import org.junit.runners.Suite;
 
     ImplicitTransactionalCacheConsistencyTest.class,
     SingleBackupImplicitTransactionalCacheConsistencyTest.class,
+    ReplicatedImplicitTransactionalCacheConsistencyTest.class,
+
     ExplicitTransactionalCacheConsistencyTest.class,
     SingleBackupExplicitTransactionalCacheConsistencyTest.class,
+    ReplicatedExplicitTransactionalCacheConsistencyTest.class,
+
     OperationRestrictionsCacheConsistencyTest.class
 })
 public class IgniteCacheDataStructuresSelfTestSuite {

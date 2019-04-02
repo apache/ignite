@@ -32,6 +32,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
@@ -182,6 +183,11 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         return 3;
     }
 
+    /** Cache mode. */
+    protected CacheMode cacheMode() {
+        return PARTITIONED;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -234,7 +240,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setCacheMode(PARTITIONED);
+        cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setBackups(backupsCount());
 
