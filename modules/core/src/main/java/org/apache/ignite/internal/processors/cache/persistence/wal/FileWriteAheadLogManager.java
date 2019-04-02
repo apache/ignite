@@ -450,21 +450,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
                 });
 
-            IgniteBiTuple<Long, Long> tup = scanMinMaxArchiveIndices();
-
             segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
 
-            segmentAware.lastTruncatedArchiveIdx(tup == null ? -1 : tup.get1() - 1);
-
-            long lastAbsArchivedIdx = tup == null ? -1 : tup.get2();
-
             if (isArchiverEnabled())
-                archiver = new FileArchiver(lastAbsArchivedIdx, log);
+                archiver = new FileArchiver(segmentAware, log);
             else
                 archiver = null;
-
-            if (lastAbsArchivedIdx > 0)
-                segmentAware.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
 
             if (dsCfg.isWalCompactionEnabled()) {
                 compressor = new FileCompressor(log);
@@ -1720,11 +1711,26 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          *
          */
-        private FileArchiver(long lastAbsArchivedIdx, IgniteLogger log) {
+        private FileArchiver(SegmentAware segmentAware, IgniteLogger log) throws IgniteCheckedException {
             super(cctx.igniteInstanceName(), "wal-file-archiver%" + cctx.igniteInstanceName(), log,
                 cctx.kernalContext().workersRegistry());
 
-            segmentAware.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
+            init(segmentAware);
+        }
+
+        /**
+         * @param segmentAware Segment aware.
+         * @throws IgniteCheckedException If initialization failed.
+         */
+        private void init(SegmentAware segmentAware) throws IgniteCheckedException {
+            IgniteBiTuple<Long, Long> tup = scanMinMaxArchiveIndices();
+
+            segmentAware.lastTruncatedArchiveIdx(tup == null ? -1 : tup.get1() - 1);
+
+            long lastAbsArchivedIdx = tup == null ? -1 : tup.get2();
+
+            if (lastAbsArchivedIdx > 0)
+                segmentAware.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
         }
 
         /**
