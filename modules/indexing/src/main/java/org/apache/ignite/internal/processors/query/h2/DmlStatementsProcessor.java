@@ -43,6 +43,7 @@ import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -90,6 +91,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.h2.command.Prepared;
@@ -113,6 +115,10 @@ import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UP
 public class DmlStatementsProcessor {
     /** Default number of attempts to re-run DELETE and UPDATE queries in case of concurrent modifications of values. */
     private static final int DFLT_DML_RERUN_ATTEMPTS = 4;
+
+    /** The version which changed the anonymous class position of REMOVE closure. */
+    private static final IgniteProductVersion RMV_ANON_CLS_POS_CHANGED_SINCE =
+        IgniteProductVersion.fromString("2.7.0");
 
     /** Indexing. */
     private IgniteH2Indexing idx;
@@ -786,7 +792,13 @@ public class DmlStatementsProcessor {
                 continue;
             }
 
-            sender.add(row.get(0), new ModifyingEntryProcessor(row.get(1), RMV),  0);
+            Object key = row.get(0);
+
+            ClusterNode node = sender.primaryNodeByKey(key);
+
+            IgniteInClosure<MutableEntry<Object, Object>> rmvC = DmlStatementsProcessor.getRemoveClosure(node, key);
+
+            sender.add(key, new ModifyingEntryProcessor(row.get(1), rmvC),  0);
         }
 
         sender.flush();
@@ -1110,6 +1122,25 @@ public class DmlStatementsProcessor {
                 e.remove();
             }
         };
+
+    /**
+     * Returns the remove closure based on the version of the primary node.
+     *
+     * @param node Primary node.
+     * @param key Key.
+     * @return Remove closure.
+     */
+    public static IgniteInClosure<MutableEntry<Object, Object>> getRemoveClosure(ClusterNode node, Object key) {
+        assert node != null;
+        assert key != null;
+
+        IgniteInClosure<MutableEntry<Object, Object>> rmvC = RMV;
+
+        if (node.version().compareTo(RMV_ANON_CLS_POS_CHANGED_SINCE) < 0)
+            rmvC = RMV_OLD;
+
+        return rmvC;
+    }
 
     /**
      * @param schema Schema name.
