@@ -1155,4 +1155,12 @@ public class GridCacheSharedContext<K, V> {
     public void setTxManager(IgniteTxManager txMgr) {
         this.txMgr = txMgr;
     }
+
+    /**
+     * @return {@code True} if lazy memory allocation enabled. {@code False} otherwise.
+     */
+    public boolean isLazyMemoryAllocation() {
+        return gridConfig().getDataStorageConfiguration().isLazyMemoryAllocation() ||
+            gridConfig().isClientMode();
+    }
 }
