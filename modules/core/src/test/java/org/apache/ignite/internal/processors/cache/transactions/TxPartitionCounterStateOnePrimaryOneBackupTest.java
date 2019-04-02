@@ -443,17 +443,17 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
                                 assertFalse(cntr.sequential());
 
-                                long[] gap = cntr.iterator().next();
+                                long[] upd = cntr.iterator().next();
 
                                 assertEquals(
                                     cntr.toString(),
                                     PRELOAD_KEYS_CNT + SIZES[PRIMARY_COMMIT_ORDER[1]] + SIZES[PRIMARY_COMMIT_ORDER[2]],
-                                    gap[0]);
+                                    upd[0]);
 
                                 assertEquals(
                                     cntr.toString(),
                                     SIZES[PRIMARY_COMMIT_ORDER[0]],
-                                    gap[1]);
+                                    upd[1]);
 
                                 // Check backup counter.
                                 String backup = txTop.get(PARTITION_ID).get2().get(0).name();

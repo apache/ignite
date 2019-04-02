@@ -112,7 +112,7 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     public boolean notEmpty();
 
     /**
-     * @return Iterator for pairs [start, delta] for each hole in the update counter sequence.
+     * @return Iterator for pairs [start, delta] for each out-of-order update in the update counter sequence.
      */
     @Override public Iterator<long[]> iterator();
 }

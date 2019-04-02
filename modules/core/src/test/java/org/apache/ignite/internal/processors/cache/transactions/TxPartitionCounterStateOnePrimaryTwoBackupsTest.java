@@ -282,12 +282,12 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
                                 assertFalse(cntr.sequential());
 
-                                long[] gap = cntr.iterator().next();
+                                long[] upd = cntr.iterator().next();
 
                                 assertEquals(
                                     PRELOAD_KEYS_CNT + SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]],
-                                    gap[0]);
-                                assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], gap[1]);
+                                    upd[0]);
+                                assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], upd[1]);
 
                                 runAsync(() -> {
                                     stopGrid(skipCheckpointOnNodeStop, backup.name()); // Will stop backup node before all commits are applied.

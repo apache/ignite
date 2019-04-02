@@ -247,7 +247,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testGapsIterator() {
+    public void testOutOfOrderUpdatesIterator() {
         PartitionUpdateCounter pc = newCounter();
 
         pc.update(67, 3);
@@ -258,20 +258,20 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
         Iterator<long[]> iter = pc.iterator();
 
-        long[] gap = iter.next();
+        long[] upd = iter.next();
 
-        assertEquals(1, gap[0]);
-        assertEquals(58, gap[1]);
+        assertEquals(1, upd[0]);
+        assertEquals(58, upd[1]);
 
-        gap = iter.next();
+        upd = iter.next();
 
-        assertEquals(60, gap[0]);
-        assertEquals(5, gap[1]);
+        assertEquals(60, upd[0]);
+        assertEquals(5, upd[1]);
 
-        gap = iter.next();
+        upd = iter.next();
 
-        assertEquals(67, gap[0]);
-        assertEquals(3, gap[1]);
+        assertEquals(67, upd[0]);
+        assertEquals(3, upd[1]);
 
         assertFalse(iter.hasNext());
     }
@@ -294,10 +294,10 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         Iterator<long[]> iter = pc.iterator();
         assertTrue(iter.hasNext());
 
-        long[] gap = iter.next();
+        long[] upd = iter.next();
 
-        assertEquals(6, gap[0]);
-        assertEquals(10, gap[1]);
+        assertEquals(6, upd[0]);
+        assertEquals(10, upd[1]);
 
         assertFalse(iter.hasNext());
     }
