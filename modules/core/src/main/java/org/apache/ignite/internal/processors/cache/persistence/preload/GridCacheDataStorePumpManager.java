@@ -28,6 +28,8 @@ import org.apache.ignite.internal.pagemem.wal.IgnitePartitionCatchUpLog;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,7 +50,8 @@ public class GridCacheDataStorePumpManager {
     private final Object mux = new Object();
 
     /** The list of cache data storages to sync their states. */
-    private final Queue<IgnitePartitionCatchUpLog> catchQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<T2<GridFutureAdapter<Boolean>, IgnitePartitionCatchUpLog>> catchQueue =
+        new ConcurrentLinkedQueue<>();
 
     /** */
     private GridCacheSharedContext<?, ?> cctx;
@@ -83,13 +86,18 @@ public class GridCacheDataStorePumpManager {
 
     /**
      * @param src The src to start work with.
+     * @return The future completes when the log has been catched.
      */
-    public void registerPumpSource(IgnitePartitionCatchUpLog src) {
+    public GridFutureAdapter<Boolean> registerPumpSource(IgnitePartitionCatchUpLog src) {
         synchronized (mux) {
             if (pumpWorker == null)
                 startStorePumpWorker();
 
-            catchQueue.add(src);
+            GridFutureAdapter<Boolean> fut0 = new GridFutureAdapter<>();
+
+            catchQueue.add(new T2<>(fut0, src));
+
+            return fut0;
         }
     }
 
@@ -140,32 +148,43 @@ public class GridCacheDataStorePumpManager {
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             Throwable err = null;
 
+            T2<GridFutureAdapter<Boolean>, IgnitePartitionCatchUpLog> tup = null;
+
             try {
                 assert !cctx.kernalContext().recoveryMode();
                 assert CU.isPersistenceEnabled(cctx.kernalContext().config());
 
-                IgnitePartitionCatchUpLog catchLog;
-
-                while ((catchLog = catchQueue.poll()) != null && !isCancelled()) {
+                while ((tup = catchQueue.poll()) != null && !isCancelled()) {
                     updateHeartbeat();
+
+                    IgnitePartitionCatchUpLog catchLog = tup.get2();
 
                     WALIterator iter = catchLog.replay();
 
                     ((GridCacheDatabaseSharedManager)cctx.database()).applyUpdates(iter,
                         (ptr, rec) -> true,
-                        (entry) -> true);
+                        (entry) -> true,
+                        true);
 
                     assert catchLog.catched();
+
+                    tup.get1().onDone();
 
                     unregisterPumpSource(catchLog);
                 }
             }
             catch (IgniteCheckedException e) {
                 log.error("An error during processing storage temporary entries", e);
+
+                if (tup != null)
+                    tup.get1().onDone(e);
             }
             catch (Throwable t) {
                 if (!(X.hasCause(t, IgniteInterruptedCheckedException.class, InterruptedException.class)))
                     err = t;
+
+                if (tup != null)
+                    tup.get1().onDone(t);
 
                 throw t;
             }

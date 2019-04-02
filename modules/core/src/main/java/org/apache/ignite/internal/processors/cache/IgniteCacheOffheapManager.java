@@ -353,6 +353,7 @@ public interface IgniteCacheOffheapManager {
      * @param expireTime Expire time.
      * @param oldRow Old row if available.
      * @param part Partition.
+     * @param primary <tt>true</tt> shows the key will be updated on primary data store.
      * @throws IgniteCheckedException If failed.
      */
     public void update(
@@ -362,7 +363,8 @@ public interface IgniteCacheOffheapManager {
         GridCacheVersion ver,
         long expireTime,
         GridDhtLocalPartition part,
-        @Nullable CacheDataRow oldRow
+        @Nullable CacheDataRow oldRow,
+        boolean primary
     ) throws IgniteCheckedException;
 
     /**
@@ -389,13 +391,15 @@ public interface IgniteCacheOffheapManager {
      * @param key Key.
      * @param partId Partition number.
      * @param part Partition.
+     * @param primary <tt>true</tt> shows the key will be removed from primary data store.
      * @throws IgniteCheckedException If failed.
      */
     public void remove(
         GridCacheContext cctx,
         KeyCacheObject key,
         int partId,
-        GridDhtLocalPartition part
+        GridDhtLocalPartition part,
+        boolean primary
     ) throws IgniteCheckedException;
 
     /**
@@ -716,7 +720,30 @@ public interface IgniteCacheOffheapManager {
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
+            @Nullable CacheDataRow oldRow
+        ) throws IgniteCheckedException;
+
+        /**
+         * @param cctx Cache context.
+         * @param key Key.
+         * @param val Value.
+         * @param ver Version.
+         * @param expireTime Expire time.
+         * @param oldRow Old row if available.
+         * @param restore <tt>true</tt> if only primary storage must be updated
+         * @throws IgniteCheckedException If failed.
+         */
+        default void update(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            @Nullable CacheDataRow oldRow,
+            boolean restore
+        ) throws IgniteCheckedException {
+            update(cctx, key, val, ver, expireTime, oldRow);
+        }
 
         /**
          * @param cctx Cache context.
@@ -887,6 +914,21 @@ public interface IgniteCacheOffheapManager {
          */
         public void remove(GridCacheContext cctx, KeyCacheObject key, int partId) throws IgniteCheckedException;
 
+        /**
+         * @param cctx Cache context.
+         * @param key Key.
+         * @param partId Partition number.
+         * @param restore <tt>true</tt> if the key must be removed from restore store.
+         * @throws IgniteCheckedException If failed.
+         */
+        public default void remove(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            int partId,
+            boolean restore
+        ) throws IgniteCheckedException {
+            remove(cctx, key, partId);
+        }
         /**
          * @param cctx Cache context.
          * @param key Key.

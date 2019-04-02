@@ -454,7 +454,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * Set {@link CacheDataStoreEx.StorageMode} to the corresponding local partition storage.
      */
-    public void storageMode(CacheDataStoreEx.StorageMode mode) {
+    public void dataStoreMode(CacheDataStoreEx.StorageMode mode) {
         if (state() != MOVING)
             return;
 
@@ -464,7 +464,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @return The curretly active storage mode.
      */
-    public CacheDataStoreEx.StorageMode storageMode() {
+    public CacheDataStoreEx.StorageMode dataStoreMode() {
         return store.storeMode();
     }
 
@@ -472,7 +472,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param mode The mode to associate with data storage instance.
      * @param storage The cache data storage instance to set to.
      */
-    public void storage(CacheDataStoreEx.StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage) {
+    public void dataStore(CacheDataStoreEx.StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage) {
         if (state() != MOVING)
             return;
 
@@ -483,14 +483,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param mode The storage mode.
      * @return The storage intance for the given mode.
      */
-    public IgniteCacheOffheapManager.CacheDataStore storage(CacheDataStoreEx.StorageMode mode) {
+    public IgniteCacheOffheapManager.CacheDataStore dataStore(CacheDataStoreEx.StorageMode mode) {
         return store.store(mode);
     }
 
     /**
      * @return The storage is used to expose temporary cache data rows when the <tt>LOG_ONLY</tt> mode is active.
      */
-    public IgnitePartitionCatchUpLog storeCatchLog() {
+    public IgnitePartitionCatchUpLog dataStoreCatchLog() {
         return store.catchLog();
     }
 
@@ -602,7 +602,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             synchronized (this) {
                 GridDhtPartitionState prevState = state();
 
-                assert storageMode() == CacheDataStoreEx.StorageMode.FULL || toState == MOVING :
+                assert dataStoreMode() == CacheDataStoreEx.StorageMode.FULL || toState == MOVING :
                     "Storage mode FULL is only allowed for the MOVING partition state";
 
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));

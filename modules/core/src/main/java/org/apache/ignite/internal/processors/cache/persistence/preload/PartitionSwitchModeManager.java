@@ -57,19 +57,19 @@ public class PartitionSwitchModeManager implements DbCheckpointListener {
                 for (Integer partId : e.getValue()) {
                     GridDhtLocalPartition locPart = grp.topology().localPartition(partId);
 
-                    if (locPart.storageMode() == rq.nextMode)
+                    if (locPart.dataStoreMode() == rq.nextMode)
                         continue;
 
                     //TODO invalidate partition
 
-                    IgniteCacheOffheapManager.CacheDataStore currStore = locPart.storage(locPart.storageMode());
+                    IgniteCacheOffheapManager.CacheDataStore currStore = locPart.dataStore(locPart.dataStoreMode());
 
                     // Pre-init the new storage.
-                    locPart.storage(rq.nextMode)
+                    locPart.dataStore(rq.nextMode)
                         .init(currStore.fullSize(), currStore.updateCounter(), currStore.cacheSizes());
 
                     // Switching mode under the write lock.
-                    locPart.storageMode(rq.nextMode);
+                    locPart.dataStoreMode(rq.nextMode);
                 }
             }
 

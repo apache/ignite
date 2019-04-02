@@ -135,7 +135,7 @@ public class PartitionDownloadManager {
                     GridDhtLocalPartition part = grp.topology().localPartition(partId, topVer, true);
 
                     assert part != null;
-                    assert part.storageMode() == CacheDataStoreEx.StorageMode.LOG_ONLY;
+                    assert part.dataStoreMode() == CacheDataStoreEx.StorageMode.LOG_ONLY;
 
                     if (part.state() == MOVING) {
                         boolean reserved = part.reserve();

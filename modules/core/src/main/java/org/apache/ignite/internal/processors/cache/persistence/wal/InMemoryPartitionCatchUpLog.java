@@ -70,7 +70,7 @@ public class InMemoryPartitionCatchUpLog implements IgnitePartitionCatchUpLog {
             QueueWALPointer ptr = new QueueWALPointer(savedPtr.incrementAndGet());
 
             if (cathed)
-                ((GridCacheDatabaseSharedManager)grp.shared().database()).applyWALRecord(entry, (e) -> true);
+                ((GridCacheDatabaseSharedManager)grp.shared().database()).applyWALRecord(entry, (e) -> true, true);
             else
                 savedRecs.add(new IgniteBiTuple<>(ptr, entry));
 

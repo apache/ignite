@@ -2503,7 +2503,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public void applyUpdates(
         WALIterator it,
         IgniteBiPredicate<WALPointer, WALRecord> recPredicate,
-        IgnitePredicate<DataEntry> entryPredicate
+        IgnitePredicate<DataEntry> entryPredicate,
+        boolean restore
     ) {
         if (it == null)
             return;
@@ -2516,7 +2517,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!recPredicate.apply(next.get1(), rec))
                 break;
 
-            applyWALRecord(rec, entryPredicate);
+            applyWALRecord(rec, entryPredicate, restore);
         }
     }
 
@@ -2524,7 +2525,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param rec The WAL record to process.
      * @param entryPredicate An entry filter to apply.
      */
-    public void applyWALRecord(WALRecord rec, IgnitePredicate<DataEntry> entryPredicate) {
+    public void applyWALRecord(WALRecord rec, IgnitePredicate<DataEntry> entryPredicate, boolean restore) {
         switch (rec.type()) {
             case MVCC_DATA_RECORD:
             case DATA_RECORD:
@@ -2543,7 +2544,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
                                 if (cacheCtx != null)
-                                    applyUpdate(cacheCtx, dataEntry);
+                                    applyUpdate(cacheCtx, dataEntry, restore);
                                 else if (log != null)
                                     log.warning("Cache is not started. Updates cannot be applied " +
                                         "[cacheId=" + cacheId + ']');
@@ -2600,7 +2601,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return;
 
         cctx.walState().runWithOutWAL(() -> {
-            applyUpdates(it, recPredicate, entryPredicate);
+            applyUpdates(it, recPredicate, entryPredicate, false);
         });
     }
 
@@ -2664,7 +2665,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
                                 try {
-                                    applyUpdate(cacheCtx, dataEntry);
+                                    applyUpdate(cacheCtx, dataEntry, false);
                                 }
                                 catch (IgniteCheckedException e) {
                                     U.error(log, "Failed to apply data entry, dataEntry=" + dataEntry +
@@ -2791,9 +2792,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param cacheCtx Cache context to apply an update.
      * @param dataEntry Data entry to apply.
+     * @param restore <tt>true</tt> shows the key will be updated on restore data store.
      * @throws IgniteCheckedException If failed to restore.
      */
-    private void applyUpdate(GridCacheContext cacheCtx, DataEntry dataEntry) throws IgniteCheckedException {
+    private void applyUpdate(GridCacheContext cacheCtx, DataEntry dataEntry, boolean restore) throws IgniteCheckedException {
         int partId = dataEntry.partitionId();
 
         if (partId == -1)
@@ -2815,6 +2817,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         ((MvccDataEntry)dataEntry).mvccVer());
                 }
                 else {
+                    // TODO load to restore true\false
                     cacheCtx.offheap().update(
                         cacheCtx,
                         dataEntry.key(),
@@ -2822,7 +2825,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         dataEntry.writeVersion(),
                         dataEntry.expireTime(),
                         locPart,
-                        null);
+                        null,
+                        restore);
                 }
 
                 if (dataEntry.partitionCounter() != 0)
@@ -2842,7 +2846,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         ((MvccDataEntry)dataEntry).mvccVer());
                 }
                 else
-                    cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart);
+                    // TODO load to restore true\false
+                    cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart, restore);
 
                 if (dataEntry.partitionCounter() != 0)
                     cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter());

@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.preload;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -45,6 +47,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheDataStoreEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -221,17 +224,35 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         if (staleFuture(fut0))
             return;
 
+        assert part.dataStoreMode() == CacheDataStoreEx.StorageMode.LOG_ONLY;
+
+        IgniteCacheOffheapManager.CacheDataStore store = part.dataStore(CacheDataStoreEx.StorageMode.FULL);
+
+        // Re-init data store at first access to it.
+        store.updateCounter();
+
+        GridFutureAdapter<Boolean> fut = pumpMgr.registerPumpSource(part.dataStoreCatchLog());
+
         // TODO Rebuild indexes by partition
 
-        // TODO Register owning partition listener here to own it on checkpoint done
-        // There is no need to check grp.localWalEnabled() as for the partition
-        // file transfer process it has no meaning. We always apply this partiton
-        // without any records to the WAL.
-        boolean isOwned = grp.topology().own(part);
+        fut.listen(f -> {
+            // TODO swithc mode when the next checkpoint finished.
+            Map<Integer, Set<Integer>> parts = new HashMap<>();
 
-        assert isOwned : "Partition must be owned: " + part;
+            parts.put(grp.groupId(), new HashSet<>(Collections.singletonList(part.id())));
 
-        // TODO Send EVT_CACHE_REBALANCE_PART_LOADED
+            switchPartitionsMode(CacheDataStoreEx.StorageMode.FULL,parts).listen(f0 -> {
+                // TODO Register owning partition listener here to own it on checkpoint done
+                // There is no need to check grp.localWalEnabled() as for the partition
+                // file transfer process it has no meaning. We always apply this partiton
+                // without any records to the WAL.
+                boolean isOwned = grp.topology().own(part);
+
+                assert isOwned : "Partition must be owned: " + part;
+
+                // TODO Send EVT_CACHE_REBALANCE_PART_LOADED
+            });
+        });
     }
 
     /**

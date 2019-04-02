@@ -441,11 +441,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridCacheVersion ver,
         long expireTime,
         GridDhtLocalPartition part,
-        @Nullable CacheDataRow oldRow
+        @Nullable CacheDataRow oldRow,
+        boolean primary
     ) throws IgniteCheckedException {
         assert expireTime >= 0;
 
-        dataStore(part).update(cctx, key, val, ver, expireTime, oldRow);
+        dataStore(part).update(cctx, key, val, ver, expireTime, oldRow, primary);
     }
 
     /** {@inheritDoc} */
@@ -602,9 +603,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridCacheContext cctx,
         KeyCacheObject key,
         int partId,
-        GridDhtLocalPartition part
+        GridDhtLocalPartition part,
+        boolean restore
     ) throws IgniteCheckedException {
-        dataStore(part).remove(cctx, key, partId);
+        dataStore(part).remove(cctx, key, partId, restore);
     }
 
     /** {@inheritDoc} */
