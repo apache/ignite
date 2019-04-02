@@ -21,6 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -28,6 +29,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -290,7 +292,7 @@ public interface GridQueryIndexing {
      *
      * @param cctx Cache context.
      */
-    void markAsRebuldNeeded(GridCacheContext cctx);
+    void markAsRebuildNeeded(GridCacheContext cctx);
 
     /**
      * Returns backup filter.
@@ -346,6 +348,13 @@ public interface GridQueryIndexing {
     public String schema(String cacheName);
 
     /**
+     * Gets database schemas names.
+     *
+     * @return Schema names.
+     */
+    public Set<String> schemasNames();
+
+    /**
      * Check if passed statement is insert statement eligible for streaming, throw an {@link IgniteSQLException} if not.
      *
      * @param nativeStmt Native statement.
@@ -377,4 +386,12 @@ public interface GridQueryIndexing {
      * @return {@code true} If context has been initialized.
      */
     public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
+
+    /**
+     * Register SQL JMX beans.
+     *
+     * @param mbMgr Ignite MXBean manager.
+     * @throws IgniteCheckedException On bean registration error.
+     */
+    void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException;
 }

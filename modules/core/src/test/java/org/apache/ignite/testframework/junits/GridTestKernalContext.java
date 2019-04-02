@@ -29,6 +29,7 @@ import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.GridKernalGatewayImpl;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -81,7 +82,8 @@ public class GridTestKernalContext extends GridKernalContextImpl {
                 U.allPluginProviders(),
                 null,
                 null,
-                null
+                null,
+                new LongJVMPauseDetector(log)
         );
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());

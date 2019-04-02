@@ -17,20 +17,9 @@
 
 package org.apache.ignite.ml.util.generators;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import org.apache.ignite.ml.dataset.Dataset;
-import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.UpstreamTransformer;
-import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
+import org.apache.ignite.ml.composition.CompositionUtils;
+import org.apache.ignite.ml.dataset.*;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
@@ -42,9 +31,18 @@ import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link DataStreamGenerator}.
@@ -175,9 +173,12 @@ public class DataStreamGeneratorTest {
     /** */
     private Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> buildDataset(
         DatasetBuilder<Vector, Double> b1) {
+        FeatureLabelExtractorWrapper<Vector, Double, ? extends Serializable, Double> wrapper = new FeatureLabelExtractorWrapper<>(
+            CompositionUtils.asFeatureLabelExtractor((v, l) -> v, (v, l) -> l)
+        );
         return b1.build(LearningEnvironmentBuilder.defaultBuilder(),
             new EmptyContextBuilder<>(),
-            new LabeledDatasetPartitionDataBuilderOnHeap<>((v, l) -> v, (v, l) -> l)
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(wrapper)
         );
     }
 
