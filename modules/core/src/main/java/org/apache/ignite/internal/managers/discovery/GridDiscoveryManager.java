@@ -790,8 +790,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             minorTopVer
                         );
 
-                        if (discoCacheUpdated)
+                        if (discoCacheUpdated) {
                             discoCache = discoCache();
+
+                            discoCacheHist.put(nextTopVer, discoCache);
+                        }
                     }
                 }
 
