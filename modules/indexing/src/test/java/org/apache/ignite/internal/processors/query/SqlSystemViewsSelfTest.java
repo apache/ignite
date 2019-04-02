@@ -1051,16 +1051,16 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         execSql("CREATE TABLE test (" +
             "ID0 INT, " +
             "ID_AFF INT, " +
-            "VAL_BOOL BOOLEAN, " +
-            "VAL_TINYINT TINYINT, " +
-            "VAL_SMALLINT SMALLINT, " +
-            "VAL_LONG LONG, " +
+            "VAL_BOOL BOOLEAN DEFAULT true NOT NULL, " +
+            "VAL_TINYINT TINYINT DEFAULT 0 NOT NULL, " +
+            "VAL_SMALLINT SMALLINT DEFAULT 28 NOT NULL, " +
+            "VAL_LONG LONG NOT NULL, " +
             "VAL_REAL REAL, " +
             "VAL_DBL DOUBLE, " +
             "VAL_UUID UUID, " +
-            "VAL_DEC DECIMAL(10, 3), " +
-            "VAL_CHAR CHAR(10), " +
-            "VAL_VARCHAR VARCHAR(80), " +
+            "VAL_DEC DECIMAL(10, 3) DEFAULT 314.15, " +
+            "VAL_CHAR CHAR(10) DEFAULT 'dflt_char' NOT NULL, " +
+            "VAL_VARCHAR VARCHAR(80) DEFAULT 'dflt_varchar', " +
             "VAL_VARCHAR_IC VARCHAR_IGNORECASE(80), " +
             "VAL_BIN BINARY(10), " +
             "VAL_VARBIN VARBINARY(80), " +
@@ -1075,126 +1075,126 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         execSql("CREATE INDEX IDX1 ON test (VAL_VARCHAR, VAL_LONG)");
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "ID0", 2, "INTEGER", 4, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 2, "ID0", null, true, 4, "INTEGER",
                 11, 10, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='ID0'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "ID_AFF", 3, "INTEGER", 4, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 3, "ID_AFF", null, true, 4, "INTEGER",
                 11, 10, 0, true)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='ID_AFF'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_BOOL", 4, "BOOLEAN", 1, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 4, "VAL_BOOL", "TRUE", false, 1, "BOOLEAN",
                 5, 1, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_BOOL'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_TINYINT", 5, "TINYINT", 2, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 5, "VAL_TINYINT", "0", false, 2, "TINYINT",
                 4, 3, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_TINYINT'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_SMALLINT", 6, "SMALLINT", 3, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 6, "VAL_SMALLINT", "28",  false, 3, "SMALLINT",
                 6, 5, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_SMALLINT'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_LONG", 7, "BIGINT", 5, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 7, "VAL_LONG", null, false, 5, "BIGINT",
                 20, 19, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_LONG'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_REAL", 8, "REAL", 8, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 8, "VAL_REAL", null, true, 8, "REAL",
                 15, 7, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_REAL'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_DBL", 9, "DOUBLE", 7, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 9, "VAL_DBL", null, true, 7, "DOUBLE",
                 24, 17, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_DBL'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_UUID", 10, "UUID", 20, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 10, "VAL_UUID", null, true, 20, "UUID",
                 2147483647, 2147483647, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_UUID'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_DEC", 11, "DECIMAL", 6, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 11, "VAL_DEC", "314.15", true, 6, "DECIMAL",
                 10, 10, 3, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_DEC'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_CHAR", 12, "VARCHAR", 13, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 12, "VAL_CHAR", "'dflt_char'", false, 13, "VARCHAR",
                 10, 10, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_CHAR'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_VARCHAR", 13, "VARCHAR", 13, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 13, "VAL_VARCHAR", "'dflt_varchar'", true, 13, "VARCHAR",
                 80, 80, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_VARCHAR'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_VARCHAR_IC", 14, "VARCHAR", 13, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 14, "VAL_VARCHAR_IC", null, true, 13, "VARCHAR",
                 80, 80, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_VARCHAR_IC'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_BIN", 15, "VARBINARY", 12, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 15, "VAL_BIN", null, true, 12, "VARBINARY",
                 2147483647, 2147483647, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_BIN'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_VARBIN", 16, "VARBINARY", 12, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 16, "VAL_VARBIN", null, true, 12, "VARBINARY",
                 2147483647, 2147483647, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_VARBIN'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_TIME", 17, "TIME", 9, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 17, "VAL_TIME", null, true, 9, "TIME",
                 8, 8, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_TIME'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_DATE", 18, "DATE", 10, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 18, "VAL_DATE",null, true, 10, "DATE",
                 10, 10, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_DATE'"));
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL_TIMESTAMP", 19, "TIMESTAMP", 11, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 19, "VAL_TIMESTAMP", null, true, 11, "TIMESTAMP",
                 26, 26, 6, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
@@ -1217,7 +1217,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         );
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL1", 4, "VARCHAR", 13, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 4, "VAL1", null, true, 13, "VARCHAR",
                 2147483647, 2147483647, 0, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
@@ -1231,14 +1231,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                 "FROM IGNITE.COLUMNS " +
                 "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL1'").size());
 
-        execSql("ALTER TABLE test ADD COLUMN VAL1 TIMESTAMP");
+        execSql("ALTER TABLE test ADD COLUMN VAL_T TIMESTAMP");
 
         assertEquals(
-            Collections.singletonList(asList("PUBLIC", "TEST", "VAL1", 4, "TIMESTAMP", 11, true,
+            Collections.singletonList(asList("PUBLIC", "TEST", 4, "VAL_T", null, true, 11, "TIMESTAMP",
                 26, 26, 6, false)),
             execSql("SELECT * " +
                 "FROM IGNITE.COLUMNS " +
-                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL1'"));
+                "WHERE TABLE_NAME='TEST' AND COLUMN_NAME='VAL_T'"));
     }
 
     /**

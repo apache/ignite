@@ -205,12 +205,26 @@ public class H2Utils {
                 .a(withQuotes(e.getKey()))
                 .a(' ')
                 .a(dbTypeFromClass(e.getValue(), prop.precision(), prop.scale()))
+                .a(defaultValue(prop))
                 .a(prop.notNull() ? " NOT NULL" : "");
         }
 
         sql.a(')');
 
         return sql.toString();
+    }
+
+    /**
+     * @param prop Query property (table field).
+     * @return DEFAULT part of the CRETE TABLE command;
+     */
+    private static String defaultValue(GridQueryProperty prop) {
+        if (prop.defaultValue() == null)
+            return "";
+        else if (prop.type() == Boolean.class || Number.class.isAssignableFrom(prop.type()))
+            return " DEFAULT " + prop.defaultValue().toString();
+        else
+            return " DEFAULT '"  + prop.defaultValue() + "'";
     }
 
     /**
