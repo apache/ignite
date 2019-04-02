@@ -168,6 +168,18 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** */
     private static final int OP_SET_TX_TIMEOUT_ON_PME = 30;
 
+    /** */
+    private static final int OP_IS_BASELINE_AUTO_ADJ_ENABLED = 31;
+
+    /** */
+    private static final int OP_SET_BASELINE_AUTO_ADJ_ENABLED = 32;
+
+    /** */
+    private static final int OP_GET_BASELINE_AUTO_ADJ_TIMEOUT = 33;
+
+    /** */
+    private static final int OP_SET_BASELINE_AUTO_ADJ_TIMEOUT = 34;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -442,6 +454,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 return 0;
             }
+
+            case OP_SET_BASELINE_AUTO_ADJ_TIMEOUT: {
+                ctx.grid().cluster().baselineAutoAdjustTimeout(val);
+
+                return 0;
+            }
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
@@ -502,6 +520,18 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
             case OP_IS_WAL_ENABLED:
                 return ctx.grid().cluster().isWalEnabled(reader.readString()) ? TRUE : FALSE;
+
+            case OP_IS_BASELINE_AUTO_ADJ_ENABLED:
+                return ctx.grid().cluster().isBaselineAutoAdjustEnabled() ? TRUE : FALSE;
+
+            case OP_SET_BASELINE_AUTO_ADJ_ENABLED:
+                boolean isEnabled = reader.readBoolean();
+                ctx.grid().cluster().baselineAutoAdjustEnabled(isEnabled);
+
+                return 0;
+
+            case OP_GET_BASELINE_AUTO_ADJ_TIMEOUT:
+                return ctx.grid().cluster().baselineAutoAdjustTimeout();
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
