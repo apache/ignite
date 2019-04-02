@@ -1016,7 +1016,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * TODO FIXME could tx be really null ?
      * Used for transactions.
      *
      * @param cacheId Cache id.
