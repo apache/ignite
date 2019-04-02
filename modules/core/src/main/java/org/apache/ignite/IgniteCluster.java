@@ -560,7 +560,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) throws IgniteException;
 
     /**
-     * @return Statistic of baseline auto-adjust.
+     * @return Status of baseline auto-adjust.
      */
     public BaselineAutoAdjustStatus baselineAutoAdjustStatus();
 }

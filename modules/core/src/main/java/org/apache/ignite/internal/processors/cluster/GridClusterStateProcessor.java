@@ -1363,12 +1363,19 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         return true;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Value of manual baseline control or auto adjusting baseline. {@code True} If cluster in auto-adjust.
+     * {@code False} If cluster in manuale.
+     */
     public boolean isBaselineAutoAdjustEnabled() {
         return distributedBaselineConfiguration.isBaselineAutoAdjustEnabled();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline. {@code True} If
+     * cluster in auto-adjust. {@code False} If cluster in manuale.
+     * @throws IgniteException If operation failed.
+     */
     public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) {
         baselineAutoAdjustEnabledAsync(baselineAutoAdjustEnabled).get();
     }
@@ -1388,12 +1395,20 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Value of time which we would wait before the actual topology change since last server topology change
+     * (node join/left/fail).
+     * @throws IgniteException If operation failed.
+     */
     public long baselineAutoAdjustTimeout() {
         return distributedBaselineConfiguration.getBaselineAutoAdjustTimeout();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
+     * server topology change (node join/left/fail).
+     * @throws IgniteException If failed.
+     */
     public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) {
         baselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout).get();
     }
@@ -1423,7 +1438,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /**
-     * @return Statistic of baseline auto-adjust.
+     * @return Status of baseline auto-adjust.
      */
     public BaselineAutoAdjustStatus baselineAutoAdjustStatus(){
         return changeTopologyWatcher.getStatus();
