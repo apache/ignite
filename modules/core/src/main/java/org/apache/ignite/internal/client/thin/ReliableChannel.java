@@ -202,14 +202,14 @@ final class ReliableChannel implements AutoCloseable {
             backups.addLast(primary);
 
             primary = backups.removeFirst();
-
-            try {
-                ch.close();
-            }
-            catch (Exception ignored) {
-            }
-
-            ch = null;
         }
+
+        try {
+            ch.close();
+        }
+        catch (Exception ignored) {
+        }
+
+        ch = null;
     }
 }
