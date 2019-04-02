@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -63,14 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.jetbrains.annotations.Nullable;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 /**
  * Parser module. Splits incoming request into a series of parsed results.
  */
@@ -80,7 +79,8 @@ public class QueryParser {
 
     /** A pattern for commands having internal implementation in Ignite. */
     private static final Pattern INTERNAL_CMD_RE = Pattern.compile(
-        "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user",
+        "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user" +
+            "|show|help|grant|revoke",
         Pattern.CASE_INSENSITIVE);
 
     /** Indexing. */
@@ -148,7 +148,7 @@ public class QueryParser {
                 cached.command()
             );
 
-        // Try parting as native command.
+        // Try parsing as native command.
         QueryParserResult parseRes = parseNative(schemaName, qry, remainingAllowed);
 
         // Otherwise parse with H2.
@@ -229,7 +229,7 @@ public class QueryParser {
             );
         }
         catch (SqlStrictParseException e) {
-            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
+            throw new IgniteSQLException(e.getMessage(), e.errorCode(), e);
         }
         catch (Exception e) {
             // Cannot parse, return.
@@ -241,7 +241,8 @@ public class QueryParser {
 
             int code = IgniteQueryErrorCode.PARSING;
 
-            if (e instanceof SqlParseException)                code = ((SqlParseException)e).code();
+            if (e instanceof SqlParseException)
+                code = ((SqlParseException)e).code();
 
             throw new IgniteSQLException("Failed to parse DDL statement: " + sql + ": " + e.getMessage(),
                 code, e);

@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.engine.Session;
@@ -46,10 +49,12 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
      */
     public SqlSystemViewTables(GridKernalContext ctx, SchemaManager schemaMgr) {
         super("TABLES", "Ignite tables", ctx, TABLE_NAME,
+            newColumn("CACHE_GROUP_ID", Value.INT),
+            newColumn("CACHE_GROUP_NAME"),
+            newColumn("CACHE_ID", Value.INT),
+            newColumn("CACHE_NAME"),
             newColumn("SCHEMA_NAME"),
             newColumn(TABLE_NAME),
-            newColumn("CACHE_NAME"),
-            newColumn("CACHE_ID", Value.INT),
             newColumn("AFFINITY_KEY_COLUMN"),
             newColumn("KEY_ALIAS"),
             newColumn("VALUE_ALIAS"),
@@ -74,14 +79,26 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
         else
             filter = tab -> true;
 
-        return schemaMgr.dataTables().stream()
+        List<Row> rows = new ArrayList<>();
+
+        schemaMgr.dataTables().stream()
             .filter(filter)
-            .map(tbl -> {
+            .forEach(tbl -> {
+                    int cacheGrpId = tbl.cacheInfo().groupId();
+
+                    CacheGroupDescriptor cacheGrpDesc = ctx.cache().cacheGroupDescriptors().get(cacheGrpId);
+
+                    // We should skip table in case in case regarding cache group has been removed.
+                    if (cacheGrpDesc == null)
+                        return;
+
                     Object[] data = new Object[] {
+                        cacheGrpId,
+                        cacheGrpDesc.cacheOrGroupName(),
+                        tbl.cacheId(),
+                        tbl.cacheName(),
                         tbl.getSchema().getName(),
                         tbl.getName(),
-                        tbl.cacheName(),
-                        tbl.cacheId(),
                         computeAffinityColumn(tbl),
                         tbl.rowDescriptor().type().keyFieldAlias(),
                         tbl.rowDescriptor().type().valueFieldAlias(),
@@ -89,9 +106,11 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                         tbl.rowDescriptor().type().valueTypeName()
                     };
 
-                    return createRow(ses, data);
+                    rows.add(createRow(ses, data));
                 }
-            ).iterator();
+            );
+
+        return rows.iterator();
     }
 
     /**

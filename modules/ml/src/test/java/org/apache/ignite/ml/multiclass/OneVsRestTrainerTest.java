@@ -17,12 +17,10 @@
 
 package org.apache.ignite.ml.multiclass;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -32,6 +30,11 @@ import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Tests for {@link OneVsRestTrainer}.
@@ -49,7 +52,7 @@ public class OneVsRestTrainerTest extends TrainerTest {
 
         LogisticRegressionSGDTrainer binaryTrainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
+                SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
             .withMaxIterations(1000)
             .withLocIterations(10)
             .withBatchSize(100)
@@ -58,15 +61,13 @@ public class OneVsRestTrainerTest extends TrainerTest {
         OneVsRestTrainer<LogisticRegressionModel> trainer = new OneVsRestTrainer<>(binaryTrainer);
 
         MultiClassModel mdl = trainer.fit(
-            cacheMock,
-            parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            cacheMock, parts,
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
 
-        Assert.assertTrue(mdl.toString().length() > 0);
-        Assert.assertTrue(mdl.toString(true).length() > 0);
-        Assert.assertTrue(mdl.toString(false).length() > 0);
+        Assert.assertTrue(!mdl.toString().isEmpty());
+        Assert.assertTrue(!mdl.toString(true).isEmpty());
+        Assert.assertTrue(!mdl.toString(false).isEmpty());
 
         TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(-100, 0)), PRECISION);
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 0)), PRECISION);
@@ -82,7 +83,7 @@ public class OneVsRestTrainerTest extends TrainerTest {
 
         LogisticRegressionSGDTrainer binaryTrainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
+                SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
             .withMaxIterations(1000)
             .withLocIterations(10)
             .withBatchSize(100)
@@ -90,27 +91,24 @@ public class OneVsRestTrainerTest extends TrainerTest {
 
         OneVsRestTrainer<LogisticRegressionModel> trainer = new OneVsRestTrainer<>(binaryTrainer);
 
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
         MultiClassModel originalMdl = trainer.fit(
-            cacheMock,
-            parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            cacheMock, parts,
+            vectorizer
         );
 
         MultiClassModel updatedOnSameDS = trainer.update(
             originalMdl,
             cacheMock,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            vectorizer
         );
 
         MultiClassModel updatedOnEmptyDS = trainer.update(
             originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            vectorizer
         );
 
         List<Vector> vectors = Arrays.asList(

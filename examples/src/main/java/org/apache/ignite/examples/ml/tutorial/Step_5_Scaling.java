@@ -20,6 +20,7 @@ package org.apache.ignite.examples.ml.tutorial;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
@@ -100,8 +101,7 @@ public class Step_5_Scaling {
                 DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    normalizationPreprocessor,
-                    lbExtractor
+                    FeatureLabelExtractorWrapper.wrap(normalizationPreprocessor, lbExtractor) //TODO: IGNITE-11581
                 );
 
                 System.out.println("\n>>> Trained model: " + mdl);

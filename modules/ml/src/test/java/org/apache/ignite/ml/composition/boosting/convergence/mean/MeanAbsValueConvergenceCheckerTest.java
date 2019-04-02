@@ -28,6 +28,7 @@ import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilde
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,8 +37,8 @@ public class MeanAbsValueConvergenceCheckerTest extends ConvergenceCheckerTest {
     /** */
     @Test
     public void testConvergenceChecking() {
-        LocalDatasetBuilder<double[], Double> datasetBuilder = new LocalDatasetBuilder<>(data, 1);
-        ConvergenceChecker<double[], Double> checker = createChecker(
+        LocalDatasetBuilder<Integer, LabeledVector<Double>> datasetBuilder = new LocalDatasetBuilder<>(data, 1);
+        ConvergenceChecker<Integer, LabeledVector<Double>, Integer> checker = createChecker(
             new MeanAbsValueConvergenceCheckerFactory(0.1), datasetBuilder);
 
         double error = checker.computeError(VectorUtils.of(1, 2), 4.0, notConvergedMdl);
@@ -49,7 +50,7 @@ public class MeanAbsValueConvergenceCheckerTest extends ConvergenceCheckerTest {
 
         try(LocalDataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
             envBuilder,
-            new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(fExtr, lbExtr))) {
+            new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer))) {
 
             double onDSError = checker.computeMeanErrorOnDataset(dataset, notConvergedMdl);
             Assert.assertEquals(1.55, onDSError, 0.01);
@@ -61,14 +62,14 @@ public class MeanAbsValueConvergenceCheckerTest extends ConvergenceCheckerTest {
     /** Mean error more sensitive to anomalies in data */
     @Test
     public void testConvergenceCheckingWithAnomaliesInData() {
-        data.put(new double[]{10, 11}, 100000.0);
-        LocalDatasetBuilder<double[], Double> datasetBuilder = new LocalDatasetBuilder<>(data, 1);
-        ConvergenceChecker<double[], Double> checker = createChecker(
+        data.put(666, VectorUtils.of(10, 11).labeled(100000.0));
+        LocalDatasetBuilder<Integer, LabeledVector<Double>> datasetBuilder = new LocalDatasetBuilder<>(data, 1);
+        ConvergenceChecker<Integer, LabeledVector<Double>, Integer> checker = createChecker(
             new MeanAbsValueConvergenceCheckerFactory(0.1), datasetBuilder);
 
         try(LocalDataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
             TestUtils.testEnvBuilder(),
-            new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(fExtr, lbExtr))) {
+            new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer))) {
 
             double onDSError = checker.computeMeanErrorOnDataset(dataset, notConvergedMdl);
             Assert.assertEquals(9090.41, onDSError, 0.01);

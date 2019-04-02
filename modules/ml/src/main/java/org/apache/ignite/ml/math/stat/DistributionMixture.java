@@ -17,12 +17,13 @@
 
 package org.apache.ignite.ml.math.stat;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.DoubleStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.DoubleStream;
 
 /**
  * Mixture of distributions class where each component has own probability and probability of input vector can be
@@ -76,21 +77,21 @@ public abstract class DistributionMixture<C extends Distribution> implements Dis
     }
 
     /**
-     * @return an amount of components.
+     * @return An amount of components.
      */
     public int countOfComponents() {
         return componentProbs.size();
     }
 
     /**
-     * @return component probabilities.
+     * @return Component probabilities.
      */
     public Vector componentsProbs() {
         return componentProbs.copy();
     }
 
     /**
-     * @return list of components.
+     * @return List of components.
      */
     public List<C> distributions() {
         return Collections.unmodifiableList(distributions);
