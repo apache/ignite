@@ -290,28 +290,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     return;
                 }
 
-                boolean suspendOnTransition = true;
-
-                if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT
-                    && ((DiscoveryCustomEvent)evt).customMessage() instanceof CacheAffinityChangeMessage
+                if (cache.state().transition() &&
+                    (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_FAILED)
                 ) {
-                    DiscoveryCustomEvent customEvt = (DiscoveryCustomEvent)evt;
-
-                    CacheAffinityChangeMessage customMsg = (CacheAffinityChangeMessage)customEvt.customMessage();
-
-                    GridDhtPartitionExchangeId exchangeId = customMsg.exchangeId();
-
-                    if (exchangeId != null) {
-                        AffinityTopologyVersion msgTopVer = exchangeId.topologyVersion();
-                        AffinityTopologyVersion curTopVer = lastInitializedFut.initialVersion();
-
-                        assert msgTopVer.compareTo(curTopVer) == 0 : msgTopVer + " " + curTopVer;
-
-                        suspendOnTransition = false;
-                    }
-                }
-
-                if (suspendOnTransition && cache.state().transition()) {
                     if (log.isDebugEnabled())
                         log.debug("Adding pending event: " + evt);
 
