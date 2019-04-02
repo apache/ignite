@@ -34,17 +34,17 @@ import org.junit.Test;
  */
 public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         IgniteUtils.IGNITE_MBEANS_DISABLED = true;
 
-        super.setUp();
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
+    @Override protected void afterTest() throws Exception {
         IgniteUtils.IGNITE_MBEANS_DISABLED = false;
 
-        super.tearDown();
+        super.afterTest();
     }
 
     /**
