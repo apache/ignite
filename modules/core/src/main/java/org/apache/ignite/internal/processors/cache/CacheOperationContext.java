@@ -287,7 +287,7 @@ public class CacheOperationContext implements Serializable {
 
     /**
      * @param consistency Consistency check flag.
-     * @return New instance of CacheOperationContext with recovery flag.
+     * @return New instance of CacheOperationContext with consistency flag.
      */
     public CacheOperationContext setConsistency(boolean consistency) {
         return new CacheOperationContext(

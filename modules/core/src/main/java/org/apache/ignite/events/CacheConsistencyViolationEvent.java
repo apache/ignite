@@ -33,10 +33,10 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Map. */
-    Map<UUID, Map<Object, Object>> map;
+    Map<UUID /*Node*/, Map<Object /*Key*/, Object /*Value*/>> map;
 
     /** Fixed map. */
-    Map<Object, Object> fixedMap;
+    Map<Object /*Key*/, Object /*Value*/> fixedMap;
 
     /**
      * @param node Node.
@@ -63,7 +63,8 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     }
 
     /**
-     * Proposed distribution. Will be fixed in case of transaction commit.
+     * Proposed distribution.
+     * Will be fixed in case of transaction commit.
      */
     public Map<Object, Object> getFixedMap() {
         return fixedMap;

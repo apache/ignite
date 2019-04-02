@@ -65,7 +65,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /** */
     protected final MvccSnapshot mvccSnapshot;
 
-    /** Premapped node (always backup). */
+    /** Premapped node (always backup or primary). */
     private ClusterNode premapped;
 
     /**
@@ -415,7 +415,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             (!forcePrimary || affNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer) &&
             !consistency && // not an initial get-with-consistency which should read value from primary.
-            premapped == null; // not a subsequent get-with-consistency which should read value from explicit backup.
+            premapped == null; // not a subsequent get-with-consistency which should read value from explicit backup or primary.
 
         if (fastLocGet) {
             try {

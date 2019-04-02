@@ -29,7 +29,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 
 /**
- * Checks data consistency. Checks that each backup value equals to primary value.
+ * Checks data consistency.
+ * Checks that each backup value equals to primary value.
  */
 public class GridConsistencyGetWithCheckFuture extends GridConsistencyAbstractGetFuture {
     /** Primary node's (current) get future. */

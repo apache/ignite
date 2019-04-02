@@ -138,7 +138,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withPartitionRecover();
 
     /**
+     * Gets an instance of {@code IgniteCache} that will be allowed to execute cache operations (read, write)
+     * regardless of cache cocsistency policy.
      *
+     * @return Cache with explicit consistency check on each read.
      */
     public IgniteCache<K, V> withConsistency();
 

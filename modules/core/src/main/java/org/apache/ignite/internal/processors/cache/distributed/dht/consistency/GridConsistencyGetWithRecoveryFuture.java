@@ -37,7 +37,10 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 
 /**
- *
+ * Checks data consistency.
+ * Checks that each affinity node's value equals other's.
+ * Prepares recovery data.
+ * Records consistency violation event.
  */
 public class GridConsistencyGetWithRecoveryFuture extends GridConsistencyAbstractGetFuture {
     /** Context. */

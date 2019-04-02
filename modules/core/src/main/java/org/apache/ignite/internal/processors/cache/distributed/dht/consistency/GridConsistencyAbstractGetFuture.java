@@ -37,7 +37,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
  *
  */
 public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter<Map<KeyCacheObject, EntryGetResult>> {
-    /** Backup node's get futures. */
+    /** Affinity node's get futures. */
     protected final Map<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs;
 
     /** Topology version. */
@@ -76,7 +76,7 @@ public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter
             }
         }
 
-        futs = new HashMap<>(mappings.size() - 1);
+        futs = new HashMap<>(mappings.size());
 
         for (Map.Entry<ClusterNode, Collection<KeyCacheObject>> mapping : mappings.entrySet()) {
             GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut = new GridPartitionedGetFuture<>(

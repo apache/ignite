@@ -20,7 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.consistency;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- *
+ * Possible consistency violation exception.
+ * Each such case should be rechecked under locks.
  */
 public class IgniteConsistencyViolationException extends IgniteCheckedException {
     /** */

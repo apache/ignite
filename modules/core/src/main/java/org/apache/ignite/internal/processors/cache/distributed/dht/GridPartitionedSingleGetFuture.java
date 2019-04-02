@@ -173,7 +173,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
-     * @param consistency Read with consistency.
+     * @param consistency Read with consistency check flag.
      * @param txLbl Transaction label.
      */
     public GridPartitionedSingleGetFuture(

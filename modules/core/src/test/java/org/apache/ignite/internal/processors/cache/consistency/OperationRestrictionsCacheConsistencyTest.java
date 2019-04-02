@@ -32,7 +32,7 @@ import org.junit.Test;
 /**
  *
  */
-public class IsolationRestrictionsCacheConsistencyTest extends AbstractCacheConsistencyTest {
+public class OperationRestrictionsCacheConsistencyTest extends AbstractCacheConsistencyTest {
     /**
      *
      */
