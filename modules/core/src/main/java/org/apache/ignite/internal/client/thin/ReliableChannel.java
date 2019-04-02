@@ -115,9 +115,6 @@ final class ReliableChannel implements AutoCloseable {
         try {
             for (int i = 0; i < totalSrvs; i++) {
                 try {
-                    if (failure != null)
-                        changeServer();
-
                     if (ch == null)
                         ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
 
@@ -135,14 +132,7 @@ final class ReliableChannel implements AutoCloseable {
                     else
                         failure.addSuppressed(e);
 
-                    try {
-                        ch.close();
-                    }
-                    catch (Exception ignored) {
-                        // No-op.
-                    }
-
-                    ch = null;
+                    changeServer();
                 }
             }
         }
@@ -212,6 +202,14 @@ final class ReliableChannel implements AutoCloseable {
             backups.addLast(primary);
 
             primary = backups.removeFirst();
+
+            try {
+                ch.close();
+            }
+            catch (Exception ignored) {
+            }
+
+            ch = null;
         }
     }
 }
