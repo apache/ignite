@@ -18,7 +18,9 @@
 namespace Apache.Ignite.Core.Common
 {
     using System;
+    using System.Globalization;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -42,6 +44,9 @@ namespace Apache.Ignite.Core.Common
         /** Revision timestamp. */
         private readonly long _revTs;
 
+        /** Revision hash. */
+        private byte[] _revHash;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -50,8 +55,8 @@ namespace Apache.Ignite.Core.Common
         /// <param name="maintenance">Maintenance version number.</param>
         /// <param name="revTs">Revision timestamp.</param>
         /// <param name="revHash">Revision hash.</param>
-        public IgniteProductVersion(byte major, byte minor, byte maintenance, long revTs)
-            : this(major, minor, maintenance, "", revTs)
+        public IgniteProductVersion(byte major, byte minor, byte maintenance, long revTs, byte[] revHash)
+            : this(major, minor, maintenance, "", revTs, revHash)
         {
             // No-op.
         }
@@ -65,13 +70,19 @@ namespace Apache.Ignite.Core.Common
         /// <param name="stage">Stage of development.</param>
         /// <param name="revTs">Revision timestamp.</param>
         /// <param name="revHash">Revision hash.</param>
-        public IgniteProductVersion(byte major, byte minor, byte maintenance, String stage, long revTs)
+        public IgniteProductVersion(byte major, byte minor, byte maintenance, String stage, long revTs, byte[] revHash)
         {
+            if (revHash != null && revHash.Length != 20)
+            {
+                throw new ArgumentException("Invalid length for SHA1 hash (must be 20): " + revHash.Length);
+            }
+
             _major = major;
             _minor = minor;
             _maintenance = maintenance;
             _stage = stage;
             _revTs = revTs;
+            _revHash = revHash;
         }
 
         /// <summary>
@@ -86,6 +97,8 @@ namespace Apache.Ignite.Core.Common
             _minor = reader.ReadByte();
             _maintenance = reader.ReadByte();
             _revTs = reader.ReadLong();
+
+            _revHash = reader.ReadByteArray();
         }
 
         /// <summary>
@@ -133,7 +146,16 @@ namespace Apache.Ignite.Core.Common
         /// </summary>
         public DateTime ReleaseDate
         {
-            get { return new DateTime(_revTs * 1000); }
+            get { return new DateTime(BinaryUtils.JavaDateTicks + _revTs * 1000); }
+        }
+
+        /// <summary>
+        /// Gets the revision hash
+        /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
+        public byte[] RevisionHash
+        {
+            get { return _revHash; }
         }
 
         /** <inheritDoc /> */
@@ -143,26 +165,33 @@ namespace Apache.Ignite.Core.Common
 
             res = 31 * res + _minor;
             res = 31 * res + _maintenance;
-            res = 31 * res + (int)(_revTs ^ (_revTs >> 32));
+            res = 31 * res + (int) (_revTs ^ (_revTs >> 32));
 
             return res;
         }
 
         /** <inheritDoc /> */
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase")]
         public override string ToString()
         {
-            String revTsStr = ReleaseDate.ToString("yyyyMMdd");
+            string hash = null;
+            if (RevisionHash != null)
+            {
+                hash = BitConverter.ToString(RevisionHash).Replace("-", "")
+                    .ToLowerInvariant()
+                    .Substring(0, Math.Min(RevisionHash.Length, 8));
+            }
 
-            return string.Format("{0}.{1}.{2}#{3}", Major, Minor, Maintenance, revTsStr);
+            return string.Format("{0}.{1}.{2}#{3:yyyyMMdd}-sha1:{4}", Major, Minor, Maintenance, ReleaseDate, hash);
         }
-        
+
         /** <inheritDoc /> */
         public bool Equals(IgniteProductVersion other)
         {
             if (other == null)
                 return false;
 
-            return RevisionTimestamp == other.RevisionTimestamp 
+            return RevisionTimestamp == other.RevisionTimestamp
                    && Maintenance == other.Maintenance
                    && Minor == other.Minor
                    && Major == other.Major;

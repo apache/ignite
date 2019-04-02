@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public const int ObjTypeId = -1;
 
         /** Ticks for Java epoch. */
-        private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
+        public static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
 
         /** Bindig flags for static search. */
         private const BindingFlags BindFlagsStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;

@@ -31,26 +31,28 @@ namespace Apache.Ignite.Core.Tests.Common
     /// </summary>
     public class IgniteProductVersionTests
     {
+        private static readonly byte[] ByteArray = {24, 229, 167, 236, 158, 50, 2, 18, 106, 105, 188, 35, 26, 107, 150, 91, 193, 215, 61, 238};
+
         private IgniteProductVersion _defaultVersion;
 
         [SetUp]
         public void SetUp()
         {
-            var timeStamp = new DateTime(2018, 1, 1).Ticks / 1000;
-            _defaultVersion = new IgniteProductVersion(2, 5, 7, timeStamp);
+            var timeStamp = (new DateTime(2018, 1, 1).Ticks - BinaryUtils.JavaDateTicks) / 1000;
+            _defaultVersion = new IgniteProductVersion(2, 5, 7, timeStamp, null);
         }
 
         [Test]
         public void TestBinaryConstructor()
         {
-            IBinaryRawReader reader = SetUpRawBinaryReader();
+            IBinaryRawReader reader = SetUpRawBinaryReader(_defaultVersion.RevisionHash);
 
             IgniteProductVersion deserializedVersion = new IgniteProductVersion(reader);
 
             Assert.AreEqual(_defaultVersion, deserializedVersion);
         }
 
-        private IBinaryRawReader SetUpRawBinaryReader()
+        private IBinaryRawReader SetUpRawBinaryReader(byte[] hash)
         {
             var marsh = BinaryUtils.Marshaller;
 
@@ -62,6 +64,7 @@ namespace Apache.Ignite.Core.Tests.Common
                 writer.WriteByte(_defaultVersion.Minor);
                 writer.WriteByte(_defaultVersion.Maintenance);
                 writer.WriteLong(_defaultVersion.RevisionTimestamp);
+                writer.WriteByteArray(hash);
 
                 stream.Seek(0, SeekOrigin.Begin);
 
@@ -78,7 +81,17 @@ namespace Apache.Ignite.Core.Tests.Common
         [Test]
         public void TestToString()
         {
-            Assert.AreEqual("2.5.7#20180101", _defaultVersion.ToString());
+            Assert.AreEqual("2.5.7#20180101-sha1:", _defaultVersion.ToString());
+        }
+
+        [Test]
+        public void TestToStringWithLimitedHashValue()
+        {
+            var hash = new byte[] {24, 229};
+            IBinaryRawReader reader = SetUpRawBinaryReader(hash);
+
+            IgniteProductVersion deserializedVersion = new IgniteProductVersion(reader);
+            Assert.AreEqual("2.5.7#20180101-sha1:18", deserializedVersion.ToString());
         }
 
         [Test]
@@ -114,10 +127,32 @@ namespace Apache.Ignite.Core.Tests.Common
                 IgniteProductVersion version = ignite.GetVersion();
 
                 Version clientVer = Assembly.GetExecutingAssembly().GetName().Version;
-                var expectedVersion = new IgniteProductVersion((byte) clientVer.Major, (byte) clientVer.Minor, (byte) clientVer.Build, 0);
+                var expectedVersion = new IgniteProductVersion((byte) clientVer.Major, (byte) clientVer.Minor,
+                    (byte) clientVer.Build, 0, null);
 
                 Assert.IsTrue(expectedVersion.CompareTo(version) >= 0);
             }
+        }
+
+        [Test]
+        public void TestUnsignedStringRepresentation()
+        {
+            var version = new IgniteProductVersion(1, 2, 3, "rc1", 4, ByteArray);
+            Assert.AreEqual("1.2.3#19700101-sha1:18e5a7ec", version.ToString());
+        }
+
+        [Test]
+        public void TestSignedByteArrayIsTheSameForStringRepresentation()
+        {
+            sbyte[] signed = Array.ConvertAll(ByteArray, b => unchecked((sbyte) b));
+
+            // ReSharper disable once PossibleInvalidCastException
+            var unsignedCast = (byte[]) (Array) signed;
+
+            var versionSigned = new IgniteProductVersion(1, 2, 3, "rc1", 4, unsignedCast);
+            var versionUnsigned = new IgniteProductVersion(1, 2, 3, "rc1", 4, ByteArray);
+
+            Assert.AreEqual(versionSigned.ToString(), versionUnsigned.ToString());
         }
     }
 }
