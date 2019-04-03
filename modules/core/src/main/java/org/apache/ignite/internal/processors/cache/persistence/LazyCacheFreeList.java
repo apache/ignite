@@ -70,7 +70,7 @@ public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
 
     /** {@inheritDoc} */
     @Override public void removeDataRowByLink(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        initDelegateIfNeeded().removeDataRowByLink(link, statHolder );
+        initDelegateIfNeeded().removeDataRowByLink(link, statHolder);
     }
 
     /** {@inheritDoc} */
@@ -144,7 +144,12 @@ public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
                     this.delegate = createDelegate();
                 }
                 catch (IgniteCheckedException e) {
-                    this.initErr = e;
+                    initErr = e;
+                }
+                catch (Throwable e) {
+                    initErr = new IgniteCheckedException(e);
+
+                    throw e;
                 }
                 finally {
                     initLatch.countDown();
