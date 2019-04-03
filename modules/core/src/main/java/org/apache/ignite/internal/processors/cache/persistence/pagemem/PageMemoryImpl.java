@@ -347,6 +347,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
+        assert stopped;
+
         stopped = false;
 
         directMemoryProvider.initialize(sizes);

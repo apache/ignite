@@ -208,6 +208,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
+        assert stopped;
+
         stopped = false;
 
         long startSize = dataRegionCfg.getInitialSize();
