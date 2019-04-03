@@ -95,7 +95,7 @@ public class QueryUtils {
     public static final String DFLT_SCHEMA = "PUBLIC";
 
     /** Schema for system view. */
-    public static final String SCHEMA_SYS = "IGNITE";
+    public static final String SCHEMA_SYS = "SYS";
 
     /** Schema for system view. */
     public static final String SCHEMA_INFORMATION = "INFORMATION_SCHEMA";

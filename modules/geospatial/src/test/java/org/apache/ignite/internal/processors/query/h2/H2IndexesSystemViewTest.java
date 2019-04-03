@@ -53,7 +53,7 @@ public class H2IndexesSystemViewTest extends GridCommonAbstractTest {
 
         execSql("CREATE SPATIAL INDEX IDX_GEO_1 ON PUBLIC.AFF_CACHE(GEOM)");
 
-        String idxSql = "SELECT * FROM IGNITE.INDEXES ORDER BY TABLE_NAME, INDEX_NAME";
+        String idxSql = "SELECT * FROM SYS.INDEXES ORDER BY TABLE_NAME, INDEX_NAME";
 
         List<List<?>> srvNodeIndexes = execSql(srv, idxSql);
 
