@@ -1094,108 +1094,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Lists files in archive directory and returns the indices of least and last archived files.
-     * In case of holes, first segment after last "hole" is considered as minimum.
-     * Example: minimum(0, 1, 10, 11, 20, 21, 22) should be 20
-     *
-     * @return The absolute indices of min and max archived files.
-     */
-    private IgniteBiTuple<Long, Long> scanMinMaxArchiveIndices() throws IgniteCheckedException {
-        TreeMap<Long, FileDescriptor> archiveIndices = new TreeMap<>();
-
-        for (File file : walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
-            try {
-                long idx = Long.parseLong(file.getName().substring(0, 16));
-
-                FileDescriptor desc = readFileDescriptor(file, ioFactory);
-
-                if (desc != null) {
-                    if (desc.idx() == idx)
-                        archiveIndices.put(desc.idx(), desc);
-                }
-                else
-                    log.warning("Skip file, failed read file header " + file);
-            }
-            catch (NumberFormatException | IndexOutOfBoundsException ignore) {
-                log.warning("Skip file " + file);
-            }
-        }
-
-        if (!archiveIndices.isEmpty()) {
-            Long min = archiveIndices.navigableKeySet().first();
-            Long max = archiveIndices.navigableKeySet().last();
-
-            if (max - min == archiveIndices.size() - 1)
-                return F.t(min, max); // Short path.
-
-            // Try to find min and max if we have skipped range semgnets in archive. Find firs gap.
-            for (Long idx : archiveIndices.descendingKeySet()) {
-                if (!archiveIndices.keySet().contains(idx - 1))
-                    return F.t(idx, max);
-            }
-
-            throw new IllegalStateException("Should never happen if archiveIndices TreeMap is valid.");
-        }
-
-        // If WAL archive is empty, try to find last not archived segment in work directory and copy to WAL archive.
-        TreeMap<Long, FileDescriptor> workIndices = new TreeMap<>();
-
-        for (File file : walWorkDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
-            FileDescriptor desc = readFileDescriptor(file, ioFactory);
-
-            if (desc != null)
-                workIndices.put(desc.idx(), desc);
-        }
-
-        if (!workIndices.isEmpty()) {
-            FileDescriptor first = workIndices.firstEntry().getValue();
-            FileDescriptor last = workIndices.lastEntry().getValue();
-
-            if (first.idx() != last.idx()) {
-                File origFile = first.file();
-
-                String archivedSegmentName = FileDescriptor.fileName(first.idx());
-
-                File dstTmpFile = new File(walArchiveDir, FileDescriptor.fileName(first.idx()) + TMP_SUFFIX);
-
-                File dstFile = new File(walArchiveDir, archivedSegmentName);
-
-                // Copy min segment from work directory to archive.
-                try (FileChannel src = FileChannel.open(origFile.toPath(), READ);
-                     FileChannel dest = FileChannel.open(dstTmpFile.toPath(), CREATE_NEW, WRITE)
-                ) {
-                    long size = src.size();
-                    long pos = 0;
-
-                    do {
-                        long bytes = src.transferTo(pos, size, dest);
-
-                        if (bytes < 0)
-                            break;
-
-                        pos += bytes;
-                    }
-                    while (pos < size);
-
-                    Files.move(dstTmpFile.toPath(), dstFile.toPath());
-
-                    dest.force(true);
-                }
-                catch (IOException e) {
-                    throw new StorageException("Failed to archive WAL segment [" +
-                        "srcFile=" + origFile.getAbsolutePath() +
-                        ", dstFile=" + dstTmpFile.getAbsolutePath() + ']', e);
-                }
-
-                // Use copied segment as min archived segment.
-                return F.t(first.idx(), first.idx());
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * @param file File to read.
      * @param ioFactory IO factory.
      */
@@ -1731,6 +1629,75 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (lastAbsArchivedIdx > 0)
                 segmentAware.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
+        }
+
+        /**
+         * Lists files in archive directory and returns the indices of least and last archived files.
+         * In case of holes, first segment after last "hole" is considered as minimum.
+         * Example: minimum(0, 1, 10, 11, 20, 21, 22) should be 20
+         *
+         * @return The absolute indices of min and max archived files.
+         */
+        private IgniteBiTuple<Long, Long> scanMinMaxArchiveIndices() throws IgniteCheckedException {
+            TreeMap<Long, FileDescriptor> archiveIndices = new TreeMap<>();
+
+            for (File file : walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
+                try {
+                    long idx = Long.parseLong(file.getName().substring(0, 16));
+
+                    FileDescriptor desc = readFileDescriptor(file, ioFactory);
+
+                    if (desc != null) {
+                        if (desc.idx() == idx)
+                            archiveIndices.put(desc.idx(), desc);
+                    }
+                    else
+                        log.warning("Skip file, failed read file header " + file);
+                }
+                catch (NumberFormatException | IndexOutOfBoundsException ignore) {
+                    log.warning("Skip file " + file);
+                }
+            }
+
+            if (!archiveIndices.isEmpty()) {
+                Long min = archiveIndices.navigableKeySet().first();
+                Long max = archiveIndices.navigableKeySet().last();
+
+                if (max - min == archiveIndices.size() - 1)
+                    return F.t(min, max); // Short path.
+
+                // Try to find min and max if we have skipped range semgnets in archive. Find firs gap.
+                for (Long idx : archiveIndices.descendingKeySet()) {
+                    if (!archiveIndices.keySet().contains(idx - 1))
+                        return F.t(idx, max);
+                }
+
+                throw new IllegalStateException("Should never happen if archiveIndices TreeMap is valid.");
+            }
+
+            // If WAL archive is empty, try to find last not archived segment in work directory and copy to WAL archive.
+            TreeMap<Long, FileDescriptor> workIndices = new TreeMap<>();
+
+            for (File file : walWorkDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
+                FileDescriptor desc = readFileDescriptor(file, ioFactory);
+
+                if (desc != null)
+                    workIndices.put(desc.idx(), desc);
+            }
+
+            if (!workIndices.isEmpty()) {
+                FileDescriptor first = workIndices.firstEntry().getValue();
+                FileDescriptor last = workIndices.lastEntry().getValue();
+
+                if (first.idx() != last.idx()) {
+                    archiveSegment(first.idx());
+
+                    // Use copied segment as min archived segment.
+                    return F.t(first.idx(), first.idx());
+                }
+            }
+
+            return null;
         }
 
         /**
