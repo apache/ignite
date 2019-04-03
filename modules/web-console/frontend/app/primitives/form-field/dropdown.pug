@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field__dropdown({ label, model, name, disabled, required, multiple, placeholder, placeholderEmpty, options, optionLabel = 'label', tip, tipOpts })
+mixin form-field__dropdown({ label, model, name, disabled, required, multiple, placeholder, placeholderEmpty, options, optionLabel = 'label', tip, tipOpts, change })
     -var errLbl = label ? label.substring(0, label.length - 1) : 'Field';
 
     mixin __form-field__input()
@@ -30,6 +30,8 @@ mixin form-field__dropdown({ label, model, name, disabled, required, multiple, p
             ng-required=required && `${required}`
             ng-ref='$input'
             ng-ref-read='ngModel'
+
+            ng-change=change && `${change}`
 
             bs-select
             bs-options=`item.value as item.${optionLabel} for item in ${options}`
@@ -50,8 +52,8 @@ mixin form-field__dropdown({ label, model, name, disabled, required, multiple, p
             ng-messages=`$input.$error`
             ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
         )
-            if block
-                block
-
             if required
                 +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
+
+            if block
+                block

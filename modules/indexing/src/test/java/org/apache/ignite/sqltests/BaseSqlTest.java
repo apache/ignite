@@ -49,6 +49,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiClosure;
@@ -56,13 +57,13 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Test base for test for sql features.
  */
-public class BaseSqlTest extends GridCommonAbstractTest {
+public class BaseSqlTest extends AbstractIndexingCommonTest {
     /** Number of all employees. */
     public static final long EMP_CNT = 1000L;
 
@@ -273,13 +274,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         explain = locExp;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Result of sql query. Contains metadata and all values in memory.
      */
@@ -486,7 +480,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param from Collection which copy is left argument of subtraction.
      * @param toRemove Right argument of subtraction.
      */
-    @SuppressWarnings("UseBulkOperation")
     private static Collection removeFromCopy(Collection<?> from, Collection<?> toRemove) {
         List<?> fromCp = new ArrayList<>(from);
 
@@ -622,6 +615,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check basic SELECT * query.
      */
+    @Test
     public void testBasicSelect() {
         testAllNodes(node -> {
             Result emps = executeFrom("SELECT * FROM Employee", node);
@@ -637,6 +631,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check SELECT query with projection (fields).
      */
+    @Test
     public void testSelectFields() {
         testAllNodes(node -> {
             Result res = executeFrom("SELECT firstName, id, age FROM Employee;", node);
@@ -654,6 +649,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check basic BETWEEN operator usage.
      */
+    @Test
     public void testSelectBetween() {
         testAllNodes(node -> {
             Result emps = executeFrom("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", node);
@@ -678,6 +674,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check BETWEEN operator filters out all the result (empty result set is expected).
      */
+    @Test
     public void testEmptyBetween() {
         testAllNodes(node -> {
             Result emps = executeFrom("SELECT * FROM Employee e WHERE e.id BETWEEN 200 AND 101", node);
@@ -689,6 +686,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check SELECT IN with fixed values.
      */
+    @Test
     public void testSelectInStatic() {
         testAllNodes(node -> {
             Result actual = executeFrom("SELECT age FROM Employee WHERE id IN (1, 256, 42)", node);
@@ -708,6 +706,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check SELECT IN with simple subquery values.
      */
+    @Test
     public void testSelectInSubquery() {
         testAllNodes(node -> {
             Result actual = executeFrom("SELECT lastName FROM Employee WHERE id in (SELECT id FROM Employee WHERE age < 30)", node);
@@ -721,6 +720,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check ORDER BY operator with varchar field.
      */
+    @Test
     public void testBasicOrderByLastName() {
         testAllNodes(node -> {
             Result result = executeFrom("SELECT * FROM Employee e ORDER BY e.lastName", node);
@@ -739,6 +739,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check DISTINCT operator selecting not unique field.
      */
+    @Test
     public void testBasicDistinct() {
         testAllNodes(node -> {
             Result ages = executeFrom("SELECT DISTINCT age FROM Employee", node);
@@ -752,6 +753,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check simple WHERE operator.
      */
+    @Test
     public void testDistinctWithWhere() {
         testAllNodes(node -> {
             Result ages = executeFrom("SELECT DISTINCT age FROM Employee WHERE id < 100", node);
@@ -765,6 +767,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check greater operator in where clause with both indexed and non-indexed field.
      */
+    @Test
     public void testWhereGreater() {
         testAllNodes(node -> {
             Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age > 30", node);
@@ -783,6 +786,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check less operator in where clause with both indexed and non-indexed field.
      */
+    @Test
     public void testWhereLess() {
         testAllNodes(node -> {
             Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age < 30", node);
@@ -801,6 +805,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check equals operator in where clause with both indexed and non-indexed field.
      */
+    @Test
     public void testWhereEq() {
         testAllNodes(node -> {
             Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age = 30", node);
@@ -819,6 +824,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check GROUP BY operator with indexed field.
      */
+    @Test
     public void testGroupByIndexedField() {
         testAllNodes(node -> {
             // Need to filter out only part of records (each one is a count of employees
@@ -851,6 +857,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check GROUP BY operator with indexed field.
      */
+    @Test
     public void testGroupByNonIndexedField() {
         testAllNodes(node -> {
             // Need to filter out only part of records (each one is a count of employees
@@ -1040,6 +1047,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check INNER JOIN with collocated data.
      */
+    @Test
     public void testInnerJoinEmployeeDepartment() {
         checkInnerJoinEmployeeDepartment(DEP_TAB);
     }
@@ -1138,6 +1146,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check LEFT JOIN with collocated data.
      */
+    @Test
     public void testLeftJoin() {
         checkLeftJoinEmployeeDepartment(DEP_TAB);
     }
@@ -1207,6 +1216,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Check RIGHT JOIN with collocated data.
      */
+    @Test
     public void testRightJoin() {
         checkRightJoinEmployeeDepartment(DEP_TAB);
     }
@@ -1215,6 +1225,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * Check that FULL OUTER JOIN (which is currently unsupported) causes valid error message.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testFullOuterJoinIsNotSupported() {
         testAllNodes(node -> {
             String fullOuterJoinQry = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
@@ -1235,6 +1246,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * Check that distributed FULL OUTER JOIN (which is currently unsupported) causes valid error message.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testFullOuterDistributedJoinIsNotSupported() {
         testAllNodes(node -> {
             String qry = "SELECT d.id, d.name, a.address " +

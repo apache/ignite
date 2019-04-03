@@ -21,7 +21,6 @@ import java.io.File;
 import java.net.URL;
 import java.util.Collections;
 import java.util.UUID;
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,27 +30,33 @@ import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Grid Log4j2 SPI test.
  */
-public class Log4j2LoggerSelfTest extends TestCase {
+public class Log4j2LoggerSelfTest {
     /** */
     private static final String LOG_PATH_TEST = "modules/core/src/test/config/log4j2-test.xml";
 
     /** */
     private static final String LOG_PATH_MAIN = "config/ignite-log4j2.xml";
 
-    /**
-     * @throws Exception If failed.
-     */
-    @Override protected void setUp() throws Exception {
+    /** */
+    @Before
+    public void setUp() {
         Log4J2Logger.cleanup();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFileConstructor() throws Exception {
         File xml = GridTestUtils.resolveIgnitePath(LOG_PATH_TEST);
 
@@ -73,6 +78,7 @@ public class Log4j2LoggerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUrlConstructor() throws Exception {
         File xml = GridTestUtils.resolveIgnitePath(LOG_PATH_TEST);
 
@@ -95,6 +101,7 @@ public class Log4j2LoggerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPathConstructor() throws Exception {
         IgniteLogger log = new Log4J2Logger(LOG_PATH_TEST).getLogger(getClass());
 
@@ -126,6 +133,7 @@ public class Log4j2LoggerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSystemNodeId() throws Exception {
         UUID id = UUID.randomUUID();
 
@@ -139,6 +147,7 @@ public class Log4j2LoggerSelfTest extends TestCase {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testLogFilesTwoNodes() throws Exception {
         checkOneNode(0);
         checkOneNode(1);

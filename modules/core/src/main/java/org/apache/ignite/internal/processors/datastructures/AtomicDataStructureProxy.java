@@ -19,8 +19,10 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.io.Externalizable;
+import javax.cache.processor.EntryProcessorException;
 import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -30,6 +32,9 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+/**
+ * Represents base class for atomic data structures.
+ */
 public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValue>
     implements GridCacheRemovable,IgniteChangeGlobalStateSupport {
     /** Logger. */
@@ -42,7 +47,7 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
     private volatile GridFutureAdapter<Void> suspendFut;
 
     /** Check removed flag. */
-    private boolean rmvCheck;
+    private volatile boolean rmvCheck;
 
     /** Structure name. */
     protected String name;
@@ -139,6 +144,35 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
     }
 
     /**
+     * Checks removed status after fail.
+     *
+     * @param cause Initial exception.
+     * @return Ignite runtime exception that corresponds the original {@code cause}.
+     */
+    protected IgniteException checkRemovedAfterFail(Exception cause) {
+        assert cause != null: "The original cause must not be null.";
+
+        needCheckNotRemoved();
+
+        try {
+            checkRemoved();
+        }
+        catch (Exception e) {
+            // The original exception should be returned.
+        }
+
+        if (cause instanceof IgniteCheckedException)
+            return U.convertException((IgniteCheckedException) cause);
+        else if (cause instanceof EntryProcessorException)
+            return new IgniteException(cause.getMessage(), cause);
+        else {
+            assert cause instanceof IgniteException;
+
+            return (IgniteException)cause;
+        }
+    }
+
+    /**
      * @return Error.
      */
     private IllegalStateException removedError() {
@@ -149,7 +183,7 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
      * @return Error.
      */
     private IllegalStateException suspendedError() {
-        throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(suspendFut), "Underlying cache is restarting: " + ctx.name());
+        throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(suspendFut), ctx.name());
     }
 
     /** {@inheritDoc} */
@@ -188,6 +222,9 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
         // No-op.
     }
 
+    /**
+     * Invalidates local state.
+     */
     protected void invalidateLocalState() {
         // No-op
     }

@@ -133,7 +133,6 @@ class OptimizedObjectStreamRegistry {
      *
      * @param in Object input stream.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     static void closeIn(OptimizedObjectInputStream in) {
         U.close(in, null);
 

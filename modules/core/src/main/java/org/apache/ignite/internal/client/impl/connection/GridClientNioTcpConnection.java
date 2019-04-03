@@ -79,7 +79,6 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -515,7 +514,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      *
      * @param res Incoming response data.
      */
-    @SuppressWarnings({"unchecked", "TooBroadScope"})
+    @SuppressWarnings({"unchecked"})
     void handleResponse(GridClientMessage res) throws IOException {
         lastMsgRcvTime = System.currentTimeMillis();
 

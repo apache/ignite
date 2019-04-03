@@ -35,6 +35,8 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
+
 /**
  * JDBC Connection Context.
  */
@@ -57,8 +59,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.7.0: adds maximum length for columns feature.*/
     static final ClientListenerProtocolVersion VER_2_7_0 = ClientListenerProtocolVersion.create(2, 7, 0);
 
+    /** Version 2.8.0: adds query id in order to implement cancel feature.*/
+    static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_7_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -83,6 +88,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_8_0);
         SUPPORTED_VERS.add(VER_2_7_0);
         SUPPORTED_VERS.add(VER_2_5_0);
         SUPPORTED_VERS.add(VER_2_4_0);
@@ -156,6 +162,12 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         }
 
+
+        Boolean dataPageScanEnabled = null;
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
+
         if (ver.compareTo(VER_2_5_0) >= 0) {
             String user = null;
             String passwd = null;
@@ -189,7 +201,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         };
 
         handler = new JdbcRequestHandler(ctx, busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode, actx, ver);
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode,
+            dataPageScanEnabled, actx, ver);
 
         handler.start();
     }
@@ -207,5 +220,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
         handler.onDisconnect();
+
+        super.onDisconnected();
     }
 }

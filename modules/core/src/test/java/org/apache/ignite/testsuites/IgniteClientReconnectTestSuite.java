@@ -17,10 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.IgniteClientConnectAfterCommunicationFailureTest;
 import org.apache.ignite.internal.IgniteClientReconnectApiExceptionTest;
 import org.apache.ignite.internal.IgniteClientReconnectAtomicsTest;
+import org.apache.ignite.internal.IgniteClientReconnectAtomicsWithLostPartitionsTest;
 import org.apache.ignite.internal.IgniteClientReconnectBinaryContexTest;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.IgniteClientReconnectCollectionsTest;
@@ -33,34 +33,28 @@ import org.apache.ignite.internal.IgniteClientReconnectServicesTest;
 import org.apache.ignite.internal.IgniteClientReconnectStopTest;
 import org.apache.ignite.internal.IgniteClientReconnectStreamerTest;
 import org.apache.ignite.internal.IgniteClientRejoinTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-/**
- *
- */
-public class IgniteClientReconnectTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception In case of error.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Client Reconnect Test Suite");
-
-        suite.addTestSuite(IgniteClientConnectAfterCommunicationFailureTest.class);
-        suite.addTestSuite(IgniteClientReconnectStopTest.class);
-        suite.addTestSuite(IgniteClientReconnectApiExceptionTest.class);
-        suite.addTestSuite(IgniteClientReconnectDiscoveryStateTest.class);
-        suite.addTestSuite(IgniteClientReconnectCacheTest.class);
-        suite.addTestSuite(IgniteClientReconnectDelayedSpiTest.class);
-        suite.addTestSuite(IgniteClientReconnectBinaryContexTest.class);
-        suite.addTestSuite(IgniteClientReconnectContinuousProcessorTest.class);
-        suite.addTestSuite(IgniteClientReconnectComputeTest.class);
-        suite.addTestSuite(IgniteClientReconnectAtomicsTest.class);
-        suite.addTestSuite(IgniteClientReconnectCollectionsTest.class);
-        suite.addTestSuite(IgniteClientReconnectServicesTest.class);
-        suite.addTestSuite(IgniteClientReconnectStreamerTest.class);
-        suite.addTestSuite(IgniteClientReconnectFailoverTest.class);
-        suite.addTestSuite(IgniteClientRejoinTest.class);
-
-        return suite;
-    }
+/** */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteClientConnectAfterCommunicationFailureTest.class,
+    IgniteClientReconnectStopTest.class,
+    IgniteClientReconnectApiExceptionTest.class,
+    IgniteClientReconnectDiscoveryStateTest.class,
+    IgniteClientReconnectCacheTest.class,
+    IgniteClientReconnectDelayedSpiTest.class,
+    IgniteClientReconnectBinaryContexTest.class,
+    IgniteClientReconnectContinuousProcessorTest.class,
+    IgniteClientReconnectComputeTest.class,
+    IgniteClientReconnectAtomicsTest.class,
+    IgniteClientReconnectAtomicsWithLostPartitionsTest.class,
+    IgniteClientReconnectCollectionsTest.class,
+    IgniteClientReconnectServicesTest.class,
+    IgniteClientReconnectStreamerTest.class,
+    IgniteClientReconnectFailoverTest.class,
+    IgniteClientRejoinTest.class
+})
+public class IgniteClientReconnectTestSuite {
 }

@@ -656,7 +656,6 @@ public class BinaryUtils {
      * @param map Map.
      * @return New map of the same type or null.
      */
-    @SuppressWarnings("unchecked")
     public static <K, V> Map<K, V> newKnownMap(Object map) {
         Class<?> cls = map == null ? null : map.getClass();
 
@@ -748,7 +747,6 @@ public class BinaryUtils {
      * @param col Collection.
      * @return New empty collection.
      */
-    @SuppressWarnings("unchecked")
     public static <V> Collection<V> newKnownCollection(Object col) {
         Class<?> cls = col == null ? null : col.getClass();
 
@@ -1074,7 +1072,6 @@ public class BinaryUtils {
      * @param cls Class.
      * @return Mode.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public static BinaryWriteMode mode(Class<?> cls) {
         assert cls != null;
 

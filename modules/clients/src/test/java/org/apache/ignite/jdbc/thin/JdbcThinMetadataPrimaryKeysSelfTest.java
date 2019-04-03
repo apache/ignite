@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Verifies that primary keys in the metadata are valid.
@@ -68,6 +69,7 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
     /**
      * Checks for PK that contains single unwrapped field.
      */
+    @Test
     public void testSingleUnwrappedKey() throws Exception {
         executeUpdate("CREATE TABLE TEST (ID LONG PRIMARY KEY, NAME VARCHAR);");
 
@@ -77,6 +79,7 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
     /**
      * Checks for PK that contains single field. Key is forcibly wrapped.
      */
+    @Test
     public void testSingleWrappedKey() throws Exception {
         executeUpdate("CREATE TABLE TEST (" +
             "ID LONG PRIMARY KEY, " +
@@ -89,6 +92,7 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
     /**
      * Checks for composite (so implicitly wrapped) primary key.
      */
+    @Test
     public void testCompositeKey() throws Exception {
         executeUpdate("CREATE TABLE TEST (" +
             "ID LONG, " +
@@ -102,6 +106,7 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
     /**
      * Checks for composite (so implicitly wrapped) primary key. Additionally, affinity key is used.
      */
+    @Test
     public void testCompositeKeyWithAK() throws Exception {
         final String tpl = "CREATE TABLE TEST (" +
             "ID LONG, " +
@@ -131,7 +136,7 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData md = conn.getMetaData();
 
-            ResultSet rs = md.getPrimaryKeys(conn.getCatalog(), "", tabName);
+            ResultSet rs = md.getPrimaryKeys(conn.getCatalog(), null, tabName);
 
             List<String> colNames = new ArrayList<>();
 
@@ -141,12 +146,5 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
             assertEquals("Field names in the primary key are not correct",
                 Arrays.asList(expPKFields), colNames);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 }

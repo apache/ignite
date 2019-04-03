@@ -88,16 +88,16 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * There are several deployable unit types supported:
  * <ul>
+ * <li>JAR file.</li>
  * <li>GAR file.</li>
- * <li>Local disk folder with structure of unpacked GAR file.</li>
+ * <li>Local disk folder with structure of an unpacked deployment archive.</li>
  * <li>Local disk folder containing only compiled Java classes.</li>
  * </ul>
- * <h1 class="header">GAR file</h1>
- * GAR file is a deployable unit. GAR file is based on <a href="http://www.gzip.org/zlib/">ZLIB</a>
- * compression format like simple JAR file and its structure is similar to WAR archive.
- * GAR file has {@code '.gar'} extension.
+ * <h1 class="header">Deployment package</h1>
+ * Deployment package can be represented as a regular JAR file with a specific structure similar to WAR format.
+ * Package files can have {@code '.jar'} or {@code '.gar'} extension.
  * <p>
- * GAR file structure (file or directory ending with {@code '.gar'}):
+ * Package structure:
  *   <pre class="snippet">
  *      META-INF/
  *              |
@@ -121,15 +121,15 @@ import org.jetbrains.annotations.Nullable;
  * <li>
  * {@code lib/} entry contains all library dependencies.
  * </li>
- * <li>Compiled Java classes must be placed in the root of a GAR file.</li>
+ * <li>Compiled Java classes must be placed in the root of a package file.</li>
  * </ul>
- * GAR file may be deployed without descriptor file. If there is no descriptor file, SPI
+ * A package may be deployed without a descriptor file. If there is no descriptor file, SPI
  * will scan all classes in archive and instantiate those that implement
  * {@link org.apache.ignite.compute.ComputeTask} interface. In that case, all grid task classes must have a
  * public no-argument constructor. Use {@link org.apache.ignite.compute.ComputeTaskAdapter} adapter for
  * convenience when creating grid tasks.
  * <p>
- * By default, all downloaded GAR files that have digital signature in {@code META-INF}
+ * By default, all downloaded packages that have digital signature in {@code META-INF}
  * folder will be verified and deployed only if signature is valid.
  * <p>
  * <h1 class="header">URI</h1>
@@ -149,7 +149,7 @@ import org.jetbrains.annotations.Nullable;
  * set to {@code true}.
  * <p>
  * <h1 class="header">Code Example</h1>
- * The following example demonstrates how the deployment SPI can be used. It expects that you have a GAR file
+ * The following example demonstrates how the deployment SPI can be used. It expects that you have a package file
  * in 'home/username/ignite/work/my_deployment/file' folder which contains 'myproject.HelloWorldTask' class.
  * <pre name="code" class="java">
  * IgniteConfiguration cfg = new IgniteConfiguration();
@@ -175,7 +175,7 @@ import org.jetbrains.annotations.Nullable;
  * by implementing {@link UriDeploymentScanner} interface.
  * </li>
  * <li>
- * Temporary directory path where scanned GAR files and directories are
+ * Temporary directory path where scanned packages are
  * copied to (see {@link #setTemporaryDirectoryPath(String) setTemporaryDirectoryPath(String)}).
  * </li>
  * <li>
@@ -206,7 +206,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * <h1 class="header">File</h1>
  * For this protocol SPI will scan folder specified by URI on file system and
- * download any GAR files or directories that end with .gar from source
+ * download any deplloyment files or directories that end with .jar or .gar from source
  * directory defined in URI. For file system URI must have scheme equal to {@code file}.
  * <p>
  * Following parameters are supported:
@@ -235,9 +235,9 @@ import org.jetbrains.annotations.Nullable;
  * <a name="classes"></a>
  * <h2 class="header">HTTP/HTTPS</h2>
  * URI deployment scanner tries to read DOM of the html it points to and parses out href attributes of all &lt;a&gt; tags
- * - this becomes the collection of URLs to GAR files that should be deployed. It's important that HTTP scanner
- * uses {@code URLConnection.getLastModified()} method to check if there were any changes since last iteration
- * for each GAR-file before redeploying.
+ * - this becomes the collection of URLs to deployment package files that should be deployed. It's important that
+ * HTTP scanner uses {@code URLConnection.getLastModified()} method to check if there were any changes since last
+ * iteration for each deployment file before redeploying.
  * <p>
  * Following parameters are supported:
  * <table class="doctable">
@@ -256,8 +256,8 @@ import org.jetbrains.annotations.Nullable;
  * </table>
  * <h2 class="header">HTTP URI Example</h2>
  * The following example will download the page `www.mysite.com/ignite/deployment`, parse it and download and deploy
- * all GAR files specified by href attributes of &lt;a&gt; elements on the page using authentication
- * {@code 'username:password'} every '10000' milliseconds (only new/updated GAR-s).
+ * all deployment packages specified by href attributes of &lt;a&gt; elements on the page using authentication
+ * {@code 'username:password'} every '10000' milliseconds (only new/updated packages).
  * <blockquote class="snippet">
  * {@code http://username:password;freq=10000@www.mysite.com:110/ignite/deployment}
  * </blockquote>
@@ -312,7 +312,7 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
 public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
     /**
-     * Default deployment directory where SPI will pick up GAR files. Note that this path is relative to
+     * Default deployment directory where SPI will pick up packages. Note that this path is relative to
      * {@code IGNITE_HOME/work} folder if {@code IGNITE_HOME} system or environment variable specified,
      * otherwise it is relative to {@code work} folder under system {@code java.io.tmpdir} folder.
      *
@@ -346,7 +346,6 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     private boolean checkMd5;
 
     /** */
-    @SuppressWarnings({"CollectionDeclaredAsConcreteClass"})
     private final LinkedList<GridUriDeploymentUnitDescriptor> unitLoaders = new LinkedList<>();
 
     /** */
@@ -374,7 +373,6 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     private IgniteLogger log;
 
     /** NOTE: flag for test purposes only. */
-    @SuppressWarnings("UnusedDeclaration")
     private boolean delayOnNewOrUpdatedFile;
 
     /** Configured scanners. */
@@ -397,7 +395,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     }
 
     /**
-     * Sets list of URI which point to GAR file and which should be
+     * Sets list of URI which point to a directory with packages and which should be
      * scanned by SPI for the new tasks.
      * <p>
      * If not provided, default value is list with
@@ -405,7 +403,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
      * Note that system property {@code IGNITE_HOME} must be set.
      * For unknown {@code IGNITE_HOME} list of URI must be provided explicitly.
      *
-     * @param uriList GAR file URIs.
+     * @param uriList Package file URIs.
      * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
@@ -557,7 +555,9 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
             @Override public boolean accept(File dir, String name) {
                 assert name != null;
 
-                return name.toLowerCase().endsWith(".gar");
+                String nameLowerCase = name.toLowerCase();
+
+                return nameLowerCase.endsWith(".gar") || nameLowerCase.endsWith(".jar");
             }
         };
 
@@ -566,7 +566,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
         GridUriDeploymentScannerListener lsnr = new GridUriDeploymentScannerListener() {
             @Override public void onNewOrUpdatedFile(File file, String uri, long tstamp) {
                 if (log.isInfoEnabled())
-                    log.info("Found new or updated GAR units [uri=" + U.hidePassword(uri) +
+                    log.info("Found new or updated deployment unit [uri=" + U.hidePassword(uri) +
                         ", file=" + file.getAbsolutePath() + ", tstamp=" + tstamp + ']');
 
                 if (delayOnNewOrUpdatedFile) {
@@ -609,7 +609,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
                     }
 
                     if (log.isInfoEnabled())
-                        log.info("Found deleted GAR units [uris=" + uriList + ']');
+                        log.info("Found deleted deployment units [uris=" + uriList + ']');
                 }
 
                 processDeletedFiles(uris);
@@ -738,7 +738,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
                     ClassLoader ldr = unitDesc.getClassLoader();
 
                     Class<?> cls = ldr instanceof GridUriDeploymentClassLoader ?
-                        ((GridUriDeploymentClassLoader)ldr).loadClassGarOnly(clsName) :
+                        ((GridUriDeploymentClassLoader)ldr).loadClassIsolated(clsName) :
                         ldr.loadClass(clsName);
 
                     assert cls != null;
@@ -991,7 +991,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
 
         try {
             in = ldr instanceof GridUriDeploymentClassLoader ?
-                ((GridUriDeploymentClassLoader)ldr).getResourceAsStreamGarOnly(rsrc) :
+                ((GridUriDeploymentClassLoader)ldr).getResourceAsStreamIsolated(rsrc) :
                 ldr.getResourceAsStream(rsrc);
 
             return in != null;
@@ -1127,7 +1127,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
                 addResources(newDesc.getClassLoader(), newDesc, clss.toArray(new Class<?>[clss.size()]));
             }
             catch (IgniteSpiException e) {
-                U.warn(log, "Failed to register GAR class loader [newDesc=" + newDesc +
+                U.warn(log, "Failed to register a class loader for a package [newDesc=" + newDesc +
                     ", msg=" + e.getMessage() + ']');
             }
         }
@@ -1152,9 +1152,9 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
                 GridUriDeploymentUnitDescriptor desc = iter.next();
 
                 assert !newDesc.getClassLoader().equals(desc.getClassLoader()) :
-                    "URI scanners always create new class loader for every GAR file: " + newDesc;
+                    "URI scanners always create new class loader for every package: " + newDesc;
 
-                // Only for GAR files. Undeploy all for overwritten GAR files.
+                // Only for deployment archives. Undeploy all for overwritten packages.
                 if (desc.getType() == GridUriDeploymentUnitDescriptor.Type.FILE &&
                     newDesc.getUri().equals(desc.getUri()) && !newDesc.getFile().equals(desc.getFile())) {
                     // Remove descriptor.
@@ -1241,7 +1241,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
             String rsrcName = entry.getKey();
 
             if (rsrcsByAlias.containsKey(rsrcName)) {
-                U.warn(log, "Found collision with task name in different GAR files. " +
+                U.warn(log, "Found collision with task name in a different package. " +
                     "Class loader will be removed [taskName=" + rsrcName + ", cls1=" + rsrcsByAlias.get(rsrcName) +
                     ", cls2=" + entry.getValue() + ", newDesc=" + newDesc + ", existDesc=" + existDesc + ']');
 
@@ -1252,7 +1252,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
         for (Class<?> rsrcCls : existDesc.getResources()) {
             if (!ComputeTask.class.isAssignableFrom(rsrcCls) &&
                 isResourceExist(newDesc.getClassLoader(), rsrcCls.getName())) {
-                U.warn(log, "Found collision with task class in different GAR files. " +
+                U.warn(log, "Found collision with task class in different deployment packages. " +
                     "Class loader will be removed [taskCls=" + rsrcCls +
                     ", removedDesc=" + newDesc + ", existDesc=" + existDesc + ']');
 
@@ -1266,11 +1266,11 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     /**
      * Deploys or redeploys given tasks.
      *
-     * @param uri GAR file deployment URI.
-     * @param file GAR file.
+     * @param uri Package file URI.
+     * @param file Package file.
      * @param tstamp File modification date.
      * @param ldr Class loader.
-     * @param clss List of tasks which were found in GAR file.
+     * @param clss List of tasks which were found in the package.
      * @param md5 md5 of the new unit.
      */
     private void newUnitReceived(String uri, File file, long tstamp, ClassLoader ldr,
@@ -1289,7 +1289,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     }
 
     /**
-     * Removes all tasks that belong to GAR files which are on list
+     * Removes all tasks that belong to package files which are on list
      * of removed files.
      *
      * @param uris List of removed files.
@@ -1370,7 +1370,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     }
 
     /** {@inheritDoc} */
-    public IgniteSpiAdapter setName(String name) {
+    @Override public IgniteSpiAdapter setName(String name) {
         super.setName(name);
 
         return this;

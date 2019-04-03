@@ -389,6 +389,20 @@ class AnyDataObject:
         return cls.map_python_type(value).from_python(value)
 
 
+def infer_from_python(value: Any):
+    """
+    Convert pythonic value to ctypes buffer, type hint-aware.
+
+    :param value: pythonic value or (value, type_hint) tuple,
+    :return: bytes.
+    """
+    if is_hinted(value):
+        value, data_type = value
+    else:
+        data_type = AnyDataObject
+    return data_type.from_python(value)
+
+
 @attr.s
 class AnyDataArray(AnyDataObject):
     """
@@ -454,8 +468,5 @@ class AnyDataArray(AnyDataObject):
         buffer = bytes(header)
 
         for x in value:
-            if is_hinted(x):
-                buffer += x[1].from_python(x[0])
-            else:
-                buffer += super().from_python(x)
+            buffer += infer_from_python(x)
         return buffer

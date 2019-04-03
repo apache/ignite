@@ -31,10 +31,8 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * BinaryObjectExceptionSelfTest
@@ -42,9 +40,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_KEY = "test_key";
-
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache name. */
     private final String cacheName = "cache";
@@ -54,7 +49,6 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setMarshaller(new BinaryMarshaller());
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setCacheConfiguration(
             new CacheConfiguration(cacheName)
@@ -86,7 +80,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("WhileLoopReplaceableByForEach")
+    @Test
     public void testUnexpectedFieldType() throws Exception {
         IgniteEx grid = grid(0);
 
@@ -157,6 +151,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedMarshallingLogging() throws Exception {
         BinaryMarshaller marshaller = createStandaloneBinaryMarshaller();
 

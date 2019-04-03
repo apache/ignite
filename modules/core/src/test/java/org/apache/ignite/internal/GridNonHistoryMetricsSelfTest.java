@@ -20,7 +20,6 @@ package org.apache.ignite.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.GridTestJob;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
@@ -29,14 +28,11 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import org.junit.Test;
 
 /**
  *
@@ -66,25 +62,14 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleTaskMetrics() throws Exception {
         final Ignite ignite = grid();
 
         ignite.compute().execute(new TestTask(), "testArg");
 
         // Let metrics update twice.
-        final CountDownLatch latch = new CountDownLatch(2);
-
-        ignite.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                assert evt.type() == EVT_NODE_METRICS_UPDATED;
-
-                latch.countDown();
-
-                return true;
-            }
-        }, EVT_NODE_METRICS_UPDATED);
-
-        latch.await();
+        awaitMetricsUpdate(2);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

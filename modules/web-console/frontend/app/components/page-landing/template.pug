@@ -14,12 +14,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-web-console-header
-    web-console-header-left
-        ignite-header-title
-    web-console-header-right
-        a#signin_show.btn-ignite.btn-ignite--primary(ui-sref='signin') Sign In
-
 section.intro-container-wrapper
     .container
         .col-lg-6.col-md-6.col-sm-6.col-xs-12.intro-content
@@ -28,9 +22,7 @@ section.intro-container-wrapper
             p It provides an interactive configuration wizard which helps you create and download configuration files and code snippets for your Apache Ignite projects. Additionally, the tool allows you to automatically load SQL metadata from any RDBMS, run SQL queries on your in-memory cache, and view execution plans, in-memory schema, and streaming charts.
             a#signup_show.btn.btn-lg.btn-primary.btn-custom(ui-sref='signup') Sign Up
         .col-lg-6.col-md-6.col-sm-6.col-xs-12
-            ui-carousel(slides='$ctrl.images' autoplay='true' slides-to-show='1' arrows='false')
-                carousel-item
-                    img(ng-src='{{item}}')
+            img(src='/images/page-landing-ui-sample.png')
 section.features-container-wrapper
     .container.features-container
         .section-title The Web Console allows you to:
@@ -62,5 +54,3 @@ section.features-container-wrapper
                     p The Web Console allows you to have accounts with different roles.
         .align-center.text-center
             a.btn.btn-lg.btn-primary.btn-custom(ui-sref='signup') Get Started
-
-web-console-footer

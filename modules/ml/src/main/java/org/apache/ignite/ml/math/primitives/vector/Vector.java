@@ -17,9 +17,6 @@
 
 package org.apache.ignite.ml.math.primitives.vector;
 
-import java.io.Externalizable;
-import java.util.Spliterator;
-import java.util.function.IntToDoubleFunction;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.MetaAttributes;
@@ -31,6 +28,11 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.structures.LabeledVector;
+
+import java.io.Externalizable;
+import java.util.Spliterator;
+import java.util.function.IntToDoubleFunction;
 
 /**
  * A vector interface.
@@ -125,6 +127,15 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * Sorts this vector in ascending order.
      */
     public Vector sort();
+
+    /**
+     * Copies the specified range of the vector into a new vector.
+     * @param from the initial index of the range to be copied, inclusive
+     * @param to the final index of the range to be copied, exclusive.
+     *     (This index may lie outside the array.)
+     * @return A new vector containing the specified range from the original vector
+     */
+    public Vector copyOfRange(int from, int to);
 
     /**
      * Gets element at the given index.
@@ -518,5 +529,16 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      */
     public default double[] asArray() {
         return getStorage().data();
+    }
+
+    /**
+     * Creates {@link LabeledVector} instance.
+     *
+     * @param lbl Label value.
+     * @param <L> Label class.
+     * @return Labeled vector.
+     */
+    public default <L> LabeledVector<L> labeled(L lbl) {
+        return new LabeledVector<>(this, lbl);
     }
 }

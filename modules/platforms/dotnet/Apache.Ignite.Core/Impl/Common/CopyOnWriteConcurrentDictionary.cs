@@ -19,6 +19,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
 
@@ -27,7 +28,8 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Good for frequent reads / infrequent writes scenarios.
     /// </summary>
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-    public class CopyOnWriteConcurrentDictionary<TKey, TValue>
+    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
+    public class CopyOnWriteConcurrentDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
     {
         /** */
         private volatile Dictionary<TKey, TValue> _dict = new Dictionary<TKey, TValue>();
@@ -88,13 +90,17 @@ namespace Apache.Ignite.Core.Impl.Common
                 _dict = dict0;
             }
         }
-
-        /// <summary>
-        /// Determines whether the specified key exists in the dictionary.
-        /// </summary>
-        public bool ContainsKey(TKey key)
+        
+        /** <inheritDoc /> */
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            return _dict.ContainsKey(key);
+            return _dict.GetEnumerator();
+        }
+
+        /** <inheritDoc /> */
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

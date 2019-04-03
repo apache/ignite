@@ -17,15 +17,17 @@
 
 package org.apache.ignite.ml.tree;
 
-import java.util.Arrays;
-import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+import java.util.Random;
 
 /**
  * Tests for {@link DecisionTreeRegressionTrainer} that require to start the whole Ignite infrastructure.
@@ -51,7 +53,7 @@ public class DecisionTreeRegressionTrainerIntegrationTest extends GridCommonAbst
     /**
      * {@inheritDoc}
      */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() {
         /* Grid instance. */
         ignite = grid(NODE_COUNT);
         ignite.configuration().setPeerClassLoadingEnabled(true);
@@ -59,6 +61,7 @@ public class DecisionTreeRegressionTrainerIntegrationTest extends GridCommonAbst
     }
 
     /** */
+    @Test
     public void testFit() {
         int size = 100;
 
@@ -79,8 +82,7 @@ public class DecisionTreeRegressionTrainerIntegrationTest extends GridCommonAbst
         DecisionTreeNode tree = trainer.fit(
             ignite,
             data,
-            (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         assertTrue(tree instanceof DecisionTreeConditionalNode);

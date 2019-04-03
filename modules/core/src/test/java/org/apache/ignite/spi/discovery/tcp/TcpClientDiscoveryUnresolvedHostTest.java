@@ -29,6 +29,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Client-based discovery SPI test with unresolved server hosts.
@@ -58,6 +59,7 @@ public class TcpClientDiscoveryUnresolvedHostTest extends GridCommonAbstractTest
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void test() throws Exception {
         try {
             startGrid(0);

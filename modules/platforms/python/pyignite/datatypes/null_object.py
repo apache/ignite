@@ -21,13 +21,14 @@ There can't be null type, because null payload takes exactly 0 bytes.
 
 import ctypes
 
+from .base import IgniteDataType
 from .type_codes import TC_NULL
 
 
 __all__ = ['Null']
 
 
-class Null:
+class Null(IgniteDataType):
     default = None
     pythonic = type(None)
     _object_c_type = None

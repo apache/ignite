@@ -16,6 +16,7 @@
 import ctypes
 
 from pyignite.constants import *
+from .base import IgniteDataType
 from .type_codes import *
 
 
@@ -25,7 +26,7 @@ __all__ = [
 ]
 
 
-class DataObject:
+class DataObject(IgniteDataType):
     """
     Base class for primitive data objects.
 

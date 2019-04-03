@@ -24,6 +24,8 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -47,6 +49,8 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     /**
      * Resumes logging after start. When WAL manager is started, it will skip logging any updates until this
      * method is called to avoid logging changes induced by the state restore procedure.
+     *
+     * @throws IgniteCheckedException If fails.
      */
     public void resumeLogging(WALPointer lastWrittenPtr) throws IgniteCheckedException;
 
@@ -90,6 +94,16 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
 
     /**
+     * Reads WAL record by the specified pointer.
+     *
+     * @param ptr WAL pointer.
+     * @return WAL record.
+     * @throws IgniteCheckedException If failed to read.
+     * @throws StorageException If IO error occurred while reading WAL entries.
+     */
+    public WALRecord read(WALPointer ptr) throws IgniteCheckedException, StorageException;
+
+    /**
      * Invoke this method to iterate over the written log entries.
      *
      * @param start Optional WAL pointer from which to start iteration.
@@ -98,6 +112,20 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @throws StorageException If IO error occurred while reading WAL entries.
      */
     public WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException;
+
+    /**
+     * Invoke this method to iterate over the written log entries.
+     *
+     * @param start Optional WAL pointer from which to start iteration.
+     * @param recordDeserializeFilter Specify a filter to skip WAL records. Those records will not be explicitly deserialized.
+     * @return Records iterator.
+     * @throws IgniteException If failed to start iteration.
+     * @throws StorageException If IO error occurred while reading WAL entries.
+     */
+    public WALIterator replay(
+        WALPointer start,
+        @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter
+    ) throws IgniteCheckedException, StorageException;
 
     /**
      * Invoke this method to reserve WAL history since provided pointer and prevent it's deletion.
@@ -178,9 +206,4 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @param grpId Group id.
      */
     public boolean disabled(int grpId);
-
-    /**
-     * Cleanup all directories relating to WAL (e.g. work WAL dir, archive WAL dir).
-     */
-    public void cleanupWalDirectories() throws IgniteCheckedException;
 }

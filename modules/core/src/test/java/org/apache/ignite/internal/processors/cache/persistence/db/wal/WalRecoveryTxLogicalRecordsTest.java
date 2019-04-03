@@ -49,8 +49,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -66,6 +66,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Assert;
+import org.junit.Test;
 
 /**
  *
@@ -147,6 +148,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalTxSimple() throws Exception {
         Ignite ignite = startGrid();
 
@@ -222,6 +224,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRecoveryRemoves() throws Exception {
         Ignite ignite = startGrid();
 
@@ -310,6 +313,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testHistoricalRebalanceIterator() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
@@ -474,6 +478,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalAfterPreloading() throws Exception {
         Ignite ignite = startGrid();
 
@@ -516,6 +521,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryRandomPutRemove() throws Exception {
         try {
             pageSize = 1024;
@@ -573,6 +579,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryNoPageLost1() throws Exception {
         recoveryNoPageLost(false);
     }
@@ -580,13 +587,17 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryNoPageLost2() throws Exception {
         recoveryNoPageLost(true);
     }
 
     /**
+     * Test checks that the number of pages per each page store are not changing before and after node restart.
+     *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryNoPageLost3() throws Exception {
         try {
             pageSize = 1024;
@@ -680,7 +691,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
                 pages = allocatedPages(ignite, CACHE2_NAME);
 
-                ignite.close();
+                stopGrid(0, true);
             }
         }
         finally {
@@ -722,6 +733,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFreeListRecovery() throws Exception {
         try {
             pageSize = 1024;

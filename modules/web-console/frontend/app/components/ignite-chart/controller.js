@@ -16,27 +16,31 @@
  */
 
 import _ from 'lodash';
+import moment from 'moment';
 
 /**
  * @typedef {{x: number, y: {[key: string]: number}}} IgniteChartDataPoint
  */
 
-const RANGE_RATE_PRESET = [{
-    label: '1 min',
-    value: 1
-}, {
-    label: '5 min',
-    value: 5
-}, {
-    label: '10 min',
-    value: 10
-}, {
-    label: '15 min',
-    value: 15
-}, {
-    label: '30 min',
-    value: 30
-}];
+const RANGE_RATE_PRESET = [
+    {label: '1 min', value: 1},
+    {label: '5 min', value: 5},
+    {label: '10 min', value: 10},
+    {label: '15 min', value: 15},
+    {label: '30 min', value: 30}
+];
+
+/**
+ * Determines what label format was chosen by determineLabelFormat function
+ * in Chart.js streaming plugin.
+ * 
+ * @param {string} label
+ */
+const inferLabelFormat = (label) => {
+    if (label.match(/\.\d{3} (am|pm)$/)) return 'MMM D, YYYY h:mm:ss.SSS a';
+    if (label.match(/:\d{1,2} (am|pm)$/)) return 'MMM D, YYYY h:mm:ss a';
+    if (label.match(/ \d{4}$/)) return 'MMM D, YYYY';
+};
 
 export class IgniteChartController {
     /** @type {import('chart.js').ChartConfiguration} */
@@ -96,6 +100,7 @@ export class IgniteChartController {
         if ((changes.chartDataPoint && _.isNil(changes.chartDataPoint.currentValue)) ||
             (changes.chartHistory && _.isEmpty(changes.chartHistory.currentValue))) {
             this.clearDatasets();
+            this.localHistory = [];
 
             return;
         }
@@ -205,7 +210,7 @@ export class IgniteChartController {
                     bodyFontSize: 13,
                     callbacks: {
                         title: (tooltipItem) => {
-                            return tooltipItem[0].xLabel.slice(0, -7);
+                            return tooltipItem[0].xLabel = moment(tooltipItem[0].xLabel, inferLabelFormat(tooltipItem[0].xLabel)).format('HH:mm:ss');
                         },
                         label: (tooltipItem, data) => {
                             const label = data.datasets[tooltipItem.datasetIndex].label || '';
@@ -227,7 +232,8 @@ export class IgniteChartController {
                         duration: this.currentRange.value * 1000 * 60,
                         frameRate: 1000 / this.refreshRate || 1 / 3,
                         refresh: this.refreshRate || 3000,
-                        ttl: this.maxRangeInMilliseconds,
+                        // Temporary workaround before https://github.com/nagix/chartjs-plugin-streaming/issues/53 resolved.
+                        // ttl: this.maxRangeInMilliseconds,
                         onRefresh: () => {
                             this.onRefresh();
                         }
@@ -308,6 +314,24 @@ export class IgniteChartController {
                 this.config.data.datasets[datasetIndex].fill = false;
             }
         });
+
+        // Temporary workaround before https://github.com/nagix/chartjs-plugin-streaming/issues/53 resolved.
+        this.pruneHistory();
+    }
+
+    // Temporary workaround before https://github.com/nagix/chartjs-plugin-streaming/issues/53 resolved.
+    pruneHistory() {
+        if (!this.xRangeUpdateInProgress) {
+            const currenTime = Date.now();
+
+            while (currenTime - this.localHistory[0].x > this.maxRangeInMilliseconds)
+                this.localHistory.shift();
+
+            this.config.data.datasets.forEach((dataset) => {
+                while (currenTime - dataset.data[0].x > this.maxRangeInMilliseconds)
+                    dataset.data.shift();
+            });
+        }
     }
 
     /**
@@ -346,6 +370,8 @@ export class IgniteChartController {
 
     changeXRange(range) {
         if (this.chart) {
+            this.xRangeUpdateInProgress = true;
+
             this.chart.config.options.plugins.streaming.duration = range.value * 60 * 1000;
 
             this.clearDatasets();
@@ -353,6 +379,8 @@ export class IgniteChartController {
 
             this.onRefresh();
             this.rerenderChart();
+
+            this.xRangeUpdateInProgress = false;
         }
     }
 

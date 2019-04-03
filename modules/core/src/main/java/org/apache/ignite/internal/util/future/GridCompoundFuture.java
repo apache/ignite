@@ -161,7 +161,6 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      *
      * @return Collection of futures.
      */
-    @SuppressWarnings("unchecked")
     public final synchronized Collection<IgniteInternalFuture<T>> futures() {
         if (futs == null)
             return Collections.emptyList();
@@ -200,7 +199,6 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      *
      * @return {@code True} if there are pending futures.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     protected final boolean hasPending() {
         synchronized (this) {
             int size = futuresCountNoLock();
@@ -222,7 +220,6 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      *
      * @param fut Future to add.
      */
-    @SuppressWarnings("unchecked")
     public final void add(IgniteInternalFuture<T> fut) {
         assert fut != null;
 
@@ -340,7 +337,6 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * @return Futures size.
      */
-    @SuppressWarnings("unchecked")
     protected final int futuresCountNoLock() {
         assert Thread.holdsLock(this);
 

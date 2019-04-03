@@ -39,9 +39,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 /**
  * Check that near cache is updated when entry loaded from store.
@@ -71,6 +73,9 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         srv = startGrid("server");
         client = startGrid("client");
     }
@@ -83,6 +88,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testAtomicUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration(), new NearCacheConfiguration<String, String>());
 
@@ -92,6 +98,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testTransactionAtomicUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration(), new NearCacheConfiguration<String, String>());
 
@@ -101,6 +108,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testPessimisticRepeatableReadUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
             new NearCacheConfiguration<String, String>());
@@ -111,6 +119,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testPessimisticReadCommittedUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
             new NearCacheConfiguration<String, String>());
@@ -121,6 +130,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testOptimisticSerializableUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
             new NearCacheConfiguration<String, String>());

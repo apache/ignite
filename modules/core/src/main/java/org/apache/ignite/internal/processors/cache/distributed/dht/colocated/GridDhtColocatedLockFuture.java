@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -152,11 +153,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     private final Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private volatile int done;
-
-    /** Trackable flag (here may be non-volatile). */
-    private boolean trackable;
 
     /** TTL for create operation. */
     private final long createTtl;
@@ -266,12 +263,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
     /** {@inheritDoc} */
     @Override public boolean trackable() {
-        return trackable;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
-        trackable = false;
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -537,7 +534,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
+    @SuppressWarnings({"IfMayBeConditional"})
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
@@ -778,7 +775,18 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
                 if (fut.exchangeDone() && fut.topologyVersion().equals(topVer)) {
-                    Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
+                    Throwable err = null;
+
+                    // Before cache validation, make sure that this topology future is already completed.
+                    try {
+                        fut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        err = fut.error();
+                    }
+
+                    if (err == null)
+                        err = fut.validateCache(cctx, recovery, read, null, keys);
 
                     if (err != null) {
                         onDone(err);
@@ -795,6 +803,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 if (this.topVer == null)
                     this.topVer = topVer;
             }
+
+            cctx.mvcc().addFuture(this);
 
             map(keys, false, true);
 
@@ -818,16 +828,25 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         // We must acquire topology snapshot from the topology version future.
         cctx.topology().readLock();
 
+        final GridDhtTopologyFuture fut;
+
+        final boolean finish;
+
         try {
             if (cctx.topology().stopping()) {
-                onDone(new CacheStoppedException(cctx.name()));
+                onDone(
+                    cctx.shared().cache().isCacheRestarting(cctx.name())?
+                        new IgniteCacheRestartingException(cctx.name()):
+                        new CacheStoppedException(cctx.name()));
 
                 return;
             }
 
-            GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+            fut = cctx.topologyVersionFuture();
 
-            if (fut.isDone()) {
+            finish = fut.isDone();
+
+            if (finish) {
                 Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                 if (err != null) {
@@ -856,29 +875,34 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     }
                 }
 
-                map(keys, remap, false);
-
-                if (c != null)
-                    c.run();
-
-                markInitialized();
-            }
-            else {
-                cctx.time().waitAsync(fut, tx == null ? 0 : tx.remainingTime(), (e, timedOut) -> {
-                    if (errorOrTimeoutOnTopologyVersion(e, timedOut))
-                        return;
-
-                    try {
-                        mapOnTopology(remap, c);
-                    }
-                    finally {
-                        cctx.shared().txContextReset();
-                    }
-                });
+                if (!remap)
+                    cctx.mvcc().addFuture(this);
             }
         }
         finally {
             cctx.topology().readUnlock();
+        }
+
+        if (finish) {
+            map(keys, remap, false);
+
+            if (c != null)
+                c.run();
+
+            markInitialized();
+        }
+        else {
+            cctx.time().waitAsync(fut, tx == null ? 0 : tx.remainingTime(), (e, timedOut) -> {
+                if (errorOrTimeoutOnTopologyVersion(e, timedOut))
+                    return;
+
+                try {
+                    mapOnTopology(remap, c);
+                }
+                finally {
+                    cctx.shared().txContextReset();
+                }
+            });
         }
     }
 
@@ -1073,7 +1097,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         keepBinary,
                                         clientFirst,
                                         false,
-                                        cctx.deploymentEnabled());
+                                        cctx.deploymentEnabled(),
+                                        inTx() ? tx.label() : null);
 
                                     mapping.request(req);
                                 }
@@ -1124,15 +1149,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     iter.remove();
                 }
             }
-
-            if (hasRmtNodes) {
-                trackable = true;
-
-                if (!remap && !cctx.mvcc().addFuture(this))
-                    throw new IllegalStateException("Duplicate future ID: " + this);
-            }
-            else
-                trackable = false;
         }
         finally {
             /** Notify ready {@link mappings} waiters. See {@link #cancel()} */
@@ -1372,8 +1388,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (isDone())
                 return true;
         }
-
-        trackable = false;
 
         if (tx != null) {
             if (explicit)

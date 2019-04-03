@@ -251,7 +251,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         if (error() != null) {
             clear();
 
-            throw new IgniteCheckedException("Query execution failed: " + qry, error());
+            throw U.cast(error());
         }
     }
 
@@ -324,7 +324,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /**
      * @param col Collection.
      */
-    @SuppressWarnings({"unchecked"})
     protected void enqueue(Collection<?> col) {
         assert Thread.holdsLock(this);
 
@@ -338,7 +337,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @return If dedup flag is {@code true} deduplicated collection (considering keys),
      *      otherwise passed in collection without any modifications.
      */
-    @SuppressWarnings({"unchecked"})
     private Collection<?> dedupIfRequired(Collection<?> col) {
         if (!qry.query().enableDedup())
             return col;
@@ -360,7 +358,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param err Error (if was).
      * @param finished Finished or not.
      */
-    @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
     public void onPage(@Nullable UUID nodeId, @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
         if (isCancelled())
             return;
@@ -377,13 +374,16 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 synchronized (this) {
                     enqueue(Collections.emptyList());
 
-                    onDone(new IgniteCheckedException(nodeId != null ?
-                        S.toString("Failed to execute query on node",
-                            "query", qry, true,
-                            "nodeId", nodeId, false) :
-                        S.toString("Failed to execute query locally",
-                            "query", qry, true),
-                        err));
+                    if (err instanceof IgniteCheckedException)
+                        onDone(err);
+                    else
+                        onDone(new IgniteCheckedException(nodeId != null ?
+                            S.toString("Failed to execute query on node",
+                                "query", qry, true,
+                                "nodeId", nodeId, false) :
+                            S.toString("Failed to execute query locally",
+                                "query", qry, true),
+                            err));
 
                     onPage(nodeId, true);
 
@@ -438,7 +438,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param col Collection.
      * @return Collection with masked {@code null} values.
      */
-    @SuppressWarnings("unchecked")
     private Collection<Object> maskNulls(Collection<Object> col) {
         assert col != null;
 
@@ -453,7 +452,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param col Collection.
      * @return Collection with unmasked {@code null} values.
      */
-    @SuppressWarnings("unchecked")
     private Collection<Object> unmaskNulls(Collection<Object> col) {
         assert col != null;
 

@@ -17,11 +17,15 @@
 
 package org.apache.ignite.ml.dataset.primitive;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNull;
@@ -47,14 +51,17 @@ public class SimpleLabeledDatasetTest {
         // Creates a local simple dataset containing features and providing standard dataset API.
         try (SimpleLabeledDataset<?> dataset = DatasetFactory.createSimpleLabeledDataset(
             dataPoints,
-            2,
-            (k, v) -> VectorUtils.of(v.getAge(), v.getSalary()),
-            (k, v) -> new double[] {k, v.getAge(), v.getSalary()}
+            TestUtils.testEnvBuilder(),
+            2, new FeatureLabelExtractorWrapper<>(CompositionUtils.asFeatureLabelExtractor(
+                (k, v) -> VectorUtils.of(v.getAge(), v.getSalary()),
+                (k, v) -> new double[] {k, v.getAge(), v.getSalary()}
+            ))
         )) {
-            assertNull(dataset.compute((data, partIdx) -> {
-                actualFeatures[partIdx] = data.getFeatures();
-                actualLabels[partIdx] = data.getLabels();
-                actualRows[partIdx] = data.getRows();
+            assertNull(dataset.compute((data, env) -> {
+                int part = env.partition();
+                actualFeatures[part] = data.getFeatures();
+                actualLabels[part] = data.getLabels();
+                actualRows[part] = data.getRows();
                 return null;
             }, (k, v) -> null));
         }

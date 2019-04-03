@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.junit.Test;
 
 /**
  * Test http scanner.
@@ -48,6 +49,9 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
     /** */
     public static final String ALL_GAR = "file.gar";
 
+    /** */
+    public static final String ALL_JAR = "file.jar";
+
     /** Gar-file which contains libs. */
     public static final String LIBS_GAR_FILE_PATH = U.resolveIgnitePath(
         GridTestProperties.getProperty("ant.urideployment.gar.libs-file")).getPath();
@@ -59,6 +63,10 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
     /** Gar-file which caontains both libs and classes. */
     public static final String ALL_GAR_FILE_PATH = U.resolveIgnitePath(
         GridTestProperties.getProperty("ant.urideployment.gar.file")).getPath();
+
+    /** JAR file with tasks and dependencies. */
+    public static final String JAR_FILE_PATH = U.resolveIgnitePath(
+            GridTestProperties.getProperty("urideployment.jar.uri")).getPath();
 
     /** Jetty. */
     private static Server srv;
@@ -80,7 +88,15 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
 
         hnd.setDirectoriesListed(true);
 
-        File resourseBaseDir = U.resolveIgnitePath(GridTestProperties.getProperty("ant.urideployment.gar.path.tmp"));
+        String garPathTmp = GridTestProperties.getProperty("urideployment.path.tmp");
+
+        File resourseBaseDir = U.resolveIgnitePath(garPathTmp);
+
+        if (resourseBaseDir == null) {
+            resourseBaseDir = new File(U.getIgniteHome(), garPathTmp);
+
+            assertTrue(resourseBaseDir.mkdirs());
+        }
 
         rsrcBase = resourseBaseDir.getPath();
 
@@ -107,7 +123,8 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
-    public void testDeployUndeploy2Files() throws Exception {
+    @Test
+    public void testDeployUndeploy2GarFiles() throws Exception {
         String taskName = "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3";
 
         checkNoTask(taskName);
@@ -133,6 +150,31 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDeployUndeployJar() throws Exception {
+        String taskName = "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask8";
+
+        checkNoTask(taskName);
+
+        try {
+            copyToResourceBase(JAR_FILE_PATH, ALL_JAR);
+
+            waitForTask(taskName, true, FREQ + 3000);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+            deleteFromResourceBase(ALL_JAR);
+
+            waitForTask(taskName, false, FREQ + 3000);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testSameContantFiles() throws Exception {
         String taskName = "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3";
 

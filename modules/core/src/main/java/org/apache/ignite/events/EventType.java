@@ -245,6 +245,16 @@ public interface EventType {
     public static final int EVT_TASK_REDUCED = 25;
 
     /**
+     * Built-in event type: Visor or Web Console management task started.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TaskEvent
+     */
+    public static final int EVT_MANAGEMENT_TASK_STARTED = 26;
+
+    /**
      * Built-in event type: non-task class deployed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -854,6 +864,30 @@ public interface EventType {
     public static final int EVT_WAL_SEGMENT_COMPACTED = 134;
 
     /**
+     * Built-in event type: Cluster activation state changed.
+     * <p>
+     * Fired when cluster activated.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see ClusterActivationEvent
+     */
+    public static final int EVT_CLUSTER_ACTIVATED = 140;
+
+    /**
+     * Built-in event type: Cluster activation state changed.
+     * <p>
+     * Fired when cluster deactivated.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see ClusterActivationEvent
+     */
+    public static final int EVT_CLUSTER_DEACTIVATED = 141;
+
+    /**
      * All checkpoint events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.
@@ -1064,6 +1098,18 @@ public interface EventType {
         EVT_TX_ROLLED_BACK,
         EVT_TX_SUSPENDED,
         EVT_TX_RESUMED
+    };
+
+    /**
+     * All cluster activation events. This array can be directly passed into
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
+     * subscribe to all cloud events.
+     *
+     * @see ClusterActivationEvent
+     */
+    public static final int[] EVTS_CLUSTER_ACTIVATION = {
+        EVT_CLUSTER_ACTIVATED,
+        EVT_CLUSTER_DEACTIVATED
     };
 
     /**

@@ -17,11 +17,13 @@
 
 package org.apache.ignite.ml.structures.partition;
 
-import java.io.Serializable;
-import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+
+import java.io.Serializable;
+import java.util.Iterator;
 
 /**
  * Partition data builder that builds {@link LabelPartitionDataOnHeap}.
@@ -30,33 +32,36 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable>
+public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable, CO extends Serializable>
     implements PartitionDataBuilder<K, V, C, LabelPartitionDataOnHeap> {
     /** */
     private static final long serialVersionUID = -7820760153954269227L;
 
-    /** Extractor of Y vector value. */
-    private final IgniteBiFunction<K, V, Double> yExtractor;
+    /** Upstream vectorizer. */
+    private final Vectorizer<K, V, CO, Double> vectorizer;
 
     /**
      * Constructs a new instance of Label partition data builder.
      *
-     * @param yExtractor Extractor of Y vector value.
+     * @param vectorizer Upstream vectorizer (can return vectori with zero size).
      */
-    public LabelPartitionDataBuilderOnHeap(IgniteBiFunction<K, V, Double> yExtractor) {
-        this.yExtractor = yExtractor;
+    public LabelPartitionDataBuilderOnHeap(Vectorizer<K, V, CO, Double> vectorizer) {
+        this.vectorizer = vectorizer;
     }
 
     /** {@inheritDoc} */
-    @Override public LabelPartitionDataOnHeap build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
-                                        C ctx) {
+    @Override public LabelPartitionDataOnHeap build(
+        LearningEnvironment env,
+        Iterator<UpstreamEntry<K, V>> upstreamData,
+        long upstreamDataSize,
+        C ctx) {
         double[] y = new double[Math.toIntExact(upstreamDataSize)];
 
         int ptr = 0;
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
 
-            y[ptr] = yExtractor.apply(entry.getKey(), entry.getValue());
+            y[ptr] = vectorizer.apply(entry.getKey(), entry.getValue()).label();
 
             ptr++;
         }

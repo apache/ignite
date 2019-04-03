@@ -36,6 +36,9 @@ public class GridRestTopologyRequest extends GridRestRequest {
     /** Include node attributes flag. */
     private boolean includeAttrs;
 
+    /** Include caches flag. With default value for compatibility. */
+    private boolean includeCaches = true;
+
     /**
      * @return Include metrics flag.
      */
@@ -62,6 +65,20 @@ public class GridRestTopologyRequest extends GridRestRequest {
      */
     public void includeAttributes(boolean includeAttrs) {
         this.includeAttrs = includeAttrs;
+    }
+
+    /**
+     * @return Include caches flag.
+     */
+    public boolean includeCaches() {
+        return includeCaches;
+    }
+
+    /**
+     * @param includeCaches Include caches flag.
+     */
+    public void includeCaches(boolean includeCaches) {
+        this.includeCaches = includeCaches;
     }
 
     /**

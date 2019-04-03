@@ -28,20 +28,23 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 
 /**
  * Failed to execute non-collocated query root cause message test
  */
-public class NonCollocatedRetryMessageSelfTest extends GridCommonAbstractTest {
+@WithSystemProperty(key = IGNITE_SQL_RETRY_TIMEOUT, value = "500")
+public class NonCollocatedRetryMessageSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 2;
 
@@ -49,15 +52,10 @@ public class NonCollocatedRetryMessageSelfTest extends GridCommonAbstractTest {
     private static final String ORG = "org";
 
     /** */
-    private static final int TEST_SQL_RETRY_TIMEOUT = 500;
-
-    /** */
-    private String sqlRetryTimeoutBackup;
-
-    /** */
     private IgniteCache<String, JoinSqlTestHelper.Person> personCache;
 
     /** */
+    @Test
     public void testNonCollocatedRetryMessage() {
         SqlQuery<String, JoinSqlTestHelper.Person> qry = new SqlQuery<String, JoinSqlTestHelper.Person>(
             JoinSqlTestHelper.Person.class, JoinSqlTestHelper.JOIN_SQL).setArgs("Organization #0");
@@ -85,23 +83,19 @@ public class NonCollocatedRetryMessageSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        sqlRetryTimeoutBackup = System.getProperty(IGNITE_SQL_RETRY_TIMEOUT);
-
-        System.setProperty(IGNITE_SQL_RETRY_TIMEOUT, String.valueOf(TEST_SQL_RETRY_TIMEOUT));
-
         startGridsMultiThreaded(NODES_COUNT, false);
 
         CacheConfiguration<String, JoinSqlTestHelper.Person> ccfg1 = new CacheConfiguration<>("pers");
 
         ccfg1.setBackups(1);
-        ccfg1.setIndexedTypes(String.class, JoinSqlTestHelper.Person.class);
+        ccfg1.setQueryEntities(JoinSqlTestHelper.personQueryEntity());
 
         personCache = ignite(0).getOrCreateCache(ccfg1);
 
         CacheConfiguration<String, JoinSqlTestHelper.Organization> ccfg2 = new CacheConfiguration<>(ORG);
 
         ccfg2.setBackups(1);
-        ccfg2.setIndexedTypes(String.class, JoinSqlTestHelper.Organization.class);
+        ccfg2.setQueryEntities(JoinSqlTestHelper.organizationQueryEntity());
 
         IgniteCache<String, JoinSqlTestHelper.Organization> orgCache = ignite(0).getOrCreateCache(ccfg2);
 
@@ -114,9 +108,6 @@ public class NonCollocatedRetryMessageSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() {
-        if (sqlRetryTimeoutBackup != null)
-            System.setProperty(IGNITE_SQL_RETRY_TIMEOUT, sqlRetryTimeoutBackup);
-
         stopAllGrids();
     }
 
@@ -134,7 +125,7 @@ public class NonCollocatedRetryMessageSelfTest extends GridCommonAbstractTest {
 
                 if (GridH2IndexRangeRequest.class.isAssignableFrom(gridMsg.message().getClass())) {
                     try {
-                        U.sleep(TEST_SQL_RETRY_TIMEOUT);
+                        U.sleep(Long.getLong(IGNITE_SQL_RETRY_TIMEOUT));
                     }
                     catch (IgniteInterruptedCheckedException e) {
                         fail("Test was interrupted.");

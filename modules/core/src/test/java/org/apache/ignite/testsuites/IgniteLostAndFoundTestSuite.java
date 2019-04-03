@@ -17,12 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.GridFactoryVmShutdownTest;
 import org.apache.ignite.internal.managers.GridManagerMxBeanIllegalArgumentHandleTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheMultiNodeDataStructureTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadUndeploysTest;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSandboxTest;
 import org.apache.ignite.internal.processors.compute.GridComputeJobExecutionErrorToLogManualTest;
 import org.apache.ignite.internal.util.future.GridFutureQueueTest;
@@ -40,46 +38,49 @@ import org.apache.ignite.jvmtest.ServerSocketMultiThreadedTest;
 import org.apache.ignite.lang.GridSystemCurrentTimeMillisTest;
 import org.apache.ignite.lang.GridThreadPriorityTest;
 import org.apache.ignite.startup.servlet.GridServletLoaderTest;
+import org.junit.Ignore;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Tests suite for orphaned tests.
+ * Tests suite for orphaned tests (not in any test sute previously).
  */
-public class IgniteLostAndFoundTestSuite extends TestSuite {
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    FileIOTest.class,
+    FileLocksTest.class,
+    GridComputeJobExecutionErrorToLogManualTest.class,
+    GridManagerMxBeanIllegalArgumentHandleTest.class,
+    GridRoundTripTest.class,
+    GridServletLoaderTest.class,
+
+    LinkedHashMapTest.class,
+    NetworkFailureTest.class,
+    PagesWriteThrottleSandboxTest.class,
+    QueueSizeCounterMultiThreadedTest.class,
+    ReadWriteLockMultiThreadedTest.class,
+    RegExpTest.class,
+    ServerSocketMultiThreadedTest.class,
+
+    IgniteLostAndFoundTestSuite.TentativeTests.class
+})
+public class IgniteLostAndFoundTestSuite {
     /**
-     * @return Tests suite for orphaned tests (not in any test sute previously).
+     * Non-JUnit classes with Test in name, which should be either converted to JUnit or removed in the future
+     * Main classes.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite List And Found Test Suite");
-
-        suite.addTestSuite(FileIOTest.class);
-        suite.addTestSuite(FileLocksTest.class);
-        suite.addTestSuite(GridComputeJobExecutionErrorToLogManualTest.class);
-        suite.addTestSuite(GridManagerMxBeanIllegalArgumentHandleTest.class);
-        suite.addTestSuite(GridRoundTripTest.class);
-        suite.addTestSuite(GridServletLoaderTest.class);
-
-        suite.addTestSuite(LinkedHashMapTest.class);
-        suite.addTestSuite(NetworkFailureTest.class);
-        suite.addTestSuite(PagesWriteThrottleSandboxTest.class);
-        suite.addTestSuite(QueueSizeCounterMultiThreadedTest.class);
-        suite.addTestSuite(ReadWriteLockMultiThreadedTest.class);
-        suite.addTestSuite(RegExpTest.class);
-        suite.addTestSuite(ServerSocketMultiThreadedTest.class);
-
-
-        // Non-JUnit classes with Test in name, which should be either converted to JUnit or removed in the future
-        // Main classes:
-        Class[] _$ = new Class[] {
-            GridCacheReplicatedPreloadUndeploysTest.class,
-            GridCacheMultiNodeDataStructureTest.class,
-            GridFactoryVmShutdownTest.class,
-            GridFutureQueueTest.class,
-            GridThreadPriorityTest.class,
-            GridSystemCurrentTimeMillisTest.class,
-            BlockingQueueTest.class,
-            MultipleFileIOTest.class
-        };
-
-        return suite;
+    @RunWith(Suite.class)
+    @Suite.SuiteClasses({
+        GridCacheReplicatedPreloadUndeploysTest.class,
+        GridCacheMultiNodeDataStructureTest.class,
+        GridFactoryVmShutdownTest.class,
+        GridFutureQueueTest.class,
+        GridThreadPriorityTest.class,
+        GridSystemCurrentTimeMillisTest.class,
+        BlockingQueueTest.class,
+        MultipleFileIOTest.class
+    })
+    @Ignore
+    public static class TentativeTests {
     }
 }

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
-import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
@@ -29,9 +29,11 @@ import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
+
+import java.io.FileNotFoundException;
 
 /**
  * {@link MinMaxScalerTrainer} and {@link NormalizationTrainer} are used in this example due to different values
@@ -99,8 +101,7 @@ public class Step_5_Scaling {
                 DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    normalizationPreprocessor,
-                    lbExtractor
+                    FeatureLabelExtractorWrapper.wrap(normalizationPreprocessor, lbExtractor) //TODO: IGNITE-11581
                 );
 
                 System.out.println("\n>>> Trained model: " + mdl);

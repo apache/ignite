@@ -29,7 +29,7 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpda
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
+import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.junit.Test;
 
 /**
@@ -51,9 +51,9 @@ public class PipelineTest extends TrainerTest {
             cacheMock.put(i, convertedRow);
         }
 
-        LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+        LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
+                SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
             .withMaxIterations(100000)
             .withLocIterations(100)
             .withBatchSize(10)
@@ -62,8 +62,8 @@ public class PipelineTest extends TrainerTest {
         PipelineMdl<Integer, Double[]> mdl = new Pipeline<Integer, Double[], Vector>()
             .addFeatureExtractor((k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)))
             .addLabelExtractor((k, v) -> v[0])
-            .addPreprocessor(new MinMaxScalerTrainer<Integer, Object[]>())
-            .addPreprocessor(new NormalizationTrainer<Integer, Object[]>()
+            .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Object[]>())
+            .addPreprocessingTrainer(new NormalizationTrainer<Integer, Object[]>()
                 .withP(1))
             .addTrainer(trainer)
             .fit(
@@ -71,8 +71,8 @@ public class PipelineTest extends TrainerTest {
                 parts
             );
 
-        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+        TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
     }
 
     /**
@@ -93,15 +93,15 @@ public class PipelineTest extends TrainerTest {
         PipelineMdl<Integer, Double[]> mdl = new Pipeline<Integer, Double[], Vector>()
             .addFeatureExtractor((k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)))
             .addLabelExtractor((k, v) -> v[0])
-            .addPreprocessor(new MinMaxScalerTrainer<Integer, Object[]>())
-            .addPreprocessor(new NormalizationTrainer<Integer, Object[]>()
+            .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Object[]>())
+            .addPreprocessingTrainer(new NormalizationTrainer<Integer, Object[]>()
                 .withP(1))
             .fit(
                 cacheMock,
                 parts
             );
 
-        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+        TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
     }
 }

@@ -18,7 +18,7 @@
 package org.apache.ignite.ml;
 
 /**
- * Interface for exportable models({@link Model}).
+ * Interface for exportable models({@link IgniteModel}).
  *
  * @see Exporter
  */

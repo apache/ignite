@@ -26,6 +26,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 /**
  * Configuration validation for SQL configured caches.
@@ -39,6 +40,7 @@ public class CacheMvccSqlConfigurationValidationTest extends CacheMvccAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheGroupAtomicityModeMismatch1() throws Exception {
         Ignite node = startGrid();
 
@@ -62,6 +64,7 @@ public class CacheMvccSqlConfigurationValidationTest extends CacheMvccAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheGroupAtomicityModeMismatch2() throws Exception {
         Ignite node = startGrid();
 
@@ -84,6 +87,7 @@ public class CacheMvccSqlConfigurationValidationTest extends CacheMvccAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxDifferentMvccSettingsTransactional() throws Exception {
         ccfg = defaultCacheConfiguration().setSqlSchema("PUBLIC");
         Ignite node = startGrid();

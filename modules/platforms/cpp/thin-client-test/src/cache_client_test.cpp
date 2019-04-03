@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 #include <boost/thread/thread.hpp>
 
@@ -814,6 +810,33 @@ BOOST_AUTO_TEST_CASE(CacheClientDefaultDynamicCache)
     }
 }
 
+BOOST_AUTO_TEST_CASE(CacheClientDefaultDynamicCacheThreeNodes)
+{
+    StartNode("node1");
+    StartNode("node2");
+
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110..11120");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<std::string, int64_t> cache =
+        client.CreateCache<std::string, int64_t>("defaultdynamic3");
+
+    cache.RefreshAffinityMapping();
+
+    for (int64_t i = 1; i < 1000; ++i)
+        cache.Put(ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
+
+    for (int64_t i = 1; i < 1000; ++i)
+    {
+        int64_t val;
+        LocalPeek(cache, ignite::common::LexicalCast<std::string>(i * 39916801), val);
+
+        BOOST_CHECK_EQUAL(val, i * 5039);
+    }
+}
+
 BOOST_AUTO_TEST_CASE(CacheClientGetAllContainers)
 {
     IgniteClientConfiguration cfg;
@@ -1172,5 +1195,715 @@ BOOST_AUTO_TEST_CASE(CacheClientContainsKeysIterators)
     BOOST_REQUIRE(cache.ContainsKeys(check.begin(), check.end()));
 }
 
+BOOST_AUTO_TEST_CASE(CacheClientReplaceIfEqualsBasicKeyValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache = client.GetCache<int32_t, std::string>("local");
+
+    int32_t key = 42;
+    std::string valIn1 = "Lorem ipsum";
+    std::string valIn2 = "Test";
+
+    cache.Put(key, valIn1);
+
+    BOOST_CHECK(!cache.Replace(key, valIn2, valIn2));
+
+    std::string valOut = cache.Get(key);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+
+    BOOST_CHECK(cache.Replace(key, valIn1, valIn2));
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, valIn2);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientReplaceIfEqualsComplexValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, ignite::ComplexType> cache = client.GetCache<int32_t, ignite::ComplexType>("local");
+
+    int32_t key = 42;
+
+    ignite::ComplexType valIn1;
+    valIn1.i32Field = 123;
+    valIn1.strField = "Test value";
+    valIn1.objField.f1 = 42;
+    valIn1.objField.f2 = "Inner value";
+
+    ignite::ComplexType valIn2;
+    valIn2.i32Field = 4234;
+    valIn2.strField = "Some";
+    valIn2.objField.f1 = 654;
+    valIn2.objField.f2 = "Lorem";
+
+    cache.Put(key, valIn1);
+
+    BOOST_REQUIRE(!cache.Replace(key, valIn2, valIn2));
+
+    ignite::ComplexType valOut = cache.Get(key);
+
+    BOOST_CHECK_EQUAL(valIn1.i32Field, valOut.i32Field);
+    BOOST_CHECK_EQUAL(valIn1.strField, valOut.strField);
+    BOOST_CHECK_EQUAL(valIn1.objField.f1, valOut.objField.f1);
+    BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut.objField.f2);
+
+    BOOST_CHECK(cache.Replace(key, valIn1, valIn2));
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valIn2.i32Field, valOut.i32Field);
+    BOOST_CHECK_EQUAL(valIn2.strField, valOut.strField);
+    BOOST_CHECK_EQUAL(valIn2.objField.f1, valOut.objField.f1);
+    BOOST_CHECK_EQUAL(valIn2.objField.f2, valOut.objField.f2);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientReplaceIfEqualsComplexKey)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::ComplexType, int32_t> cache = client.GetCache<ignite::ComplexType, int32_t>("local");
+
+    ignite::ComplexType key;
+
+    key.i32Field = 123;
+    key.strField = "Test value";
+    key.objField.f1 = 42;
+    key.objField.f2 = "Inner value";
+
+    int32_t valIn1 = 123;
+    int32_t valIn2 = 321;
+
+    cache.Put(key, valIn1);
+
+    BOOST_CHECK(!cache.Replace(key, valIn2, valIn2));
+
+    int32_t valOut = cache.Get(key);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+
+    BOOST_CHECK(cache.Replace(key, valIn1, valIn2));
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, valIn2);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientRemoveIfEqualsBasicKeyValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache = client.GetCache<int32_t, std::string>("local");
+
+    int32_t key = 42;
+    std::string valIn1 = "Lorem ipsum";
+    std::string valIn2 = "Test";
+
+    cache.Put(key, valIn1);
+
+    BOOST_REQUIRE(!cache.Remove(key, valIn2));
+
+    BOOST_CHECK(cache.ContainsKey(key));
+
+    std::string valOut = cache.Get(key);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+
+    BOOST_CHECK(cache.Remove(key, valIn1));
+
+    BOOST_CHECK(!cache.ContainsKey(key));
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientRemoveIfEqualsComplexValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, ignite::ComplexType> cache = client.GetCache<int32_t, ignite::ComplexType>("local");
+
+    int32_t key = 42;
+
+    ignite::ComplexType valIn1;
+    valIn1.i32Field = 123;
+    valIn1.strField = "Test value";
+    valIn1.objField.f1 = 42;
+    valIn1.objField.f2 = "Inner value";
+
+    ignite::ComplexType valIn2;
+    valIn2.i32Field = 4234;
+    valIn2.strField = "Some";
+    valIn2.objField.f1 = 654;
+    valIn2.objField.f2 = "Lorem";
+
+    cache.Put(key, valIn1);
+
+    BOOST_CHECK(!cache.Remove(key, valIn2));
+
+    BOOST_CHECK(cache.ContainsKey(key));
+
+    ignite::ComplexType valOut = cache.Get(key);
+
+    BOOST_CHECK_EQUAL(valIn1.i32Field, valOut.i32Field);
+    BOOST_CHECK_EQUAL(valIn1.strField, valOut.strField);
+    BOOST_CHECK_EQUAL(valIn1.objField.f1, valOut.objField.f1);
+    BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut.objField.f2);
+
+    BOOST_CHECK(cache.Remove(key, valIn1));
+
+    BOOST_CHECK(!cache.ContainsKey(key));
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientRemoveIfEqualsComplexKey)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::ComplexType, int32_t> cache = client.GetCache<ignite::ComplexType, int32_t>("local");
+
+    ignite::ComplexType key;
+
+    key.i32Field = 123;
+    key.strField = "Test value";
+    key.objField.f1 = 42;
+    key.objField.f2 = "Inner value";
+
+    int32_t valIn1 = 123;
+    int32_t valIn2 = 321;
+
+    cache.Put(key, valIn1);
+
+    BOOST_CHECK(!cache.Remove(key, valIn2));
+
+    BOOST_CHECK(cache.ContainsKey(key));
+
+    int32_t valOut = cache.Get(key);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+
+    BOOST_CHECK(cache.Remove(key, valIn1));
+
+    BOOST_CHECK(!cache.ContainsKey(key));
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndPutBasicKeyValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache = client.GetCache<int32_t, std::string>("local");
+
+    int32_t key = 42;
+    std::string valIn1 = "Lorem ipsum";
+    std::string valIn2 = "Test";
+
+    cache.Put(key, valIn1);
+    std::string valOut = cache.GetAndPut(key, valIn2);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, valIn2);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndPutComplexValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, ignite::ComplexType> cache = client.GetCache<int32_t, ignite::ComplexType>("local");
+
+    int32_t key = 42;
+
+    ignite::ComplexType valIn1;
+    valIn1.i32Field = 123;
+    valIn1.strField = "Test value";
+    valIn1.objField.f1 = 42;
+    valIn1.objField.f2 = "Inner value";
+
+    ignite::ComplexType valIn2;
+    valIn2.i32Field = 4234;
+    valIn2.strField = "Some";
+    valIn2.objField.f1 = 654;
+    valIn2.objField.f2 = "Lorem";
+
+    ignite::ComplexType valOut;
+
+    cache.Put(key, valIn1);
+    cache.GetAndPut(key, valIn2, valOut);
+
+    BOOST_CHECK_EQUAL(valIn1.i32Field, valOut.i32Field);
+    BOOST_CHECK_EQUAL(valIn1.strField, valOut.strField);
+    BOOST_CHECK_EQUAL(valIn1.objField.f1, valOut.objField.f1);
+    BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut.objField.f2);
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valIn2.i32Field, valOut.i32Field);
+    BOOST_CHECK_EQUAL(valIn2.strField, valOut.strField);
+    BOOST_CHECK_EQUAL(valIn2.objField.f1, valOut.objField.f1);
+    BOOST_CHECK_EQUAL(valIn2.objField.f2, valOut.objField.f2);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndPutComplexKey)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::ComplexType, int32_t> cache = client.GetCache<ignite::ComplexType, int32_t>("local");
+
+    ignite::ComplexType key;
+
+    key.i32Field = 123;
+    key.strField = "Test value";
+    key.objField.f1 = 42;
+    key.objField.f2 = "Inner value";
+
+    int32_t valIn1 = 123;
+    int32_t valIn2 = 321;
+
+    cache.Put(key, valIn1);
+    int32_t valOut = cache.GetAndPut(key, valIn2);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, valIn2);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndRemoveBasicKeyValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache = client.GetCache<int32_t, std::string>("local");
+
+    int32_t key = 42;
+    std::string valIn = "Lorem ipsum";
+
+    cache.Put(key, valIn);
+    std::string valOut = cache.GetAndRemove(key);
+
+    BOOST_CHECK_EQUAL(valOut, valIn);
+
+    BOOST_CHECK(!cache.ContainsKey(key));
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndRemoveComplexValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, ignite::ComplexType> cache = client.GetCache<int32_t, ignite::ComplexType>("local");
+
+    int32_t key = 42;
+
+    ignite::ComplexType valIn;
+    valIn.i32Field = 123;
+    valIn.strField = "Test value";
+    valIn.objField.f1 = 42;
+    valIn.objField.f2 = "Inner value";
+
+    ignite::ComplexType valOut;
+
+    cache.Put(key, valIn);
+    cache.GetAndRemove(key, valOut);
+
+    BOOST_CHECK_EQUAL(valIn.i32Field, valOut.i32Field);
+    BOOST_CHECK_EQUAL(valIn.strField, valOut.strField);
+    BOOST_CHECK_EQUAL(valIn.objField.f1, valOut.objField.f1);
+    BOOST_CHECK_EQUAL(valIn.objField.f2, valOut.objField.f2);
+
+    BOOST_CHECK(!cache.ContainsKey(key));
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndRemoveComplexKey)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::ComplexType, int32_t> cache = client.GetCache<ignite::ComplexType, int32_t>("local");
+
+    ignite::ComplexType key;
+
+    key.i32Field = 123;
+    key.strField = "Test value";
+    key.objField.f1 = 42;
+    key.objField.f2 = "Inner value";
+
+    int32_t valIn = 123;
+
+    cache.Put(key, valIn);
+    int32_t valOut = cache.GetAndRemove(key);
+
+    BOOST_CHECK_EQUAL(valOut, valIn);
+
+    BOOST_CHECK(!cache.ContainsKey(key));
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndReplaceBasicKeyValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache = client.GetCache<int32_t, std::string>("local");
+
+    int32_t key = 42;
+    std::string valIn1 = "Lorem ipsum";
+    std::string valIn2 = "Test";
+
+    std::string valOut;
+    cache.GetAndReplace(key, valIn1, valOut);
+
+    BOOST_CHECK(valOut.empty());
+    BOOST_CHECK(!cache.ContainsKey(key));
+
+    cache.Put(key, valIn1);
+    valOut = cache.GetAndReplace(key, valIn2);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, valIn2);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndReplaceComplexValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, ignite::ComplexType> cache = client.GetCache<int32_t, ignite::ComplexType>("local");
+
+    int32_t key = 42;
+
+    ignite::ComplexType valIn1;
+    valIn1.i32Field = 123;
+    valIn1.strField = "Test value";
+    valIn1.objField.f1 = 42;
+    valIn1.objField.f2 = "Inner value";
+
+    ignite::ComplexType valIn2;
+    valIn2.i32Field = 4234;
+    valIn2.strField = "Some";
+    valIn2.objField.f1 = 654;
+    valIn2.objField.f2 = "Lorem";
+
+    ignite::ComplexType valOut = cache.GetAndReplace(key, valIn1);
+
+    BOOST_CHECK(!cache.ContainsKey(key));
+
+    cache.Put(key, valIn1);
+    cache.GetAndReplace(key, valIn2, valOut);
+
+    BOOST_CHECK_EQUAL(valIn1.i32Field, valOut.i32Field);
+    BOOST_CHECK_EQUAL(valIn1.strField, valOut.strField);
+    BOOST_CHECK_EQUAL(valIn1.objField.f1, valOut.objField.f1);
+    BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut.objField.f2);
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valIn2.i32Field, valOut.i32Field);
+    BOOST_CHECK_EQUAL(valIn2.strField, valOut.strField);
+    BOOST_CHECK_EQUAL(valIn2.objField.f1, valOut.objField.f1);
+    BOOST_CHECK_EQUAL(valIn2.objField.f2, valOut.objField.f2);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndReplaceComplexKey)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::ComplexType, int32_t> cache = client.GetCache<ignite::ComplexType, int32_t>("local");
+
+    ignite::ComplexType key;
+
+    key.i32Field = 123;
+    key.strField = "Test value";
+    key.objField.f1 = 42;
+    key.objField.f2 = "Inner value";
+
+    int32_t valIn1 = 123;
+    int32_t valIn2 = 321;
+
+    int32_t valOut;
+    cache.GetAndReplace(key, valIn1, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, 0);
+    BOOST_CHECK(!cache.ContainsKey(key));
+
+    cache.Put(key, valIn1);
+    valOut = cache.GetAndReplace(key, valIn2);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, valIn2);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPutIfAbsentBasicKeyValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache = client.GetCache<int32_t, std::string>("local");
+
+    int32_t key = 42;
+    std::string valIn1 = "Lorem ipsum";
+    std::string valIn2 = "Test";
+
+    BOOST_CHECK(cache.PutIfAbsent(key, valIn1));
+    BOOST_CHECK(cache.ContainsKey(key));
+
+    std::string valOut = cache.Get(key);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+
+    BOOST_CHECK(!cache.PutIfAbsent(key, valIn2));
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPutIfAbsentComplexValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, ignite::ComplexType> cache = client.GetCache<int32_t, ignite::ComplexType>("local");
+
+    int32_t key = 42;
+
+    ignite::ComplexType valIn1;
+    valIn1.i32Field = 123;
+    valIn1.strField = "Test value";
+    valIn1.objField.f1 = 42;
+    valIn1.objField.f2 = "Inner value";
+
+    ignite::ComplexType valIn2;
+    valIn2.i32Field = 4234;
+    valIn2.strField = "Some";
+    valIn2.objField.f1 = 654;
+    valIn2.objField.f2 = "Lorem";
+
+    BOOST_CHECK(cache.PutIfAbsent(key, valIn1));
+    BOOST_CHECK(cache.ContainsKey(key));
+
+    ignite::ComplexType valOut = cache.Get(key);
+
+    BOOST_CHECK_EQUAL(valIn1.i32Field, valOut.i32Field);
+    BOOST_CHECK_EQUAL(valIn1.strField, valOut.strField);
+    BOOST_CHECK_EQUAL(valIn1.objField.f1, valOut.objField.f1);
+    BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut.objField.f2);
+
+    BOOST_CHECK(!cache.PutIfAbsent(key, valIn2));
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valIn1.i32Field, valOut.i32Field);
+    BOOST_CHECK_EQUAL(valIn1.strField, valOut.strField);
+    BOOST_CHECK_EQUAL(valIn1.objField.f1, valOut.objField.f1);
+    BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut.objField.f2);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPutIfAbsentComplexKey)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::ComplexType, int32_t> cache = client.GetCache<ignite::ComplexType, int32_t>("local");
+
+    ignite::ComplexType key;
+
+    key.i32Field = 123;
+    key.strField = "Test value";
+    key.objField.f1 = 42;
+    key.objField.f2 = "Inner value";
+
+    int32_t valIn1 = 123;
+    int32_t valIn2 = 321;
+
+    BOOST_CHECK(cache.PutIfAbsent(key, valIn1));
+    BOOST_CHECK(cache.ContainsKey(key));
+
+    int32_t valOut = cache.Get(key);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+
+    BOOST_CHECK(!cache.PutIfAbsent(key, valIn2));
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndPutIfAbsentBasicKeyValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache = client.GetCache<int32_t, std::string>("local");
+
+    int32_t key = 42;
+    std::string valIn1 = "Lorem ipsum";
+    std::string valIn2 = "Test";
+
+    std::string valOut = cache.GetAndPutIfAbsent(key, valIn1);
+
+    BOOST_CHECK(valOut.empty());
+    BOOST_CHECK(cache.ContainsKey(key));
+
+    cache.GetAndPutIfAbsent(key, valIn2, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndPutIfAbsentComplexValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, ignite::ComplexType> cache = client.GetCache<int32_t, ignite::ComplexType>("local");
+
+    int32_t key = 42;
+
+    ignite::ComplexType valIn1;
+    valIn1.i32Field = 123;
+    valIn1.strField = "Test value";
+    valIn1.objField.f1 = 42;
+    valIn1.objField.f2 = "Inner value";
+
+    ignite::ComplexType valIn2;
+    valIn2.i32Field = 4234;
+    valIn2.strField = "Some";
+    valIn2.objField.f1 = 654;
+    valIn2.objField.f2 = "Lorem";
+
+    ignite::ComplexType valOut = cache.GetAndPutIfAbsent(key, valIn1);
+
+    BOOST_CHECK(cache.ContainsKey(key));
+
+    cache.GetAndPutIfAbsent(key, valIn2, valOut);
+
+    BOOST_CHECK_EQUAL(valIn1.i32Field, valOut.i32Field);
+    BOOST_CHECK_EQUAL(valIn1.strField, valOut.strField);
+    BOOST_CHECK_EQUAL(valIn1.objField.f1, valOut.objField.f1);
+    BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut.objField.f2);
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valIn1.i32Field, valOut.i32Field);
+    BOOST_CHECK_EQUAL(valIn1.strField, valOut.strField);
+    BOOST_CHECK_EQUAL(valIn1.objField.f1, valOut.objField.f1);
+    BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut.objField.f2);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndPutIfAbsentComplexKey)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::ComplexType, int32_t> cache = client.GetCache<ignite::ComplexType, int32_t>("local");
+
+    ignite::ComplexType key;
+
+    key.i32Field = 123;
+    key.strField = "Test value";
+    key.objField.f1 = 42;
+    key.objField.f2 = "Inner value";
+
+    int32_t valIn1 = 123;
+    int32_t valIn2 = 321;
+
+    int32_t valOut = cache.GetAndPutIfAbsent(key, valIn1);
+
+    BOOST_CHECK_EQUAL(valOut, 0);
+    BOOST_CHECK(cache.ContainsKey(key));
+
+    cache.GetAndPutIfAbsent(key, valIn2, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, valIn1);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

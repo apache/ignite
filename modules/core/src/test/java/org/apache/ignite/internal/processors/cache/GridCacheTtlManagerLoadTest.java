@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -36,6 +37,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoad() throws Exception {
         cacheMode = REPLICATED;
 

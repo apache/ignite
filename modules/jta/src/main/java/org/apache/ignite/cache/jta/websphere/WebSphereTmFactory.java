@@ -201,7 +201,6 @@ public class WebSphereTmFactory implements Factory<TransactionManager> {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("SimplifiableIfStatement")
         @Override public boolean enlistResource(final XAResource xaRes) throws RollbackException, IllegalStateException,
             SystemException {
             if (xaRes == null)

@@ -28,7 +28,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * The basic listener for custom log contents checking in {@link ListeningTestLogger}.<br><br>
@@ -66,9 +65,9 @@ public abstract class LogListener implements Consumer<String> {
     /**
      * Checks that all conditions are met.
      *
-     * @throws AssertionError If some condition failed.
+     * @return {@code True} if all conditions are met.
      */
-    public abstract void check() throws AssertionError;
+    public abstract boolean check();
 
     /**
      * Reset listener state.
@@ -122,7 +121,7 @@ public abstract class LogListener implements Consumer<String> {
          * @return current builder instance.
          */
         public Builder andMatches(String substr) {
-            addLast(new Node(substr, msg -> {
+            addLast(new Node(msg -> {
                 if (substr.isEmpty())
                     return msg.isEmpty() ? 1 : 0;
 
@@ -144,7 +143,7 @@ public abstract class LogListener implements Consumer<String> {
          * @return current builder instance.
          */
         public Builder andMatches(Pattern regexp) {
-            addLast(new Node(regexp.toString(), msg -> {
+            addLast(new Node(msg -> {
                 int cnt = 0;
 
                 Matcher matcher = regexp.matcher(msg);
@@ -165,7 +164,7 @@ public abstract class LogListener implements Consumer<String> {
          * @return current builder instance.
          */
         public Builder andMatches(Predicate<String> pred) {
-            addLast(new Node(null, msg -> pred.test(msg) ? 1 : 0));
+            addLast(new Node(msg -> pred.test(msg) ? 1 : 0));
 
             return this;
         }
@@ -222,19 +221,6 @@ public abstract class LogListener implements Consumer<String> {
         }
 
         /**
-         * Set custom message for assertion error.
-         *
-         * @param msg Custom message.
-         * @return current builder instance.
-         */
-        public Builder orError(String msg) {
-            if (prev != null)
-                prev.msg = msg;
-
-            return this;
-        }
-
-        /**
          * Constructs message listener.
          *
          * @return Log message listener.
@@ -263,13 +249,7 @@ public abstract class LogListener implements Consumer<String> {
          */
         static final class Node {
             /** */
-            final String subj;
-
-            /** */
             final Function<String, Integer> func;
-
-            /** */
-            String msg;
 
             /** */
             Integer min;
@@ -281,8 +261,7 @@ public abstract class LogListener implements Consumer<String> {
             Integer cnt;
 
             /** */
-            Node(String subj, Function<String, Integer> func) {
-                this.subj = subj;
+            Node(Function<String, Integer> func) {
                 this.func = func;
             }
 
@@ -297,7 +276,7 @@ public abstract class LogListener implements Consumer<String> {
                 else
                     range = ValueRange.of(min == null ? 0 : min, max == null ? Integer.MAX_VALUE : max);
 
-                return new LogMessageListener(func, range, subj, msg);
+                return new LogMessageListener(func, range);
             }
         }
     }
@@ -316,28 +295,13 @@ public abstract class LogListener implements Consumer<String> {
         /** */
         private final ValueRange exp;
 
-        /** */
-        private final String subj;
-
-        /** */
-        private final String errMsg;
-
         /**
-         * @param subj Search subject.
          * @param exp Expected occurrences.
          * @param func Function of counting matches in the message.
-         * @param errMsg Custom error message.
          */
-        private LogMessageListener(
-            @NotNull Function<String, Integer> func,
-            @NotNull ValueRange exp,
-            @Nullable String subj,
-            @Nullable String errMsg
-        ) {
+        private LogMessageListener(@NotNull Function<String, Integer> func, @NotNull ValueRange exp) {
             this.func = func;
             this.exp = exp;
-            this.subj = subj == null ? func.toString() : subj;
-            this.errMsg = errMsg;
         }
 
         /** {@inheritDoc} */
@@ -350,7 +314,8 @@ public abstract class LogListener implements Consumer<String> {
 
                 if (cnt > 0)
                     matches.addAndGet(cnt);
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 err.compareAndSet(null, t);
 
                 if (t instanceof VirtualMachineError)
@@ -359,18 +324,12 @@ public abstract class LogListener implements Consumer<String> {
         }
 
         /** {@inheritDoc} */
-        @Override public void check() {
+        @Override public boolean check() {
             errCheck();
 
             int matchesCnt = matches.get();
 
-            if (!exp.isValidIntValue(matchesCnt)) {
-                String err =  errMsg != null ? errMsg :
-                    "\"" + subj + "\" matches " + matchesCnt + " times, expected: " +
-                        (exp.getMaximum() == exp.getMinimum() ? exp.getMinimum() : exp) + ".";
-
-                throw new AssertionError(err);
-            }
+            return exp.isValidIntValue(matchesCnt);
         }
 
         /** {@inheritDoc} */
@@ -385,10 +344,10 @@ public abstract class LogListener implements Consumer<String> {
             Throwable t = err.get();
 
             if (t instanceof Error)
-                throw (Error) t;
+                throw (Error)t;
 
             if (t instanceof RuntimeException)
-                throw (RuntimeException) t;
+                throw (RuntimeException)t;
 
             assert t == null : t;
         }
@@ -400,9 +359,12 @@ public abstract class LogListener implements Consumer<String> {
         private final List<LogMessageListener> lsnrs = new ArrayList<>();
 
         /** {@inheritDoc} */
-        @Override public void check() {
+        @Override public boolean check() {
             for (LogMessageListener lsnr : lsnrs)
-                lsnr.check();
+                if (!lsnr.check())
+                    return false;
+
+            return true;
         }
 
         /** {@inheritDoc} */

@@ -17,9 +17,7 @@
 
 package org.apache.ignite.ml.nn.performance;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -33,6 +31,10 @@ import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
 
@@ -61,8 +63,8 @@ public class MLPTrainerMnistTest {
             LossFunctions.MSE,
             new UpdatesStrategy<>(
                 new RPropUpdateCalculator(),
-                RPropParameterUpdate::sum,
-                RPropParameterUpdate::avg
+                RPropParameterUpdate.SUM,
+                RPropParameterUpdate.AVG
             ),
             200,
             2000,
@@ -75,8 +77,10 @@ public class MLPTrainerMnistTest {
         MultilayerPerceptron mdl = trainer.fit(
             trainingSet,
             1,
-            (k, v) -> VectorUtils.of(v.getPixels()),
-            (k, v) -> VectorUtils.num2Vec(v.getLabel(), 10).getStorage().data()
+            FeatureLabelExtractorWrapper.wrap(
+                (k, v) -> VectorUtils.of(v.getPixels()),
+                (k, v) -> VectorUtils.oneHot(v.getLabel(), 10).getStorage().data()
+            )
         );
         System.out.println("Training completed in " + (System.currentTimeMillis() - start) + "ms");
 
@@ -84,10 +88,10 @@ public class MLPTrainerMnistTest {
         int incorrectAnswers = 0;
 
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(10_000)) {
-            Matrix input = new DenseMatrix(new double[][]{e.getPixels()});
-            Matrix outputMatrix = mdl.apply(input);
+            Matrix input = new DenseMatrix(new double[][] {e.getPixels()});
+            Matrix outputMatrix = mdl.predict(input);
 
-            int predicted = (int) VectorUtils.vec2Num(outputMatrix.getRow(0));
+            int predicted = (int)VectorUtils.vec2Num(outputMatrix.getRow(0));
 
             if (predicted == e.getLabel())
                 correctAnswers++;

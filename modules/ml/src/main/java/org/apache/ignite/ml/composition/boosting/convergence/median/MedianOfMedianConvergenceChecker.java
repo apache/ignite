@@ -17,18 +17,19 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence.median;
 
-import java.util.Arrays;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+
+import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * Use median of median on partitions value of errors for estimating error on dataset. This algorithm may be less
@@ -37,7 +38,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public class MedianOfMedianConvergenceChecker<K, V> extends ConvergenceChecker<K, V> {
+public class MedianOfMedianConvergenceChecker<K, V, C extends Serializable> extends ConvergenceChecker<K, V, C> {
     /** Serial version uid. */
     private static final long serialVersionUID = 4902502002933415287L;
 
@@ -48,19 +49,18 @@ public class MedianOfMedianConvergenceChecker<K, V> extends ConvergenceChecker<K
      * @param lblMapping External label to internal mapping.
      * @param loss Loss function.
      * @param datasetBuilder Dataset builder.
-     * @param fExtr Feature extractor.
-     * @param lbExtr Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param precision Precision.
      */
     public MedianOfMedianConvergenceChecker(long sampleSize, IgniteFunction<Double, Double> lblMapping, Loss loss,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> fExtr,
-        IgniteBiFunction<K, V, Double> lbExtr, double precision) {
+        DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> vectorizer, double precision) {
 
-        super(sampleSize, lblMapping, loss, datasetBuilder, fExtr, lbExtr, precision);
+        super(sampleSize, lblMapping, loss, datasetBuilder, vectorizer, precision);
     }
 
     /** {@inheritDoc} */
-    @Override public Double computeMeanErrorOnDataset(Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset,
+    @Override public Double computeMeanErrorOnDataset(
+        Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset,
         ModelsComposition mdl) {
 
         double[] medians = dataset.compute(
@@ -68,7 +68,7 @@ public class MedianOfMedianConvergenceChecker<K, V> extends ConvergenceChecker<K
             this::reduce
         );
 
-        if(medians == null)
+        if (medians == null)
             return Double.POSITIVE_INFINITY;
         return getMedian(medians);
     }
@@ -78,7 +78,7 @@ public class MedianOfMedianConvergenceChecker<K, V> extends ConvergenceChecker<K
      *
      * @param mdl Model.
      * @param data Data.
-     * @return median value.
+     * @return Median value.
      */
     private double[] computeMedian(ModelsComposition mdl, FeatureMatrixWithLabelsOnHeapData data) {
         double[] errors = new double[data.getLabels().length];
@@ -91,10 +91,10 @@ public class MedianOfMedianConvergenceChecker<K, V> extends ConvergenceChecker<K
      * Compute median value on array of errors.
      *
      * @param errors Error values.
-     * @return median value of errors.
+     * @return Median value of errors.
      */
     private double getMedian(double[] errors) {
-        if(errors.length == 0)
+        if (errors.length == 0)
             return Double.POSITIVE_INFINITY;
 
         Arrays.sort(errors);
@@ -110,12 +110,12 @@ public class MedianOfMedianConvergenceChecker<K, V> extends ConvergenceChecker<K
      *
      * @param left Left partition.
      * @param right Right partition.
-     * @return merged median values.
+     * @return Merged median values.
      */
     private double[] reduce(double[] left, double[] right) {
         if (left == null)
             return right;
-        if(right == null)
+        if (right == null)
             return left;
 
         double[] res = new double[left.length + right.length];

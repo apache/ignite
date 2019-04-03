@@ -24,7 +24,10 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerDataTypes;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Various ODBC utility methods.
@@ -54,6 +57,32 @@ public class OdbcUtils {
             return str.substring(1, str.length() - 1);
 
         return str;
+    }
+
+    /**
+     * Pre-process table or column pattern.
+     *
+     * @param ptrn Pattern to pre-process.
+     * @return Processed pattern.
+     */
+    public static String preprocessPattern(String ptrn) {
+        if (F.isEmpty(ptrn))
+            return ptrn;
+
+        String ptrn0 = removeQuotationMarksIfNeeded(ptrn.toUpperCase());
+
+        return SqlListenerUtils.translateSqlWildcardsToRegex(ptrn0);
+    }
+
+    /**
+     * Prepare client's schema for processing.
+     * @param schema Schema.
+     * @return Prepared schema.
+     */
+    public static String prepareSchema(String schema) {
+        String schema0 = removeQuotationMarksIfNeeded(schema);
+
+        return F.isEmpty(schema0) ? QueryUtils.DFLT_SCHEMA : schema0;
     }
 
     /**
@@ -173,6 +202,7 @@ public class OdbcUtils {
         String msg = err.getMessage();
 
         Throwable e = err.getCause();
+
         while (e != null) {
             if (e.getClass().getCanonicalName().equals("org.h2.jdbc.JdbcSQLException")) {
                 msg = e.getMessage();

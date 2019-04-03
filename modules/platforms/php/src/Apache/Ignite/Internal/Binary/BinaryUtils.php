@@ -203,6 +203,9 @@ class BinaryUtils
             $actualTypeCode === ObjectType::BINARY_OBJECT &&
             $expectedTypeCode === ObjectType::COMPLEX_OBJECT) {
             return;
+        } elseif ($expectedTypeCode === ObjectType::ENUM &&
+            $actualTypeCode === ObjectType::BINARY_ENUM) {
+            return;
         } elseif ($actualTypeCode !== $expectedTypeCode) {
             BinaryUtils::typeCastError($actualTypeCode, $expectedTypeCode);
         }
@@ -413,6 +416,15 @@ class BinaryUtils
     public static function serializationError(bool $serialize, string $message = null): void
     {
         $msg = $serialize ? 'Complex object can not be serialized' : 'Complex object can not be deserialized';
+        if ($message) {
+            $msg = $msg . ': ' . $message;
+        }
+        throw new ClientException($msg);
+    }
+
+    public static function enumSerializationError(bool $serialize, string $message = null): void
+    {
+        $msg = $serialize ? 'Enum item can not be serialized' : 'Enum item can not be deserialized';
         if ($message) {
             $msg = $msg . ': ' . $message;
         }

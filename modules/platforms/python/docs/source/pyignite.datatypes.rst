@@ -11,6 +11,7 @@ Submodules
 
 .. toctree::
 
+   pyignite.datatypes.base
    pyignite.datatypes.binary
    pyignite.datatypes.cache_config
    pyignite.datatypes.cache_properties

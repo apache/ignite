@@ -158,7 +158,6 @@ public class GridifySetToSetAbstractAspect {
      * @param taskRes Result of last task execution.
      * @return Calculation result.
      */
-    @SuppressWarnings({"unchecked"})
     private Object result(Class<?> cls, Iterable taskRes) {
         assert taskRes != null;
 

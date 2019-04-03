@@ -63,8 +63,9 @@ public class SqlSystemViewBaselineNodes extends SqlAbstractLocalSystemView {
 
         for (Object consistentId : consistentIds) {
             rows.add(
-                createRow(ses, rows.size(),
-                    consistentId,
+                createRow(
+                    ses,
+                    toStringSafe(consistentId),
                     aliveNodeIds.contains(consistentId)
                 )
             );

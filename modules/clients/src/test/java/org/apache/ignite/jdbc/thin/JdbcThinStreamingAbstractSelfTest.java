@@ -32,7 +32,6 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests for streaming via thin driver.
@@ -96,6 +96,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStreamedBatchedInsert() throws Exception {
         for (int i = 10; i <= 100; i += 10)
             put(i, nameForId(i * 100));
@@ -132,6 +133,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
     /**
      * @throws SQLException if failed.
      */
+    @Test
     public void testSimultaneousStreaming() throws Exception {
         try (Connection anotherConn = createOrdinaryConnection()) {
             execute(anotherConn, "CREATE TABLE PUBLIC.T(x int primary key, y int) WITH " +
@@ -212,6 +214,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
     /**
      *
      */
+    @Test
     public void testStreamingWithMixedStatementTypes() throws Exception {
         String prepStmtStr = "insert into Person(\"id\", \"name\") values (?, ?)";
 
@@ -268,6 +271,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
     /**
      * @throws SQLException if failed.
      */
+    @Test
     public void testStreamingOffToOn() throws Exception {
         try (Connection conn = createOrdinaryConnection()) {
             assertStreamingState(false);
@@ -281,6 +285,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
     /**
      * @throws SQLException if failed.
      */
+    @Test
     public void testStreamingOffToOff() throws Exception {
         try (Connection conn = createOrdinaryConnection()) {
             assertStreamingState(false);
@@ -294,6 +299,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
     /**
      * @throws SQLException if failed.
      */
+    @Test
     public void testStreamingOnToOff() throws Exception {
         try (Connection conn = createStreamedConnection(false)) {
             assertStreamingState(true);
@@ -307,6 +313,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
     /**
      * @throws SQLException if failed.
      */
+    @Test
     public void testFlush() throws Exception {
         try (Connection conn = createStreamedConnection(false, 10000)) {
             assertStreamingState(true);
@@ -337,6 +344,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
     /**
      * @throws SQLException if failed.
      */
+    @Test
     public void testStreamingReEnabled() throws Exception {
         try (Connection conn = createStreamedConnection(false, 10000)) {
             assertStreamingState(true);
@@ -381,6 +389,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
      *
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testNonStreamedBatch() {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -407,6 +416,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
      *
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testStreamingStatementInTheMiddleOfNonPreparedBatch() {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -428,6 +438,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
      *
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testBatchingSetStreamingStatement() {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -505,12 +516,24 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
         }
 
         /** {@inheritDoc} */
-        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
-            GridQueryCancel cancel) {
+        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(
+            String schemaName,
+            SqlFieldsQuery qry,
+            @Nullable SqlClientContext cliCtx,
+            boolean keepBinary,
+            boolean failOnMultipleStmts,
+            GridQueryCancel cancel
+        ) {
             IndexingWithContext.cliCtx = cliCtx;
 
-            return super.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, tracker, cancel);
+            return super.querySqlFields(
+                schemaName,
+                qry,
+                cliCtx,
+                keepBinary,
+                failOnMultipleStmts,
+                cancel
+            );
         }
     }
 }

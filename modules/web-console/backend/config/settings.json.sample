@@ -1,23 +1,36 @@
 {
-    "server": {
-        "port": 3000,
-        "sessionSecret": "CHANGE ME",
-        "ssl": false,
-        "key": "serve/keys/test.key",
-        "cert": "serve/keys/test.crt",
-        "keyPassphrase": "password"
-    },
-    "mongodb": {
-        "url": "mongodb://localhost/console"
-    },
-    "mail": {
-        "service": "",
-        "from": "Some Company Web Console <some_username@some_company.com>",
-        "greeting": "Some Company Web Console",
-        "sign": "Kind regards,<br>Some Company Team",
-        "auth": {
-            "user": "some_username@some_company.com",
-            "pass": ""
-        }
+  "server": {
+    "port": 3000,
+    "sessionSecret": "CHANGE ME",
+    "ssl": false,
+    "key": "path to file with server.key",
+    "cert": "path to file with server.crt",
+    "ca": "path to file with ca.crt",
+    "passphrase": "password",
+    "ciphers": "ECDHE-RSA-AES128-GCM-SHA256",
+    "secureProtocol": "TLSv1_2_method",
+    "requestCert": false,
+    "rejectUnauthorized": false,
+    "disable": {
+      "signup": false
     }
+  },
+  "mongodb": {
+    "url": "mongodb://localhost/console"
+  },
+  "activation": {
+      "enabled": false,
+      "timeout": 1800000,
+      "sendTimeout": 180000
+  },
+  "mail": {
+    "service": "gmail",
+    "from": "Some Company Web Console <some_username@some_company.com>",
+    "greeting": "Some Company Web Console",
+    "sign": "Kind regards,<br>Some Company Team",
+    "auth": {
+      "user": "some_username@some_company.com",
+      "pass": "CHANGE ME"
+    }
+  }
 }

@@ -17,43 +17,32 @@
 
 package org.apache.ignite.ml.tree.randomforest;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
-import org.apache.ignite.ml.tree.randomforest.data.NodeId;
-import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
-import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
-import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
+import org.apache.ignite.ml.tree.randomforest.data.*;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityComputer;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityHistogramsComputer;
 import org.apache.ignite.ml.tree.randomforest.data.statistics.LeafValuesComputer;
 import org.apache.ignite.ml.tree.randomforest.data.statistics.NormalDistributionStatistics;
 import org.apache.ignite.ml.tree.randomforest.data.statistics.NormalDistributionStatisticsComputer;
+
+import java.io.Serializable;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Class represents a realization of Random Forest algorithm. Main idea of this realization is that at each learning
@@ -110,12 +99,13 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    @Override public <K, V, C extends Serializable> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
         List<TreeRoot> models = null;
         try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
+            envBuilder,
             new EmptyContextBuilder<>(),
-            new BootstrappedDatasetBuilder<>(featureExtractor, lbExtractor, amountOfTrees, subSampleSize))) {
+            new BootstrappedDatasetBuilder<>(extractor, amountOfTrees, subSampleSize))) {
 
             if(!init(dataset))
                 return buildComposition(Collections.emptyList());
@@ -238,17 +228,17 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(ModelsComposition mdl) {
+    @Override public boolean isUpdateable(ModelsComposition mdl) {
         ModelsComposition fakeComposition = buildComposition(Collections.emptyList());
         return mdl.getPredictionsAggregator().getClass() == fakeComposition.getPredictionsAggregator().getClass();
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    @Override protected <K, V, C extends Serializable> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
 
-        ArrayList<Model<Vector, Double>> oldModels = new ArrayList<>(mdl.getModels());
-        ModelsComposition newModels = fit(datasetBuilder, featureExtractor, lbExtractor);
+        ArrayList<IgniteModel<Vector, Double>> oldModels = new ArrayList<>(mdl.getModels());
+        ModelsComposition newModels = fit(datasetBuilder, extractor);
         oldModels.addAll(newModels.getModels());
 
         return new ModelsComposition(oldModels, mdl.getPredictionsAggregator());

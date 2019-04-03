@@ -17,17 +17,19 @@
 
 package org.apache.ignite.ml.svm;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * Tests for {@link SVMLinearBinaryClassificationTrainer}.
+ * Tests for {@link SVMLinearClassificationTrainer}.
  */
 public class SVMBinaryTrainerTest extends TrainerTest {
     /**
@@ -40,18 +42,16 @@ public class SVMBinaryTrainerTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
-        SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer()
+        SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer()
             .withSeed(1234L);
 
-        SVMLinearBinaryClassificationModel mdl = trainer.fit(
-            cacheMock,
-            parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+        SVMLinearClassificationModel mdl = trainer.fit(
+            cacheMock, parts,
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
 
-        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+        TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
     }
 
     /** */
@@ -62,35 +62,32 @@ public class SVMBinaryTrainerTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
-        SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer()
+        SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer()
             .withAmountOfIterations(1000)
             .withSeed(1234L);
 
-        SVMLinearBinaryClassificationModel originalMdl = trainer.fit(
-            cacheMock,
-            parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+        SVMLinearClassificationModel originalMdl = trainer.fit(
+            cacheMock, parts,
+            vectorizer
         );
 
-        SVMLinearBinaryClassificationModel updatedOnSameDS = trainer.update(
+        SVMLinearClassificationModel updatedOnSameDS = trainer.update(
             originalMdl,
             cacheMock,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            vectorizer
         );
 
-        SVMLinearBinaryClassificationModel updatedOnEmptyDS = trainer.update(
+        SVMLinearClassificationModel updatedOnEmptyDS = trainer.update(
             originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            vectorizer
         );
 
         Vector v = VectorUtils.of(100, 10);
-        TestUtils.assertEquals(originalMdl.apply(v), updatedOnSameDS.apply(v), PRECISION);
-        TestUtils.assertEquals(originalMdl.apply(v), updatedOnEmptyDS.apply(v), PRECISION);
+        TestUtils.assertEquals(originalMdl.predict(v), updatedOnSameDS.predict(v), PRECISION);
+        TestUtils.assertEquals(originalMdl.predict(v), updatedOnEmptyDS.predict(v), PRECISION);
     }
 }

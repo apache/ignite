@@ -21,21 +21,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-
 /**
  * File I/O factory which provides RandomAccessFileIO implementation of FileIO.
  */
 public class RandomAccessFileIOFactory implements FileIOFactory {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** {@inheritDoc} */
-    @Override public FileIO create(File file) throws IOException {
-        return create(file, CREATE, READ, WRITE);
-    }
 
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {

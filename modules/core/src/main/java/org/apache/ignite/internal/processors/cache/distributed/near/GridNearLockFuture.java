@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -148,11 +149,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     private final Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private volatile int done;
 
     /** Keys locked so far. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @GridToStringExclude
     private List<GridDistributedCacheEntry> entries;
 
@@ -448,7 +447,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param nodeId Left node ID
      * @return {@code True} if node was in the list.
      */
-    @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
@@ -576,7 +574,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
+    @SuppressWarnings({"IfMayBeConditional"})
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
@@ -847,7 +845,17 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
                 if (fut.exchangeDone() && fut.topologyVersion().equals(topVer)){
-                    Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
+                    Throwable err = null;
+
+                    // Before cache validation, make sure that this topology future is already completed.
+                    try {
+                        fut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        err = fut.error();
+                    }
+
+                    err = (err == null)? fut.validateCache(cctx, recovery, read, null, keys): err;
 
                     if (err != null) {
                         onDone(err);
@@ -886,7 +894,10 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         try {
             if (cctx.topology().stopping()) {
-                onDone(new CacheStoppedException(cctx.name()));
+                onDone(
+                    cctx.shared().cache().isCacheRestarting(cctx.name())?
+                        new IgniteCacheRestartingException(cctx.name()):
+                        new CacheStoppedException(cctx.name()));
 
                 return;
             }
@@ -1123,7 +1134,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                 keepBinary,
                                                 clientFirst,
                                                 true,
-                                                cctx.deploymentEnabled());
+                                                cctx.deploymentEnabled(),
+                                                inTx() ? tx.label() : null);
 
                                             mapping.request(req);
                                         }
@@ -1213,7 +1225,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      *
      * @throws IgniteCheckedException If mapping can not be completed.
      */
-    @SuppressWarnings("unchecked")
     private void proceedMapping0()
         throws IgniteCheckedException {
         GridNearLockMapping map;
@@ -1485,7 +1496,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         private Set<IgniteTxKey> requestedKeys;
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         @Override public void onTimeout() {
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);

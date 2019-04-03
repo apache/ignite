@@ -20,6 +20,7 @@ from math import ceil
 import uuid
 
 from pyignite.constants import *
+from .base import IgniteDataType
 from .type_codes import *
 from .null_object import Null
 
@@ -39,7 +40,7 @@ __all__ = [
 ]
 
 
-class StandardObject:
+class StandardObject(IgniteDataType):
     type_code = None
 
     @classmethod
@@ -58,7 +59,7 @@ class StandardObject:
         return c_type, buffer
 
 
-class String:
+class String(IgniteDataType):
     """
     Pascal-style string: `c_int` counter, followed by count*bytes.
     UTF-8-encoded, so that one character may take 1 to 4 bytes.
@@ -125,7 +126,7 @@ class String:
         return bytes(data_object)
 
 
-class DecimalObject:
+class DecimalObject(IgniteDataType):
     type_code = TC_DECIMAL
     pythonic = decimal.Decimal
     default = decimal.Decimal('0.00')
@@ -245,9 +246,15 @@ class UUIDObject(StandardObject):
     """
     Universally unique identifier (UUID), aka Globally unique identifier
     (GUID). Payload takes up 16 bytes.
+
+    Byte order in :py:meth:`~pyignite.datatypes.standard.UUIDObject.to_python`
+    and :py:meth:`~pyignite.datatypes.standard.UUIDObject.from_python` methods
+    is changed for compatibility with `java.util.UUID`.
     """
     type_code = TC_UUID
     _object_c_type = None
+
+    UUID_BYTE_ORDER = (7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8)
 
     @classmethod
     def build_c_type(cls):
@@ -273,7 +280,7 @@ class UUIDObject(StandardObject):
             cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
-        for i, byte in enumerate(bytearray(value.bytes)):
+        for i, byte in zip(cls.UUID_BYTE_ORDER, bytearray(value.bytes)):
             data_object.value[i] = byte
         return bytes(data_object)
 
@@ -284,7 +291,10 @@ class UUIDObject(StandardObject):
             byteorder=PROTOCOL_BYTE_ORDER
         ):
             return None
-        return uuid.UUID(bytes=bytes(ctypes_object.value))
+        uuid_array = bytearray(ctypes_object.value)
+        return uuid.UUID(
+            bytes=bytes([uuid_array[i] for i in cls.UUID_BYTE_ORDER])
+        )
 
 
 class TimestampObject(StandardObject):
@@ -511,7 +521,7 @@ class BinaryEnumObject(EnumObject):
     type_code = TC_BINARY_ENUM
 
 
-class StandardArray:
+class StandardArray(IgniteDataType):
     """
     Base class for array of primitives. Payload-only.
     """

@@ -166,7 +166,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     /**
      * @param evt Discovery event.
      */
-    @SuppressWarnings( {"unchecked"})
     public void onDiscoveryEvent(DiscoveryEvent evt) {
         topCntr.incrementAndGet();
 
@@ -192,7 +191,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     /**
      * @param res Response.
      */
-    @SuppressWarnings( {"unchecked"})
     public void onResult(GridDhtForceKeysResponse res) {
         for (IgniteInternalFuture<Object> f : futures())
             if (isMini(f)) {
@@ -237,6 +235,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         boolean ret = false;
 
         if (mappings != null) {
+            assert !cctx.mvccEnabled(); // Should not happen when MVCC enabled.
+
             ClusterNode loc = cctx.localNode();
 
             int curTopVer = topCntr.get();
@@ -552,8 +552,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                             false
                         )) {
                             if (rec && !entry.isInternal())
-                                cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
+                                cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
+                                    null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                     false, null, null, null, false);
                         }
                     }

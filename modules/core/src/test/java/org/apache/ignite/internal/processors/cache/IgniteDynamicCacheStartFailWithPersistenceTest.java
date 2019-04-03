@@ -25,6 +25,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
+
 /**
  * Tests the recovery after a dynamic cache start failure, with enabled persistence.
  */
@@ -34,6 +36,7 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
         return 5 * 60 * 1000;
     }
 
+    /** {@inheritDoc} */
     @Override protected boolean persistenceEnabled() {
         return true;
     }
@@ -56,6 +59,8 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
         cleanPersistenceDir();
 
         startGrids(gridCount());
@@ -72,6 +77,8 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
         super.afterTestsStopped();
 
         cleanPersistenceDir();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */

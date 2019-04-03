@@ -17,14 +17,20 @@
 
 package org.apache.ignite.ml.dataset.impl.bootstrapping;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import org.apache.commons.math3.distribution.PoissonDistribution;
+import org.apache.commons.math3.random.Well19937c;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
+
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  * Builder for bootstrapped dataset. Bootstrapped dataset consist of several subsamples created in according to random
@@ -39,11 +45,8 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
     /** Serial version uid. */
     private static final long serialVersionUID = 8146220902914010559L;
 
-    /** Feature extractor. */
-    private final IgniteBiFunction<K, V, Vector> featureExtractor;
-
-    /** Label extractor. */
-    private final IgniteBiFunction<K, V, Double> lbExtractor;
+    /** Mapper of upstream entries into {@link LabeledVector}. */
+    private final FeatureLabelExtractor<K, V, Double> extractor;
 
     /** Samples count. */
     private final int samplesCnt;
@@ -54,32 +57,38 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
     /**
      * Creates an instance of BootstrappedDatasetBuilder.
      *
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param extractor Mapper of upstream entries into {@link LabeledVector}.
      * @param samplesCnt Samples count.
      * @param subsampleSize Subsample size.
      */
-    public BootstrappedDatasetBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor, int samplesCnt, double subsampleSize) {
-
-        this.featureExtractor = featureExtractor;
-        this.lbExtractor = lbExtractor;
+    public <C extends Serializable> BootstrappedDatasetBuilder(Vectorizer<K, V, C, Double> extractor, int samplesCnt, double subsampleSize) {
+        this.extractor = extractor;
         this.samplesCnt = samplesCnt;
         this.subsampleSize = subsampleSize;
     }
 
     /** {@inheritDoc} */
-    @Override public BootstrappedDatasetPartition build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
+    @Override public BootstrappedDatasetPartition build(
+        LearningEnvironment env,
+        Iterator<UpstreamEntry<K, V>> upstreamData,
+        long upstreamDataSize,
         EmptyContext ctx) {
 
         BootstrappedVector[] dataset = new BootstrappedVector[Math.toIntExact(upstreamDataSize)];
 
         int cntr = 0;
-        PoissonDistribution poissonDistribution = new PoissonDistribution(subsampleSize);
+
+        PoissonDistribution poissonDistribution = new PoissonDistribution(
+            new Well19937c(env.randomNumbersGenerator().nextLong()),
+            subsampleSize,
+            PoissonDistribution.DEFAULT_EPSILON,
+            PoissonDistribution.DEFAULT_MAX_ITERATIONS);
+
         while(upstreamData.hasNext()) {
             UpstreamEntry<K, V> nextRow = upstreamData.next();
-            Vector features = featureExtractor.apply(nextRow.getKey(), nextRow.getValue());
-            Double lb = lbExtractor.apply(nextRow.getKey(), nextRow.getValue());
+            LabeledVector<Double> vecAndLb = extractor.extract(nextRow.getKey(), nextRow.getValue());
+            Vector features = vecAndLb.features();
+            Double lb = vecAndLb.label();
             int[] repetitionCounters = new int[samplesCnt];
             Arrays.setAll(repetitionCounters, i -> poissonDistribution.sample());
             dataset[cntr++] = new BootstrappedVector(features, lb, repetitionCounters);

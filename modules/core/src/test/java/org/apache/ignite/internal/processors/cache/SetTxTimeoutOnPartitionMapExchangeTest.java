@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -41,14 +40,12 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.TransactionsMXBean;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -58,9 +55,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Wait condition timeout. */
     private static final long WAIT_CONDITION_TIMEOUT = 10_000L;
 
@@ -71,19 +65,10 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        return cfg;
-    }
-
     /**
      *
      */
+    @Test
     public void testDefaultTxTimeoutOnPartitionMapExchange() throws Exception {
         IgniteEx ig1 = startGrid(1);
         IgniteEx ig2 = startGrid(2);
@@ -100,6 +85,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
     /**
      *
      */
+    @Test
     public void testJmxSetTxTimeoutOnPartitionMapExchange() throws Exception {
         startGrid(1);
         startGrid(2);
@@ -122,6 +108,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
     /**
      *
      */
+    @Test
     public void testClusterSetTxTimeoutOnPartitionMapExchange() throws Exception {
         Ignite ig1 = startGrid(1);
         Ignite ig2 = startGrid(2);
@@ -141,6 +128,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testSetTxTimeoutDuringPartitionMapExchange() throws Exception {
         IgniteEx ig = (IgniteEx) startGrids(2);
 
@@ -152,6 +140,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testSetTxTimeoutOnClientDuringPartitionMapExchange() throws Exception {
         IgniteEx ig = (IgniteEx) startGrids(2);
         IgniteEx client = startGrid(getConfiguration("client").setClientMode(true));

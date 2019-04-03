@@ -18,6 +18,8 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerClientSelfTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  *
@@ -29,7 +31,9 @@ public class CacheMvccContinuousWithTransformerClientSelfTest extends CacheConti
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
+    @Test
     @Override public void testExpired() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
+        // No-op.
     }
 }

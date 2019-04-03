@@ -30,7 +30,7 @@ import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 
 /**
@@ -66,13 +66,13 @@ public class Step_5_Scaling_with_Pipeline {
                 PipelineMdl<Integer, Object[]> mdl = new Pipeline<Integer, Object[], Object[]>()
                     .addFeatureExtractor(featureExtractor)
                     .addLabelExtractor(lbExtractor)
-                    .addPreprocessor(new EncoderTrainer<Integer, Object[]>()
+                    .addPreprocessingTrainer(new EncoderTrainer<Integer, Object[]>()
                         .withEncoderType(EncoderType.STRING_ENCODER)
                         .withEncodedFeature(1)
                         .withEncodedFeature(6))
-                    .addPreprocessor(new ImputerTrainer<Integer, Object[]>())
-                    .addPreprocessor(new MinMaxScalerTrainer<Integer, Object[]>())
-                    .addPreprocessor(new NormalizationTrainer<Integer, Object[]>()
+                    .addPreprocessingTrainer(new ImputerTrainer<Integer, Object[]>())
+                    .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Object[]>())
+                    .addPreprocessingTrainer(new NormalizationTrainer<Integer, Object[]>()
                         .withP(1))
                     .addTrainer(new DecisionTreeClassificationTrainer(5, 0))
                     .fit(ignite, dataCache);

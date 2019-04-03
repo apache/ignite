@@ -22,6 +22,8 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -31,7 +33,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  *
  */
 public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
-
     /** {@inheritDoc} */
     @Override @NotNull protected CacheReadBackgroundOperation<?, ?> getReadOperation() {
         return new CacheReadBackgroundOperation<Integer, TestingEntity>() {
@@ -95,37 +96,81 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Test
     @Override public void testStartServerAtomicPartitioned() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Test
     @Override public void testStartServerTransactionalPartitioned() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Test
     @Override public void testStopServerAtomicPartitioned() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Test
     @Override public void testStopServerTransactionalPartitioned() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Test
     @Override public void testStopBaselineAtomicPartitioned() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Test
     @Override public void testStopBaselineTransactionalPartitioned() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Test
+    @Override public void testStartClientAtomicPartitioned() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Test
+    @Override public void testStartClientTransactionalPartitioned() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Test
+    @Override public void testStopClientAtomicPartitioned() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Test
+    @Override public void testStopClientTransactionalPartitioned() {
+        // No-op.
     }
 }

@@ -29,7 +29,9 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 
@@ -66,35 +68,28 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @WithSystemProperty(key = IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, value = "true")
     public void testSkipCheckConsistencyFlagEnabled() throws Exception {
-        String backup = System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "true");
+        // Wrong usage of Ignite (done only in test purposes).
+        binaryCfg = null;
 
-        try {
-            // Wrong usage of Ignite (done only in test purposes).
-            binaryCfg = null;
+        startGrid(0);
 
-            startGrid(0);
+        binaryCfg = new BinaryConfiguration();
 
-            binaryCfg = new BinaryConfiguration();
+        startGrid(1);
 
-            startGrid(1);
+        isClient = true;
+        binaryCfg = customConfig(true);
 
-            isClient = true;
-            binaryCfg = customConfig(true);
-
-            startGrid(2);
-        }
-        finally {
-            if (backup != null)
-                System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, backup);
-            else
-                System.clearProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
-        }
+        startGrid(2);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPositiveNullConfig() throws Exception {
         binaryCfg = null;
 
@@ -108,6 +103,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPositiveEmptyConfig() throws Exception {
         binaryCfg = new BinaryConfiguration();
 
@@ -121,6 +117,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPositiveCustomConfig() throws Exception {
         binaryCfg = customConfig(false);
 
@@ -134,6 +131,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeNullEmptyConfigs() throws Exception {
         checkNegative(null, new BinaryConfiguration());
     }
@@ -141,6 +139,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeEmptyNullConfigs() throws Exception {
         checkNegative(new BinaryConfiguration(), null);
     }
@@ -148,6 +147,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeEmptyCustomConfigs() throws Exception {
         checkNegative(new BinaryConfiguration(), customConfig(false));
     }
@@ -156,6 +156,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeCustomNullConfigs() throws Exception {
         checkNegative(customConfig(false), null);
     }

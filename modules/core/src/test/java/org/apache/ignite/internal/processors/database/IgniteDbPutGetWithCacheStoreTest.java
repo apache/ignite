@@ -31,7 +31,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -77,6 +79,13 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.beforeTest();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         cleanPersistenceDir();
 
@@ -93,6 +102,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWriteThrough() throws Exception {
         checkWriteThrough(ATOMIC);
         checkWriteThrough(TRANSACTIONAL);
@@ -101,6 +111,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadThrough() throws Exception {
         checkReadThrough(ATOMIC);
         checkReadThrough(TRANSACTIONAL);

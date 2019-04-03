@@ -17,20 +17,15 @@
 
 package org.apache.ignite.ml.knn.ann;
 
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.List;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -41,6 +36,14 @@ import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
+
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 
 /**
  * ANN algorithm trainer to solve multi-class classification task. This trainer is based on ACD strategy and KMeans
@@ -59,40 +62,35 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     /** Distance measure. */
     private DistanceMeasure distance = new EuclideanDistance();
 
-    /** KMeans initializer. */
-    private long seed;
-
     /**
      * Trains model based on the specified data.
      *
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param extractor Mapping from upstream entry to {@link LabeledVector}.
      * @return Model.
      */
-    @Override public <K, V> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    @Override public <K, V, C extends Serializable> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
 
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> ANNClassificationModel updateModel(ANNClassificationModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+    @Override protected <K, V, C extends Serializable> ANNClassificationModel updateModel(ANNClassificationModel mdl,
+        DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> extractor) {
 
         List<Vector> centers;
         CentroidStat centroidStat;
         if (mdl != null) {
             centers = Arrays.stream(mdl.getCandidates().data()).map(x -> x.features()).collect(Collectors.toList());
-            CentroidStat newStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
-            if(newStat == null)
+            CentroidStat newStat = getCentroidStat(datasetBuilder, extractor, centers);
+            if (newStat == null)
                 return mdl;
             CentroidStat oldStat = mdl.getCentroindsStat();
             centroidStat = newStat.merge(oldStat);
         } else {
-            centers = getCentroids(featureExtractor, lbExtractor, datasetBuilder);
-            centroidStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
+            centers = getCentroids(extractor, datasetBuilder);
+            centroidStat = getCentroidStat(datasetBuilder, extractor, centers);
         }
 
         final LabeledVectorSet<ProbableLabel, LabeledVector> dataset = buildLabelsForCandidates(centers, centroidStat);
@@ -101,15 +99,21 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(ANNClassificationModel mdl) {
+    @Override public boolean isUpdateable(ANNClassificationModel mdl) {
         return mdl.getDistanceMeasure().equals(distance) && mdl.getCandidates().rowSize() == k;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ANNClassificationTrainer withEnvironmentBuilder(
+        LearningEnvironmentBuilder envBuilder) {
+        return (ANNClassificationTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 
     /** */
     @NotNull private LabeledVectorSet<ProbableLabel, LabeledVector> buildLabelsForCandidates(List<Vector> centers,
         CentroidStat centroidStat) {
         // init
-        final LabeledVector<Vector, ProbableLabel>[] arr = new LabeledVector[centers.size()];
+        final LabeledVector<ProbableLabel>[] arr = new LabeledVector[centers.size()];
 
         // fill label for each centroid
         for (int i = 0; i < centers.size(); i++)
@@ -121,28 +125,20 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     /**
      * Perform KMeans clusterization algorithm to find centroids.
      *
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param datasetBuilder The dataset builder.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return The arrays of vectors.
      */
-    private <K, V> List<Vector> getCentroids(IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor, DatasetBuilder<K, V> datasetBuilder) {
+    private <K, V, C extends Serializable> List<Vector> getCentroids(Vectorizer<K,V,C,Double> vectorizer, DatasetBuilder<K, V> datasetBuilder) {
         KMeansTrainer trainer = new KMeansTrainer()
             .withAmountOfClusters(k)
             .withMaxIterations(maxIterations)
-            .withSeed(seed)
             .withDistance(distance)
             .withEpsilon(epsilon);
 
-        KMeansModel mdl = trainer.fit(
-            datasetBuilder,
-            featureExtractor,
-            lbExtractor
-        );
-
+        KMeansModel mdl = trainer.fit(datasetBuilder, vectorizer);
         return Arrays.asList(mdl.getCenters());
     }
 
@@ -170,17 +166,15 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     }
 
     /** */
-    private <K, V> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor, List<Vector> centers) {
+    private <K, V, C extends Serializable> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> vectorizer,
+        List<Vector> centers) {
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
-            featureExtractor,
-            lbExtractor
-        );
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(vectorizer);
 
         try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
+            envBuilder,
+            (env, upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
             return dataset.compute(data -> {
@@ -323,26 +317,6 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      */
     public ANNClassificationTrainer withDistance(DistanceMeasure distance) {
         this.distance = distance;
-        return this;
-    }
-
-    /**
-     * Gets the seed number.
-     *
-     * @return The parameter value.
-     */
-    public long getSeed() {
-        return seed;
-    }
-
-    /**
-     * Set up the seed.
-     *
-     * @param seed The parameter value.
-     * @return Model with new seed parameter value.
-     */
-    public ANNClassificationTrainer withSeed(long seed) {
-        this.seed = seed;
         return this;
     }
 

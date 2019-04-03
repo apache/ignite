@@ -160,7 +160,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SimplifiableIfStatement")
     @Override public void readBinary(BinaryReaderExImpl reader,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.readBinary(reader, ver);
@@ -193,6 +192,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryExecuteRequest.class, this);
+        return S.toString(JdbcQueryExecuteRequest.class, this, super.toString());
     }
 }

@@ -17,23 +17,29 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.BiFunction;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.convergence.simple.ConvergenceCheckerStubFactory;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.BiFunction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -60,17 +66,16 @@ public class GDBTrainerTest extends TrainerTest {
         GDBTrainer trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0)
             .withUsingIdx(true);
 
-        Model<Vector, Double> mdl = trainer.fit(
+        IgniteModel<Vector, Double> mdl = trainer.fit(
             learningSample, 1,
-            (k, v) -> VectorUtils.of(v[0]),
-            (k, v) -> v[1]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         double mse = 0.0;
         for (int j = 0; j < size; j++) {
             double x = xs[j];
             double y = ys[j];
-            double p = mdl.apply(VectorUtils.of(x));
+            double p = mdl.predict(VectorUtils.of(x));
             mse += Math.pow(y - p, 2);
         }
         mse /= size;
@@ -78,9 +83,9 @@ public class GDBTrainerTest extends TrainerTest {
         assertEquals(0.0, mse, 0.0001);
 
         ModelsComposition composition = (ModelsComposition)mdl;
-        assertTrue(composition.toString().length() > 0);
-        assertTrue(composition.toString(true).length() > 0);
-        assertTrue(composition.toString(false).length() > 0);
+        assertTrue(!composition.toString().isEmpty());
+        assertTrue(!composition.toString(true).isEmpty());
+        assertTrue(!composition.toString(false).isEmpty());
 
         composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeConditionalNode));
 
@@ -88,11 +93,7 @@ public class GDBTrainerTest extends TrainerTest {
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
 
         trainer = trainer.withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.1));
-        assertTrue(trainer.fit(
-            learningSample, 1,
-            (k, v) -> VectorUtils.of(v[0]),
-            (k, v) -> v[1]
-        ).getModels().size() < 2000);
+        assertTrue(trainer.fit(learningSample, 1, new ArraysVectorizer<Integer>().labeled(1)).getModels().size() < 2000);
     }
 
     /** */
@@ -100,8 +101,7 @@ public class GDBTrainerTest extends TrainerTest {
     public void testFitClassifier() {
         testClassifier((trainer, learningSample) -> trainer.fit(
             learningSample, 1,
-            (k, v) -> VectorUtils.of(v[0]),
-            (k, v) -> v[1]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ));
     }
 
@@ -110,14 +110,13 @@ public class GDBTrainerTest extends TrainerTest {
     public void testFitClassifierWithLearningStrategy() {
         testClassifier((trainer, learningSample) -> trainer.fit(
             new LocalDatasetBuilder<>(learningSample, 1),
-            (k, v) -> VectorUtils.of(v[0]),
-            (k, v) -> v[1]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ));
     }
 
     /** */
     private void testClassifier(BiFunction<GDBTrainer, Map<Integer, double[]>,
-        Model<Vector, Double>> fitter) {
+        IgniteModel<Vector, Double>> fitter) {
         int sampleSize = 100;
         double[] xs = new double[sampleSize];
         double[] ys = new double[sampleSize];
@@ -135,13 +134,13 @@ public class GDBTrainerTest extends TrainerTest {
             .withUsingIdx(true)
             .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.3));
 
-        Model<Vector, Double> mdl = fitter.apply(trainer, learningSample);
+        IgniteModel<Vector, Double> mdl = fitter.apply(trainer, learningSample);
 
         int errorsCnt = 0;
         for (int j = 0; j < sampleSize; j++) {
             double x = xs[j];
             double y = ys[j];
-            double p = mdl.apply(VectorUtils.of(x));
+            double p = mdl.predict(VectorUtils.of(x));
             if (p != y)
                 errorsCnt++;
         }
@@ -192,18 +191,20 @@ public class GDBTrainerTest extends TrainerTest {
     private void testUpdate(Map<Integer, double[]> dataset, IgniteBiFunction<Integer, double[], Vector> fExtr,
         IgniteBiFunction<Integer, double[], Double> lExtr, GDBTrainer trainer) {
 
-        ModelsComposition originalMdl = trainer.fit(dataset, 1, fExtr, lExtr);
-        ModelsComposition updatedOnSameDataset = trainer.update(originalMdl, dataset, 1, fExtr, lExtr);
+        FeatureLabelExtractorWrapper<Integer, double[], ?, Double> vectorizer = FeatureLabelExtractorWrapper.wrap(fExtr, lExtr);
+        ModelsComposition originalMdl = trainer.fit(dataset, 1, vectorizer);
+        ModelsComposition updatedOnSameDataset = trainer.update(originalMdl, dataset, 1, vectorizer);
 
         LocalDatasetBuilder<Integer, double[]> epmtyDataset = new LocalDatasetBuilder<>(new HashMap<>(), 1);
-        ModelsComposition updatedOnEmptyDataset = trainer.updateModel(originalMdl, epmtyDataset, fExtr, lExtr);
+        FeatureLabelExtractor<Integer, double[], Double> extractor = (k, v) -> new LabeledVector<>(fExtr.apply(k, v), lExtr.apply(k, v));
+        ModelsComposition updatedOnEmptyDataset = trainer.updateModel(originalMdl, epmtyDataset, new FeatureLabelExtractorWrapper<>(extractor));
 
         dataset.forEach((k,v) -> {
             Vector features = fExtr.apply(k, v);
 
-            Double originalAnswer = originalMdl.apply(features);
-            Double updatedMdlAnswer1 = updatedOnSameDataset.apply(features);
-            Double updatedMdlAnswer2 = updatedOnEmptyDataset.apply(features);
+            Double originalAnswer = originalMdl.predict(features);
+            Double updatedMdlAnswer1 = updatedOnSameDataset.predict(features);
+            Double updatedMdlAnswer2 = updatedOnEmptyDataset.predict(features);
 
             assertEquals(originalAnswer, updatedMdlAnswer1, 0.01);
             assertEquals(originalAnswer, updatedMdlAnswer2, 0.01);

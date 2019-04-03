@@ -18,29 +18,32 @@
 package org.apache.ignite.examples.ml.dataset;
 
 import com.github.fommil.netlib.BLAS;
-import java.io.Serializable;
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.primitive.DatasetWrapper;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
+import java.io.Serializable;
+import java.util.Arrays;
+
 /**
- * Example that shows how to implement your own algorithm
- * (<a href="https://en.wikipedia.org/wiki/Gradient_descent">gradient</a> descent trainer for linear regression)
- * which uses dataset as an underlying infrastructure.
+ * Example that shows how to implement your own algorithm (<a href="https://en.wikipedia.org/wiki/Gradient_descent">gradient</a>
+ * descent trainer for linear regression) which uses dataset as an underlying infrastructure.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
  * <p>
- * After that it creates an algorithm specific dataset to perform linear regression as described in more detail below.</p>
+ * After that it creates an algorithm specific dataset to perform linear regression as described in more detail
+ * below.</p>
  * <p>
  * Finally, this example trains linear regression model using gradient descent and outputs the result.</p>
  * <p>
@@ -52,13 +55,12 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * {@link DatasetWrapper}) in a sequential manner.</p>
  * <p>
  * In this example we need to implement gradient descent. This is iterative method that involves calculation of gradient
- * on every step. In according with the common idea we define
- * {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificDataset} - extended version of {@code Dataset} with
- * {@code gradient} method. As a result our gradient descent method looks like a simple loop where every iteration
- * includes call of the {@code gradient} method. In the example we want to keep iteration number as well for logging.
- * Iteration number cannot be recovered from the {@code upstream} data and we need to keep it in the custom
- * partition {@code context} which is represented by
- * {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificPartitionContext} class.</p>
+ * on every step. In according with the common idea we define {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificDataset}
+ * - extended version of {@code Dataset} with {@code gradient} method. As a result our gradient descent method looks
+ * like a simple loop where every iteration includes call of the {@code gradient} method. In the example we want to keep
+ * iteration number as well for logging. Iteration number cannot be recovered from the {@code upstream} data and we need
+ * to keep it in the custom partition {@code context} which is represented by {@link
+ * AlgorithmSpecificDatasetExample.AlgorithmSpecificPartitionContext} class.</p>
  */
 public class AlgorithmSpecificDatasetExample {
     /** Run example. */
@@ -66,49 +68,58 @@ public class AlgorithmSpecificDatasetExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Algorithm Specific Dataset example started.");
 
-            IgniteCache<Integer, Person> persons = createCache(ignite);
+            IgniteCache<Integer, Person> persons = null;
+            try {
+                persons = createCache(ignite);
 
-            // Creates a algorithm specific dataset to perform linear regression. Here we define the way features and
-            // labels are extracted, and partition data and context are created.
-            try (AlgorithmSpecificDataset dataset = DatasetFactory.create(
-                ignite,
-                persons,
-                (upstream, upstreamSize) -> new AlgorithmSpecificPartitionContext(),
-                new SimpleLabeledDatasetDataBuilder<Integer, Person, AlgorithmSpecificPartitionContext>(
-                    (k, v) -> VectorUtils.of(v.getAge()),
-                    (k, v) -> new double[] {v.getSalary()}
-                ).andThen((data, ctx) -> {
-                    double[] features = data.getFeatures();
-                    int rows = data.getRows();
+                // Creates a algorithm specific dataset to perform linear regression. Here we define the way features and
+                // labels are extracted, and partition data and context are created.
+                SimpleLabeledDatasetDataBuilder<Integer, Person, AlgorithmSpecificPartitionContext, ? extends Serializable> builder =
+                    new SimpleLabeledDatasetDataBuilder<>(new FeatureLabelExtractorWrapper<>(CompositionUtils.asFeatureLabelExtractor(
+                        (k, v) -> VectorUtils.of(v.getAge()),
+                        (k, v) -> new double[] {v.getSalary()}
+                    )));
 
-                    // Makes a copy of features to supplement it by columns with values equal to 1.0.
-                    double[] a = new double[features.length + rows];
+                try (AlgorithmSpecificDataset dataset = DatasetFactory.create(
+                    ignite,
+                    persons,
+                    (env, upstream, upstreamSize) -> new AlgorithmSpecificPartitionContext(),
+                    builder.andThen((data, ctx) -> {
+                        double[] features = data.getFeatures();
+                        int rows = data.getRows();
 
-                    for (int i = 0; i < rows; i++)
-                        a[i] = 1.0;
+                        // Makes a copy of features to supplement it by columns with values equal to 1.0.
+                        double[] a = new double[features.length + rows];
 
-                    System.arraycopy(features, 0, a, rows, features.length);
+                        for (int i = 0; i < rows; i++)
+                            a[i] = 1.0;
 
-                    return new SimpleLabeledDatasetData(a, data.getLabels(), rows);
-                })
-            ).wrap(AlgorithmSpecificDataset::new)) {
-                // Trains linear regression model using gradient descent.
-                double[] linearRegressionMdl = new double[2];
+                        System.arraycopy(features, 0, a, rows, features.length);
 
-                for (int i = 0; i < 1000; i++) {
-                    double[] gradient = dataset.gradient(linearRegressionMdl);
+                        return new SimpleLabeledDatasetData(a, data.getLabels(), rows);
+                    })
+                ).wrap(AlgorithmSpecificDataset::new)) {
+                    // Trains linear regression model using gradient descent.
+                    double[] linearRegressionMdl = new double[2];
 
-                    if (BLAS.getInstance().dnrm2(gradient.length, gradient, 1) < 1e-4)
-                        break;
+                    for (int i = 0; i < 1000; i++) {
+                        double[] gradient = dataset.gradient(linearRegressionMdl);
 
-                    for (int j = 0; j < gradient.length; j++)
-                        linearRegressionMdl[j] -= 0.1 / persons.size() * gradient[j];
+                        if (BLAS.getInstance().dnrm2(gradient.length, gradient, 1) < 1e-4)
+                            break;
+
+                        for (int j = 0; j < gradient.length; j++)
+                            linearRegressionMdl[j] -= 0.1 / persons.size() * gradient[j];
+                    }
+
+                    System.out.println("Linear Regression Model: " + Arrays.toString(linearRegressionMdl));
                 }
 
-                System.out.println("Linear Regression Model: " + Arrays.toString(linearRegressionMdl));
+                System.out.println(">>> Algorithm Specific Dataset example completed.");
             }
-
-            System.out.println(">>> Algorithm Specific Dataset example completed.");
+            finally {
+                persons.destroy();
+            }
         }
     }
 

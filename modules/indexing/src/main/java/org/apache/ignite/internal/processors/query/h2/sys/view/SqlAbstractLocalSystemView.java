@@ -18,7 +18,11 @@
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
 import java.util.UUID;
+
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -26,12 +30,13 @@ import org.h2.table.Column;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
-import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Local system view base class (which uses only local node data).
  */
+@SuppressWarnings("IfMayBeConditional")
 public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
     /**
      * @param tblName Table name.
@@ -40,7 +45,7 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
      * @param indexes Indexes.
      * @param cols Columns.
      */
-    public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String[] indexes,
+    protected SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String[] indexes,
         Column... cols) {
         super(tblName, desc, ctx, cols, indexes);
 
@@ -56,7 +61,8 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
      * @param indexedCols Indexed columns.
      * @param cols Columns.
      */
-    public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String indexedCols, Column... cols) {
+    protected SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String indexedCols,
+        Column... cols) {
         this(tblName, desc, ctx, new String[] {indexedCols}, cols);
     }
 
@@ -66,16 +72,16 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
      * @param ctx Context.
      * @param cols Columns.
      */
-    public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, Column ... cols) {
-        this(tblName, desc, ctx, new String[] {}, cols);
+    @SuppressWarnings("ZeroLengthArrayAllocation")
+    protected SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, Column ... cols) {
+        this(tblName, desc, ctx, new String[] {} , cols);
     }
 
     /**
      * @param ses Session.
-     * @param key Key.
      * @param data Data for each column.
      */
-    protected Row createRow(Session ses, long key, Object... data) {
+    protected Row createRow(Session ses, Object... data) {
         Value[] values = new Value[data.length];
 
         for (int i = 0; i < data.length; i++) {
@@ -87,11 +93,7 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
             values[i] = cols[i].convert(v);
         }
 
-        Row row = ses.getDatabase().createRow(values, 1);
-
-        row.setKey(key);
-
-        return row;
+        return ses.getDatabase().createRow(values, 0);
     }
 
     /**
@@ -140,19 +142,6 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
     }
 
     /**
-     * Converts millis to ValueTime
-     *
-     * @param millis Millis.
-     */
-    protected static Value valueTimeFromMillis(long millis) {
-        if (millis == -1L || millis == Long.MAX_VALUE)
-            return ValueNull.INSTANCE;
-        else
-            // Note: ValueTime.fromMillis(long) method trying to convert time using timezone and return wrong result.
-            return ValueTime.fromNanos(millis * 1_000_000L);
-    }
-
-    /**
      * Converts millis to ValueTimestamp
      *
      * @param millis Millis.
@@ -162,5 +151,46 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
             return ValueNull.INSTANCE;
         else
             return ValueTimestamp.fromMillis(millis);
+    }
+
+    /**
+     * Get node's filter string representation.
+     *
+     * @param ccfg Cache configuration.
+     *
+     * @return String representation of node filter.
+     */
+    @Nullable protected static String nodeFilter(CacheConfiguration<?, ?> ccfg) {
+        IgnitePredicate<ClusterNode> nodeFilter = ccfg.getNodeFilter();
+
+        if (nodeFilter instanceof CacheConfiguration.IgniteAllNodesPredicate)
+            nodeFilter = null;
+
+        return toStringSafe(nodeFilter);
+    }
+
+    /**
+     * Get string representation of an object properly catching all exceptions.
+     *
+     * @param obj Object.
+     * @return Result or {@code null}.
+     */
+    @Nullable protected static String toStringSafe(@Nullable Object obj) {
+        if (obj == null)
+            return null;
+        else {
+            try {
+                return obj.toString();
+            }
+            catch (Exception e) {
+                try {
+                    return "Failed to convert object to string: " + e.getMessage();
+                }
+                catch (Exception e0) {
+                    return "Failed to convert object to string (error message is not available)";
+                }
+            }
+        }
+
     }
 }

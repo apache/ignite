@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.sql;
 
 import java.lang.reflect.Field;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -285,6 +283,18 @@ public class SqlKeyword {
 
     /** Keyword: PASSWORD. */
     public static final String PASSWORD = "PASSWORD";
+
+    /** Keyword: SHOW. */
+    public static final String SHOW = "SHOW";
+
+    /** Keyword: HELP. */
+    public static final String HELP = "HELP";
+
+    /** Keyword: GRANT. */
+    public static final String GRANT = "GRANT";
+
+    /** Keyword: REVOKE. */
+    public static final String REVOKE = "REVOKE";
 
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;

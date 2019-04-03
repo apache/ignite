@@ -17,14 +17,16 @@
 
 package org.apache.ignite.ml.structures.partition;
 
-import java.io.Serializable;
-import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
+
+import java.io.Serializable;
+import java.util.Iterator;
 
 /**
  * Partition data builder that builds {@link LabeledVectorSet}.
@@ -33,32 +35,28 @@ import org.apache.ignite.ml.structures.LabeledVectorSet;
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializable>
+public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializable, CO extends Serializable>
     implements PartitionDataBuilder<K, V, C, LabeledVectorSet<Double, LabeledVector>> {
     /** */
     private static final long serialVersionUID = -7820760153954269227L;
 
-    /** Extractor of X matrix row. */
-    private final IgniteBiFunction<K, V, Vector> xExtractor;
-
-    /** Extractor of Y vector value. */
-    private final IgniteBiFunction<K, V, Double> yExtractor;
+    /** Upstream vectorizer. */
+    private final Vectorizer<K, V, CO, Double> vectorizer;
 
     /**
      * Constructs a new instance of SVM partition data builder.
      *
-     * @param xExtractor Extractor of X matrix row.
-     * @param yExtractor Extractor of Y vector value.
+     * @param vectorizer Upstream vectorizer.
      */
-    public LabeledDatasetPartitionDataBuilderOnHeap(IgniteBiFunction<K, V, Vector> xExtractor,
-                                         IgniteBiFunction<K, V, Double> yExtractor) {
-        this.xExtractor = xExtractor;
-        this.yExtractor = yExtractor;
+    public LabeledDatasetPartitionDataBuilderOnHeap(Vectorizer<K, V, CO, Double> vectorizer) {
+        this.vectorizer = vectorizer;
     }
 
     /** {@inheritDoc} */
-    @Override public LabeledVectorSet<Double, LabeledVector> build(Iterator<UpstreamEntry<K, V>> upstreamData,
-                                                                   long upstreamDataSize, C ctx) {
+    @Override public LabeledVectorSet<Double, LabeledVector> build(
+        LearningEnvironment env,
+        Iterator<UpstreamEntry<K, V>> upstreamData,
+        long upstreamDataSize, C ctx) {
         int xCols = -1;
         double[][] x = null;
         double[] y = new double[Math.toIntExact(upstreamDataSize)];
@@ -67,7 +65,8 @@ public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializab
 
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
-            Vector row = xExtractor.apply(entry.getKey(), entry.getValue());
+            LabeledVector<Double> labeledVector = vectorizer.apply(entry.getKey(), entry.getValue());
+            Vector row = labeledVector.features();
 
             if (xCols < 0) {
                 xCols = row.size();
@@ -78,7 +77,7 @@ public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializab
 
             x[ptr] = row.asArray();
 
-            y[ptr] = yExtractor.apply(entry.getKey(), entry.getValue());
+            y[ptr] = labeledVector.label();
 
             ptr++;
         }

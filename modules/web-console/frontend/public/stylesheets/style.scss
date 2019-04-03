@@ -19,9 +19,13 @@
 @import "./bootstrap-custom";
 @import "./variables";
 @import "~roboto-font/css/fonts.css";
-@import "./../../app/directives/information/information.scss";
 @import "./blocks/error";
 @import "./form-field";
+
+:root {
+    --sans-serif-font: Roboto;
+    --serif-font: Roboto_slab;
+}
 
 body {
     overflow-y: scroll !important;
@@ -255,17 +259,70 @@ body {
     flex-direction: column;
 }
 
-body > .wrapper,
-    // Nested ui-view, like on password reset state
-body > .wrapper > ui-view {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    flex: 1 0 auto;
+:root {
+    --page-side-padding: 30px;
+}
 
-    .body-container {
-        flex: 1 0 auto;
-        padding-bottom: 30px;
+.wrapper {
+    --header-height: 62px;
+
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto var(--header-height) 1fr;
+    grid-template-areas: 'notifications notifications' 'header header' 'sidebar content';
+
+    permanent-notifications {
+        grid-area: notifications;
+    }
+
+    web-console-header {
+        grid-area: header;
+        position: -webkit-sticky;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        transform: translateZ(1px);
+    }
+
+    web-console-sidebar {
+        grid-area: sidebar;
+        transform: translateZ(1px);
+    }
+
+    &>.content {
+        grid-area: content;
+        padding-left: var(--page-side-padding);
+        padding-right: var(--page-side-padding);
+        padding-bottom: var(--page-side-padding);
+        display: flex;
+        flex-direction: column;
+
+        &>ui-view {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+    }
+
+    &.wrapper-public {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto var(--header-height) 1fr auto;
+        grid-template-areas: 'notifications' 'header' 'content' 'footer';
+    }
+}
+
+.public-page {
+    margin-left: auto;
+    margin-right: auto;
+    flex: 1 0 auto;
+    width: 100%;
+    max-width: 530px;
+
+    .public-page__title {
+        font-size: 38px;
+        font-weight: 300;
+        margin: 30px 0 30px;
     }
 }
 
@@ -374,7 +431,6 @@ i.btn {
 h1,
 h2,
 h3 {
-    user-select: none;
     font-weight: normal;
     /* Makes the vertical size of the text the same for all fonts. */
     line-height: 1;
@@ -483,13 +539,6 @@ button.form-control {
         color: $ignite-placeholder-color;
         height: 65px;
         line-height: 65px;
-    }
-
-    .empty-caches {
-        text-align: center;
-        color: $ignite-placeholder-color;
-        height: 55px;
-        line-height: 55px;
     }
 
     .panel-collapse {
@@ -1113,7 +1162,6 @@ button.form-control {
 }
 
 .popover.validation-error {
-    font-family: Roboto;
     white-space: pre-wrap;
     width: auto !important;
     max-width: 400px !important;
@@ -1610,6 +1658,66 @@ th[st-sort] {
     }
 }
 
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+.am-fade-and-scale {
+    animation-duration: 0.3s;
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: backwards;
+
+    &.ng-enter, &.am-fade-and-scale-add, &.ng-hide-remove, &.ng-move {
+        animation-name: fadeAndScaleIn;
+    }
+
+    &.ng-leave, &.am-fade-and-scale-remove, &.ng-hide, &.ng-move {
+        animation-name: fadeAndScaleOut;
+    }
+
+    &.ng-enter {
+        visibility: hidden;
+        animation-name: fadeAndScaleIn;
+        animation-play-state: paused;
+
+        &.ng-enter-active {
+            visibility: visible;
+            animation-play-state: running;
+        }
+    }
+
+    &.ng-leave {
+        animation-name: fadeAndScaleOut;
+        animation-play-state: paused;
+
+        &.ng-leave-active {
+            animation-play-state: running;
+        }
+    }
+
+
+}
+
+@keyframes fadeAndScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.7);
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeAndScaleOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.7);
+    }
+}
+
 .panel-tip-container {
     display: inline-block;
 }
@@ -1869,64 +1977,6 @@ treecontrol.tree-classic {
     border-bottom-width: 0;
 }
 
-.ribbon-wrapper {
-    width: 150px;
-    height: 150px;
-    position: absolute;
-    overflow: hidden;
-    top: 0;
-    z-index: 1001;
-    pointer-events: none;
-}
-
-.ribbon-wrapper.right {
-    right: 0;
-}
-
-.ribbon {
-    position: absolute;
-    top: 42px;
-    width: 186px;
-    padding: 1px 0;
-    color: $btn-primary-color;
-    background: $btn-primary-border;
-
-    right: -42px;
-    -moz-transform: rotate(45deg);
-    -webkit-transform: rotate(45deg);
-    -o-transform: rotate(45deg);
-    -ms-transform: rotate(45deg);
-    transform: rotate(45deg);
-
-    > label {
-        padding: 1px 0;
-        height: 17px;
-        line-height: 12px;
-        text-align: center;
-        text-decoration: none;
-        font-family: Roboto, sans-serif;
-        font-size: 16px;
-        display: block;
-        font-weight: 400;
-
-        border: 1px solid rgba(255,255,255,0.3);
-
-        -moz-text-shadow: 0 0 10px rgba(0,0,0,0.31);
-        -webkit-text-shadow: 0 0 10px rgba(0,0,0,0.31);
-        text-shadow: 0 0 10px rgba(0,0,0,0.31);
-    }
-}
-
-.ribbon-wrapper.left {
-    overflow: visible;
-
-    .ribbon {
-        transform: rotate(-45deg);
-        left: -75px;
-        top: 10px;
-    }
-}
-
 html, body {
     width: 100%;
     min-height: 100vh;
@@ -2062,10 +2112,6 @@ html, body {
     position: absolute !important;
 }
 
-.demo-mode {
-    padding-top: 30px;
-}
-
 // Fix for injecting svg icon into BS btn
 .btn--with-icon {
     display: flex;
@@ -2085,11 +2131,10 @@ header.header-with-selector {
 
 
     h1 {
-        height: 36px;
+        min-height: 36px;
         margin: 0;
         margin-right: 8px;
 
-        font-family: Roboto, sans-serif;
         font-size: 24px;
         line-height: 36px;
     }
@@ -2119,7 +2164,6 @@ header.header-with-selector {
 
                 ul.dropdown-menu {
                     min-width: 100%;
-                    font-family: Roboto;
                 }
             }
         }

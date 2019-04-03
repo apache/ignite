@@ -30,6 +30,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.io.GridReversedLinesFileReader;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -48,6 +49,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.textFile;
  * Search text matching in logs
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTaskArg, VisorLogSearchTaskResult,
     Collection<VisorLogSearchResult>> {
     /** */

@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Test;
 
 /**
  *
@@ -51,6 +50,7 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCopyOnReadDisabled() throws Exception {
         IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 

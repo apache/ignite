@@ -21,6 +21,7 @@ import org.apache.ignite.internal.util.GridStringBuilderFactory;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * String builder factory test.
@@ -35,6 +36,7 @@ public class GridStringBuilderFactorySelfTest extends GridCommonAbstractTest {
     /**
      * Tests string builder factory.
      */
+    @Test
     public void testStringBuilderFactory() {
         SB b1 = GridStringBuilderFactory.acquire();
 

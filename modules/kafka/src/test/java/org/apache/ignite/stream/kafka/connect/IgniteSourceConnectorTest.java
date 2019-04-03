@@ -55,6 +55,7 @@ import org.apache.kafka.connect.storage.MemoryOffsetBackingStore;
 import org.apache.kafka.connect.util.Callback;
 import org.apache.kafka.connect.util.ConnectUtils;
 import org.apache.kafka.connect.util.FutureCallback;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -87,7 +88,6 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     private static Ignite grid;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
         IgniteConfiguration cfg = loadConfiguration("modules/kafka/src/test/resources/example-ignite.xml");
 
@@ -136,6 +136,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown in case of the failure.
      */
+    @Test
     public void testEventsInjectedIntoKafkaWithoutFilter() throws Exception {
         Map<String, String> srcProps = makeSourceProps(Utils.join(TOPICS, ","));
 
@@ -149,6 +150,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown in case of the failure.
      */
+    @Test
     public void testEventsInjectedIntoKafka() throws Exception {
         doTest(makeSourceProps(Utils.join(TOPICS, ",")), true);
     }

@@ -17,17 +17,18 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
-import java.io.File;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.IgniteUtils;
+
 import java.io.FileNotFoundException;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Locale;
 import java.util.Scanner;
 import java.util.UUID;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  * The utility class.
@@ -43,7 +44,7 @@ public class TitanicUtils {
     public static IgniteCache<Integer, Object[]> readPassengers(Ignite ignite)
         throws FileNotFoundException {
         IgniteCache<Integer, Object[]> cache = getCache(ignite);
-        Scanner scanner = new Scanner(new File("examples/src/main/resources/datasets/titanic.csv"));
+        Scanner scanner = new Scanner(IgniteUtils.resolveIgnitePath("examples/src/main/resources/datasets/titanic.csv"));
 
         int cnt = 0;
         while (scanner.hasNextLine()) {
@@ -58,8 +59,7 @@ public class TitanicUtils {
 
             for (int i = 0; i < cells.length; i++)
                 try{
-                    if(cells[i].equals("")) data[i] = Double.NaN;
-                    else data[i] = Double.valueOf(cells[i]);
+                    data[i] = "".equals(cells[i]) ? Double.NaN : Double.valueOf(cells[i]);
                 } catch (java.lang.NumberFormatException e) {
 
                     try {

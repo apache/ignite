@@ -22,10 +22,11 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
@@ -42,16 +43,22 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  */
 public class Pipeline<K, V, R> {
     /** Feature extractor. */
+    private IgniteBiFunction<K, V, R> featureExtractor;
+
+    /** Final Feature extractor. */
     private IgniteBiFunction<K, V, R> finalFeatureExtractor;
 
     /** Label extractor. */
     private IgniteBiFunction<K, V, Double> lbExtractor;
 
-    /** Prerpocessor stages. */
-    private List<PreprocessingTrainer> preprocessors = new ArrayList<>();
+    /** Preprocessor stages. */
+    private List<PreprocessingTrainer> preprocessingTrainers = new ArrayList<>();
 
     /** Final trainer stage. */
     private DatasetTrainer finalStage;
+
+    /** Learning environment builder. */
+    private LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
 
     /**
      * Adds feature extractor as a zero stage.
@@ -60,7 +67,7 @@ public class Pipeline<K, V, R> {
      * @return The updated Pipeline.
      */
     public Pipeline<K, V, R> addFeatureExtractor(IgniteBiFunction<K, V, R> featureExtractor) {
-        this.finalFeatureExtractor = featureExtractor;
+        this.featureExtractor = featureExtractor;
         return this;
     }
 
@@ -78,11 +85,11 @@ public class Pipeline<K, V, R> {
     /**
      * Adds a preprocessor.
      *
-     * @param preprocessor The parameter value.
+     * @param preprocessingTrainer The parameter value.
      * @return The updated Pipeline.
      */
-    public Pipeline<K, V, R> addPreprocessor(PreprocessingTrainer preprocessor) {
-        preprocessors.add(preprocessor);
+    public Pipeline<K, V, R> addPreprocessingTrainer(PreprocessingTrainer preprocessingTrainer) {
+        preprocessingTrainers.add(preprocessingTrainer);
         return this;
     }
 
@@ -98,6 +105,13 @@ public class Pipeline<K, V, R> {
     }
 
     /**
+     * Returns trainer.
+     */
+    public DatasetTrainer getTrainer() {
+        return finalStage;
+    }
+
+    /**
      * Fits the pipeline to the input cache.
      *
      * @param ignite Ignite instance.
@@ -107,6 +121,15 @@ public class Pipeline<K, V, R> {
     public PipelineMdl<K, V> fit(Ignite ignite, IgniteCache<K, V> cache) {
         DatasetBuilder datasetBuilder = new CacheBasedDatasetBuilder<>(ignite, cache);
         return fit(datasetBuilder);
+    }
+
+    /**
+     * Set learning environment builder.
+     *
+     * @param envBuilder Learning environment builder.
+     */
+    public void setEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        this.envBuilder = envBuilder;
     }
 
     /**
@@ -122,22 +145,27 @@ public class Pipeline<K, V, R> {
     }
 
     /** Fits the pipeline to the input dataset builder. */
-    private PipelineMdl<K, V> fit(DatasetBuilder datasetBuilder) {
+    public PipelineMdl<K, V> fit(DatasetBuilder datasetBuilder) {
         assert lbExtractor != null;
-        assert finalFeatureExtractor != null;
+        assert featureExtractor != null;
 
         if (finalStage == null)
             throw new IllegalStateException("The Pipeline should be finished with the Training Stage.");
 
-        preprocessors.forEach(e -> {
+        // Reload for new fit
+        finalFeatureExtractor = featureExtractor;
+
+        preprocessingTrainers.forEach(e -> {
 
             finalFeatureExtractor = e.fit(
+                envBuilder,
                 datasetBuilder,
                 finalFeatureExtractor
             );
         });
 
-        Model<Vector, Double> internalMdl = finalStage
+        //TODO: IGNITE-11481
+        IgniteModel<Vector, Double> internalMdl = finalStage
             .fit(
                 datasetBuilder,
                 finalFeatureExtractor,

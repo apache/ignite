@@ -18,42 +18,37 @@
 package org.apache.ignite.ml.knn.regression;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.knn.KNNUtils;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
+
+import java.io.Serializable;
 
 /**
  * kNN algorithm trainer to solve regression task.
  */
 public class KNNRegressionTrainer extends SingleLabelDatasetTrainer<KNNRegressionModel> {
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @return Model.
-     */
-    public <K, V> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    /** {@inheritDoc} */
+    @Override public <K, V, C extends Serializable> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
 
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> KNNRegressionModel updateModel(KNNRegressionModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    @Override public <K, V, C extends Serializable> KNNRegressionModel updateModel(
+        KNNRegressionModel mdl,
+        DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
 
-        KNNRegressionModel res = new KNNRegressionModel(KNNUtils.buildDataset(datasetBuilder,
-            featureExtractor, lbExtractor));
+        KNNRegressionModel res = new KNNRegressionModel(KNNUtils.buildDataset(envBuilder, datasetBuilder, extractor));
         if (mdl != null)
             res.copyStateFrom(mdl);
         return res;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(KNNRegressionModel mdl) {
+    @Override public boolean isUpdateable(KNNRegressionModel mdl) {
         return true;
     }
 }

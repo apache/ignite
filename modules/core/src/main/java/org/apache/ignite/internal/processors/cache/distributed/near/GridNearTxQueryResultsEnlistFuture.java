@@ -22,15 +22,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -45,7 +48,6 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -150,10 +152,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
 
             boolean first = (nodeId != null);
 
-            // Need to unlock topology to avoid deadlock with binary descriptors registration.
-            if(!topLocked && cctx.topology().holdsLock())
-                cctx.topology().readUnlock();
-
             for (Batch batch : next) {
                 ClusterNode node = batch.node();
 
@@ -201,12 +199,10 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
 
                 KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((IgniteBiTuple)cur).getKey());
 
-                List<ClusterNode> nodes = cctx.affinity().nodesByKey(key, topVer);
+                ClusterNode node = cctx.affinity().primaryByPartition(key.partition(), topVer);
 
-                ClusterNode node;
-
-                if (F.isEmpty(nodes) || ((node = nodes.get(0)) == null))
-                    throw new ClusterTopologyCheckedException("Failed to get primary node " +
+                if (node == null)
+                    throw new ClusterTopologyServerNotFoundException("Failed to get primary node " +
                         "[topVer=" + topVer + ", key=" + key + ']');
 
                 if (!sequential)
@@ -230,8 +226,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
                     break;
                 }
 
-                batch.add(op.isDeleteOrLock() ? key : cur,
-                    op != EnlistOperation.LOCK && cctx.affinityNode() && (cctx.isReplicated() || nodes.indexOf(cctx.localNode()) > 0));
+                batch.add(op.isDeleteOrLock() ? key : cur, !node.isLocal() && isLocalBackup(op, key));
 
                 if (batch.size() == batchSize)
                     res = markReady(res, batch);
@@ -285,6 +280,16 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
             peek = FINISHED;
 
         return peek != FINISHED;
+    }
+
+    /** */
+    private boolean isLocalBackup(EnlistOperation op, KeyCacheObject key) {
+        if (!cctx.affinityNode() || op == EnlistOperation.LOCK)
+            return false;
+        else if (cctx.isReplicated())
+            return true;
+
+        return cctx.topology().nodes(key.partition(), tx.topologyVersion()).contains(cctx.localNode());
     }
 
     /** */
@@ -351,7 +356,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
                     -1,
                     this.tx.subjectId(),
                     this.tx.taskNameHash(),
-                    false);
+                    false,
+                    tx.label());
 
                 dhtTx.mvccSnapshot(new MvccSnapshotWithoutTxs(mvccSnapshot.coordinatorVersion(),
                     mvccSnapshot.counter(), MVCC_OP_COUNTER_NA, mvccSnapshot.cleanupVersion()));
@@ -524,13 +530,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
 
             topEx.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(topVer));
 
-            processFailure(topEx, null);
-
-            batches.remove(nodeId);
-
-            if (batches.isEmpty()) // Wait for all pending requests.
-                onDone();
-
+            onDone(topEx);
         }
 
         if (log.isDebugEnabled())
@@ -555,14 +555,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
         if (res != null)
             tx.mappings().get(nodeId).addBackups(res.newDhtNodes());
 
-        if (err != null)
-            processFailure(err, null);
-
-        if (ex != null) {
-            batches.remove(nodeId);
-
-            if (batches.isEmpty()) // Wait for all pending requests.
-                onDone();
+        if (err != null) {
+            onDone(err);
 
             return false;
         }
@@ -571,7 +565,17 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
 
         RES_UPD.getAndAdd(this, res.result());
 
-        return true;
+        tx.hasRemoteLocks(true);
+
+        return !isDone();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<UUID> pendingResponseNodes() {
+        return batches.entrySet().stream()
+            .filter(e -> e.getValue().ready())
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toSet());
     }
 
     /** {@inheritDoc} */
@@ -664,5 +668,4 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
             this.ready = ready;
         }
     }
-
 }

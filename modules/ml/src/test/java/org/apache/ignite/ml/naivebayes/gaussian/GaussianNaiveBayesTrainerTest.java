@@ -17,16 +17,18 @@
 
 package org.apache.ignite.ml.naivebayes.gaussian;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Tests for {@link GaussianNaiveBayesTrainer}.
@@ -61,6 +63,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         singleLabeldata2.put(1, new double[] {-5.0, -2.0, LABEL_2});
     }
 
+    /** Trainer. */
     private GaussianNaiveBayesTrainer trainer;
 
     /** Initialization {@code GaussianNaiveBayesTrainer}.*/
@@ -79,12 +82,11 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         GaussianNaiveBayesModel mdl = trainer.fit(
             cacheMock,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
 
-        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+        TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
     }
 
     /** */
@@ -93,8 +95,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
 
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Assert.assertEquals(3. / data.size(), model.getClassProbabilities()[0], PRECISION);
@@ -109,8 +110,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
 
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Assert.assertEquals(.5, model.getClassProbabilities()[0], PRECISION);
@@ -126,8 +126,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
 
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Assert.assertEquals(priorProbabilities[0], model.getClassProbabilities()[0], PRECISION);
@@ -140,8 +139,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
 
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(singleLabeldata1, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Assert.assertArrayEquals(new double[] {2.0, 2. / 3.}, model.getMeans()[0], PRECISION);
@@ -153,8 +151,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
 
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(singleLabeldata1, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         double[] expectedVars = {8.666666666666666, 1.5555555555555556};
@@ -164,16 +161,15 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     /** */
     @Test
     public void testUpdatigModel() {
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST);
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(singleLabeldata1, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            vectorizer
         );
 
         GaussianNaiveBayesModel updatedModel = trainer.updateModel(model,
             new LocalDatasetBuilder<>(singleLabeldata2, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            vectorizer
         );
 
         Assert.assertEquals(3. / data.size(), updatedModel.getClassProbabilities()[0], PRECISION);

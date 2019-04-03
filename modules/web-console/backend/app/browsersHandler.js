@@ -38,12 +38,12 @@ module.exports = {
              * @param {Socket} sock
              */
             add(sock) {
-                const token = sock.request.user._id.toString();
+                const key = sock.request.user._id.toString();
 
-                if (this.sockets.has(token))
-                    this.sockets.get(token).push(sock);
+                if (this.sockets.has(key))
+                    this.sockets.get(key).push(sock);
                 else
-                    this.sockets.set(token, [sock]);
+                    this.sockets.set(key, [sock]);
 
                 return this.sockets.get(sock.request.user);
             }
@@ -52,9 +52,9 @@ module.exports = {
              * @param {Socket} sock
              */
             remove(sock) {
-                const token = sock.request.user.token;
+                const key = sock.request.user._id.toString();
 
-                const sockets = this.sockets.get(token);
+                const sockets = this.sockets.get(key);
 
                 _.pull(sockets, sock);
 
@@ -62,16 +62,14 @@ module.exports = {
             }
 
             get(account) {
-                let sockets = this.sockets.get(account._id.toString());
+                const key = account._id.toString();
+
+                let sockets = this.sockets.get(key);
 
                 if (_.isEmpty(sockets))
-                    this.sockets.set(account._id.toString(), sockets = []);
+                    this.sockets.set(key, sockets = []);
 
                 return sockets;
-            }
-
-            demo(token) {
-                return _.filter(this.sockets.get(token), (sock) => sock.request._query.IgniteDemoMode === 'true');
             }
         }
 
@@ -113,7 +111,7 @@ module.exports = {
                     .then((agentSocks) => {
                         const stat = _.reduce(agentSocks, (acc, agentSock) => {
                             acc.count += 1;
-                            acc.hasDemo |= _.get(agentSock, 'demo.enabled');
+                            acc.hasDemo = acc.hasDemo || _.get(agentSock, 'demo.enabled');
 
                             if (agentSock.cluster)
                                 acc.clusters.push(agentSock.cluster);
@@ -132,7 +130,12 @@ module.exports = {
             clusterChanged(account, cluster) {
                 const socks = this._browserSockets.get(account);
 
-                _.forEach(socks, (sock) => sock.emit('cluster:changed', cluster));
+                _.forEach(socks, (sock) => {
+                    if (sock)
+                        sock.emit('cluster:changed', cluster);
+                    else
+                        console.log(`Fount closed socket [account=${account}, cluster=${cluster}]`);
+                });
             }
 
             pushInitialData(sock) {
@@ -191,10 +194,10 @@ module.exports = {
              * @param {Object.<String, String>} params
              * @return {Promise.<T>}
              */
-            executeOnNode(agent, demo, credentials, params) {
+            executeOnNode(agent, token, demo, credentials, params) {
                 return agent
                     .then((agentSock) => agentSock.emitEvent('node:rest',
-                        {uri: 'ignite', demo, params: _.merge({}, credentials, params)}));
+                        {uri: 'ignite', token, demo, params: _.merge({}, credentials, params)}));
             }
 
             registerVisorTask(taskId, taskCls, ...argCls) {
@@ -222,7 +225,9 @@ module.exports = {
 
                     const agent = this._agentHnd.agent(sock.request.user, demo, clusterId);
 
-                    this.executeOnNode(agent, demo, credentials, params)
+                    const token = sock.request.user.token;
+
+                    this.executeOnNode(agent, token, demo, credentials, params)
                         .then((data) => cb(null, data))
                         .catch((err) => cb(this.errorTransformer(err)));
                 });
@@ -239,10 +244,18 @@ module.exports = {
                 this.registerVisorTask('queryFetch', internalVisor('query.VisorQueryNextPageTask'), 'org.apache.ignite.lang.IgniteBiTuple', 'java.lang.String', 'java.lang.Integer');
                 this.registerVisorTask('queryFetchX2', internalVisor('query.VisorQueryNextPageTask'), internalVisor('query.VisorQueryNextPageTaskArg'));
 
+                this.registerVisorTask('queryFetchFirstPage', internalVisor('query.VisorQueryFetchFirstPageTask'), internalVisor('query.VisorQueryNextPageTaskArg'));
+                this.registerVisorTask('queryPing', internalVisor('query.VisorQueryPingTask'), internalVisor('query.VisorQueryNextPageTaskArg'));
+
                 this.registerVisorTask('queryClose', internalVisor('query.VisorQueryCleanupTask'), 'java.util.Map', 'java.util.UUID', 'java.util.Set');
                 this.registerVisorTask('queryCloseX2', internalVisor('query.VisorQueryCleanupTask'), internalVisor('query.VisorQueryCleanupTaskArg'));
 
                 this.registerVisorTask('toggleClusterState', internalVisor('misc.VisorChangeGridActiveStateTask'), internalVisor('misc.VisorChangeGridActiveStateTaskArg'));
+
+                this.registerVisorTask('cacheNamesCollectorTask', internalVisor('cache.VisorCacheNamesCollectorTask'), 'java.lang.Void');
+
+                this.registerVisorTask('cacheNodesTask', internalVisor('cache.VisorCacheNodesTask'), 'java.lang.String');
+                this.registerVisorTask('cacheNodesTaskX2', internalVisor('cache.VisorCacheNodesTask'), internalVisor('cache.VisorCacheNodesTaskArg'));
 
                 // Return command result from grid to browser.
                 sock.on('node:visor', (arg, cb) => {
@@ -277,7 +290,9 @@ module.exports = {
 
                     const agent = this._agentHnd.agent(sock.request.user, demo, clusterId);
 
-                    this.executeOnNode(agent, demo, credentials, exeParams)
+                    const token = sock.request.user.token;
+
+                    this.executeOnNode(agent, token, demo, credentials, exeParams)
                         .then((data) => {
                             if (data.finished && !data.zipped)
                                 return cb(null, data.result);

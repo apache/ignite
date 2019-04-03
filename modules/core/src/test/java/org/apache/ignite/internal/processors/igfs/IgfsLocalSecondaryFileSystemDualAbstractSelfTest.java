@@ -35,6 +35,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.Test;
 
 /**
  * Abstract test for Hadoop 1.0 file system stack.
@@ -125,6 +126,7 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testListPathForSymlink() throws Exception {
         if (U.isWindows())
             return;
@@ -147,6 +149,7 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteSymlinkDir() throws Exception {
         if (U.isWindows())
             return;
@@ -163,6 +166,7 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSymlinkToFile() throws Exception {
         if (U.isWindows())
             return;
@@ -177,6 +181,7 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
      *
      * @throws Exception If failed.
      */
+    @Test
     @Override public void testUpdateParentRootPathMissing() throws Exception {
         doUpdateParentRootPathMissing(properties(TEST_GROUP, "0555"));
     }
@@ -186,6 +191,7 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMkdirsInsideSymlink() throws Exception {
         if (U.isWindows())
             return;
@@ -202,6 +208,7 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUsedSpaceSize() throws Exception {
         final int DIRS_COUNT = 5;
         final int DIRS_MAX_DEEP = 3;

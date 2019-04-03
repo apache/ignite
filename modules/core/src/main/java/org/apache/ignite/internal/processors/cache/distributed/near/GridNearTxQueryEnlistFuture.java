@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.Collection;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -31,12 +36,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQuer
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.NearTxQueryEnlistResultHandler.createResponse;
 
 /**
@@ -95,137 +99,138 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
      * @param topLocked Topology locked flag.
      */
     @Override protected void map(final boolean topLocked) {
-        MiniFuture mini = null;
-
         try {
-            final AffinityAssignment assignment = cctx.affinity().assignment(topVer);
+            Map<ClusterNode, IntArrayHolder> map; boolean locallyMapped = false;
 
-            Collection<ClusterNode> primary;
+            AffinityAssignment assignment = cctx.affinity().assignment(topVer);
 
             if (parts != null) {
-                primary = U.newHashSet(parts.length);
+                map = U.newHashMap(parts.length);
 
                 for (int i = 0; i < parts.length; i++) {
                     ClusterNode pNode = assignment.get(parts[i]).get(0);
 
-                    primary.add(pNode);
+                    map.computeIfAbsent(pNode, n -> new IntArrayHolder()).add(parts[i]);
 
                     updateMappings(pNode);
+
+                    if (!locallyMapped && pNode.isLocal())
+                        locallyMapped = true;
                 }
             }
             else {
-                primary = assignment.primaryPartitionNodes();
+                Set<ClusterNode> nodes = assignment.primaryPartitionNodes();
 
-                for (ClusterNode pNode : primary)
+                map = U.newHashMap(nodes.size());
+
+                for (ClusterNode pNode : nodes) {
+                    map.put(pNode, null);
+
                     updateMappings(pNode);
+
+                    if (!locallyMapped && pNode.isLocal())
+                        locallyMapped = true;
+                }
             }
 
-            boolean locallyMapped = primary.contains(cctx.localNode());
+            if (map.isEmpty())
+                throw new ClusterTopologyServerNotFoundException("Failed to find data nodes for cache (all partition " +
+                    "nodes left the grid). [fut=" + toString() + ']');
 
-            if (locallyMapped)
-                add(new MiniFuture(cctx.localNode()));
+            int idx = 0; boolean first = true, clientFirst = false;
 
-            int idx = locallyMapped ? 1 : 0;
-            boolean first = true;
-            boolean clientFirst = false;
+            GridDhtTxQueryEnlistFuture localFut = null;
 
-            // Need to unlock topology to avoid deadlock with binary descriptors registration.
-            if(!topLocked && cctx.topology().holdsLock())
-                cctx.topology().readUnlock();
+            for (Map.Entry<ClusterNode, IntArrayHolder> entry : map.entrySet()) {
+                MiniFuture mini; ClusterNode node = entry.getKey(); IntArrayHolder parts = entry.getValue();
 
-            for (ClusterNode node : F.view(primary, F.remoteNodes(cctx.localNodeId()))) {
                 add(mini = new MiniFuture(node));
 
-                if (first) {
-                    clientFirst = cctx.localNode().isClient() && !topLocked && !tx.hasRemoteLocks();
+                if (node.isLocal()) {
+                    localFut = new GridDhtTxQueryEnlistFuture(
+                        cctx.localNode().id(),
+                        lockVer,
+                        mvccSnapshot,
+                        threadId,
+                        futId,
+                        -(++idx), // The common tx logic expects non-zero mini-future ids (negative local and positive non-local).
+                        tx,
+                        cacheIds,
+                        parts == null ? null : parts.array(),
+                        schema,
+                        qry,
+                        params,
+                        flags,
+                        pageSize,
+                        remainingTime(),
+                        cctx);
 
-                    first = false;
+                    updateLocalFuture(localFut);
+
+                    localFut.listen(new CI1<IgniteInternalFuture<Long>>() {
+                        @Override public void apply(IgniteInternalFuture<Long> fut) {
+                            assert fut.error() != null || fut.result() != null : fut;
+
+                            try {
+                                clearLocalFuture((GridDhtTxQueryEnlistFuture)fut);
+
+                                GridNearTxQueryEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
+
+                                mini.onResult(res, fut.error());
+                            }
+                            catch (IgniteCheckedException e) {
+                                mini.onResult(null, e);
+                            }
+                            finally {
+                                CU.unwindEvicts(cctx);
+                            }
+                        }
+                    });
                 }
+                else {
+                    if (first) {
+                        clientFirst = cctx.localNode().isClient() && !topLocked && !tx.hasRemoteLocks();
 
-                GridNearTxQueryEnlistRequest req = new GridNearTxQueryEnlistRequest(
-                    cctx.cacheId(),
-                    threadId,
-                    futId,
-                    ++idx,
-                    tx.subjectId(),
-                    topVer,
-                    lockVer,
-                    mvccSnapshot,
-                    cacheIds,
-                    parts,
-                    schema,
-                    qry,
-                    params,
-                    flags,
-                    pageSize,
-                    remainingTime(),
-                    tx.remainingTime(),
-                    tx.taskNameHash(),
-                    clientFirst
-                );
-
-                sendRequest(req, node.id(), mini);
-            }
-
-            if (locallyMapped) {
-                final MiniFuture localMini = mini = miniFuture(-1);
-
-                assert localMini != null;
-
-                GridDhtTxQueryEnlistFuture fut = new GridDhtTxQueryEnlistFuture(
-                    cctx.localNode().id(),
-                    lockVer,
-                    mvccSnapshot,
-                    threadId,
-                    futId,
-                    -1,
-                    tx,
-                    cacheIds,
-                    parts,
-                    schema,
-                    qry,
-                    params,
-                    flags,
-                    pageSize,
-                    remainingTime(),
-                    cctx);
-
-                updateLocalFuture(fut);
-
-                fut.listen(new CI1<IgniteInternalFuture<Long>>() {
-                    @Override public void apply(IgniteInternalFuture<Long> fut) {
-                        assert fut.error() != null || fut.result() != null : fut;
-
-                        try {
-                            clearLocalFuture((GridDhtTxQueryEnlistFuture)fut);
-
-                            GridNearTxQueryEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
-
-                            localMini.onResult(res, fut.error());
-                        }
-                        catch (IgniteCheckedException e) {
-                            localMini.onResult(null, e);
-                        }
-                        finally {
-                            CU.unwindEvicts(cctx);
-                        }
+                        first = false;
                     }
-                });
 
-                fut.init();
+                    GridNearTxQueryEnlistRequest req = new GridNearTxQueryEnlistRequest(
+                        cctx.cacheId(),
+                        threadId,
+                        futId,
+                        ++idx, // The common tx logic expects non-zero mini-future ids (negative local and positive non-local).
+                        tx.subjectId(),
+                        topVer,
+                        lockVer,
+                        mvccSnapshot,
+                        cacheIds,
+                        parts == null ? null : parts.array(),
+                        schema,
+                        qry,
+                        params,
+                        flags,
+                        pageSize,
+                        remainingTime(),
+                        tx.remainingTime(),
+                        tx.taskNameHash(),
+                        clientFirst
+                    );
+
+                    sendRequest(req, node.id(), mini);
+                }
             }
+
+            markInitialized();
+
+            if (localFut != null)
+                localFut.init();
         }
         catch (Throwable e) {
-            if (mini != null)
-                mini.onResult(null, e);
-            else
-                onDone(e);
+            onDone(e);
 
             if (e instanceof Error)
                 throw (Error)e;
         }
-
-        markInitialized();
     }
 
     /**
@@ -239,7 +244,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
         IgniteInternalFuture<?> txSync = cctx.tm().awaitFinishAckAsync(nodeId, tx.threadId());
 
         if (txSync == null || txSync.isDone())
-            cctx.io().send(nodeId, req, cctx.ioPolicy());
+            cctx.io().send(nodeId, req, QUERY_POOL); // Process query requests in query pool.
         else
             txSync.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
@@ -283,19 +288,10 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    private MiniFuture miniFuture(int miniId) {
-         synchronized (this) {
-            int idx = Math.abs(miniId) - 1;
+    private synchronized MiniFuture miniFuture(int miniId) {
+        IgniteInternalFuture<Long> fut = future(Math.abs(miniId) - 1);
 
-            assert idx >= 0 && idx < futuresCountNoLock();
-
-            IgniteInternalFuture<Long> fut = future(idx);
-
-            if (!fut.isDone())
-                return (MiniFuture)fut;
-        }
-
-        return null;
+        return !fut.isDone() ? (MiniFuture)fut : null;
     }
 
     /**
@@ -322,6 +318,19 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
         if (mini != null)
             mini.onResult(res, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<UUID> pendingResponseNodes() {
+        if (initialized() && !isDone()) {
+            return futures().stream()
+                .map(MiniFuture.class::cast)
+                .filter(mini -> !mini.isDone())
+                .map(mini -> mini.node.id())
+                .collect(Collectors.toSet());
+        }
+
+        return Collections.emptySet();
     }
 
     /** {@inheritDoc} */
@@ -381,6 +390,35 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
             }
 
             return err != null ? onDone(err) : onDone(res.result(), res.error());
+        }
+    }
+
+    /** */
+    private static class IntArrayHolder {
+        /** */
+        private int[] array;
+        /** */
+        private int size;
+
+        /** */
+        void add(int i) {
+            if (array == null)
+                array = new int[4];
+
+            if (array.length == size)
+                array = Arrays.copyOf(array, size << 1);
+
+            array[size++] = i;
+        }
+
+        /** */
+        public int[] array() {
+            if (array == null)
+                return null;
+            else if (size == array.length)
+                return array;
+            else
+                return Arrays.copyOf(array, size);
         }
     }
 }

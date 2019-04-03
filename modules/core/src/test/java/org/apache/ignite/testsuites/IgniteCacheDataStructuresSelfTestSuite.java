@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.AtomicCacheAffinityConfigurationTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueCleanupSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueClientDisconnectTest;
@@ -26,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDa
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDiscoveryDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureUniqueNameTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureWithJobTest;
-import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresNoClassOnServerTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteSequenceInternalCleanupTest;
 import org.apache.ignite.internal.processors.cache.datastructures.SemaphoreFailoverNoWaitingAcquirerTest;
 import org.apache.ignite.internal.processors.cache.datastructures.SemaphoreFailoverSafeReleasePermitsTest;
@@ -45,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.partitioned.Gr
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueRotativeMultiNodeTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicReferenceApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicReferenceMultiNodeTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicSequenceMultiThreadedTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicSequenceTxSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicSetFailoverSelfTest;
@@ -64,13 +61,14 @@ import org.apache.ignite.internal.processors.cache.datastructures.partitioned.Gr
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSequenceMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSetFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSetSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSetWithClientSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSetWithNodeFilterSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedAtomicLongApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedCountDownLatchSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedQueueNoBackupsTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedSemaphoreSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedSetNoBackupsSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedAtomicReferenceApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedAtomicReferenceMultiNodeTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedAtomicStampedApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedDataStructuresFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedQueueApiSelfTest;
@@ -79,112 +77,114 @@ import org.apache.ignite.internal.processors.cache.datastructures.replicated.Gri
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSequenceApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSequenceMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSetSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSetWithClientSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSetWithNodeFilterSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.IgniteReplicatedAtomicLongApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.IgniteReplicatedCountDownLatchSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.IgniteReplicatedLockSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.IgniteReplicatedSemaphoreSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheAtomicReplicatedNodeRestartSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Test suite for cache data structures.
  */
-public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
-    /**
-     * @return Cache test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Cache Data Structures Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCachePartitionedQueueFailoverDataConsistencySelfTest.class,
+    GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class,
 
-        // Data structures.
-        suite.addTest(new TestSuite(GridCachePartitionedQueueFailoverDataConsistencySelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class));
+    GridCacheLocalSequenceApiSelfTest.class,
+    GridCacheLocalSetSelfTest.class,
+    GridCacheLocalAtomicSetSelfTest.class,
+    GridCacheLocalQueueApiSelfTest.class,
+    GridCacheLocalAtomicQueueApiSelfTest.class,
+    IgniteLocalCountDownLatchSelfTest.class,
+    IgniteLocalSemaphoreSelfTest.class,
+    IgniteLocalLockSelfTest.class,
 
-        suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheLocalSetSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheLocalAtomicSetSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheLocalQueueApiSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheLocalAtomicQueueApiSelfTest.class));
-        suite.addTest(new TestSuite(IgniteLocalCountDownLatchSelfTest.class));
-        suite.addTest(new TestSuite(IgniteLocalSemaphoreSelfTest.class));
-        suite.addTest(new TestSuite(IgniteLocalLockSelfTest.class));
+    GridCacheReplicatedSequenceApiSelfTest.class,
+    GridCacheReplicatedSequenceMultiNodeSelfTest.class,
+    GridCacheReplicatedQueueApiSelfTest.class,
+    GridCacheReplicatedQueueMultiNodeSelfTest.class,
+    GridCacheReplicatedQueueRotativeMultiNodeTest.class,
+    GridCacheReplicatedSetSelfTest.class,
+    GridCacheReplicatedSetWithClientSelfTest.class,
+    GridCacheReplicatedSetWithNodeFilterSelfTest.class,
+    GridCacheReplicatedDataStructuresFailoverSelfTest.class,
+    IgniteReplicatedCountDownLatchSelfTest.class,
+    IgniteReplicatedSemaphoreSelfTest.class,
+    IgniteReplicatedLockSelfTest.class,
+    IgniteCacheAtomicReplicatedNodeRestartSelfTest.class,
 
-        suite.addTest(new TestSuite(GridCacheReplicatedSequenceApiSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheReplicatedSequenceMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheReplicatedQueueApiSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheReplicatedQueueMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheReplicatedQueueRotativeMultiNodeTest.class));
-        suite.addTest(new TestSuite(GridCacheReplicatedSetSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheReplicatedDataStructuresFailoverSelfTest.class));
-        suite.addTest(new TestSuite(IgniteReplicatedCountDownLatchSelfTest.class));
-        suite.addTest(new TestSuite(IgniteReplicatedSemaphoreSelfTest.class));
-        suite.addTest(new TestSuite(IgniteReplicatedLockSelfTest.class));
-        suite.addTest(new TestSuite(IgniteCacheAtomicReplicatedNodeRestartSelfTest.class));
+    GridCachePartitionedSequenceApiSelfTest.class,
+    GridCachePartitionedSequenceMultiNodeSelfTest.class,
+    GridCachePartitionedQueueApiSelfTest.class,
+    GridCachePartitionedAtomicQueueApiSelfTest.class,
+    GridCachePartitionedQueueMultiNodeSelfTest.class,
+    GridCachePartitionedAtomicQueueMultiNodeSelfTest.class,
+    GridCacheQueueClientDisconnectTest.class,
 
-        suite.addTest(new TestSuite(GridCachePartitionedSequenceApiSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedSequenceMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedQueueApiSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueApiSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedQueueMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheQueueClientDisconnectTest.class));
+    GridCachePartitionedQueueCreateMultiNodeSelfTest.class,
+    GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class,
+    GridCachePartitionedSetSelfTest.class,
+    GridCachePartitionedSetWithClientSelfTest.class,
+    GridCachePartitionedSetWithNodeFilterSelfTest.class,
+    IgnitePartitionedSetNoBackupsSelfTest.class,
+    GridCachePartitionedAtomicSetSelfTest.class,
+    IgnitePartitionedCountDownLatchSelfTest.class,
+    IgniteDataStructureWithJobTest.class,
+    IgnitePartitionedSemaphoreSelfTest.class,
+    SemaphoreFailoverSafeReleasePermitsTest.class,
+    SemaphoreFailoverNoWaitingAcquirerTest.class,
+    // TODO IGNITE-3141, enabled when fixed.
+    // suite.addTest(new JUnit4TestAdapter(IgnitePartitionedLockSelfTest.class,
 
-        suite.addTest(new TestSuite(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedSetSelfTest.class));
-        suite.addTest(new TestSuite(IgnitePartitionedSetNoBackupsSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicSetSelfTest.class));
-        suite.addTest(new TestSuite(IgnitePartitionedCountDownLatchSelfTest.class));
-        suite.addTest(new TestSuite(IgniteDataStructureWithJobTest.class));
-        suite.addTest(new TestSuite(IgnitePartitionedSemaphoreSelfTest.class));
-        suite.addTest(new TestSuite(SemaphoreFailoverSafeReleasePermitsTest.class));
-        suite.addTest(new TestSuite(SemaphoreFailoverNoWaitingAcquirerTest.class));
-        // TODO IGNITE-3141, enabled when fixed.
-        // suite.addTest(new TestSuite(IgnitePartitionedLockSelfTest.class));
+    GridCachePartitionedSetFailoverSelfTest.class,
+    GridCachePartitionedAtomicSetFailoverSelfTest.class,
 
-        suite.addTest(new TestSuite(GridCachePartitionedSetFailoverSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicSetFailoverSelfTest.class));
+    GridCachePartitionedQueueRotativeMultiNodeTest.class,
+    GridCachePartitionedAtomicQueueRotativeMultiNodeTest.class,
+    GridCacheQueueCleanupSelfTest.class,
 
-        suite.addTest(new TestSuite(GridCachePartitionedQueueRotativeMultiNodeTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueRotativeMultiNodeTest.class));
-        suite.addTest(new TestSuite(GridCacheQueueCleanupSelfTest.class));
+    GridCachePartitionedQueueEntryMoveSelfTest.class,
 
-        suite.addTest(new TestSuite(GridCachePartitionedQueueEntryMoveSelfTest.class));
+    GridCachePartitionedDataStructuresFailoverSelfTest.class,
+    GridCacheQueueMultiNodeConsistencySelfTest.class,
 
-        suite.addTest(new TestSuite(GridCachePartitionedDataStructuresFailoverSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheQueueMultiNodeConsistencySelfTest.class));
+    IgniteLocalAtomicLongApiSelfTest.class,
+    IgnitePartitionedAtomicLongApiSelfTest.class,
+    IgniteReplicatedAtomicLongApiSelfTest.class,
 
-        suite.addTest(new TestSuite(IgniteLocalAtomicLongApiSelfTest.class));
-        suite.addTest(new TestSuite(IgnitePartitionedAtomicLongApiSelfTest.class));
-        suite.addTest(new TestSuite(IgniteReplicatedAtomicLongApiSelfTest.class));
+    GridCachePartitionedAtomicSequenceMultiThreadedTest.class,
+    GridCachePartitionedAtomicSequenceTxSelfTest.class,
 
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicSequenceMultiThreadedTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicSequenceTxSelfTest.class));
+    GridCachePartitionedAtomicStampedApiSelfTest.class,
+    GridCacheReplicatedAtomicStampedApiSelfTest.class,
 
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicStampedApiSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheReplicatedAtomicStampedApiSelfTest.class));
+    GridCachePartitionedAtomicReferenceApiSelfTest.class,
+    GridCacheReplicatedAtomicReferenceApiSelfTest.class,
 
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicReferenceApiSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheReplicatedAtomicReferenceApiSelfTest.class));
+    //suite.addTest(new JUnit4TestAdapter(GridCachePartitionedAtomicReferenceMultiNodeTest.class,
+    //suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedAtomicReferenceMultiNodeTest.class,
 
-        //suite.addTest(new TestSuite(GridCachePartitionedAtomicReferenceMultiNodeTest.class));
-        //suite.addTest(new TestSuite(GridCacheReplicatedAtomicReferenceMultiNodeTest.class));
+    GridCachePartitionedNodeRestartTxSelfTest.class,
+    GridCachePartitionedQueueJoinedNodeSelfTest.class,
 
-        suite.addTest(new TestSuite(GridCachePartitionedNodeRestartTxSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedQueueJoinedNodeSelfTest.class));
+    IgniteDataStructureUniqueNameTest.class,
+    //suite.addTest(new JUnit4TestAdapter(IgniteDataStructuresNoClassOnServerTest.class,
 
-        suite.addTest(new TestSuite(IgniteDataStructureUniqueNameTest.class));
-        //suite.addTest(new TestSuite(IgniteDataStructuresNoClassOnServerTest.class));
+    IgniteClientDataStructuresTest.class,
+    IgniteClientDiscoveryDataStructuresTest.class,
 
-        suite.addTest(new TestSuite(IgniteClientDataStructuresTest.class));
-        suite.addTest(new TestSuite(IgniteClientDiscoveryDataStructuresTest.class));
+    IgnitePartitionedQueueNoBackupsTest.class,
 
-        suite.addTest(new TestSuite(IgnitePartitionedQueueNoBackupsTest.class));
+    IgniteSequenceInternalCleanupTest.class,
 
-        suite.addTest(new TestSuite(IgniteSequenceInternalCleanupTest.class));
+    AtomicCacheAffinityConfigurationTest.class,
 
-        suite.addTestSuite(AtomicCacheAffinityConfigurationTest.class);
-
-        return suite;
-    }
+    IgniteCacheDataStructuresBinarySelfTestSuite.class
+})
+public class IgniteCacheDataStructuresSelfTestSuite {
 }

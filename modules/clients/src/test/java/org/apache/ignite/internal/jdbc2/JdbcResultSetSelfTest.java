@@ -40,11 +40,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -56,9 +54,6 @@ import static org.apache.ignite.jdbc.JdbcResultSetSelfTest.assertEqualsToStringR
  */
 @SuppressWarnings("FloatingPointEquality")
 public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-config.xml";
 
@@ -86,12 +81,6 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         );
 
         cfg.setCacheConfiguration(cache);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
@@ -164,6 +153,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBoolean() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -244,6 +234,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBoolean2() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -264,6 +255,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBoolean3() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -284,6 +276,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBoolean4() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -304,6 +297,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByte() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -344,6 +338,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShort() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -384,6 +379,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInteger() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -424,6 +420,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLong() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -464,6 +461,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFloat() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -504,6 +502,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDouble() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -544,6 +543,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBigDecimal() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -584,6 +584,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBigDecimalScale() throws Exception {
         assert "0.12".equals(convertStringToBigDecimalViaJdbc("0.1234", 2).toString());
         assert "1.001".equals(convertStringToBigDecimalViaJdbc("1.0005", 3).toString());
@@ -608,6 +609,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testString() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -647,6 +649,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testArray() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -668,6 +671,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
+    @Test
     public void testDate() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -696,6 +700,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
+    @Test
     public void testTime() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -723,6 +728,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestamp() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -750,6 +756,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUrl() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -770,6 +777,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObject() throws Exception {
         final Ignite ignite = ignite(0);
         final boolean binaryMarshaller = ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
@@ -804,6 +812,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNavigation() throws Exception {
         ResultSet rs = stmt.executeQuery("select * from TestObject where id > 0");
 
@@ -849,6 +858,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFetchSize() throws Exception {
         stmt.setFetchSize(1);
 
@@ -864,6 +874,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNewQueryTaskFetchSize() throws Exception {
         stmt.setFetchSize(1);
 
@@ -883,6 +894,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFindColumn() throws Exception {
         final ResultSet rs = stmt.executeQuery(SQL);
 
@@ -908,7 +920,6 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * Test object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class BaseTestObject implements Serializable {
         /** */
         @QuerySqlField(index = false)
@@ -931,7 +942,6 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * Test object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject extends BaseTestObject {
         /** */
         @QuerySqlField

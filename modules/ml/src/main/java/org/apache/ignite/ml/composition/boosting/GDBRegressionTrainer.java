@@ -19,12 +19,14 @@ package org.apache.ignite.ml.composition.boosting;
 
 import org.apache.ignite.ml.composition.boosting.loss.SquaredError;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+
+import java.io.Serializable;
 
 /**
- * Trainer for regressor using Gradient Boosting.
- * This algorithm uses gradient of Mean squared error loss metric [MSE] in each step of learning.
+ * Trainer for regressor using Gradient Boosting. This algorithm uses gradient of Mean squared error loss metric [MSE]
+ * in each step of learning.
  */
 public abstract class GDBRegressionTrainer extends GDBTrainer {
     /**
@@ -38,8 +40,8 @@ public abstract class GDBRegressionTrainer extends GDBTrainer {
     }
 
     /** {@inheritDoc} */
-    @Override protected <V, K> boolean learnLabels(DatasetBuilder<K, V> builder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lExtractor) {
+    @Override protected <V, K, C extends Serializable> boolean learnLabels(DatasetBuilder<K, V> builder,
+        Vectorizer<K, V, C, Double> vectorizer) {
 
         return true;
     }
@@ -52,5 +54,10 @@ public abstract class GDBRegressionTrainer extends GDBTrainer {
     /** {@inheritDoc} */
     @Override protected double internalLabelToExternal(double x) {
         return x;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GDBRegressionTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (GDBRegressionTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 }

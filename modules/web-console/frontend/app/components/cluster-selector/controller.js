@@ -17,8 +17,9 @@
 
 import _ from 'lodash';
 
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import 'rxjs/add/operator/combineLatest';
+import { BehaviorSubject } from 'rxjs';
+import {tap, filter, combineLatest} from 'rxjs/operators';
+import {CancellationError} from 'app/errors/CancellationError';
 
 export default class {
     static $inject = ['AgentManager', 'IgniteConfirm', 'IgniteVersion', 'IgniteMessages'];
@@ -46,15 +47,16 @@ export default class {
 
         this.inProgress$ = this._inProgressSubject.asObservable();
 
-        this.clusters$ = this.agentMgr.connectionSbj
-            .combineLatest(this.inProgress$)
-            .do(([sbj, inProgress]) => this.inProgress = inProgress)
-            .filter(([sbj, inProgress]) => !inProgress)
-            .do(([{cluster, clusters}]) => {
+        this.clusters$ = this.agentMgr.connectionSbj.pipe(
+            combineLatest(this.inProgress$),
+            tap(([sbj, inProgress]) => this.inProgress = inProgress),
+            filter(([sbj, inProgress]) => !inProgress),
+            tap(([{cluster, clusters}]) => {
                 this.cluster = cluster ? {...cluster} : null;
                 this.clusters = _.orderBy(clusters, ['name'], ['asc']);
             })
-            .subscribe(() => {});
+        )
+        .subscribe(() => {});
     }
 
     $onDestroy() {
@@ -62,8 +64,13 @@ export default class {
             this.clusters$.unsubscribe();
     }
 
-    change() {
-        this.agentMgr.switchCluster(this.cluster);
+    change(item) {
+        this.agentMgr.switchCluster(item)
+            .then(() => this.cluster = item)
+            .catch((err) => {
+                if (!(err instanceof CancellationError))
+                    this.Messages.showError('Failed to switch cluster: ', err);
+            });
     }
 
     isChangeStateAvailable() {

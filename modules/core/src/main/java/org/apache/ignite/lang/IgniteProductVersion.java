@@ -274,7 +274,6 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @param verStr String representation of version.
      * @return Product version.
      */
-    @SuppressWarnings({"MagicConstant", "TypeMayBeWeakened"})
     public static IgniteProductVersion fromString(String verStr) {
         assert verStr != null;
 

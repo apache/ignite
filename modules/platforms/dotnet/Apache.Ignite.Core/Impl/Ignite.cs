@@ -963,7 +963,7 @@ namespace Apache.Ignite.Core.Impl
                 w.WriteString(label);
             });
             
-            return new TransactionsImpl(this, platformTargetInternal, GetLocalNode().Id);
+            return new TransactionsImpl(this, platformTargetInternal, GetLocalNode().Id, label);
         }
 
         /// <summary>
@@ -1002,6 +1002,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="clusterRestarted">Cluster restarted flag.</param>
         internal void OnClientReconnected(bool clusterRestarted)
         {
+            _marsh.OnClientReconnected(clusterRestarted);
+            
             _clientReconnectTaskCompletionSource.TrySetResult(clusterRestarted);
 
             var handler = ClientReconnected;

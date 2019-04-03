@@ -30,7 +30,6 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -103,14 +102,14 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     @GridDirectCollection(Integer.class)
     private Collection<Integer> grpsAffRequest;
 
+    /** Start time of exchange on node which sent this message in nanoseconds. */
+    private long exchangeStartTime;
+
     /**
      * Exchange finish message, sent to new coordinator when it tries to
      * restore state after previous coordinator failed during exchange.
      */
     private GridDhtPartitionsFullMessage finishMsg;
-
-    /** */
-    private GridLongList activeQryTrackers;
 
     /**
      * Required by {@link Externalizable}.
@@ -133,20 +132,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         this.client = client;
         this.compress = compress;
-    }
-
-    /**
-     * @return Active queries started with previous coordinator.
-     */
-    GridLongList activeQueries() {
-        return activeQryTrackers;
-    }
-
-    /**
-     * @param activeQrys Active queries started with previous coordinator.
-     */
-    void activeQueries(GridLongList activeQrys) {
-        this.activeQryTrackers = activeQrys;
     }
 
     /**
@@ -228,7 +213,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param partsCnt Total cache partitions.
      * @return Partition update counters.
      */
-    @SuppressWarnings("unchecked")
     public CachePartitionPartialCountersMap partitionUpdateCounters(int grpId, int partsCnt) {
         Object res = partCntrs == null ? null : partCntrs.get(grpId);
 
@@ -243,35 +227,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         Map<Integer, T2<Long, Long>> map = (Map<Integer, T2<Long, Long>>)res;
 
         return CachePartitionPartialCountersMap.fromCountersMap(map, partsCnt);
-    }
-
-    /**
-     * @param grpId Cache group ID.
-     * @param partsCnt Total cache partitions.
-     * @return Partition update counters.
-     */
-    @SuppressWarnings("unchecked")
-    public CachePartitionPartialCountersMap partitionUpdateCountersUnsorted(int grpId, int partsCnt) {
-        Object res = partCntrs == null ? null : partCntrs.get(grpId);
-
-        if (res == null)
-            return CachePartitionPartialCountersMap.EMPTY;
-
-        if (res instanceof CachePartitionPartialCountersMap)
-            return (CachePartitionPartialCountersMap)res;
-
-        assert res instanceof Map : res;
-
-        Map<Integer, T2<Long, Long>> map = (Map<Integer, T2<Long, Long>>)res;
-
-        CachePartitionPartialCountersMap partCounersMap = new CachePartitionPartialCountersMap(partsCnt);
-
-        for (Map.Entry<Integer, T2<Long, Long>> e : map.entrySet())
-            partCounersMap.add(e.getKey(), e.getValue().get1(), e.getValue().get2());
-
-        partCounersMap.trim();
-
-        return partCounersMap;
     }
 
     /**
@@ -361,6 +316,20 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      */
     @Nullable public Exception getError() {
         return err;
+    }
+
+    /**
+     * Start time of exchange on node which sent this message.
+     */
+    public long exchangeStartTime() {
+        return exchangeStartTime;
+    }
+
+    /**
+     * @param exchangeStartTime Start time of exchange.
+     */
+    public void exchangeStartTime(long exchangeStartTime) {
+        this.exchangeStartTime = exchangeStartTime;
     }
 
     /** {@inheritDoc}
@@ -502,65 +471,66 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         }
 
         switch (writer.state()) {
-            case 5:
+            case 6:
                 if (!writer.writeBoolean("client", client))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeMap("dupPartsData", dupPartsData, MessageCollectionItemType.INT, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 8:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
-                if (!writer.writeMessage("finishMsg", finishMsg))
-                    return false;
-
-                writer.incrementState();
-
             case 9:
-                if (!writer.writeCollection("grpsAffRequest", grpsAffRequest, MessageCollectionItemType.INT))
+                if (!writer.writeLong("exchangeStartTime", exchangeStartTime))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
+                if (!writer.writeMessage("finishMsg", finishMsg))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeByteArray("partHistCntrsBytes", partHistCntrsBytes))
+                if (!writer.writeCollection("grpsAffRequest", grpsAffRequest, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeByteArray("partsBytes", partsBytes))
+                if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeByteArray("partsSizesBytes", partsSizesBytes))
+                if (!writer.writeByteArray("partHistCntrsBytes", partHistCntrsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeMessage("activeQryTrackers", activeQryTrackers))
+                if (!writer.writeByteArray("partsBytes", partsBytes))
                     return false;
 
                 writer.incrementState();
+
+            case 15:
+                if (!writer.writeByteArray("partsSizesBytes", partsSizesBytes))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -577,7 +547,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             return false;
 
         switch (reader.state()) {
-            case 5:
+            case 6:
                 client = reader.readBoolean("client");
 
                 if (!reader.isLastRead())
@@ -585,7 +555,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 dupPartsData = reader.readMap("dupPartsData", MessageCollectionItemType.INT, MessageCollectionItemType.INT, false);
 
                 if (!reader.isLastRead())
@@ -593,7 +563,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -601,16 +571,8 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
                 reader.incrementState();
 
-            case 8:
-                finishMsg = reader.readMessage("finishMsg");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 9:
-                grpsAffRequest = reader.readCollection("grpsAffRequest", MessageCollectionItemType.INT);
+                exchangeStartTime = reader.readLong("exchangeStartTime");
 
                 if (!reader.isLastRead())
                     return false;
@@ -618,7 +580,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 reader.incrementState();
 
             case 10:
-                partCntrsBytes = reader.readByteArray("partCntrsBytes");
+                finishMsg = reader.readMessage("finishMsg");
 
                 if (!reader.isLastRead())
                     return false;
@@ -626,7 +588,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 reader.incrementState();
 
             case 11:
-                partHistCntrsBytes = reader.readByteArray("partHistCntrsBytes");
+                grpsAffRequest = reader.readCollection("grpsAffRequest", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -634,7 +596,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 reader.incrementState();
 
             case 12:
-                partsBytes = reader.readByteArray("partsBytes");
+                partCntrsBytes = reader.readByteArray("partCntrsBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -642,7 +604,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 reader.incrementState();
 
             case 13:
-                partsSizesBytes = reader.readByteArray("partsSizesBytes");
+                partHistCntrsBytes = reader.readByteArray("partHistCntrsBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -650,12 +612,21 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 reader.incrementState();
 
             case 14:
-                activeQryTrackers = reader.readMessage("activeQryTrackers");
+                partsBytes = reader.readByteArray("partsBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
+            case 15:
+                partsSizesBytes = reader.readByteArray("partsSizesBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtPartitionsSingleMessage.class);
@@ -668,7 +639,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
+        return 16;
     }
 
     /** {@inheritDoc} */

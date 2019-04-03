@@ -396,14 +396,14 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /**
-     * @return Keep binary flag.
+     * @return Recovery flag.
      */
     public final boolean recovery() {
         return isFlag(RECOVERY_FLAG_MASK);
     }
 
     /**
-     * @param val Keep binary flag.
+     * @param val Recovery flag.
      */
     public void recovery(boolean val) {
         setFlag(val, RECOVERY_FLAG_MASK);
@@ -528,7 +528,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */
@@ -546,44 +546,44 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 8:
                 if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 9:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
-                if (!writer.writeMessage("topVer", topVer))
+            case 10:
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -604,7 +604,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -612,7 +612,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
@@ -620,7 +620,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 byte opOrd;
 
                 opOrd = reader.readByte("op");
@@ -632,7 +632,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -640,7 +640,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 byte syncModeOrd;
 
                 syncModeOrd = reader.readByte("syncMode");
@@ -652,7 +652,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
                 reader.incrementState();
 
-            case 8:
+            case 9:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -660,8 +660,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
                 reader.incrementState();
 
-            case 9:
-                topVer = reader.readMessage("topVer");
+            case 10:
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;

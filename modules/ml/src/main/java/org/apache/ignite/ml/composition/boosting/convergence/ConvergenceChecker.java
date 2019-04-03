@@ -17,18 +17,20 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+
+import java.io.Serializable;
 
 /**
  * Contains logic of error computing and convergence checking for Gradient Boosting algorithms.
@@ -36,7 +38,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public abstract class ConvergenceChecker<K, V> implements Serializable {
+public abstract class ConvergenceChecker<K, V, C extends Serializable> implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 710762134746674105L;
 
@@ -49,11 +51,8 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
     /** Loss function. */
     private Loss loss;
 
-    /** Feature extractor. */
-    private IgniteBiFunction<K, V, Vector> featureExtractor;
-
-    /** Label extractor. */
-    private IgniteBiFunction<K, V, Double> lbExtractor;
+    /** Upstream vectorizer. */
+    private Vectorizer<K, V, C, Double> vectorizer;
 
     /** Precision of convergence check. */
     private double precision;
@@ -65,36 +64,38 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
      * @param externalLbToInternalMapping External label to internal mapping.
      * @param loss Loss gradient.
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @param precision
+     * @param vectorizer Upstream vectorizer.
+     * @param precision Precision.FeatureMatrixWithLabelsOnHeapDataBuilder.java
      */
     public ConvergenceChecker(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor,
-        double precision) {
+        DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> vectorizer, double precision) {
 
         assert precision < 1 && precision >= 0;
 
         this.sampleSize = sampleSize;
         this.externalLbToInternalMapping = externalLbToInternalMapping;
         this.loss = loss;
-        this.featureExtractor = featureExtractor;
-        this.lbExtractor = lbExtractor;
         this.precision = precision;
+        this.vectorizer = vectorizer;
     }
 
     /**
      * Checks convergency on dataset.
      *
+     * @param envBuilder Learning environment builder.
      * @param currMdl Current model.
-     * @return true if GDB is converged.
+     * @return True if GDB is converged.
      */
-    public boolean isConverged(DatasetBuilder<K, V> datasetBuilder, ModelsComposition currMdl) {
+    public boolean isConverged(
+        LearningEnvironmentBuilder envBuilder,
+        DatasetBuilder<K, V> datasetBuilder,
+        ModelsComposition currMdl) {
         try (Dataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
+            envBuilder,
             new EmptyContextBuilder<>(),
-            new FeatureMatrixWithLabelsOnHeapDataBuilder<>(featureExtractor, lbExtractor)
+            new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer)
         )) {
             return isConverged(dataset, currMdl);
         }
@@ -108,9 +109,10 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
      *
      * @param dataset Dataset.
      * @param currMdl Current model.
-     * @return true if GDB is converged.
+     * @return True if GDB is converged.
      */
-    public boolean isConverged(Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset, ModelsComposition currMdl) {
+    public boolean isConverged(Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset,
+        ModelsComposition currMdl) {
         Double error = computeMeanErrorOnDataset(dataset, currMdl);
         return error < precision || error.isNaN();
     }
@@ -120,7 +122,7 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
      *
      * @param dataset Learning dataset.
      * @param mdl Model.
-     * @return error mean value.
+     * @return Error mean value.
      */
     public abstract Double computeMeanErrorOnDataset(
         Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset,
@@ -130,11 +132,11 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
      * Compute error for the specific vector of dataset.
      *
      * @param currMdl Current model.
-     * @return error.
+     * @return Error.
      */
     public double computeError(Vector features, Double answer, ModelsComposition currMdl) {
         Double realAnswer = externalLbToInternalMapping.apply(answer);
-        Double mdlAnswer = currMdl.apply(features);
+        Double mdlAnswer = currMdl.predict(features);
         return -loss.gradient(sampleSize, realAnswer, mdlAnswer);
     }
 }

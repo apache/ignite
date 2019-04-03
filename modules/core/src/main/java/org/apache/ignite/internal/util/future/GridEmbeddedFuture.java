@@ -31,7 +31,6 @@ import org.apache.ignite.lang.IgniteOutClosure;
  * Future which waits for embedded future to complete and then asynchronously executes
  * provided closure with embedded future result.
  */
-@SuppressWarnings({"NullableProblems"})
 public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     /** Embedded future to wait for. */
     private IgniteInternalFuture<B> embedded;
@@ -50,7 +49,6 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
         this.embedded = embedded;
 
         embedded.listen(new AL1() {
-            @SuppressWarnings({"ErrorNotRethrown", "CatchGenericClass"})
             @Override public void applyx(IgniteInternalFuture<B> embedded) {
                 try {
                     onDone(c.apply(embedded.get(), null));

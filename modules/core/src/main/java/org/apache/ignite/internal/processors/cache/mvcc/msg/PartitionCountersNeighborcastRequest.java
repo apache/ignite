@@ -79,13 +79,13 @@ public class PartitionCountersNeighborcastRequest extends GridCacheIdMessage {
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
                     return false;
 
@@ -107,7 +107,7 @@ public class PartitionCountersNeighborcastRequest extends GridCacheIdMessage {
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -115,7 +115,7 @@ public class PartitionCountersNeighborcastRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -135,7 +135,7 @@ public class PartitionCountersNeighborcastRequest extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 
     /** {@inheritDoc} */

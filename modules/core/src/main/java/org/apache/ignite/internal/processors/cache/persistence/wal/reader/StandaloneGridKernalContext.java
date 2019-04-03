@@ -34,6 +34,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalGateway;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -68,6 +70,8 @@ import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -84,6 +88,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -295,6 +300,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridClusterStateProcessor state() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DistributedMetaStorage distributedMetastorage() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DistributedConfigurationProcessor distributedConfiguration() {
         return null;
     }
 
@@ -647,9 +662,18 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return null;
     }
 
+    @Override public IoStatisticsManager ioStats() {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean recoveryMode() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -665,5 +689,15 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<GridComponent> iterator() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CompressionProcessor compress() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public LongJVMPauseDetector longJvmPauseDetector() {
+        return new LongJVMPauseDetector(log);
     }
 }

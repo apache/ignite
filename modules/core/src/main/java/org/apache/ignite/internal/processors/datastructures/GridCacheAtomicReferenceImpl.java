@@ -92,12 +92,12 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
             GridCacheAtomicReferenceValue<T> ref = cacheView.get(key);
 
             if (ref == null)
-                throw new IgniteCheckedException("Failed to find atomic reference with given name: " + name);
+                throw new IgniteException("Failed to find atomic reference with given name: " + name);
 
             return ref.get();
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -106,8 +106,13 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
         checkRemoved();
 
         try {
-            if (ctx.dataStructures().knownType(val))
-                cacheView.invoke(key, new ReferenceSetEntryProcessor<>(val));
+            if (ctx.dataStructures().knownType(val)) {
+                EntryProcessorResult res = cacheView.invoke(key, new ReferenceSetEntryProcessor<>(val));
+
+                assert res != null;
+
+                res.get();
+            }
             else {
                 CU.retryTopologySafe(new Callable<Void>() {
                     @Override public Void call() throws Exception {
@@ -127,11 +132,8 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
                 });
             }
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -173,11 +175,8 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
                 });
             }
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -225,11 +224,8 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
                 });
             }
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -273,7 +269,6 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
      * @return Reconstructed object.
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
-    @SuppressWarnings("unchecked")
     private Object readResolve() throws ObjectStreamException {
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();

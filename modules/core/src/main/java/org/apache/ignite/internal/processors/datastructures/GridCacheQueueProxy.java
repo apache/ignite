@@ -123,7 +123,6 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SuspiciousMethodCalls")
     @Override public boolean contains(final Object item) {
         gate.enter();
 
@@ -160,7 +159,6 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SuspiciousMethodCalls")
     @Override public boolean remove(final Object item) {
         gate.enter();
 
@@ -446,6 +444,18 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     /** {@inheritDoc} */
     @Override public <R> R affinityCall(final IgniteCallable<R> job) {
         return delegate.affinityCall(job);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <V1> IgniteQueue<V1> withKeepBinary() {
+        gate.enter();
+
+        try {
+            return new GridCacheQueueProxy<>(cctx, (GridCacheQueueAdapter<V1>)delegate.withKeepBinary());
+        }
+        finally {
+            gate.leave();
+        }
     }
 
     /** {@inheritDoc} */

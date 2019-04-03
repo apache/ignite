@@ -17,19 +17,21 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
-import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
+
+import java.io.FileNotFoundException;
 
 /**
  * Let's add two categorial features "sex", "embarked" to predict more precisely than in {@link Step_1_Read_and_Learn}..
@@ -85,8 +87,7 @@ public class Step_3_Categorial_with_One_Hot_Encoder {
                 DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    imputingPreprocessor,
-                    lbExtractor
+                    FeatureLabelExtractorWrapper.wrap(imputingPreprocessor, lbExtractor) //TODO: IGNITE-11581
                 );
 
                 System.out.println("\n>>> Trained model: " + mdl);

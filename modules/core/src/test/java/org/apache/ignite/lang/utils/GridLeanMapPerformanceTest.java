@@ -20,6 +20,7 @@ package org.apache.ignite.lang.utils;
 import java.util.Map;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Performance test for {@link GridLeanMap}.
@@ -34,6 +35,7 @@ public class GridLeanMapPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPerformance() throws Exception {
         long avgDur = 0;
 
@@ -67,7 +69,7 @@ public class GridLeanMapPerformanceTest extends GridCommonAbstractTest {
      * @param map Map.
      * @throws Exception In case of error.
      */
-    @SuppressWarnings({"StatementWithEmptyBody", "UnusedDeclaration"})
+    @SuppressWarnings({"StatementWithEmptyBody"})
     private void iterate(Map<Integer, Integer> map) throws Exception {
         for (int i = 1; i <= ITER_CNT; i++) {
             // Iterate through entries.

@@ -21,8 +21,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteTxMultiThreadedAbstractTest;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -33,9 +35,16 @@ public class GridCacheLocalTxMultiThreadedSelfTest extends IgniteTxMultiThreaded
     /** Cache debug flag. */
     private static final boolean CACHE_DEBUG = false;
 
+    /** */
+    @Before
+    public void beforeGridCacheLocalEvictionEventSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+    }
+
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);

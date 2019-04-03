@@ -25,6 +25,7 @@ import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.resource.transaction.spi.TransactionStatus;
+import org.junit.Test;
 
 /**
  * Cache store test.
@@ -69,6 +70,7 @@ public class CacheHibernateBlobStoreSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfigurationByUrl() throws Exception {
         URL url = U.resolveIgniteUrl(CacheHibernateStoreFactorySelfTest.MODULE_PATH +
             "/src/test/java/org/apache/ignite/cache/store/hibernate/hibernate.cfg.xml");
@@ -84,6 +86,7 @@ public class CacheHibernateBlobStoreSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfigurationByFile() throws Exception {
         URL url = U.resolveIgniteUrl(CacheHibernateStoreFactorySelfTest.MODULE_PATH +
                 "/src/test/java/org/apache/ignite/cache/store/hibernate/hibernate.cfg.xml");
@@ -101,6 +104,7 @@ public class CacheHibernateBlobStoreSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfigurationByResource() throws Exception {
         store.setHibernateConfigurationPath("/org/apache/ignite/cache/store/hibernate/hibernate.cfg.xml");
 
@@ -108,7 +112,4 @@ public class CacheHibernateBlobStoreSelfTest extends
         store.load("key");
     }
 
-    @Override public void testSimpleMultithreading() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1757");
-    }
 }

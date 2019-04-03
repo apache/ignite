@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.zip.CRC32;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;

@@ -17,9 +17,7 @@
 
 package org.apache.ignite.examples.ml.knn;
 
-import java.util.Arrays;
-import java.util.UUID;
-import javax.cache.Cache;
+import org.apache.commons.math3.util.Precision;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -27,13 +25,18 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+
+import javax.cache.Cache;
+import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * Run ANN multi-class classification trainer ({@link ANNClassificationTrainer}) over distributed dataset.
@@ -51,73 +54,76 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
  */
 public class ANNClassificationExample {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> ANN multi-class classification algorithm over cached dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
+            IgniteCache<Integer, double[]> dataCache = null;
+            try {
+                dataCache = getTestCache(ignite);
 
-            ANNClassificationTrainer trainer = new ANNClassificationTrainer()
-                .withDistance(new ManhattanDistance())
-                .withK(50)
-                .withMaxIterations(1000)
-                .withSeed(1234L)
-                .withEpsilon(1e-2);
+                ANNClassificationTrainer trainer = new ANNClassificationTrainer()
+                    .withDistance(new ManhattanDistance())
+                    .withK(50)
+                    .withMaxIterations(1000)
+                    .withEpsilon(1e-2);
 
-            long startTrainingTime = System.currentTimeMillis();
+                long startTrainingTime = System.currentTimeMillis();
 
-            NNClassificationModel knnMdl = trainer.fit(
-                ignite,
-                dataCache,
-                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-                (k, v) -> v[0]
-            ).withK(5)
-                .withDistanceMeasure(new EuclideanDistance())
-                .withStrategy(NNStrategy.WEIGHTED);
+                NNClassificationModel knnMdl = trainer.fit(
+                    ignite,
+                    dataCache,
+                    new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+                ).withK(5)
+                    .withDistanceMeasure(new EuclideanDistance())
+                    .withStrategy(NNStrategy.WEIGHTED);
 
-            long endTrainingTime = System.currentTimeMillis();
-
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Ground Truth\t|");
-            System.out.println(">>> ---------------------------------");
-
-            int amountOfErrors = 0;
-            int totalAmount = 0;
-
-            long totalPredictionTime = 0L;
-
-            try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, double[]> observation : observations) {
-                    double[] val = observation.getValue();
-                    double[] inputs = Arrays.copyOfRange(val, 1, val.length);
-                    double groundTruth = val[0];
-
-                    long startPredictionTime = System.currentTimeMillis();
-                    double prediction = knnMdl.apply(new DenseVector(inputs));
-                    long endPredictionTime = System.currentTimeMillis();
-
-                    totalPredictionTime += (endPredictionTime - startPredictionTime);
-
-                    totalAmount++;
-                    if (groundTruth != prediction)
-                        amountOfErrors++;
-
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                }
+                long endTrainingTime = System.currentTimeMillis();
 
                 System.out.println(">>> ---------------------------------");
+                System.out.println(">>> | Prediction\t| Ground Truth\t|");
+                System.out.println(">>> ---------------------------------");
 
-                System.out.println("Training costs = " + (endTrainingTime - startTrainingTime));
-                System.out.println("Prediction costs = " + totalPredictionTime);
+                int amountOfErrors = 0;
+                int totalAmount = 0;
 
-                System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double) totalAmount));
-                System.out.println(totalAmount);
+                long totalPredictionTime = 0L;
 
-                System.out.println(">>> ANN multi-class classification algorithm over cached dataset usage example completed.");
+                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
+                    for (Cache.Entry<Integer, double[]> observation : observations) {
+                        double[] val = observation.getValue();
+                        double[] inputs = Arrays.copyOfRange(val, 1, val.length);
+                        double groundTruth = val[0];
+
+                        long startPredictionTime = System.currentTimeMillis();
+                        double prediction = knnMdl.predict(new DenseVector(inputs));
+                        long endPredictionTime = System.currentTimeMillis();
+
+                        totalPredictionTime += (endPredictionTime - startPredictionTime);
+
+                        totalAmount++;
+                        if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))
+                            amountOfErrors++;
+
+                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
+                    }
+
+                    System.out.println(">>> ---------------------------------");
+
+                    System.out.println("Training costs = " + (endTrainingTime - startTrainingTime));
+                    System.out.println("Prediction costs = " + totalPredictionTime);
+
+                    System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
+                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+                    System.out.println(totalAmount);
+
+                    System.out.println(">>> ANN multi-class classification algorithm over cached dataset usage example completed.");
+                }
+            } finally {
+                dataCache.destroy();
             }
         }
     }

@@ -23,6 +23,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Test;
 
 /**
  *
@@ -52,6 +53,7 @@ public class IgnitePdsTxCacheRebalancingTest extends IgnitePdsCacheRebalancingAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyChangesWithConstantLoadExplicitTx() throws Exception {
         explicitTx = true;
 

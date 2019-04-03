@@ -16,5 +16,20 @@
  */
 
 form-field-size {
+    --scale-select-width: 60px;
+    --error-area-width: 36px;
+    --default-input-padding-horizontal: 10px;
+
 	display: block;
+
+    .form-field__error {
+        width: var(--error-area-width);
+        position: absolute;
+        right: var(--scale-select-width);
+        bottom: 0;
+    }
+
+    &.ng-invalid input, input.ng-invalid {
+        padding-right: var(--error-area-width);
+    }
 }

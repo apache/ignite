@@ -28,7 +28,6 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
@@ -38,7 +37,6 @@ import org.apache.ignite.hadoop.fs.IgniteHadoopFileSystemCounterWriter;
 import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
@@ -47,16 +45,16 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Test of integration with Hadoop client via command line interface.
  */
 public class HadoopCommandLineTest extends GridCommonAbstractTest {
     /** IGFS instance. */
-    private IgfsEx igfs;
+    private static IgfsEx igfs;
 
     /** */
     private static final String igfsName = "igfs";
@@ -148,10 +146,8 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
+    /** */
+    private void beforeHadoopCommandLineTest() throws Exception {
         hiveHome = IgniteSystemProperties.getString("HIVE_HOME");
 
         assertFalse("HIVE_HOME hasn't been set.", F.isEmpty(hiveHome));
@@ -215,13 +211,15 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
         return path != null ? path : U.resolveIgnitePath("config/hadoop/" + name);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    /** */
+    private void afterHadoopCommandLineTest() {
         U.delete(testWorkDir);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        beforeHadoopCommandLineTest();
+
         String cfgPath = "config/hadoop/default-config.xml";
 
         IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> tup = IgnitionEx.loadConfiguration(cfgPath);
@@ -234,8 +232,10 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void afterTest() {
         stopAllGrids(true);
+
+        afterHadoopCommandLineTest();
     }
 
     /**
@@ -358,6 +358,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     /**
      * Tests Hadoop command line integration.
      */
+    @Test
     public void testHadoopCommandLine() throws Exception {
         assertEquals(0, executeHadoopCmd("fs", "-ls", "/"));
 
@@ -434,6 +435,8 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     /**
      * Tests Hive integration.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9920")
+    @Test
     public void testHiveCommandLine() throws Exception {
         assertEquals(0, executeHiveQuery(
             "create table table_a (" +

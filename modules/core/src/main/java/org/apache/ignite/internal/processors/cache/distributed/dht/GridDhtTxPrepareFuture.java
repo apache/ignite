@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -73,7 +74,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
-import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -91,19 +91,20 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_VALIDATE_CACHE_REQUESTS;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /**
@@ -166,15 +167,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     private Map<UUID, GridDistributedTxMapping> dhtMap;
 
     /** Error. */
-    @SuppressWarnings("UnusedDeclaration")
     private volatile Throwable err;
 
     /** Replied flag. */
-    @SuppressWarnings("UnusedDeclaration")
     private volatile int replied;
 
     /** All replies flag. */
-    @SuppressWarnings("UnusedDeclaration")
     private volatile int mapped;
 
     /** Prepare request. */
@@ -216,6 +214,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
     /** Timeout object. */
     private final PrepareTimeoutObject timeoutObj;
+
+    /** */
+    private CountDownLatch timeoutAddedLatch;
 
     /**
      * @param cctx Context.
@@ -260,6 +261,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         assert nearMap != null;
 
         timeoutObj = timeout > 0 ? new PrepareTimeoutObject(timeout) : null;
+
+        if (tx.onePhaseCommit())
+            timeoutAddedLatch = new CountDownLatch(1);
     }
 
     /** {@inheritDoc} */
@@ -406,8 +410,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         entryProc,
                         tx.resolveTaskName(),
                         null,
-                        keepBinary,
-                        null);  // TODO IGNITE-7371
+                        keepBinary);
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
@@ -520,8 +523,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*transformClo*/null,
                             /*taskName*/null,
                             /*expiryPlc*/null,
-                            /*keepBinary*/true,
-                            null); // TODO IGNITE-7371
+                            /*keepBinary*/true);
                     }
 
                     if (oldVal != null)
@@ -532,9 +534,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to get result value for cache entry: " + cached, e);
+
+                onError(e);
             }
             catch (GridCacheEntryRemovedException e) {
-                assert false : "Got entry removed exception while holding transactional lock on entry [e=" + e + ", cached=" + cached + ']';
+                // Entry was unlocked by concurrent rollback.
+                onError(tx.rollbackException());
             }
             finally {
                 cctx.database().checkpointReadUnlock();
@@ -590,7 +595,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
@@ -686,11 +690,18 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      * @return {@code True} if all locks are acquired, {@code false} otherwise.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private boolean mapIfLocked() {
         if (checkLocks()) {
             if (!MAPPED_UPD.compareAndSet(this, 0, 1))
                 return false;
+
+            if (timeoutObj != null && tx.onePhaseCommit()) {
+                U.awaitQuiet(timeoutAddedLatch);
+
+                // Disable timeouts after all locks are acquired for one-phase commit or partition desync will occur.
+                if (!cctx.time().removeTimeoutObject(timeoutObj))
+                    return true; // Should not proceed with prepare if tx is already timed out.
+            }
 
             if (forceKeysFut == null || (forceKeysFut.isDone() && forceKeysFut.error() == null))
                 prepare0();
@@ -730,7 +741,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.clearPrepareFuture(this);
 
         // Do not commit one-phase commit transaction if originating node has near cache enabled.
-        if (tx.onePhaseCommit() && tx.commitOnPrepare()) {
+        if (tx.commitOnPrepare()) {
             assert last;
 
             Throwable prepErr = this.err;
@@ -740,61 +751,55 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             onComplete(res);
 
-            if (tx.commitOnPrepare()) {
-                if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
-                    CIX1<IgniteInternalFuture<IgniteInternalTx>> resClo =
-                        new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
-                            @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
-                                if(res.error() == null && fut.error() != null)
-                                    res.error(fut.error());
+            if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
+                CIX1<IgniteInternalFuture<IgniteInternalTx>> resClo =
+                    new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
+                        @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
+                            if (res.error() == null && fut.error() != null)
+                                res.error(fut.error());
 
-                                if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
-                                    sendPrepareResponse(res);
-                            }
-                        };
-
-                    try {
-                        if (prepErr == null) {
-                            try {
-                                tx.commitAsync().listen(resClo);
-                            }
-                            catch (Throwable e) {
-                                res.error(e);
-
-                                tx.systemInvalidate(true);
-
-                                try {
-                                    tx.rollbackAsync().listen(resClo);
-                                }
-                                catch (Throwable e1) {
-                                    e.addSuppressed(e1);
-                                }
-
-                                throw e;
-                            }
+                            if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
+                                sendPrepareResponse(res);
                         }
-                        else if (!cctx.kernalContext().isStopping()) {
+                    };
+
+                try {
+                    if (prepErr == null) {
+                        try {
+                            tx.commitAsync().listen(resClo);
+                        }
+                        catch (Throwable e) {
+                            res.error(e);
+
+                            tx.systemInvalidate(true);
+
                             try {
                                 tx.rollbackAsync().listen(resClo);
                             }
-                            catch (Throwable e) {
-                                if (err != null)
-                                    err.addSuppressed(e);
-
-                                throw err;
+                            catch (Throwable e1) {
+                                e.addSuppressed(e1);
                             }
+
+                            throw e;
                         }
                     }
-                    catch (Throwable e){
-                        tx.logTxFinishErrorSafe(log, true, e);
+                    else if (!cctx.kernalContext().isStopping()) {
+                        try {
+                            tx.rollbackAsync().listen(resClo);
+                        }
+                        catch (Throwable e) {
+                            if (err != null)
+                                err.addSuppressed(e);
 
-                        cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                            throw err;
+                        }
                     }
                 }
-            }
-            else {
-                if (REPLIED_UPD.compareAndSet(this, 0, 1))
-                    sendPrepareResponse(res);
+                catch (Throwable e) {
+                    tx.logTxFinishErrorSafe(log, true, e);
+
+                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                }
             }
 
             return true;
@@ -895,8 +900,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             null,
             tx.onePhaseCommit(),
             tx.activeCachesDeploymentEnabled());
-
-        res.mvccSnapshot(tx.mvccSnapshot());
 
         if (prepErr == null) {
             if (tx.needReturnValue() || tx.nearOnOriginatingNode() || tx.hasInterceptor())
@@ -1001,7 +1004,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @return {@code True} if {@code done} flag was changed as a result of this call.
      */
     private boolean onComplete(@Nullable GridNearTxPrepareResponse res) {
-        if ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local()))
+        if (!tx.onePhaseCommit() && ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local())))
             tx.state(PREPARED);
 
         if (super.onDone(res, res == null ? err : null)) {
@@ -1033,7 +1036,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      * @param req Prepare request.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public void prepare(GridNearTxPrepareRequest req) {
         assert req != null;
 
@@ -1044,6 +1046,24 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         }
 
         this.req = req;
+
+        ClusterNode node = cctx.discovery().node(tx.topologyVersion(), tx.nearNodeId());
+
+        boolean validateCache = needCacheValidation(node);
+
+        if (validateCache) {
+            GridDhtTopologyFuture topFut = cctx.exchange().lastFinishedFuture();
+
+            if (topFut != null && !isEmpty(req.writes())) {
+                // All caches either read only or not. So validation of one cache context is enough.
+                GridCacheContext ctx = F.first(req.writes()).context();
+
+                Throwable err = topFut.validateCache(ctx, req.recovery(), isEmpty(req.writes()), null, null);
+
+                if (err != null)
+                    onDone(null, new IgniteCheckedException(err));
+            }
+        }
 
         boolean ser = tx.serializable() && tx.optimistic();
 
@@ -1063,12 +1083,33 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         readyLocks();
 
-        if (timeoutObj != null && !isDone()) {
-            // Start timeout tracking after 'readyLocks' to avoid race with timeout processing.
+        // Start timeout tracking after 'readyLocks' to avoid race with timeout processing.
+        if (timeoutObj != null) {
             cctx.time().addTimeoutObject(timeoutObj);
+
+            // Fix race with add/remove timeout object if locks are mapped from another
+            // thread before timeout object is enqueued.
+            if (tx.onePhaseCommit())
+                timeoutAddedLatch.countDown();
         }
 
         mapIfLocked();
+    }
+
+    /**
+     * Returns {@code true} if cache validation needed.
+     *
+     * @param node Originating node.
+     * @return {@code True} if cache should be validated, {@code false} - otherwise.
+     */
+    private boolean needCacheValidation(ClusterNode node) {
+        if (node == null) {
+            // The originating (aka near) node has left the topology
+            // and therefore the cache validation doesn't make sense.
+            return false;
+        }
+
+        return Boolean.TRUE.equals(node.attribute(ATTR_VALIDATE_CACHE_REQUESTS));
     }
 
     /**
@@ -1163,7 +1204,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
         }
         catch (GridCacheEntryRemovedException ignore) {
-            assert false : "Got removed exception on entry with dht local candidate: " + entries;
+            // Entry was unlocked by concurrent rollback.
+            onError(tx.rollbackException());
         }
 
         return null;
@@ -1217,8 +1259,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      */
     private void prepare0() {
-        boolean skipInit = false;
-
         try {
             if (tx.serializable() && tx.optimistic()) {
                 IgniteCheckedException err0;
@@ -1253,29 +1293,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
 
-            IgniteInternalFuture<MvccSnapshot> waitCrdCntrFut = null;
-
-            if (req.requestMvccCounter()) {
-                assert last;
-
-                assert tx.txState().mvccEnabled();
-
-                try {
-                    // Request snapshot locally only because
-                    // Mvcc Coordinator is expected to be local.
-                    MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(tx);
-
-                    assert snapshot != null : tx.topologyVersion();
-
-                    tx.mvccSnapshot(snapshot);
-                }
-                catch (ClusterTopologyCheckedException e) {
-                    onDone(e);
-
-                    return;
-                }
-            }
-
             onEntriesLocked();
 
             // We are holding transaction-level locks for entries here, so we can get next write version.
@@ -1296,43 +1313,23 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 return;
 
             if (last) {
-                if (waitCrdCntrFut != null) {
-                    skipInit = true;
+                recheckOnePhaseCommit();
 
-                    waitCrdCntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
-                        @Override public void apply(IgniteInternalFuture<MvccSnapshot> fut) {
-                            try {
-                                fut.get();
+                if (tx.onePhaseCommit())
+                    tx.chainState(PREPARED);
 
-                                sendPrepareRequests();
-
-                                markInitialized();
-                            }
-                            catch (Throwable e) {
-                                U.error(log, "Failed to get mvcc version for tx [txId=" + tx.nearXidVersion() +
-                                    ", err=" + e + ']', e);
-
-                                GridNearTxPrepareResponse res = createPrepareResponse(e);
-
-                                onDone(res, res.error());
-                            }
-                        }
-                    });
-                }
-                else
-                    sendPrepareRequests();
+                sendPrepareRequests();
             }
         }
         finally {
-            if (!skipInit)
-                markInitialized();
+            markInitialized();
         }
     }
 
     /**
-     *
+     * Checking that one phase commit for transaction still actual.
      */
-    private void sendPrepareRequests() {
+    private void recheckOnePhaseCommit() {
         if (tx.onePhaseCommit() && !tx.nearMap().isEmpty()) {
             for (GridDistributedTxMapping nearMapping : tx.nearMap().values()) {
                 if (!tx.dhtMap().containsKey(nearMapping.primary().id())) {
@@ -1342,7 +1339,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
         }
+    }
 
+    /**
+     *
+     */
+    private void sendPrepareRequests() {
         assert !tx.txState().mvccEnabled() || !tx.onePhaseCommit() || tx.mvccSnapshot() != null;
 
         int miniId = 0;
@@ -1825,7 +1827,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         /**
          * @param res Result callback.
          */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void onResult(GridDhtTxPrepareResponse res) {
             if (res.error() != null)
                 // Fail the whole compound future.
@@ -1918,8 +1919,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 drType,
                                 false)) {
                                 if (rec && !entry.isInternal())
-                                    cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                        (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
+                                    cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
+                                        null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                         false, null, null, null, false);
 
                                 if (retVal && !invoke)
@@ -1980,8 +1981,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 lockKeys.clear();
             }
 
-            onError(new IgniteTxTimeoutCheckedException("Failed to acquire lock within " +
-                "provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
+            onError(tx.timeoutException());
         }
 
         /** {@inheritDoc} */

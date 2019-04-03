@@ -23,17 +23,20 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
@@ -41,7 +44,9 @@ import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
@@ -51,6 +56,9 @@ import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
+
+import static java.lang.Math.abs;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanToByte;
 
 /**
  * JDBC IO layer implementation based on blocking IPC streams.
@@ -74,8 +82,11 @@ public class JdbcThinTcpIo {
     /** Version 2.7.0. */
     private static final ClientListenerProtocolVersion VER_2_7_0 = ClientListenerProtocolVersion.create(2, 7, 0);
 
+    /** Version 2.8.0. */
+    private static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
+
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_7_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -96,7 +107,7 @@ public class JdbcThinTcpIo {
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
     /** Random. */
-    private static final AtomicLong IDX_GEN = new AtomicLong();
+    private static final AtomicLong IDX_GEN = new AtomicLong(new Random(U.currentTimeMillis()).nextLong());
 
     /** Connection properties. */
     private final ConnectionProperties connProps;
@@ -122,11 +133,17 @@ public class JdbcThinTcpIo {
     /** Mutex. */
     private final Object mux = new Object();
 
+    /** Connection mutex. */
+    private final Object connMux = new Object();
+
     /** Current protocol version used to connection to Ignite. */
     private ClientListenerProtocolVersion srvProtocolVer;
 
     /** Server index. */
     private volatile int srvIdx;
+
+    /** Socket. */
+    private Socket sock;
 
     /**
      * Constructor.
@@ -249,6 +266,8 @@ public class JdbcThinTcpIo {
 
                 try {
                     sock.connect(addr, timeout);
+
+                    this.sock = sock;
                 }
                 catch (IOException e) {
                     throw new SQLException("Failed to connect to server [host=" + addr.getHostName() +
@@ -330,6 +349,9 @@ public class JdbcThinTcpIo {
         if (ver.compareTo(VER_2_7_0) >= 0)
             writer.writeString(connProps.nestedTxMode());
 
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            writer.writeByte(nullableBooleanToByte(connProps.isDataPageScanEnabled()));
+
         if (!F.isEmpty(connProps.getUsername())) {
             assert ver.compareTo(VER_2_5_0) >= 0 : "Authentication is supported since 2.5";
 
@@ -377,7 +399,8 @@ public class JdbcThinTcpIo {
                     + ", url=" + connProps.getUrl() + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
-            if (VER_2_5_0.equals(srvProtoVer0)
+            if (VER_2_7_0.equals(srvProtoVer0)
+                || VER_2_5_0.equals(srvProtoVer0)
                 || VER_2_4_0.equals(srvProtoVer0)
                 || VER_2_3_0.equals(srvProtoVer0)
                 || VER_2_1_5.equals(srvProtoVer0))
@@ -464,14 +487,7 @@ public class JdbcThinTcpIo {
                     + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
             }
 
-            int cap = guessCapacity(req);
-
-            BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
-                null, null);
-
-            req.writeBinary(writer, srvProtocolVer);
-
-            send(writer.array());
+            sendRequestRaw(req);
         }
         finally {
             synchronized (mux) {
@@ -482,12 +498,12 @@ public class JdbcThinTcpIo {
 
     /**
      * @param req Request.
+     * @param stmt Statement.
      * @return Server response.
      * @throws IOException In case of IO error.
      * @throws SQLException On concurrent access to JDBC connection.
      */
-    @SuppressWarnings("unchecked")
-    JdbcResponse sendRequest(JdbcRequest req) throws SQLException, IOException {
+    JdbcResponse sendRequest(JdbcRequest req, JdbcThinStatement stmt) throws SQLException, IOException {
         synchronized (mux) {
             if (ownThread != null) {
                 throw new SQLException("Concurrent access to JDBC connection is not allowed"
@@ -499,15 +515,30 @@ public class JdbcThinTcpIo {
         }
 
         try {
-            int cap = guessCapacity(req);
+            if (stmt != null) {
+                synchronized (stmt.cancellationMutex()) {
+                    if (stmt.isCancelled()) {
+                        if (req instanceof JdbcQueryCloseRequest)
+                            return new JdbcResponse(null);
 
-            BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
+                        return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
+                    }
 
-            req.writeBinary(writer, srvProtocolVer);
+                    sendRequestRaw(req);
 
-            send(writer.array());
+                    if (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest)
+                        stmt.currentRequestId(req.requestId());
+                }
+            }
+            else
+                sendRequestRaw(req);
 
-            return readResponse();
+            JdbcResponse resp = readResponse();
+
+            if (stmt != null && stmt.isCancelled())
+                return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
+            else
+                return resp;
         }
         finally {
             synchronized (mux) {
@@ -517,12 +548,22 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * Sends cancel request.
+     *
+     * @param cancellationReq contains request id to be cancelled
+     * @throws IOException In case of IO error.
+     */
+    void sendCancelRequest(JdbcQueryCancelRequest cancellationReq) throws IOException {
+        sendRequestRaw(cancellationReq);
+    }
+
+    /**
      * @return Server response.
      * @throws IOException In case of IO error.
      */
-    @SuppressWarnings("unchecked")
     JdbcResponse readResponse() throws IOException {
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, null, false);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null,
+            null, false);
 
         JdbcResponse res = new JdbcResponse();
 
@@ -530,7 +571,6 @@ public class JdbcThinTcpIo {
 
         return res;
     }
-
 
     /**
      * Try to guess request capacity.
@@ -559,6 +599,23 @@ public class JdbcThinTcpIo {
             cap = DYNAMIC_SIZE_MSG_CAP;
 
         return cap;
+    }
+
+    /**
+     * @param req Request.
+     * @throws IOException In case of IO error.
+     */
+    private void sendRequestRaw(JdbcRequest req) throws IOException {
+        int cap = guessCapacity(req);
+
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
+            null, null);
+
+        req.writeBinary(writer, srvProtocolVer);
+
+        synchronized (connMux) {
+            send(writer.array());
+        }
     }
 
     /**
@@ -654,6 +711,15 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * @return True if query cancellation supported, false otherwise.
+     */
+    boolean isQueryCancellationSupported() {
+        assert srvProtocolVer != null;
+
+        return srvProtocolVer.compareTo(VER_2_8_0) >= 0;
+    }
+
+    /**
      * @return Current server index.
      */
     public int serverIndex() {
@@ -672,7 +738,36 @@ public class JdbcThinTcpIo {
         else {
             long nextIdx = IDX_GEN.getAndIncrement();
 
-            return (int)(nextIdx % len);
+            return (int)(abs(nextIdx) % len);
+        }
+    }
+
+    /**
+     * Enable/disable socket timeout with specified timeout.
+     *
+     * @param ms the specified timeout, in milliseconds.
+     * @throws SQLException if there is an error in the underlying protocol.
+     */
+    public void timeout(int ms) throws SQLException {
+        try {
+            sock.setSoTimeout(ms);
+        }
+        catch (SocketException e) {
+            throw new SQLException("Failed to set connection timeout.", SqlStateCode.INTERNAL_ERROR, e);
+        }
+    }
+
+    /**
+     * Returns socket timeout.
+     *
+     * @throws SQLException if there is an error in the underlying protocol.
+     */
+    public int timeout() throws SQLException {
+        try {
+            return sock.getSoTimeout();
+        }
+        catch (SocketException e) {
+            throw new SQLException("Failed to set connection timeout.", SqlStateCode.INTERNAL_ERROR, e);
         }
     }
 }

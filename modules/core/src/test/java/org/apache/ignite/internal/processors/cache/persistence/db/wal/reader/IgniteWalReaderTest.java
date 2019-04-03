@@ -38,6 +38,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -55,13 +56,15 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -76,20 +79,20 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Test;
 
 import static java.util.Arrays.fill;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TX_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -99,9 +102,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * Test suite for WAL segments reader and event generator.
  */
 public class IgniteWalReaderTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Wal segments count */
     private static final int WAL_SEGMENTS = 10;
 
@@ -123,9 +123,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Custom wal mode. */
     private WALMode customWalMode;
 
-    /** Clear properties in afterTest() method. */
-    private boolean clearProps;
-
     /** Set WAL and Archive path to same value. */
     private boolean setWalAndArchiveToSameVal;
 
@@ -135,8 +132,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
@@ -184,8 +179,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 
@@ -195,13 +188,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        if (clearProps)
-            System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
+        System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
     }
 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testFillWalAndReadRecords() throws Exception {
         setWalAndArchiveToSameVal = false;
 
@@ -267,7 +260,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 WALRecord walRecord = tup.get2();
 
-                if (walRecord.type() == DATA_RECORD) {
+                if (walRecord.type() == DATA_RECORD || walRecord.type() == MVCC_DATA_RECORD) {
                     DataRecord record = (DataRecord)walRecord;
 
                     for (DataEntry entry : record.writeEntries()) {
@@ -293,6 +286,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testArchiveCompletedEventFired() throws Exception {
         assertTrue(checkWhetherWALRelatedEventFired(EVT_WAL_SEGMENT_ARCHIVED));
     }
@@ -302,6 +296,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testArchiveCompactedEventFired() throws Exception {
         boolean oldEnableWalCompaction = enableWalCompaction;
 
@@ -353,6 +348,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failure occurs.
      */
+    @Test
     public void testArchiveIncompleteSegmentAfterInactivity() throws Exception {
         AtomicBoolean waitingForEvt = new AtomicBoolean();
 
@@ -399,6 +395,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testFillWalForExactSegmentsCount() throws Exception {
         customWalMode = WALMode.FSYNC;
 
@@ -483,6 +480,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testTxFillWalAndExtractDataRecords() throws Exception {
         Ignite ignite0 = startGrid();
 
@@ -584,6 +582,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testFillWalWithDifferentTypes() throws Exception {
         Ignite ig = startGrid();
 
@@ -778,6 +777,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testReadEmptyWal() throws Exception {
         customWalMode = WALMode.FSYNC;
 
@@ -807,6 +807,60 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             null,
             null
         );
+    }
+
+    /**
+     * Tests WAL iterator which uses shared cache context of currently started Ignite node.
+     */
+    @Test
+    public void testIteratorWithCurrentKernelContext() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        int cntEntries = 100;
+
+        putDummyRecords(ignite, cntEntries);
+
+        String workDir = U.defaultWorkDirectory();
+
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+
+        IteratorParametersBuilder iterParametersBuilder =
+            createIteratorParametersBuilder(workDir, genDbSubfolderName(ignite, 0))
+                .filesOrDirs(workDir)
+                .binaryMetadataFileStoreDir(null)
+                .marshallerMappingFileStoreDir(null)
+                .sharedContext(ignite.context().cache().context());
+
+        AtomicInteger cnt = new AtomicInteger();
+
+        IgniteBiInClosure<Object, Object> objConsumer = (key, val) -> {
+            if (val instanceof IndexedObject) {
+                assertEquals(key, ((IndexedObject)val).iVal);
+                assertEquals(key, cnt.getAndIncrement());
+            }
+        };
+
+        iterateAndCountDataRecord(factory.iterator(iterParametersBuilder.copy()), objConsumer, null);
+
+        assertEquals(cntEntries, cnt.get());
+
+        // Test without converting non primary types.
+        iterParametersBuilder.keepBinary(true);
+
+        cnt.set(0);
+
+        IgniteBiInClosure<Object, Object> binObjConsumer = (key, val) -> {
+            if (val instanceof BinaryObject) {
+                assertEquals(key, ((BinaryObject)val).field("iVal"));
+                assertEquals(key, cnt.getAndIncrement());
+            }
+        };
+
+        iterateAndCountDataRecord(factory.iterator(iterParametersBuilder.copy()), binObjConsumer, null);
+
+        assertEquals(cntEntries, cnt.get());
     }
 
     /**
@@ -845,6 +899,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testRemoveOperationPresentedForDataEntry() throws Exception {
         runRemoveOperationTest(CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -854,7 +909,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testRemoveOperationPresentedForDataEntryForAtomic() throws Exception {
+        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
+
         runRemoveOperationTest(CacheAtomicityMode.ATOMIC);
     }
 
@@ -941,6 +999,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testPutAllTxIntoTwoNodes() throws Exception {
         Ignite ignite = startGrid("node0");
         Ignite ignite1 = startGrid(1);
@@ -1040,9 +1099,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testTxRecordsReadWoBinaryMeta() throws Exception {
-        clearProps = true;
-
         System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
 
         Ignite ignite = startGrid("node0");
@@ -1081,6 +1139,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckBoundsIterator() throws Exception {
         Ignite ignite = startGrid("node0");
 
@@ -1287,62 +1346,78 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 WALRecord walRecord = tup.get2();
 
-                if (walRecord.type() == DATA_RECORD && walRecord instanceof DataRecord) {
-                    DataRecord dataRecord = (DataRecord)walRecord;
+                WALRecord.RecordType type = walRecord.type();
 
-                    if (dataRecordHnd != null)
-                        dataRecordHnd.apply(dataRecord);
+                //noinspection EnumSwitchStatementWhichMissesCases
+                switch (type) {
+                    case DATA_RECORD:
+                        // Fallthrough.
+                    case MVCC_DATA_RECORD: {
+                        assert walRecord instanceof DataRecord;
 
-                    List<DataEntry> entries = dataRecord.writeEntries();
+                        DataRecord dataRecord = (DataRecord)walRecord;
 
-                    for (DataEntry entry : entries) {
-                        GridCacheVersion globalTxId = entry.nearXidVersion();
+                        if (dataRecordHnd != null)
+                            dataRecordHnd.apply(dataRecord);
 
-                        Object unwrappedKeyObj;
-                        Object unwrappedValObj;
+                        List<DataEntry> entries = dataRecord.writeEntries();
 
-                        if (entry instanceof UnwrapDataEntry) {
-                            UnwrapDataEntry unwrapDataEntry = (UnwrapDataEntry)entry;
-                            unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
-                            unwrappedValObj = unwrapDataEntry.unwrappedValue();
+                        for (DataEntry entry : entries) {
+                            GridCacheVersion globalTxId = entry.nearXidVersion();
+
+                            Object unwrappedKeyObj;
+                            Object unwrappedValObj;
+
+                            if (entry instanceof UnwrappedDataEntry) {
+                                UnwrappedDataEntry unwrapDataEntry = (UnwrappedDataEntry)entry;
+                                unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
+                                unwrappedValObj = unwrapDataEntry.unwrappedValue();
+                            }
+                            else if (entry instanceof MarshalledDataEntry) {
+                                unwrappedKeyObj = null;
+                                unwrappedValObj = null;
+                                //can't check value
+                            }
+                            else {
+                                final CacheObject val = entry.value();
+
+                                unwrappedValObj = val instanceof BinaryObject ? val : val.value(null, false);
+
+                                final CacheObject key = entry.key();
+
+                                unwrappedKeyObj = key instanceof BinaryObject ? key : key.value(null, false);
+                            }
+
+                            if (DUMP_RECORDS)
+                                log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
+                                    "under transaction: " + globalTxId +
+                                    //; entry " + entry +
+                                    "; Key: " + unwrappedKeyObj +
+                                    "; Value: " + unwrappedValObj);
+
+                            if (cacheObjHnd != null && (unwrappedKeyObj != null || unwrappedValObj != null))
+                                cacheObjHnd.apply(unwrappedKeyObj, unwrappedValObj);
+
+                            Integer entriesUnderTx = entriesUnderTxFound.get(globalTxId);
+
+                            entriesUnderTxFound.put(globalTxId, entriesUnderTx == null ? 1 : entriesUnderTx + 1);
                         }
-                        else if (entry instanceof LazyDataEntry) {
-                            unwrappedKeyObj = null;
-                            unwrappedValObj = null;
-                            //can't check value
-                        }
-                        else {
-                            final CacheObject val = entry.value();
+                    }
 
-                            unwrappedValObj = val instanceof BinaryObject ? val : val.value(null, false);
+                    break;
 
-                            final CacheObject key = entry.key();
+                    case TX_RECORD:
+                        // Fallthrough
+                    case MVCC_TX_RECORD: {
+                        assert walRecord instanceof TxRecord;
 
-                            unwrappedKeyObj = key instanceof BinaryObject ? key : key.value(null, false);
-                        }
+                        TxRecord txRecord = (TxRecord)walRecord;
+                        GridCacheVersion globalTxId = txRecord.nearXidVersion();
 
                         if (DUMP_RECORDS)
-                            log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
-                                "under transaction: " + globalTxId +
-                                //; entry " + entry +
-                                "; Key: " + unwrappedKeyObj +
-                                "; Value: " + unwrappedValObj);
-
-                        if (cacheObjHnd != null && (unwrappedKeyObj != null || unwrappedValObj != null))
-                            cacheObjHnd.apply(unwrappedKeyObj, unwrappedValObj);
-
-                        Integer entriesUnderTx = entriesUnderTxFound.get(globalTxId);
-
-                        entriesUnderTxFound.put(globalTxId, entriesUnderTx == null ? 1 : entriesUnderTx + 1);
+                            log.info("//Tx Record, state: " + txRecord.state() +
+                                "; nearTxVersion" + globalTxId);
                     }
-                }
-                else if (walRecord.type() == TX_RECORD && walRecord instanceof TxRecord) {
-                    TxRecord txRecord = (TxRecord)walRecord;
-                    GridCacheVersion globalTxId = txRecord.nearXidVersion();
-
-                    if (DUMP_RECORDS)
-                        log.info("//Tx Record, state: " + txRecord.state() +
-                            "; nearTxVersion" + globalTxId);
                 }
             }
         }

@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
@@ -40,8 +41,11 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,15 +54,14 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 
 /**
- * Manager for caching MVCC transaction updates.
- * This updates can be used further in CQ, DR and other places.
+ * Manager for caching MVCC transaction updates. This updates can be used further in CQ, DR and other places.
  */
 public class MvccCachingManager extends GridCacheSharedManagerAdapter {
     /** Maximum possible transaction size when caching is enabled. */
     public static final int TX_SIZE_THRESHOLD = IgniteSystemProperties.getInteger(IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD,
         20_000);
 
-    /** Cached enlist values*/
+    /** Cached enlist values. */
     private final Map<GridCacheVersion, EnlistBuffer> enlistCache = new ConcurrentHashMap<>();
 
     /** Counters map. Used for OOM prevention caused by the big transactions. */
@@ -66,6 +69,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Adds enlisted tx entry to cache.
+     *
      * @param key Key.
      * @param val Value.
      * @param ttl Time to live.
@@ -100,15 +104,11 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
 
         if (log.isDebugEnabled()) {
             log.debug("Added entry to mvcc cache: [key=" + key + ", val=" + val + ", oldVal=" + oldVal +
-                ", primary=" + primary + ", mvccVer=" + mvccVer + ", cacheId=" + cacheId + ", ver=" + ver +']');
+                ", primary=" + primary + ", mvccVer=" + mvccVer + ", cacheId=" + cacheId + ", ver=" + ver + ']');
         }
 
-        GridCacheContext ctx0 = cctx.cacheContext(cacheId);
-
-        // Do not cache updates if there is no DR or CQ enabled.
-        if (!needDrReplicate(ctx0, key) &&
-            F.isEmpty(continuousQueryListeners(ctx0, tx, key)) &&
-            !ctx0.group().hasContinuousQueryCaches())
+        // Do not cache updates if there are no DR or CQ were enabled when cache was added as active for the current tx.
+        if (!tx.txState().useMvccCaching(cacheId))
             return;
 
         AtomicInteger cntr = cntrs.computeIfAbsent(new TxKey(mvccVer.coordinatorVersion(), mvccVer.counter()),
@@ -122,17 +122,16 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
 
         EnlistBuffer cached = enlistCache.computeIfAbsent(ver, v -> new EnlistBuffer());
 
-        cached.add(primary ? null : futId, primary ? -1 : batchNum, key, e);
+        cached.add(primary ? null : futId, primary ? -1 : batchNum, e);
     }
 
     /**
-     *
      * @param tx Transaction.
      * @param commit {@code True} if commit.
      */
     public void onTxFinished(IgniteInternalTx tx, boolean commit) throws IgniteCheckedException {
         if (log.isDebugEnabled())
-            log.debug("Transaction finished: [commit=" + commit + ", tx=" + tx  + ']');
+            log.debug("Transaction finished: [commit=" + commit + ", tx=" + tx + ']');
 
         if (tx.system() || tx.internal() || tx.mvccSnapshot() == null)
             return;
@@ -141,23 +140,133 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
 
         EnlistBuffer buf = enlistCache.remove(tx.xidVersion());
 
-        if (buf == null)
-            return;
-
-        Map<KeyCacheObject, MvccTxEntry> cached = buf.getCached();
-
-        if (F.isEmpty(cached) || !commit)
-            return;
+        Map<Integer, Map<KeyCacheObject, MvccTxEntry>> allCached = buf == null ? null : buf.getCached();
 
         TxCounters txCntrs = tx.txCounters(false);
 
-        assert txCntrs != null;
+        Collection<PartitionUpdateCountersMessage> cntrsColl = txCntrs == null ? null : txCntrs.updateCounters();
 
-        Collection<PartitionUpdateCountersMessage> cntrsColl =  txCntrs.updateCounters();
+        if (txCntrs == null || F.isEmpty(cntrsColl))
+            return;
 
-        assert  !F.isEmpty(cntrsColl) : cntrsColl;
+        GridIntList cacheIds = tx.txState().cacheIds();
 
-        // cacheId -> partId -> initCntr -> cntr + delta.
+        assert cacheIds != null;
+
+        for (int i = 0; i < cacheIds.size(); i++) {
+            int cacheId = cacheIds.get(i);
+
+            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+            assert ctx0 != null;
+
+            ctx0.group().listenerLock().readLock().lock();
+
+            try {
+                boolean hasListeners = ctx0.hasContinuousQueryListeners(tx);
+                boolean drEnabled = ctx0.isDrEnabled();
+
+                if (!hasListeners && !drEnabled)
+                    continue; // There are no listeners to notify.
+
+                // Get cached entries for the given cache.
+                Map<KeyCacheObject, MvccTxEntry> cached = allCached == null ? null : allCached.get(cacheId);
+
+                Map<Integer, Map<Integer, T2<AtomicLong, Long>>> cntrsMap = countersPerPartition(cntrsColl);
+
+                Map<Integer, T2<AtomicLong, Long>> cntrPerCache = cntrsMap.get(cacheId);
+
+                if (F.isEmpty(cntrPerCache))
+                    continue; // No updates were made for this cache.
+
+                boolean fakeEntries = false;
+
+                if (F.isEmpty(cached)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Transaction updates were not cached fully (this can happen when listener started" +
+                            " during the transaction execution). [tx=" + tx + ']');
+
+                    if (hasListeners) {
+                        cached = createFakeCachedEntries(cntrPerCache, tx, cacheId); // Create fake update entries if we have CQ listeners.
+
+                        fakeEntries = true;
+                    }
+                    else
+                        continue; // Nothing to do further if tx is not cached entirely and there are no any CQ listeners.
+                }
+
+                if (F.isEmpty(cached))
+                    continue;
+
+                // Feed CQ & DR with entries.
+                for (Map.Entry<KeyCacheObject, MvccTxEntry> entry : cached.entrySet()) {
+                    MvccTxEntry e = entry.getValue();
+
+                    assert e.key().partition() != -1;
+
+                    assert cntrPerCache != null;
+                    assert e.cacheId() == cacheId;
+
+                    T2<AtomicLong, Long> cntr = cntrPerCache.get(e.key().partition());
+
+                    long resCntr = cntr.getKey().incrementAndGet();
+
+                    assert resCntr <= cntr.getValue();
+
+                    e.updateCounter(resCntr);
+
+                    if (ctx0.group().sharedGroup()) {
+                        ctx0.group().onPartitionCounterUpdate(cacheId, e.key().partition(), resCntr,
+                            tx.topologyVersion(), tx.local());
+                    }
+
+                    if (log.isDebugEnabled())
+                        log.debug("Process cached entry:" + e);
+
+                    // DR
+                    if (ctx0.isDrEnabled() && !fakeEntries) {
+                        ctx0.dr().replicate(e.key(), e.value(), e.ttl(), e.expireTime(), e.version(),
+                            tx.local() ? DR_PRIMARY : DR_BACKUP, e.topologyVersion());
+                    }
+
+                    // CQ
+                    CacheContinuousQueryManager contQryMgr = ctx0.continuousQueries();
+
+                    if (ctx0.continuousQueries().notifyContinuousQueries(tx)) {
+                        Map<UUID, CacheContinuousQueryListener> lsnrCol = continuousQueryListeners(ctx0, tx);
+
+                        if (!F.isEmpty(lsnrCol)) {
+                            contQryMgr.onEntryUpdated(
+                                lsnrCol,
+                                e.key(),
+                                commit ? e.value() : null, // Force skip update counter if rolled back.
+                                commit ? e.oldValue() : null, // Force skip update counter if rolled back.
+                                false,
+                                e.key().partition(),
+                                tx.local(),
+                                false,
+                                e.updateCounter(),
+                                null,
+                                e.topologyVersion());
+                        }
+                    }
+                }
+            }
+            finally {
+                ctx0.group().listenerLock().readLock().unlock();
+            }
+        }
+    }
+
+    /**
+     * Calculates counters updates per cache and partition: cacheId -> partId -> initCntr -> cntr + delta.
+     *
+     * @param cntrsColl Counters collection.
+     * @return Counters updates per cache and partition.
+     */
+    private Map<Integer, Map<Integer, T2<AtomicLong, Long>>> countersPerPartition(
+        Collection<PartitionUpdateCountersMessage> cntrsColl) {
+        //
         Map<Integer, Map<Integer, T2<AtomicLong, Long>>> cntrsMap = new HashMap<>();
 
         for (PartitionUpdateCountersMessage msg : cntrsColl) {
@@ -172,91 +281,50 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
             }
         }
 
-        // Feed CQ & DR with entries.
-        for (Map.Entry<KeyCacheObject, MvccTxEntry> entry : cached.entrySet()) {
-            MvccTxEntry e = entry.getValue();
-
-            assert e.key().partition() != -1;
-
-            Map<Integer, T2<AtomicLong, Long>> cntrPerCache = cntrsMap.get(e.cacheId());
-
-            GridCacheContext ctx0 = cctx.cacheContext(e.cacheId());
-
-            assert ctx0 != null && cntrPerCache != null;
-
-            T2<AtomicLong, Long> cntr = cntrPerCache.get(e.key().partition());
-
-            long resCntr = cntr.getKey().incrementAndGet();
-
-            assert resCntr <= cntr.getValue();
-
-            e.updateCounter(resCntr);
-
-            if (ctx0.group().sharedGroup()) {
-                ctx0.group().onPartitionCounterUpdate(ctx0.cacheId(), e.key().partition(), resCntr,
-                    tx.topologyVersion(), tx.local());
-            }
-
-            if (log.isDebugEnabled())
-                log.debug("Process cached entry:" + e);
-
-            // DR
-            if (ctx0.isDrEnabled()) {
-                ctx0.dr().replicate(e.key(), e.value(), e.ttl(), e.expireTime(), e.version(),
-                    tx.local() ? DR_PRIMARY : DR_BACKUP, e.topologyVersion());
-            }
-
-            // CQ
-            CacheContinuousQueryManager contQryMgr = ctx0.continuousQueries();
-
-            if (ctx0.continuousQueries().notifyContinuousQueries(tx)) {
-                contQryMgr.getListenerReadLock().lock();
-
-                try {
-                    Map<UUID, CacheContinuousQueryListener> lsnrCol = continuousQueryListeners(ctx0, tx, e.key());
-
-                    if (!F.isEmpty(lsnrCol)) {
-                        contQryMgr.onEntryUpdated(
-                            lsnrCol,
-                            e.key(),
-                            e.value(),
-                            e.oldValue(),
-                            false,
-                            e.key().partition(),
-                            tx.local(),
-                            false,
-                            e.updateCounter(),
-                            null,
-                            e.topologyVersion());
-                    }
-                }
-                finally {
-                    contQryMgr.getListenerReadLock().unlock();
-                }
-            }
-        }
+        return cntrsMap;
     }
 
     /**
-     * @param ctx0 Cache context.
-     * @param key Key.
-     * @return {@code True} if need to replicate this value.
+     * If transaction was not cached entirely (if listener was set during tx execution), we should feed the CQ engine
+     * with a fake entries prepared by this method.
+     *
+     * @param cntrPerCache Update counters deltas made by transaction.
+     * @param tx Transaction.
+     * @param cacheId Cache id.
+     * @return Fake entries for each tx update.
      */
-    public boolean needDrReplicate(GridCacheContext ctx0, KeyCacheObject key) {
-        return ctx0.isDrEnabled() && !key.internal();
+    private Map<KeyCacheObject, MvccTxEntry> createFakeCachedEntries(Map<Integer, T2<AtomicLong, Long>> cntrPerCache,
+        IgniteInternalTx tx, int cacheId) {
+        Map<KeyCacheObject, MvccTxEntry> fakeCached = new HashMap<>();
+
+        for (Map.Entry<Integer, T2<AtomicLong, Long>> e : cntrPerCache.entrySet()) {
+            int part = e.getKey();
+
+            long startCntr = e.getValue().get1().get(); // Init update counter.
+            long endCntr = e.getValue().get1().get() + e.getValue().get2(); // Init update counter + delta.
+
+            for (long i = startCntr; i < endCntr; i++) {
+                KeyCacheObject fakeKey = new KeyCacheObjectImpl("", null, part);
+
+                MvccTxEntry fakeEntry = new MvccTxEntry(fakeKey, null, 0, 0, tx.xidVersion(), null,
+                    tx.local(), tx.topologyVersion(), tx.mvccSnapshot(), cacheId);
+
+                fakeCached.put(fakeKey, fakeEntry);
+            }
+        }
+
+        return fakeCached;
     }
 
     /**
      * @param ctx0 Cache context.
      * @param tx Transaction.
-     * @param key Key.
      * @return Map of listeners to be notified by this update.
      */
-    public Map<UUID, CacheContinuousQueryListener> continuousQueryListeners(GridCacheContext ctx0, @Nullable IgniteInternalTx tx, KeyCacheObject key) {
-        boolean internal = key.internal() || !ctx0.userCache();
-
+    public Map<UUID, CacheContinuousQueryListener> continuousQueryListeners(GridCacheContext ctx0,
+        @Nullable IgniteInternalTx tx) {
         return ctx0.continuousQueries().notifyContinuousQueries(tx) ?
-            ctx0.continuousQueries().updateListeners(internal, false) : null;
+            ctx0.continuousQueries().updateListeners(!ctx0.userCache(), false) : null;
     }
 
     /**
@@ -267,10 +335,12 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
         /** Last DHT future id. */
         private IgniteUuid lastFutId;
 
-        /** Main buffer for entries. */
-        private Map<KeyCacheObject, MvccTxEntry> cached = new LinkedHashMap<>();
+        /** Main buffer for entries. CacheId -> entriesMap. */
+        @GridToStringInclude
+        private Map<Integer, Map<KeyCacheObject, MvccTxEntry>> cached = new TreeMap<>();
 
-        /** Pending entries. */
+        /** Pending entries. BatchId -> entriesMap. */
+        @GridToStringInclude
         private SortedMap<Integer, Map<KeyCacheObject, MvccTxEntry>> pending;
 
         /**
@@ -278,10 +348,11 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
          *
          * @param futId Future id.
          * @param batchNum Batch number.
-         * @param key Key.
          * @param e Entry.
          */
-        synchronized void add(IgniteUuid futId, int batchNum, KeyCacheObject key, MvccTxEntry e) {
+        synchronized void add(IgniteUuid futId, int batchNum, MvccTxEntry e) {
+            KeyCacheObject key = e.key();
+
             if (batchNum >= 0) {
                 /*
                  * Assume that batches within one future may be reordered. But batches between futures cannot be
@@ -296,7 +367,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
                 }
 
                 if (pending == null)
-                    pending = new TreeMap<>() ;
+                    pending = new TreeMap<>();
 
                 MvccTxEntry prev = pending.computeIfAbsent(batchNum, k -> new LinkedHashMap<>()).put(key, e);
 
@@ -306,8 +377,12 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
             else { // batchNum == -1 means no reordering (e.g. this is a primary node).
                 assert batchNum == -1;
 
-                MvccTxEntry prev = cached.put(key, e);
+                Map<KeyCacheObject, MvccTxEntry> entriesForCache = cached.computeIfAbsent(e.cacheId(), k -> new LinkedHashMap<>());
 
+                MvccTxEntry prev = entriesForCache.put(key, e);
+
+                // If key is updated more than once within transaction, we should copy old value
+                // (the value existed before tx started) from the previous entry to the new one.
                 if (prev != null && prev.oldValue() != null)
                     e.oldValue(prev.oldValue());
             }
@@ -316,7 +391,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
         /**
          * @return Cached entries map.
          */
-        synchronized Map<KeyCacheObject, MvccTxEntry> getCached() {
+        synchronized Map<Integer, Map<KeyCacheObject, MvccTxEntry>> getCached() {
             flushPending();
 
             return cached;
@@ -332,10 +407,25 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
             for (Map.Entry<Integer, Map<KeyCacheObject, MvccTxEntry>> entry : pending.entrySet()) {
                 Map<KeyCacheObject, MvccTxEntry> vals = entry.getValue();
 
-                cached.putAll(vals);
+                for (Map.Entry<KeyCacheObject, MvccTxEntry> e : vals.entrySet()) {
+                    Map<KeyCacheObject, MvccTxEntry> entriesForCache = cached
+                        .computeIfAbsent(e.getValue().cacheId(), k -> new LinkedHashMap<>());
+
+                    MvccTxEntry prev = entriesForCache.put(e.getKey(), e.getValue());
+
+                    // If key is updated more than once within transaction, we should copy old value
+                    // (the value existed before tx started) from the previous entry to the new one.
+                    if (prev != null && prev.oldValue() != null)
+                        e.getValue().oldValue(prev.oldValue());
+                }
             }
 
             pending.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(EnlistBuffer.class, this);
         }
     }
 }

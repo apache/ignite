@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -33,19 +32,13 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for replicated cache with one node.
  */
-@SuppressWarnings("Duplicates")
 public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -62,12 +55,6 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
             cacheCfg.setNearConfiguration(null);
 
         cfg.setCacheConfiguration(cacheCfg);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -89,6 +76,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocal() throws Exception {
         if (cacheMode() == CacheMode.REPLICATED)
             doTest(true);
@@ -97,6 +85,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributed() throws Exception {
         doTest(false);
     }
@@ -104,6 +93,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalOneNode() throws Exception {
         doTestOneNode(true);
     }
@@ -111,6 +101,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedOneNode() throws Exception {
         doTestOneNode(false);
     }

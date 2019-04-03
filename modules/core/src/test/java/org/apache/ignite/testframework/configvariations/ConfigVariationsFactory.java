@@ -62,7 +62,6 @@ public class ConfigVariationsFactory implements ConfigFactory {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteConfiguration getConfiguration(String igniteInstanceName, IgniteConfiguration srcCfg) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 

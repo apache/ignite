@@ -39,12 +39,11 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionSerializationException;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -58,16 +57,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private boolean client;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi) cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setClientMode(client);
 
@@ -84,6 +78,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionAtomic() throws Exception {
         concurrentUpdatePartition(ATOMIC, false);
     }
@@ -91,6 +86,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionTx() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL, false);
     }
@@ -98,6 +94,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionMvccTx() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL_SNAPSHOT, false);
     }
@@ -105,6 +102,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionAtomicCacheGroup() throws Exception {
         concurrentUpdatePartition(ATOMIC, true);
     }
@@ -112,6 +110,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionTxCacheGroup() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL, true);
     }
@@ -119,6 +118,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionMvccTxCacheGroup() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL_SNAPSHOT, true);
     }
@@ -217,8 +217,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                         committed = true;
                                     }
                                     catch (CacheException e) {
-                                        assertTrue(e.getMessage() != null &&
-                                            e.getMessage().contains("Cannot serialize transaction due to write conflict"));
+                                        assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                        assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
                                     }
                                 }
                             }
@@ -274,6 +274,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartAtomic() throws Exception {
         concurrentUpdatesAndQueryStart(ATOMIC, false);
     }
@@ -281,6 +282,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartTx() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL, false);
     }
@@ -288,6 +290,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartMvccTx() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL_SNAPSHOT, false);
     }
@@ -295,6 +298,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartAtomicCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(ATOMIC, true);
     }
@@ -302,6 +306,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartTxCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL, true);
     }
@@ -309,6 +314,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartMvccTxCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL_SNAPSHOT, true);
     }
@@ -406,8 +412,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                             committed = true;
                                         }
                                         catch (CacheException e) {
-                                            assertTrue(e.getMessage() != null &&
-                                                e.getMessage().contains("Cannot serialize transaction due to write conflict"));
+                                            assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                            assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
                                         }
                                     }
                                 }
@@ -421,7 +427,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                 U.sleep(1000);
 
                 for (String cache : caches)
-                    qrys.add(startListener(client.cache(cache)));
+                    for (int l = 0; l < 10; l++)
+                        qrys.add(startListener(client.cache(cache)));
 
                 U.sleep(1000);
 
@@ -455,8 +462,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                         committed = true;
                                     }
                                     catch (CacheException e) {
-                                        assertTrue(e.getMessage() != null &&
-                                            e.getMessage().contains("Cannot serialize transaction due to write conflict"));
+                                        assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                        assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
                                     }
                                 }
                             }

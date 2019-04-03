@@ -72,7 +72,8 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      * @param autoCommit Client auto commit flag state.
      * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean autoCommit, boolean lastStreamBatch) {
+    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean autoCommit,
+        boolean lastStreamBatch) {
         super(BATCH_EXEC);
 
         assert lastStreamBatch || !F.isEmpty(queries);
@@ -92,7 +93,8 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      * @param autoCommit Client auto commit flag state.
      * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
      */
-    protected JdbcBatchExecuteRequest(byte type, String schemaName, List<JdbcQuery> queries, boolean autoCommit, boolean lastStreamBatch) {
+    protected JdbcBatchExecuteRequest(byte type, String schemaName, List<JdbcQuery> queries, boolean autoCommit,
+        boolean lastStreamBatch) {
         super(type);
 
         assert lastStreamBatch || !F.isEmpty(queries);
@@ -155,7 +157,6 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SimplifiableIfStatement")
     @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.readBinary(reader, ver);
 
@@ -182,6 +183,6 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcBatchExecuteRequest.class, this);
+        return S.toString(JdbcBatchExecuteRequest.class, this, super.toString());
     }
 }

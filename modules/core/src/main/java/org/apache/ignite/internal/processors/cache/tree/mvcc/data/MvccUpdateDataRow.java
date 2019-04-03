@@ -273,8 +273,11 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 else {
                     // Actually, full row can be omitted for replace(k,newval) and putIfAbsent, but
                     // operation context is not available here and full row required if filter is set.
-                    if (res == ResultType.PREV_NOT_NULL && (isFlagsSet(NEED_PREV_VALUE) || filter != null))
-                        oldRow = tree.getRow(io, pageAddr, idx, RowData.FULL);
+                    if (res == ResultType.PREV_NOT_NULL && (isFlagsSet(NEED_PREV_VALUE) || filter != null)) {
+                        oldRow = tree.getRow(io, pageAddr, idx, RowData.NO_KEY);
+
+                        oldRow.key(key);
+                    }
                     else
                         oldRow = row;
                 }
@@ -297,13 +300,13 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         long rowCntr = row.mvccCounter();
 
         // with hint bits
-        int rowOpCntr = (row.mvccTxState() << MVCC_HINTS_BIT_OFF) | (row.mvccOperationCounter() & ~MVCC_OP_COUNTER_MASK);
+        int rowOpCntr = row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF);
 
         long rowNewCrd = row.newMvccCoordinatorVersion();
         long rowNewCntr = row.newMvccCounter();
 
         // with hint bits
-        int rowNewOpCntr = (row.newMvccTxState() << MVCC_HINTS_BIT_OFF) | (row.newMvccOperationCounter() & ~MVCC_OP_COUNTER_MASK);
+        int rowNewOpCntr = row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF);
 
         // Search for youngest committed by another transaction row.
         if (!isFlagsSet(LAST_COMMITTED_FOUND)) {
@@ -398,7 +401,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                         rowIo.setMvccLockCoordinatorVersion(pageAddr, idx, mvccCoordinatorVersion());
                         rowIo.setMvccLockCounter(pageAddr, idx, mvccCounter());
 
-                        // TODO Delta record IGNITE-7991
+                        // Actually, there is no need to log lock delta record into WAL.
 
                         setFlags(DIRTY);
                     }
@@ -444,7 +447,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
             // We can cleanup previous row only if it was deleted by another
             // transaction and delete version is less or equal to cleanup one
-            if (rowNewCrd < mvccCoordinatorVersion() || Long.compare(cleanupVer, rowNewCntr) >= 0)
+            if (rowNewCrd < mvccCoordinatorVersion() || cleanupVer >= rowNewCntr)
                 setFlags(CAN_CLEANUP);
         }
 
@@ -453,7 +456,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             if (cleanupRows == null)
                 cleanupRows = new ArrayList<>();
 
-            cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_OP_COUNTER_MASK, rowLink));
+            cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & MVCC_OP_COUNTER_MASK, rowLink));
         }
         else {
             // Row obsoleted by current operation, all rows created or updated with current tx.
@@ -464,7 +467,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 if (histRows == null)
                     histRows = new ArrayList<>();
 
-                histRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_OP_COUNTER_MASK, rowLink));
+                histRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & MVCC_OP_COUNTER_MASK, rowLink));
             }
 
             if (cleanupVer > MVCC_OP_COUNTER_NA // Do not clean if cleanup version is not assigned.
@@ -581,9 +584,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
     /** {@inheritDoc} */
     @Override public CacheObject oldValue() {
-        assert oldRow != null;
-
-        return oldRow.value();
+        return oldRow == null ? null : oldRow.value();
     }
 
     /** {@inheritDoc} */

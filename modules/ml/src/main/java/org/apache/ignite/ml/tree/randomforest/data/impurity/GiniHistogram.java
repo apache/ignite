@@ -17,20 +17,14 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.basic.CountersHistogram;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Class contains implementation of splitting point finding algorithm based on Gini metric (see
@@ -68,11 +62,10 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
         this.sampleId = sampleId;
         this.bucketMeta = bucketMeta;
         this.lblMapping = lblMapping;
+        this.bucketIds = new TreeSet<>();
 
         for (int i = 0; i < lblMapping.size(); i++)
-            hists.add(new ObjectHistogram<>(this::bucketMap, this::counterMap));
-
-        this.bucketIds = new TreeSet<>();
+            hists.add(new CountersHistogram(bucketIds, bucketMeta, featureId, sampleId));
     }
 
     /** {@inheritDoc} */
@@ -169,32 +162,10 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
      * Returns counters histogram for class-label.
      *
      * @param lbl Label.
-     * @return counters histogram for class-label.
+     * @return Counters histogram for class-label.
      */
     ObjectHistogram<BootstrappedVector> getHistForLabel(Double lbl) {
         return hists.get(lblMapping.get(lbl));
-    }
-
-    /**
-     * Maps vector to counter value.
-     *
-     * @param vec Vector.
-     * @return Counter value.
-     */
-    private Double counterMap(BootstrappedVector vec) {
-        return (double)vec.counters()[sampleId];
-    }
-
-    /**
-     * Maps vector to bucket id.
-     *
-     * @param vec Vector.
-     * @return Bucket id.
-     */
-    private Integer bucketMap(BootstrappedVector vec) {
-        int bucketId = bucketMeta.getBucketId(vec.features().get(featureId));
-        this.bucketIds.add(bucketId);
-        return bucketId;
     }
 
     /** {@inheritDoc} */
@@ -221,4 +192,5 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
 
         return true;
     }
+
 }

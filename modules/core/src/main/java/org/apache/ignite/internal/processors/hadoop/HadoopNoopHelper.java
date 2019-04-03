@@ -32,7 +32,6 @@ public class HadoopNoopHelper implements HadoopHelper {
      *
      * @param ctx Kernal context.
      */
-    @SuppressWarnings("UnusedParameters")
     public HadoopNoopHelper(GridKernalContext ctx) {
         // No-op.
     }

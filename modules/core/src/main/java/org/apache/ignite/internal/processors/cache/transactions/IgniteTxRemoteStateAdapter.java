@@ -22,6 +22,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
@@ -34,6 +35,12 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState {
     /** Active cache IDs. */
     private GridIntList activeCacheIds = new GridIntList();
+
+    /** Cache ids used for mvcc caching. See {@link MvccCachingManager}. */
+    private GridIntList mvccCachingCacheIds = new GridIntList();
+
+    /** */
+    protected boolean mvccEnabled;
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
@@ -80,9 +87,19 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
 
         int cacheId = cctx.cacheId();
 
+        boolean mvccTx = tx.mvccSnapshot() != null;
+
+        assert activeCacheIds.isEmpty() || mvccEnabled == mvccTx;
+
+        mvccEnabled = mvccTx;
+
         // Check if we can enlist new cache to transaction.
-        if (!activeCacheIds.contains(cacheId))
+        if (!activeCacheIds.contains(cacheId)) {
             activeCacheIds.add(cacheId);
+
+            if (cctx.mvccEnabled() && (cctx.hasContinuousQueryListeners(tx) || cctx.isDrEnabled()))
+                mvccCachingCacheIds.add(cacheId);
+        }
     }
 
     /** {@inheritDoc} */
@@ -115,5 +132,15 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     /** {@inheritDoc} */
     @Override public void onTxEnd(GridCacheSharedContext cctx, IgniteInternalTx tx, boolean commit) {
         assert false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean mvccEnabled() {
+        return mvccEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean useMvccCaching(int cacheId) {
+        return mvccCachingCacheIds.contains(cacheId);
     }
 }

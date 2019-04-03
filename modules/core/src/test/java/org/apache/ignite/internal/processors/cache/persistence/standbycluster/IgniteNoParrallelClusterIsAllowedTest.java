@@ -17,21 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteNoParrallelClusterIsAllowedTest extends IgniteChangeGlobalStateAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder vmIpFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSimple() throws Exception {
         startPrimaryNodes(primaryNodes());
 
@@ -69,14 +65,14 @@ public class IgniteNoParrallelClusterIsAllowedTest extends IgniteChangeGlobalSta
 
             fail();
         }
-        catch (AssertionFailedError er) {
+        catch (AssertionError er) {
                 throw er;
         }
         catch (Throwable e) {
             while (true) {
                 String message = e.getMessage();
 
-                if (message.contains("Failed to acquire file lock during"))
+                if (message.contains("Failed to acquire file lock ["))
                     break;
 
                 if (e.getCause() != null)

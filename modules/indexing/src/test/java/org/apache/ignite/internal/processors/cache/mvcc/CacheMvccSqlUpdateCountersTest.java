@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
@@ -55,6 +56,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateCountersInsertSimple() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -93,6 +95,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateCountersDoubleUpdate() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -139,6 +142,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateCountersRollback() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -185,6 +189,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteOwnKey() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, 1)
             .setCacheMode(CacheMode.REPLICATED)
@@ -265,7 +270,15 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
         checkUpdateCounters(DEFAULT_CACHE_NAME, part1, 2);
 
         try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            SqlFieldsQuery qry  = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",5)");
+            SqlFieldsQuery qry  = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (" + key1 + ", 2)");
+
+            cache.query(qry).getAll();
+
+            qry = new SqlFieldsQuery("DELETE FROM Integer WHERE _key=" + key1);
+
+            cache.query(qry).getAll();
+
+            qry  = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ", 3)");
 
             cache.query(qry).getAll();
 
@@ -307,7 +320,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
 
             cache.query(qry).getAll();
 
-            qry  = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",5)");
+            qry  = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",7)");
 
             cache.query(qry).getAll();
 
@@ -320,6 +333,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateCountersMultithreaded() throws Exception {
         final int writers = 4;
 

@@ -40,21 +40,19 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheIoManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.WalStateManager;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessorImpl;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -63,6 +61,7 @@ import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
@@ -88,12 +87,6 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         2
     };
 
-    /** FileWriteAheadLogManagers for check. */
-    private Class[] checkWalManagers = new Class[] {
-        FileWriteAheadLogManager.class,
-        FsyncModeFileWriteAheadLogManager.class
-    };
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -113,6 +106,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If some thing failed.
      */
+    @Test
     public void testCheckSerializer() throws Exception {
         for (int serVer : checkSerializerVers) {
             checkInvariantSwitchSegmentSize(serVer);
@@ -127,7 +121,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         GridKernalContext kctx = new StandaloneGridKernalContext(
             log, null, null) {
             @Override public IgniteCacheObjectProcessor cacheObjects() {
-                return new IgniteCacheObjectProcessorImpl(this);
+                return new CacheObjectBinaryProcessorImpl(this);
             }
         };
 
@@ -154,6 +148,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                 null,
                 null,
                 null,
+                null,
                 null)
         ).createSerializer(serVer);
 
@@ -169,17 +164,14 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If some thing failed.
      */
+    @Test
     public void testInvariantSwitchSegment() throws Exception {
         for (int serVer : checkSerializerVers) {
-            for (Class walMgrClass : checkWalManagers) {
-                try {
-                    log.info("checking wal manager " + walMgrClass + " with serializer version " + serVer);
-
-                    checkInvariantSwitchSegment(walMgrClass, serVer);
-                }
-                finally {
-                    U.delete(Paths.get(U.defaultWorkDirectory()));
-                }
+            try {
+                checkInvariantSwitchSegment(serVer);
+            }
+            finally {
+                U.delete(Paths.get(U.defaultWorkDirectory()));
             }
         }
     }
@@ -189,26 +181,26 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If some thing failed.
      */
+    @Test
     public void testSwitchReadingSegmentFromWorkToArchive() throws Exception {
         for (int serVer : checkSerializerVers) {
-                try {
-                    checkSwitchReadingSegmentDuringIteration(FileWriteAheadLogManager.class, serVer);
-                }
-                finally {
-                    U.delete(Paths.get(U.defaultWorkDirectory()));
-                }
+            try {
+                checkSwitchReadingSegmentDuringIteration(serVer);
+            }
+            finally {
+                U.delete(Paths.get(U.defaultWorkDirectory()));
+            }
         }
     }
 
     /**
-     * @param walMgrClass WAL manager class.
      * @param serVer WAL serializer version.
      * @throws Exception If some thing failed.
      */
-    private void checkInvariantSwitchSegment(Class walMgrClass, int serVer) throws Exception {
+    private void checkInvariantSwitchSegment(int serVer) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        T2<IgniteWriteAheadLogManager, RecordSerializer> initTup = initiate(walMgrClass, serVer, workDir);
+        T2<IgniteWriteAheadLogManager, RecordSerializer> initTup = initiate(serVer, workDir);
 
         IgniteWriteAheadLogManager walMgr = initTup.get1();
 
@@ -271,9 +263,8 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         // Add more record for rollover to the next segment.
         recordsToWrite += 100;
 
-        for (int i = 0; i < recordsToWrite; i++) {
+        for (int i = 0; i < recordsToWrite; i++)
             walMgr.log(new MetastoreDataRecord(rec.key(), rec.value()));
-        }
 
         walMgr.flush(null, true);
 
@@ -326,14 +317,13 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param walMgrClass WAL manager class.
      * @param serVer WAL serializer version.
      * @throws Exception If some thing failed.
      */
-    private void checkSwitchReadingSegmentDuringIteration(Class walMgrClass, int serVer) throws Exception {
+    private void checkSwitchReadingSegmentDuringIteration(int serVer) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        T2<IgniteWriteAheadLogManager, RecordSerializer> initTup = initiate(walMgrClass, serVer, workDir);
+        T2<IgniteWriteAheadLogManager, RecordSerializer> initTup = initiate(serVer, workDir);
 
         IgniteWriteAheadLogManager walMgr = initTup.get1();
 
@@ -369,8 +359,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             () -> {
                 // Check that switch segment works as expected and all record is reachable.
                 try (WALIterator it = walMgr.replay(null)) {
-                    Object handle = getFieldValueHierarchy(it,  "currWalSegment");
-
+                    Object handle = getFieldValueHierarchy(it, "currWalSegment");
                     FileInput in = getFieldValueHierarchy(handle, "in");
                     Object delegate = getFieldValueHierarchy(in.io(), "delegate");
                     Channel ch = getFieldValueHierarchy(delegate, "ch");
@@ -423,14 +412,12 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
     /***
      * Initiate WAL manager.
      *
-     * @param walMgrClass WAL manager class.
      * @param serVer WAL serializer version.
      * @param workDir Work directory path.
      * @return Tuple of WAL manager and WAL record serializer.
      * @throws IgniteCheckedException If some think failed.
      */
     private T2<IgniteWriteAheadLogManager, RecordSerializer> initiate(
-        Class walMgrClass,
         int serVer,
         String workDir
     ) throws IgniteCheckedException {
@@ -448,6 +435,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                         .setWalMode(WALMode.FSYNC)
                         .setWalPath(workDir + WORK_SUB_DIR)
                         .setWalArchivePath(workDir + ARCHIVE_SUB_DIR)
+                        .setFileIOFactory(new RandomAccessFileIOFactory())
                 );
 
                 cfg.setEventStorageSpi(new NoopEventStorageSpi());
@@ -464,18 +452,9 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             }
         };
 
-        IgniteWriteAheadLogManager walMgr = null;
+        IgniteWriteAheadLogManager walMgr = new FileWriteAheadLogManager(kctx);
 
-        if (walMgrClass.equals(FileWriteAheadLogManager.class)) {
-            walMgr = new FileWriteAheadLogManager(kctx);
-
-            GridTestUtils.setFieldValue(walMgr, "serializerVer", serVer);
-        }
-        else if (walMgrClass.equals(FsyncModeFileWriteAheadLogManager.class)) {
-            walMgr = new FsyncModeFileWriteAheadLogManager(kctx);
-
-            GridTestUtils.setFieldValue(walMgr, "serializerVersion", serVer);
-        }
+        GridTestUtils.setFieldValue(walMgr, "serializerVer", serVer);
 
         GridCacheSharedContext<?, ?> ctx = new GridCacheSharedContext<>(
             kctx,
@@ -491,6 +470,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             null,
             null,
             new GridCacheIoManager(),
+            null,
             null,
             null,
             null,

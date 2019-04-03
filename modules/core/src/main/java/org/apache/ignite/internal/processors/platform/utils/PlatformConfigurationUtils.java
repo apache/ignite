@@ -69,7 +69,6 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
@@ -100,8 +99,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
@@ -406,7 +406,6 @@ public class PlatformConfigurationUtils {
      * @param out Stream.
      * @param cfg NearCacheConfiguration.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     private static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
         assert cfg != null;
 
@@ -461,7 +460,6 @@ public class PlatformConfigurationUtils {
      * @param out Stream.
      * @param p Policy.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     private static void writeEvictionPolicy(BinaryRawWriter out, EvictionPolicy p) {
         if (p instanceof FifoEvictionPolicy) {
             out.writeByte((byte)1);
@@ -525,7 +523,7 @@ public class PlatformConfigurationUtils {
                 Object defVal = in.readObject();
                 if (defVal != null)
                     defVals.put(fieldName, defVal);
-                
+
                 if (ver.compareTo(VER_1_2_0) >= 0) {
                     int precision = in.readInt();
 
@@ -618,7 +616,7 @@ public class PlatformConfigurationUtils {
      * @param ver Client version.
      */
     @SuppressWarnings("deprecation")
-    public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg, 
+    public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg,
         ClientListenerProtocolVersion ver) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
@@ -663,6 +661,8 @@ public class PlatformConfigurationUtils {
             cfg.setMvccVacuumThreadCount(in.readInt());
         if (in.readBoolean())
             cfg.setSystemWorkerBlockedTimeout(in.readLong());
+        if (in.readBoolean())
+            cfg.setSqlQueryHistorySize(in.readInt());
 
         int sqlSchemasCnt = in.readInt();
 
@@ -713,9 +713,11 @@ public class PlatformConfigurationUtils {
             TcpCommunicationSpi comm = new TcpCommunicationSpi();
 
             comm.setAckSendThreshold(in.readInt());
+            comm.setConnectionsPerNode(in.readInt());
             comm.setConnectTimeout(in.readLong());
             comm.setDirectBuffer(in.readBoolean());
             comm.setDirectSendBuffer(in.readBoolean());
+            comm.setFilterReachableAddresses(in.readBoolean());
             comm.setIdleConnectionTimeout(in.readLong());
             comm.setLocalAddress(in.readString());
             comm.setLocalPort(in.readInt());
@@ -724,11 +726,15 @@ public class PlatformConfigurationUtils {
             comm.setMessageQueueLimit(in.readInt());
             comm.setReconnectCount(in.readInt());
             comm.setSelectorsCount(in.readInt());
+            comm.setSelectorSpins(in.readLong());
+            comm.setSharedMemoryPort(in.readInt());
             comm.setSlowClientQueueLimit(in.readInt());
             comm.setSocketReceiveBuffer(in.readInt());
             comm.setSocketSendBuffer(in.readInt());
+            comm.setSocketWriteTimeout(in.readLong());
             comm.setTcpNoDelay(in.readBoolean());
             comm.setUnacknowledgedMessagesBufferSize(in.readInt());
+            comm.setUsePairedConnections(in.readBoolean());
 
             cfg.setCommunicationSpi(comm);
         }
@@ -776,6 +782,7 @@ public class PlatformConfigurationUtils {
             tx.setDefaultTxTimeout(in.readLong());
             tx.setPessimisticTxLogLinger(in.readInt());
             tx.setTxTimeoutOnPartitionMapExchange(in.readLong());
+            tx.setDeadlockTimeout(in.readLong());
 
             cfg.setTransactionConfiguration(tx);
         }
@@ -844,7 +851,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @param ver Client version.
      */
-    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg, 
+    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg,
         ClientListenerProtocolVersion ver) {
         int len = in.readInt();
 
@@ -979,7 +986,7 @@ public class PlatformConfigurationUtils {
      * @param ccfg Configuration.
      * @param ver Client version.
      */
-    public static void writeCacheConfiguration(BinaryRawWriter writer, CacheConfiguration ccfg, 
+    public static void writeCacheConfiguration(BinaryRawWriter writer, CacheConfiguration ccfg,
         ClientListenerProtocolVersion ver) {
         assert writer != null;
         assert ccfg != null;
@@ -1100,7 +1107,7 @@ public class PlatformConfigurationUtils {
      * @param qryEntity Query entity.
      * @param ver Client version.
      */
-    public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity qryEntity, 
+    public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity qryEntity,
         ClientListenerProtocolVersion ver) {
         assert qryEntity != null;
 
@@ -1200,7 +1207,7 @@ public class PlatformConfigurationUtils {
      * @param ver Client version.
      */
     @SuppressWarnings("deprecation")
-    public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg, 
+    public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg,
         ClientListenerProtocolVersion ver) {
         assert w != null;
         assert cfg != null;
@@ -1246,6 +1253,8 @@ public class PlatformConfigurationUtils {
         } else {
             w.writeBoolean(false);
         }
+        w.writeBoolean(true);
+        w.writeInt(cfg.getSqlQueryHistorySize());
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(-1);
@@ -1299,9 +1308,11 @@ public class PlatformConfigurationUtils {
             TcpCommunicationSpi tcp = (TcpCommunicationSpi) comm;
 
             w.writeInt(tcp.getAckSendThreshold());
+            w.writeInt(tcp.getConnectionsPerNode());
             w.writeLong(tcp.getConnectTimeout());
             w.writeBoolean(tcp.isDirectBuffer());
             w.writeBoolean(tcp.isDirectSendBuffer());
+            w.writeBoolean(tcp.isFilterReachableAddresses());
             w.writeLong(tcp.getIdleConnectionTimeout());
             w.writeString(tcp.getLocalAddress());
             w.writeInt(tcp.getLocalPort());
@@ -1310,11 +1321,15 @@ public class PlatformConfigurationUtils {
             w.writeInt(tcp.getMessageQueueLimit());
             w.writeInt(tcp.getReconnectCount());
             w.writeInt(tcp.getSelectorsCount());
+            w.writeLong(tcp.getSelectorSpins());
+            w.writeInt(tcp.getSharedMemoryPort());
             w.writeInt(tcp.getSlowClientQueueLimit());
             w.writeInt(tcp.getSocketReceiveBuffer());
             w.writeInt(tcp.getSocketSendBuffer());
+            w.writeLong(tcp.getSocketWriteTimeout());
             w.writeBoolean(tcp.isTcpNoDelay());
             w.writeInt(tcp.getUnacknowledgedMessagesBufferSize());
+            w.writeBoolean(tcp.isUsePairedConnections());
         }
         else
             w.writeBoolean(false);
@@ -1367,6 +1382,7 @@ public class PlatformConfigurationUtils {
             w.writeLong(tx.getDefaultTxTimeout());
             w.writeInt(tx.getPessimisticTxLogLinger());
             w.writeLong(tx.getTxTimeoutOnPartitionMapExchange());
+            w.writeLong(tx.getDeadlockTimeout());
         }
         else
             w.writeBoolean(false);

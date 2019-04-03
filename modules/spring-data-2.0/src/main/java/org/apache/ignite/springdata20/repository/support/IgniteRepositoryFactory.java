@@ -148,9 +148,21 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
     /**
      * @param qry Query string.
-     * @return {@code true} if query is SQLFieldsQuery.
+     * @return {@code true} if query is SqlFieldsQuery.
      */
     private boolean isFieldQuery(String qry) {
-        return qry.matches("^SELECT.*") && !qry.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
+        return isStatement(qry) && !qry.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
+    }
+
+    /**
+     * Evaluates if the query starts with a clause.<br>
+     * <code>SELECT, INSERT, UPDATE, MERGE, DELETE</code>
+     *
+     * @param qry Query string.
+     * @return {@code true} if query is full SQL statement.
+     */
+    private boolean isStatement(String qry) {
+        return qry.matches("^SELECT.*") || qry.matches("^UPDATE.*") || qry.matches("^DELETE.*") ||
+            qry.matches("^MERGE.*") || qry.matches("^INSERT.*");
     }
 }

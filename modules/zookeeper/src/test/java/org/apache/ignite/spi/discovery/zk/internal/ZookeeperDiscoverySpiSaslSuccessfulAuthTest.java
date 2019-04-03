@@ -16,7 +16,10 @@
  */
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import org.apache.zookeeper.client.ZooKeeperSaslClient;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.junit.Test;
+
+import static org.apache.zookeeper.client.ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY;
 
 /**
  *
@@ -25,10 +28,9 @@ public class ZookeeperDiscoverySpiSaslSuccessfulAuthTest extends ZookeeperDiscov
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @WithSystemProperty(key = LOGIN_CONTEXT_NAME_KEY, value = "ValidZookeeperClient")
     public void testIgniteNodesWithValidPasswordSuccessfullyJoins() throws Exception {
-        System.setProperty(ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY,
-            "ValidZookeeperClient");
-
         startGrids(3);
 
         waitForTopology(3);
@@ -37,6 +39,7 @@ public class ZookeeperDiscoverySpiSaslSuccessfulAuthTest extends ZookeeperDiscov
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgniteNodeWithoutSaslConfigurationSuccessfullyJoins() throws Exception {
         //clearing SASL-related system properties that were set in beforeTest
         clearSaslSystemProperties();

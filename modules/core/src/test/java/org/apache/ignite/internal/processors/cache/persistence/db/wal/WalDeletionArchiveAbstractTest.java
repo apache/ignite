@@ -23,6 +23,8 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 
@@ -41,9 +44,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT
  *
  */
 public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractTest {
-    /** */
-    public static final String CACHE_NAME = "SomeCache";
-
     /**
      * Start grid with override default configuration via customConfigurator.
      */
@@ -55,7 +55,6 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
         dbCfg.setWalMode(walMode());
         dbCfg.setWalSegmentSize(512 * 1024);
         dbCfg.setCheckpointFrequency(60 * 1000);//too high value for turn off frequency checkpoint.
-        dbCfg.setPageSize(4 * 1024);
         dbCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
             .setMaxSize(100 * 1024 * 1024)
             .setPersistenceEnabled(true));
@@ -69,6 +68,13 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
         ignite.active(true);
 
         return ignite;
+    }
+
+    /** */
+    private CacheConfiguration<Integer, Integer> cacheConfiguration() {
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+
+        return ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /** {@inheritDoc} */
@@ -95,6 +101,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     /**
      * History size parameters consistency check. Should be set just one of wal history size or max wal archive size.
      */
+    @Test
     public void testGridDoesNotStart_BecauseBothWalHistorySizeAndMaxWalArchiveSizeUsed() throws Exception {
         //given: wal history size and max wal archive size are both set.
         IgniteConfiguration configuration = getConfiguration(getTestIgniteInstanceName());
@@ -125,6 +132,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     /**
      * Correct delete archived wal files.
      */
+    @Test
     public void testCorrectDeletedArchivedWalFiles() throws Exception {
         //given: configured grid with setted max wal archive size
         long maxWalArchiveSize = 2 * 1024 * 1024;
@@ -136,7 +144,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         long allowedThresholdWalArchiveSize = maxWalArchiveSize / 2;
 
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheConfiguration());
 
         //when: put to cache more than 2 MB
         for (int i = 0; i < 500; i++)
@@ -165,6 +173,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     /**
      * Checkpoint triggered depends on wal size.
      */
+    @Test
     public void testCheckpointStarted_WhenWalHasTooBigSizeWithoutCheckpoint() throws Exception {
         //given: configured grid with max wal archive size = 1MB, wal segment size = 512KB
         Ignite ignite = startGrid(dbCfg -> {
@@ -173,7 +182,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         GridCacheDatabaseSharedManager dbMgr = gridDatabase(ignite);
 
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheConfiguration());
 
         for (int i = 0; i < 500; i++)
             cache.put(i, i);
@@ -191,6 +200,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
      *
      * @deprecated Test old removing process depends on WalHistorySize.
      */
+    @Test
     public void testCheckpointHistoryRemovingByWalHistorySize() throws Exception {
         //given: configured grid with wal history size = 10
         int walHistorySize = 10;
@@ -201,7 +211,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         GridCacheDatabaseSharedManager dbMgr = gridDatabase(ignite);
 
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheConfiguration());
 
         //when: put to cache and do checkpoint
         int testNumberOfCheckpoint = walHistorySize * 2;
@@ -225,6 +235,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
      * Correct delete checkpoint history from memory depends on IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE. WAL files
      * doesn't delete because deleting was disabled.
      */
+    @Test
     public void testCorrectDeletedCheckpointHistoryButKeepWalFiles() throws Exception {
         System.setProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "2");
         //given: configured grid with disabled WAL removing.
@@ -234,7 +245,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         GridCacheDatabaseSharedManager dbMgr = gridDatabase(ignite);
 
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheConfiguration());
 
         //when: put to cache
         for (int i = 0; i < 500; i++) {

@@ -17,23 +17,19 @@
 
 package org.apache.ignite.ml.nn;
 
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.functions.*;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.MatrixStorage;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.Spliterator;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
-import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
-import org.apache.ignite.ml.math.primitives.matrix.Matrix;
-import org.apache.ignite.ml.math.primitives.matrix.MatrixStorage;
-import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Convenient way to create matrix of replicated columns or rows from vector.
@@ -362,7 +358,7 @@ class ReplicatedVectorMatrix implements Matrix {
      * Specialized optimized version of minus for ReplicatedVectorMatrix.
      *
      * @param mtx Matrix to be subtracted.
-     * @return new ReplicatedVectorMatrix resulting from subtraction.
+     * @return New ReplicatedVectorMatrix resulting from subtraction.
      */
     public Matrix minus(ReplicatedVectorMatrix mtx) {
         if (isColumnReplicated() == mtx.isColumnReplicated()) {
@@ -390,7 +386,7 @@ class ReplicatedVectorMatrix implements Matrix {
      * Specialized optimized version of plus for ReplicatedVectorMatrix.
      *
      * @param mtx Matrix to be added.
-     * @return new ReplicatedVectorMatrix resulting from addition.
+     * @return New ReplicatedVectorMatrix resulting from addition.
      */
     public Matrix plus(ReplicatedVectorMatrix mtx) {
         if (isColumnReplicated() == mtx.isColumnReplicated()) {
@@ -550,5 +546,19 @@ class ReplicatedVectorMatrix implements Matrix {
      */
     public Vector replicant() {
         return vector;
+    }
+
+    /** {@inheritDoc} */
+    @Override public double determinant() {
+        // If matrix is not square throw exception.
+        checkCardinality(vector.size(), replicationCnt);
+
+        // If matrix is 1x1 then determinant is its single element otherwise there are linear dependence and determinant is 0.
+        return vector.size() > 1 ? 0 : vector.get(1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix inverse() {
+        throw new UnsupportedOperationException();
     }
 }

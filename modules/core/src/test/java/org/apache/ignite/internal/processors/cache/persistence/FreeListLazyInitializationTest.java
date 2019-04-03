@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.List;
@@ -105,10 +106,11 @@ public class FreeListLazyInitializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLazyFreeListInitialization() throws Exception {
         IgniteEx node = startGrid(0);
 
-        node.active(true);
+        node.cluster().active(true);
 
         int parts = node.affinity(DEFAULT_CACHE_NAME).partitions();
 

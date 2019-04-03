@@ -27,12 +27,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cached affinity calculations.
+ *
+ * Deprecated GridAffinityAssignment doesn't support versioning.
+ * Use GridAffinityAssignmentV2 instead.
  */
+@Deprecated
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridAffinityAssignment implements AffinityAssignment, Serializable {
     /** */
@@ -40,9 +43,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
 
     /** Topology version. */
     private final AffinityTopologyVersion topVer;
-
-    /** */
-    private final MvccCoordinator mvccCrd;
 
     /** Collection of calculated affinity nodes. */
     private List<List<ClusterNode>> assignment;
@@ -74,7 +74,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         this.topVer = topVer;
         primary = new HashMap<>();
         backup = new HashMap<>();
-        mvccCrd = null;
     }
 
     /**
@@ -84,8 +83,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      */
     GridAffinityAssignment(AffinityTopologyVersion topVer,
         List<List<ClusterNode>> assignment,
-        List<List<ClusterNode>> idealAssignment,
-        MvccCoordinator mvccCrd) {
+        List<List<ClusterNode>> idealAssignment) {
         assert topVer != null;
         assert assignment != null;
         assert idealAssignment != null;
@@ -93,7 +91,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         this.topVer = topVer;
         this.assignment = assignment;
         this.idealAssignment = idealAssignment.equals(assignment) ? assignment : idealAssignment;
-        this.mvccCrd = mvccCrd;
 
         primary = new HashMap<>();
         backup = new HashMap<>();
@@ -112,7 +109,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         idealAssignment = aff.idealAssignment;
         primary = aff.primary;
         backup = aff.backup;
-        mvccCrd = aff.mvccCrd;
     }
 
     /**
@@ -276,11 +272,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     }
 
     /** {@inheritDoc} */
-    @Override public MvccCoordinator mvccCoordinator() {
-        return mvccCrd;
-    }
-
-    /** {@inheritDoc} */
     @Override public int hashCode() {
         return topVer.hashCode();
     }
@@ -291,7 +282,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         if (o == this)
             return true;
 
-        if (o == null || !(o instanceof AffinityAssignment))
+        if (!(o instanceof AffinityAssignment))
             return false;
 
         return topVer.equals(((AffinityAssignment)o).topologyVersion());

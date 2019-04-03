@@ -32,11 +32,9 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
@@ -50,9 +48,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  *
  */
 public class WalRolloverTypesTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private WALMode walMode;
 
@@ -70,8 +65,6 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -101,41 +94,49 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeLogOnlyModeArchiveOn() throws Exception {
         checkCurrentSegmentType(LOG_ONLY, false);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeLogOnlyModeArchiveOff() throws Exception {
         checkCurrentSegmentType(LOG_ONLY, true);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeLogFsyncModeArchiveOn() throws Exception {
         checkCurrentSegmentType(FSYNC, false);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeLogFsyncModeArchiveOff() throws Exception {
         checkCurrentSegmentType(FSYNC, true);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeLogOnlyModeArchiveOn() throws Exception {
         checkNextSegmentType(LOG_ONLY, false);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeLogOnlyModeArchiveOff() throws Exception {
         checkNextSegmentType(LOG_ONLY, true);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeFsyncModeArchiveOn() throws Exception {
         checkNextSegmentType(FSYNC, false);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeFsyncModeArchiveOff() throws Exception {
         checkNextSegmentType(FSYNC, true);
     }
@@ -187,21 +188,25 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeWithCacheActivityLogOnlyModeArchiveOn() throws Exception {
         checkNextSegmentTypeWithCacheActivity(LOG_ONLY, false);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeWithCacheActivityLogOnlyModeArchiveOff() throws Exception {
         checkNextSegmentTypeWithCacheActivity(LOG_ONLY, true);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeWithCacheActivityFsyncModeArchiveOn() throws Exception {
         checkNextSegmentTypeWithCacheActivity(FSYNC, false);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeWithCacheActivityFsyncModeArchiveOff() throws Exception {
         checkNextSegmentTypeWithCacheActivity(FSYNC, true);
     }
@@ -273,21 +278,25 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeWithCacheActivityLogOnlyModeArchiveOn() throws Exception {
         checkCurrentSegmentTypeWithCacheActivity(LOG_ONLY, false);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeWithCacheActivityLogOnlyModeArchiveOff() throws Exception {
         checkCurrentSegmentTypeWithCacheActivity(LOG_ONLY, true);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeWithCacheActivityFsyncModeArchiveOn() throws Exception {
         checkCurrentSegmentTypeWithCacheActivity(FSYNC, false);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeWithCacheActivityFsyncModeArchiveOff() throws Exception {
         checkCurrentSegmentTypeWithCacheActivity(FSYNC, true);
     }

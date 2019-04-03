@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -28,9 +27,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
@@ -41,8 +37,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -50,6 +44,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
@@ -108,6 +103,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRepeatableReadIsolationGetPut() throws Exception {
         checkOperations(GET, GET, PUT, true);
         checkOperations(GET, GET, PUT, false);
@@ -116,6 +112,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRepeatableReadIsolationInvoke() throws Exception {
         checkOperations(GET, GET, WriteMode.INVOKE, true);
         checkOperations(GET, GET, WriteMode.INVOKE, false);
@@ -124,6 +121,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRepeatableReadIsolationSqlPut() throws Exception {
         checkOperations(SQL, SQL, PUT, true);
         checkOperations(SQL, SQL, PUT, false);
@@ -132,6 +130,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRepeatableReadIsolationSqlInvoke() throws Exception {
         checkOperations(SQL, SQL, WriteMode.INVOKE, true);
         checkOperations(SQL, SQL, WriteMode.INVOKE, false);
@@ -140,6 +139,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRepeatableReadIsolationSqlDml() throws Exception {
         checkOperations(SQL, SQL, DML, true);
         checkOperations(SQL, SQL, DML, false);
@@ -148,6 +148,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRepeatableReadIsolationGetDml() throws Exception {
         checkOperations(GET, GET, DML, true);
         checkOperations(GET, GET, DML, false);
@@ -156,6 +157,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRepeatableReadIsolationMixedPut() throws Exception {
         checkOperations(SQL, GET, PUT, false);
         checkOperations(SQL, GET, PUT, true);
@@ -166,6 +168,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRepeatableReadIsolationMixedPut2() throws Exception {
         checkOperations(GET, SQL, PUT, false);
         checkOperations(GET, SQL, PUT, true);
@@ -176,6 +179,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRepeatableReadIsolationMixedDml() throws Exception {
         checkOperations(SQL, GET, DML, false);
         checkOperations(SQL, GET, DML, true);
@@ -184,6 +188,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRepeatableReadIsolationMixedDml2() throws Exception {
         checkOperations(GET, SQL, DML, false);
         checkOperations(GET, SQL, DML, true);
@@ -192,6 +197,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOperationConsistency() throws Exception {
         checkOperationsConsistency(PUT, false);
         checkOperationsConsistency(DML, false);
@@ -204,6 +210,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeConsistency() throws Exception {
         Ignite node = grid(/*requestFromClient ? nodesCount() - 1 :*/ 0);
 

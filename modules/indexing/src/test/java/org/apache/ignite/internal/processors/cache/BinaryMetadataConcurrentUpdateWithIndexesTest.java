@@ -29,7 +29,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -57,11 +56,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -89,9 +88,6 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
     /** */
     private static final int MB = 1024 * 1024;
 
-    /** */
-    private static final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -105,7 +101,7 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
 
         rndAddrsField.set(spi, true);
 
-        cfg.setDiscoverySpi(spi.setIpFinder(ipFinder));
+        cfg.setDiscoverySpi(spi.setIpFinder(sharedStaticIpFinder));
 
         cfg.setClientMode(igniteInstanceName.startsWith("client"));
 
@@ -153,6 +149,7 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
     public static final CountDownLatch localMetaUpdatedLatch = new CountDownLatch(1);
 
     /** */
+    @Test
     public void testMissingSchemaUpdate() throws Exception {
         // Start order is important.
         Ignite node0 = startGrid("node0");

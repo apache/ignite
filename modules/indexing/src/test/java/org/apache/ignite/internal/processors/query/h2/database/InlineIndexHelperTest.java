@@ -31,8 +31,8 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.result.SortOrder;
 import org.h2.value.CompareMode;
 import org.h2.value.Value;
@@ -51,6 +51,7 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.junit.Test;
 import org.springframework.util.SerializationUtils;
 
 import static org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper.CANT_BE_COMPARE;
@@ -58,7 +59,7 @@ import static org.apache.ignite.internal.processors.query.h2.database.InlineInde
 /**
  * Simple tests for {@link InlineIndexHelper}.
  */
-public class InlineIndexHelperTest extends GridCommonAbstractTest {
+public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
     /** */
     private static final int CACHE_ID = 42;
 
@@ -72,6 +73,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     private static final Comparator ALWAYS_FAILS_COMPARATOR = new AlwaysFailsComparator();
 
     /** Test utf-8 string cutting. */
+    @Test
     public void testConvert() {
         // 8 bytes total: 1b, 1b, 3b, 3b.
 
@@ -86,6 +88,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCompare1bytes() throws Exception {
         int maxSize = 3 + 2; // 2 ascii chars + 3 bytes header.
 
@@ -101,6 +104,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCompare2bytes() throws Exception {
         int maxSize = 3 + 4; // 2 2-bytes chars + 3 bytes header.
 
@@ -116,6 +120,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCompare3bytes() throws Exception {
         int maxSize = 3 + 6; // 2 3-bytes chars + 3 bytes header.
 
@@ -131,6 +136,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCompare4bytes() throws Exception {
         int maxSize = 3 + 8; // 2 4-bytes chars + 3 bytes header.
 
@@ -146,6 +152,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCompareMixed() throws Exception {
         int maxSize = 3 + 8; // 2 up to 4-bytes chars + 3 bytes header.
 
@@ -156,6 +163,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCompareMixed2() throws Exception {
         int strCnt = 1000;
         int symbCnt = 20;
@@ -225,6 +233,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** Limit is too small to cut */
+    @Test
     public void testStringCut() {
         // 6 bytes total: 3b, 3b.
         byte[] bytes = InlineIndexHelper.trimUTF8("\u20ac\u20ac".getBytes(Charsets.UTF_8), 2);
@@ -233,6 +242,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** Test on String values compare */
+    @Test
     public void testRelyOnCompare() {
         InlineIndexHelper ha = new InlineIndexHelper("", Value.STRING, 0, SortOrder.ASCENDING,
             CompareMode.getInstance(null, 0));
@@ -255,6 +265,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** Test on Bytes values compare */
+    @Test
     public void testRelyOnCompareBytes() {
         InlineIndexHelper ha = new InlineIndexHelper("", Value.BYTES, 0, SortOrder.ASCENDING,
             CompareMode.getInstance(null, 0));
@@ -277,6 +288,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** Test on Bytes values compare */
+    @Test
     public void testRelyOnCompareJavaObject() {
         InlineIndexHelper ha = new InlineIndexHelper("",Value.JAVA_OBJECT, 0, SortOrder.ASCENDING,
             CompareMode.getInstance(null, 0));
@@ -301,6 +313,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testStringTruncate() throws Exception {
         DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
@@ -352,6 +365,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBytes() throws Exception {
         DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
@@ -410,6 +424,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testJavaObject() throws Exception {
         DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
@@ -468,6 +483,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testNull() throws Exception {
         testPutGet(ValueInt.get(-1), ValueNull.INSTANCE, ValueInt.get(3));
         testPutGet(ValueInt.get(-1), ValueNull.INSTANCE, ValueInt.get(3));
@@ -477,41 +493,49 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBoolean() throws Exception {
         testPutGet(ValueBoolean.get(true), ValueBoolean.get(false), ValueBoolean.get(true));
     }
 
     /** */
+    @Test
     public void testByte() throws Exception {
         testPutGet(ValueByte.get((byte)-1), ValueByte.get((byte)2), ValueByte.get((byte)3));
     }
 
     /** */
+    @Test
     public void testShort() throws Exception {
         testPutGet(ValueShort.get((short)-32000), ValueShort.get((short)2), ValueShort.get((short)3));
     }
 
     /** */
+    @Test
     public void testInt() throws Exception {
         testPutGet(ValueInt.get(-1), ValueInt.get(2), ValueInt.get(3));
     }
 
     /** */
+    @Test
     public void testLong() throws Exception {
         testPutGet(ValueLong.get(-1), ValueLong.get(2), ValueLong.get(3));
     }
 
     /** */
+    @Test
     public void testFloat() throws Exception {
         testPutGet(ValueFloat.get(1.1f), ValueFloat.get(2.2f), ValueFloat.get(1.1f));
     }
 
     /** */
+    @Test
     public void testDouble() throws Exception {
         testPutGet(ValueDouble.get(1.1f), ValueDouble.get(2.2f), ValueDouble.get(1.1f));
     }
 
     /** */
+    @Test
     public void testDate() throws Exception {
         testPutGet(ValueDate.get(Date.valueOf("2017-02-20")),
             ValueDate.get(Date.valueOf("2017-02-21")),
@@ -519,6 +543,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTime() throws Exception {
         testPutGet(ValueTime.get(Time.valueOf("10:01:01")),
             ValueTime.get(Time.valueOf("11:02:02")),
@@ -526,6 +551,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTimestamp() throws Exception {
         testPutGet(ValueTimestamp.get(Timestamp.valueOf("2017-02-20 10:01:01")),
             ValueTimestamp.get(Timestamp.valueOf("2017-02-20 10:01:01")),
@@ -533,6 +559,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testUUID() throws Exception {
         testPutGet(ValueUuid.get(UUID.randomUUID().toString()),
             ValueUuid.get(UUID.randomUUID().toString()),

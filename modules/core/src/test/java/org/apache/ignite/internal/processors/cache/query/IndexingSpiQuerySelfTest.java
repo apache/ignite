@@ -40,8 +40,6 @@ import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -52,6 +50,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Indexing Spi query only test
@@ -63,13 +62,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
         cfg.setIndexingSpi(indexingSpi);
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -89,6 +82,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleIndexingSpi() throws Exception {
         indexingSpi = new MyIndexingSpi();
 
@@ -110,6 +104,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexingSpiWithDisabledQueryProcessor() throws Exception {
         indexingSpi = new MyIndexingSpi();
 
@@ -131,6 +126,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryIndexingSpi() throws Exception {
         indexingSpi = new MyBinaryIndexingSpi();
 
@@ -159,36 +155,42 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonBinaryIndexingSpi() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI, "true");
 
-        indexingSpi = new MyIndexingSpi();
+        try {
+            indexingSpi = new MyIndexingSpi();
 
-        Ignite ignite = startGrid(0);
+            Ignite ignite = startGrid(0);
 
-        CacheConfiguration<PersonKey, Person> ccfg = cacheConfiguration(DEFAULT_CACHE_NAME);
+            CacheConfiguration<PersonKey, Person> ccfg = cacheConfiguration(DEFAULT_CACHE_NAME);
 
-        IgniteCache<PersonKey, Person> cache = ignite.createCache(ccfg);
+            IgniteCache<PersonKey, Person> cache = ignite.createCache(ccfg);
 
-        for (int i = 0; i < 10; i++) {
-            PersonKey key = new PersonKey(i);
+            for (int i = 0; i < 10; i++) {
+                PersonKey key = new PersonKey(i);
 
-            cache.put(key, new Person("John Doe " + i));
+                cache.put(key, new Person("John Doe " + i));
+            }
+
+            QueryCursor<Cache.Entry<PersonKey, Person>> cursor = cache.query(
+                new SpiQuery<PersonKey, Person>().setArgs(new PersonKey(2), new PersonKey(5)));
+
+            for (Cache.Entry<PersonKey, Person> entry : cursor)
+                System.out.println(entry);
+
+            cache.remove(new PersonKey(9));
         }
-
-        QueryCursor<Cache.Entry<PersonKey, Person>> cursor = cache.query(
-            new SpiQuery<PersonKey, Person>().setArgs(new PersonKey(2), new PersonKey(5)));
-
-        for (Cache.Entry<PersonKey, Person> entry : cursor)
-            System.out.println(entry);
-
-        cache.remove(new PersonKey(9));
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testIndexingSpiFailure() throws Exception {
         indexingSpi = new MyBrokenIndexingSpi();
 
