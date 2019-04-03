@@ -46,7 +46,7 @@ public enum IgniteFeatures {
     DIFFERENT_REBALANCE_POOL_SIZE(4),
 
     /** */
-    CACHE_PARTITION_FILE_REBALANCE(4);
+    CACHE_PARTITION_FILE_REBALANCE(5);
     /**
      * Unique feature identifier.
      */
