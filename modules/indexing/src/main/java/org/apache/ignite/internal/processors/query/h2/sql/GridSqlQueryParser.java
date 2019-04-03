@@ -786,7 +786,7 @@ public class GridSqlQueryParser {
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
 
-            if (select.isDistinct())
+            if (select.isAnyDistinct())
                 throw new IgniteSQLException("DISTINCT clause is not supported for SELECT FOR UPDATE.",
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
