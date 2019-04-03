@@ -229,5 +229,5 @@ public abstract class NNClassificationModel implements IgniteModel<Vector, Doubl
     }
 
     /** */
-    public abstract <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path);
+    @Override public abstract <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path);
 }
