@@ -28,6 +28,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustData.NULL_BASELINE_DATA;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
@@ -67,14 +68,14 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
             ctx.log(BaselineAutoAdjustExecutor.class),
             cluster,
             ctx.getSystemExecutorService(),
-            this::isBaselineAutoAdjustEnabled
+            this::isTopologyWatcherEnabled
         ), ctx.log(BaselineAutoAdjustScheduler.class));
         this.discoveryMgr = ctx.discovery();
     }
 
     /** {@inheritDoc} */
     @Override public void onEvent(Event evt) {
-        if (!isBaselineAutoAdjustEnabled()) {
+        if (!isTopologyWatcherEnabled()) {
             synchronized (this) {
                 lastBaselineData = NULL_BASELINE_DATA;
             }
@@ -116,8 +117,9 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
     /**
      * @return {@code true} if auto-adjust baseline enabled.
      */
-    private boolean isBaselineAutoAdjustEnabled() {
-        return stateProcessor.clusterState().active() && baselineConfiguration.isBaselineAutoAdjustEnabled();
+    private boolean isTopologyWatcherEnabled() {
+        return stateProcessor.clusterState().active() && baselineConfiguration.isBaselineAutoAdjustEnabled()
+            && (CU.isPersistenceEnabled(cluster.ignite().configuration()) || cluster.baselineAutoAdjustTimeout() != 0L);
     }
 
     /**
