@@ -1550,10 +1550,29 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     RootPage reuseRoot = metas.reuseListRoot;
 
                     freeList = new LazyCacheFreeList() {
-                        @Override protected CacheFreeList<CacheDataRow> createDelegate() throws IgniteCheckedException {
-                            assert grp.shared().database().checkpointLockIsHeldByThread();
+                        @Override protected CacheFreeList<CacheDataRow> createDelegate(boolean create) throws IgniteCheckedException {
+                            boolean lock = false;
 
-                            return new PartitionCacheFreeList(grp, partId, reuseRoot);
+                            try {
+                                if (!create) {
+                                    if (reuseRoot.pageId().pageId() == 0L)
+                                        return null;
+
+                                    assert !grp.shared().database().checkpointLockIsHeldByThread();
+
+                                    grp.shared().database().checkpointReadLock();
+
+                                    lock = true;
+                                }
+
+                                assert grp.shared().database().checkpointLockIsHeldByThread();
+
+                                return new PartitionCacheFreeList(grp, partId, reuseRoot);
+                            }
+                            finally {
+                                if (lock)
+                                    grp.shared().database().checkpointReadUnlock();
+                            }
                         }
                     };
 

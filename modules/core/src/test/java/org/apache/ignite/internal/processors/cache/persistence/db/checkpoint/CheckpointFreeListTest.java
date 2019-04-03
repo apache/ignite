@@ -49,7 +49,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.LazyCacheFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -141,6 +144,19 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    private AtomicReferenceArray<PagesList.Stripe[]> freeListBuckets(IgniteCacheOffheapManager.CacheDataStore cacheData) {
+        FreeList freeList = cacheData.rowStore().freeList();
+
+        if (freeList instanceof LazyCacheFreeList) {
+            freeList = GridTestUtils.getFieldValue(freeList, LazyCacheFreeList.class, "delegate");
+
+            if (freeList == null)
+                return null;
+        }
+
+        return U.field(freeList, "buckets");
+    }
+
     /**
      * @throws Exception if fail.
      */
@@ -168,7 +184,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         HashMap<Integer, AtomicReferenceArray<PagesList.Stripe[]>> bucketsStorage = new HashMap<>();
 
         offheap.cacheDataStores().forEach(cacheData ->
-            bucketsStorage.put(cacheData.partId(), U.field(cacheData.rowStore().freeList(), "buckets"))
+            bucketsStorage.put(cacheData.partId(), freeListBuckets(cacheData))
         );
 
         forceCheckpoint();
@@ -182,7 +198,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         GridCacheOffheapManager offheap2 = cacheOffheapManager();
 
         offheap2.cacheDataStores().forEach(cacheData -> {
-            AtomicReferenceArray<PagesList.Stripe[]> restoredBuckets = U.field(cacheData.rowStore().freeList(), "buckets");
+            AtomicReferenceArray<PagesList.Stripe[]> restoredBuckets = freeListBuckets(cacheData);
             AtomicReferenceArray<PagesList.Stripe[]> savedBuckets = bucketsStorage.get(cacheData.partId());
 
             if (savedBuckets != null && restoredBuckets != null) {

@@ -55,28 +55,30 @@ public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
 
     /** {@inheritDoc} */
     @Override public void insertDataRow(CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        initDelegateIfNeeded().insertDataRow(row, statHolder);
+        initDelegateIfNeeded(true).insertDataRow(row, statHolder);
     }
 
     /** {@inheritDoc} */
     @Override public boolean updateDataRow(long link, CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        return initDelegateIfNeeded().updateDataRow(link, row, statHolder);
+        return initDelegateIfNeeded(true).updateDataRow(link, row, statHolder);
     }
 
     /** {@inheritDoc} */
     @Override public <S, R> R updateDataRow(long link, PageHandler<S, R> pageHnd, S arg, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        return (R)initDelegateIfNeeded().updateDataRow(link, pageHnd, arg, statHolder);
+        return (R)initDelegateIfNeeded(true).updateDataRow(link, pageHnd, arg, statHolder);
     }
 
     /** {@inheritDoc} */
     @Override public void removeDataRowByLink(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        initDelegateIfNeeded().removeDataRowByLink(link, statHolder);
+        initDelegateIfNeeded(true).removeDataRowByLink(link, statHolder);
     }
 
     /** {@inheritDoc} */
     @Override public int emptyDataPages() {
         try {
-            return initDelegateIfNeeded().emptyDataPages();
+            CacheFreeList<CacheDataRow> freeList = initDelegateIfNeeded(false);
+
+            return freeList != null ? freeList.emptyDataPages() : 0;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to initialize FreeList", e);
@@ -86,7 +88,9 @@ public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
     /** {@inheritDoc} */
     @Override public long freeSpace() {
         try {
-            return initDelegateIfNeeded().freeSpace();
+            CacheFreeList<CacheDataRow> freeList = initDelegateIfNeeded(false);
+
+            return freeList != null ? freeList.freeSpace() : null;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to initialize FreeList", e);
@@ -103,30 +107,30 @@ public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
 
     /** {@inheritDoc} */
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
-        initDelegateIfNeeded().addForRecycle(bag);
+        initDelegateIfNeeded(true).addForRecycle(bag);
     }
 
     /** {@inheritDoc} */
     @Override public long takeRecycledPage() throws IgniteCheckedException {
-        return initDelegateIfNeeded().takeRecycledPage();
+        return initDelegateIfNeeded(true).takeRecycledPage();
     }
 
     /** {@inheritDoc} */
     @Override public long recycledPagesCount() throws IgniteCheckedException {
-        return  initDelegateIfNeeded().recycledPagesCount();
+        return  initDelegateIfNeeded(true).recycledPagesCount();
     }
 
     /**
      * @return Cache free list.
      * @throws IgniteCheckedException If failed.
      */
-    protected abstract CacheFreeList<CacheDataRow> createDelegate() throws IgniteCheckedException;
+    protected abstract CacheFreeList<CacheDataRow> createDelegate(boolean create) throws IgniteCheckedException;
 
     /**
      * @return Cache free list.
      * @throws IgniteCheckedException If failed to initialize free list.
      */
-    private CacheFreeList<CacheDataRow> initDelegateIfNeeded() throws IgniteCheckedException {
+    private CacheFreeList<CacheDataRow> initDelegateIfNeeded(boolean create) throws IgniteCheckedException {
         CacheFreeList<CacheDataRow> delegate = this.delegate;
 
         if (delegate != null)
@@ -141,7 +145,7 @@ public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
 
             if (initLatchUpdater.compareAndSet(this, null, initLatch)) {
                 try {
-                    this.delegate = createDelegate();
+                    this.delegate = createDelegate(create);
                 }
                 catch (IgniteCheckedException e) {
                     initErr = e;
