@@ -106,14 +106,20 @@ namespace ignite
                     success = TryRestoreConnection(timeout);
 
                     if (!success)
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                            "Can not send message to remote host: timeout");
+
+                    success = Send(mem.Data(), mem.Length(), timeout);
+
+                    if (!success)
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
                             "Can not send message to remote host: timeout");
                 }
 
                 success = Receive(mem, timeout);
 
                 if (!success)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
                         "Can not receive message response from the remote host: timeout");
             }
 
@@ -128,7 +134,7 @@ namespace ignite
                     return false;
 
                 if (res == OperationResult::FAIL)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
                         "Can not send message due to connection failure");
 
                 return true;
@@ -173,7 +179,7 @@ namespace ignite
                     return false;
 
                 if (res == OperationResult::FAIL)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message header");
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, "Can not receive message header");
 
                 interop::InteropInputStream inStream(&msg);
 
@@ -183,7 +189,8 @@ namespace ignite
                 {
                     Close();
 
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Protocol error: Message length is negative");
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                        "Protocol error: Message length is negative");
                 }
 
                 if (msgLen == 0)
@@ -200,7 +207,7 @@ namespace ignite
                     return false;
 
                 if (res == OperationResult::FAIL)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                    throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
                         "Connection failure: Can not receive message body");
 
                 return true;

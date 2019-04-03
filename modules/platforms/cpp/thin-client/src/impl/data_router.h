@@ -125,9 +125,7 @@ namespace ignite
 
                     int32_t metaVer = typeMgr.GetVersion();
 
-                    channel.Get()->SyncMessage(req, rsp, ioTimeout);
-
-                    CheckAffinity(rsp);
+                    SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
 
                     ProcessMeta(metaVer);
                 }
@@ -145,11 +143,14 @@ namespace ignite
                 {
                     SP_DataChannel channel = GetBestChannel(hint);
 
+                    if (!channel.IsValid())
+                        Connect();
+
+                    channel = GetBestChannel(hint);
+
                     int32_t metaVer = typeMgr.GetVersion();
 
-                    channel.Get()->SyncMessage(req, rsp, ioTimeout);
-
-                    CheckAffinity(rsp);
+                    SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
 
                     ProcessMeta(metaVer);
                 }
@@ -168,9 +169,7 @@ namespace ignite
                 {
                     SP_DataChannel channel = GetRandomChannel();
 
-                    channel.Get()->SyncMessage(req, rsp, ioTimeout);
-
-                    CheckAffinity(rsp);
+                    SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
                 }
 
                 /**
@@ -208,13 +207,69 @@ namespace ignite
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataRouter);
 
+                /**
+                 * Invalidate provided data channel.
+                 *
+                 * @param channel Data channel.
+                 */
+                void InvalidateChannel(SP_DataChannel& channel);
+
+                /**
+                 * Synchronously send request message and receive response.
+                 *
+                 * @param req Request message.
+                 * @param rsp Response message.
+                 * @param preferred Preferred channel to use.
+                 * @throw IgniteError on error.
+                 */
+                template<typename ReqT, typename RspT>
+                void SyncMessagePreferredChannelNoMetaUpdate(const ReqT& req, RspT& rsp, const SP_DataChannel& preferred)
+                {
+                    SP_DataChannel channel = preferred;
+
+                    while (true)
+                    {
+                        if (!channel.IsValid())
+                            channel = GetRandomChannel();
+
+                        if (!channel.IsValid())
+                        {
+                            Connect();
+
+                            channel = GetRandomChannel();
+                        }
+
+                        if (!channel.IsValid())
+                            break;
+
+                        try
+                        {
+                            channel.Get()->SyncMessage(req, rsp, ioTimeout);
+
+                            break;
+                        }
+                        catch (IgniteError&)
+                        {
+                            InvalidateChannel(channel);
+                        }
+                    }
+
+                    if (!channel.IsValid())
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                            "Can not connect to any available cluster node.");
+                    }
+
+                    CheckAffinity(rsp);
+                }
+
                 /** Shared pointer to end points. */
                 typedef common::concurrent::SharedPointer<network::EndPoints> SP_EndPoints;
 
                 /**
                  * Get random data channel.
                  *
-                 * @return Random data channel.
+                 * @return Random data channel or null, if not connected.
                  */
                 SP_DataChannel GetRandomChannel();
 
@@ -222,7 +277,7 @@ namespace ignite
                  * Get random data channel.
                  * @warning May only be called when lock is held!
                  *
-                 * @return Random data channel.
+                 * @return Random data channel or null, if not connected.
                  */
                 SP_DataChannel GetRandomChannelUnsafe();
 
@@ -238,7 +293,7 @@ namespace ignite
                  * Get the best data channel.
                  *
                  * @param hint GUID of preferred server node to use.
-                 * @return The best available data channel.
+                 * @return The best available data channel or null if not connected.
                  */
                 SP_DataChannel GetBestChannel(const Guid& hint);
 

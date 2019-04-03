@@ -167,6 +167,38 @@ namespace ignite
                 return affinityManager.GetAffinityAssignment(cacheId);
             }
 
+            void DataRouter::InvalidateChannel(SP_DataChannel &channel)
+            {
+                if (!channel.IsValid())
+                    return;
+
+                const IgniteNode& node = channel.Get()->GetNode();
+
+                common::concurrent::CsLockGuard lock(channelsMutex);
+
+                if (!node.IsLegacy())
+                {
+                    channels.erase(node.GetGuid());
+                }
+                else
+                {
+                    const network::EndPoint& ep1 = node.GetEndPoint();
+                    for (ChannelsVector::iterator it = legacyChannels.begin(); it != legacyChannels.end(); ++it)
+                    {
+                        const network::EndPoint& ep2 = it->Get()->GetNode().GetEndPoint();
+
+                        if (ep1 == ep2)
+                        {
+                            legacyChannels.erase(it);
+
+                            break;
+                        }
+                    }
+                }
+
+                channel = SP_DataChannel();
+            }
+
             SP_DataChannel DataRouter::GetRandomChannel()
             {
                 common::concurrent::CsLockGuard lock(channelsMutex);
@@ -176,6 +208,9 @@ namespace ignite
 
             SP_DataChannel DataRouter::GetRandomChannelUnsafe()
             {
+                if (channels.empty() && legacyChannels.empty())
+                    return SP_DataChannel();
+
                 int r = rand();
 
                 size_t idx = r % (channels.size() + legacyChannels.size());
