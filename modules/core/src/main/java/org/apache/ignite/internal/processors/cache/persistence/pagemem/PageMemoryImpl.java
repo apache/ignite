@@ -283,7 +283,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     /**
      * Marker that stop was invoked and memory is not supposed for any usage.
      */
-    private volatile boolean stopped;
+    private volatile boolean stopped = true;
 
     /**
      * @param directMemoryProvider Memory allocator to use.
@@ -426,6 +426,10 @@ public class PageMemoryImpl implements PageMemoryEx {
         stopped = true;
 
         directMemoryProvider.shutdown(deallocate);
+    }
+
+    @Override public boolean stopped() {
+        return stopped;
     }
 
     /** {@inheritDoc} */

@@ -2779,8 +2779,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         DataRegion dataRegion = sharedCtx.database().dataRegion(memPlcName);
 
-        if (sharedCtx.isLazyMemoryAllocation() && (!ctx.clientNode() || desc.config().getCacheMode() == LOCAL))
+        if (sharedCtx.isLazyMemoryAllocation() &&
+            dataRegion.pageMemory().stopped() &&
+            (!ctx.clientNode() || desc.config().getCacheMode() == LOCAL)) {
             dataRegion.pageMemory().start();
+        }
 
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
