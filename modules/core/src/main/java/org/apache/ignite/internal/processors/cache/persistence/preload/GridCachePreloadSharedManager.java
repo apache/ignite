@@ -83,7 +83,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     private final boolean presistenceRebalanceEnabled;
 
     /** */
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** */
     private final ConcurrentMap<UUID, RebalanceDownloadFuture> futMap = new ConcurrentHashMap<>();
@@ -218,6 +218,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
      * @param part Completely downloaded partition file.
      */
     void onPartitionDownloaded(UUID nodeId, CacheGroupContext grp, GridDhtLocalPartition part) {
+        assert lock.getReadHoldCount() > 1;
+
         final RebalanceDownloadFuture fut0 = futMap.get(nodeId);
 
         if (staleFuture(fut0))
@@ -235,7 +237,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         // TODO Rebuild indexes by partition
 
         fut.listen(f -> {
-            // TODO swithc mode when the next checkpoint finished.
+            // TODO switch mode when the next checkpoint finished.
             Map<Integer, Set<Integer>> parts = new HashMap<>();
 
             parts.put(grp.groupId(), new HashSet<>(Collections.singletonList(part.id())));
