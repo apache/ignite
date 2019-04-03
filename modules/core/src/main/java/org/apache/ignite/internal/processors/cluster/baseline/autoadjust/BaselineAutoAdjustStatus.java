@@ -20,17 +20,17 @@ package org.apache.ignite.internal.processors.cluster.baseline.autoadjust;
 /**
  * Statistic of baseline auto-adjust.
  */
-public class BaselineAutoAdjustStatistic {
+public class BaselineAutoAdjustStatus {
     /** Timeout of task of baseline adjust. */
-    private final long baselineAdjustTimeout;
+    private final long timeUntilAutoAdjust;
     /** State of baseline adjust task. */
     private final TaskState taskState;
 
     /**
      * @param timeout Timeout of baseline adjust.
      */
-    private BaselineAutoAdjustStatistic(TaskState state, long timeout) {
-        baselineAdjustTimeout = timeout;
+    private BaselineAutoAdjustStatus(TaskState state, long timeout) {
+        timeUntilAutoAdjust = timeout;
         taskState = state;
     }
 
@@ -38,29 +38,29 @@ public class BaselineAutoAdjustStatistic {
      * @param timeout Timeout of task of baseline adjust.
      * @return Created statistic object.
      */
-    public static BaselineAutoAdjustStatistic scheduled(long timeout) {
-        return new BaselineAutoAdjustStatistic(TaskState.SCHEDULED, timeout);
+    public static BaselineAutoAdjustStatus scheduled(long timeout) {
+        return new BaselineAutoAdjustStatus(TaskState.SCHEDULED, timeout);
     }
 
     /**
      * @return Created statistic object with 'in progress' status.
      */
-    public static BaselineAutoAdjustStatistic inProgress() {
-        return new BaselineAutoAdjustStatistic(TaskState.IN_PROGRESS, -1);
+    public static BaselineAutoAdjustStatus inProgress() {
+        return new BaselineAutoAdjustStatus(TaskState.IN_PROGRESS, -1);
     }
 
     /**
      * @return Created statistic object with 'not scheduled' status.
      */
-    public static BaselineAutoAdjustStatistic notScheduled() {
-        return new BaselineAutoAdjustStatistic(TaskState.NOT_SCHEDULED, -1);
+    public static BaselineAutoAdjustStatus notScheduled() {
+        return new BaselineAutoAdjustStatus(TaskState.NOT_SCHEDULED, -1);
     }
 
     /**
      * @return Timeout of task of baseline adjust.
      */
-    public long getBaselineAdjustTimeout() {
-        return baselineAdjustTimeout;
+    public long getTimeUntilAutoAdjust() {
+        return timeUntilAutoAdjust;
     }
 
     /**

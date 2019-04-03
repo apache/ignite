@@ -35,6 +35,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -46,7 +47,7 @@ import static org.junit.Assume.assumeTrue;
  *
  */
 @GridCommonTest(group = "Kernal Self")
-public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
+public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_NAME = "TEST_NAME";
     /** */
@@ -362,5 +363,50 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
         igniteClient.close();
 
         assertTrue(isCurrentBaselineFromOneNode(ignite0));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testBaselineAutoAdjustDisableByDefaultBecauseNotNewCluster() throws Exception {
+        assumeTrue(isPersistent());
+
+        //It emulate working cluster before auto-adjust feature was available.
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+        try {
+            Ignite ignite0 = startGrids(2);
+
+            //This activation guarantee that baseline would be set.
+            ignite0.cluster().active(true);
+
+            ignite0.cluster().baselineAutoAdjustTimeout(0);
+
+            stopAllGrids();
+        }
+        finally {
+            System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+        }
+
+        //Auto-activation is expected. Not first activation should be detected.
+        Ignite ignite0 = startGrids(2);
+
+        awaitPartitionMapExchange();
+
+        Set<Object> initBaseline = ignite0.cluster().currentBaselineTopology().stream()
+            .map(BaselineNode::consistentId)
+            .collect(Collectors.toSet());
+
+        stopGrid(1);
+
+        //Should nothing happened because auto-adjust should be disable due to activation is not first.
+        assertFalse(waitForCondition(
+            () -> !initBaseline.equals(
+                ignite0.cluster().currentBaselineTopology().stream()
+                    .map(BaselineNode::consistentId)
+                    .collect(Collectors.toSet())
+            ),
+            5_000
+        ));
     }
 }

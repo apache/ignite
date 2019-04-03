@@ -22,7 +22,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
 /** */
-public class ChangeTopologyWatcherInMemoryTest extends ChangeTopologyWatcherTest {
+public class BaselineAutoAdjustInMemoryTest extends BaselineAutoAdjustTest {
     /** {@inheritDoc} */
     @Override protected boolean isPersistent() {
         return false;

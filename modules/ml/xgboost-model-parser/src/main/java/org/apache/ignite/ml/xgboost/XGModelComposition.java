@@ -29,8 +29,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
-import static org.apache.ignite.ml.math.StorageConstants.RANDOM_ACCESS_MODE;
-
 /**
  * XGBoost model composition.
  */
@@ -81,7 +79,7 @@ public class XGModelComposition implements IgniteModel<NamedVector, Double> {
      * @return Sparse vector.
      */
     private Vector reencode(NamedVector vector) {
-        Vector inputVector = new SparseVector(dict.size(), RANDOM_ACCESS_MODE);
+        Vector inputVector = new SparseVector(dict.size());
         for (int i = 0; i < dict.size(); i++)
             inputVector.set(i, Double.NaN);
 
