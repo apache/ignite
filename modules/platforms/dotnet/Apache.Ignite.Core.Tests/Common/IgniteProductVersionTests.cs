@@ -114,9 +114,9 @@ namespace Apache.Ignite.Core.Tests.Common
         }
 
         [Test]
-        public void TestClientVersionIsMoreOrEqualsServerNodeVersion()
+        public void TestClientVersionMatchesServerNodeVersion()
         {
-            Version clientVer = Assembly.GetExecutingAssembly().GetName().Version;
+            Version clientVer = typeof(IIgnite).Assembly.GetName().Version;
 
             IgniteProductVersion version = Ignite.GetVersion();
             
