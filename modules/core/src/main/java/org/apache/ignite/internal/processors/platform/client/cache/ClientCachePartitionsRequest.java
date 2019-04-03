@@ -184,7 +184,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         try {
             GridCacheContext cacheContext = ctx.kernalContext().cache().context().cacheContext(cacheId);
             return cacheContext.affinity().assignment(affinityVer.getVersion());
-        } catch (IgniteException e) {
+        } catch (Exception e) {
             return null;
         }
     }
