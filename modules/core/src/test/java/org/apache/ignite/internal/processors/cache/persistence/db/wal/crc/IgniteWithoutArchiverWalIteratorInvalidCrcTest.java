@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.LOGICAL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.PHYSICAL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 
@@ -104,7 +105,19 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
 
         stopGrid(0);
 
-        // The node should.
+        IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
+
+        File walDir = U.field(walMgr, "walWorkDir");
+
+        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
+
+        List<FileDescriptor> walFiles = getWalFiles(walDir, iterFactory);
+
+        FileDescriptor lastWalFile = walFiles.get(walFiles.size() - 1);
+
+        List<FileWALPointer> pointers = WalTestUtils.getPointers(lastWalFile, iterFactory, LOGICAL);
+
+        WalTestUtils.corruptWalSegmentFile(lastWalFile, pointers.get(pointers.size()-1));
 
         IgniteEx ex = startGrid(0);
 
