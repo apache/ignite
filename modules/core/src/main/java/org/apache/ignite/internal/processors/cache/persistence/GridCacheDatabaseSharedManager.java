@@ -2180,8 +2180,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         boolean apply = status.needRestoreMemory();
 
-        if(!CheckpointStatus.NULL_PTR.equals(status.startPtr))
-            cctx.wal().read(status.startPtr);
+        WALRecord startRec = !CheckpointStatus.NULL_PTR.equals(status.startPtr) || apply ?  cctx.wal().read(status.startPtr) : null;
 
         if (apply) {
             if (finalizeState)
@@ -2190,13 +2189,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.pageStore().beginRecover();
 
-            WALRecord rec = cctx.wal().read(status.startPtr);
-
-            if (!(rec instanceof CheckpointRecord))
+            if (!(startRec instanceof CheckpointRecord))
                 throw new StorageException("Checkpoint marker doesn't point to checkpoint record " +
-                    "[ptr=" + status.startPtr + ", rec=" + rec + "]");
+                    "[ptr=" + status.startPtr + ", rec=" + startRec + "]");
 
-            WALPointer cpMark = ((CheckpointRecord)rec).checkpointMark();
+            WALPointer cpMark = ((CheckpointRecord)startRec).checkpointMark();
 
             if (cpMark != null) {
                 log.info("Restoring checkpoint after logical recovery, will start physical recovery from " +
