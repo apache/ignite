@@ -17,13 +17,15 @@
 
 package org.apache.ignite.ml.svm;
 
+import java.io.Serializable;
+import java.util.List;
+import java.util.Random;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -33,10 +35,6 @@ import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.Serializable;
-import java.util.List;
-import java.util.Random;
 
 /**
  * Base class for a soft-margin SVM linear classification trainer based on the communication-efficient distributed dual
@@ -151,7 +149,7 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
         int stateVectorSize = weights.size() + 1;
         Vector res = weights.isDense() ?
             new DenseVector(stateVectorSize) :
-            new SparseVector(stateVectorSize, StorageConstants.RANDOM_ACCESS_MODE);
+            new SparseVector(stateVectorSize);
 
         res.set(0, intercept);
         weights.nonZeroes().forEach(ith -> res.set(ith.index(), ith.get()));
