@@ -220,11 +220,6 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     @Override public void updateInitial(long start, long delta) {
         long cntr0 = get();
 
-        // The method is called with zero counter to trigger data store initialization before checkpoints are started
-        // (or cp read lock will never be taken).
-        if (start == 0)
-            return;
-
         assert start >= cntr0 : "Illegal update counters order: cur=" + cntr0 + ", new=" + start;
 
         update(start, delta);

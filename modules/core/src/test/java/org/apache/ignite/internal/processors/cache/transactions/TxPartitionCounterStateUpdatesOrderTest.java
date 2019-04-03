@@ -21,15 +21,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Random;
 import java.util.concurrent.atomic.LongAdder;
-import javax.cache.Cache;
-import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.query.CacheQueryEntryEvent;
-import org.apache.ignite.cache.query.ContinuousQuery;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -43,8 +39,11 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.jsr166.ConcurrentLinkedHashMap;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Tests if updates using new counter implementation is applied in expected order.
@@ -52,6 +51,9 @@ import org.junit.Test;
 public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterStateAbstractTest {
     /** */
     public static final int PARTITION_ID = 0;
+
+    /** */
+    public static final int SERVER_NODES = 3;
 
     /**
      * Should observe same order of updates on all owners.
@@ -109,43 +111,55 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
     public void testMultiThreadedUpdateOrderWithPrimaryRestart() throws Exception {
         backups = 2;
 
-        Ignite crd = startGridsMultiThreaded(3);
+        Ignite crd = startGridsMultiThreaded(SERVER_NODES);
 
         IgniteEx client = startGrid("client");
 
-        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
-
-        ConcurrentLinkedHashMap<Object, T2<Object, Long>> events = new ConcurrentLinkedHashMap<>();
-
-        qry.setLocalListener(evts -> {
-            for (CacheEntryEvent<?, ?> event : evts) {
-                CacheQueryEntryEvent e0 = (CacheQueryEntryEvent)event;
-
-                events.put(event.getKey(), new T2<>(event.getValue(), e0.getPartitionUpdateCounter()));
-            }
-        });
-
-        QueryCursor<Cache.Entry<Object, Object>> cur = client.cache(DEFAULT_CACHE_NAME).query(qry);
+        // TODO FIXME enable CQ in the test.
+//        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+//
+//        ConcurrentLinkedHashMap<Object, T2<Object, Long>> events = new ConcurrentLinkedHashMap<>();
+//
+//        qry.setLocalListener(evts -> {
+//            for (CacheEntryEvent<?, ?> event : evts) {
+//                CacheQueryEntryEvent e0 = (CacheQueryEntryEvent)event;
+//
+//                events.put(event.getKey(), new T2<>(event.getValue(), e0.getPartitionUpdateCounter()));
+//            }
+//        });
+//
+//        QueryCursor<Cache.Entry<Object, Object>> cur = client.cache(DEFAULT_CACHE_NAME).query(qry);
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        Ignite prim = G.ignite(client.affinity(DEFAULT_CACHE_NAME).mapPartitionToNode(PARTITION_ID).id());
+        List<Integer> primaryKeys = partitionKeys(cache, PARTITION_ID, 10000, 0);
 
-        Iterator<Integer> it = partitionKeysIterator(cache, PARTITION_ID);
+        Ignite prim = primaryNode(primaryKeys.get(0), DEFAULT_CACHE_NAME);
+
+        final List<Ignite> backups = backupNodes(primaryKeys.get(0), DEFAULT_CACHE_NAME);
 
         long stop = U.currentTimeMillis() + 60_000;
 
+        Random r = new Random();
+
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
             while(U.currentTimeMillis() < stop) {
-                doSleep(1000);
+                doSleep(5000);
 
-                stopGrid(prim.name());
+                Ignite backup = backups.get(r.nextInt(backups.size()));
+
+                assertFalse(prim == backup);
+
+                String name = backup.name();
+
+                stopGrid(true, name);
 
                 try {
-                    awaitPartitionMapExchange();
-                    startGrid(prim.name());
+                    waitForTopology(SERVER_NODES);
 
-                    doSleep(300);
+                    doSleep(15000);
+
+                    startGrid(name);
                 }
                 catch (Exception e) {
                     fail();
@@ -153,41 +167,58 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
             }
         }, 1, "node-restarter");
 
-        LongAdder cnt = new LongAdder();
+        //LongAdder cnt = new LongAdder();
 
-        final int threads = 1; //Runtime.getRuntime().availableProcessors();
+        final int threads = 4; //Runtime.getRuntime().availableProcessors();
+
+        LongAdder puts = new LongAdder();
+        LongAdder removes = new LongAdder();
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(() -> {
             while (U.currentTimeMillis() < stop) {
-                Integer key;
+                int rangeStart = r.nextInt(primaryKeys.size() - 500);
+                int range = 1 + r.nextInt(499);
 
-                synchronized (it) {
-                    key = it.next();
+                List<Integer> keys = primaryKeys.subList(rangeStart, rangeStart + range);
+
+                try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+                    for (Integer key : keys) {
+                        boolean rmv = r.nextFloat() < 0.7;
+                        if (rmv) {
+                            cache.remove(key);
+
+                            removes.increment();
+                        }
+                        else {
+                            cache.put(key, key);
+
+                            puts.increment();
+                        }
+                    }
+
+                    tx.commit();
                 }
 
-                cache.put(key, 0);
-
-                cnt.increment();
+                //cnt.increment();
             }
         }, threads, "tx-put-thread");
 
         fut.get();
         fut2.get();
 
-        // Wait until primary rebalance.
+        waitForTopology(SERVER_NODES + 1);
+
         awaitPartitionMapExchange();
 
-        int size = cache.size();
-
-        assertEquals(cnt.sum(), size);
+        log.info("TX: puts=" + puts.sum() + ", removes=" + removes.sum());
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
 
         assertCountersSame(PARTITION_ID, true);
 
-        cur.close();
-
-        assertEquals(size, events.size());
+//        cur.close();
+//
+//        assertEquals(size, events.size());
     }
 
     /**
