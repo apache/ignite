@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.impl.DelegatingNamedVector;
@@ -211,7 +210,7 @@ public class VectorUtils {
 
         Vector answer;
         if (Arrays.stream(values).anyMatch(Objects::isNull))
-            answer = new SparseVector(values.length, StorageConstants.RANDOM_ACCESS_MODE);
+            answer = new SparseVector(values.length);
         else
             answer = new DenseVector(values.length);
 
@@ -229,7 +228,7 @@ public class VectorUtils {
      * @return Named vector.
      */
     public static NamedVector of(Map<String, Double> values) {
-        SparseVector vector = new SparseVector(values.size(), StorageConstants.RANDOM_ACCESS_MODE);
+        SparseVector vector = new SparseVector(values.size());
         for (int i = 0; i < values.size(); i++)
             vector.set(i, Double.NaN);
 
