@@ -37,6 +37,11 @@ public interface PageMemory extends PageIdAllocator, PageSupport {
     public void stop(boolean deallocate) throws IgniteException;
 
     /**
+     * @return {@code True} if this memory is stopped.
+     */
+    public boolean stopped();
+
+    /**
      * @return Page size in bytes.
      */
     public int pageSize();

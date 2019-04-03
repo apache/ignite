@@ -167,7 +167,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /**
      * Marker that stop was invoked and memory is not supposed for any usage.
      */
-    private volatile boolean stopped;
+    private volatile boolean stopped = true;
 
     /**
      * @param log Logger.
@@ -262,6 +262,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 throw new IgniteException(e);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean stopped() {
+        return stopped;
     }
 
     /** {@inheritDoc} */
