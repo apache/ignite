@@ -17,32 +17,42 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.lang.IgniteBiTuple;
-
-import java.sql.ResultSet;
+import java.sql.PreparedStatement;
+import org.apache.ignite.cluster.ClusterNode;
 
 /**
- * Special key/value iterator based on database result set.
+ * Map query info.
  */
-public class H2KeyValueIterator<K, V> extends H2ResultSetIterator<IgniteBiTuple<K, V>> {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class MapH2QueryInfo extends H2QueryInfo {
+    /** Node. */
+    private final ClusterNode node;
+
+    /** Request id. */
+    private final long reqId;
+
+    /** Segment. */
+    private final int segment;
 
     /**
-     * @param data Data array.
-     * @throws IgniteCheckedException If failed.
+     * @param stmt Query statement.
+     * @param sql Query statement.
+     * @param node Originator node ID
+     * @param reqId Request ID.
+     * @param segment Segment.
      */
-    protected H2KeyValueIterator(ResultSet data) throws IgniteCheckedException {
-        super(data);
+    public MapH2QueryInfo(PreparedStatement stmt, String sql,
+        ClusterNode node, long reqId, int segment) {
+        super(QueryType.MAP, stmt, sql);
+
+        this.node = node;
+        this.reqId= reqId;
+        this.segment = segment;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected IgniteBiTuple<K, V> createRow() {
-        K key = (K)row[0];
-        V val = (V)row[1];
-
-        return new IgniteBiTuple<>(key, val);
+    @Override protected void printInfo(StringBuilder msg) {
+        msg.append(", node=").append(node)
+            .append(", reqId=").append(reqId)
+            .append(", segment=").append(segment);
     }
 }
