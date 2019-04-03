@@ -182,39 +182,6 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         }
     }
 
-
-    /**
-     *
-     */
-    @Test
-    public void testDefault() {
-        IgniteCache p = cache();
-
-        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery(
-            "UPDATE Person p SET id = DEFAULT, firstName = ?, secondName = ? WHERE _key = ?"
-        ).setArgs( "Jo", "Woo", "FirstKey"));
-
-        c.iterator();
-
-        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by _key, id"));
-
-        List<List<?>> leftovers = c.getAll();
-
-        assertEquals(4, leftovers.size());
-
-        assertEqualsCollections(asList("FirstKey", createPerson(0, "Jo", "Woo"), 0, "Jo", "Woo"),
-            leftovers.get(0));
-
-        assertEqualsCollections(asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
-            leftovers.get(1));
-
-        assertEqualsCollections(asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
-            leftovers.get(2));
-
-        assertEqualsCollections(asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
-            leftovers.get(3));
-    }
-
     /** */
     @Test
     public void testTypeConversions() throws ParseException {

@@ -1095,6 +1095,22 @@ public class GridNioServer<T> {
         clientWorkers.get(balanceIdx).offer(req);
     }
 
+    /**
+     * Stop polling for write availability if write queue is empty.
+     */
+    private void stopPollingForWrite(SelectionKey key, GridSelectorNioSessionImpl ses) {
+        if (ses.procWrite.get()) {
+            ses.procWrite.set(false);
+
+            if (ses.writeQueue().isEmpty()) {
+                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
+                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+            }
+            else
+                ses.procWrite.set(true);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNioServer.class, this);
@@ -1219,16 +1235,7 @@ public class GridNioServer<T> {
                     req = ses.pollFuture();
 
                     if (req == null) {
-                        if (ses.procWrite.get()) {
-                            ses.procWrite.set(false);
-
-                            if (ses.writeQueue().isEmpty()) {
-                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                            }
-                            else
-                                ses.procWrite.set(true);
-                        }
+                        stopPollingForWrite(key, ses);
 
                         break;
                     }
@@ -1410,10 +1417,14 @@ public class GridNioServer<T> {
             boolean handshakeFinished = sslFilter.lock(ses);
 
             try {
-                writeSslSystem(ses, sockCh);
+                boolean writeFinished = writeSslSystem(ses, sockCh);
 
-                if (!handshakeFinished)
+                if (!handshakeFinished) {
+                    if (writeFinished)
+                        stopPollingForWrite(key, ses);
+
                     return;
+                }
 
                 ByteBuffer sslNetBuf = ses.removeMeta(BUF_META_KEY);
 
@@ -1453,16 +1464,7 @@ public class GridNioServer<T> {
                             req = ses.pollFuture();
 
                             if (req == null && buf.position() == 0) {
-                                if (ses.procWrite.get()) {
-                                    ses.procWrite.set(false);
-
-                                    if (ses.writeQueue().isEmpty()) {
-                                        if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                            key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                                    }
-                                    else
-                                        ses.procWrite.set(true);
-                                }
+                                stopPollingForWrite(key, ses);
 
                                 break;
                             }
@@ -1589,8 +1591,10 @@ public class GridNioServer<T> {
          * @param ses NIO session.
          * @param sockCh Socket channel.
          * @throws IOException If failed.
+         *
+         * @return {@code True} if there's nothing else to write (last buffer is written and queue is empty).
          */
-        private void writeSslSystem(GridSelectorNioSessionImpl ses, WritableByteChannel sockCh)
+        private boolean writeSslSystem(GridSelectorNioSessionImpl ses, WritableByteChannel sockCh)
             throws IOException {
             ConcurrentLinkedQueue<ByteBuffer> queue = ses.meta(BUF_SSL_SYSTEM_META_KEY);
 
@@ -1609,8 +1613,10 @@ public class GridNioServer<T> {
                 if (!buf.hasRemaining())
                     queue.poll();
                 else
-                    break;
+                    return false;
             }
+
+            return true;
         }
 
         /**
@@ -1662,16 +1668,7 @@ public class GridNioServer<T> {
                     req = ses.pollFuture();
 
                     if (req == null && buf.position() == 0) {
-                        if (ses.procWrite.get()) {
-                            ses.procWrite.set(false);
-
-                            if (ses.writeQueue().isEmpty()) {
-                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                            }
-                            else
-                                ses.procWrite.set(true);
-                        }
+                        stopPollingForWrite(key, ses);
 
                         return;
                     }

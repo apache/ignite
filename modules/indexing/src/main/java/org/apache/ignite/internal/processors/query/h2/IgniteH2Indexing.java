@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
@@ -48,6 +49,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.managers.IgniteMBeansManager;
+import org.apache.ignite.internal.mxbean.SqlQueryMXBean;
+import org.apache.ignite.internal.mxbean.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -133,7 +137,6 @@ import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
@@ -257,6 +260,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** Schema manager. */
     private SchemaManager schemaMgr;
+
+    /** H2 Connection manager. */
+    private LongRunningQueryManager longRunningQryMgr;
+
 
     /**
      * @return Kernal context.
@@ -552,7 +559,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             args,
                             timeout0,
                             cancel,
-                            qryParams.dataPageScanEnabled()
+                            qryParams.dataPageScanEnabled(),
+                            new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry0)
                         );
 
                         if (sfuFut0 != null) {
@@ -797,7 +805,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Prepared statement with set parameters.
      * @throws IgniteCheckedException If failed.
      */
-    private PreparedStatement preparedStatementWithParams(Connection conn, String sql, Collection<Object> params,
+    public PreparedStatement preparedStatementWithParams(Connection conn, String sql, Collection<Object> params,
         boolean useStmtCache) throws IgniteCheckedException {
         final PreparedStatement stmt;
 
@@ -879,10 +887,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable Collection<Object> params,
         int timeoutMillis,
         @Nullable GridQueryCancel cancel,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        final H2QueryInfo qryInfo
     ) throws IgniteCheckedException {
         return executeSqlQueryWithTimer(preparedStatementWithParams(conn, sql, params, false),
-            conn, sql, params, timeoutMillis, cancel, dataPageScanEnabled);
+            conn, sql, params, timeoutMillis, cancel, dataPageScanEnabled, qryInfo);
     }
 
     /**
@@ -913,44 +922,33 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable Collection<Object> params,
         int timeoutMillis,
         @Nullable GridQueryCancel cancel,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        final H2QueryInfo qryInfo
     ) throws IgniteCheckedException {
-        long start = U.currentTimeMillis();
+        if (qryInfo != null)
+            longRunningQryMgr.registerQuery(qryInfo);
 
         enableDataPageScan(dataPageScanEnabled);
 
         try {
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
 
-            long time = U.currentTimeMillis() - start;
-
-            if (time > ctx.config().getLongQueryWarningTimeout()) {
-                // In lazy mode we have to use separate connection to gather plan to print warning.
-                // Otherwise the all tables are unlocked by this query.
-                try (Connection planConn = connMgr.connectionNoCache(conn.getSchema())) {
-                    ResultSet plan = executeSqlQuery(planConn, preparedStatementWithParams(planConn, "EXPLAIN " + sql,
-                        params, false), 0, null);
-
-                    plan.next();
-
-                    // Add SQL explain result message into log.
-                    String msg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
-                        ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
-                        (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
-
-                    LT.warn(log, msg);
-                }
+            if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout())
+                qryInfo.printLogMessage(log, connMgr, "Long running query is finished");            return rs;
+        }
+        catch (Throwable e) {
+            if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout()) {
+                qryInfo.printLogMessage(log, connMgr, "Long running query is finished with error: "
+                    + e.getMessage());
             }
 
-            return rs;
-        }
-        catch (SQLException e) {
-            connMgr.onSqlException(conn);
-
-            throw new IgniteCheckedException(e);
+            throw  e;
         }
         finally {
             CacheDataTree.setDataPageScanEnabled(false);
+
+            if (qryInfo != null)
+                longRunningQryMgr.unregisterQuery(qryInfo);
         }
     }
 
@@ -1777,6 +1775,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
+    @Override public Set<String> schemasNames(){
+        return schemaMgr.schemaNames();
+    }
+
+    /** {@inheritDoc} */
     @Override public void checkStatementStreamable(PreparedStatement nativeStmt) {
         if (!GridSqlQueryParser.isStreamableInsertStatement(nativeStmt))
             throw new IgniteSQLException("Streaming mode supports only INSERT commands without subqueries.",
@@ -1786,6 +1789,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public GridQueryRowCacheCleaner rowCacheCleaner(int grpId) {
         return rowCache.forGroup(grpId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void markAsRebuildNeeded(GridCacheContext cctx) {
+        assert cctx.group().persistenceEnabled(): cctx;
+
+        markIndexRebuild(cctx.name(), true);
     }
 
     /** {@inheritDoc} */
@@ -1931,6 +1941,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         partReservationMgr = new PartitionReservationManager(ctx);
 
         connMgr = new ConnectionManager(ctx);
+
+        longRunningQryMgr = new LongRunningQueryManager(ctx);
 
         parser = new QueryParser(this, connMgr);
 
@@ -2088,6 +2100,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         runningQryMgr.stop();
         schemaMgr.stop();
+        longRunningQryMgr.stop();
         connMgr.stop();
 
         if (log.isDebugEnabled())
@@ -2735,5 +2748,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (commit)
                 cctx.tm().resetContext();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException {
+        SqlQueryMXBean qryMXBean = new SqlQueryMXBeanImpl(ctx);
+
+        mbMgr.registerMBean("SQL Query", qryMXBean.getClass().getSimpleName(), qryMXBean, SqlQueryMXBean.class);
+    }
+
+    /**
+     * @return Long running queries manager.
+     */
+    public LongRunningQueryManager longRunningQueries() {
+        return longRunningQryMgr;
     }
 }

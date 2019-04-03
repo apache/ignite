@@ -19,15 +19,16 @@ package org.apache.ignite.ml.composition.boosting.convergence;
 
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+
+import java.io.Serializable;
 
 /**
  * Factory for ConvergenceChecker.
  */
 public abstract class ConvergenceCheckerFactory {
-    /** Precision of error checking. If error <= precision then it is equated to 0.0*/
+    /** Precision of error checking. If error <= precision then it is equated to 0.0 */
     protected double precision;
 
     /**
@@ -46,13 +47,11 @@ public abstract class ConvergenceCheckerFactory {
      * @param externalLbToInternalMapping External label to internal mapping.
      * @param loss Loss function.
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @return ConvergenceCheckerFactory instance.
      */
-    public abstract <K,V> ConvergenceChecker<K,V> create(long sampleSize,
+    public abstract <K, V, C extends Serializable> ConvergenceChecker<K, V, C> create(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor);
+        Vectorizer<K, V, C, Double> vectorizer);
 }

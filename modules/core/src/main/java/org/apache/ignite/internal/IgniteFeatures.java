@@ -42,6 +42,9 @@ public enum IgniteFeatures {
     /** Data paket compression. */
     DATA_PACKET_COMPRESSION(3),
 
+    /** Support of different rebalance size for nodes.  */
+    DIFFERENT_REBALANCE_POOL_SIZE(4),
+
     /** */
     CACHE_PARTITION_FILE_REBALANCE(4);
     /**

@@ -20,6 +20,9 @@ package org.apache.ignite.examples.ml.svm;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.composition.CompositionUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
@@ -53,33 +56,34 @@ public class SVMBinaryClassificationExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer();
+                SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer();
 
-            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-            IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            SVMLinearClassificationModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                featureExtractor,
-                lbExtractor
-            );
+                SVMLinearClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-            System.out.println(">>> SVM model " + mdl);
+                System.out.println(">>> SVM model " + mdl);
 
-            double accuracy = Evaluator.evaluate(
-                dataCache,
-                mdl,
-                featureExtractor,
-                lbExtractor
-            ).accuracy();
+                IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
+                IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    featureExtractor,
+                    lbExtractor
+                ).accuracy();
 
-            System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Accuracy " + accuracy);
 
-            System.out.println(">>> SVM Binary classification model over cache based dataset usage example completed.");
+                System.out.println(">>> SVM Binary classification model over cache based dataset usage example completed.");
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 }
