@@ -32,6 +32,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -172,6 +173,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @Test
+    @Ignore
     public void testLocalCacheOnClientNodeWithLazyAllocation() throws Exception {
         lazyAllocation = true;
         client = false;
@@ -250,10 +252,6 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
 
     /** */
     private void checkMemoryNotAllocated(PageMemory pageMem) {
-        AtomicInteger allocatedPages = GridTestUtils.getFieldValue(pageMem, "allocatedPages");
-
-        assertEquals(allocatedPages.get(), 0);
-
         Object[] segments = GridTestUtils.getFieldValue(pageMem, "segments");
 
         assertNull(segments);
