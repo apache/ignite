@@ -68,7 +68,7 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
      *
      * @param vec Vector.
      */
-    public Integer predict(Vector vec) {
+    @Override public Integer predict(Vector vec) {
         int res = -1;
         double minDist = Double.POSITIVE_INFINITY;
 
