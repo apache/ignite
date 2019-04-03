@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,16 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.spi.deployment.uri.tasks;
 
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import java.util.Collection;
+import java.util.List;
 
-/** */
-public class CacheMvccReplicatedSelectForUpdateQueryTest extends CacheMvccSelectForUpdateQueryAbstractTest {
-    /** {@inheritDoc} */
-    @Override public CacheMode cacheMode() {
-        return REPLICATED;
+/**
+ * Simple URI deployment test task.
+ */
+public class GridUriDeploymentTestTask11 extends ComputeTaskSplitAdapter<Object, Object> {
+    /**
+     * {@inheritDoc}
+     */
+    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
+        return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public Object reduce(List<ComputeJobResult> results) {
+        return null;
     }
 }
