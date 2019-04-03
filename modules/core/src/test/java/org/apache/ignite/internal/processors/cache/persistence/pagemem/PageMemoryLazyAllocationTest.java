@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,12 +30,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-@RunWith(Parameterized.class)
+/** */
 public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     /** */
     public static final String LAZY_REGION = "lazyRegion";
@@ -46,14 +41,10 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     public static final String EAGER_REGION = "eagerRegion";
 
     /** */
-    private boolean client = false;
+    protected boolean client = false;
 
     /** */
-    private boolean lazyAllocation = true;
-
-    /** Use index. */
-    @Parameterized.Parameter
-    public boolean persistenceEnabled;
+    protected boolean lazyAllocation = true;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -66,10 +57,10 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
             .setDataRegionConfigurations(
                 new DataRegionConfiguration()
                     .setName(LAZY_REGION)
-                    .setPersistenceEnabled(persistenceEnabled),
+                    .setPersistenceEnabled(persistenceEnabled()),
                 new DataRegionConfiguration()
                     .setName(EAGER_REGION)
-                    .setPersistenceEnabled(persistenceEnabled)));
+                    .setPersistenceEnabled(persistenceEnabled())));
 
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>("my-cache")
             .setDataRegionName(EAGER_REGION);
@@ -173,7 +164,6 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @Test
-    @Ignore
     public void testLocalCacheOnClientNodeWithLazyAllocation() throws Exception {
         lazyAllocation = true;
         client = false;
@@ -225,7 +215,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void createCacheAndPut(IgniteEx g) {
+    protected void createCacheAndPut(IgniteEx g) {
         createCacheAndPut(g, CacheConfiguration.DFLT_CACHE_MODE);
     }
 
@@ -258,7 +248,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private IgniteEx startSrv() throws Exception {
+    protected IgniteEx startSrv() throws Exception {
         IgniteEx srv = startGrid(0);
 
         srv.cluster().active(true);
@@ -268,12 +258,8 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         return srv;
     }
 
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Persistence enabled = {0}")
-    public static Iterable<Boolean[]> data() {
-        return Arrays.asList(
-            new Boolean[] {true},
-            new Boolean[] {false}
-        );
+    /** */
+    protected boolean persistenceEnabled() {
+        return false;
     }
 }
