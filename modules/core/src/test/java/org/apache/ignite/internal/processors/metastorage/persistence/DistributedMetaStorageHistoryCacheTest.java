@@ -22,6 +22,7 @@ import java.util.List;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -35,80 +36,105 @@ public class DistributedMetaStorageHistoryCacheTest {
 
     /** */
     @Test
-    public void testBasicOperations() {
-        // Empty cache.
+    public void testEmptyCache() {
         DistributedMetaStorageHistoryCache histCache = new DistributedMetaStorageHistoryCache();
 
-        assertTrue(histCache.isEmpty());
-
-        assertEquals(0, histCache.size());
-
-        assertEquals(0L, histCache.sizeInBytes());
-
-        assertEquals(0, histCache.toArray().length);
+        validate(histCache, emptyList(), 0);
 
         assertNull(histCache.get(0));
+    }
 
-        // Cache with one element.
+    /** */
+    @Test
+    public void testPutSingle() {
+        DistributedMetaStorageHistoryCache histCache = new DistributedMetaStorageHistoryCache();
+
         DistributedMetaStorageHistoryItem item0 = newHistoryItem("key0");
 
         histCache.put(25L, item0);
 
-        assertFalse(histCache.isEmpty());
-
-        assertEquals(1, histCache.size());
-
-        long sizeInBytes = histCache.sizeInBytes();
+        validate(histCache, singletonList(item0), -1L);
 
         assertEquals(item0, histCache.get(25L));
 
-        assertEquals(singletonList(item0), asList(histCache.toArray()));
+        assertTrue(histCache.sizeInBytes() > 0L);
+    }
 
-        DistributedMetaStorageHistoryItem item1 = newHistoryItem("key1");
+    /** */
+    @Test
+    public void testPutWrongVersion() {
+        DistributedMetaStorageHistoryCache histCache = new DistributedMetaStorageHistoryCache();
+
+        DistributedMetaStorageHistoryItem item0 = newHistoryItem("key0");
+
+        histCache.put(25L, item0);
+
+        long sizeInBytes = histCache.sizeInBytes();
 
         // Put with wrong history should throw default assertion error or do nothing.
         try {
-            histCache.put(30L, item1);
+            histCache.put(30L, newHistoryItem("key1"));
         }
         catch (Throwable ignore) {
         }
 
-        assertEquals(1, histCache.size());
+        validate(histCache, singletonList(item0), sizeInBytes);
+    }
 
-        assertEquals(sizeInBytes, histCache.sizeInBytes());
+    /** */
+    @Test
+    public void testPutMultiple() {
+        DistributedMetaStorageHistoryCache histCache = new DistributedMetaStorageHistoryCache();
 
-        // Cache with two elements.
+        DistributedMetaStorageHistoryItem item0 = newHistoryItem("key0");
+        DistributedMetaStorageHistoryItem item1 = newHistoryItem("key1");
+
+        histCache.put(25L, item0);
+
+        long sizeInBytes = histCache.sizeInBytes();
+
         histCache.put(26L, item1);
 
-        assertEquals(2, histCache.size());
+        validate(histCache, asList(item0, item1), sizeInBytes * 2L);
+    }
 
-        assertEquals(sizeInBytes * 2, histCache.sizeInBytes());
+    /** */
+    @Test
+    public void testRemove() {
+        DistributedMetaStorageHistoryCache histCache = new DistributedMetaStorageHistoryCache();
 
-        assertEquals(asList(item0, item1), asList(histCache.toArray()));
+        DistributedMetaStorageHistoryItem item0 = newHistoryItem("key0");
+        DistributedMetaStorageHistoryItem item1 = newHistoryItem("key1");
 
-        // Remove oldest element, one left.
+        histCache.put(25L, item0);
+
+        long sizeInBytes = histCache.sizeInBytes();
+
+        histCache.put(26L, item1);
+
         histCache.removeOldest();
 
-        assertEquals(1, histCache.size());
-
-        assertEquals(sizeInBytes, histCache.sizeInBytes());
+        validate(histCache, singletonList(item1), sizeInBytes);
 
         assertNull(histCache.get(25L));
 
         assertEquals(item1, histCache.get(26L));
+    }
 
-        assertEquals(singletonList(item1), asList(histCache.toArray()));
+    /** */
+    @Test
+    public void testClear() {
+        DistributedMetaStorageHistoryCache histCache = new DistributedMetaStorageHistoryCache();
 
-        // Empty cache again.
+        DistributedMetaStorageHistoryItem item0 = newHistoryItem("key0");
+        DistributedMetaStorageHistoryItem item1 = newHistoryItem("key1");
+
+        histCache.put(25L, item0);
+        histCache.put(26L, item1);
+
         histCache.clear();
 
-        assertTrue(histCache.isEmpty());
-
-        assertEquals(0, histCache.size());
-
-        assertEquals(0L, histCache.sizeInBytes());
-
-        assertEquals(0, histCache.toArray().length);
+        validate(histCache, emptyList(), 0);
     }
 
     /** */
@@ -120,16 +146,19 @@ public class DistributedMetaStorageHistoryCacheTest {
 
         long ver = 0L;
 
-        // Default 16-elemets internal array will fit 15 elemet without expanding.
+        // Default 16-elements internal array will fit 15 elements without expanding.
         for (; ver < 15L; ver++) {
-            DistributedMetaStorageHistoryItem newItem = newHistoryItem(Long.toString(ver));
+            DistributedMetaStorageHistoryItem newItem = newHistoryItem(fixedLengthString(ver));
 
             histCache.put(ver, newItem);
 
             expect.add(newItem);
         }
 
-        assertEquals(expect, asList(histCache.toArray()));
+        // Size of the single item. They all have the same size in this test.
+        long sizeInBytes = histCache.sizeInBytes() / 15L;
+
+        validate(histCache, expect, sizeInBytes * 15L);
 
         // Clear the beginning of the array.
         for (int i = 0; i < 5; i++) {
@@ -140,33 +169,59 @@ public class DistributedMetaStorageHistoryCacheTest {
             assertEquals(expOldest, oldest);
         }
 
-        assertEquals(expect, asList(histCache.toArray()));
+        validate(histCache, expect, sizeInBytes * 10L);
 
-        // Overlap data through the end of the internal array.
+        // Overlap data over the end of the internal array.
         for (; ver < 20L; ver++) {
-            DistributedMetaStorageHistoryItem newItem = newHistoryItem(Long.toString(ver));
+            DistributedMetaStorageHistoryItem newItem = newHistoryItem(fixedLengthString(ver));
 
             histCache.put(ver, newItem);
 
             expect.add(newItem);
         }
 
-        assertEquals(expect, asList(histCache.toArray()));
+        validate(histCache, expect, sizeInBytes * 15L);
 
         // Expand the internal array.
         for (; ver < 25L; ver++) {
-            DistributedMetaStorageHistoryItem newItem = newHistoryItem(Long.toString(ver));
+            DistributedMetaStorageHistoryItem newItem = newHistoryItem(fixedLengthString(ver));
 
             histCache.put(ver, newItem);
 
             expect.add(newItem);
         }
 
-        assertEquals(expect, asList(histCache.toArray()));
+        validate(histCache, expect, sizeInBytes * 20L);
     }
 
     /** */
     private static DistributedMetaStorageHistoryItem newHistoryItem(String key) {
         return new DistributedMetaStorageHistoryItem(key, EMPTY_BYTE_ARRAY);
+    }
+
+    /** */
+    private static void validate(
+        DistributedMetaStorageHistoryCache histCache,
+        List<DistributedMetaStorageHistoryItem> exp,
+        long expSizeInBytes
+    ) {
+        if (exp.isEmpty())
+            assertTrue(histCache.isEmpty());
+        else
+            assertFalse(histCache.isEmpty());
+
+        assertEquals(exp.size(), histCache.size());
+
+        if (expSizeInBytes >= 0L)
+            assertEquals(expSizeInBytes, histCache.sizeInBytes());
+
+        assertEquals(exp, asList(histCache.toArray()));
+    }
+
+    /** */
+    private static String fixedLengthString(long ver) {
+        assertTrue(ver < 100);
+
+        return Long.toString(100 + ver);
     }
 }
