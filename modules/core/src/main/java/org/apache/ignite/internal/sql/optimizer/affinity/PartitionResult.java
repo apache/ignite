@@ -36,6 +36,9 @@ public class PartitionResult {
     /** Affinity function. */
     private final PartitionTableAffinityDescriptor aff;
 
+    // TODO VO: Add affinity topology version, here
+    // TODO VO: Add cache name and number of partitions for client here
+
     /**
      * Constructor.
      *

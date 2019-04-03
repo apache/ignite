@@ -886,6 +886,8 @@ public class JdbcThinConnection implements Connection {
                     timer.schedule(reqTimeoutTimerTask, 0, REQUEST_TIMEOUT_PERIOD);
                 }
 
+                // TODO VO: "containsPartitionResult" is second map lookup even if they are already resolved successfully
+                // TODO VO: need to rework it to a single lookup.
                 boolean reqPartRes = bestEffortAffinity && req instanceof JdbcQueryExecuteRequest &&
                     (affinityCache == null ||
                         !affinityCache.containsPartitionResult(((JdbcQueryExecuteRequest)req).sqlQuery()));
@@ -907,6 +909,7 @@ public class JdbcThinConnection implements Connection {
                 else if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
                     throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
 
+                // TODO VO: Consider moving to separate method fot simplicity
                 if (bestEffortAffinity) {
                     AffinityTopologyVersion resAffinityVer = res.affinityVersion();
 
@@ -926,6 +929,7 @@ public class JdbcThinConnection implements Connection {
                                     GridCacheUtils.cacheId(partRes.tree().cacheName()) :
                                     -1,
                                 partRes != null ?
+                                    // TODO VO: Pass number of partitions along with PartitionResult?
                                     new PartitionClientContext(partRes.affinity().parts()) :
                                     null));
                     }
@@ -968,6 +972,7 @@ public class JdbcThinConnection implements Connection {
 
         JdbcQueryExecuteRequest qry = (JdbcQueryExecuteRequest)req;
 
+        // TODO VO: Ouch, schema is not used, hence incorrect result could be returned.
         JdbcThinPartitionResultDescriptor partResDesc = affinityCache.partitionResult(qry.sqlQuery());
 
         if (partResDesc == null)
@@ -978,6 +983,7 @@ public class JdbcThinConnection implements Connection {
         if (parts == null || parts.length == 0)
             return null;
 
+        // TODO VO: Shouldn't this line be moved to "retrieveCacheDistribution" along with null check?
         Map<Integer, UUID> cacheDistr = affinityCache.cacheDistribution(partResDesc.cacheId());
 
         if (cacheDistr == null)
@@ -999,7 +1005,7 @@ public class JdbcThinConnection implements Connection {
      * Retrieve cache destribution for specified cache Id.
      *
      * @param cacheId Cache Id.
-     * @return Partitions cache distibution.
+     * @return Partitions cache distribution.
      */
     private Map<Integer, UUID> retrieveCacheDistribution(int cacheId) {
         JdbcResponse res;
@@ -1009,6 +1015,7 @@ public class JdbcThinConnection implements Connection {
                 new JdbcCachePartitionsRequest(Collections.singleton(cacheId)), null);
         }
         catch (IOException e) {
+            // TODO VO: Remove this catch block, as it is already handler upper in call stack
             onDisconnect();
 
             return null;
@@ -1052,6 +1059,7 @@ public class JdbcThinConnection implements Connection {
      * @return Calculated partitions or {@code null} if failed to calculate and there should be a broadcast.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
+    // TODO VO: Return Collection instead of array to avoid unnecessary copying.
     public static int[] calculatePartitions(JdbcThinPartitionResultDescriptor partResDesc, Object[] args) {
         PartitionResult derivedParts = partResDesc.partitionResult();
 
@@ -1075,6 +1083,7 @@ public class JdbcThinConnection implements Connection {
                 }
             }
             catch (IgniteCheckedException e) {
+                // TODO VO: No need for this conversion. Insread, proper SQLException should be thrown.
                 throw new CacheException("Failed to calculate derived partitions for query.", e);
             }
         }
@@ -1440,6 +1449,10 @@ public class JdbcThinConnection implements Connection {
         if (nodeIds.size() == 1)
             io = ios.get(nodeIds.iterator().next());
         else {
+            // TODO VO: I would not create intermediate collections here. We need only one working connection.
+            // TODO VO: It can work as follows: 1) pass List of nodeIds instead of set; 2) Get random position
+            // TODO VO: in the list, and try to get the first working connection in a round-robin fashion.
+            // TODO VO: 3) If none found - fallback to normal mode
             Set<JdbcThinTcpIo> conns = new HashSet<>();
 
             for (UUID nodeId : nodeIds) {

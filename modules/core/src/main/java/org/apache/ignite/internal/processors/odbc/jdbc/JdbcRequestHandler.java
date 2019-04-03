@@ -439,6 +439,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 default:
                     throw new IllegalArgumentException();
             }
+
+            // TODO VO: Move getAffinityTopologyVersionIfChanged to a separate method to avoid tens of repetitions on the same code
             return new JdbcResponse(new JdbcQueryExecuteResult(req.cursorId(), processor.updateCnt(), null),
                 connCtx.getAffinityTopologyVersionIfChanged());
         }

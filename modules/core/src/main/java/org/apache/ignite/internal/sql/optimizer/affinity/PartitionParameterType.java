@@ -69,6 +69,7 @@ public enum PartitionParameterType {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 
+    // TODO VO: Remove binary stuff
     /**
      * Returns debinarized parameter type.
      *

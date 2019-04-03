@@ -88,7 +88,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Request handler. */
     private JdbcRequestHandler handler = null;
 
-
     /** Last reported affinity topology version. */
     private AtomicReference<AffinityTopologyVersion> lastAffinityTopVer = new AtomicReference<>();
 
@@ -233,6 +232,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /**
      * @return Retrieves current affinity topology version and sets it as a last.
      */
+    // TODO VO: This method should not shift version, just get current readyAffinityVersion
+    // TODO VO: Consider removing, as only "ctx.cache().context().exchange().readyAffinityVersion()" is needed
     public AffinityTopologyVersion getAffinityTopologyVersion() {
         while (true) {
             AffinityTopologyVersion oldVer = lastAffinityTopVer.get();

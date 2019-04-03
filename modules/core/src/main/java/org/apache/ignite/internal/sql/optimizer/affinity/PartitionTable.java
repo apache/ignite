@@ -116,6 +116,7 @@ public class PartitionTable implements JdbcRawBinarylizable {
         return S.toString(PartitionTable.class, this);
     }
 
+    // TODO VO: Remove
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
@@ -130,6 +131,7 @@ public class PartitionTable implements JdbcRawBinarylizable {
         writer.writeInt(joinGrp);
     }
 
+    // TODO VO: Remove
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
@@ -144,6 +146,7 @@ public class PartitionTable implements JdbcRawBinarylizable {
      * @return Debinarized partition table.
      * @throws BinaryObjectException On error.
      */
+    // TODO VO: Remove
     public static PartitionTable readTable(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
         String alias = reader.readString();

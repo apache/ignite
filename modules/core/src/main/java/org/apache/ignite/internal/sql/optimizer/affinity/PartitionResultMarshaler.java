@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
  */
 public class PartitionResultMarshaler {
     /** {@link PartitionAllNode} type. */
+    // TODO VO: Should never be serialized, use assert instead
     static final byte ALL_NODE = 1;
 
     /** {@link PartitionCompositeNode} type. */
@@ -42,6 +43,7 @@ public class PartitionResultMarshaler {
     static final byte GROUP_NODE = 4;
 
     /** {@link PartitionNoneNode} type. */
+    // TODO VO: Do not pass NONE, as this is inherently unsafe (we may miss results)
     static final byte NONE_NODE = 5;
 
     /** {@link PartitionParameterNode} type. */
@@ -55,16 +57,22 @@ public class PartitionResultMarshaler {
      * @param partRes Partitoin result to serialize.
      * @throws BinaryObjectException In case of error.
      */
+    // TODO VO: Remove ClientListenerProtocolVersion, as it is not used at the moment.
     public static void marshal(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver, PartitionResult partRes)
         throws BinaryObjectException {
+        // TODO VO: Should not be checked twice
         if (partRes == null)
             return;
 
+        // TODO VO: Should never be null provided that partRes exists.
         writer.writeBoolean(partRes.tree() != null);
 
         if (partRes.tree() != null)
             writeNode(writer, ver, partRes.tree());
 
+        // TODO VO: Add cache name
+
+        // TODO VO: Should not be there
         // Write affinity descriptor. Actually we only need partitions count.
         writer.writeInt(partRes.affinity().parts());
     }
@@ -84,6 +92,7 @@ public class PartitionResultMarshaler {
         if (reader.readBoolean())
             tree = readNode(reader, ver);
 
+        // TODO VO: No need to re-read affinity descriptor
         return new PartitionResult(tree, readTableAffinityDescriptor(reader, ver));
     }
 
@@ -200,6 +209,7 @@ public class PartitionResultMarshaler {
 
         PartitionNode right = readNode(reader, ver);
 
+        // TODO VO: Read/write operation first, then nodes.
         PartitionCompositeNodeOperator op = PartitionCompositeNodeOperator.fromOrdinal(reader.readInt());
 
         return new PartitionCompositeNode(left, right, op);
@@ -272,6 +282,7 @@ public class PartitionResultMarshaler {
 
         Set<PartitionSingleNode> siblings = node.siblings();
 
+        // TODO VO: Null should never happen, assert instead
         writer.writeInt(siblings == null ? 0 : siblings.size());
 
         for (PartitionSingleNode singleNode : siblings) {
@@ -297,6 +308,7 @@ public class PartitionResultMarshaler {
 
         int idx = reader.readInt();
 
+        // TODO VO: This is not used on a client side, so can be skipped
         int type = reader.readInt();
 
         PartitionParameterType mappedType = PartitionParameterType.readParameterType(reader, ver);

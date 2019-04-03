@@ -36,9 +36,11 @@ public final class AffinityCache {
     private final AffinityTopologyVersion ver;
 
     /** Cache partitions distribution. */
+    // TODO VO: Can we convert inner Map to array?
     private final GridBoundedLinkedHashMap<Integer, Map<Integer, UUID>> cachePartitionsDistribution;
 
     /** Sql cache. */
+    // TODO VO: Key should be "SQL + schema"
     private final GridBoundedLinkedHashMap<String, JdbcThinPartitionResultDescriptor> sqlCache;
 
     /**
@@ -68,6 +70,7 @@ public final class AffinityCache {
      * @param distribution Cache partitions distribution.
      */
     void addCacheDistribution(Integer cacheId, Map<Integer, UUID> distribution) {
+        // TODO VO: Merge same distributions to minimize memory usage
         cachePartitionsDistribution.put(cacheId, distribution);
     }
 

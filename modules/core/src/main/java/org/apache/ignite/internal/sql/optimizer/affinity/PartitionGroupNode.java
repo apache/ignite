@@ -115,6 +115,7 @@ public class PartitionGroupNode implements PartitionNode {
 
     /** {@inheritDoc} */
     @Override public String cacheName() {
+        // TODO VO: Cannot be null
         if (siblings != null)
             return siblings.iterator().next().cacheName();
 

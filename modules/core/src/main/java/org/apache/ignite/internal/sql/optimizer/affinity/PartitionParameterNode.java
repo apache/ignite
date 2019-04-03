@@ -36,6 +36,7 @@ public class PartitionParameterNode extends PartitionSingleNode {
     private final int type;
 
     /** Mapped parameter type. */
+    // TODO VO: Rename to "clientType"?
     private final PartitionParameterType mappedType;
 
     /**

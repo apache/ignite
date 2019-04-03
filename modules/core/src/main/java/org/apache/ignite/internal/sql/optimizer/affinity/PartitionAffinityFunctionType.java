@@ -66,6 +66,7 @@ public enum PartitionAffinityFunctionType implements JdbcRawBinarylizable {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 
+    // TODO VO: Move to another place
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {

@@ -41,6 +41,7 @@ public class PartitionClientContext {
 
         this.parts = parts;
 
+        // TODO VO: Duplication of RendezvousAffinityFunction?
         mask = (parts & (parts - 1)) == 0 ? parts - 1 : -1;
     }
 
@@ -52,8 +53,11 @@ public class PartitionClientContext {
      * @return Partition or {@code null} if cannot be resolved.
      */
     @Nullable public Integer partition(Object arg, @Nullable PartitionParameterType typ) {
+        // TODO VO: No check for conversion failure
+        // TODO VO: No null check
         Object key = PartitionDataTypeUtils.convert(arg, typ);
 
+        // TODO VO: Duplication of RendezvousAffinityFunction?
         if (mask >= 0) {
             int h;
             return ((h = key.hashCode()) ^ (h >>> 16)) & mask;

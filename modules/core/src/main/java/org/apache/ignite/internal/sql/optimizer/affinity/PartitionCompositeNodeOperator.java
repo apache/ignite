@@ -47,6 +47,7 @@ public enum PartitionCompositeNodeOperator implements JdbcRawBinarylizable {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 
+    // TODO VO: Remove binary logic
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
