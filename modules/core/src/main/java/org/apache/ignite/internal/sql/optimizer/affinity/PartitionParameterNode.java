@@ -35,9 +35,8 @@ public class PartitionParameterNode extends PartitionSingleNode {
     /** Parameter data type. */
     private final int type;
 
-    /** Mapped parameter type. */
-    // TODO VO: Rename to "clientType"?
-    private final PartitionParameterType mappedType;
+    /** Client parameter type. */
+    private final PartitionParameterType clientType;
 
     /**
      * Constructor.
@@ -46,16 +45,16 @@ public class PartitionParameterNode extends PartitionSingleNode {
      * @param partRslvr Partition resolver.
      * @param idx Parameter index.
      * @param type Parameter data type.
-     * @param mappedType Mapped parameter type to be used by thin clients.
+     * @param clientType Mapped parameter type to be used by thin clients.
      */
     public PartitionParameterNode(PartitionTable tbl, PartitionResolver partRslvr, int idx, int type,
-        PartitionParameterType mappedType) {
+        PartitionParameterType clientType) {
         super(tbl);
 
         this.partRslvr = partRslvr;
         this.idx = idx;
         this.type = type;
-        this.mappedType = mappedType;
+        this.clientType = clientType;
     }
 
     /** {@inheritDoc} */
@@ -66,7 +65,7 @@ public class PartitionParameterNode extends PartitionSingleNode {
         Object arg = args[idx];
 
         if (cliCtx != null)
-            return cliCtx.partition(arg, mappedType);
+            return cliCtx.partition(arg, clientType);
         else {
             assert partRslvr != null;
 
@@ -96,10 +95,10 @@ public class PartitionParameterNode extends PartitionSingleNode {
     }
 
     /**
-     * @return Mapped parameter type.
+     * @return Client parameter type.
      */
-    public PartitionParameterType mappedType() {
-        return mappedType;
+    public PartitionParameterType clientType() {
+        return clientType;
     }
 
     /** {@inheritDoc} */

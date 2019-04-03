@@ -308,9 +308,9 @@ public class PartitionResultMarshaler {
         // TODO VO: This is not used on a client side, so can be skipped
         int type = reader.readInt();
 
-        PartitionParameterType mappedType = PartitionParameterType.readParameterType(reader, ver);
+        PartitionParameterType clientType = PartitionParameterType.fromOrdinal (reader.readInt());
 
-        return new PartitionParameterNode(null, null, idx, type, mappedType);
+        return new PartitionParameterNode(null, null, idx, type, clientType);
     }
 
     /**
@@ -330,6 +330,6 @@ public class PartitionResultMarshaler {
 
         writer.writeInt(node.type());
 
-        writer.writeInt(node.mappedType().ordinal());
+        writer.writeInt(node.clientType().ordinal());
     }
 }

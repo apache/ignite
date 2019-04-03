@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -67,19 +64,5 @@ public enum PartitionParameterType {
      */
     @Nullable public static PartitionParameterType fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
-    }
-
-    // TODO VO: Remove binary stuff
-    /**
-     * Returns debinarized parameter type.
-     *
-     * @param reader Binary reader.
-     * @param ver Protocol verssion.
-     * @return Debinarized parameter type.
-     * @throws BinaryObjectException On error.
-     */
-    public static PartitionParameterType readParameterType(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        return fromOrdinal (reader.readInt());
     }
 }
