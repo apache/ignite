@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmented
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmentedIndexSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlCreateTableTemplateTest;
 import org.apache.ignite.internal.processors.query.LocalQueryLazyTest;
+import org.apache.ignite.internal.processors.query.LongRunningQueryTest;
 import org.apache.ignite.internal.processors.query.SqlLocalQueryConnectionAndStatementTest;
 import org.apache.ignite.internal.processors.query.h2.CacheQueryEntityWithDateTimeApiFieldsTest;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessorTest;
@@ -140,6 +141,8 @@ import org.junit.runners.Suite;
     IgniteSqlCreateTableTemplateTest.class,
 
     LocalQueryLazyTest.class,
+
+    LongRunningQueryTest.class,
     DmlBatchSizeDeadlockTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite2 {
