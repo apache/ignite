@@ -53,7 +53,7 @@ public class OperationRestrictionsCacheConsistencyTest extends AbstractCacheCons
     public void test(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         for (Ignite initiator : G.allGrids()) {
             Boolean[] booleans = {Boolean.TRUE, Boolean.FALSE};
-            Integer cnt = 20;
+            Integer cnt = 10;
 
             for (Boolean raw : booleans) {
                 // Get -> Get with Consistency -> Commit
@@ -104,7 +104,7 @@ public class OperationRestrictionsCacheConsistencyTest extends AbstractCacheCons
                     }
                 });
 
-                // Put -> Get with Consistency
+                // Put -> Get with Consistency -> Failed commit
                 // Consistency get allowed only in case value was not cached inside tx during previous put.
                 prepareAndCheck(initiator, cnt, raw, (ConsistencyRecoveryData data) -> {
                     IgniteCache<Integer, Integer> cache = data.cache;
@@ -140,6 +140,42 @@ public class OperationRestrictionsCacheConsistencyTest extends AbstractCacheCons
                                 // No-op.
                             }
                         }
+                    }
+                });
+
+                // Get with Consistency -> Put -> Get (inside tx) -> Commit -> Get (outside tx)
+                prepareAndCheck(initiator, cnt, raw, (ConsistencyRecoveryData data) -> {
+                    IgniteCache<Integer, Integer> cache = data.cache;
+
+                    for (Map.Entry<Integer, InconsistencyValuesMapping> entry : data.data.entrySet()) {
+                        Integer updated = 42;
+                        Integer key;
+                        Integer res;
+
+                        try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
+                            key = entry.getKey();
+
+                            res = raw ?
+                                cache.withConsistency().getEntry(key).getValue() :
+                                cache.withConsistency().get(key);
+
+                            assertTrue(res > 0);
+
+                            if (ThreadLocalRandom.current().nextBoolean())
+                                cache.withConsistency().put(key, updated);
+                            else
+                                cache.put(key, updated);
+
+                            res = cache.get(key);
+
+                            assertEquals(updated, res); // Check value updated after get-with-consistency (inside tx).
+
+                            tx.commit();
+                        }
+
+                        res = cache.get(key);
+
+                        assertEquals(updated, res); // Check value updated after get-with-consistency (outside tx).
                     }
                 });
             }
