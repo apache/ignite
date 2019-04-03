@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -190,7 +190,7 @@ public class JdbcStatement implements Statement {
      *
      * @param qry query which parameters to set up
      */
-    protected void setupQuery(SqlFieldsQueryEx qry) {
+    protected void setupQuery(SqlFieldsQuery qry) {
         qry.setPageSize(fetchSize);
         qry.setLocal(conn.nodeId() == null);
         qry.setCollocated(conn.isCollocatedQuery());

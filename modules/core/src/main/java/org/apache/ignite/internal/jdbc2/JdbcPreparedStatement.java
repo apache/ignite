@@ -40,6 +40,8 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinParameterMetadata;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
@@ -57,17 +59,14 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     /** Batch arguments. */
     private List<List<Object>> batchArgs;
 
-    /** Cached parameters meta of the {@link #sql}. {@code Null} if not fetched yet*/
+    /** Parameters metadata (initialized lazily). */
     private ParameterMetaData paramsMeta;
 
-    /**
-     * Cached result set meta of the {@link #sql}. {@code Null} if this statement is not a SELECT statement or if it
-     * just not fetched yet.
-     */
-    @Nullable private ResultSetMetaData resMeta;
+    /** Result set metadata (initialized lazily). */
+    private ResultSetMetaData resMeta;
 
     /** Whether metadata of returning result set have been fetched. */
-    private boolean resMetaFetched = false;
+    private boolean resMetaFetched;
 
     /**
      * Creates new prepared statement.
@@ -280,18 +279,14 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * Implementation note: If this Prepared Statement is multi-statement or is not a select, {@code null} is returned.
-     */
+    /** {@inheritDoc} */
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
         if (!resMetaFetched) {
             assert resMeta == null;
 
-            resMeta = resultMetaData();
+            resMeta = getMetadata0();
 
             resMetaFetched = true;
         }
@@ -304,8 +299,8 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
      *
      * @return metadata describing result set or {@code null} if query is not a SELECT operation.
      */
-    @Nullable private ResultSetMetaData resultMetaData() throws SQLException {
-        SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
+    @Nullable private ResultSetMetaData getMetadata0() throws SQLException {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
         setupQuery(qry);
 
@@ -316,7 +311,8 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
                 return null;
 
             return new JdbcResultSetMetadata(meta);
-        } catch (IgniteSQLException ex) {
+        }
+        catch (IgniteSQLException ex) {
             throw ex.toJdbcException();
         }
     }

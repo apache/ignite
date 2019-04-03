@@ -742,11 +742,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             String sql = OdbcEscapeUtils.parse(req.query());
             String schema = OdbcUtils.prepareSchema(req.schema());
 
-            PreparedStatement stmt = ctx.query().getIndexing().prepareNativeStatement(schema, sql);
+            SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
-            SqlFieldsQueryEx qry = makeQuery(req.schema(), sql);
-
-            List<JdbcParameterMeta> params = ctx.query().getIndexing().parameterMetaData(req.schema(), qry);
+            List<JdbcParameterMeta> params = ctx.query().getIndexing().parameterMetaData(schema, qry);
 
             byte[] typeIds = new byte[params.size()];
 
