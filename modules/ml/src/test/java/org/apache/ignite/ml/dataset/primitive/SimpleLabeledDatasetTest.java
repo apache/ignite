@@ -17,12 +17,15 @@
 
 package org.apache.ignite.ml.dataset.primitive;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNull;
@@ -49,9 +52,10 @@ public class SimpleLabeledDatasetTest {
         try (SimpleLabeledDataset<?> dataset = DatasetFactory.createSimpleLabeledDataset(
             dataPoints,
             TestUtils.testEnvBuilder(),
-            2,
-            (k, v) -> VectorUtils.of(v.getAge(), v.getSalary()),
-            (k, v) -> new double[] {k, v.getAge(), v.getSalary()}
+            2, new FeatureLabelExtractorWrapper<>(CompositionUtils.asFeatureLabelExtractor(
+                (k, v) -> VectorUtils.of(v.getAge(), v.getSalary()),
+                (k, v) -> new double[] {k, v.getAge(), v.getSalary()}
+            ))
         )) {
             assertNull(dataset.compute((data, env) -> {
                 int part = env.partition();

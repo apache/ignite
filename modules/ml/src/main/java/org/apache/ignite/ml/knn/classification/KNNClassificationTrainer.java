@@ -17,33 +17,31 @@
 
 package org.apache.ignite.ml.knn.classification;
 
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.knn.KNNUtils;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
+
+import java.io.Serializable;
 
 /**
  * kNN algorithm trainer to solve multi-class classification task.
  */
 public class KNNClassificationTrainer extends SingleLabelDatasetTrainer<KNNClassificationModel> {
     /** {@inheritDoc} */
-    @Override public <K, V> KNNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override public <K, V, C extends Serializable> KNNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> KNNClassificationModel updateModel(KNNClassificationModel mdl,
+    @Override protected <K, V, C extends Serializable> KNNClassificationModel updateModel(KNNClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+        Vectorizer<K, V, C, Double> extractor) {
 
-        KNNClassificationModel res = new KNNClassificationModel(KNNUtils.buildDataset(envBuilder,
-            datasetBuilder,
-            CompositionUtils.asFeatureExtractor(extractor),
-            CompositionUtils.asLabelExtractor(extractor)));
+        KNNClassificationModel res = new KNNClassificationModel(KNNUtils.buildDataset(envBuilder, datasetBuilder, extractor));
         if (mdl != null)
             res.copyStateFrom(mdl);
         return res;

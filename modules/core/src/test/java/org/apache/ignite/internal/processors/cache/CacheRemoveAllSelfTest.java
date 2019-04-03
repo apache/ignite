@@ -33,10 +33,10 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
  */
 public class CacheRemoveAllSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10082", MvccFeatureChecker.forcedMvcc());
 
-        super.setUp();
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
