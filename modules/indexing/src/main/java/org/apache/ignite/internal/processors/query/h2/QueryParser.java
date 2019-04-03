@@ -45,8 +45,10 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.sql.SqlParseException;
@@ -69,6 +71,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.keyColumn;
 
 /**
  * Parser module. Splits incoming request into a series of parsed results.
@@ -114,7 +118,7 @@ public class QueryParser {
      *
      * @param schemaName schema name.
      * @param qry query to parse.
-     * @param remainingAllowed Whether multiple statements are allowed.            
+     * @param remainingAllowed Whether multiple statements are allowed.
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
     public QueryParserResult parse(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
@@ -138,7 +142,7 @@ public class QueryParser {
 
         QueryParserCacheEntry cached = cache.get(qryDesc);
 
-        if (cached != null) 
+        if (cached != null)
             return new QueryParserResult(
                 qryDesc,
                 QueryParameters.fromQuery(qry),
@@ -306,7 +310,7 @@ public class QueryParser {
             // Prepare new query.
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL());
 
-            int paramsCnt = prepared.getParameters().size();
+            final int paramsCnt = prepared.getParameters().size();
 
             Object[] argsOrig = qry.getArgs();
 
@@ -381,7 +385,7 @@ public class QueryParser {
             // Parse SELECT.
             GridSqlQueryParser parser = new GridSqlQueryParser(false);
 
-            GridSqlStatement stmt0 = parser.parse(prepared);
+            GridSqlQuery selectStmt = (GridSqlQuery)parser.parse(prepared);
 
             List<Integer> cacheIds = parser.cacheIds();
             Integer mvccCacheId = mvccCacheIdForSelect(parser.objectsMap());
@@ -410,32 +414,88 @@ public class QueryParser {
             boolean splitNeeded = !loc || locSplit;
 
             try {
+                String forUpdateQryOutTx = null;
+                String forUpdateQryTx = null;
+                GridCacheTwoStepQuery forUpdateTwoStepQry = null;
+
+                boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
+
+                // SELECT FOR UPDATE case handling. We need to create extra queries with appended _key
+                // column to be able to lock selected rows further.
+                if (forUpdate) {
+                    // We have checked above that it's not an UNION query, so it's got to be SELECT.
+                    assert selectStmt instanceof GridSqlSelect;
+
+                    // Check FOR UPDATE invariants: only one table, MVCC is there.
+                    if (cacheIds.size() != 1)
+                        throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
+                            "that involve single transactional cache.");
+
+                    if (mvccCacheId == null)
+                        throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
+                            "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+                    // We need a copy because we are going to modify AST a bit. We do not want to modify original select.
+                    GridSqlSelect selForUpdate = ((GridSqlSelect)selectStmt).copySelectForUpdate();
+
+                    // Clear forUpdate flag to run it as a plain query.
+                    selForUpdate.forUpdate(false);
+                    ((GridSqlSelect)selectStmt).forUpdate(false);
+
+                    // Remember sql string without FOR UPDATE clause.
+                    forUpdateQryOutTx = selForUpdate.getSQL();
+
+                    GridSqlAlias keyCol = keyColumn(selForUpdate);
+
+                    selForUpdate.addColumn(keyCol, true);
+
+                    // Remember sql string without FOR UPDATE clause and with _key column.
+                    forUpdateQryTx = selForUpdate.getSQL();
+
+                    // Prepare additional two-step query for FOR UPDATE case.
+                    if (splitNeeded) {
+                        forUpdateTwoStepQry = GridSqlQuerySplitter.split(
+                            connMgr.connectionForThread().connection(newQry.getSchema()),
+                            selForUpdate,
+                            forUpdateQryTx,
+                            newQry.isCollocated(),
+                            newQry.isDistributedJoins(),
+                            newQry.isEnforceJoinOrder(),
+                            locSplit,
+                            idx,
+                            paramsCnt
+                        );
+                    }
+                }
+
                 GridCacheTwoStepQuery twoStepQry = null;
 
                 if (splitNeeded) {
                     twoStepQry = GridSqlQuerySplitter.split(
                         connMgr.connectionForThread().connection(newQry.getSchema()),
-                        prepared,
+                        selectStmt,
+                        newQry.getSql(),
                         newQry.isCollocated(),
                         newQry.isDistributedJoins(),
                         newQry.isEnforceJoinOrder(),
                         locSplit,
-                        idx
+                        idx,
+                        paramsCnt
                     );
                 }
 
                 List<GridQueryFieldMetadata> meta = H2Utils.meta(stmt.getMetaData());
 
-                boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
-
                 QueryParserResultSelect select = new QueryParserResultSelect(
-                    stmt0,
+                    selectStmt,
                     twoStepQry,
+                    forUpdateTwoStepQry,
                     meta,
-                    prepared.getParameters().size(),
+                    paramsCnt,
                     cacheIds,
                     mvccCacheId,
-                    forUpdate
+                    forUpdateQryOutTx,
+                    forUpdateQryTx
                 );
 
                 return new QueryParserResult(
