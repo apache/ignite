@@ -26,12 +26,16 @@ public class GridSqlParameter extends GridSqlElement {
     /** Index. */
     private int idx;
 
+    /** H2 type of this parameter. */
+    private int type;
+
     /**
      * @param idx Index.
      */
-    public GridSqlParameter(int idx) {
+    public GridSqlParameter(int idx, int type) {
         super(Collections.<GridSqlAst>emptyList());
 
+        this.type = type;
         this.idx = idx;
     }
 
@@ -52,5 +56,10 @@ public class GridSqlParameter extends GridSqlElement {
      */
     public void index(int idx) {
         this.idx = idx;
+    }
+
+    /** H2 type of this parameter. */
+    public int type() {
+        return type;
     }
 }

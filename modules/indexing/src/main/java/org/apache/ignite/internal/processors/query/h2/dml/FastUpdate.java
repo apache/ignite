@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.dml;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -76,12 +78,15 @@ public final class FastUpdate {
      */
     @SuppressWarnings({"unchecked"})
     public UpdateResult execute(GridCacheAdapter cache, Object[] args) throws IgniteCheckedException {
-        Object key = keyArg.get(args);
+        // We need to convert all the objects, otherwise cache won't find existing entry by incorrect typed key/val.
+        CacheObjectContext coCtx = cache.context().cacheObjectContext();
+
+        Object key = H2Utils.convert(keyArg.get(args), coCtx , keyArg.expectedType());
 
         assert key != null;
 
-        Object val = valArg.get(args);
-        Object newVal = newValArg.get(args);
+        Object val = H2Utils.convert(valArg.get(args), coCtx, valArg.expectedType());
+        Object newVal = H2Utils.convert(newValArg.get(args), coCtx, newValArg.expectedType());
 
         boolean res;
 

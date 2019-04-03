@@ -28,4 +28,9 @@ public interface DmlArgument {
      * @return value.
      */
     Object get(Object[] params);
+
+    /**
+     * Get expected H2 type of the extracted argument.
+     */
+    int expectedType();
 }

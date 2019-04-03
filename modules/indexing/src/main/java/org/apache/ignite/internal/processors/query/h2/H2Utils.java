@@ -398,12 +398,12 @@ public class H2Utils {
      * Convert value to column's expected type by means of H2.
      *
      * @param val Source value.
-     * @param idx Row descriptor.
+     * @param coCtx Cache object context to handle binary objects.
      * @param type Expected column type to convert to.
      * @return Converted object.
      * @throws IgniteCheckedException if failed.
      */
-    public static Object convert(Object val, IgniteH2Indexing idx, int type) throws IgniteCheckedException {
+    public static Object convert(Object val, CacheObjectValueContext coCtx, int type) throws IgniteCheckedException {
         if (val == null)
             return null;
 
@@ -412,7 +412,7 @@ public class H2Utils {
         if (objType == type)
             return val;
 
-        Value h2Val = wrap(idx.objectContext(), val, objType);
+        Value h2Val = wrap(coCtx, val, objType);
 
         return h2Val.convertTo(type).getObject();
     }
