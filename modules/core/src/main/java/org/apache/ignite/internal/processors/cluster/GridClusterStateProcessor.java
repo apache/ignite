@@ -43,6 +43,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -56,6 +57,8 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -67,6 +70,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -83,6 +87,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.STATE_PROC;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -133,6 +138,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private final JdkMarshaller marsh = new JdkMarshaller();
 
+    /** Watcher of topology change for baseline auto-adjust. */
+    private ChangeTopologyWatcher changeTopologyWatcher;
+
+    /** Distributed baseline configuration. */
+    private DistributedBaselineConfiguration distributedBaselineConfiguration;
+
     /** Minimal IgniteProductVersion supporting BaselineTopology */
     private static final IgniteProductVersion MIN_BLT_SUPPORTING_VER = IgniteProductVersion.fromString("2.4.0");
 
@@ -164,6 +175,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         super(ctx);
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+
+        distributedBaselineConfiguration = new DistributedBaselineConfiguration(
+            ctx.internalSubscriptionProcessor(),
+            ctx,
+            ctx.log(DistributedBaselineConfiguration.class)
+        );
     }
 
     /**
@@ -319,6 +336,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        ctx.event().addLocalEventListener(
+            changeTopologyWatcher = new ChangeTopologyWatcher(ctx),
+            EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         GridChangeGlobalStateFuture fut = this.stateChangeFut.get();
 
@@ -345,7 +370,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 && ctx.config().isAutoActivationEnabled()
                 && !state.active()
                 && isBaselineSatisfied(state.baselineTopology(), discoCache.serverNodes()))
-                changeGlobalState0(true, state.baselineTopology(), false);
+                changeGlobalState(true, state.baselineTopology().currentBaseline(), false);
 
         return null;
     }
@@ -846,7 +871,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
         BaselineTopology blt, boolean forceChangeBaselineTopology, boolean isAutoAdjust) {
-        boolean isBaselineAutoAdjustEnabled = ctx.cluster().get().baselineConfiguration().isBaselineAutoAdjustEnabled();
+        boolean isBaselineAutoAdjustEnabled = isBaselineAutoAdjustEnabled();
 
         if (forceChangeBaselineTopology && isBaselineAutoAdjustEnabled != isAutoAdjust)
             throw new BaselineAdjustForbiddenException(isBaselineAutoAdjustEnabled);
@@ -1197,6 +1222,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                     ctx.encryption().onActivate(ctx);
 
+                    distributedBaselineConfiguration.onActivate();
+
                     if (log.isInfoEnabled())
                         log.info("Successfully performed final activation steps [nodeId="
                             + ctx.localNodeId() + ", client=" + client + ", topVer=" + req.topologyVersion() + "]");
@@ -1332,6 +1359,87 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** {@inheritDoc} */
     @Override public boolean evictionsAllowed() {
         return true;
+    }
+
+    /**
+     * @return Value of manual baseline control or auto adjusting baseline. {@code True} If cluster in auto-adjust.
+     * {@code False} If cluster in manuale.
+     */
+    public boolean isBaselineAutoAdjustEnabled() {
+        return distributedBaselineConfiguration.isBaselineAutoAdjustEnabled();
+    }
+
+    /**
+     * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline. {@code True} If
+     * cluster in auto-adjust. {@code False} If cluster in manuale.
+     * @throws IgniteException If operation failed.
+     */
+    public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) {
+        baselineAutoAdjustEnabledAsync(baselineAutoAdjustEnabled).get();
+    }
+
+    /**
+     * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline. {@code True} If
+     * cluster in auto-adjust. {@code False} If cluster in manuale.
+     * @return Future for await operation completion.
+     */
+    public IgniteFuture<?> baselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled) {
+        try {
+            return new IgniteFutureImpl<>(
+                distributedBaselineConfiguration.updateBaselineAutoAdjustEnabledAsync(baselineAutoAdjustEnabled));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
+     * @return Value of time which we would wait before the actual topology change since last server topology change
+     * (node join/left/fail).
+     * @throws IgniteException If operation failed.
+     */
+    public long baselineAutoAdjustTimeout() {
+        return distributedBaselineConfiguration.getBaselineAutoAdjustTimeout();
+    }
+
+    /**
+     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
+     * server topology change (node join/left/fail).
+     * @throws IgniteException If failed.
+     */
+    public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) {
+        baselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout).get();
+    }
+
+    /**
+     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
+     * server topology change (node join/left/fail).
+     * @return Future for await operation completion.
+     */
+    public IgniteFuture<?> baselineAutoAdjustTimeoutAsync(long baselineAutoAdjustTimeout) {
+        A.ensure(baselineAutoAdjustTimeout >= 0, "timeout should be positive or zero");
+
+        try {
+            return new IgniteFutureImpl<>(
+                distributedBaselineConfiguration.updateBaselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
+     * @return Baseline configuration.
+     */
+    public DistributedBaselineConfiguration baselineConfiguration() {
+        return distributedBaselineConfiguration;
+    }
+
+    /**
+     * @return Status of baseline auto-adjust.
+     */
+    public BaselineAutoAdjustStatus baselineAutoAdjustStatus(){
+        return changeTopologyWatcher.getStatus();
     }
 
     /**
