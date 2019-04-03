@@ -366,18 +366,23 @@ public class H2Utils {
      * @param h2ParamsMeta parameters metadata returned by h2.
      * @return Descriptions of the parameters.
      */
-    public static List<JdbcParameterMeta> parametersMeta(ParameterMetaData h2ParamsMeta) throws SQLException {
-        int paramsSize = h2ParamsMeta.getParameterCount();
+    public static List<JdbcParameterMeta> parametersMeta(ParameterMetaData h2ParamsMeta) throws IgniteCheckedException {
+        try {
+            int paramsSize = h2ParamsMeta.getParameterCount();
 
-        if (paramsSize == 0)
-            return Collections.emptyList();
+            if (paramsSize == 0)
+                return Collections.emptyList();
 
-        ArrayList<JdbcParameterMeta> params = new ArrayList<>(paramsSize);
+            ArrayList<JdbcParameterMeta> params = new ArrayList<>(paramsSize);
 
-        for (int i = 1; i <= paramsSize; i++)
-            params.add(new JdbcParameterMeta(h2ParamsMeta, i));
+            for (int i = 1; i <= paramsSize; i++)
+                params.add(new JdbcParameterMeta(h2ParamsMeta, i));
 
-        return params;
+            return params;
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException("Failed to get parameters metadata", e);
+        }
     }
 
     /**

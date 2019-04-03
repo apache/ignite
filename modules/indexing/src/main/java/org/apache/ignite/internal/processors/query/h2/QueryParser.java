@@ -349,8 +349,8 @@ public class QueryParser {
 
                 assert prepared.getParameters().size() == paramsMeta.size();
             }
-            catch (SQLException e) {
-                throw new IgniteSQLException(e);
+            catch (IgniteCheckedException | SQLException e) {
+                throw new IgniteSQLException("Failed to get parameters metadata", IgniteQueryErrorCode.UNKNOWN, e);
             }
 
             // Do actual parsing.
