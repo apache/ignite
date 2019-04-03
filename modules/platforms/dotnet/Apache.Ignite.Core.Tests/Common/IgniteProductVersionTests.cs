@@ -29,17 +29,17 @@ namespace Apache.Ignite.Core.Tests.Common
     /// <summary>
     /// Tests the <see cref="IgniteProductVersion"/>.
     /// </summary>
-    public class IgniteProductVersionTests
+    public class IgniteProductVersionTests : TestBase
     {
         private static readonly byte[] ByteArray = {24, 229, 167, 236, 158, 50, 2, 18, 106, 105, 188, 35, 26, 107, 150, 91, 193, 215, 61, 238};
+        private static readonly DateTime DefaultReleaseDate = new DateTime(2018, 1, 1);
 
         private IgniteProductVersion _defaultVersion;
 
         [SetUp]
         public void SetUp()
         {
-            var timeStamp = (new DateTime(2018, 1, 1).Ticks - BinaryUtils.JavaDateTicks) / 1000;
-            _defaultVersion = new IgniteProductVersion(2, 5, 7, timeStamp, null);
+            _defaultVersion = new IgniteProductVersion(2, 5, 7, DefaultReleaseDate, null);
         }
 
         [Test]
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Common
                 writer.WriteByte(_defaultVersion.Major);
                 writer.WriteByte(_defaultVersion.Minor);
                 writer.WriteByte(_defaultVersion.Maintenance);
-                writer.WriteLong(_defaultVersion.RevisionTimestamp);
+                writer.WriteLong(BinaryUtils.DateTimeToJavaTicks(_defaultVersion.ReleaseDate));
                 writer.WriteByteArray(hash);
 
                 stream.Seek(0, SeekOrigin.Begin);
@@ -97,48 +97,39 @@ namespace Apache.Ignite.Core.Tests.Common
         [Test]
         public void TestLocalNodeGetVersion()
         {
-            using (IIgnite ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
-            {
-                IgniteProductVersion nodeVersion = ignite.GetCluster().GetLocalNode().Version;
+            IgniteProductVersion nodeVersion = Ignite.GetCluster().GetLocalNode().Version;
 
-                Assert.GreaterOrEqual(nodeVersion.Major, 2);
-                Assert.GreaterOrEqual(nodeVersion.Minor, 0);
-                Assert.GreaterOrEqual(nodeVersion.Maintenance, 0);
-            }
+            Assert.GreaterOrEqual(nodeVersion.Major, 2);
+            Assert.GreaterOrEqual(nodeVersion.Minor, 0);
+            Assert.GreaterOrEqual(nodeVersion.Maintenance, 0);
         }
 
         [Test]
         public void TestIgniteGetVersionAndNodeVersionAreEqual()
         {
-            using (IIgnite ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
-            {
-                IgniteProductVersion version = ignite.GetVersion();
-                IgniteProductVersion nodeVersion = ignite.GetCluster().GetLocalNode().Version;
+            IgniteProductVersion version = Ignite.GetVersion();
+            IgniteProductVersion nodeVersion = Ignite.GetCluster().GetLocalNode().Version;
 
-                Assert.AreEqual(version, nodeVersion);
-            }
+            Assert.AreEqual(version, nodeVersion);
         }
 
         [Test]
         public void TestClientVersionIsMoreOrEqualsServerNodeVersion()
         {
-            using (IIgnite ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
-            {
-                IgniteProductVersion version = ignite.GetVersion();
+            Version clientVer = Assembly.GetExecutingAssembly().GetName().Version;
 
-                Version clientVer = Assembly.GetExecutingAssembly().GetName().Version;
-                var expectedVersion = new IgniteProductVersion((byte) clientVer.Major, (byte) clientVer.Minor,
-                    (byte) clientVer.Build, 0, null);
-
-                Assert.IsTrue(expectedVersion.CompareTo(version) >= 0);
-            }
+            IgniteProductVersion version = Ignite.GetVersion();
+            
+            Assert.AreEqual(clientVer.Major, version.Major);
+            Assert.AreEqual(clientVer.Minor, version.Minor);
+            Assert.AreEqual(clientVer.Build, version.Maintenance);
         }
 
         [Test]
         public void TestUnsignedStringRepresentation()
         {
-            var version = new IgniteProductVersion(1, 2, 3, "rc1", 4, ByteArray);
-            Assert.AreEqual("1.2.3#19700101-sha1:18e5a7ec", version.ToString());
+            var version = new IgniteProductVersion(1, 2, 3, "rc1", new DateTime(2019, 1, 1), ByteArray);
+            Assert.AreEqual("1.2.3#20190101-sha1:18e5a7ec", version.ToString());
         }
 
         [Test]
@@ -149,8 +140,8 @@ namespace Apache.Ignite.Core.Tests.Common
             // ReSharper disable once PossibleInvalidCastException
             var unsignedCast = (byte[]) (Array) signed;
 
-            var versionSigned = new IgniteProductVersion(1, 2, 3, "rc1", 4, unsignedCast);
-            var versionUnsigned = new IgniteProductVersion(1, 2, 3, "rc1", 4, ByteArray);
+            var versionSigned = new IgniteProductVersion(1, 2, 3, "rc1", DefaultReleaseDate, unsignedCast);
+            var versionUnsigned = new IgniteProductVersion(1, 2, 3, "rc1", DefaultReleaseDate, ByteArray);
 
             Assert.AreEqual(versionSigned.ToString(), versionUnsigned.ToString());
         }

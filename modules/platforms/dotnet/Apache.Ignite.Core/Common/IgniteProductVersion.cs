@@ -39,13 +39,13 @@ namespace Apache.Ignite.Core.Common
         private readonly byte _maintenance;
 
         /** Stage of development. */
-        private readonly String _stage;
+        private readonly string _stage;
 
-        /** Revision timestamp. */
-        private readonly long _revTs;
+        /** Release date. */
+        private readonly DateTime _releaseDate;
 
         /** Revision hash. */
-        private byte[] _revHash;
+        private readonly byte[] _revHash;
 
         /// <summary>
         /// Constructor.
@@ -53,9 +53,9 @@ namespace Apache.Ignite.Core.Common
         /// <param name="major">Major version number.</param>
         /// <param name="minor">Minor version number.</param>
         /// <param name="maintenance">Maintenance version number.</param>
-        /// <param name="revTs">Revision timestamp.</param>
+        /// <param name="revTs">Revision date.</param>
         /// <param name="revHash">Revision hash.</param>
-        public IgniteProductVersion(byte major, byte minor, byte maintenance, long revTs, byte[] revHash)
+        public IgniteProductVersion(byte major, byte minor, byte maintenance, DateTime revTs, byte[] revHash)
             : this(major, minor, maintenance, "", revTs, revHash)
         {
             // No-op.
@@ -68,9 +68,9 @@ namespace Apache.Ignite.Core.Common
         /// <param name="minor">Minor version number.</param>
         /// <param name="maintenance">Maintenance version number.</param>
         /// <param name="stage">Stage of development.</param>
-        /// <param name="revTs">Revision timestamp.</param>
+        /// <param name="releaseDate">Revision date.</param>
         /// <param name="revHash">Revision hash.</param>
-        public IgniteProductVersion(byte major, byte minor, byte maintenance, String stage, long revTs, byte[] revHash)
+        public IgniteProductVersion(byte major, byte minor, byte maintenance, string stage, DateTime releaseDate, byte[] revHash)
         {
             if (revHash != null && revHash.Length != 20)
             {
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Common
             _minor = minor;
             _maintenance = maintenance;
             _stage = stage;
-            _revTs = revTs;
+            _releaseDate = releaseDate;
             _revHash = revHash;
         }
 
@@ -96,8 +96,7 @@ namespace Apache.Ignite.Core.Common
             _major = reader.ReadByte();
             _minor = reader.ReadByte();
             _maintenance = reader.ReadByte();
-            _revTs = reader.ReadLong();
-
+            _releaseDate = BinaryUtils.ParseDateTimeFromJavaTicks(reader);
             _revHash = reader.ReadByteArray();
         }
 
@@ -134,19 +133,11 @@ namespace Apache.Ignite.Core.Common
         }
 
         /// <summary>
-        /// Gets the revision timestamp.
-        /// </summary>
-        public long RevisionTimestamp
-        {
-            get { return _revTs; }
-        }
-
-        /// <summary>
         /// Gets the release date.
         /// </summary>
         public DateTime ReleaseDate
         {
-            get { return new DateTime(BinaryUtils.JavaDateTicks + _revTs * 1000); }
+            get { return _releaseDate; }
         }
 
         /// <summary>
@@ -161,11 +152,11 @@ namespace Apache.Ignite.Core.Common
         /** <inheritDoc /> */
         public override int GetHashCode()
         {
-            int res = _major;
+            int res = Major;
 
-            res = 31 * res + _minor;
-            res = 31 * res + _maintenance;
-            res = 31 * res + (int) (_revTs ^ (_revTs >> 32));
+            res = 31 * res + Minor;
+            res = 31 * res + Maintenance;
+            res = 31 * res + ReleaseDate.GetHashCode();
 
             return res;
         }
@@ -191,7 +182,7 @@ namespace Apache.Ignite.Core.Common
             if (other == null)
                 return false;
 
-            return RevisionTimestamp == other.RevisionTimestamp
+            return ReleaseDate == other.ReleaseDate
                    && Maintenance == other.Maintenance
                    && Minor == other.Minor
                    && Major == other.Major;
@@ -218,7 +209,7 @@ namespace Apache.Ignite.Core.Common
             if (res != 0)
                 return res;
 
-            return RevisionTimestamp.CompareTo(other.RevisionTimestamp);
+            return ReleaseDate.CompareTo(other.ReleaseDate);
         }
     }
 }
