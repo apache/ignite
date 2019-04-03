@@ -165,7 +165,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         ListeningTestLogger testLog = testLog();
 
         LogListener lsnr = LogListener
-            .matches("Query produces too big result set")
+            .matches("Query produced big result set")
             .build();
 
         testLog.registerListener(lsnr);

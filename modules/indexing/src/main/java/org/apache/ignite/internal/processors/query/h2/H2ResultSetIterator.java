@@ -71,11 +71,11 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Connection manager. */
-    private ConnectionManager connectionMgr;
-
     /** Result set size threshold. */
     private long threshold;
+
+    /** Result set size threshold multiplier. */
+    private final int thresholdMult;
 
     /** Query info to print log message. */
     private H2QueryInfo qryInfo;
@@ -120,8 +120,8 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
         assert qryInfo != null;
 
         this.log = log;
-        connectionMgr = h2.connections();
         threshold = h2.longRunningQueries().getResultSetSizeThreshold();
+        thresholdMult = h2.longRunningQueries().getResultSetSizeThresholdMultiplier();
         this.qryInfo = qryInfo;
     }
 
@@ -161,11 +161,13 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
 
             fetchedSize++;
 
-            if (fetchedSize >= threshold) {
-                qryInfo.printLogMessage(log, connectionMgr, "Query produces too big result set. " +
-                    "[fetched=" + fetchedSize + ']');
+            if (threshold > 0 && fetchedSize >= threshold) {
+                qryInfo.printLogMessage(log, "Query produced big result set. ",
+                    "fetched=" + fetchedSize);
 
-                threshold *= 2;
+                if (thresholdMult > 1)
+                    threshold *= thresholdMult;
+
                 bigResults = true;
             }
 
@@ -209,15 +211,14 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
             return;
 
         if (bigResults) {
-            qryInfo.printLogMessage(log, connectionMgr, "Query produced too big results is end. " +
-                "[fetched=" + fetchedSize + ']');
+            qryInfo.printLogMessage(log, "Query produced big result set. ",
+                "fetched=" + fetchedSize);
         }
 
         U.closeQuiet(data);
 
         res = null;
         data = null;
-        connectionMgr = null;
         qryInfo = null;
     }
 

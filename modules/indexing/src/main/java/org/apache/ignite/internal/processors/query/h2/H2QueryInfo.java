@@ -21,7 +21,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -101,24 +100,37 @@ public class H2QueryInfo {
     /**
      * @param log Logger.
      * @param msg Log message
-     * @param connMgr Connection manager.
+     * @param additionalQryInfo Additional query info.
      */
-    public void printLogMessage(IgniteLogger log, ConnectionManager connMgr, String msg) {
+    public void printLogMessage(IgniteLogger log, String msg, String... additionalQryInfo) {
+        printLogMessage(log, null, msg, additionalQryInfo);
+    }
+
+    /**
+     * @param log Logger.
+     * @param msg Log message
+     * @param connMgr Connection manager.
+     * @param additionalQryInfo Additional query info.
+     */
+    public void printLogMessage(IgniteLogger log, ConnectionManager connMgr, String msg, String... additionalQryInfo) {
         StringBuilder msgSb = new StringBuilder(msg + " [");
 
-        msgSb.append("time=").append(time()).append("ms")
+        for (String s : additionalQryInfo)
+            msgSb.append(s).append(", ");
+
+        msgSb.append("duration=").append(time()).append("ms")
             .append(", type=").append(type)
             .append(", distributedJoin=").append(distributedJoin)
             .append(", enforceJoinOrder=").append(enforceJoinOrder)
             .append(", lazy=").append(lazy);
 
-        printInfo(msgSb);
-
         msgSb.append(", sql='")
             .append(sql);
 
-        if (type != QueryType.REDUCE)
+        if (type != QueryType.REDUCE && connMgr != null)
             msgSb.append("', plan=").append(queryPlan(log, connMgr));
+
+        printInfo(msgSb);
 
         msgSb.append(']');
 

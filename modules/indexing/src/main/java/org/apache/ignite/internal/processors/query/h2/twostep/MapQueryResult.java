@@ -110,6 +110,9 @@ class MapQueryResult {
     /** Result set size threshold. */
     private long threshold;
 
+    /** Result set size threshold multiplier. */
+    private final int thresholdMult;
+
     /** Fetched count of rows. */
     private long fetchedSize;
 
@@ -154,6 +157,7 @@ class MapQueryResult {
             this.log = log;
             this.qryInfo = qryInfo;
             this.threshold = h2.longRunningQueries().getResultSetSizeThreshold();
+            this.thresholdMult = h2.longRunningQueries().getResultSetSizeThresholdMultiplier();
         }
         else {
             this.rs = null;
@@ -162,6 +166,7 @@ class MapQueryResult {
             this.rowCnt = -1;
             this.qryInfo = null;
             this.threshold = -1;
+            this.thresholdMult = 0;
             this.log = null;
 
             closed = true;
@@ -268,11 +273,13 @@ class MapQueryResult {
 
             ++fetchedSize;
 
-            if (fetchedSize >= threshold) {
-                qryInfo.printLogMessage(log, h2.connections(), "Query produces too big result set. " +
-                    "[fetched=" + fetchedSize + ']');
+            if (threshold > 0 && fetchedSize >= threshold) {
+                qryInfo.printLogMessage(log, "Query produced big result set. ",
+                    "fetched=" + fetchedSize);
 
-                threshold *= 2;
+                if (thresholdMult > 1)
+                    threshold *= thresholdMult;
+
                 bigResults = true;
             }
         }
@@ -318,8 +325,8 @@ class MapQueryResult {
             closed = true;
 
             if (bigResults) {
-                qryInfo.printLogMessage(log, h2.connections(), "Query produced too big results is end. " +
-                    "[fetched=" + fetchedSize + ']');
+                qryInfo.printLogMessage(log, "Query produced big result set. ",
+                    "fetched=" + fetchedSize);
             }
 
             U.closeQuiet(rs);
