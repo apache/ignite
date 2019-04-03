@@ -133,7 +133,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
     /** {@inheritDoc} */
     @Override public boolean getTxOwnerDumpRequestsAllowed() {
-        return ctx.config().getTransactionConfiguration().getTxOwnerDumpRequestsAllowed();
+        return ctx.cache().context().tm().txOwnerDumpRequestsAllowed();
     }
 
     /** {@inheritDoc} */

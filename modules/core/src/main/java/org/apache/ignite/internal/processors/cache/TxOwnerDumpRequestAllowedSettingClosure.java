@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
@@ -45,6 +46,11 @@ public class TxOwnerDumpRequestAllowedSettingClosure implements IgniteRunnable {
 
     /** */
     @Override public void run() {
-        ignite.configuration().getTransactionConfiguration().setTxOwnerDumpRequestsAllowed(allowed);
+        ((IgniteEx)ignite)
+            .context()
+            .cache()
+            .context()
+            .tm()
+            .setTxOwnerDumpRequestsAllowed(allowed);
     }
 }

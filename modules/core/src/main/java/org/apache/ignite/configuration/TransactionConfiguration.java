@@ -37,9 +37,6 @@ public class TransactionConfiguration implements Serializable {
     private static final IgniteProductVersion TX_PME_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.5.1");
 
     /** */
-    private static final IgniteProductVersion TX_OWNER_DUMP_ALLOWED_SINCE = IgniteProductVersion.fromString("2.8.0");
-
-    /** */
     private static final IgniteProductVersion DEADLOCK_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.7.3");
 
     /** */
@@ -59,14 +56,6 @@ public class TransactionConfiguration implements Serializable {
 
     /** Transaction timeout on partition map synchronization. */
     public static final long TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE = 0;
-
-    /**
-     * Default value for {@link TransactionConfiguration#txOwnerDumpRequestsAllowed } parameter, which
-     * shows if dump requests from local node to near node are allowed, when long running transaction
-     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
-     * owner thread.
-     */
-    public static final boolean DFLT_TX_OWNER_DUMP_REQUESTS_ALLOWED = true;
 
     /** Default timeout before starting deadlock detection. */
     public static final long DFLT_DEADLOCK_TIMEOUT = 10_000;
@@ -91,13 +80,6 @@ public class TransactionConfiguration implements Serializable {
      * Volatile in order to be changed dynamically.
      */
     private volatile long txTimeoutOnPartitionMapExchange = TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE;
-
-    /**
-     * Shows if dump requests from local node to near node are allowed, when long running transaction
-     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
-     * owner thread.
-     */
-    private volatile boolean txOwnerDumpRequestsAllowed = DFLT_TX_OWNER_DUMP_REQUESTS_ALLOWED;
 
     /** Timeout before starting deadlock detection. */
     private long deadlockTimeout = DFLT_DEADLOCK_TIMEOUT;
@@ -142,7 +124,6 @@ public class TransactionConfiguration implements Serializable {
         tmLookupClsName = cfg.getTxManagerLookupClassName();
         txManagerFactory = cfg.getTxManagerFactory();
         useJtaSync = cfg.isUseJtaSynchronization();
-        txOwnerDumpRequestsAllowed = cfg.getTxOwnerDumpRequestsAllowed();
     }
 
     /**
@@ -468,42 +449,14 @@ public class TransactionConfiguration implements Serializable {
      */
     @SuppressWarnings("unused")
     private static String[] transientSerializableFields(IgniteProductVersion ver) {
-        ArrayList<String> transients = new ArrayList<>(3);
+        ArrayList<String> transients = new ArrayList<>(2);
 
         if (TX_PME_TIMEOUT_SINCE.compareToIgnoreTimestamp(ver) >= 0)
             transients.add("txTimeoutOnPartitionMapExchange");
-
-        if (TX_OWNER_DUMP_ALLOWED_SINCE.compareToIgnoreTimestamp(ver) >= 0)
-            transients.add("txOwnerDumpRequestsAllowed");
 
         if (DEADLOCK_TIMEOUT_SINCE.compareToIgnoreTimestamp(ver) >= 0)
             transients.add("deadlockTimeout");
 
         return transients.isEmpty() ? null : transients.toArray(new String[transients.size()]);
-    }
-
-    /**
-     * Sets if dump requests from local node to near node are allowed, when long running transaction
-     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
-     * owner thread.
-     *
-     * @return <code>true</code> if allowed, <code>false</code> otherwise.
-     */
-    public boolean getTxOwnerDumpRequestsAllowed() {
-        return txOwnerDumpRequestsAllowed;
-    }
-
-    /**
-     * Sets if dump requests from local node to near node are allowed, when long running transaction
-     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
-     * owner thread.
-     *
-     * @param allowed whether allowed
-     * @return {@code this} for chaining
-     */
-    public TransactionConfiguration setTxOwnerDumpRequestsAllowed(boolean allowed) {
-        txOwnerDumpRequestsAllowed = allowed;
-
-        return this;
     }
 }

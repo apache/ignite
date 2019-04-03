@@ -2054,9 +2054,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         Ignite ignite = cctx.kernalContext().grid();
 
-        boolean txOwnerDumpAllowed = ignite.configuration()
-            .getTransactionConfiguration()
-            .getTxOwnerDumpRequestsAllowed();
+        boolean txOwnerDumpAllowed = cctx.tm().txOwnerDumpRequestsAllowed();
 
         if (txOwnerDumpAllowed && tx.local() && tx.state() == TransactionState.ACTIVE) {
             Collection<UUID> masterNodeIds = tx.masterNodeIds();
