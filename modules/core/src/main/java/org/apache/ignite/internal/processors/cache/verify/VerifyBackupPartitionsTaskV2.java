@@ -414,7 +414,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             return grpIds;
         }
 
-        /** */
+        /**
+         * Filters cache groups by exclude regexps.
+         *
+         * @param cachesToFilter cache groups to filter
+         */
         private void filterByExcludeCaches(Set<CacheGroupContext> cachesToFilter) {
             if (!F.isEmpty(arg.getExcludeCaches())) {
                 Set<Pattern> excludedNamesPatterns = new HashSet<>();
@@ -422,30 +426,37 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 for (String excluded : arg.getExcludeCaches())
                     excludedNamesPatterns.add(Pattern.compile(excluded));
 
-                boolean excludeSysCaches;
-
-                if (arg instanceof VisorIdleVerifyDumpTaskArg) {
-                    CacheFilterEnum filter = ((VisorIdleVerifyDumpTaskArg) arg).getCacheFilterEnum();
-
-                    excludeSysCaches = !(filter == CacheFilterEnum.SYSTEM);
-                } else
-                    excludeSysCaches = true;
-
-                cachesToFilter.removeIf(grp ->
-                    (grp.systemCache() && excludeSysCaches)
-                        || grp.isLocal()
-                        || doesGrpMatchOneOfPatterns(grp, excludedNamesPatterns)
-                );
+                cachesToFilter.removeIf(grp -> doesGrpMatchOneOfPatterns(grp, excludedNamesPatterns));
             }
         }
 
-        /** */
+        /**
+         * Filters cache groups by cache filter, also removes system (if not specified in filter option)
+         * and local caches.
+         *
+         * @param cachesToFilter cache groups to filter
+         */
         private void filterByCacheFilter(Set<CacheGroupContext> cachesToFilter) {
             if (onlySpecificCaches())
                 cachesToFilter.removeIf(grp -> !doesGrpMatchFilter(grp));
+
+            boolean excludeSysCaches;
+
+            if (arg instanceof VisorIdleVerifyDumpTaskArg) {
+                CacheFilterEnum filter = ((VisorIdleVerifyDumpTaskArg) arg).getCacheFilterEnum();
+
+                excludeSysCaches = !(filter == CacheFilterEnum.SYSTEM);
+            } else
+                excludeSysCaches = true;
+
+            cachesToFilter.removeIf(grp -> (grp.systemCache() && excludeSysCaches) || grp.isLocal());
         }
 
-        /** */
+        /**
+         * Filters cache groups by whitelist of cache name regexps. By default, all cache groups are included.
+         *
+         * @param cachesToFilter cache groups to filter
+         */
         private void filterByCacheNames(Set<CacheGroupContext> cachesToFilter) {
             if (arg.getCaches() != null && !arg.getCaches().isEmpty()) {
                 Set<Pattern> cacheNamesPatterns = new HashSet<>();
