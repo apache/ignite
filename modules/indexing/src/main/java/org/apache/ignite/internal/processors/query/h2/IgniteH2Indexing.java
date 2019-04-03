@@ -1155,10 +1155,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (cancel == null)
             cancel = new GridQueryCancel();
 
-        // Check security.
-        if (ctx.security().enabled())
-            checkSecurity(select.cacheIds());
-
         // Register query.
         Long qryId = registerRunningQuery(qryDesc, cancel);
 
@@ -1294,6 +1290,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) throws IgniteCheckedException {
         assert !select.mvccEnabled() || mvccTracker != null;
 
+        // Check security.
         if (ctx.security().enabled())
             checkSecurity(select.cacheIds());
 
