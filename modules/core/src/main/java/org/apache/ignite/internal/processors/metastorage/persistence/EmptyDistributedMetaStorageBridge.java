@@ -44,11 +44,7 @@ class EmptyDistributedMetaStorageBridge implements DistributedMetaStorageBridge 
     }
 
     /** {@inheritDoc} */
-    @Override public void onUpdateMessage(
-        DistributedMetaStorageHistoryItem histItem,
-        Serializable val,
-        boolean notifyListeners
-    ) {
+    @Override public void onUpdateMessage(DistributedMetaStorageHistoryItem histItem) {
         throw new UnsupportedOperationException("onUpdateMessage");
     }
 
@@ -58,7 +54,7 @@ class EmptyDistributedMetaStorageBridge implements DistributedMetaStorageBridge 
     }
 
     /** {@inheritDoc} */
-    @Override public DistributedMetaStorageHistoryItem[] localFullData() {
-        return DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
+    @Override public DistributedMetaStorageKeyValuePair[] localFullData() {
+        return DistributedMetaStorageKeyValuePair.EMPTY_ARRAY;
     }
 }

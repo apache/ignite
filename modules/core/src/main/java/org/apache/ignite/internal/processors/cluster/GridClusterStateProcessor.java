@@ -1197,8 +1197,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                     ctx.encryption().onActivate(ctx);
 
-                    ((IgniteChangeGlobalStateSupport)ctx.distributedMetastorage()).onActivate(ctx);
-
                     if (log.isInfoEnabled())
                         log.info("Successfully performed final activation steps [nodeId="
                             + ctx.localNodeId() + ", client=" + client + ", topVer=" + req.topologyVersion() + "]");
