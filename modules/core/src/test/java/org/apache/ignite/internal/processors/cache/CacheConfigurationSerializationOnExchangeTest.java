@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.configuration.FactoryBuilder;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -33,15 +35,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Test suite to check that user-defined parameters for static cache configurations are not explicitly deserialized
- * on non-affinity nodes.
+ *
  */
-public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAbstractTest {
+public class CacheConfigurationSerializationOnExchangeTest extends GridCommonAbstractTest {
     /** Client mode. */
     private boolean clientMode;
-
-    /** Caches. */
-    private CacheConfiguration[] caches;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -50,9 +48,6 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
         cfg.setConsistentId(igniteInstanceName);
 
         cfg.setClientMode(clientMode);
-
-        if (caches != null)
-            cfg.setCacheConfiguration(caches);
 
         return cfg;
     }
@@ -82,6 +77,7 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
     private CacheConfiguration onlyOnNode(int nodeIdx) {
         return new CacheConfiguration("cache-" + getTestIgniteInstanceName(nodeIdx))
             .setNodeFilter(new OnlyOneNodeFilter(getTestIgniteInstanceName(nodeIdx)))
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setCacheStoreFactory(FactoryBuilder.factoryOf(GridCacheTestStore.class));
     }
 
@@ -89,107 +85,66 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
      *
      */
     @Test
-    public void testSerializationForCachesConfiguredOnCoordinator() throws Exception {
-        caches = new CacheConfiguration[] {onlyOnNode(0), onlyOnNode(1), onlyOnNode(2)};
+    public void testSerializationForDynamicCacheStartedOnCoordinator() throws Exception {
+        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
-        startGrid(0);
-
-        caches = null;
-
-        startGridsMultiThreaded(1, 2);
-
-        awaitPartitionMapExchange();
-
-        for (Ignite node : G.allGrids())
-            checkCaches((IgniteEx) node);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testSerializationForCachesConfiguredOnDifferentNodes1() throws Exception {
-        startGrid(0);
-
-        caches = new CacheConfiguration[] {onlyOnNode(0), onlyOnNode(1)};
-
-        startGrid(1);
-
-        caches = new CacheConfiguration[] {onlyOnNode(2)};
-
-        startGrid(2);
-
-        awaitPartitionMapExchange();
-
-        for (Ignite node : G.allGrids())
-            checkCaches((IgniteEx) node);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testSerializationForCachesConfiguredOnDifferentNodes2() throws Exception {
-        caches = new CacheConfiguration[] {onlyOnNode(0)};
-
-        startGrid(0);
-
-        caches = new CacheConfiguration[] {onlyOnNode(1)};
-
-        startGrid(1);
-
-        caches = new CacheConfiguration[] {onlyOnNode(2)};
-
-        startGrid(2);
-
-        awaitPartitionMapExchange();
-
-        for (Ignite node : G.allGrids())
-            checkCaches((IgniteEx) node);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testSerializationForCachesConfiguredOnDifferentNodes3() throws Exception {
-        caches = new CacheConfiguration[] {onlyOnNode(1)};
-
-        startGrid(0);
-
-        caches = new CacheConfiguration[] {onlyOnNode(2)};
-
-        startGrid(1);
-
-        caches = new CacheConfiguration[] {onlyOnNode(0)};
-
-        startGrid(2);
-
-        awaitPartitionMapExchange();
-
-        for (Ignite node : G.allGrids())
-            checkCaches((IgniteEx) node);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testSerialzationForCachesOnClientNode() throws Exception {
-        startGrid(0);
-
-        caches = new CacheConfiguration[] {onlyOnNode(0), onlyOnNode(1)};
-
-        startGrid(1);
-
-        caches = new CacheConfiguration[] {onlyOnNode(2)};
-
-        startGrid(2);
-
-        caches = null;
         clientMode = true;
 
         startGrid(3);
+
+        crd.getOrCreateCaches(Lists.newArrayList(
+            onlyOnNode(0),
+            onlyOnNode(1),
+            onlyOnNode(2)
+        ));
+
+        awaitPartitionMapExchange();
+
+        for (Ignite node : G.allGrids())
+            checkCaches((IgniteEx) node);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testSerializationForDynamicCacheStartedOnOtherNode() throws Exception {
+        startGridsMultiThreaded(2);
+
+        IgniteEx otherNode = startGrid(2);
+
+        clientMode = true;
+
+        startGrid(3);
+
+        otherNode.getOrCreateCaches(Lists.newArrayList(
+            onlyOnNode(0),
+            onlyOnNode(1),
+            onlyOnNode(2)
+        ));
+
+        awaitPartitionMapExchange();
+
+        for (Ignite node : G.allGrids())
+            checkCaches((IgniteEx) node);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testSerializationForDynamicCacheStartedOnClientNode() throws Exception {
+        startGridsMultiThreaded(3);
+
+        clientMode = true;
+
+        IgniteEx clientNode = startGrid(3);
+
+        clientNode.getOrCreateCaches(Lists.newArrayList(
+            onlyOnNode(0),
+            onlyOnNode(1),
+            onlyOnNode(2)
+        ));
 
         awaitPartitionMapExchange();
 

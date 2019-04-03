@@ -77,6 +77,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -5542,7 +5543,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         req.clientStartOnly(true);
 
                     req.deploymentId(desc.deploymentId());
-                    req.startCacheConfiguration(descCfg);
+
+                    IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+
+                    // Backward compatibility.
+                    if (spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS)) {
+                        CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+
+                        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(desc);
+
+                        req.startCacheConfiguration(splitCfg.get1());
+                        req.setCacheCfgEnrichment(splitCfg.get2());
+                    }
+                    else
+                        req.startCacheConfiguration(descCfg);
+
                     req.schema(desc.schema());
                 }
             }
@@ -5551,11 +5566,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 req.deploymentId(IgniteUuid.randomUuid());
 
-                req.startCacheConfiguration(cfg);
+                IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+
+                // Backward compatibility.
+                if (spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS)) {
+                    CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+
+                    T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(cfg);
+
+                    req.startCacheConfiguration(splitCfg.get1());
+                    req.setCacheCfgEnrichment(splitCfg.get2());
+                }
+                else
+                    req.startCacheConfiguration(cfg);
 
                 CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
-                initialize(cfg, cacheObjCtx);
+                initialize(req.startCacheConfiguration(), cacheObjCtx);
 
                 if (restartId != null)
                     req.schema(new QuerySchema(qryEntities == null ? cfg.getQueryEntities() : qryEntities));
@@ -5580,7 +5607,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             req.deploymentId(desc.deploymentId());
-            req.startCacheConfiguration(ccfg);
+
+            IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+
+            // Backward compatibility.
+            if (spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS)) {
+                CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+
+                T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(ccfg);
+
+                req.startCacheConfiguration(splitCfg.get1());
+                req.setCacheCfgEnrichment(splitCfg.get2());
+            }
+            else
+                req.startCacheConfiguration(ccfg);
+
             req.schema(desc.schema());
         }
 

@@ -34,7 +34,22 @@ public class CacheConfigurationEnricher {
         CacheConfiguration<?, ?> ccfg,
         CacheConfigurationEnrichment enrichment
     ) {
-        // TODO: STUB
-        return ccfg;
+        CacheConfiguration<?, ?> enrichedCopy = new CacheConfiguration<>(ccfg);
+
+        try {
+            for (Field field : CacheConfiguration.class.getDeclaredFields())
+                if (field.getDeclaredAnnotation(SerializeSeparately.class) != null) {
+                    field.setAccessible(true);
+
+                    Object enrichedValue = enrichment.getFieldValue(field.getName());
+
+                    field.set(enrichedCopy, enrichedValue);
+                }
+        }
+        catch (Exception e) {
+            throw new IgniteException("Failed to enrich cache configuration " + ccfg.getName(), e);
+        }
+
+        return enrichedCopy;
     }
 }

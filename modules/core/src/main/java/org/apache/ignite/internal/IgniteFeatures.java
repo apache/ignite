@@ -45,7 +45,8 @@ public enum IgniteFeatures {
     /** Support of different rebalance size for nodes.  */
     DIFFERENT_REBALANCE_POOL_SIZE(4),
 
-    CACHE_CONFIGURATIONS_EXCHANGE_V2(5);
+    /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
+    SPLITTED_CACHE_CONFIGURATIONS(5);
 
     /**
      * Unique feature identifier.
