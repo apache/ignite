@@ -118,7 +118,7 @@ public class FraudDetectionExample {
         System.out.println(String.format(">> Model recall: %.2f", metricValues.recall()));
         System.out.println(String.format(">> Model f1-score: %.2f", metricValues.f1Score()));
         System.out.println(">> Confusion matrix:");
-        System.out.println(">>                   fraud (ans) | not fraud (ans)");
+        System.out.println(">>                    fraud (ans) | not fraud (ans)");
         System.out.println(String.format(">> fraud (pred)     | %1$11.2f | %2$15.2f ", metricValues.tp(), metricValues.fp()));
         System.out.println(String.format(">> not fraud (pred) | %1$11.2f | %2$15.2f ", metricValues.fn(), metricValues.tn()));
     }
