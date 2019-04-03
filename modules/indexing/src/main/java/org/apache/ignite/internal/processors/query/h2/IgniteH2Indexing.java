@@ -391,8 +391,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     unwrappedCols,
                     wrappedCols,
                     inlineSize,
-                    segments,
-                    log
+                    segments
                 );
             }
             else

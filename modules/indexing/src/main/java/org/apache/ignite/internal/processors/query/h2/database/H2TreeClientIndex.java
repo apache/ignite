@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -63,7 +62,6 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
      * @param colsList Indexed columns.
      * @param inlineSize Inline size.
      * @param log Logger.
-     * @throws IgniteCheckedException If failed.
      * @return Index.
      */
     public static H2TreeClientIndex createIndex(

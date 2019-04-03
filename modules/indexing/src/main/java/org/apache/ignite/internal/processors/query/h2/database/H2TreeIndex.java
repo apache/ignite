@@ -154,7 +154,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param idxColsInfo Index column info.
      * @param treeName Tree name.
      * @param segments Tree segmets.
-     * @throws IgniteCheckedException If failed.
+     * @param log Logger.
      */
     private H2TreeIndex(
         GridCacheContext<?, ?> cctx,
@@ -164,15 +164,16 @@ public class H2TreeIndex extends H2TreeIndexBase {
         boolean affinityKey,
         IndexColumnsInfo idxColsInfo,
         String treeName,
-        H2Tree[] segments
-    ) throws IgniteCheckedException {
+        H2Tree[] segments,
+        IgniteLogger log
+    ) {
         super(tbl, idxName, idxColsInfo.cols(),
             pk ? IndexType.createPrimaryKey(false, false) :
                 IndexType.createNonUnique(false, false, false));
 
         this.cctx = cctx;
         ctx = cctx.kernalContext();
-        log = ctx.log(getClass());
+        this.log = log;
 
         this.pk = pk;
         this.affinityKey = affinityKey;
@@ -223,9 +224,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param wrappedColsList Index columns as is.
      * @param inlineSize Inline size.
      * @param segmentsCnt Count of tree segments.
-     * @param log Logger.
-     * @throws IgniteCheckedException If failed.
      * @return Index.
+     * @throws IgniteCheckedException If failed.
      */
     public static H2TreeIndex createIndex(
         GridCacheContext<?, ?> cctx,
@@ -237,10 +237,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
         List<IndexColumn> unwrappedColsList,
         List<IndexColumn> wrappedColsList,
         int inlineSize,
-        int segmentsCnt,
-        IgniteLogger log
+        int segmentsCnt
     ) throws IgniteCheckedException {
         assert segmentsCnt > 0 : segmentsCnt;
+
+        IgniteLogger log = cctx.logger(H2TreeIndex.class);
 
         IndexColumn[] unwrappedCols = unwrappedColsList.toArray(H2Utils.EMPTY_COLUMNS);
 
@@ -317,7 +318,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         IndexColumnsInfo idxColsInfo = useUnwrappedCols ? unwrappedColsInfo : wrappedColsInfo;
 
-        return new H2TreeIndex(cctx, tbl, idxName, pk, affinityKey, idxColsInfo, treeName, segments);
+        return new H2TreeIndex(cctx, tbl, idxName, pk, affinityKey, idxColsInfo, treeName, segments, log);
     }
 
     /** {@inheritDoc} */
@@ -865,9 +866,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
      *
      */
     @SuppressWarnings({"PublicInnerClass", "AssignmentOrReturnOfFieldWithMutableType"})
-    /**
-     *
-     */
     public static class IndexColumnsInfo {
         /** */
         private final int inlineSize;
