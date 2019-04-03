@@ -95,6 +95,7 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.
+     * TODO FIXME remove
      *
      * @param part Partition.
      * @param cntr Partition counter.
@@ -105,12 +106,14 @@ public interface IgniteCacheOffheapManager {
      * Initial counter will be updated on state restore only
      *
      * @param part Partition
-     * @param cntr New initial counter
+     * @param start Start.
+     * @param delta Delta.
      */
-    public void onPartitionInitialCounterUpdated(int part, long cntr);
+    public void onPartitionInitialCounterUpdated(int part, long start, long delta);
 
     /**
      * Partition counter provider. May be overridden by plugin-provided subclasses.
+     * TODO FIXME remove
      *
      * @param part Partition ID.
      * @return Last updated counter.
@@ -1029,9 +1032,10 @@ public interface IgniteCacheOffheapManager {
         public RowStore rowStore();
 
         /**
-         * @param cntr Counter.
+         * @param start Counter.
+         * @param delta Delta.
          */
-        public void updateInitialCounter(long cntr);
+        public void updateInitialCounter(long start, long delta);
 
         /**
          * Inject rows cache cleaner.

@@ -85,9 +85,10 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     public void reset();
 
     /**
-     * @param cntr Counter.
+     * @param start Counter.
+     * @param delta
      */
-    public void updateInitial(long cntr);
+    public void updateInitial(long start, long delta);
 
     /**
      * Flushes pending update counters closing all possible gaps.
@@ -112,6 +113,8 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     public boolean notEmpty();
 
     /**
+     * TODO implement gaps iterator instead.
+     *
      * @return Iterator for pairs [start, delta] for each out-of-order update in the update counter sequence.
      */
     @Override public Iterator<long[]> iterator();

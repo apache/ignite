@@ -185,7 +185,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         int[] sizes) throws Exception {
         this.backups = backups;
 
-        IgniteEx crd = (IgniteEx)startGrids(nodesCnt);
+        IgniteEx crd = startGrids(nodesCnt);
 
         crd.cluster().active(true);
 
@@ -806,6 +806,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
+         * TODO FIXME callbacks are called only for defined order: add to javadoc!!
+         *
          * @param primary Primary.
          * @param idx Index.
          */

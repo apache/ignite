@@ -1085,13 +1085,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @param val Initial update counter value.
-     */
-    public void initialUpdateCounter(long val) {
-        store.updateInitialCounter(val);
-    }
-
-    /**
      * Updates MVCC cache update counter on primary node.
      *
      * @param delta Value to be added to update counter.

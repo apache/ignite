@@ -499,9 +499,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
 
-                // Triggers initialization of existing(having datafile) partition.
+                // Triggers initialization of existing(having datafile) partition before aquiring cp readlock.
                 // Partition will not be reset to zero.
-                onPartitionInitialCounterUpdated(p, 0);
+                // TODO FIXME bad naming
+                // onPartitionInitialCounterUpdated(p, 0, delta);
 
                 ctx.database().checkpointReadLock();
 
@@ -861,12 +862,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionInitialCounterUpdated(int part, long cntr) {
+    @Override public void onPartitionInitialCounterUpdated(int part, long start, long delta) {
         CacheDataStore store = partDataStores.get(part);
 
         assert store != null;
 
-        store.updateInitialCounter(cntr);
+        store.updateInitialCounter(start, delta);
     }
 
     /** {@inheritDoc} */
@@ -2110,15 +2111,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
-        /** {@inheritDoc} */
-        @Override public void updateInitialCounter(long cntr) {
+        /** {@inheritDoc}
+         * @param start Start.
+         * @param delta Delta.
+         */
+        @Override public void updateInitialCounter(long start, long delta) {
             try {
                 CacheDataStore delegate0 = init0(true);
 
                 if (delegate0 == null)
                     throw new IllegalStateException("Should be never called.");
 
-                delegate0.updateInitialCounter(cntr);
+                delegate0.updateInitialCounter(start, delta);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

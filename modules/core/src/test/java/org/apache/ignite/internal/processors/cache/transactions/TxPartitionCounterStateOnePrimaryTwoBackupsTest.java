@@ -24,15 +24,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -242,6 +246,93 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
     /**
      * Test scenario:
+     * <p>
+     * 1. Assign counters in order tx0, tx1
+     * <p>
+     * 2. Commit tx1.
+     * <p>
+     * 3. Prepare tx0 on both backups.
+     * <p>
+     * 4. Stop primary to trigger rollback on recovery.
+     * <p>
+     * 5. Stop backup1 without triggering checkpoint.
+     * <p>
+     * 6. Start backup1.
+     *
+     * Pass condition: backup1 has RollbackRecord in WAL. After logical recovery no rebalancing must happen.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCommitReorderWithRollbackNoRebalanceAfterRestart() throws Exception {
+        int[] sizes = new int[] {3, 7};
+        int[] assignOrder = new int[] {0, 1};
+        int[] prepOrder = new int[] {1, 0};
+
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, SERVERS_CNT,
+            map -> {
+                Ignite primary = map.get(PARTITION_ID).get1();
+
+                return new TwoPhaseCommitTxCallbackAdapter(
+                    U.map((IgniteEx)primary, assignOrder),
+                    U.map((IgniteEx)primary, prepOrder),
+                    new HashMap<>(),
+                    sizes.length) {
+
+                    @Override protected boolean onPrimaryPrepared(IgniteEx primary, IgniteInternalTx tx, int idx) {
+                        super.onPrimaryPrepared(primary, tx, idx);
+
+                        return idx == prepOrder[0]; // Prevent preparing tx0 on primary.
+                    }
+
+                    @Override public boolean afterPrimaryFinish(IgniteEx primary, IgniteUuid nearXidVer,
+                        GridFutureAdapter<?> proceedFut) {
+                        log.info("TX: Finish primary " + order(nearXidVer));
+
+                        runAsync(() -> stopGrid(true, primary.name()));
+
+                        return super.afterPrimaryFinish(primary, nearXidVer, proceedFut);
+                    }
+                };
+            },
+            sizes);
+
+        waitForTopology(SERVERS_CNT); // SERVERS_CNT - 1 + client node.
+
+        awaitPartitionMapExchange();
+
+        // No gaps are expected on backups.
+        Ignite backup1 = txTops.get(PARTITION_ID).get2().get(0);
+        Ignite backup2 = txTops.get(PARTITION_ID).get2().get(1);
+
+        IgniteEx client = grid(CLIENT_GRID_NAME);
+
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+        assertCountersSame(PARTITION_ID, true);
+
+        PartitionUpdateCounter cntr1 = counter(PARTITION_ID, backup1.name());
+        assertNotNull(cntr1);
+        assertTrue(cntr1.sequential());
+
+        PartitionUpdateCounter cntr2 = counter(PARTITION_ID, backup2.name());
+        assertNotNull(cntr2);
+        assertTrue(cntr2.sequential());
+
+        stopGrid(true, backup1.name());
+
+        // Prevent rebalance from backup2.
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(backup2);
+        spi.record(GridDhtPartitionSupplyMessage.class);
+
+        startGrid(backup1.name());
+
+        awaitPartitionMapExchange();
+
+        assertTrue(spi.recordedMessages(true).isEmpty());
+    }
+
+    /**
+     * Test scenario: TODO FIXME unclear
      * <p>
      * 1. Prepare all txs.
      * <p>

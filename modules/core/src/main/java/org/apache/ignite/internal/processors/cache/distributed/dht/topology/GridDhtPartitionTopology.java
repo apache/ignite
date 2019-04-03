@@ -289,7 +289,7 @@ public interface GridDhtPartitionTopology {
      *      means full map received is not related to exchange
      * @param partMap Update partition map.
      * @param cntrMap Partition update counters.
-     * @param partsToReload Set of partitions that need to be reloaded.
+     * @param partsToReload Set of partitions that need to be cleared and reloaded.
      * @param msgTopVer Topology version from incoming message. This value is not null only for case message is not
      *      related to exchange. Value should be not less than previous 'Topology version from exchange'.
      * @return {@code True} if local state was changed.

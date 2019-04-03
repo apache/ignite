@@ -103,6 +103,7 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
 
     /**
      * TODO same test with historical rebalanbce and different backups(1,2).
+     * TODO missing updates and removes.
      */
     @Test
     public void testMultiThreadedUpdateOrderWithPrimaryRestart() throws Exception {

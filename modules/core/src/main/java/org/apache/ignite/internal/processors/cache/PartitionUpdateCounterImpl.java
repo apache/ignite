@@ -214,19 +214,20 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     /**
      * Updates initial counter on recovery. Not thread-safe.
      *
-     * @param cntr Initial counter.
+     * @param start Start.
+     * @param delta Delta.
      */
-    @Override public void updateInitial(long cntr) {
+    @Override public void updateInitial(long start, long delta) {
         long cntr0 = get();
 
         // The method is called with zero counter to trigger data store initialization before checkpoints are started
         // (or cp read lock will never be taken).
-        if (cntr == 0)
+        if (start == 0)
             return;
 
-        assert cntr > cntr0 : "Illegal update counters order: cur=" + cntr0 + ", new=" + cntr;
+        assert start >= cntr0 : "Illegal update counters order: cur=" + cntr0 + ", new=" + start;
 
-        update(cntr - 1, 1);
+        update(start, delta);
 
         initCntr = get();
     }
