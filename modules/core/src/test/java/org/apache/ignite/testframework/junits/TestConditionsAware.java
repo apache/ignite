@@ -19,6 +19,8 @@ package org.apache.ignite.testframework.junits;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
@@ -28,7 +30,7 @@ import org.junit.rules.TestName;
 @SuppressWarnings({"TransientFieldInNonSerializableClass", "ExtendsUtilityClass"})
 public class TestConditionsAware extends JUnitAssertAware {
     /**
-     * Supports obtaining test name for JUnit4 framework in a way that makes it available for legacy methods invoked
+     * Supports obtaining test name for JUnit4 framework in a way that makes it available for methods invoked
      * from {@code runTest(Statement)}.
      */
     @Rule public transient TestName nameRule = new TestName();
@@ -68,7 +70,7 @@ public class TestConditionsAware extends JUnitAssertAware {
     /**
      * Called before execution of all test methods in class.
      * <p>
-     * Do not annotate with BeforeClass in overriding methods.</p>
+     * Do not annotate with {@link BeforeClass} in overriding methods.</p>
      *
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
@@ -77,10 +79,10 @@ public class TestConditionsAware extends JUnitAssertAware {
     }
 
     /**
-     * Called after execution of all test methods in class or
-     * if {@link #beforeTestsStarted()} failed without execution of any test methods.
+     * Called after execution of all test methods in class or if {@link #beforeTestsStarted()} failed without
+     * execution of any test methods.
      * <p>
-     * Do not annotate with AfterClass in overriding methods.</p>
+     * Do not annotate with {@link AfterClass} in overriding methods.</p>
      *
      * @throws Exception If failed.
      */
