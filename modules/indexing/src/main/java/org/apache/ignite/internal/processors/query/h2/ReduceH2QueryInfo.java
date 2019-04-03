@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,16 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.cache.CacheMode;
+import java.sql.PreparedStatement;
 
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+/**
+ * Reduce query info.
+ */
+public class ReduceH2QueryInfo extends H2QueryInfo {
+    /** Request id. */
+    private final long reqId;
 
-/** */
-public class CacheMvccReplicatedSelectForUpdateQueryTest extends CacheMvccSelectForUpdateQueryAbstractTest {
+    /**
+     * @param stmt Query statement.
+     * @param sql Query statement.
+     * @param reqId Request ID.
+     */
+    public ReduceH2QueryInfo(PreparedStatement stmt, String sql, long reqId) {
+        super(QueryType.REDUCE, stmt, sql);
+
+        this.reqId= reqId;
+    }
+
     /** {@inheritDoc} */
-    @Override public CacheMode cacheMode() {
-        return REPLICATED;
+    @Override protected void printInfo(StringBuilder msg) {
+        msg.append(", reqId=").append(reqId);
     }
 }

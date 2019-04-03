@@ -28,11 +28,22 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class QueryParserResultSelect {
-    /** Statmement. */
+    /** Statement. */
     private GridSqlStatement stmt;
 
     /** Two-step query, or {@code} null if this result is for local query. */
     private final GridCacheTwoStepQuery twoStepQry;
+
+    /**
+     * Two-step query in SELECT FOR UPDATE case, or {@code} null if this result is for local query.
+     * If a query is for update, we need to save two  variants of the this query.
+     * First variant {@link QueryParserResultSelect#twoStepQry} is used  when the query is executed outside
+     * of transaction - it is executed as a plain query.  The second variant of the query - is actually
+     * a "for update" query which is used when running within transaction. In this query an extra _key column
+     * is implicitly appended to query columns. This extra column is used to lock the selected rows.
+     * This column is hidden from client.
+     */
+    private final GridCacheTwoStepQuery forUpdateTwoStepQry;
 
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
     private final List<GridQueryFieldMetadata> meta;
@@ -43,33 +54,48 @@ public class QueryParserResultSelect {
     /** ID of the first MVCC cache. */
     private final Integer mvccCacheId;
 
-    /** FOR UPDATE flag. */
-    private final boolean forUpdate;
+    /**
+     * Sql query with cleared "FOR UPDATE" statement.
+     * This string is used when query is executed out of transaction.
+     */
+    private final String forUpdateQryOutTx;
+
+    /**
+     * Sql query for update. Contains additional "_key" column.
+     * This string is used when executing query within explicit transaction.
+     */
+    private final String forUpdateQryTx;
 
     /**
      * Constructor.
      *
      * @param stmt Statement.
      * @param twoStepQry Distributed query plan.
+     * @param forUpdateTwoStepQry FOR UPDATE query for execution within transaction.
      * @param meta Fields metadata.
      * @param cacheIds Cache IDs.
      * @param mvccCacheId ID of the first MVCC cache.
-     * @param forUpdate Whether this is FOR UPDATE flag.
+     * @param forUpdateQryOutTx FOR UPDATE query string for execution out of transaction.
+     * @param forUpdateQryTx FOR UPDATE query string for execution within transaction.
      */
     public QueryParserResultSelect(
         GridSqlStatement stmt,
         @Nullable GridCacheTwoStepQuery twoStepQry,
+        @Nullable GridCacheTwoStepQuery forUpdateTwoStepQry,
         List<GridQueryFieldMetadata> meta,
         List<Integer> cacheIds,
         @Nullable Integer mvccCacheId,
-        boolean forUpdate
+        String forUpdateQryOutTx,
+        String forUpdateQryTx
     ) {
         this.stmt = stmt;
         this.twoStepQry = twoStepQry;
+        this.forUpdateTwoStepQry = forUpdateTwoStepQry;
         this.meta = meta;
         this.cacheIds = cacheIds;
         this.mvccCacheId = mvccCacheId;
-        this.forUpdate = forUpdate;
+        this.forUpdateQryOutTx = forUpdateQryOutTx;
+        this.forUpdateQryTx = forUpdateQryTx;
     }
 
     /**
@@ -84,6 +110,13 @@ public class QueryParserResultSelect {
      */
     @Nullable public GridCacheTwoStepQuery twoStepQuery() {
         return twoStepQry;
+    }
+
+    /**
+     * @return Two-step query for update, or {@code} null if this result is for local query.
+     */
+    @Nullable public GridCacheTwoStepQuery forUpdateTwoStepQuery() {
+        return forUpdateTwoStepQry;
     }
 
     /**
@@ -125,6 +158,20 @@ public class QueryParserResultSelect {
      * @return Whether this is FOR UPDATE query.
      */
     public boolean forUpdate() {
-        return forUpdate;
+        return forUpdateQryTx != null;
+    }
+
+    /**
+     * @return Sql FOR UPDATE query for execution out of transaction.
+     */
+    public String forUpdateQueryOutTx() {
+        return forUpdateQryOutTx;
+    }
+
+    /**
+     * @return Sql FOR UPDATE query for execution within transaction.
+     */
+    public String forUpdateQueryTx() {
+        return forUpdateQryTx;
     }
 }

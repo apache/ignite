@@ -20,6 +20,7 @@ package org.apache.ignite.examples.ml.inference.spark;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
@@ -53,23 +54,29 @@ public class LogRegFromSparkThroughPMMLExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            LogisticRegressionModel mdl = PMMLParser.load("examples/src/main/resources/models/spark/iris.pmml");
+                String path = IgniteUtils.resolveIgnitePath("examples/src/main/resources/models/spark/iris.pmml")
+                    .toPath().toAbsolutePath().toString();
+                LogisticRegressionModel mdl = PMMLParser.load(path);
 
-            System.out.println(">>> Logistic regression model: " + mdl);
+                System.out.println(">>> Logistic regression model: " + mdl);
 
-            double accuracy = Evaluator.evaluate(
-                dataCache,
-                mdl,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0),
-                new Accuracy<>()
-            );
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    (k, v) -> v.copyOfRange(1, v.size()),
+                    (k, v) -> v.get(0),
+                    new Accuracy<>()
+                );
 
-            System.out.println("\n>>> Accuracy " + accuracy);
-            System.out.println("\n>>> Test Error " + (1 - accuracy));
+                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Test Error " + (1 - accuracy));
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 

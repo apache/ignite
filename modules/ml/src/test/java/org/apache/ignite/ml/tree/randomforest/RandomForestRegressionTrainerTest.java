@@ -17,16 +17,18 @@
 
 package org.apache.ignite.ml.tree.randomforest;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -56,7 +58,7 @@ public class RandomForestRegressionTrainerTest extends TrainerTest {
             .withAmountOfTrees(5)
             .withFeaturesCountSelectionStrgy(x -> 2);
 
-        ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(v), (k, v) -> k);
+        ModelsComposition mdl = trainer.fit(sample, parts, FeatureLabelExtractorWrapper.wrap((k, v) -> VectorUtils.of(v), (k, v) -> k));
         assertTrue(mdl.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
         assertEquals(5, mdl.getModels().size());
     }
@@ -82,9 +84,9 @@ public class RandomForestRegressionTrainerTest extends TrainerTest {
             .withAmountOfTrees(100)
             .withFeaturesCountSelectionStrgy(x -> 2);
 
-        ModelsComposition originalMdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
-        ModelsComposition updatedOnSameDS = trainer.update(originalMdl, sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
-        ModelsComposition updatedOnEmptyDS = trainer.update(originalMdl, new HashMap<double[], Double>(), parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
+        ModelsComposition originalMdl = trainer.fit(sample, parts, FeatureLabelExtractorWrapper.wrap((k, v) -> VectorUtils.of(k), (k, v) -> v));
+        ModelsComposition updatedOnSameDS = trainer.update(originalMdl, sample, parts, FeatureLabelExtractorWrapper.wrap((k, v) -> VectorUtils.of(k), (k, v) -> v));
+        ModelsComposition updatedOnEmptyDS = trainer.update(originalMdl, new HashMap<double[], Double>(), parts, FeatureLabelExtractorWrapper.wrap((k, v) -> VectorUtils.of(k), (k, v) -> v));
 
         Vector v = VectorUtils.of(5, 0.5, 0.05, 0.005);
         assertEquals(originalMdl.predict(v), updatedOnSameDS.predict(v), 0.1);
