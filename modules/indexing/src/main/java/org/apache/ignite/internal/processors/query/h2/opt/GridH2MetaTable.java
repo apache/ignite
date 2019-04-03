@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,7 +39,6 @@ import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
-import org.h2.table.MetaTable;
 import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
@@ -63,7 +61,7 @@ public class GridH2MetaTable extends TableBase {
 
     /** */
     private final Set<Session> fakeExclusiveSet = Collections.newSetFromMap(
-        new ConcurrentHashMap<Session,Boolean>());
+        new ConcurrentHashMap<>());
 
     /**
      * @param data Data.

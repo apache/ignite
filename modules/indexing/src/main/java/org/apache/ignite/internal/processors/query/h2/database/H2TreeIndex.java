@@ -153,7 +153,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param affinityKey {@code true} for affinity key.
      * @param idxColsInfo Index column info.
      * @param treeName Tree name.
-     * @param segments Tree segmets.
+     * @param segments Tree segments.
      * @param log Logger.
      */
     private H2TreeIndex(

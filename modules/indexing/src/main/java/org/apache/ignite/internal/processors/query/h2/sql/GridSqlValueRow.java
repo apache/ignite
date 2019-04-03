@@ -28,7 +28,7 @@ public class GridSqlValueRow extends GridSqlElement {
      * @param size Array size.
      */
     public GridSqlValueRow(int size) {
-        super(size == 0 ? Collections.<GridSqlAst>emptyList() : new ArrayList<GridSqlAst>(size));
+        super(size == 0 ? Collections.emptyList() : new ArrayList<>(size));
     }
 
     /** {@inheritDoc}  */
