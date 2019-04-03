@@ -54,9 +54,9 @@ public class DistributedBaselineConfiguration {
     private static final String PROPERTY_UPDATE_MESSAGE =
         "Baseline parameter '%s' was changed from '%s' to '%s'";
     /** */
-    private volatile long dfltTimeout = DEFAULT_PERSISTENCE_TIMEOUT;
+    private volatile long dfltTimeout;
     /** Default auto-adjust enable/disable. */
-    private volatile boolean dfltEnabled = false;
+    private volatile boolean dfltEnabled;
     /** */
     private final GridKernalContext ctx;
     /** */
@@ -81,13 +81,14 @@ public class DistributedBaselineConfiguration {
         IgniteLogger log) {
         this.ctx = ctx;
         this.log = log;
+
+        boolean persistenceEnabled = ctx.config() != null && CU.isPersistenceEnabled(ctx.config());
+
+        dfltTimeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
+        dfltEnabled = !persistenceEnabled;
+
         isp.registerDistributedConfigurationListener(
             dispatcher -> {
-                boolean persistenceEnabled = ctx.config() != null && CU.isPersistenceEnabled(ctx.config());
-
-                dfltTimeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
-                dfltEnabled = !persistenceEnabled;
-
                 baselineAutoAdjustEnabled.addListener(makeUpdateListener(dfltEnabled));
                 baselineAutoAdjustTimeout.addListener(makeUpdateListener(dfltTimeout));
 
