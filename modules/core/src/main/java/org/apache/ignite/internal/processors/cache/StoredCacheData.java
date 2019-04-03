@@ -23,6 +23,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -115,6 +116,29 @@ public class StoredCacheData implements Serializable {
 
     public CacheConfigurationEnrichment cacheCfgEnrichment() {
         return cacheCfgEnrichment;
+    }
+
+    public StoredCacheData withSplittedCacheConfig() {
+        if (cacheCfgEnrichment == null) {
+            CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+
+            T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(ccfg);
+
+            ccfg = splitCfg.get1();
+            cacheCfgEnrichment = splitCfg.get2();
+        }
+
+        return this;
+    }
+
+    public StoredCacheData withOldCacheConfig() {
+        if (cacheCfgEnrichment != null) {
+            ccfg = CacheConfigurationEnricher.enrichFully(ccfg, cacheCfgEnrichment);
+
+            cacheCfgEnrichment = null;
+        }
+
+        return this;
     }
 
     /** {@inheritDoc} */
