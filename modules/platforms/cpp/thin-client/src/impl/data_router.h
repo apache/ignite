@@ -220,11 +220,11 @@ namespace ignite
 
                 /**
                  * Get random data channel.
-                 * @warning Should be called when lock is held!
+                 * @warning May only be called when lock is held!
                  *
                  * @return Random data channel.
                  */
-                SP_DataChannel GetRandomChannelLocked();
+                SP_DataChannel GetRandomChannelUnsafe();
 
                 /**
                  * Check whether the provided end point is provided by user using configuration.

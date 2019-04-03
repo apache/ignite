@@ -171,10 +171,10 @@ namespace ignite
             {
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
-                return GetRandomChannelLocked();
+                return GetRandomChannelUnsafe();
             }
 
-            SP_DataChannel DataRouter::GetRandomChannelLocked()
+            SP_DataChannel DataRouter::GetRandomChannelUnsafe()
             {
                 int r = rand();
 
@@ -216,7 +216,7 @@ namespace ignite
                 if (itChannel != channels.end())
                     return itChannel->second;
 
-                return GetRandomChannelLocked();
+                return GetRandomChannelUnsafe();
             }
 
             void DataRouter::CollectAddresses(const std::string& str, std::vector<network::TcpRange>& ranges)
