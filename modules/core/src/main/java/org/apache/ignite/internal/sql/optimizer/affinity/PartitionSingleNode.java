@@ -32,10 +32,6 @@ public abstract class PartitionSingleNode implements PartitionNode {
     @GridToStringExclude
     protected final PartitionTable tbl;
 
-    /** Cache name. */
-    @GridToStringExclude
-    protected final String cacheName;
-
     /**
      * Constructor.
      *
@@ -43,17 +39,6 @@ public abstract class PartitionSingleNode implements PartitionNode {
      */
     protected PartitionSingleNode(PartitionTable tbl) {
         this.tbl = tbl;
-        cacheName = tbl.cacheName();
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param cacheName Cache name.
-     */
-    protected PartitionSingleNode(String cacheName) {
-        tbl = null;
-        this.cacheName = cacheName;
     }
 
     /** {@inheritDoc} */
@@ -85,10 +70,12 @@ public abstract class PartitionSingleNode implements PartitionNode {
     }
 
     /**
-     * @return Cache name.
+     * @return Cache name. Should be used only on server side.
      */
     @Override public String cacheName() {
-        return cacheName;
+        assert tbl != null;
+
+        return tbl.cacheName();
     }
 
     /**

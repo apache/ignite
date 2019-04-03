@@ -22,6 +22,7 @@ import java.util.Set;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
 /**
@@ -64,17 +65,15 @@ public class PartitionResultMarshaler {
         if (partRes == null)
             return;
 
-        // TODO VO: Should never be null provided that partRes exists.
-        writer.writeBoolean(partRes.tree() != null);
+        writeNode(writer, ver, partRes.tree());
 
-        if (partRes.tree() != null)
-            writeNode(writer, ver, partRes.tree());
+        writer.writeString(partRes.cacheName());
 
-        // TODO VO: Add cache name
+        writer.writeInt(partRes.partitionsCount());
 
-        // TODO VO: Should not be there
-        // Write affinity descriptor. Actually we only need partitions count.
-        writer.writeInt(partRes.affinity().parts());
+        writer.writeLong(partRes.topologyVersion().topologyVersion());
+
+        writer.writeInt(partRes.topologyVersion().minorTopologyVersion());
     }
 
     /**
@@ -87,13 +86,15 @@ public class PartitionResultMarshaler {
      */
     public static PartitionResult unmarshal(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
         throws BinaryObjectException {
-        PartitionNode tree = null;
+        PartitionNode tree = readNode(reader, ver);
 
-        if (reader.readBoolean())
-            tree = readNode(reader, ver);
+        String cacheName = reader.readString();
 
-        // TODO VO: No need to re-read affinity descriptor
-        return new PartitionResult(tree, readTableAffinityDescriptor(reader, ver));
+        int partsCnt = reader.readInt();
+
+        AffinityTopologyVersion topVer = new AffinityTopologyVersion(reader.readLong(), reader.readInt());
+
+        return new PartitionResult(tree, topVer, cacheName, partsCnt);
     }
 
     /**
@@ -172,9 +173,7 @@ public class PartitionResultMarshaler {
         throws BinaryObjectException {
         int part = reader.readInt();
 
-        String cacheName = reader.readString();
-
-        return new PartitionConstantNode(cacheName, part);
+        return new PartitionConstantNode(null, part);
     }
 
     /**
@@ -191,8 +190,6 @@ public class PartitionResultMarshaler {
         writer.writeByte(CONST_NODE);
 
         writer.writeInt(node.value());
-
-        writer.writeString(node.cacheName());
     }
 
     /**
@@ -313,9 +310,7 @@ public class PartitionResultMarshaler {
 
         PartitionParameterType mappedType = PartitionParameterType.readParameterType(reader, ver);
 
-        String cacheName = reader.readString();
-
-        return new PartitionParameterNode(cacheName, null, idx, type, mappedType);
+        return new PartitionParameterNode(null, null, idx, type, mappedType);
     }
 
     /**
@@ -336,23 +331,5 @@ public class PartitionResultMarshaler {
         writer.writeInt(node.type());
 
         writer.writeInt(node.mappedType().ordinal());
-
-        writer.writeString(node.cacheName());
-    }
-
-    /**
-     * Returns debinarized partition table affinity descriptor.
-     *
-     * @param reader Binary reader.
-     * @param ver Protocol verssion.
-     * @return Debinarized partition table affinity descriptor.
-     * @throws BinaryObjectException On error.
-     */
-    @SuppressWarnings("unused")
-    private static PartitionTableAffinityDescriptor readTableAffinityDescriptor(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
-
-        return new PartitionTableAffinityDescriptor(PartitionAffinityFunctionType.RENDEZVOUS, reader.readInt(),
-            false, null);
     }
 }

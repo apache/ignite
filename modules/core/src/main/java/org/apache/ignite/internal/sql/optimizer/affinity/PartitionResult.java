@@ -20,6 +20,7 @@ package org.apache.ignite.internal.sql.optimizer.affinity;
 import java.util.Collection;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -36,8 +37,14 @@ public class PartitionResult {
     /** Affinity function. */
     private final PartitionTableAffinityDescriptor aff;
 
-    // TODO VO: Add affinity topology version, here
-    // TODO VO: Add cache name and number of partitions for client here
+    /** Affinity topology version. Used within Jdbc thin best effort affinity. */
+    private final AffinityTopologyVersion topVer;
+
+    /** Cache name. Used within Jdbc thin best effort affinity. */
+    private final String cacheName;
+
+    /** Partitions count. Used within Jdbc thin best effort affinity. */
+    private final int partsCnt;
 
     /**
      * Constructor.
@@ -45,9 +52,35 @@ public class PartitionResult {
      * @param tree Tree.
      * @param aff Affinity function.
      */
-    public PartitionResult(PartitionNode tree, PartitionTableAffinityDescriptor aff) {
+    public PartitionResult(PartitionNode tree, PartitionTableAffinityDescriptor aff, AffinityTopologyVersion topVer) {
         this.tree = tree;
         this.aff = aff;
+        this.topVer = topVer;
+        cacheName = tree != null ? tree.cacheName() : null;
+        partsCnt = aff.parts();
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param tree Tree.
+     * @param aff Affinity function.
+     */
+
+    /**
+     * Constructor.
+     *
+     * @param tree Tree.
+     * @param topVer Affinity topology version.
+     * @param cacheName Cache name.
+     * @param partsCnt Partitions count.
+     */
+    public PartitionResult(PartitionNode tree, AffinityTopologyVersion topVer, String cacheName, int partsCnt) {
+        this.tree = tree;
+        aff = null;
+        this.topVer = topVer;
+        this.cacheName = cacheName;
+        this.partsCnt = partsCnt;
     }
 
     /**
@@ -101,6 +134,27 @@ public class PartitionResult {
         }
 
         return null;
+    }
+
+    /**
+     * @return Affinity topology version. This method is intended to be used within the Jdbc thin client.
+     */
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
+    /**
+     * @return Cache name. This method is intended to be used within the Jdbc thin client.
+     */
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /**
+     * @return Partitions count. This method is intended to be used within the Jdbc thin client.
+     */
+    public int partitionsCount() {
+        return partsCnt;
     }
 
     /** {@inheritDoc} */

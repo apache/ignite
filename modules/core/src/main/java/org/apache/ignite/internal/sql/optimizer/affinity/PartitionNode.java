@@ -44,10 +44,8 @@ public interface PartitionNode {
 
     /**
      * @return First met cache name of an any <code>PartitionSingleNode</code>
-     * during <code>PartitionNode</code> tree traversal.
+     * during <code>PartitionNode</code> tree traversal. This method is intended to be used within the Jdbc thin client.
      */
-    // TODO VO: Rethink. Cache name should be extracted and preserved during initial tree
-    // TODO VO: creation and serialized only once.
     String cacheName();
 
     /**

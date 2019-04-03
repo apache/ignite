@@ -1957,7 +1957,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         rdcQryExec.start(ctx, this);
 
         runningQryMgr = new RunningQueryManager(ctx);
-        partExtractor = new PartitionExtractor(new H2PartitionResolver(this));
+        partExtractor = new PartitionExtractor(new H2PartitionResolver(this), ctx);
 
         cmdProc = new CommandProcessor(ctx, schemaMgr, runningQryMgr);
 

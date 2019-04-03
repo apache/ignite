@@ -926,11 +926,10 @@ public class JdbcThinConnection implements Connection {
                             new JdbcThinPartitionResultDescriptor(
                                 partRes,
                                 (partRes != null && partRes.tree() != null) ?
-                                    GridCacheUtils.cacheId(partRes.tree().cacheName()) :
+                                    GridCacheUtils.cacheId(partRes.cacheName()) :
                                     -1,
                                 partRes != null ?
-                                    // TODO VO: Pass number of partitions along with PartitionResult?
-                                    new PartitionClientContext(partRes.affinity().parts()) :
+                                    new PartitionClientContext(partRes.partitionsCount()) :
                                     null));
                     }
                 }
