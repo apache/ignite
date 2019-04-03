@@ -35,8 +35,9 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.transactions.TransactionException;
+import org.apache.ignite.transactions.NonMvccTransactionException;
 import org.apache.ignite.transactions.TransactionState;
+import org.apache.ignite.transactions.UnsupportedTxModeException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -944,26 +945,6 @@ public class MvccUtils {
         @Override public MvccVersion apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
             int mvccOpCntr, long newMvccCrd, long newMvccCntr, int newMvccOpCntr) {
             return newMvccCrd == MVCC_CRD_COUNTER_NA ? null : mvccVersion(newMvccCrd, newMvccCntr, newMvccOpCntr);
-        }
-    }
-
-    /** */
-    public static class UnsupportedTxModeException extends TransactionException {
-        /** */
-        private static final long serialVersionUID = 0L;
-        /** */
-        private UnsupportedTxModeException() {
-            super("Only pessimistic transactions are supported when MVCC is enabled.");
-        }
-    }
-
-    /** */
-    public static class NonMvccTransactionException extends TransactionException {
-        /** */
-        private static final long serialVersionUID = 0L;
-        /** */
-        private NonMvccTransactionException() {
-            super("Operations on MVCC caches are not permitted in transactions spanning non MVCC caches.");
         }
     }
 }

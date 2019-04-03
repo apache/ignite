@@ -446,7 +446,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean inTx,
         int timeout
     ) throws IgniteCheckedException {
-        assert !select.mvccEnabled() || mvccTracker != null;
+        assert select.mvccEnabled() ^ mvccTracker == null;
 
         String qry;
 
@@ -455,9 +455,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else
             qry = qryDesc.sql();
 
-        boolean mvccEnabled = mvccEnabled(kernalContext());
-
-        assert mvccEnabled || mvccTracker == null;
+        boolean mvccEnabled = select.mvccEnabled();
 
         try {
             assert select != null;
@@ -467,7 +465,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             MvccSnapshot mvccSnapshot = null;
 
-            if (select.mvccEnabled())
+            if (mvccEnabled)
                 mvccSnapshot = mvccTracker.snapshot();
 
             final QueryContext qctx = new QueryContext(
@@ -975,7 +973,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean failOnMultipleStmts,
         GridQueryCancel cancel
     ) {
-        boolean mvccEnabled = mvccEnabled(ctx);
+        boolean mvccEnabled = false;
 
         try {
             List<FieldsQueryCursor<List<?>>> res = new ArrayList<>(1);
@@ -1025,6 +1023,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     assert dml != null;
 
+                    if (!mvccEnabled)
+                        mvccEnabled = dml.mvccEnabled();
+
                     List<? extends FieldsQueryCursor<List<?>>> dmlRes = executeDml(
                         newQryDesc,
                         newQryParams,
@@ -1040,6 +1041,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     QueryParserResultSelect select = parseRes.select();
 
                     assert select != null;
+
+                    if (!mvccEnabled)
+                        mvccEnabled = select.mvccEnabled();
 
                     List<? extends FieldsQueryCursor<List<?>>> qryRes = executeSelect(
                         newQryDesc,
