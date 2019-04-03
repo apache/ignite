@@ -139,18 +139,8 @@ public class VectorizedViewMatrixStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return parent.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return parent.isDense();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return parent.isRandomAccess();
     }
 
     /** {@inheritDoc} */

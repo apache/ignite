@@ -37,11 +37,7 @@ public class VectorAttributesTest {
             DenseVector.class),
         new AttrCfg("isArrayBased", Vector::isArrayBased,
             DenseVector.class),
-        new AttrCfg("isSequentialAccess", Vector::isSequentialAccess,
-            DenseVector.class, SparseLocalVectorSequentialAccess.class),
         new AttrCfg("guidNotNull", v -> v.guid() == null), // IMPL NOTE this is somewhat artificial
-        new AttrCfg("isRandomAccess", Vector::isRandomAccess,
-            DenseVector.class, SparseLocalVectorSequentialAccess.class, SparseLocalVectorRandomAccess.class),
         new AttrCfg("isDistributed", Vector::isDistributed));
 
     /** */

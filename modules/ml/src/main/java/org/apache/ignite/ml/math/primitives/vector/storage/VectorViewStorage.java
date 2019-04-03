@@ -115,18 +115,8 @@ public class VectorViewStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return sto.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return sto.isDense();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return sto.isRandomAccess();
     }
 
     /** {@inheritDoc} */

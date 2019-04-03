@@ -112,18 +112,8 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return true;
     }
 
     /** {@inheritDoc} */

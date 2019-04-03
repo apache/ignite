@@ -122,11 +122,6 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return dlg.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return dlg.isArrayBased();
     }
@@ -376,11 +371,6 @@ public class DelegatingVector implements Vector {
     /** {@inheritDoc} */
     @Override public double getDistanceSquared(Vector vec) {
         return dlg.getDistanceSquared(vec);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return dlg.isRandomAccess();
     }
 
     /** {@inheritDoc} */

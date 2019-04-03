@@ -682,16 +682,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return sto.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return sto.isRandomAccess();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDistributed() {
         return sto.isDistributed();
     }
