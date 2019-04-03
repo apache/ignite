@@ -79,6 +79,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
 
 /**
  *
@@ -277,11 +278,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private void startDataRegions() {
         boolean lazyMemoryAllocation = cctx.isLazyMemoryAllocation();
 
-        for (DataRegion region : dataRegionMap.values()) {
-            if (!lazyMemoryAllocation)
-                region.pageMemory().start();
+        for (Map.Entry<String, DataRegion> region : dataRegionMap.entrySet()) {
+            if (!lazyMemoryAllocation || METASTORE_DATA_REGION_NAME.equals(region.getKey()))
+                region.getValue().pageMemory().start();
 
-            region.evictionTracker().start();
+            region.getValue().evictionTracker().start();
         }
     }
 
