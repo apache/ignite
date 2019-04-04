@@ -45,11 +45,14 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.mxbean.SqlQueryMXBean;
 import org.apache.ignite.internal.mxbean.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -264,6 +267,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** H2 Connection manager. */
     private LongRunningQueryManager longRunningQryMgr;
 
+    /** Discovery event listener. */
+    private GridLocalEventListener discoLsnr;
 
     /**
      * @return Kernal context.
@@ -1905,6 +1910,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         mapQryExec.start(ctx, this);
         rdcQryExec.start(ctx, this);
 
+        discoLsnr = evt -> {
+            mapQryExec.onNodeLeft((DiscoveryEvent)evt);
+            rdcQryExec.onNodeLeft((DiscoveryEvent)evt);
+        };
+
+        ctx.event().addLocalEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+
         runningQryMgr = new RunningQueryManager(ctx);
         partExtractor = new PartitionExtractor(new H2PartitionResolver(this));
 
@@ -2049,6 +2061,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schemaMgr.stop();
         longRunningQryMgr.stop();
         connMgr.stop();
+
+        ctx.event().removeLocalEventListener(discoLsnr);
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");

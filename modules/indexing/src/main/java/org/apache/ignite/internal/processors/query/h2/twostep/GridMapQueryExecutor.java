@@ -41,12 +41,9 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -130,21 +127,6 @@ public class GridMapQueryExecutor {
 
         log = ctx.log(GridMapQueryExecutor.class);
 
-        ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(final Event evt) {
-                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
-
-                qryCtxRegistry.clearSharedOnRemoteNodeStop(nodeId);
-
-                MapNodeResults nodeRess = qryRess.remove(nodeId);
-
-                if (nodeRess == null)
-                    return;
-
-                nodeRess.cancelAll();
-            }
-        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
-
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
             @SuppressWarnings("deprecation")
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
@@ -162,6 +144,23 @@ public class GridMapQueryExecutor {
                 }
             }
         });
+    }
+
+    /**
+     * Node left event handling method..
+     * @param evt Discovery event.
+     */
+    public void onNodeLeft(DiscoveryEvent evt) {
+        UUID nodeId = evt.eventNode().id();
+
+        qryCtxRegistry.clearSharedOnRemoteNodeStop(nodeId);
+
+        MapNodeResults nodeRess = qryRess.remove(nodeId);
+
+        if (nodeRess == null)
+            return;
+
+        nodeRess.cancelAll();
     }
 
     /**

@@ -46,14 +46,11 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
@@ -205,26 +202,27 @@ public class GridReduceQueryExecutor {
                 }
             }
         });
+    }
 
-        ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(final Event evt) {
-                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+    /**
+     * Node left event handling method..
+     * @param evt Discovery event.
+     */
+    public void onNodeLeft(DiscoveryEvent evt) {
+        UUID nodeId = evt.eventNode().id();
 
-                for (ReduceQueryRun r : runs.values()) {
-                    for (ReduceIndex idx : r.indexes()) {
-                        if (idx.hasSource(nodeId)) {
-                            handleNodeLeft(r, nodeId);
+        for (ReduceQueryRun r : runs.values()) {
+            for (ReduceIndex idx : r.indexes()) {
+                if (idx.hasSource(nodeId)) {
+                    handleNodeLeft(r, nodeId);
 
-                            break;
-                        }
-                    }
+                    break;
                 }
-
-                for (DmlDistributedUpdateRun r : updRuns.values())
-                    r.handleNodeLeft(nodeId);
-
             }
-        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+        }
+
+        for (DmlDistributedUpdateRun r : updRuns.values())
+            r.handleNodeLeft(nodeId);
     }
 
     /**
