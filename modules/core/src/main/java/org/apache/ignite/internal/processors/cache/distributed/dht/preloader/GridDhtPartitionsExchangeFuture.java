@@ -762,6 +762,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             timeBag.finishGlobalStage("Exchange parameters initialization");
 
+            cctx.exchange().blockSchedulingResendPartitions();
+
             ExchangeType exchange;
 
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
@@ -2160,7 +2162,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     }
 
-                    if (!grpToRefresh.isEmpty()) {
+                    if (!grpToRefresh.isEmpty() && (crd != null && !crd.isLocal())) {
                         if (log.isDebugEnabled())
                             log.debug("Refresh partitions due to partitions initialized when affinity ready [" +
                                 grpToRefresh.stream().map(CacheGroupContext::name).collect(Collectors.toList()) + ']');
@@ -2238,6 +2240,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 t.addSuppressed(err);
 
             err = t;
+        }
+        finally {
+            cctx.exchange().stopBlockingResendPartitions();
         }
 
         final Throwable err0 = err;

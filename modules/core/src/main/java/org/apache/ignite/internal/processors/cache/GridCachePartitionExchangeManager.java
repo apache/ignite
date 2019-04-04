@@ -170,6 +170,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** Atomic reference for pending partition resend timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
 
+    /** */
+    private volatile boolean blockResendingPartitionStates;
+
+    /** */
+    private volatile boolean resendPartitionStatesAfterBlocking;
+
     /** Partition resend timeout after eviction. */
     private final long partResendTimeout = getLong(IGNITE_PRELOAD_RESEND_TIMEOUT, DFLT_PRELOAD_RESEND_TIMEOUT);
 
@@ -1118,6 +1124,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Schedules next full partitions update.
      */
     public void scheduleResendPartitions() {
+        if (blockResendingPartitionStates) {
+            resendPartitionStatesAfterBlocking = true;
+
+            return;
+        }
+
         ResendTimeoutObject timeout = pendingResend.get();
 
         if (timeout == null || timeout.started()) {
@@ -1125,6 +1137,33 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             if (pendingResend.compareAndSet(timeout, update))
                 cctx.time().addTimeoutObject(update);
+        }
+    }
+
+    /**
+     * Blocks sending partition states update when PME is in progress.
+     */
+    public void blockSchedulingResendPartitions() {
+        if (!blockResendingPartitionStates) {
+            blockResendingPartitionStates = true;
+
+            for (;;) {
+                if (pendingResend.get() == null)
+                    break;
+            }
+        }
+    }
+
+    /**
+     * Unblocks sending partition states update when PME is completed.
+     */
+    public void stopBlockingResendPartitions() {
+        blockResendingPartitionStates = false;
+
+        if (resendPartitionStatesAfterBlocking) {
+            resendPartitionStatesAfterBlocking = false;
+
+            scheduleResendPartitions();
         }
     }
 
@@ -3234,7 +3273,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          *
          */
         private ResendTimeoutObject() {
-            this.log = cctx.logger(getClass());
+            log = cctx.logger(getClass());
         }
 
         /** {@inheritDoc} */
