@@ -50,6 +50,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Default value of the update internal batch size. */
+    private static final int DEFLT_UPDATE_BATCH_SIZE = 1;
+
     /** Do not remove. For tests only. */
     @SuppressWarnings("NonConstantFieldWithUpperCaseName")
     private static boolean DFLT_LAZY;
@@ -91,7 +94,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** Update internal batch size. Default is 1 to prevent deadlock on update where keys sequence are different in
      * several concurrent updates.
      */
-    private int updateBatchSize = 1;
+    private int updateBatchSize = DEFLT_UPDATE_BATCH_SIZE;
 
     /**
      * Copy constructs SQL fields query.

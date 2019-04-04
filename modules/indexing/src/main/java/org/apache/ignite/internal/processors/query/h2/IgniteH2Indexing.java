@@ -2259,7 +2259,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 try {
                     List<List<List<?>>> cur = plan.createRows(argss);
 
-                    ress = DmlUtils.processSelectResultBatched(plan, cur, qryParams.pageSize());
+                    ress = DmlUtils.processSelectResultBatched(plan, cur, qryParams.updateBatchSize());
                 }
                 finally {
                     DmlUtils.restoreKeepBinaryContext(cctx, opCtx);

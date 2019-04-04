@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcUtils;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.F;
@@ -85,11 +86,8 @@ public class JdbcThinTcpIo {
     /** Version 2.8.0. */
     private static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
-    /** Version 2.8.1. Add updateBatchSize property */
-    private static final ClientListenerProtocolVersion VER_2_8_1 = ClientListenerProtocolVersion.create(2, 8, 0);
-
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_1;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -352,14 +350,10 @@ public class JdbcThinTcpIo {
         if (ver.compareTo(VER_2_7_0) >= 0)
             writer.writeString(connProps.nestedTxMode());
 
-        if (ver.compareTo(VER_2_8_0) >= 0)
+        if (ver.compareTo(VER_2_8_0) >= 0) {
             writer.writeByte(nullableBooleanToByte(connProps.isDataPageScanEnabled()));
 
-        if (ver.compareTo(VER_2_8_1) >= 0) {
-            writer.writeBoolean(connProps.getUpdateBatchSize() != null);
-
-            if (connProps.getUpdateBatchSize() != null)
-                writer.writeInt(connProps.getUpdateBatchSize());
+            JdbcUtils.writeNullableInteger(writer, connProps.getUpdateBatchSize());
         }
 
         if (!F.isEmpty(connProps.getUsername())) {

@@ -165,12 +165,12 @@ public class JdbcThinUtils {
         return !"_KEY".equalsIgnoreCase(name) &&
             !"_VAL".equalsIgnoreCase(name) &&
             !(boolean.class.getName().equals(cls) ||
-            byte.class.getName().equals(cls) ||
-            short.class.getName().equals(cls) ||
-            int.class.getName().equals(cls) ||
-            long.class.getName().equals(cls) ||
-            float.class.getName().equals(cls) ||
-            double.class.getName().equals(cls));
+                byte.class.getName().equals(cls) ||
+                short.class.getName().equals(cls) ||
+                int.class.getName().equals(cls) ||
+                long.class.getName().equals(cls) ||
+                float.class.getName().equals(cls) ||
+                double.class.getName().equals(cls));
     }
 
     /**
