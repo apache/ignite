@@ -23,12 +23,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.After;
@@ -387,5 +391,128 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
             ),
             5_000
         ));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void shouldNodeWithPersistenceSuccessfullyJoinedToClusterWhenAutoAdjustDisabled() throws Exception {
+        IgniteEx ignite0 = startGrid(inMemoryConfiguration(0));
+
+        ignite0.cluster().active(true);
+
+        ignite0.cluster().baselineAutoAdjustEnabled(false);
+
+        startGrid(persistentRegionConfiguration(1));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void shouldNodeWithPersistenceSuccessfullyJoinedToClusterWhenTimeoutGreaterThanZero() throws Exception {
+        IgniteEx ignite0 = startGrid(inMemoryConfiguration(0));
+
+        ignite0.cluster().active(true);
+
+        ignite0.cluster().baselineAutoAdjustTimeout(1);
+
+        startGrid(persistentRegionConfiguration(1));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void shouldJoinSuccessBecauseCoordinatorIsPersistent() throws Exception {
+        IgniteEx ignite0 = startGrid(persistentRegionConfiguration(0));
+
+        ignite0.cluster().active(true);
+
+        startGrid(inMemoryConfiguration(1));
+
+        startGrid(persistentRegionConfiguration(2));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void shouldJoinSuccessBecauseClusterHasPersistentNode() throws Exception {
+        IgniteEx ignite0 = startGrid(inMemoryConfiguration(0));
+
+        ignite0.cluster().active(true);
+
+        ignite0.cluster().baselineAutoAdjustEnabled(false);
+
+        startGrid(persistentRegionConfiguration(1));
+
+        ignite0.cluster().baselineAutoAdjustEnabled(true);
+
+        startGrid(persistentRegionConfiguration(2));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void shouldJoinFailedBecauseCoordinatorIsInMemoryNodeAndEnabledAutoAdjust() throws Exception {
+        IgniteEx ignite0 = startGrid(inMemoryConfiguration(0));
+        startGrid(inMemoryConfiguration(1));
+
+        ignite0.cluster().active(true);
+
+        try {
+            startGrid(persistentRegionConfiguration(2));
+        }
+        catch (IgniteCheckedException ex) {
+            if (!X.hasCause(ex, "Joining persistence node to in-memory cluster couldn't be allowed", IgniteSpiException.class))
+                fail("Join should be fail due to cluster has in-memory node and enabled auto-adjust.");
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    private IgniteConfiguration inMemoryConfiguration(int id) throws Exception {
+        IgniteConfiguration conf = getConfiguration(getTestIgniteInstanceName(id));
+
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+
+        storageCfg.getDefaultDataRegionConfiguration()
+            .setPersistenceEnabled(false)
+            .setMaxSize(500L * 1024 * 1024);
+
+        storageCfg.setDataRegionConfigurations(new DataRegionConfiguration()
+            .setName("InMemoryRegion")
+            .setPersistenceEnabled(false)
+            .setMaxSize(500L * 1024 * 1024));
+
+        conf.setDataStorageConfiguration(storageCfg);
+
+        return conf;
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    private IgniteConfiguration persistentRegionConfiguration(int id) throws Exception {
+        IgniteConfiguration conf = getConfiguration(getTestIgniteInstanceName(id));
+
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+
+        storageCfg.getDefaultDataRegionConfiguration()
+            .setPersistenceEnabled(false)
+            .setMaxSize(500L * 1024 * 1024);
+
+        storageCfg.setDataRegionConfigurations(new DataRegionConfiguration()
+            .setName("PersistentRegion")
+            .setPersistenceEnabled(true)
+            .setMaxSize(500L * 1024 * 1024));
+
+        conf.setDataStorageConfiguration(storageCfg);
+
+        return conf;
     }
 }

@@ -36,11 +36,13 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
@@ -181,6 +183,50 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             ctx,
             ctx.log(DistributedBaselineConfiguration.class)
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
+        if (!isBaselineAutoAdjustEnabled() || baselineAutoAdjustTimeout() != 0)
+            return null;
+
+        Collection<ClusterNode> nodes = ctx.discovery().aliveServerNodes();
+
+        //Any node allowed to join if cluster has at least one persist node.
+        if (nodes.stream().anyMatch(serNode -> CU.isPersistenceEnabled(extractDataStorage(serNode))))
+            return null;
+
+        DataStorageConfiguration crdDsCfg = extractDataStorage(node);
+
+        if (!CU.isPersistenceEnabled(crdDsCfg))
+            return null;
+
+        return new IgniteNodeValidationResult(
+            node.id(),
+            "Joining persistence node to in-memory cluster couldn't be allowed " +
+            "due to baseline auto-adjust is enabled and timeout equal to 0"
+        );
+    }
+
+    /**
+     * Extract and unmarshal data storage configuration from given node.
+     *
+     * @param node Source of data storage configuration.
+     * @return Data storage configuration for given node.
+     */
+    private DataStorageConfiguration extractDataStorage(ClusterNode node) {
+        Object dsCfgBytes = node.attribute(IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG);
+
+        if (dsCfgBytes instanceof byte[]) {
+            try {
+                return new JdkMarshaller().unmarshal((byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to unmarshal remote data storage configuration [remoteNode=" + node + "]", e);
+            }
+        }
+
+        return null;
     }
 
     /**
