@@ -307,6 +307,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * @param restore <tt>true</tt> then the original data store will be provided.
+     * @return The cache data store.
+     */
+    public CacheDataStore dataStore(boolean restore) {
+        return restore ? store.store(CacheDataStoreEx.StorageMode.FULL) : dataStore();
+    }
+
+    /**
      * Adds group reservation to this partition.
      *
      * @param r Reservation.

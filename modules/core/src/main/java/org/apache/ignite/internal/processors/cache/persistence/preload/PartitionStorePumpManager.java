@@ -174,7 +174,7 @@ public class PartitionStorePumpManager {
 
                     assert catchLog.catched();
 
-                    tup.get1().onDone();
+                    tup.get1().onDone(true);
 
                     unregisterPumpSource(catchLog);
                 }
@@ -197,10 +197,6 @@ public class PartitionStorePumpManager {
                 throw t;
             }
             finally {
-                // TODO remove false-positive thread handling when it stops normally
-                if (err == null && !isCancelled)
-                    err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
-
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)

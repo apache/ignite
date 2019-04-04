@@ -292,17 +292,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
     }
 
-    /**
-     * @param part Partition.
-     * @return Data store for given entry.
-     */
-    @Override public CacheDataStore dataStore(GridDhtLocalPartition part) {
+    /** {@inheritDoc} */
+    @Override public CacheDataStore dataStore(GridDhtLocalPartition part, boolean restore) {
         if (grp.isLocal())
             return locCacheDataStore;
         else {
             assert part != null;
 
-            return part.dataStore();
+            return part.dataStore(restore);
         }
     }
 
@@ -442,11 +439,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         long expireTime,
         GridDhtLocalPartition part,
         @Nullable CacheDataRow oldRow,
-        boolean primary
+        boolean restore
     ) throws IgniteCheckedException {
         assert expireTime >= 0;
 
-        dataStore(part).update(cctx, key, val, ver, expireTime, oldRow, primary);
+        dataStore(part, restore).update(cctx, key, val, ver, expireTime, oldRow);
     }
 
     /** {@inheritDoc} */
@@ -606,7 +603,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridDhtLocalPartition part,
         boolean restore
     ) throws IgniteCheckedException {
-        dataStore(part).remove(cctx, key, partId, restore);
+        dataStore(part, restore).remove(cctx, key, partId);
     }
 
     /** {@inheritDoc} */

@@ -147,7 +147,16 @@ public interface IgniteCacheOffheapManager {
      * @param part Partition.
      * @return Data store.
      */
-    public CacheDataStore dataStore(GridDhtLocalPartition part);
+    public default CacheDataStore dataStore(GridDhtLocalPartition part) {
+        return dataStore(part, false);
+    }
+
+    /**
+     * @param part The partition to get store to.
+     * @param restore <tt>true</tt> to get the cache data store currently being restore.
+     * @return The cache data store correspongind to the given partition.
+     */
+    public CacheDataStore dataStore(GridDhtLocalPartition part, boolean restore);
 
     /**
      * @param store Data store.
@@ -353,7 +362,7 @@ public interface IgniteCacheOffheapManager {
      * @param expireTime Expire time.
      * @param oldRow Old row if available.
      * @param part Partition.
-     * @param primary <tt>true</tt> shows the key will be updated on primary data store.
+     * @param restore <tt>true</tt> shows the key will be updated on restore data store.
      * @throws IgniteCheckedException If failed.
      */
     public void update(
@@ -364,7 +373,7 @@ public interface IgniteCacheOffheapManager {
         long expireTime,
         GridDhtLocalPartition part,
         @Nullable CacheDataRow oldRow,
-        boolean primary
+        boolean restore
     ) throws IgniteCheckedException;
 
     /**
@@ -728,28 +737,6 @@ public interface IgniteCacheOffheapManager {
          * @param key Key.
          * @param val Value.
          * @param ver Version.
-         * @param expireTime Expire time.
-         * @param oldRow Old row if available.
-         * @param restore <tt>true</tt> if only primary storage must be updated
-         * @throws IgniteCheckedException If failed.
-         */
-        default void update(
-            GridCacheContext cctx,
-            KeyCacheObject key,
-            CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            @Nullable CacheDataRow oldRow,
-            boolean restore
-        ) throws IgniteCheckedException {
-            update(cctx, key, val, ver, expireTime, oldRow);
-        }
-
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
-         * @param val Value.
-         * @param ver Version.
          * @param mvccVer MVCC version.
          * @param newMvccVer New MVCC version.
          * @return {@code True} if new value was inserted.
@@ -914,21 +901,6 @@ public interface IgniteCacheOffheapManager {
          */
         public void remove(GridCacheContext cctx, KeyCacheObject key, int partId) throws IgniteCheckedException;
 
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
-         * @param partId Partition number.
-         * @param restore <tt>true</tt> if the key must be removed from restore store.
-         * @throws IgniteCheckedException If failed.
-         */
-        public default void remove(
-            GridCacheContext cctx,
-            KeyCacheObject key,
-            int partId,
-            boolean restore
-        ) throws IgniteCheckedException {
-            remove(cctx, key, partId);
-        }
         /**
          * @param cctx Cache context.
          * @param key Key.

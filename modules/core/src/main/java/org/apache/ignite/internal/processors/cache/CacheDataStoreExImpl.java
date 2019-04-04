@@ -186,23 +186,7 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
         long expireTime,
         @Nullable CacheDataRow oldRow
     ) throws IgniteCheckedException {
-        update(cctx, key, val, ver, expireTime, oldRow, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void update(
-        GridCacheContext cctx,
-        KeyCacheObject key,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        @Nullable CacheDataRow oldRow,
-        boolean restore
-    ) throws IgniteCheckedException {
-        if (restore)
-            storageMap.get(StorageMode.FULL).update(cctx, key, val, ver, expireTime, oldRow);
-        else
-            activeStorage().update(cctx, key, val, ver, expireTime, oldRow);
+        activeStorage().update(cctx, key, val, ver, expireTime, oldRow);
     }
 
     /** {@inheritDoc} */
@@ -317,15 +301,6 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
     /** {@inheritDoc} */
     @Override public void remove(GridCacheContext cctx, KeyCacheObject key, int partId) throws IgniteCheckedException {
         activeStorage().remove(cctx, key, partId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void remove(GridCacheContext cctx, KeyCacheObject key, int partId,
-        boolean restore) throws IgniteCheckedException {
-        if (restore)
-            storageMap.get(StorageMode.FULL).remove(cctx, key, partId);
-        else
-            activeStorage().remove(cctx, key, partId);
     }
 
     /** {@inheritDoc} */
