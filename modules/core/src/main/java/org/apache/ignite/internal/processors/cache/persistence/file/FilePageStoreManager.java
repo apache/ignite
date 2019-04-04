@@ -125,7 +125,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
          *
          * @param closure closure.
          * @param <T> return type.
-         * @return value that is returned by {@param closure}.
+         * @return value that is returned by {@code closure}.
          */
         public <T> T afterAsyncCompletion(IgniteOutClosure<T> closure) {
             readWriteLock.readLock().lock();
