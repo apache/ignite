@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.primitives.vector.storage;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
 
 /**
@@ -89,8 +90,18 @@ public class VectorViewStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public <T extends Serializable> T getRaw(int i) {
+        return sto.getRaw(off + i);
+    }
+
+    /** {@inheritDoc} */
     @Override public void set(int i, double v) {
         sto.set(off + i, v);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setRaw(int i, Serializable v) {
+        sto.setRaw(off + i, v);
     }
 
     /** {@inheritDoc} */
@@ -99,18 +110,13 @@ public class VectorViewStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return sto.isSequentialAccess();
+    @Override public Serializable[] rawData() {
+        return sto.rawData();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDense() {
         return sto.isDense();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return sto.isRandomAccess();
     }
 
     /** {@inheritDoc} */
@@ -121,6 +127,11 @@ public class VectorViewStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return sto.isArrayBased();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isNumeric() {
+        return sto.isNumeric();
     }
 
     /** {@inheritDoc} */
