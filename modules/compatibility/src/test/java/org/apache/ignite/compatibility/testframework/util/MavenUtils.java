@@ -162,10 +162,12 @@ public class MavenUtils {
         if (!F.isEmpty(localProxyMavenSettingsFromEnv))
             localProxyMavenSettings = Paths.get(localProxyMavenSettingsFromEnv);
 
-        if (Files.exists(localProxyMavenSettings))
+      /*  if (Files.exists(localProxyMavenSettings))
             mavenCommandArgs.a(" -s " + localProxyMavenSettings.toString());
-        else
-            mavenCommandArgs.a(useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "");
+        else*/
+            mavenCommandArgs.a(" -DremoteRepositories=" + GG_MVN_REPO);
+
+        System.err.println("START MAVEN: " +  mavenCommandArgs.toString());
 
         exec(buildMvnCommand() + mavenCommandArgs.toString());
 
@@ -182,6 +184,8 @@ public class MavenUtils {
     private static String exec(String cmd) throws Exception {
         ProcessBuilder pb = new ProcessBuilder();
         pb.redirectErrorStream(true);
+
+        X.printerrln("Exec command: " + cmd);
 
         pb.command(U.isWindows() ?
             new String[] {"cmd", "/c", cmd} :
