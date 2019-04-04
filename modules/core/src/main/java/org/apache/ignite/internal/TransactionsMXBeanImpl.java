@@ -46,7 +46,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     /**
      * @param ctx Context.
      */
-    TransactionsMXBeanImpl(GridKernalContextImpl ctx) {
+    public TransactionsMXBeanImpl(GridKernalContextImpl ctx) {
         this.ctx = ctx;
     }
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.LongFunction;
@@ -35,7 +34,7 @@ class DistributedMetaStorageVersion implements Serializable {
 
     /** Incremental rehashing considering new update information. */
     private static long nextHash(long hash, DistributedMetaStorageHistoryItem update) {
-        return hash * 31L + ((long)update.key.hashCode() << 32) + Arrays.hashCode(update.valBytes);
+        return hash * 31L + update.longHash();
     }
 
     /**
