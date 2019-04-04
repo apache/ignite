@@ -46,7 +46,6 @@ public final class UpdateResult {
     private final Object[] errKeys;
 
     /** Partition result. */
-    // TODO VO: Add DELETE support
     private final PartitionResult partRes;
 
     /**

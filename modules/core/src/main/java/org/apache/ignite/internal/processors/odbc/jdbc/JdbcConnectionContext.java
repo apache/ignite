@@ -230,29 +230,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     }
 
     /**
-     * @return Retrieves current affinity topology version and sets it as a last.
-     */
-    // TODO VO: This method should not shift version, just get current readyAffinityVersion
-    // TODO VO: Consider removing, as only "ctx.cache().context().exchange().readyAffinityVersion()" is needed
-    public AffinityTopologyVersion getAffinityTopologyVersion() {
-        while (true) {
-            AffinityTopologyVersion oldVer = lastAffinityTopVer.get();
-            AffinityTopologyVersion newVer = ctx.cache().context().exchange().readyAffinityVersion();
-
-            boolean changed = oldVer == null || oldVer.compareTo(newVer) < 0;
-
-            if (changed) {
-                boolean success = lastAffinityTopVer.compareAndSet(oldVer, newVer);
-
-                if (!success)
-                    continue;
-            }
-
-            return newVer;
-        }
-    }
-
-    /**
      * @return Retrieves current affinity topology version and sets it as a last if it was changed, false otherwise.
      */
     public AffinityTopologyVersion getAffinityTopologyVersionIfChanged() {

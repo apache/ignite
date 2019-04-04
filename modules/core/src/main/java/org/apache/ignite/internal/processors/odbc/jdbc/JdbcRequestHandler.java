@@ -63,6 +63,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionAllNode;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNoneNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -625,8 +627,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 if (cur.isQuery())
                     res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext(),
-                        req.partitionResponseRequest() &&
-                            (partRes == null || partRes.affinity().isClientBestEffortAffinityApplicable()) ?
+                        isClientBestEffortAffinityApplicable(req.partitionResponseRequest(), partRes) ?
                             partRes :
                             null);
                 else {
@@ -638,8 +639,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                             ", res=" + S.toString(List.class, items) + ']';
 
                     res = new JdbcQueryExecuteResult(cur.cursorId(), (Long)items.get(0).get(0),
-                        req.partitionResponseRequest() &&
-                            (partRes == null || partRes.affinity().isClientBestEffortAffinityApplicable()) ?
+                        isClientBestEffortAffinityApplicable(req.partitionResponseRequest(), partRes) ?
                             partRes :
                             null);
                 }
@@ -1276,7 +1276,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private JdbcResponse getCachePartitions(JdbcCachePartitionsRequest req) {
         List<JdbcThinAffinityAwarenessMappingGroup> mappings = new ArrayList<>();
 
-        AffinityTopologyVersion topVer = connCtx.getAffinityTopologyVersion();
+        AffinityTopologyVersion topVer = connCtx.kernalContext().cache().context().exchange().readyAffinityVersion();
 
         for (int cacheId : req.cacheIds()) {
             Map<UUID, Set<Integer>> partitionsMap = getPartitionsMap(
@@ -1435,5 +1435,21 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse resultToResonse(JdbcResult res) {
         return new JdbcResponse(res, connCtx.getAffinityTopologyVersionIfChanged());
+    }
+
+    /**
+     *
+     * @param partResRequested Boolean flag that signals whether client requested partiton result.
+     * @param partRes Direved partition result.
+     *
+     * @return True if applicable to jdbc thin client side best effort affinity:
+     *   1. Partitoin result was requested;
+     *   2. Partition result either null or
+     *     a. Rendezvous affinity function without map filters was used;
+     *     b. Partition result tree neither PartitoinAllNode nor PartitionNoneNode;
+     */
+    private static boolean isClientBestEffortAffinityApplicable(boolean partResRequested, PartitionResult partRes) {
+        return partResRequested && (partRes == null || (partRes.affinity().isClientBestEffortAffinityApplicable() &&
+            !(partRes.tree() instanceof PartitionNoneNode) && !(partRes.tree() instanceof PartitionAllNode)));
     }
 }

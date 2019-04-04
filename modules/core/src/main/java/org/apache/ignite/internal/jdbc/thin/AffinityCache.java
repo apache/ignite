@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -36,12 +37,10 @@ public final class AffinityCache {
     private final AffinityTopologyVersion ver;
 
     /** Cache partitions distribution. */
-    // TODO VO: Can we convert inner Map to array?
-    private final GridBoundedLinkedHashMap<Integer, Map<Integer, UUID>> cachePartitionsDistribution;
+    private final GridBoundedLinkedHashMap<Integer, UUID[]> cachePartitionsDistribution;
 
     /** Sql cache. */
-    // TODO VO: Key should be "SQL + schema"
-    private final GridBoundedLinkedHashMap<String, JdbcThinPartitionResultDescriptor> sqlCache;
+    private final GridBoundedLinkedHashMap<QualifiedSQLQuery, JdbcThinPartitionResultDescriptor> sqlCache;
 
     /**
      * Constructor.
@@ -67,46 +66,45 @@ public final class AffinityCache {
      * Adds cache distribution related to the cache with specified cache id.
      *
      * @param cacheId Cache Id.
-     * @param distribution Cache partitions distribution.
+     * @param distribution Cache partitions distribution, where partition id is an array index.
      */
-    void addCacheDistribution(Integer cacheId, Map<Integer, UUID> distribution) {
-        // TODO VO: Merge same distributions to minimize memory usage
+    void addCacheDistribution(Integer cacheId, UUID[] distribution) {
+        for (Map.Entry<Integer, UUID[]> entry : cachePartitionsDistribution.entrySet()) {
+            if (Arrays.equals(entry.getValue(), distribution)) {
+                // put link to alrady existing distribution instead of creating new one.
+                cachePartitionsDistribution.put(cacheId, entry.getValue());
+                return;
+            }
+        }
+
         cachePartitionsDistribution.put(cacheId, distribution);
     }
 
     /**
      * Adds sql query with corresponding partion result descriptor.
      *
-     * @param sql Plain sql query.
+     * @param sql Qualified sql query.
      * @param partRes Partition result descriptor.
      */
-    void addSqlQuery(String sql, JdbcThinPartitionResultDescriptor partRes) {
-        sqlCache.put(sql, partRes);
+    void addSqlQuery(QualifiedSQLQuery sql, JdbcThinPartitionResultDescriptor partRes) {
+        sqlCache.put(sql, partRes == null ? JdbcThinPartitionResultDescriptor.EMPTY_DESCRIPTOR : partRes);
     }
 
     /**
      * Retrieves partition result descriptor related to corresponding sql query.
      *
-     * @param sqlQry Plain sql query.
+     * @param sqlQry Qualified sql query.
      * @return Partition result descriptor or null.
      */
-    JdbcThinPartitionResultDescriptor partitionResult(String sqlQry) {
+    public JdbcThinPartitionResultDescriptor partitionResult(QualifiedSQLQuery sqlQry) {
         return sqlCache.get(sqlQry);
-    }
-
-    /**
-     * @param sqlQry Plain sql
-     * @return Returns true if this cache contains a mapping for the specified sql query.
-     */
-    boolean containsPartitionResult(String sqlQry) {
-        return sqlCache.containsKey(sqlQry);
     }
 
     /**
      * @param cacheId Cache Id.
      * @return Cache partitoins distribution for given cache Id or null.
      */
-    Map<Integer, UUID> cacheDistribution(int cacheId) {
+    UUID[] cacheDistribution(int cacheId) {
         return cachePartitionsDistribution.get(cacheId);
     }
 }

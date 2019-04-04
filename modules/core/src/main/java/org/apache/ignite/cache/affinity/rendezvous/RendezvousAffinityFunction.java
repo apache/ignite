@@ -101,6 +101,34 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
     private transient IgniteLogger log;
 
     /**
+     * Helper method to calculates mask.
+     *
+     * @param parts Number of partitions.
+     * @return Mask to use in calculation when partitions count is power of 2.
+     */
+    public static int calculateMask(int parts) {
+        return (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+    }
+
+    /**
+     * Helper method to calculate partition.
+     *
+     * @param key – Key to get partition for.
+     * @param mask Mask to use in calculation when partitions count is power of 2.
+     * @param parts Number of partitions.
+     * @return Partition number for a given key.
+     */
+    public static int calculatePartition(Object key, int mask, int parts) {
+        if (mask >= 0) {
+            int h;
+
+            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
+        }
+
+        return U.safeAbs(key.hashCode() % parts);
+    }
+
+    /**
      * Empty constructor with all defaults.
      */
     public RendezvousAffinityFunction() {
@@ -199,7 +227,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
 
         this.parts = parts;
 
-        mask = (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+        mask = calculateMask(parts);
 
         return this;
     }
@@ -465,13 +493,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
             throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
                 "Make sure that an affinity key that is used is initialized properly.");
 
-        if (mask >= 0) {
-            int h;
-
-            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
-        }
-
-        return U.safeAbs(key.hashCode() % parts);
+        return calculatePartition(key, mask, parts);
     }
 
     /** {@inheritDoc} */
