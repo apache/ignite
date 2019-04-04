@@ -19,22 +19,20 @@ package org.apache.ignite.examples.ml.regression.linear;
 
 import java.io.FileNotFoundException;
 import java.util.function.BiFunction;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricValues;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
-import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
@@ -76,53 +74,18 @@ public class BostonHousePricesPredictionExample {
                 );
 
                 System.out.println(">>> Perform scoring.");
-                double u = 0.0; // Parameters for R^2 score evaluation.
-                double v = 0.0;
-                double meanPrice = computeMeanPrice(dataCache, split.getTestFilter(), vectorizer);
-                ScanQuery<Integer, Vector> qry = new ScanQuery<>(split.getTestFilter());
-                try (QueryCursor<Cache.Entry<Integer, Vector>> cursor = dataCache.query(qry)) {
-                    for (Cache.Entry<Integer, Vector> entry : cursor) {
-                        LabeledVector<Double> vec = vectorizer.apply(entry.getKey(), entry.getValue());
+                double score = Evaluator.evaluate(
+                    dataCache, split.getTestFilter(),
+                    model, vectorizer,
+                    new RegressionMetrics().withMetric(RegressionMetricValues::r2)
+                );
 
-                        double realPrice = vec.label();
-                        double predictedPrice = model.predict(vec.features());
-
-                        u += Math.pow(realPrice - predictedPrice, 2);
-                        v += Math.pow(realPrice - meanPrice, 2);
-                    }
-                }
-
-                double score = 1 - u / v;
                 System.out.println(">>> Model: " + toString(model));
                 System.out.println(">>> R^2 score: " + score);
             } finally {
                 dataCache.destroy();
             }
         }
-    }
-
-    /**
-     * Computes mean value of label over dataset.
-     *
-     * @param cache Cache with dataset.
-     * @param filter Filter of testing data.
-     * @param vectorizer Vectorizer for feature-value extraction.
-     * @return Mean value of label over dataset.
-     */
-    private static double computeMeanPrice(IgniteCache<Integer, Vector> cache,
-        IgniteBiPredicate<Integer, Vector> filter,
-        Vectorizer<Integer, Vector, Integer, Double> vectorizer) {
-
-        long countOfExamples = 0;
-        double sumOfPrices = 0.0;
-        try (QueryCursor<Cache.Entry<Integer, Vector>> cursor = cache.query(new ScanQuery<>(filter))) {
-            for (Cache.Entry<Integer, Vector> ent : cursor) {
-                sumOfPrices += vectorizer.apply(ent.getKey(), ent.getValue()).label();
-                countOfExamples += 1;
-            }
-        }
-
-        return sumOfPrices / Math.max(countOfExamples, 1);
     }
 
     /**
