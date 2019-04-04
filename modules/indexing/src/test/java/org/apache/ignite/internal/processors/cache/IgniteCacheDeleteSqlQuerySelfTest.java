@@ -17,11 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -29,6 +35,11 @@ import org.junit.Test;
  */
 @SuppressWarnings("unchecked")
 public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDmlQuerySelfTest {
+    @Before
+    public void cleanup() {
+        execute("DROP TABLE IF EXISTS TEST_TABLE;");
+    }
+
     /**
      *
      */
@@ -106,5 +117,38 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         assertEqualsCollections(Arrays.asList("f0u4thk3y", new Person(4, "Jane", "Silver"), 4, "Jane", "Silver"),
             leftovers.get(1));
+    }
+
+    @Test
+    public void testFastDeleteByKey() {
+        execute("CREATE TABLE TEST_TABLE (" +
+            "ID NUMBER(19,0)," +
+            "VALUE VARCHAR2(255 CHAR)," +
+            "PRIMARY KEY (ID))");
+
+        Stream.of(1, 1L, 1d, "1", new BigDecimal(1))
+            .forEach((Object one) -> {
+                execute("DELETE FROM TEST_TABLE");
+
+                execute("Insert INTO test_table (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
+
+                execute("DELETE FROM TEST_TABLE WHERE ID = 1.0001", one);
+
+                List<List<?>> expRows = Collections.singletonList(Arrays.asList(new BigDecimal(2), "value"));
+
+                assertEqualsCollections("Argument of class " + one.getClass().getSimpleName() + " is converted incorrectly",
+                    expRows, execute("SELECT * FROM TEST_TABLE ORDER BY ID"));
+            });
+    }
+
+
+    /**
+     * Execute sql query using cache API.
+     *
+     * @param sql query.
+     * @return fetched result.
+     */
+    private List<List<?>> execute(String sql, Object... args) {
+        return cache().query(new SqlFieldsQuery(sql).setArgs(args).setSchema("PUBLIC")).getAll();
     }
 }

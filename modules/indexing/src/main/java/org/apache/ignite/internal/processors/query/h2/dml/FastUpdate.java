@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -89,6 +91,29 @@ public final class FastUpdate {
         Object newVal = H2Utils.convert(newValArg.get(args), coCtx, newValArg.expectedType());
 
         boolean res;
+
+        if (key instanceof BigDecimal) {
+            System.out.println("+++ old scale = " + ((BigDecimal)key).scale());
+
+            try {
+                key = ((BigDecimal)key).setScale(0, RoundingMode.UNNECESSARY);
+            }
+            catch (ArithmeticException badRounding) {
+                throw new IgniteCheckedException("Bad scale for the decimal value " + key + " expected scale ");
+            }
+        }
+
+        // Debug
+
+        System.out.println("+++ Original type = " + keyArg.get(args).getClass().getName());
+        System.out.println("+++ Converted type = " + key.getClass().getName());
+        System.out.println("+++ Converted val = " + key);
+        System.out.println("+++ Cache.get(key) = " + cache.get(key));
+        System.out.println("+++ Cache.get(1 as BD) = " + cache.get(new BigDecimal(1)));
+        System.out.println("+++ Cache.size() = " + cache.size());
+
+        // debug off
+
 
         if (newVal != null) {
             // Update.
