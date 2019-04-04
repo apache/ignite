@@ -174,18 +174,8 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return acsMode == SEQUENTIAL_ACCESS_MODE;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return acsMode == RANDOM_ACCESS_MODE;
     }
 
     /** {@inheritDoc} */

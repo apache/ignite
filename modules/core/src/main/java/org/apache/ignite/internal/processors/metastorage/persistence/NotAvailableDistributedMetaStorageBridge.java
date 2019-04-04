@@ -42,11 +42,7 @@ class NotAvailableDistributedMetaStorageBridge implements DistributedMetaStorage
     }
 
     /** {@inheritDoc} */
-    @Override public void onUpdateMessage(
-        DistributedMetaStorageHistoryItem histItem,
-        Serializable val,
-        boolean notifyListeners
-    ) {
+    @Override public void onUpdateMessage(DistributedMetaStorageHistoryItem histItem) {
         throw new UnsupportedOperationException("onUpdateMessage");
     }
 
@@ -56,7 +52,7 @@ class NotAvailableDistributedMetaStorageBridge implements DistributedMetaStorage
     }
 
     /** {@inheritDoc} */
-    @Override public DistributedMetaStorageHistoryItem[] localFullData() {
+    @Override public DistributedMetaStorageKeyValuePair[] localFullData() {
         throw new UnsupportedOperationException("localFullData");
     }
 }

@@ -533,4 +533,9 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return Inverse of this matrix
      */
     public Matrix inverse();
+
+    /** {@inheritDoc} */
+    @Override default boolean isNumeric() {
+        return true;
+    }
 }

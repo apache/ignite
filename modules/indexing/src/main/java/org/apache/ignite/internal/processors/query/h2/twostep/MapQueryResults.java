@@ -49,9 +49,6 @@ class MapQueryResults {
     /** */
     private volatile boolean cancelled;
 
-    /** {@code SELECT FOR UPDATE} flag. */
-    private final boolean forUpdate;
-
     /** Query context. */
     private final QueryContext qctx;
 
@@ -62,13 +59,11 @@ class MapQueryResults {
      * @param qryReqId Query request ID.
      * @param qrys Number of queries.
      * @param cctx Cache context.
-     * @param forUpdate {@code SELECT FOR UPDATE} flag.
      * @param lazy Lazy flag.
      * @param qctx Query context.
      */
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
-        boolean forUpdate, boolean lazy, QueryContext qctx) {
-        this.forUpdate = forUpdate;
+        boolean lazy, QueryContext qctx) {
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cctx = cctx;
@@ -201,13 +196,6 @@ class MapQueryResults {
      */
     long queryRequestId() {
         return qryReqId;
-    }
-
-    /**
-     * @return {@code SELECT FOR UPDATE} flag.
-     */
-    public boolean isForUpdate() {
-        return forUpdate;
     }
 
     /**
