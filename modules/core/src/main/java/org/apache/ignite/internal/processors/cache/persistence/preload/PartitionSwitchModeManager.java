@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheDataStoreEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -28,11 +29,15 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
 public class PartitionSwitchModeManager implements DbCheckpointListener {
+    /** */
+    private final IgniteLogger log;
+
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
 
@@ -44,6 +49,7 @@ public class PartitionSwitchModeManager implements DbCheckpointListener {
      */
     public PartitionSwitchModeManager(GridCacheSharedContext<?, ?> cctx) {
         this.cctx = cctx;
+        this.log = cctx.logger(PartitionSwitchModeManager.class);
     }
 
     /** {@inheritDoc} */
@@ -101,6 +107,8 @@ public class PartitionSwitchModeManager implements DbCheckpointListener {
         boolean offered = switchReqs.offer(req);
 
         assert offered;
+
+        U.log(log, "Change partition mode request registered [mode=" + mode + ", parts=" + parts + ']');
 
         return req.rqFut;
     }

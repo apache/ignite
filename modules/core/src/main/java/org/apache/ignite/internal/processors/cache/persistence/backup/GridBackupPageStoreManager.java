@@ -333,7 +333,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
             }
         }
         catch (Exception e) {
-            U.error(log, "An error occured while handling partition files.", e);
+            U.error(log, "The backup process finished with an error", e);
 
             for (GroupPartitionId key : grpPartIdSet) {
                 AtomicInteger keyCnt = trackMap.get(key);

@@ -135,9 +135,12 @@ public class PartitionDownloadManager {
                     GridDhtLocalPartition part = grp.topology().localPartition(partId, topVer, true);
 
                     assert part != null;
-                    assert part.dataStoreMode() == CacheDataStoreEx.StorageMode.LOG_ONLY;
 
                     if (part.state() == MOVING) {
+                        assert part.dataStoreMode() == CacheDataStoreEx.StorageMode.LOG_ONLY :
+                            "The partition must be set to LOG_ONLY mode [partId=" + part.id() +
+                                ", grp=" + part.group().cacheOrGroupName() + ']';
+
                         boolean reserved = part.reserve();
 
                         assert reserved : "Failed to reserve partition [igniteInstanceName=" +
@@ -173,7 +176,7 @@ public class PartitionDownloadManager {
 
                             // TODO Validate CRC partition
 
-                            U.log(log, "The partition file have been processed successfully [" +
+                            U.log(log, "The cache partition file has been downloaded [" +
                                 "nodeId=" + cctx.localNodeId() + ", grpId=" + grpId +
                                 ", partId=" + partId + ", state=" + part.state().name() +
                                 ", cfgFile=" + cfgFile.getName() + ']');
@@ -186,16 +189,14 @@ public class PartitionDownloadManager {
                         }
                     }
                     else {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Skipping partition (state is not MOVING) " +
-                                "[grpId=" + grpId + ", partId=" + partId + ", nodeId=" + nodeId + ']');
-                        }
+                        log.error("Skipping partition (state is not MOVING but it must!) " +
+                            "[grpId=" + grpId + ", partId=" + partId + ", nodeId=" + nodeId + ']');
                     }
                 }
             }
         }
         catch (IOException | IgniteCheckedException e) {
-            U.error(log, "An error during receiving binary data from channel: " + channel, e);
+            U.error(log, "An error during downloading data from the remote node: " + nodeId, e);
 
             rebFut.onDone(new IgniteCheckedException("Error with downloading binary data from remote node " +
                 "[grpId=" + grpId + ", partId=" + partId + ", nodeId=" + nodeId + ']', e));

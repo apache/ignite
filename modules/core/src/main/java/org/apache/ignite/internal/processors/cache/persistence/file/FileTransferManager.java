@@ -223,7 +223,8 @@ public class FileTransferManager<T extends FileMetaInfo> implements AutoCloseabl
             readAck();
         }
         catch (IOException e) {
-            throw new IgniteCheckedException(e);
+            throw new IgniteCheckedException("Transfer data error [file=" + file.getAbsolutePath() + ", offset=" + offset +
+                ", size=" + size + ']', e);
         }
         finally {
             U.closeQuiet(fileIO);

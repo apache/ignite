@@ -95,6 +95,10 @@ public class PartitionStorePumpManager {
 
             GridFutureAdapter<Boolean> fut0 = new GridFutureAdapter<>();
 
+            fut0.listen(future -> {
+                U.log(log,"All entries applyed to the original store: " + src);
+            });
+
             catchQueue.add(new T2<>(fut0, src));
 
             return fut0;
@@ -159,6 +163,8 @@ public class PartitionStorePumpManager {
 
                     IgnitePartitionCatchUpLog catchLog = tup.get2();
 
+                    U.log(log, "Start applying cache entries to the original store: " + catchLog);
+
                     WALIterator iter = catchLog.replay();
 
                     ((GridCacheDatabaseSharedManager)cctx.database()).applyUpdates(iter,
@@ -174,10 +180,12 @@ public class PartitionStorePumpManager {
                 }
             }
             catch (IgniteCheckedException e) {
-                log.error("An error during processing storage temporary entries", e);
+                log.error("The pump worker has an error during processing storage temporary entries", e);
 
                 if (tup != null)
                     tup.get1().onDone(e);
+
+                err = e;
             }
             catch (Throwable t) {
                 if (!(X.hasCause(t, IgniteInterruptedCheckedException.class, InterruptedException.class)))
@@ -189,6 +197,7 @@ public class PartitionStorePumpManager {
                 throw t;
             }
             finally {
+                // TODO remove false-positive thread handling when it stops normally
                 if (err == null && !isCancelled)
                     err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
 

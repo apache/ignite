@@ -31,6 +31,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapterEx;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
@@ -42,6 +43,9 @@ import static java.util.Optional.of;
 public class InMemoryPartitionCatchUpLog implements IgnitePartitionCatchUpLog {
     /** */
     private final CacheGroupContext grp;
+
+    /** */
+    private final int partId;
 
     /** The absolute WAL pointer per temp WAL partition storage. */
     private final AtomicLong savedPtr = new AtomicLong();
@@ -58,8 +62,9 @@ public class InMemoryPartitionCatchUpLog implements IgnitePartitionCatchUpLog {
     /**
      * @param grp The cache group.
      */
-    public InMemoryPartitionCatchUpLog(CacheGroupContext grp) {
+    public InMemoryPartitionCatchUpLog(CacheGroupContext grp, int partId) {
         this.grp = grp;
+        this.partId = partId;
     }
 
     /** {@inheritDoc} */
@@ -105,6 +110,11 @@ public class InMemoryPartitionCatchUpLog implements IgnitePartitionCatchUpLog {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(InMemoryPartitionCatchUpLog.class, this);
+    }
+
     /**
      *
      */
@@ -126,7 +136,7 @@ public class InMemoryPartitionCatchUpLog implements IgnitePartitionCatchUpLog {
 
         /** {@inheritDoc} */
         @Override protected boolean onHasNext() throws IgniteCheckedException {
-            assert ((QueueWALPointer)lastRead.get1()).index() <= savedPtr.get();
+            assert lastRead == null || ((QueueWALPointer)lastRead.get1()).index() <= savedPtr.get() : lastRead;
 
             IgniteBiTuple<WALPointer, WALRecord> rec;
 

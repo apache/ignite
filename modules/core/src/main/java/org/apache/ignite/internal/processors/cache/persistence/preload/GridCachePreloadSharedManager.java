@@ -203,13 +203,23 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         RebalanceDownloadFuture rebFut
     ) {
         assert rebFut.nodeId.equals(nodeId);
+        assert lock.getReadHoldCount() > 0;
 
         if (staleFuture(rebFut))
             return;
 
-        U.log(log, "Channel created. Start handling partition files [channel=" + channel + ']');
+        U.log(log, "The channel created. Start download of partition files [channel=" + channel +
+            ", remote=" + nodeId + ']');
 
-        downloadMgr.onChannelCreated0(nodeId, channel, rebFut.nodeAssigns, rebFut.topVer, rebFut);
+        try {
+            downloadMgr.onChannelCreated0(nodeId, channel, rebFut.nodeAssigns, rebFut.topVer, rebFut);
+        }
+        catch (Throwable t) {
+            // TODO hande by failure handler
+            log.error("The error occurred on the demander node during processing channel creation", t);
+
+            throw t;
+        }
     }
 
     /**
@@ -218,7 +228,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
      * @param part Completely downloaded partition file.
      */
     void onPartitionDownloaded(UUID nodeId, CacheGroupContext grp, GridDhtLocalPartition part) {
-        assert lock.getReadHoldCount() > 1;
+        assert lock.getReadHoldCount() > 0;
 
         final RebalanceDownloadFuture fut0 = futMap.get(nodeId);
 
@@ -392,7 +402,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                 final Map<Integer, Set<Integer>> assigns = rebFut.nodeAssigns;
 
                 IgniteInternalFuture<Boolean> switchFut = cctx.preloadMgr()
-                    .switchPartitionsMode(CacheDataStoreEx.StorageMode.FULL, assigns);
+                    .switchPartitionsMode(CacheDataStoreEx.StorageMode.LOG_ONLY, assigns);
 
                 switchFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                     @Override public void apply(IgniteInternalFuture fut) {

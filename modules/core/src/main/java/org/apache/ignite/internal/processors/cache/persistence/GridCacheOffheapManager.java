@@ -177,7 +177,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
 
-        IgnitePartitionCatchUpLog catchLog = new InMemoryPartitionCatchUpLog(grp);
+        IgnitePartitionCatchUpLog catchLog = new InMemoryPartitionCatchUpLog(grp, p);
 
         return new CacheDataStoreExImpl(grp.shared(),
             new GridCacheDataStore(p, exists),
@@ -1892,9 +1892,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 ofNullable(delegate0)
                     .orElseThrow(() -> new IgniteCheckedException("The storage must be present at inital phase"));
 
-                assert delegate0.fullSize() == size;
-                assert delegate0.updateCounter() == updCntr;
-                assert ofNullable(cacheSizes).orElse(new HashMap<>()).equals(delegate0.cacheSizes());
+                assert delegate0.fullSize() == size :
+                    "oldSize=" + delegate0.fullSize() + ", newSize=" + size;
+                assert delegate0.updateCounter() == updCntr :
+                    "oldUpdCntr=" + delegate0.updateCounter() + ", newUpdCntr=" + updCntr;
+                assert ofNullable(cacheSizes).orElse(new HashMap<>()).equals(delegate0.cacheSizes()) :
+                    "oldCacheSizes=" + delegate0.cacheSizes() + ", newCacheSizes=" + cacheSizes;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
