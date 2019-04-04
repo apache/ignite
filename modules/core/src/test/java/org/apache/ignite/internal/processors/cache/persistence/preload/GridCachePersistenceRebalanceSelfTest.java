@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -46,6 +47,7 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED;
 
 /**
  * Test cases for checking cancellation rebalancing process if some events occurs.
@@ -61,20 +63,12 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
     @Before
     public void setBefore() throws Exception {
         cleanPersistenceDir();
-
-        // Turn off for the debug
-        System.setProperty(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, "true");
-        System.setProperty(IGNITE_DUMP_THREADS_ON_FAILURE, "false");
-
-        // Tests
-        System.setProperty(IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED, "true");
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
     }
 
     /** */
     @After
     public void setAfter() {
-        System.setProperty(IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED, "false");
+        System.setProperty(IGNITE_PERSISTENCE_REBALANCE_ENABLED, "false");
     }
 
     /** {@inheritDoc} */
@@ -108,6 +102,10 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
     /** */
     @Test
+    @WithSystemProperty(key = IGNITE_JVM_PAUSE_DETECTOR_DISABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
+    @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testPersistenceRebalanceBase() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
@@ -148,6 +146,10 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
     /** */
     @Test
+    @WithSystemProperty(key = IGNITE_JVM_PAUSE_DETECTOR_DISABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
+    @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testPersistenceRebalanceManualCache() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
@@ -180,6 +182,10 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
     /** */
     @Test
+    @WithSystemProperty(key = IGNITE_JVM_PAUSE_DETECTOR_DISABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
+    @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testPersistenceRebalanceAsyncUpdates() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
