@@ -2176,7 +2176,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 U.quietAndWarn(log, "Ignite node stopped in the middle of checkpoint. Will restore memory state and " +
                     "finish checkpoint on node start.");
 
-            if (cctx.gridConfig().getDataStorageConfiguration().isLazyMemoryAllocation()) {
+            if (cctx.isLazyMemoryAllocation()) {
                 cctx.cache().cacheGroupDescriptors().forEach((grpId, desc) -> {
                     if (!cacheGroupsPredicate.apply(grpId))
                         return;
