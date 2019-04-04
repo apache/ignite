@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.preload;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheDataStoreEx;
@@ -52,6 +53,21 @@ public class PartitionSwitchModeManager implements DbCheckpointListener {
         this.log = cctx.logger(PartitionSwitchModeManager.class);
     }
 
+    /**
+     * @param p The condition to check.
+     * @return The number of pending switch request satisfyed by given condition.
+     */
+    public int pendingRequests(Predicate<CacheDataStoreEx.StorageMode> p) {
+        int cnt = 0;
+
+        for (SwitchModeRequest rq : switchReqs) {
+            if (p.test(rq.nextMode))
+                cnt++;
+        }
+
+        return cnt;
+    }
+
     /** {@inheritDoc} */
     @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
         SwitchModeRequest rq;
@@ -79,7 +95,7 @@ public class PartitionSwitchModeManager implements DbCheckpointListener {
                 }
             }
 
-            rq.rqFut.onDone();
+            rq.rqFut.onDone(true);
         }
     }
 

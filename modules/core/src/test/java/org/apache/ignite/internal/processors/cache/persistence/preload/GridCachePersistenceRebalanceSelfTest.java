@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.preload;
 
 import java.util.Collections;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -32,6 +33,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.CacheDataStoreEx;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -48,6 +51,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR
  * Test cases for checking cancellation rebalancing process if some events occurs.
  */
 public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final int CACHE_PART_COUNT = 8;
+
     /** */
     private static final int TEST_SIZE = GridTestUtils.SF.applyLB(100_000, 10_000);
 
@@ -82,6 +88,24 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         .setCommunicationSpi(new TestRecordingCommunicationSpi());
     }
 
+    /**
+     * @param ignite The ignite instance to check.
+     * @param check The mode to check.
+     * @return The number of pending switch requests.
+     */
+    private int getPendingSwitchRequests(IgniteEx ignite, CacheDataStoreEx.StorageMode check) {
+        return ignite.context()
+            .cache()
+            .context()
+            .preloadMgr()
+            .switcher()
+            .pendingRequests(new Predicate<CacheDataStoreEx.StorageMode>() {
+                @Override public boolean test(CacheDataStoreEx.StorageMode mode) {
+                    return mode == check;
+                }
+            });
+    }
+
     /** */
     @Test
     public void testPersistenceRebalanceBase() throws Exception {
@@ -96,7 +120,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setBackups(1)
                 .setAffinity(new RendezvousAffinityFunction(false)
-                    .setPartitions(8)));
+                    .setPartitions(CACHE_PART_COUNT)));
 
         loadData(ignite0, DEFAULT_CACHE_NAME, TEST_SIZE);
 
@@ -106,7 +130,20 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
         ignite1.cluster().setBaselineTopology(ignite1.cluster().nodes());
 
-        awaitPartitionMapExchange(true, true, Collections.singleton(ignite1.localNode()), true);
+        GridTestUtils.waitForCondition(
+            new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return CACHE_PART_COUNT == getPendingSwitchRequests(ignite1, CacheDataStoreEx.StorageMode.FULL);
+                }
+            }, 15_000);
+
+        assertEquals(getPendingSwitchRequests(ignite1, CacheDataStoreEx.StorageMode.FULL), CACHE_PART_COUNT);
+
+        forceCheckpoint(ignite1);
+
+        awaitPartitionMapExchange(true,
+            true,
+            Collections.singleton(ignite1.localNode()), true);
     }
 
     /** */

@@ -247,7 +247,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
         fut.listen(f -> {
             // TODO switch mode when the next checkpoint finished.
-            U.log(log, "The partition can now be swithed to the FULL mode: " + part);
+            U.log(log, "The partition will be swithed to the FULL mode: " + part);
 
             Map<Integer, Set<Integer>> parts = new HashMap<>();
 
@@ -259,7 +259,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                         if (!f0.get())
                             return;
 
-                        U.log(log, "The partition file can now be own by node: " + part);
+                        U.log(log, "The partition file will be owned by node: " + part);
 
                         // TODO Register owning partition listener here to own it on checkpoint done
                         // There is no need to check grp.localWalEnabled() as for the partition
@@ -530,6 +530,13 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
      */
     public PartitionStorePumpManager pump() {
         return pumpMgr;
+    }
+
+    /**
+     * @return The switch mode manager.
+     */
+    public PartitionSwitchModeManager switcher() {
+        return switchMgr;
     }
 
     /**
