@@ -18,20 +18,15 @@
 package org.apache.ignite.internal.processors.configuration.distributed;
 
 /**
- * Implementation of {@link DistributedProperty} for {@link Boolean}.
+ * Listener of distributed property change event.
  */
-public class DistributedBooleanProperty extends DistributedProperty<Boolean> {
-
-    /** {@inheritDoc} */
-    DistributedBooleanProperty(String name) {
-        super(name);
-    }
-
+public interface DistributePropertyListener<T> {
     /**
-     * @param name Name of property.
-     * @return Property detached from processor.(Distributed updating are not accessable).
+     * Handle changed value event.
+     *
+     * @param name Name of distributed property.
+     * @param oldVal Old value which was changed from.
+     * @param newVal New value which was changed to.
      */
-    public static DistributedBooleanProperty detachedBooleanProperty(String name) {
-        return new DistributedBooleanProperty(name);
-    }
+    void onUpdate(String name, T oldVal, T newVal);
 }

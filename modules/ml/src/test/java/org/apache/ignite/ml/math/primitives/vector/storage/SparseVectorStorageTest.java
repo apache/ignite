@@ -15,23 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.configuration.distributed;
+package org.apache.ignite.ml.math.primitives.vector.storage;
 
-/**
- * Implementation of {@link DistributedProperty} for {@link Boolean}.
- */
-public class DistributedBooleanProperty extends DistributedProperty<Boolean> {
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
+import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
+
+public class SparseVectorStorageTest extends AbstractStorageTest {
 
     /** {@inheritDoc} */
-    DistributedBooleanProperty(String name) {
-        super(name);
+    @Override protected boolean isNumericVector(VectorStorage storage) {
+        return true;
     }
 
-    /**
-     * @param name Name of property.
-     * @return Property detached from processor.(Distributed updating are not accessable).
-     */
-    public static DistributedBooleanProperty detachedBooleanProperty(String name) {
-        return new DistributedBooleanProperty(name);
+    /** {@inheritDoc} */
+    @Override protected boolean isRaw(VectorStorage storage) {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected VectorStorage createStorage(int size) {
+        return new SparseVectorStorage(size);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Vector createVector(int size) {
+        return new SparseVector(size);
     }
 }
