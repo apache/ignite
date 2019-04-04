@@ -57,16 +57,16 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
         super("COLUMNS", "Ignite columns", ctx, new String[] {TABLE_NAME, COLUMN_NAME},
             newColumn("SCHEMA_NAME"),
             newColumn(TABLE_NAME),
-            newColumn("COLUMN_ID", Value.INT),
             newColumn(COLUMN_NAME),
+            newColumn("ORDINAL_POSITION", Value.INT),
             newColumn("DEFAULT_VALUE"),
             newColumn("IS_NULLABLE", Value.BOOLEAN),
-            newColumn("SQL_TYPE", Value.INT),
             newColumn("DATA_TYPE"),
-            newColumn("DISPLAY_SIZE", Value.INT),
-            newColumn("PRECISION", Value.INT),
-            newColumn("SCALE", Value.INT),
-            newColumn("AFFINITY_KEY", Value.BOOLEAN)
+            newColumn("CHARACTER_LENGTH", Value.INT),
+            newColumn("NUMERIC_PRECISION", Value.INT),
+            newColumn("NUMERIC_SCALE", Value.INT),
+            newColumn("IS_AFFINITY_KEY", Value.BOOLEAN),
+            newColumn("IS_HIDDEN", Value.BOOLEAN)
         );
 
         this.schemaMgr = schemaMgr;
@@ -113,16 +113,16 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
                 Object[] data = new Object[] {
                     col.getTable().getSchema().getName(),
                     col.getTable().getName(),
-                    col.getColumnId(),
                     col.getName(),
-                    col.getDefaultExpression() != null ? col.getDefaultExpression().getValue(ses).toString() : null,
+                    col.getColumnId() - QueryUtils.DEFAULT_COLUMNS_COUNT + 1, // ordinal
+                    col.getDefaultExpression() != null ? toStringSafe(col.getDefaultExpression().getValue(ses)) : null,
                     col.isNullable(),
-                    col.getType(),
                     DataType.getDataType(col.getType()).name,
-                    col.getDisplaySize(),
-                    col.getPrecision(),
-                    col.getScale(),
+                    characterLength(col),
+                    numericPrecision(col),
+                    numericScale(col),
                     affCol != null && F.eq(col.getColumnId(), affCol.column.getColumnId()),
+                    false
                 };
 
                 res.add(createRow(ses, data));
@@ -130,6 +130,52 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
         }
 
         return res.iterator();
+    }
+
+    /**
+     * @param col Column.
+     * @return Character length for CHAR and VARCHAR columns. Otherwise return 0.
+     */
+    private static int characterLength(Column col) {
+        if (col.getType() == Value.STRING || col.getType() == Value.STRING_IGNORECASE)
+            return (int)col.getPrecision();
+        else
+            return 0;
+    }
+
+    /**
+     * @param col Column.
+     * @return Precision for numeric columns. Otherwise return 0.
+     */
+    private static int numericPrecision(Column col) {
+        if (col.getType() == Value.BYTE
+            || col.getType() == Value.SHORT
+            || col.getType() == Value.INT
+            || col.getType() == Value.LONG
+            || col.getType() == Value.DOUBLE
+            || col.getType() == Value.FLOAT
+            || col.getType() == Value.DECIMAL
+        )
+            return (int)col.getPrecision();
+        else
+            return 0;
+    }
+
+    /**
+     * @param col Column.
+     * @return Scale for numeric columns. Otherwise return 0.
+     */
+    private static int numericScale(Column col) {
+        if (col.getType() == Value.BYTE
+            || col.getType() == Value.SHORT
+            || col.getType() == Value.INT
+            || col.getType() == Value.LONG
+            || col.getType() == Value.DOUBLE
+            || col.getType() == Value.DECIMAL
+        )
+            return col.getScale();
+        else
+            return 0;
     }
 
     /** {@inheritDoc} */
