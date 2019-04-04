@@ -37,6 +37,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 
 /**
@@ -308,6 +309,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testOptimizedWriteTwice() throws Exception {
         startGrid(0).cluster().active(true);
 
@@ -328,6 +330,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testClient() throws Exception {
         startGrid(0).cluster().active(true);
 
@@ -354,6 +357,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testClientReconnect() throws Exception {
         startGrid(0).cluster().active(true);
 
