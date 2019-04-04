@@ -602,8 +602,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             synchronized (this) {
                 GridDhtPartitionState prevState = state();
 
-                assert dataStoreMode() == CacheDataStoreEx.StorageMode.FULL || toState == MOVING :
-                    "Storage mode FULL is only allowed for the MOVING partition state";
+                //TODO allow only to FULL > MOVING, LOG_ONLY > OWNING
+//                assert dataStoreMode() == CacheDataStoreEx.StorageMode.FULL || toState == MOVING :
+//                    "Storage mode FULL is only allowed for the MOVING partition state";
 
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 

@@ -161,22 +161,20 @@ public class PartitionDownloadManager {
                             // Will restore meta pageId on merge delta file phase, if it exists
                             source.readInto(cfgFile, 0, meta.getSize());
 
-                            U.log(log, "Partition file uptated succusfully: " + cfgFile.getName());
+                            U.log(log, "The partition file has been downloaded: " + cfgFile.getName());
 
                             // Start processing delta file.
                             source.readMetaInto(meta = new PartitionFileMetaInfo());
-
-                            U.log(log, "Received meta pages: " + meta);
 
                             assert meta.getType() == 1 : meta;
 
                             applyPartitionDeltaPages(source, store, meta.getSize());
 
-                            U.log(log, "Partition delta pages applied successfully");
+                            U.log(log, "The partition file deltas has been applied: " + cfgFile.getName());
 
                             // TODO Validate CRC partition
 
-                            U.log(log, "The cache partition file has been downloaded [" +
+                            U.log(log, "The partition file has been downloaded and all deltas has been applied [" +
                                 "nodeId=" + cctx.localNodeId() + ", grpId=" + grpId +
                                 ", partId=" + partId + ", state=" + part.state().name() +
                                 ", cfgFile=" + cfgFile.getName() + ']');

@@ -30,7 +30,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -248,21 +247,31 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
         fut.listen(f -> {
             // TODO switch mode when the next checkpoint finished.
+            U.log(log, "The partition can now be swithed to the FULL mode: " + part);
+
             Map<Integer, Set<Integer>> parts = new HashMap<>();
 
             parts.put(grp.groupId(), new HashSet<>(Collections.singletonList(part.id())));
 
-            switchPartitionsMode(CacheDataStoreEx.StorageMode.FULL,parts).listen(f0 -> {
-                // TODO Register owning partition listener here to own it on checkpoint done
-                // There is no need to check grp.localWalEnabled() as for the partition
-                // file transfer process it has no meaning. We always apply this partiton
-                // without any records to the WAL.
-                boolean isOwned = grp.topology().own(part);
+            switchPartitionsMode(CacheDataStoreEx.StorageMode.FULL, parts).listen(
+                new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
+                    @Override public void applyx(IgniteInternalFuture<Boolean> f0) throws IgniteCheckedException {
+                        if (!f0.get())
+                            return;
 
-                assert isOwned : "Partition must be owned: " + part;
+                        U.log(log, "The partition file can now be own by node: " + part);
 
-                // TODO Send EVT_CACHE_REBALANCE_PART_LOADED
-            });
+                        // TODO Register owning partition listener here to own it on checkpoint done
+                        // There is no need to check grp.localWalEnabled() as for the partition
+                        // file transfer process it has no meaning. We always apply this partiton
+                        // without any records to the WAL.
+                        boolean isOwned = grp.topology().own(part);
+
+                        assert isOwned : "Partition must be owned: " + part;
+
+                        // TODO Send EVT_CACHE_REBALANCE_PART_LOADED
+                    }
+                });
         });
     }
 

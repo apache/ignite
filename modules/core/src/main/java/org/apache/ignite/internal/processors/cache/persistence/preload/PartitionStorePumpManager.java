@@ -90,9 +90,6 @@ public class PartitionStorePumpManager {
      */
     public GridFutureAdapter<Boolean> registerPumpSource(IgnitePartitionCatchUpLog src) {
         synchronized (mux) {
-            if (pumpWorker == null)
-                startStorePumpWorker();
-
             GridFutureAdapter<Boolean> fut0 = new GridFutureAdapter<>();
 
             fut0.listen(future -> {
@@ -100,6 +97,9 @@ public class PartitionStorePumpManager {
             });
 
             catchQueue.add(new T2<>(fut0, src));
+
+            if (pumpWorker == null)
+                startStorePumpWorker();
 
             return fut0;
         }

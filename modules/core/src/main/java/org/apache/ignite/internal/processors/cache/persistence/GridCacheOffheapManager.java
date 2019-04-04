@@ -1896,7 +1896,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     "oldSize=" + delegate0.fullSize() + ", newSize=" + size;
                 assert delegate0.updateCounter() == updCntr :
                     "oldUpdCntr=" + delegate0.updateCounter() + ", newUpdCntr=" + updCntr;
-                assert ofNullable(cacheSizes).orElse(new HashMap<>()).equals(delegate0.cacheSizes()) :
+                assert (delegate0.cacheSizes() == null && cacheSizes == null) ||
+                    ofNullable(cacheSizes).orElse(new HashMap<>()).equals(delegate0.cacheSizes()) :
                     "oldCacheSizes=" + delegate0.cacheSizes() + ", newCacheSizes=" + cacheSizes;
             }
             catch (IgniteCheckedException e) {
