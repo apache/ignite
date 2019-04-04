@@ -2319,7 +2319,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean disabledAfterStart,
         boolean clientCache
     ) throws IgniteCheckedException {
-        desc.enrich(sharedCtx);
+        desc.enrich(desc.cacheConfiguration().getCacheMode() == LOCAL || isLocalAffinity(desc.cacheConfiguration()));
 
         GridCacheContext cacheCtx = prepareCacheContext(desc, reqNearCfg, exchTopVer, disabledAfterStart);
 
@@ -2353,7 +2353,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion exchTopVer,
         boolean disabledAfterStart
     ) throws IgniteCheckedException {
-        desc.enrich(sharedCtx);
+        desc.enrich(desc.cacheConfiguration().getCacheMode() == LOCAL || isLocalAffinity(desc.cacheConfiguration()));
 
         CacheConfiguration startCfg = desc.cacheConfiguration();
 
@@ -2498,7 +2498,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return true;
         }
 
-        if (isLocalAffinity(desc.groupDescriptor().config()))
+        if (isLocalAffinity(desc.cacheConfiguration()))
             return true;
 
         ccfg.setNearConfiguration(reqNearCfg);
@@ -2655,7 +2655,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private GridCacheContext<?, ?> startCacheInRecoveryMode(
         DynamicCacheDescriptor desc
     ) throws IgniteCheckedException {
-        desc.enrich(sharedCtx);
+        // Only affinity node caches are able to start in recovery mode.
+        desc.enrich(true);
 
         CacheConfiguration cfg = desc.cacheConfiguration();
 
@@ -2797,7 +2798,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion exchTopVer,
         boolean recoveryMode
     ) throws IgniteCheckedException {
-        desc.enrich(sharedCtx);
+        desc.enrich(affNode);
 
         CacheConfiguration cfg = new CacheConfiguration(desc.config());
 

@@ -422,14 +422,14 @@ public class DynamicCacheDescriptor {
         return cacheCfgEnrichment == null || cacheCfgEnriched;
     }
 
-    public void enrich(GridCacheSharedContext cctx) {
+    public void enrich(boolean affinityNode) {
         if (CU.isUtilityCache(cacheName()))
             return;
 
         if (isConfigurationEnriched())
             return;
 
-        cacheCfg = CacheConfigurationEnricher.enrich(cctx, cacheCfg, cacheCfgEnrichment);
+        cacheCfg = CacheConfigurationEnricher.enrich(cacheCfg, cacheCfgEnrichment, affinityNode);
 
         cacheCfgEnriched = true;
     }

@@ -347,14 +347,14 @@ public class CacheGroupDescriptor {
         return cacheCfgEnrichment == null || isConfigurationEnriched;
     }
 
-    public void enrich(GridCacheSharedContext cctx) {
+    public void enrich(boolean affinityNode) {
         if (CU.isUtilityCache(cacheOrGroupName()))
             return;
 
         if (isConfigurationEnriched())
             return;
 
-        cacheCfg = CacheConfigurationEnricher.enrich(cctx, cacheCfg, cacheCfgEnrichment);
+        cacheCfg = CacheConfigurationEnricher.enrich(cacheCfg, cacheCfgEnrichment, affinityNode);
 
         isConfigurationEnriched = true;
     }
