@@ -1751,7 +1751,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 }
                             }
 
-                            // Remove reader only if
+                            // Remove reader only if there are no other active transactions from it.
                             if (!hasOriginatingNodeId)
                                 clearReader(originatingNodeId);
                         }
