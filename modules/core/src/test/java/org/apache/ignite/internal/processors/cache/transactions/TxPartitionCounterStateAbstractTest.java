@@ -473,7 +473,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     private GridFutureAdapter<?> createSendFuture(TestRecordingCommunicationSpi wrapperSpi, Message msg) {
         GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
-        fut.listen(fut1 -> wrapperSpi.stopBlock(true, objects -> objects.get2().message() == msg, false));
+        fut.listen(fut1 -> wrapperSpi.stopBlock(true, objects -> objects.get2().message() == msg, false, true));
 
         return fut;
     }

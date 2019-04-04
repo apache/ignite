@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
@@ -53,7 +54,7 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
     public static final int PARTITION_ID = 0;
 
     /** */
-    public static final int SERVER_NODES = 3;
+    public static final int SERVER_NODES = 4;
 
     /**
      * Should observe same order of updates on all owners.
@@ -103,6 +104,10 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
         }
     }
 
+    @Override protected boolean isMultiJvm() {
+        return true;
+    }
+
     /**
      * TODO same test with historical rebalanbce and different backups(1,2).
      * TODO missing updates and removes.
@@ -111,9 +116,9 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
     public void testMultiThreadedUpdateOrderWithPrimaryRestart() throws Exception {
         backups = 2;
 
-        Ignite crd = startGridsMultiThreaded(SERVER_NODES);
+        Ignite prim = startGrids(SERVER_NODES);
 
-        IgniteEx client = startGrid("client");
+        prim.cluster().active(true);
 
         // TODO FIXME enable CQ in the test.
 //        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
@@ -130,36 +135,41 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
 //
 //        QueryCursor<Cache.Entry<Object, Object>> cur = client.cache(DEFAULT_CACHE_NAME).query(qry);
 
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
+        assertFalse(isRemoteJvm(prim.name()));
 
-        List<Integer> primaryKeys = partitionKeys(cache, PARTITION_ID, 10000, 0);
+        IgniteCache<Object, Object> cache = prim.cache(DEFAULT_CACHE_NAME);
 
-        Ignite prim = primaryNode(primaryKeys.get(0), DEFAULT_CACHE_NAME);
+        List<Integer> primaryKeys = primaryKeys(cache, 10000);
 
-        final List<Ignite> backups = backupNodes(primaryKeys.get(0), DEFAULT_CACHE_NAME);
+        //final List<Ignite> backups = backupNodes(primaryKeys.get(0), DEFAULT_CACHE_NAME);
 
-        long stop = U.currentTimeMillis() + 60_000;
+        long stop = U.currentTimeMillis() + 3 * 60_000;
 
         Random r = new Random();
+
+        assertTrue(prim == grid(0));
 
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
             while(U.currentTimeMillis() < stop) {
                 doSleep(5000);
 
-                Ignite backup = backups.get(r.nextInt(backups.size()));
+                Ignite restartNode = grid(1 + r.nextInt(3));
 
-                assertFalse(prim == backup);
+                assertFalse(prim == restartNode);
 
-                String name = backup.name();
+                String name = restartNode.name();
 
-                stopGrid(true, name);
+                //stopGrid(true, name);
+                IgniteProcessProxy.kill(name);
 
                 try {
-                    waitForTopology(SERVER_NODES);
+                    //waitForTopology(SERVER_NODES - 1);
 
                     doSleep(15000);
 
                     startGrid(name);
+
+                    awaitPartitionMapExchange();
                 }
                 catch (Exception e) {
                     fail();
@@ -176,14 +186,14 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(() -> {
             while (U.currentTimeMillis() < stop) {
-                int rangeStart = r.nextInt(primaryKeys.size() - 500);
-                int range = 1 + r.nextInt(499);
+                int rangeStart = r.nextInt(primaryKeys.size() - 3);
+                int range = 1 + r.nextInt(3);
 
                 List<Integer> keys = primaryKeys.subList(rangeStart, rangeStart + range);
 
-                try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+                try(Transaction tx = prim.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
                     for (Integer key : keys) {
-                        boolean rmv = r.nextFloat() < 0.7;
+                        boolean rmv = r.nextFloat() < 0.4;
                         if (rmv) {
                             cache.remove(key);
 
@@ -206,15 +216,11 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
         fut.get();
         fut2.get();
 
-        waitForTopology(SERVER_NODES + 1);
+        log.info("TX: puts=" + puts.sum() + ", removes=" + removes.sum() + ", size=" + cache.size());
 
-        awaitPartitionMapExchange();
+        assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
 
-        log.info("TX: puts=" + puts.sum() + ", removes=" + removes.sum());
-
-        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
-
-        assertCountersSame(PARTITION_ID, true);
+        //assertCountersSame(PARTITION_ID, true);
 
 //        cur.close();
 //

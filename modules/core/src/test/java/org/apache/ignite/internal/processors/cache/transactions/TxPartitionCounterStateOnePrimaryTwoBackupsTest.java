@@ -20,11 +20,12 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
@@ -32,11 +33,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -259,7 +260,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * <p>
      * 6. Start backup1.
      *
-     * Pass condition: backup1 has RollbackRecord in WAL. After logical recovery no rebalancing must happen.
+     * Pass condition: backup1 has RollbackRecord in WAL closing the gap on logical recovery.
+     * After logical recovery no rebalancing must happen.
      *
      * @throws Exception If failed.
      */
@@ -329,6 +331,118 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         awaitPartitionMapExchange();
 
         assertTrue(spi.recordedMessages(true).isEmpty());
+    }
+
+    /**
+     * Test scenario:
+     * <p>
+     * 1. Assign counters in order tx0, tx1
+     * <p>
+     * 2. Commit tx1.
+     * <p>
+     * 3. Delay tx0 commit on backup1.
+     * <p>
+     * 4. Put more keys in partition, trigger checkpoint, put more keys.
+     * <p>
+     * 5. Commit delayed tx closing gap.
+     * <p>
+     * 5. Restart backup1 without triggering checkpoint on stop.
+     * <p>
+     *
+     * Pass condition: backup1 after restart has sequential update counter.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMissingUpdateBetweenMultipleCheckpoints() throws Exception {
+        int[] sizes = new int[] {3, 7};
+        int[] assignOrder = new int[] {0, 1};
+
+        int delayBackupIdx = 0;
+
+        GridFutureAdapter<T2<Ignite, GridFutureAdapter>> fut = new GridFutureAdapter<>();
+
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    T2<Ignite, GridFutureAdapter> pair = fut.get(30, TimeUnit.SECONDS);
+
+                    IgniteEx client = grid(CLIENT_GRID_NAME);
+
+                    // Allow txs to work as usual.
+                    for (Ignite node : G.allGrids())
+                        TestRecordingCommunicationSpi.spi(node).stopBlock(false, null, true, false);
+
+                    List<Integer> keys = partitionKeys(
+                        client.cache(DEFAULT_CACHE_NAME),
+                        PARTITION_ID,
+                        10,
+                        sizes[0] + sizes[1] + PRELOAD_KEYS_CNT);
+
+                    for (Integer key : keys)
+                        client.cache(DEFAULT_CACHE_NAME).put(key, key);
+
+                    Ignite backup1 = pair.get1();
+
+                    forceCheckpoint(backup1);
+
+                    pair.get2().onDone(); // Commit delayed tx.
+                }
+                catch (IgniteCheckedException e) {
+                    fail(X.getFullStackTrace(e));
+                }
+            }
+        });
+
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, SERVERS_CNT,
+            map -> {
+                Ignite primary = map.get(PARTITION_ID).get1();
+                Ignite backup1 = map.get(PARTITION_ID).get2().get(delayBackupIdx);
+
+                return new TwoPhaseCommitTxCallbackAdapter(
+                    U.map((IgniteEx)primary, assignOrder),
+                    new HashMap<>(),
+                    new HashMap<>(),
+                    sizes.length) {
+
+                    @Override public boolean beforeBackupFinish(IgniteEx primary, IgniteEx backup,
+                        @Nullable IgniteInternalTx primaryTx,
+                        IgniteInternalTx backupTx, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
+
+                        if (order(nearXidVer) == assignOrder[0] && backup == backup1) {
+                            fut.onDone(new T2<>(backup1, proceedFut));
+
+                            // Delay commit on backup.
+                            return true;
+                        }
+
+                        return super.beforeBackupFinish(primary, backup, primaryTx, backupTx, nearXidVer, proceedFut);
+                    }
+                };
+            },
+            sizes);
+        // At this point all txs are committed and no gaps are expected.
+        Ignite backup1 = txTops.get(PARTITION_ID).get2().get(delayBackupIdx);
+
+        PartitionUpdateCounter cntr;
+
+        assertNotNull(cntr = counter(PARTITION_ID, backup1.name()));
+
+        assertTrue(cntr.sequential());
+
+        stopGrid(true, backup1.name());
+
+        startGrid(backup1.name());
+
+        awaitPartitionMapExchange();
+
+        assertNotNull(cntr = counter(PARTITION_ID, backup1.name()));
+
+        assertTrue(cntr.sequential());
+
+        assertPartitionsSame(idleVerify(grid("client"), DEFAULT_CACHE_NAME));
+
+        assertCountersSame(PARTITION_ID, true);
     }
 
     /**
