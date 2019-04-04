@@ -103,7 +103,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
 
         client = true;
 
-        IgniteEx clnt = startGrid(1);
+        IgniteEx clnt = startGrid(2);
 
         IgniteCacheDatabaseSharedManager clntDb = clnt.context().cache().context().database();
 
@@ -149,7 +149,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
 
         client = true;
 
-        IgniteEx clnt = startGrid(1);
+        IgniteEx clnt = startGrid(2);
 
         IgniteCacheDatabaseSharedManager clntDb = clnt.context().cache().context().database();
 
@@ -177,7 +177,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
 
         client = true;
 
-        IgniteEx clnt = startGrid(1);
+        IgniteEx clnt = startGrid(2);
 
         IgniteCacheDatabaseSharedManager clntDb = clnt.context().cache().context().database();
 
@@ -250,6 +250,8 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     /** */
     protected IgniteEx startSrv() throws Exception {
         IgniteEx srv = startGrid(0);
+
+        startGrid(1);
 
         srv.cluster().active(true);
 
