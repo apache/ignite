@@ -39,7 +39,6 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
     @Test
     public void testNodeRestart() throws Exception {
         lazyAllocation = true;
-
         client = false;
 
         IgniteEx srv = startSrv();
@@ -57,7 +56,6 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
     @Test
     public void testClientNodeRestart() throws Exception {
         lazyAllocation = true;
-
         client = false;
 
         IgniteEx srv = startSrv();
@@ -85,7 +83,6 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
     @Test
     public void testHugeNotUsedMemoryRegion() throws Exception {
         lazyAllocation = true;
-
         client = false;
 
         IgniteConfiguration cfg = getConfiguration("test-server");
