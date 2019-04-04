@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
@@ -31,17 +35,35 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Test suite to check that user-defined parameters for static cache configurations are not explicitly deserialized
  * on non-affinity nodes.
  */
+@RunWith(Parameterized.class)
 public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAbstractTest {
+    /** */
+    @Parameterized.Parameters(name = "Persistence enabled = {0}")
+    public static List<Object[]> parameters() {
+        ArrayList<Object[]> params = new ArrayList<>();
+
+        params.add(new Object[]{false});
+        params.add(new Object[]{true});
+
+        return params;
+    }
+
     /** Client mode. */
     private boolean clientMode;
 
     /** Caches. */
     private CacheConfiguration[] caches;
+
+    /** Persistence enabled. */
+    @Parameterized.Parameter
+    public boolean persistenceEnabled;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -53,6 +75,12 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
 
         if (caches != null)
             cfg.setCacheConfiguration(caches);
+
+        if (persistenceEnabled)
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setPersistenceEnabled(true).setMaxSize(256 * 1024 * 1024))
+            );
 
         return cfg;
     }
@@ -92,16 +120,22 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
     public void testSerializationForCachesConfiguredOnCoordinator() throws Exception {
         caches = new CacheConfiguration[] {onlyOnNode(0), onlyOnNode(1), onlyOnNode(2)};
 
-        startGrid(0);
+        IgniteEx crd = startGrid(0);
 
         caches = null;
 
         startGridsMultiThreaded(1, 2);
 
+        if (persistenceEnabled)
+            crd.cluster().active(true);
+
         awaitPartitionMapExchange();
 
         for (Ignite node : G.allGrids())
             checkCaches((IgniteEx) node);
+
+        if (persistenceEnabled)
+            restartNodesAndCheck();
     }
 
     /**
@@ -109,7 +143,7 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
      */
     @Test
     public void testSerializationForCachesConfiguredOnDifferentNodes1() throws Exception {
-        startGrid(0);
+        IgniteEx crd = startGrid(0);
 
         caches = new CacheConfiguration[] {onlyOnNode(0), onlyOnNode(1)};
 
@@ -119,10 +153,18 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
 
         startGrid(2);
 
+        caches = null;
+
+        if (persistenceEnabled)
+            crd.cluster().active(true);
+
         awaitPartitionMapExchange();
 
         for (Ignite node : G.allGrids())
             checkCaches((IgniteEx) node);
+
+        if (persistenceEnabled)
+            restartNodesAndCheck();
     }
 
     /**
@@ -132,7 +174,7 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
     public void testSerializationForCachesConfiguredOnDifferentNodes2() throws Exception {
         caches = new CacheConfiguration[] {onlyOnNode(0)};
 
-        startGrid(0);
+        IgniteEx crd = startGrid(0);
 
         caches = new CacheConfiguration[] {onlyOnNode(1)};
 
@@ -142,10 +184,18 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
 
         startGrid(2);
 
+        caches = null;
+
+        if (persistenceEnabled)
+            crd.cluster().active(true);
+
         awaitPartitionMapExchange();
 
         for (Ignite node : G.allGrids())
             checkCaches((IgniteEx) node);
+
+        if (persistenceEnabled)
+            restartNodesAndCheck();
     }
 
     /**
@@ -155,7 +205,7 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
     public void testSerializationForCachesConfiguredOnDifferentNodes3() throws Exception {
         caches = new CacheConfiguration[] {onlyOnNode(1)};
 
-        startGrid(0);
+        IgniteEx crd = startGrid(0);
 
         caches = new CacheConfiguration[] {onlyOnNode(2)};
 
@@ -165,17 +215,25 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
 
         startGrid(2);
 
+        caches = null;
+
+        if (persistenceEnabled)
+            crd.cluster().active(true);
+
         awaitPartitionMapExchange();
 
         for (Ignite node : G.allGrids())
             checkCaches((IgniteEx) node);
+
+        if (persistenceEnabled)
+            restartNodesAndCheck();
     }
 
     /**
      *
      */
     @Test
-    public void testSerialzationForCachesOnClientNode() throws Exception {
+    public void testSerializationForCachesOnClientNode() throws Exception {
         startGrid(0);
 
         caches = new CacheConfiguration[] {onlyOnNode(0), onlyOnNode(1)};
@@ -189,7 +247,29 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
         caches = null;
         clientMode = true;
 
-        startGrid(3);
+        IgniteEx clnt = startGrid(3);
+
+        clientMode = false;
+
+        if (persistenceEnabled)
+            clnt.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        for (Ignite node : G.allGrids())
+            checkCaches((IgniteEx) node);
+
+        if (persistenceEnabled)
+            restartNodesAndCheck();
+    }
+
+    /**
+     * Restart nodes and check caches.
+     */
+    private void restartNodesAndCheck() throws Exception {
+        stopAllGrids();
+
+        startGridsMultiThreaded(3);
 
         awaitPartitionMapExchange();
 
@@ -209,7 +289,8 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
                 continue;
 
             boolean affinityNode = CU.affinityNode(clusterNode, cacheDesc.cacheConfiguration().getNodeFilter())
-                || cacheDesc.receivedFrom().equals(node.localNode().id());
+                // A cache can be started on node where it was configured in case of non-persistent mode.
+                || (!persistenceEnabled && cacheDesc.receivedFrom().equals(node.localNode().id()));
 
             if (affinityNode) {
                 IgniteInternalCache cache = cacheProcessor.cache(cacheDesc.cacheName());

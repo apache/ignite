@@ -75,6 +75,7 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
@@ -2472,6 +2473,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     : "Cache " + cacheAdapter.context() + " is still in recovery mode after start, but not activated.";
 
                 stopCacheSafely(cacheContext);
+
+                log.info("Shutdown " + cacheContext.name());
             }
         }
     }
@@ -5802,7 +5805,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Override public void afterBinaryMemoryRestore(
             IgniteCacheDatabaseSharedManager mgr,
             GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException {
+
+            Object consistentId = ctx.pdsFolderResolver().resolveFolders().consistentId();
+            DetachedClusterNode clusterNode = new DetachedClusterNode(consistentId, ctx.nodeAttributes());
+
             for (DynamicCacheDescriptor cacheDescriptor : persistentCaches()) {
+                boolean affinityNode = CU.affinityNode(clusterNode, cacheDescriptor.cacheConfiguration().getNodeFilter());
+
+                if (!affinityNode)
+                    continue;
+
                 startCacheInRecoveryMode(cacheDescriptor);
 
                 querySchemas.put(cacheDescriptor.cacheId(), cacheDescriptor.schema().copy());
