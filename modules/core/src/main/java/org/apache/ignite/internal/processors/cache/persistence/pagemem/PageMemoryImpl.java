@@ -238,7 +238,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     private final DirectMemoryProvider directMemoryProvider;
 
     /** Segments array. */
-    private Segment[] segments;
+    private volatile Segment[] segments;
+
+    private Object segmentsLock = new Object();
 
     /** */
     private PagePool checkpointPool;
@@ -347,58 +349,64 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        assert stopped;
+        synchronized (segmentsLock) {
+            if (!stopped)
+                return;
 
-        stopped = false;
+            stopped = false;
 
-        directMemoryProvider.initialize(sizes);
+            directMemoryProvider.initialize(sizes);
 
-        List<DirectMemoryRegion> regions = new ArrayList<>(sizes.length);
+            List<DirectMemoryRegion> regions = new ArrayList<>(sizes.length);
 
-        while (true) {
-            DirectMemoryRegion reg = directMemoryProvider.nextRegion();
+            while (true) {
+                DirectMemoryRegion reg = directMemoryProvider.nextRegion();
 
-            if (reg == null)
-                break;
+                if (reg == null)
+                    break;
 
-            regions.add(reg);
+                regions.add(reg);
+            }
+
+            int regs = regions.size();
+
+            Segment[] segments = new Segment[regs - 1];
+
+            DirectMemoryRegion cpReg = regions.get(regs - 1);
+
+            checkpointPool = new PagePool(regs - 1, cpReg, cpBufPagesCntr);
+
+            long checkpointBuf = cpReg.size();
+
+            long totalAllocated = 0;
+            int pages = 0;
+            long totalTblSize = 0;
+
+            for (int i = 0; i < regs - 1; i++) {
+                assert i < segments.length;
+
+                DirectMemoryRegion reg = regions.get(i);
+
+                totalAllocated += reg.size();
+
+                segments[i] = new Segment(i, regions.get(i), checkpointPool.pages() / segments.length, throttlingPlc);
+
+                pages += segments[i].pages();
+                totalTblSize += segments[i].tableSize();
+            }
+
+            this.segments = segments;
+
+            initWriteThrottle();
+
+            if (log.isInfoEnabled())
+                log.info("Started page memory [memoryAllocated=" + U.readableSize(totalAllocated, false) +
+                    ", pages=" + pages +
+                    ", tableSize=" + U.readableSize(totalTblSize, false) +
+                    ", checkpointBuffer=" + U.readableSize(checkpointBuf, false) +
+                    ']');
+
         }
-
-        int regs = regions.size();
-
-        segments = new Segment[regs - 1];
-
-        DirectMemoryRegion cpReg = regions.get(regs - 1);
-
-        checkpointPool = new PagePool(regs - 1, cpReg, cpBufPagesCntr);
-
-        long checkpointBuf = cpReg.size();
-
-        long totalAllocated = 0;
-        int pages = 0;
-        long totalTblSize = 0;
-
-        for (int i = 0; i < regs - 1; i++) {
-            assert i < segments.length;
-
-            DirectMemoryRegion reg = regions.get(i);
-
-            totalAllocated += reg.size();
-
-            segments[i] = new Segment(i, regions.get(i), checkpointPool.pages() / segments.length, throttlingPlc);
-
-            pages += segments[i].pages();
-            totalTblSize += segments[i].tableSize();
-        }
-
-        initWriteThrottle();
-
-        if (log.isInfoEnabled())
-            log.info("Started page memory [memoryAllocated=" + U.readableSize(totalAllocated, false) +
-                ", pages=" + pages +
-                ", tableSize=" + U.readableSize(totalTblSize, false) +
-                ", checkpointBuffer=" + U.readableSize(checkpointBuf, false) +
-                ']');
     }
 
     /**
@@ -415,19 +423,21 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean deallocate) throws IgniteException {
-        if (log.isDebugEnabled())
-            log.debug("Stopping page memory.");
+        synchronized (segmentsLock) {
+            if (log.isDebugEnabled())
+                log.debug("Stopping page memory.");
 
-        U.shutdownNow(getClass(), asyncRunner, log);
+            U.shutdownNow(getClass(), asyncRunner, log);
 
-        if (segments != null) {
-            for (Segment seg : segments)
-                seg.close();
+            if (segments != null) {
+                for (Segment seg : segments)
+                    seg.close();
+            }
+
+            stopped = true;
+
+            directMemoryProvider.shutdown(deallocate);
         }
-
-        stopped = true;
-
-        directMemoryProvider.shutdown(deallocate);
     }
 
     @Override public boolean stopped() {
@@ -1053,6 +1063,9 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param dirtyRatioThreshold Throttle threshold.
      */
     boolean shouldThrottle(double dirtyRatioThreshold) {
+        if (segments == null)
+            return false;
+
         for (Segment segment : segments) {
             if (segment.shouldThrottle(dirtyRatioThreshold))
                 return true;
@@ -1065,6 +1078,9 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return Max dirty ratio from the segments.
      */
     double getDirtyPagesRatio() {
+        if (segments == null)
+            return 0D;
+
         double res = 0;
 
         for (Segment segment : segments) {
@@ -1078,6 +1094,9 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return Total pages can be placed in all segments.
      */
     public long totalPages() {
+        if (segments == null)
+            return 0L;
+
         long res = 0;
 
         for (Segment segment : segments) {
@@ -1325,25 +1344,30 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public int invalidate(int grpId, int partId) {
-        int tag = 0;
+        synchronized (segmentsLock) {
+            if (stopped)
+                return 0;
 
-        for (Segment seg : segments) {
-            seg.writeLock().lock();
+            int tag = 0;
 
-            try {
-                int newTag = seg.incrementPartGeneration(grpId, partId);
+            for (Segment seg : segments) {
+                seg.writeLock().lock();
 
-                if (tag == 0)
-                    tag = newTag;
+                try {
+                    int newTag = seg.incrementPartGeneration(grpId, partId);
 
-                assert tag == newTag;
+                    if (tag == 0)
+                        tag = newTag;
+
+                    assert tag == newTag;
+                }
+                finally {
+                    seg.writeLock().unlock();
+                }
             }
-            finally {
-                seg.writeLock().unlock();
-            }
+
+            return tag;
         }
-
-        return tag;
     }
 
     /** {@inheritDoc} */
@@ -1413,6 +1437,9 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return Total number of acquired pages.
      */
     public long acquiredPages() {
+        if (segments == null)
+            return 0L;
+
         long total = 0;
 
         for (Segment seg : segments) {
@@ -1682,6 +1709,9 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return Number of active pages.
      */
     public int activePagesCount() {
+        if (segments == null)
+            return 0;
+
         int total = 0;
 
         for (Segment seg : segments)
@@ -1749,6 +1779,9 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return Segment.
      */
     private Segment segment(int grpId, long pageId) {
+        if (segments == null)
+            System.out.println("PageMemoryImpl.segment");
+
         int idx = segmentIndex(grpId, pageId, segments.length);
 
         return segments[idx];
@@ -1953,6 +1986,9 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return Collection of all page IDs marked as dirty.
      */
     public Collection<FullPageId> dirtyPages() {
+        if (segments == null)
+            return Collections.EMPTY_SET;
+
         Collection<FullPageId> res = new HashSet<>((int)loadedPages());
 
         for (Segment seg : segments)

@@ -140,6 +140,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** Segments array. */
     private volatile Segment[] segments;
 
+    private Object segmentsLock = new Object();
+
     /** */
     private final AtomicInteger allocatedPages = new AtomicInteger();
 
@@ -208,60 +210,65 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        assert stopped;
+        synchronized (segmentsLock) {
+            if (!stopped)
+                return;
 
-        stopped = false;
+            stopped = false;
 
-        long startSize = dataRegionCfg.getInitialSize();
-        long maxSize = dataRegionCfg.getMaxSize();
+            long startSize = dataRegionCfg.getInitialSize();
+            long maxSize = dataRegionCfg.getMaxSize();
 
-        long[] chunks = new long[SEG_CNT];
+            long[] chunks = new long[SEG_CNT];
 
-        chunks[0] = startSize;
+            chunks[0] = startSize;
 
-        long total = startSize;
+            long total = startSize;
 
-        long allocChunkSize = Math.max((maxSize - startSize) / (SEG_CNT - 1), 256L * 1024 * 1024);
+            long allocChunkSize = Math.max((maxSize - startSize) / (SEG_CNT - 1), 256L * 1024 * 1024);
 
-        int lastIdx = 0;
+            int lastIdx = 0;
 
-        for (int i = 1; i < SEG_CNT; i++) {
-            long allocSize = Math.min(allocChunkSize, maxSize - total);
+            for (int i = 1; i < SEG_CNT; i++) {
+                long allocSize = Math.min(allocChunkSize, maxSize - total);
 
-            if (allocSize <= 0)
-                break;
+                if (allocSize <= 0)
+                    break;
 
-            chunks[i] = allocSize;
+                chunks[i] = allocSize;
 
-            total += allocSize;
+                total += allocSize;
 
-            lastIdx = i;
+                lastIdx = i;
+            }
+
+            if (lastIdx != SEG_CNT - 1)
+                chunks = Arrays.copyOf(chunks, lastIdx + 1);
+
+            if (segments == null)
+                directMemoryProvider.initialize(chunks);
+
+            addSegment(null);
         }
-
-        if (lastIdx != SEG_CNT - 1)
-            chunks = Arrays.copyOf(chunks, lastIdx + 1);
-
-        if (segments == null)
-            directMemoryProvider.initialize(chunks);
-
-        addSegment(null);
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean deallocate) throws IgniteException {
-        if (log.isDebugEnabled())
-            log.debug("Stopping page memory.");
+        synchronized (segmentsLock) {
+            if (log.isDebugEnabled())
+                log.debug("Stopping page memory.");
 
-        stopped = true;
+            stopped = true;
 
-        directMemoryProvider.shutdown(deallocate);
+            directMemoryProvider.shutdown(deallocate);
 
-        if (directMemoryProvider instanceof Closeable) {
-            try {
-                ((Closeable)directMemoryProvider).close();
-            }
-            catch (IOException e) {
-                throw new IgniteException(e);
+            if (directMemoryProvider instanceof Closeable) {
+                try {
+                    ((Closeable)directMemoryProvider).close();
+                }
+                catch (IOException e) {
+                    throw new IgniteException(e);
+                }
             }
         }
     }

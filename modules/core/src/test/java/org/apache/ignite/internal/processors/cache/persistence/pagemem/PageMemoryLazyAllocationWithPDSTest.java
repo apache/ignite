@@ -18,11 +18,18 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.IgniteUtils.GB;
+
 /** */
 public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocationTest {
+
+    public static final long PETA_BYTE = 1024 * GB;
+
     /** {@inheritDoc} */
     @Override public void testLocalCacheOnClientNodeWithLazyAllocation() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-11677");
@@ -72,6 +79,23 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
         IgniteCache<Integer, String> cache = startGrid(1).cache("my-cache-2");
 
         assertEquals(cache.get(1), "test");
+    }
+
+    /** */
+    @Test
+    public void testHugeNotUsedMemoryRegion() throws Exception {
+        lazyAllocation = true;
+
+        client = false;
+
+        IgniteConfiguration cfg = getConfiguration("test-server");
+
+        for (DataRegionConfiguration drc : cfg.getDataStorageConfiguration().getDataRegionConfigurations()) {
+            if (drc.getName().equals(LAZY_REGION))
+                drc.setMaxSize(PETA_BYTE);
+        }
+
+        IgniteEx srv = startGrid(cfg);
     }
 
     /** {@inheritDoc} */
