@@ -30,8 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL Fields query. This query can return specific fields of data based
- * on SQL {@code 'select'} clause, as opposed to {@link SqlQuery}, which always returns
- * the whole key and value objects back.
+ * on SQL {@code 'select'} clause.
  * <h1 class="header">Collocated Flag</h1>
  * Collocation flag is used for optimization purposes. Whenever Ignite executes
  * a distributed query, it sends sub-queries to individual cluster members.
