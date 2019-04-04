@@ -534,14 +534,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * Will preserve crc in buffer if keepCrc is true.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Group ID.
      * @param pageId Page ID.
      * @param pageBuf Page buffer.
      * @param keepCrc Keep CRC flag.
      * @throws IgniteCheckedException If failed.
      */
-    public void read(int cacheId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
-        PageStore store = getStore(cacheId, PageIdUtils.partId(pageId));
+    public void read(int grpId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+        PageStore store = getStore(grpId, PageIdUtils.partId(pageId));
 
         try {
             store.read(pageId, pageBuf, keepCrc);

@@ -113,17 +113,7 @@ public class DenseMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDense() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
         return true;
     }
 
@@ -194,7 +184,7 @@ public class DenseMatrixStorage implements MatrixStorage {
     }
 
     /** Get the access mode of this storage. */
-    public int accessMode() {
+    @Override public int accessMode() {
         return stoMode;
     }
 
