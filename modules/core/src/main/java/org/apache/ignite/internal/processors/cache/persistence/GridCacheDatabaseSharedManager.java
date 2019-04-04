@@ -40,7 +40,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -2180,30 +2180,35 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         boolean apply = status.needRestoreMemory();
 
-        WALRecord startRec = !CheckpointStatus.NULL_PTR.equals(status.startPtr) || apply ?  cctx.wal().read(status.startPtr) : null;
+        try {
+            WALRecord startRec = !CheckpointStatus.NULL_PTR.equals(status.startPtr) || apply ? cctx.wal().read(status.startPtr) : null;
 
-        if (apply) {
-            if (finalizeState)
-                U.quietAndWarn(log, "Ignite node stopped in the middle of checkpoint. Will restore memory state and " +
-                    "finish checkpoint on node start.");
+            if (apply) {
+                if (finalizeState)
+                    U.quietAndWarn(log, "Ignite node stopped in the middle of checkpoint. Will restore memory state and " +
+                        "finish checkpoint on node start.");
 
-            cctx.pageStore().beginRecover();
+                cctx.pageStore().beginRecover();
 
-            if (!(startRec instanceof CheckpointRecord))
-                throw new StorageException("Checkpoint marker doesn't point to checkpoint record " +
-                    "[ptr=" + status.startPtr + ", rec=" + startRec + "]");
+                if (!(startRec instanceof CheckpointRecord))
+                    throw new StorageException("Checkpoint marker doesn't point to checkpoint record " +
+                        "[ptr=" + status.startPtr + ", rec=" + startRec + "]");
 
-            WALPointer cpMark = ((CheckpointRecord)startRec).checkpointMark();
+                WALPointer cpMark = ((CheckpointRecord)startRec).checkpointMark();
 
-            if (cpMark != null) {
-                log.info("Restoring checkpoint after logical recovery, will start physical recovery from " +
-                    "back pointer: " + cpMark);
+                if (cpMark != null) {
+                    log.info("Restoring checkpoint after logical recovery, will start physical recovery from " +
+                        "back pointer: " + cpMark);
 
-                recPtr = cpMark;
+                    recPtr = cpMark;
+                }
             }
+            else
+                cctx.wal().notchLastCheckpointPtr(status.startPtr);
         }
-        else
-            cctx.wal().notchLastCheckpointPtr(status.startPtr);
+        catch (NoSuchElementException e) {
+            throw new StorageException("Checkpoint marker couldn't be read from WAL [ptr=" + status.startPtr + "]");
+        }
 
         AtomicReference<IgniteCheckedException> applyError = new AtomicReference<>();
 
