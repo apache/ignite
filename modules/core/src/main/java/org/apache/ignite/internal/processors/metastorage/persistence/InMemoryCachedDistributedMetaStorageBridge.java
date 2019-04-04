@@ -43,7 +43,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     @Override public Serializable read(String globalKey, boolean unmarshal) throws IgniteCheckedException {
         byte[] valBytes = cache.get(globalKey);
 
-        return unmarshal ? unmarshal(valBytes) : valBytes;
+        return unmarshal ? unmarshal(dms.marshaller, valBytes) : valBytes;
     }
 
     /** {@inheritDoc} */
@@ -54,7 +54,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     ) throws IgniteCheckedException {
         for (Map.Entry<String, byte[]> entry : cache.entrySet()) {
             if (entry.getKey().startsWith(globalKeyPrefix))
-                cb.accept(entry.getKey(), unmarshal ? unmarshal(entry.getValue()) : entry.getValue());
+                cb.accept(entry.getKey(), unmarshal ? unmarshal(dms.marshaller, entry.getValue()) : entry.getValue());
         }
     }
 
@@ -67,15 +67,8 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     }
 
     /** {@inheritDoc} */
-    @Override public void onUpdateMessage(
-        DistributedMetaStorageHistoryItem histItem,
-        Serializable val,
-        boolean notifyListeners
-    ) throws IgniteCheckedException {
-        dms.ver = dms.ver.nextVersion(histItem);
-
-        if (notifyListeners)
-            dms.notifyListeners(histItem.key, read(histItem.key, true), val);
+    @Override public void onUpdateMessage(DistributedMetaStorageHistoryItem histItem) {
+        dms.setVer(dms.getVer().nextVersion(histItem));
     }
 
     /** {@inheritDoc} */
@@ -83,10 +76,10 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     }
 
     /** {@inheritDoc} */
-    @Override public DistributedMetaStorageHistoryItem[] localFullData() {
+    @Override public DistributedMetaStorageKeyValuePair[] localFullData() {
         return cache.entrySet().stream().map(
-            entry -> new DistributedMetaStorageHistoryItem(entry.getKey(), entry.getValue())
-        ).toArray(DistributedMetaStorageHistoryItem[]::new);
+            entry -> new DistributedMetaStorageKeyValuePair(entry.getKey(), entry.getValue())
+        ).toArray(DistributedMetaStorageKeyValuePair[]::new);
     }
 
     /** */
@@ -94,15 +87,15 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
         if (startupExtras.fullNodeData != null) {
             DistributedMetaStorageClusterNodeData fullNodeData = startupExtras.fullNodeData;
 
-            dms.ver = fullNodeData.ver;
+            dms.setVer(fullNodeData.ver);
 
-            for (DistributedMetaStorageHistoryItem item : fullNodeData.fullData)
+            for (DistributedMetaStorageKeyValuePair item : fullNodeData.fullData)
                 cache.put(item.key, item.valBytes);
 
             for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
                 DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
 
-                dms.addToHistoryCache(dms.ver.id + i + 1 - len, histItem);
+                dms.addToHistoryCache(dms.getVer().id + i + 1 - len, histItem);
             }
         }
     }
