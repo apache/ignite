@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.IgniteUtils.GB;
@@ -62,7 +63,7 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
 
         client = true;
 
-        IgniteEx clnt = startGrid(1);
+        IgniteEx clnt = startGrid(2);
 
         createCacheAndPut(clnt);
 
@@ -74,7 +75,7 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
 
         client = true;
 
-        IgniteCache<Integer, String> cache = startGrid(1).cache("my-cache-2");
+        IgniteCache<Integer, String> cache = startGrid(2).cache("my-cache-2");
 
         assertEquals(cache.get(1), "test");
     }
@@ -85,14 +86,31 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
         lazyAllocation = true;
         client = false;
 
-        IgniteConfiguration cfg = getConfiguration("test-server");
+        IgniteEx srv = startGrid(cfgWithHugeRegion("test-server"));
+
+        startGrid(cfgWithHugeRegion("test-server-2"));
+
+        srv.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        stopAllGrids(false);
+
+        srv = startGrid(cfgWithHugeRegion("test-server"));
+
+        startGrid(cfgWithHugeRegion("test-server-2"));
+
+        srv.cluster().active(true);
+    }
+
+    @NotNull private IgniteConfiguration cfgWithHugeRegion(String name) throws Exception {
+        IgniteConfiguration cfg = getConfiguration(name);
 
         for (DataRegionConfiguration drc : cfg.getDataStorageConfiguration().getDataRegionConfigurations()) {
             if (drc.getName().equals(LAZY_REGION))
                 drc.setMaxSize(PETA_BYTE);
         }
-
-        IgniteEx srv = startGrid(cfg);
+        return cfg;
     }
 
     /** {@inheritDoc} */
