@@ -79,7 +79,7 @@ class VectorImplementationsFixtures {
     private static class SparseLocalVectorFixture extends VectorSizesExtraFixture<Integer> {
         /** */
         SparseLocalVectorFixture() {
-            super("SparseLocalVector", SparseVector::new, "access mode",
+            super("SparseLocalVector", (x,y) -> new SparseVector(x), "access mode",
                 new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null});
         }
     }
@@ -216,7 +216,7 @@ class VectorImplementationsFixtures {
         }
 
         /** */
-        void selfTest() {
+        @Override void selfTest() {
             final Set<Integer> extraIdxs = new HashSet<>();
 
             int cnt = 0;

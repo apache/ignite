@@ -294,7 +294,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     return;
                 }
 
-                if (cache.state().transition()) {
+                if (cache.state().transition() &&
+                    (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_FAILED)
+                ) {
                     if (log.isDebugEnabled())
                         log.debug("Adding pending event: " + evt);
 

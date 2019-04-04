@@ -89,11 +89,7 @@ public enum IgniteFeatures {
 
         int bitIdx = featureId & 0x7;
 
-        boolean res = (features[byteIdx] & (1 << bitIdx)) != 0;
-
-        assert res == BitSet.valueOf(features).get(featureId);
-
-        return res;
+        return (features[byteIdx] & (1 << bitIdx)) != 0;
     }
 
     /**
