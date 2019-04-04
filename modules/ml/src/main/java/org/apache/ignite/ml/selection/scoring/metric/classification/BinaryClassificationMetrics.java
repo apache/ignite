@@ -58,16 +58,7 @@ public class BinaryClassificationMetrics extends AbstractMetrics<BinaryClassific
         // for ROC AUC calculation
         long pos = 0;
         long neg = 0;
-        PriorityQueue<Pair<Double, Double>> queue = new PriorityQueue<>(new Comparator<Pair<Double, Double>>() {
-            @Override public int compare(Pair<Double, Double> o1, Pair<Double, Double> o2) {
-                if (o1.getKey() < o2.getKey())
-                    return -1;
-                if (o1.getKey() > o2.getKey())
-                    return 1;
-                return 0;
-            }
-        });
-
+        PriorityQueue<Pair<Double, Double>> queue = new PriorityQueue<>(Comparator.comparingDouble(Pair::getKey));
 
         while (iter.hasNext()) {
             LabelPair<Double> e = iter.next();

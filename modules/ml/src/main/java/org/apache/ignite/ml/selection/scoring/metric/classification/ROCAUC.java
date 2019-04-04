@@ -40,15 +40,9 @@ public class ROCAUC implements Metric<Double> {
 
     /** {@inheritDoc} */
     @Override public double score(Iterator<LabelPair<Double>> iter) {
-        PriorityQueue<Pair<Double, Double>> queue = new PriorityQueue<>(new Comparator<Pair<Double, Double>>() {
-            @Override public int compare(Pair<Double, Double> o1, Pair<Double, Double> o2) {
-                if (o1.getKey() < o2.getKey())
-                    return -1;
-                if (o1.getKey() > o2.getKey())
-                    return 1;
-                return 0;
-            }
-        });
+        //TODO: It should work with not binary values only, see IGNITE-11680.
+
+        PriorityQueue<Pair<Double, Double>> queue = new PriorityQueue<>(Comparator.comparingDouble(Pair::getKey));
 
         long pos = 0;
         long neg = 0;
@@ -73,7 +67,10 @@ public class ROCAUC implements Metric<Double> {
         return calculateROCAUC(queue, pos, neg, positiveClsLb);
     }
 
-    /** */
+    /**
+     * Calculates the ROC AUC value based on queue of pairs,
+     * amount of positive/negative cases and label of positive class.
+     */
     public static double calculateROCAUC(PriorityQueue<Pair<Double, Double>> queue, long pos, long neg, double positiveClsLb) {
         double[] lb = new double[queue.size()];
         double[] prediction = new double[queue.size()];
@@ -81,7 +78,6 @@ public class ROCAUC implements Metric<Double> {
 
         while (!queue.isEmpty()) {
             Pair<Double, Double> elem = queue.poll();
-            System.out.println(elem.getKey() + " " + elem.getValue());
             lb[cnt] = elem.getValue();
             prediction[cnt] = elem.getKey();
             cnt++;
@@ -114,24 +110,24 @@ public class ROCAUC implements Metric<Double> {
         return auc;
     }
 
-    /** */
+    /** Get the positive label. */
     public double positiveClsLb() {
         return positiveClsLb;
     }
 
-    /** */
+    /** Set the positive label. */
     public ROCAUC withPositiveClsLb(double positiveClsLb) {
         if (Double.isFinite(positiveClsLb))
             this.positiveClsLb = positiveClsLb;
         return this;
     }
 
-    /** */
+    /** Get the negative label. */
     public double negativeClsLb() {
         return negativeClsLb;
     }
 
-    /** */
+    /** Set the negative label. */
     public ROCAUC withNegativeClsLb(double negativeClsLb) {
         if (Double.isFinite(negativeClsLb))
             this.negativeClsLb = negativeClsLb;

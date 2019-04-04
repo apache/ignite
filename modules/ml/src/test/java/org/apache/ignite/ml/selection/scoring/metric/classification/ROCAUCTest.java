@@ -26,7 +26,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link Accuracy}.
+ * Tests for {@link ROCAUC}.
  */
 public class ROCAUCTest {
     /** */
@@ -44,6 +44,7 @@ public class ROCAUCTest {
         assertEquals(Double.NaN, score, 1e-12);
     }
 
+    /** */
     @Test
     public void testTotalUntruth() {
         Metric<Double> scoreCalculator = new ROCAUC();
@@ -58,6 +59,7 @@ public class ROCAUCTest {
         assertEquals(Double.NaN, score, 1e-12);
     }
 
+    /** */
     @Test
     public void testOneDifferent() {
         Metric<Double> scoreCalculator = new ROCAUC();
@@ -72,6 +74,7 @@ public class ROCAUCTest {
         assertEquals(0.5, score, 1e-12);
     }
 
+    /** */
     @Test
     public void testOneDifferentButBalanced() {
         Metric<Double> scoreCalculator = new ROCAUC();
@@ -86,6 +89,7 @@ public class ROCAUCTest {
         assertEquals(0.75, score, 1e-12);
     }
 
+    /** */
     @Test
     public void testTwoDifferentAndBalanced() {
         Metric<Double> scoreCalculator = new ROCAUC();
@@ -98,5 +102,20 @@ public class ROCAUCTest {
         double score = scoreCalculator.score(cursor.iterator());
 
         assertEquals(0.5, score, 1e-12);
+    }
+
+    /** */
+    @Test
+    public void testNotOnlyBinaryValues() {
+        Metric<Double> scoreCalculator = new ROCAUC();
+
+        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
+            Arrays.asList(1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0),
+            Arrays.asList(0.40209054, 0.33697626, 0.5449324 , 0.13010869, 0.19019675, 0.39767829, 0.9686739 , 0.91783275, 0.7503783 , 0.5306605)
+        );
+
+        double score = scoreCalculator.score(cursor.iterator());
+
+        assertEquals(0.625, score, 1e-12);
     }
 }
