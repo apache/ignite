@@ -122,6 +122,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryReq
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
+import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
@@ -446,7 +447,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean inTx,
         int timeout
     ) throws IgniteCheckedException {
-        assert select.mvccEnabled() ^ mvccTracker == null;
+        assert !select.mvccEnabled() || mvccTracker != null;
 
         String qry;
 
@@ -455,7 +456,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else
             qry = qryDesc.sql();
 
-        boolean mvccEnabled = select.mvccEnabled();
+        boolean mvccEnabled = mvccTracker != null;
 
         try {
             assert select != null;
@@ -973,8 +974,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean failOnMultipleStmts,
         GridQueryCancel cancel
     ) {
-        boolean mvccEnabled = false;
-
         try {
             List<FieldsQueryCursor<List<?>>> res = new ArrayList<>(1);
 
@@ -1023,9 +1022,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     assert dml != null;
 
-                    if (!mvccEnabled)
-                        mvccEnabled = dml.mvccEnabled();
-
                     List<? extends FieldsQueryCursor<List<?>>> dmlRes = executeDml(
                         newQryDesc,
                         newQryParams,
@@ -1042,9 +1038,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     assert select != null;
 
-                    if (!mvccEnabled)
-                        mvccEnabled = select.mvccEnabled();
-
                     List<? extends FieldsQueryCursor<List<?>>> qryRes = executeSelect(
                         newQryDesc,
                         newQryParams,
@@ -1060,9 +1053,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return res;
         }
         catch (RuntimeException | Error e) {
-            GridNearTxLocal tx;
+            GridNearTxLocal tx = ctx.cache().context().tm().tx();
 
-            if (mvccEnabled && (tx = tx(ctx)) != null &&
+            if (tx != null &&
                 (!(e instanceof IgniteSQLException) || /* Parsing errors should not rollback Tx. */
                     ((IgniteSQLException)e).sqlState() != SqlStateCode.PARSING_EXCEPTION)) {
 
