@@ -52,6 +52,7 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.mxbean.SqlQueryMXBean;
 import org.apache.ignite.internal.mxbean.SqlQueryMXBeanImpl;
@@ -121,6 +122,12 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
+import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
+import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
+import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
+import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -269,6 +276,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** Discovery event listener. */
     private GridLocalEventListener discoLsnr;
+
+    /** Query message listener. */
+    private GridMessageListener qryLsnr;
 
     /**
      * @return Kernal context.
@@ -1904,8 +1914,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         nodeId = ctx.localNodeId();
         marshaller = ctx.config().getMarshaller();
 
-        mapQryExec = new GridMapQueryExecutor(busyLock);
-        rdcQryExec = new GridReduceQueryExecutor(busyLock);
+        mapQryExec = new GridMapQueryExecutor();
+        rdcQryExec = new GridReduceQueryExecutor();
 
         mapQryExec.start(ctx, this);
         rdcQryExec.start(ctx, this);
@@ -1917,6 +1927,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         ctx.event().addLocalEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
+        qryLsnr = (nodeId, msg, plc) -> onMessage(nodeId, msg);
+
+        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, qryLsnr);
+
         runningQryMgr = new RunningQueryManager(ctx);
         partExtractor = new PartitionExtractor(new H2PartitionResolver(this));
 
@@ -1926,6 +1940,57 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             U.warn(log, "Custom H2 serialization is already configured, will override.");
 
         JdbcUtils.serializer = h2Serializer();
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param msg Message.
+     */
+    public void onMessage(UUID nodeId, Object msg) {
+        assert msg != null;
+
+        ClusterNode node = ctx.discovery().node(nodeId);
+
+        if (node == null)
+            return; // Node left, ignore.
+
+        if (!busyLock.enterBusy())
+            return;
+
+        try {
+            if (msg instanceof GridCacheQueryMarshallable)
+                ((GridCacheQueryMarshallable)msg).unmarshall(ctx.config().getMarshaller(), ctx);
+
+            try {
+                boolean processed = true;
+
+                if (msg instanceof GridQueryNextPageRequest)
+                    mapQueryExecutor().onNextPageRequest(node, (GridQueryNextPageRequest)msg);
+                else if (msg instanceof GridQueryNextPageResponse)
+                    reduceQueryExecutor().onNextPage(node, (GridQueryNextPageResponse)msg);
+                else if (msg instanceof GridH2QueryRequest)
+                    mapQueryExecutor().onQueryRequest(node, (GridH2QueryRequest)msg);
+                else if (msg instanceof GridH2DmlRequest)
+                    mapQueryExecutor().onDmlRequest(node, (GridH2DmlRequest)msg);
+                else if (msg instanceof GridH2DmlResponse)
+                    reduceQueryExecutor().onDmlResponse(node, (GridH2DmlResponse)msg);
+                else if (msg instanceof GridQueryFailResponse)
+                    reduceQueryExecutor().onFail(node, (GridQueryFailResponse)msg);
+                else if (msg instanceof GridQueryCancelRequest)
+                    mapQueryExecutor().onCancel(node, (GridQueryCancelRequest)msg);
+                else
+                    processed = false;
+
+                if (processed && log.isDebugEnabled())
+                    log.debug("Processed message " + msg.getClass().getName() + ": " + nodeId + "->" + ctx.localNodeId() + " " + msg);
+            }
+            catch (Throwable th) {
+                U.error(log, "Failed to process message: " + msg, th);
+            }
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
@@ -2062,6 +2127,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         longRunningQryMgr.stop();
         connMgr.stop();
 
+        ctx.io().removeMessageListener(GridTopic.TOPIC_QUERY, qryLsnr);
         ctx.event().removeLocalEventListener(discoLsnr);
 
         if (log.isDebugEnabled())

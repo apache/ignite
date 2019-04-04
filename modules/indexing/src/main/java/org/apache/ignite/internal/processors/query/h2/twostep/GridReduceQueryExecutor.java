@@ -50,11 +50,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
@@ -79,7 +77,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlReque
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
-import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -146,12 +143,12 @@ public class GridReduceQueryExecutor {
     private final Lock fakeTblsLock = new ReentrantLock();
 
     /** */
-    private final GridSpinBusyLock busyLock;
-
-    /** */
     private final CIX2<ClusterNode,Message> locNodeHnd = new CIX2<ClusterNode,Message>() {
         @Override public void applyx(ClusterNode locNode, Message msg) {
-            h2.mapQueryExecutor().onMessage(locNode.id(), msg);
+            assert msg instanceof GridQueryNextPageRequest || msg instanceof GridH2QueryRequest ||
+                msg instanceof GridH2DmlRequest || msg instanceof GridQueryCancelRequest : msg.getClass();
+
+            h2.onMessage(locNode.id(), msg);
         }
     };
 
@@ -160,15 +157,6 @@ public class GridReduceQueryExecutor {
 
     /** Default query timeout. */
     private long dfltQueryTimeout;
-
-    /**
-     * Constructor.
-     *
-     * @param busyLock Busy lock.
-     */
-    public GridReduceQueryExecutor(GridSpinBusyLock busyLock) {
-        this.busyLock = busyLock;
-    }
 
     /**
      * @param ctx Context.
@@ -184,24 +172,6 @@ public class GridReduceQueryExecutor {
         log = ctx.log(GridReduceQueryExecutor.class);
 
         mapper = new ReducePartitionMapper(ctx, log);
-
-        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
-            @SuppressWarnings("deprecation")
-            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                if (!busyLock.enterBusy())
-                    return;
-
-                try {
-                    if (msg instanceof GridCacheQueryMarshallable)
-                        ((GridCacheQueryMarshallable)msg).unmarshall(ctx.config().getMarshaller(), ctx);
-
-                    GridReduceQueryExecutor.this.onMessage(nodeId, msg);
-                }
-                finally {
-                    busyLock.leaveBusy();
-                }
-            }
-        });
     }
 
     /**
@@ -234,42 +204,10 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param nodeId Node ID.
-     * @param msg Message.
-     */
-    public void onMessage(UUID nodeId, Object msg) {
-        try {
-            assert msg != null;
-
-            ClusterNode node = ctx.discovery().node(nodeId);
-
-            if (node == null)
-                return; // Node left, ignore.
-
-            boolean processed = true;
-
-            if (msg instanceof GridQueryNextPageResponse)
-                onNextPage(node, (GridQueryNextPageResponse)msg);
-            else if (msg instanceof GridQueryFailResponse)
-                onFail(node, (GridQueryFailResponse)msg);
-            else if (msg instanceof GridH2DmlResponse)
-                onDmlResponse(node, (GridH2DmlResponse)msg);
-            else
-                processed = false;
-
-            if (processed && log.isDebugEnabled())
-                log.debug("Processed response: " + nodeId + "->" + ctx.localNodeId() + " " + msg);
-        }
-        catch(Throwable th) {
-            U.error(log, "Failed to process message: " + msg, th);
-        }
-    }
-
-    /**
      * @param node Node.
      * @param msg Message.
      */
-    private void onFail(ClusterNode node, GridQueryFailResponse msg) {
+    public void onFail(ClusterNode node, GridQueryFailResponse msg) {
         ReduceQueryRun r = runs.get(msg.queryRequestId());
 
         fail(r, node.id(), msg.error(), msg.failCode());
@@ -305,7 +243,7 @@ public class GridReduceQueryExecutor {
      * @param node Node.
      * @param msg Message.
      */
-    private void onNextPage(final ClusterNode node, final GridQueryNextPageResponse msg) {
+    public void onNextPage(final ClusterNode node, final GridQueryNextPageResponse msg) {
         final long qryReqId = msg.queryRequestId();
         final int qry = msg.query();
         final int seg = msg.segmentId();
@@ -338,7 +276,7 @@ public class GridReduceQueryExecutor {
                             (byte)setDataPageScanEnabled(0, r.isDataPageScanEnabled()));
 
                         if (node.isLocal())
-                            h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg0);
+                            h2.mapQueryExecutor().onNextPageRequest(node, msg0);
                         else
                             ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg0, GridIoPolicy.QUERY_POOL);
                     }
@@ -932,7 +870,7 @@ public class GridReduceQueryExecutor {
      * @param node Node.
      * @param msg Message.
      */
-    private void onDmlResponse(final ClusterNode node, GridH2DmlResponse msg) {
+    public void onDmlResponse(final ClusterNode node, GridH2DmlResponse msg) {
         try {
             long reqId = msg.requestId();
 
