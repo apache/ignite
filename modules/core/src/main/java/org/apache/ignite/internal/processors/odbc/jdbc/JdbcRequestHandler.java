@@ -1441,7 +1441,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      *
      * @param partResRequested Boolean flag that signals whether client requested partiton result.
      * @param partRes Direved partition result.
-     *
      * @return True if applicable to jdbc thin client side best effort affinity:
      *   1. Partitoin result was requested;
      *   2. Partition result either null or
@@ -1449,7 +1448,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      *     b. Partition result tree neither PartitoinAllNode nor PartitionNoneNode;
      */
     private static boolean isClientBestEffortAffinityApplicable(boolean partResRequested, PartitionResult partRes) {
-        return partResRequested && (partRes == null || (partRes.affinity().isClientBestEffortAffinityApplicable() &&
+        return partResRequested && (partRes == null || (partRes.affinity() != null &&
+            partRes.affinity().isClientBestEffortAffinityApplicable() &&
             !(partRes.tree() instanceof PartitionNoneNode) && !(partRes.tree() instanceof PartitionAllNode)));
     }
 }
