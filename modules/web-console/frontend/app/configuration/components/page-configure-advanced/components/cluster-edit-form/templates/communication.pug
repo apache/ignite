@@ -236,6 +236,24 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     min: '1',
                     tip: 'Count of selectors te be used in TCP server'
                 })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Selectors spins:',
+                    model: `${communication}.selectorSpins`,
+                    name: '"selectorSpins"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Defines how many non-blocking selector.selectNow() should be made before falling into selector.select(long) in NIO server'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Connections per node:',
+                    model: `${communication}.connectionsPerNode`,
+                    name: '"connectionsPerNode"',
+                    placeholder: '1',
+                    min: '1',
+                    tip: 'Number of connections to each remote node'
+                })
             .pc-form-grid-col-60
                 +form-field__java-class({
                     label: 'Address resolver:',
@@ -264,6 +282,20 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     model: `${communication}.tcpNoDelay`,
                     name: '"tcpNoDelay"',
                     tip: 'Value for TCP_NODELAY socket option'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Use paired connections',
+                    model: `${communication}.usePairedConnections`,
+                    name: '"usePairedConnections"',
+                    tip: 'Maintain connection for outgoing and incoming messages separately'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.3.0")')
+                +form-field__checkbox({
+                    label: 'Filter reachable addresses',
+                    model: `${communication}.filterReachableAddresses`,
+                    name: '"filterReachableAddresses"',
+                    tip: 'Filter for reachable addresses on creating tcp client'
                 })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterCommunication')

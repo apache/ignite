@@ -223,6 +223,7 @@ public class WebConsoleConfigurationSelfTest {
         atomicCfgProps.add("atomicSequenceReserveSize");
         atomicCfgProps.add("backups");
         atomicCfgProps.add("affinity");
+        atomicCfgProps.add("groupName");
 
         metadata.put(AtomicConfiguration.class, new MetadataInfo(atomicCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
@@ -346,17 +347,13 @@ public class WebConsoleConfigurationSelfTest {
         commProps.add("directBuffer");
         commProps.add("directSendBuffer");
         commProps.add("tcpNoDelay");
+        commProps.add("selectorSpins");
+        commProps.add("connectionsPerNode");
+        commProps.add("usePairedConnections");
+        commProps.add("filterReachableAddresses");
+        commProps.add("soLinger");
 
-        Set<String> commPropsDep = new HashSet<>();
-        commPropsDep.add("discoveryStartupDelay");
-
-        // Removed from configuration since ignite 2.3
-        Set<String> commPropsExcl = new HashSet<>();
-        commPropsExcl.add("discoveryStartupDelay");
-        commPropsExcl.addAll(SPI_EXCLUDED_FIELDS);
-
-        metadata.put(TcpCommunicationSpi.class,
-            new MetadataInfo(commProps, commPropsDep, commPropsExcl));
+        metadata.put(TcpCommunicationSpi.class, new MetadataInfo(commProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
 
         Set<String> discoverySpiProps = new HashSet<>();
         discoverySpiProps.add("ipFinder");
@@ -384,7 +381,13 @@ public class WebConsoleConfigurationSelfTest {
         discoverySpiProps.add("authenticator");
         discoverySpiProps.add("forceServerMode");
         discoverySpiProps.add("clientReconnectDisabled");
-        metadata.put(TcpDiscoverySpi.class, new MetadataInfo(discoverySpiProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
+        discoverySpiProps.add("connectionRecoveryTimeout");
+        discoverySpiProps.add("reconnectDelay");
+
+        Set<String> discoverySpiExclProps = new HashSet<>();
+        discoverySpiExclProps.addAll(SPI_EXCLUDED_FIELDS);
+        discoverySpiExclProps.add("nodeAttributes");
+        metadata.put(TcpDiscoverySpi.class, new MetadataInfo(discoverySpiProps, EMPTY_FIELDS, discoverySpiExclProps));
 
         Set<String> connectorProps = new HashSet<>();
         connectorProps.add("jettyPath");
@@ -441,7 +444,10 @@ public class WebConsoleConfigurationSelfTest {
         dataStorageProps.add("metricsEnabled");
         dataStorageProps.add("alwaysWriteFullPages");
         dataStorageProps.add("writeThrottlingEnabled");
+        dataStorageProps.add("checkpointReadLockTimeout");
+        dataStorageProps.add("maxWalArchiveSize");
         dataStorageProps.add("walCompactionEnabled");
+        dataStorageProps.add("walCompactionLevel");
         metadata.put(DataStorageConfiguration.class, new MetadataInfo(dataStorageProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> dataRegionProps = new HashSet<>();
