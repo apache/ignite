@@ -1225,6 +1225,18 @@ module.exports.factory = function(mongoose) {
                 className: String
             }
         },
+        failureHandler: {
+            kind: {type: String, enum: ['RestartProcess', 'StopNodeOnHalt', 'StopNode', 'Noop', 'Custom']},
+            ignoredFailureTypes: [{type: String, enum: ['SEGMENTATION', 'SYSTEM_WORKER_TERMINATION',
+                    'SYSTEM_WORKER_BLOCKED', 'CRITICAL_ERROR', 'SYSTEM_CRITICAL_OPERATION_TIMEOUT']}],
+            StopNodeOnHalt: {
+                tryStop: Boolean,
+                timeout: Number
+            },
+            Custom: {
+                className: String
+            }
+        },
         mvccVacuumThreadCount: Number,
         mvccVacuumFrequency: Number,
         authenticationEnabled: Boolean,

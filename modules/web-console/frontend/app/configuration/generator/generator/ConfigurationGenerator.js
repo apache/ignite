@@ -1298,6 +1298,65 @@ export default class IgniteConfigurationGenerator {
         if (spis.length)
             cfg.arrayProperty('failoverSpi', 'failoverSpi', spis, 'org.apache.ignite.spi.failover.FailoverSpi');
 
+        if (available('2.5.0')) {
+            const handler = cluster.failureHandler;
+            const kind = _.get(handler, 'kind');
+
+            let bean;
+
+            switch (kind) {
+                case 'RestartProcess':
+                    bean = new Bean('org.apache.ignite.failure.RestartProcessFailureHandler', 'failureHandler', handler);
+
+                    break;
+
+                case 'StopNodeOnHalt':
+                    const failover = handler.StopNodeOnHalt;
+
+                    bean = new Bean('org.apache.ignite.failure.StopNodeOrHaltFailureHandler', 'failureHandler', handler.StopNodeOnHalt);
+
+                    if (failover || failover.tryStop || failover.timeout) {
+                        failover.tryStop = failover.tryStop || false;
+                        failover.timeout = failover.timeout || 0;
+
+                        bean.boolConstructorArgument('tryStop')
+                            .longConstructorArgument('timeout');
+                    }
+
+                    break;
+
+                case 'StopNode':
+                    bean = new Bean('org.apache.ignite.failure.StopNodeFailureHandler', 'failureHandler', handler);
+
+                    break;
+
+                case 'Noop':
+                    bean = new Bean('org.apache.ignite.failure.NoOpFailureHandler', 'failureHandler', handler);
+
+                    break;
+
+                case 'Custom':
+                    const clsName = _.get(handler, 'Custom.className');
+
+                    if (clsName)
+                        bean = new Bean(clsName, 'failureHandler', handler);
+
+                    break;
+
+                default:
+                    // No-op.
+            }
+
+            if (bean) {
+                if (['RestartProcess', 'StopNodeOnHalt', 'StopNode'].indexOf(kind) >= 0) {
+                    bean.collectionProperty('ignoredFailureTypes', 'ignoredFailureTypes', handler.ignoredFailureTypes,
+                        'org.apache.ignite.failure.FailureType', 'java.util.HashSet');
+                }
+
+                cfg.beanProperty('failureHandler', bean);
+            }
+        }
+
         return cfg;
     }
 
