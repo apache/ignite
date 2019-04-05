@@ -38,7 +38,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -152,8 +151,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
                         }
 
                     }
-                    else
-                        if (SchemaProposeDiscoveryMessage.class.isAssignableFrom(delegate.getClass())) {
+                    else if (SchemaProposeDiscoveryMessage.class.isAssignableFrom(delegate.getClass())) {
                         try {
                             awaitTimeout();
                         }
@@ -373,7 +371,6 @@ public class KillQueryTest extends GridCommonAbstractTest {
             async);
     }
 
-
     /**
      * Trying to cancel DROP INDEX command.
      *
@@ -403,7 +400,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
     private void testDropIndexCancellationUnsupported(boolean async) throws Exception {
         testCancellationUnsupported(
             Arrays.asList("CREATE TABLE " + currentTestTableName() + " (id INTEGER PRIMARY KEY, name VARCHAR)",
-            "CREATE INDEX " + currentTestTableName() + "_IDX ON " + currentTestTableName() + "(name, id)"),
+                "CREATE INDEX " + currentTestTableName() + "_IDX ON " + currentTestTableName() + "(name, id)"),
             "DROP INDEX " + currentTestTableName() + "_IDX",
             async);
     }
@@ -438,7 +435,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
         newBarrier(2);
 
         IgniteInternalFuture cancelRes = cancelQueryWithBarrier(sqlCmd,
-            "Query can't be cancelled due to such queries don't support cancellation",
+            "Query doesn't support cancellation",
             async);
 
         stmt.execute(sqlCmd);
@@ -559,7 +556,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(log,
             () -> reqCache.query(killQry),
             CacheException.class,
-            "Failed to cancel query due to query doesn't exist");
+            "Query with provided ID doesn't exist");
 
         cur.close();
 
@@ -781,7 +778,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
      *
      * @return <code>IgniteInternalFuture</code> to check whether exception was thrown.
      */
-    private IgniteInternalFuture cancel(int expQryNum, boolean async, String... skypSqls ) {
+    private IgniteInternalFuture cancel(int expQryNum, boolean async, String... skypSqls) {
         return GridTestUtils.runAsync(() -> {
             try {
                 TestSQLFunctions.cancelLatch.await();
