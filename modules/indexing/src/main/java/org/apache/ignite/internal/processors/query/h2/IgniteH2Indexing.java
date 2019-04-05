@@ -264,7 +264,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** H2 Connection manager. */
     private LongRunningQueryManager longRunningQryMgr;
 
-
     /**
      * @return Kernal context.
      */
@@ -1148,10 +1147,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean keepBinary,
         GridQueryCancel cancel
     ) {
-        // Check security.
-        if (ctx.security().enabled())
-            checkSecurity(select.cacheIds());
-
         // Register query.
         Long qryId = registerRunningQuery(qryDesc, cancel);
 
@@ -1286,6 +1281,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         int timeout
     ) throws IgniteCheckedException {
         assert !select.mvccEnabled() || mvccTracker != null;
+
+        // Check security.
+        if (ctx.security().enabled())
+            checkSecurity(select.cacheIds());
 
         Iterable<List<?>> iter;
 

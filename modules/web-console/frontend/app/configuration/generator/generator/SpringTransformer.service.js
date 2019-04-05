@@ -100,6 +100,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
                     return `${item}`;
                 case 'java.lang.String':
                 case 'PATH':
+                case 'PATH_ARRAY':
                     return this.escapeXml(item);
                 default:
                     return item;
@@ -209,6 +210,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
 
                     break;
                 case 'ARRAY':
+                case 'PATH_ARRAY':
                 case 'COLLECTION':
                     this._setCollection(sb, prop);
 

@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -474,7 +475,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
                 .query(createKillQuery(nodeId, Long.MAX_VALUE, async));
 
             return null;
-        }, CacheException.class, "Failed to cancel query due to query doesn't exist [nodeId=" + nodeId);
+        }, CacheException.class, "Query with provided ID doesn't exist [nodeId=" + nodeId);
     }
 
     /**
