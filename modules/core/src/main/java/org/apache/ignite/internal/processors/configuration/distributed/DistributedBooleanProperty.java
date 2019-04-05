@@ -23,16 +23,15 @@ package org.apache.ignite.internal.processors.configuration.distributed;
 public class DistributedBooleanProperty extends DistributedProperty<Boolean> {
 
     /** {@inheritDoc} */
-    DistributedBooleanProperty(String name, Boolean val) {
-        super(name, val);
+    DistributedBooleanProperty(String name) {
+        super(name);
     }
 
     /**
      * @param name Name of property.
-     * @param initVal Initial initVal of property.
      * @return Property detached from processor.(Distributed updating are not accessable).
      */
-    public static DistributedBooleanProperty detachedBooleanProperty(String name, Boolean initVal) {
-        return new DistributedBooleanProperty(name, initVal);
+    public static DistributedBooleanProperty detachedBooleanProperty(String name) {
+        return new DistributedBooleanProperty(name);
     }
 }

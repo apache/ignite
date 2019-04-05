@@ -17,32 +17,31 @@
 
 package org.apache.ignite.ml.knn.regression;
 
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.knn.KNNUtils;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
+
+import java.io.Serializable;
 
 /**
  * kNN algorithm trainer to solve regression task.
  */
 public class KNNRegressionTrainer extends SingleLabelDatasetTrainer<KNNRegressionModel> {
     /** {@inheritDoc} */
-    @Override public <K, V> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+    @Override public <K, V, C extends Serializable> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+        Vectorizer<K, V, C, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> KNNRegressionModel updateModel(
+    @Override public <K, V, C extends Serializable> KNNRegressionModel updateModel(
         KNNRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+        Vectorizer<K, V, C, Double> extractor) {
 
-        KNNRegressionModel res = new KNNRegressionModel(KNNUtils.buildDataset(envBuilder, datasetBuilder,
-            CompositionUtils.asFeatureExtractor(extractor),
-            CompositionUtils.asLabelExtractor(extractor)));
+        KNNRegressionModel res = new KNNRegressionModel(KNNUtils.buildDataset(envBuilder, datasetBuilder, extractor));
         if (mdl != null)
             res.copyStateFrom(mdl);
         return res;
