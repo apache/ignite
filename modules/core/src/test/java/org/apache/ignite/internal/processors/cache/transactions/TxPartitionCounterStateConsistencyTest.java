@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -27,7 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -43,21 +42,19 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Tests if updates using new counter implementation is applied in expected order.
+ * Test partitions consistency in various scenarios.
  */
-public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterStateAbstractTest {
+public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterStateAbstractTest {
     /** */
     public static final int PARTITION_ID = 0;
 
@@ -65,14 +62,15 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
     public static final int SERVER_NODES = 3;
 
     /**
-     * Should observe same order of updates on all owners.
-     * @throws Exception
+     * Test if same updates order on all owners after txs are finished.
+     *
+     * @throws Exception If failed.
      */
     @Test
     public void testSingleThreadedUpdateOrder() throws Exception {
         backups = 2;
 
-        Ignite crd = startGridsMultiThreaded(3);
+        Ignite crd = startGridsMultiThreaded(SERVER_NODES);
 
         IgniteEx client = startGrid("client");
 
@@ -113,41 +111,71 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
     }
 
     /**
-     * TODO same test with historical rebalanbce and different backups(1,2).
-     * TODO missing updates and removes.
+     * Test primary-backup partitions consistency while restarting primary node under load.
      */
     @Test
-    public void testMultiThreadedUpdateOrderWithPrimaryRestart() throws Exception {
+    public void testPartitionConsistencyWithPrimaryRestart() throws Exception {
         backups = 2;
 
-        Ignite prim = startGrids(SERVER_NODES);
+        Ignite prim = startGridsMultiThreaded(SERVER_NODES);
+
+        IgniteEx client = startGrid("client");
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        List<Integer> primaryKeys = primaryKeys(prim.cache(DEFAULT_CACHE_NAME), 10_000);
+
+        long stop = U.currentTimeMillis() + 60_000;
+
+        Random r = new Random();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            while(U.currentTimeMillis() < stop) {
+                doSleep(3000);
+
+                stopGrid(true, prim.name());
+
+                try {
+                    awaitPartitionMapExchange();
+
+                    startGrid(prim.name());
+
+                    awaitPartitionMapExchange();
+
+                    doSleep(5000);
+                }
+                catch (Exception e) {
+                    fail(X.getFullStackTrace(e));
+                }
+            }
+        }, 1, "node-restarter");
+
+        doRandomUpdates(r, client, primaryKeys, cache, stop).get();
+        fut.get();
+
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     * Test primary-backup partitions consistency while restarting random backup nodes under load.
+     */
+    @Test
+    public void testPartitionConsistencyWithBackupsRestart() throws Exception {
+        backups = 2;
+
+        final int srvNodes = SERVER_NODES + 1; // Add one non-owner node to test to increase entropy.
+
+        Ignite prim = startGrids(srvNodes);
 
         prim.cluster().active(true);
-
-        // TODO FIXME enable CQ in the test.
-//        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
-//
-//        ConcurrentLinkedHashMap<Object, T2<Object, Long>> events = new ConcurrentLinkedHashMap<>();
-//
-//        qry.setLocalListener(evts -> {
-//            for (CacheEntryEvent<?, ?> event : evts) {
-//                CacheQueryEntryEvent e0 = (CacheQueryEntryEvent)event;
-//
-//                events.put(event.getKey(), new T2<>(event.getValue(), e0.getPartitionUpdateCounter()));
-//            }
-//        });
-//
-//        QueryCursor<Cache.Entry<Object, Object>> cur = client.cache(DEFAULT_CACHE_NAME).query(qry);
 
         assertFalse(isRemoteJvm(prim.name()));
 
         IgniteCache<Object, Object> cache = prim.cache(DEFAULT_CACHE_NAME);
 
-        List<Integer> primaryKeys = primaryKeys(cache, 10000);
+        List<Integer> primaryKeys = primaryKeys(cache, 10_000);
 
-        //final List<Ignite> backups = backupNodes(primaryKeys.get(0), DEFAULT_CACHE_NAME);
-
-        long stop = U.currentTimeMillis() + 3 * 60_000;
+        long stop = U.currentTimeMillis() + 60_000;
 
         Random r = new Random();
 
@@ -155,47 +183,59 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
 
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
             while(U.currentTimeMillis() < stop) {
-                doSleep(5000);
+                doSleep(3_000);
 
-                Ignite restartNode = grid(1 + r.nextInt(3));
+                Ignite restartNode = grid(1 + r.nextInt(srvNodes - 1));
 
                 assertFalse(prim == restartNode);
 
                 String name = restartNode.name();
 
                 stopGrid(true, name);
-                //IgniteProcessProxy.kill(name);
 
                 try {
-                    //waitForTopology(SERVER_NODES - 1);
+                    waitForTopology(SERVER_NODES);
 
-                    doSleep(15000);
+                    doSleep(10_000);
 
                     startGrid(name);
 
                     awaitPartitionMapExchange();
                 }
                 catch (Exception e) {
-                    fail();
+                    fail(X.getFullStackTrace(e));
                 }
             }
         }, 1, "node-restarter");
 
-        //LongAdder cnt = new LongAdder();
+        doRandomUpdates(r, prim, primaryKeys, cache, stop).get();
+        fut.get();
 
-        final int threads = 4; //Runtime.getRuntime().availableProcessors();
+        assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
+    }
 
+    /**
+     * @param r Random.
+     * @param near Near node.
+     * @param primaryKeys Primary keys.
+     * @param cache Cache.
+     * @param stop Time to stop.
+     *
+     * @return Finish future.
+     */
+    private IgniteInternalFuture<?> doRandomUpdates(Random r, Ignite near, List<Integer> primaryKeys,
+        IgniteCache<Object, Object> cache, long stop) throws Exception {
         LongAdder puts = new LongAdder();
         LongAdder removes = new LongAdder();
 
-        IgniteInternalFuture<?> fut2 = multithreadedAsync(() -> {
+        return multithreadedAsync(() -> {
             while (U.currentTimeMillis() < stop) {
                 int rangeStart = r.nextInt(primaryKeys.size() - 3);
                 int range = 1 + r.nextInt(3);
 
                 List<Integer> keys = primaryKeys.subList(rangeStart, rangeStart + range);
 
-                try(Transaction tx = prim.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+                try(Transaction tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
                     for (Integer key : keys) {
                         boolean rmv = r.nextFloat() < 0.4;
                         if (rmv) {
@@ -212,27 +252,22 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
 
                     tx.commit();
                 }
-
-                //cnt.increment();
+                catch (Exception e) {
+                    assertTrue(X.hasCause(e, ClusterTopologyException.class) ||
+                        X.hasCause(e, TransactionRollbackException.class));
+                }
             }
-        }, threads, "tx-put-thread");
 
-        fut.get();
-        fut2.get();
+            log.info("TX: puts=" + puts.sum() + ", removes=" + removes.sum() + ", size=" + cache.size());
 
-        log.info("TX: puts=" + puts.sum() + ", removes=" + removes.sum() + ", size=" + cache.size());
-
-        assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
-
-        //assertCountersSame(PARTITION_ID, true);
-
-//        cur.close();
-//
-//        assertEquals(size, events.size());
+        }, Runtime.getRuntime().availableProcessors() * 2, "tx-update-thread");
     }
 
+    /**
+     * Test scenario when deferred removal queue is cleared during rebalance leading to inconsistencies.
+     */
     @Test
-    public void testDelete() throws Exception {
+    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL, "1000");
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
@@ -286,6 +321,8 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
             fut.get();
 
             assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
+
+            assertCountersSame(PARTITION_ID, true);
         }
         finally {
             System.clearProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL);
