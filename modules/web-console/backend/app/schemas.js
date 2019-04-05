@@ -1237,6 +1237,10 @@ module.exports.factory = function(mongoose) {
                 className: String
             }
         },
+        localEventListeners: [{
+            className: String,
+            eventTypes: [String]
+        }],
         mvccVacuumThreadCount: Number,
         mvccVacuumFrequency: Number,
         authenticationEnabled: Boolean,

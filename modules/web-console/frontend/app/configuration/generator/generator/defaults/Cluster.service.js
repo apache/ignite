@@ -452,6 +452,15 @@ const DFLT_CLUSTER = {
     failureHandler: {
         ignoredFailureTypes: {clsName: 'org.apache.ignite.failure.FailureType'}
     },
+    localEventListeners: {
+        keyClsName: 'org.apache.ignite.lang.IgnitePredicate',
+        keyClsGenericType: 'org.apache.ignite.events.Event',
+        isKeyClsGenericTypeExtended: true,
+        valClsName: 'int[]',
+        valClsNameShow: 'EVENTS',
+        keyField: 'className',
+        valField: 'eventTypes'
+    },
     authenticationEnabled: false,
     sqlQueryHistorySize: 1000,
     allSegmentationResolversPassRequired: true,
