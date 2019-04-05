@@ -211,8 +211,8 @@ export default class AbstractTransformer {
     }
 
     // Generate transactions group.
-    static clusterTransactions(transactionConfiguration) {
-        return this.toSection(this.generator.clusterTransactions(transactionConfiguration));
+    static clusterTransactions(transactionConfiguration, available) {
+        return this.toSection(this.generator.clusterTransactions(transactionConfiguration, available));
     }
 
     // Generate user attributes group.
