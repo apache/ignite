@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.testframework.GridTestNode;
 import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * Ensures that abstart classes of entry modifiers are compatible with old versions.
+ * Ensures that anonymous classes of entry modifiers are compatible with old versions.
  */
 public class DmlStatementsProcessorTest {
     /**
@@ -49,8 +52,47 @@ public class DmlStatementsProcessorTest {
     }
 
     /**
+     * Checks that the old remove-closure is used if the remote node version is less than 2.7.0.
+     */
+    @Test
+    public void testRemoveEntryModifierClassName() {
+        String oldClsName = DmlStatementsProcessor.class.getName() + "$" + 4;
+        String newClsName = DmlStatementsProcessor.class.getName() + "$" + 5;
+
+        checkRemoveEntryClassName("2.4.0", oldClsName);
+        checkRemoveEntryClassName("2.5.0", oldClsName);
+        checkRemoveEntryClassName("2.6.0", oldClsName);
+
+        checkRemoveEntryClassName("2.7.0", newClsName);
+        checkRemoveEntryClassName("2.8.0", newClsName);
+    }
+
+    /**
+     * Checks remove-closure class name.
+     *
+     * @param ver The version of the remote node.
+     * @param expClsName Expected class name.
+     */
+    private void checkRemoveEntryClassName(final String ver, String expClsName) {
+        ClusterNode node = new GridTestNode() {
+            @Override public IgniteProductVersion version() {
+                return IgniteProductVersion.fromString(ver);
+            }
+        };
+
+        IgniteInClosure<MutableEntry<Object, Object>> rmvC =
+            DmlStatementsProcessor.getRemoveClosure(node, 0);
+
+        Assert.assertNotNull("Check remove-closure", rmvC);
+
+        Assert.assertEquals("Check remove-closure class name for version " + ver,
+            expClsName, rmvC.getClass().getName());
+    }
+
+    /**
      * Checks that remove-closure is available by anonymous class position.
      */
+    @SuppressWarnings("unchecked")
     private void checkRemoveClosureByAnonymousPosition(int position) throws Exception {
         Class<?> cls = Class.forName(DmlStatementsProcessor.class.getName() + "$" + position);
 
