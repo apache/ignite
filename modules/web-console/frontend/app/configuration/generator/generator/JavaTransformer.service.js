@@ -400,6 +400,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                 case 'java.lang.String':
                     return `"${item.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
                 case 'PATH':
+                case 'PATH_ARRAY':
                     return `"${item.replace(/\\/g, '\\\\')}"`;
                 case 'java.lang.Class':
                     return `${this.javaTypes.shortClassName(item)}.class`;
@@ -612,6 +613,13 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                         this._setVarArg(sb, id, prop, vars, limitLines);
                     else
                         this._setArray(sb, id, prop, vars, limitLines);
+
+                    break;
+                case 'PATH_ARRAY':
+                    if (prop.varArg)
+                        this._setVarArg(sb, id, prop, this._toObject(prop.clsName, prop.items), limitLines);
+                    else
+                        this._setArray(sb, id, prop, this._toObject(prop.clsName, prop.items), limitLines);
 
                     break;
                 case 'COLLECTION':

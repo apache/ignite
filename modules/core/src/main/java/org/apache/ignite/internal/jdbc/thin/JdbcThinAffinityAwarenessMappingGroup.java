@@ -85,17 +85,18 @@ public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizab
      * id'. First form is more compact, so it's preffered in case of data transfering, second form is easier to use on
      * client side, cause we mainly retrieve data using partition is as key.
      *
+     * @param partsCnt Partitoins count.
      * @return Reverted form of partitions mapping: partition id -> node id.
      */
-    public Map<Integer, UUID> revertMappings() {
+    public UUID[] revertMappings(int partsCnt) {
         if (partitionsMappings == null)
             return null;
 
-        Map<Integer, UUID> reverted = new HashMap<>();
+        UUID[] reverted = new UUID[partsCnt];
 
         for (UUID nodeId : partitionsMappings.keySet()) {
             for (Integer partition : partitionsMappings.get(nodeId)) {
-                reverted.put(partition, nodeId);
+                reverted[partition] = nodeId;
             }
         }
 

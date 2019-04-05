@@ -103,8 +103,6 @@ public class MatrixViewConstructorTest {
             assertEquals(m.rowSize(), (delegateStorage).rowsLength());
             assertEquals(m.columnSize(), (delegateStorage).columnsLength());
 
-            assertEquals(m.isSequentialAccess(), delegateStorage.isSequentialAccess());
-            assertEquals(m.isRandomAccess(), delegateStorage.isRandomAccess());
             assertEquals(m.isDistributed(), delegateStorage.isDistributed());
             assertEquals(m.isDense(), delegateStorage.isDense());
             assertEquals(m.isArrayBased(), delegateStorage.isArrayBased());

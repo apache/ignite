@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
@@ -78,18 +79,24 @@ public class PartitionExtractor {
     /** Maximum number of partitions to be used in case of between expression. */
     private final int maxPartsCntBetween;
 
+    /** Grid kernal context. */
+    private final GridKernalContext ctx;
+
     /**
      * Constructor.
      *
      * @param partResolver Partition resolver.
+     * @param ctx Grid kernal context.
      */
-    public PartitionExtractor(H2PartitionResolver partResolver) {
+    public PartitionExtractor(H2PartitionResolver partResolver, GridKernalContext ctx) {
         this.partResolver = partResolver;
 
         maxPartsCntBetween = Integer.getInteger(
             IgniteSystemProperties.IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN,
             DFLT_MAX_EXTRACTED_PARTS_FROM_BETWEEN
         );
+
+        this.ctx = ctx;
     }
 
     /**
@@ -120,7 +127,8 @@ public class PartitionExtractor {
             return null;
 
         // Done.
-        return new PartitionResult(tree, tblModel.joinGroupAffinity(tree.joinGroup()));
+        return new PartitionResult(tree, tblModel.joinGroupAffinity(tree.joinGroup()),
+            ctx.cache().context().exchange().readyAffinityVersion());
     }
 
     /**
@@ -175,7 +183,7 @@ public class PartitionExtractor {
         // If there is no affinity, then we assume "NONE" result.
         assert aff != null || tree == PartitionNoneNode.INSTANCE;
 
-        return new PartitionResult(tree, aff);
+        return new PartitionResult(tree, aff, ctx.cache().context().exchange().readyAffinityVersion());
     }
 
     /**

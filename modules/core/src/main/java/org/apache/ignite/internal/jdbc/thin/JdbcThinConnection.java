@@ -43,7 +43,6 @@ import java.sql.Struct;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +59,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
@@ -87,7 +85,6 @@ import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionClientContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.HostAndPortRange;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -886,13 +883,9 @@ public class JdbcThinConnection implements Connection {
                     timer.schedule(reqTimeoutTimerTask, 0, REQUEST_TIMEOUT_PERIOD);
                 }
 
-                boolean reqPartRes = bestEffortAffinity && req instanceof JdbcQueryExecuteRequest &&
-                    (affinityCache == null ||
-                        !affinityCache.containsPartitionResult(((JdbcQueryExecuteRequest)req).sqlQuery()));
-
-                // Set boolean flag to JdbcQueryExecuteRequest in order to request PartitionResult.
+                JdbcQueryExecuteRequest qryReq = null;
                 if (req instanceof JdbcQueryExecuteRequest)
-                    ((JdbcQueryExecuteRequest)req).partitionResponseRequest(reqPartRes);
+                    qryReq = (JdbcQueryExecuteRequest) req;
 
                 JdbcResponse res = cliIo.sendRequest(req, stmt);
 
@@ -907,29 +900,7 @@ public class JdbcThinConnection implements Connection {
                 else if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
                     throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
 
-                if (bestEffortAffinity) {
-                    AffinityTopologyVersion resAffinityVer = res.affinityVersion();
-
-                    if (resAffinityVer != null &&
-                        (affinityCache == null || affinityCache.version().compareTo(resAffinityVer) < 0))
-                        affinityCache = new AffinityCache(resAffinityVer);
-
-                    // Partition result was requested.
-                    if (reqPartRes && res.response() instanceof JdbcQueryExecuteResult &&
-                        affinityCache.version().equals(resAffinityVer)) {
-                        PartitionResult partRes = ((JdbcQueryExecuteResult)res.response()).partitionResult();
-
-                        affinityCache.addSqlQuery(((JdbcQueryExecuteRequest)req).sqlQuery(),
-                            new JdbcThinPartitionResultDescriptor(
-                                partRes,
-                                (partRes != null && partRes.tree() != null) ?
-                                    GridCacheUtils.cacheId(partRes.tree().cacheName()) :
-                                    -1,
-                                partRes != null ?
-                                    new PartitionClientContext(partRes.affinity().parts()) :
-                                    null));
-                    }
-                }
+                updateAffinityCache(qryReq, res);
 
                 return new JdbcResultWithIo(res.response(), cliIo);
             }
@@ -961,35 +932,50 @@ public class JdbcThinConnection implements Connection {
      *
      * @param req Jdbc request for which we'll try to calculate node id.
      * @return node UUID or null if failed to calculate.
+     * @throws IOException If Exception occured during the network partiton destribution retrieval.
+     * @throws SQLException If Failed to calculate derived partitions.
      */
-    @Nullable private Set<UUID> calculateNodeIds(JdbcRequest req) {
-        if (!bestEffortAffinity || !(req instanceof JdbcQueryExecuteRequest) || affinityCache == null)
+    @Nullable private List<UUID> calculateNodeIds(JdbcRequest req) throws IOException, SQLException {
+        if (!bestEffortAffinity || !(req instanceof JdbcQueryExecuteRequest))
             return null;
 
         JdbcQueryExecuteRequest qry = (JdbcQueryExecuteRequest)req;
 
-        JdbcThinPartitionResultDescriptor partResDesc = affinityCache.partitionResult(qry.sqlQuery());
+        if (affinityCache == null) {
+            qry.partitionResponseRequest(true);
 
-        if (partResDesc == null)
+            return null;
+        }
+
+        JdbcThinPartitionResultDescriptor partResDesc = affinityCache.partitionResult(
+            new QualifiedSQLQuery(qry.schemaName(), qry.sqlQuery()));
+
+        // Value is empty.
+        if (partResDesc == JdbcThinPartitionResultDescriptor.EMPTY_DESCRIPTOR)
             return null;
 
-        int[] parts = calculatePartitions(partResDesc, qry.arguments());
+        // Key is missinging.
+        if (partResDesc == null) {
+            qry.partitionResponseRequest(true);
 
-        if (parts == null || parts.length == 0)
+            return null;
+        }
+
+        Collection<Integer> parts = calculatePartitions(partResDesc, qry.arguments());
+
+        if (parts == null || parts.isEmpty())
             return null;
 
-        Map<Integer, UUID> cacheDistr = affinityCache.cacheDistribution(partResDesc.cacheId());
+        UUID[] cacheDistr = retrieveCacheDistribution(partResDesc.cacheId(),
+            partResDesc.partitionResult().partitionsCount());
 
-        if (cacheDistr == null)
-            cacheDistr = retrieveCacheDistribution(partResDesc.cacheId());
-
-        if (parts.length == 1)
-            return Collections.singleton(cacheDistr.get(parts[0]));
+        if (parts.size() == 1)
+            return Collections.singletonList(cacheDistr[parts.iterator().next()]);
         else {
-            Set<UUID> bestEffortAffinityNodeIds = new HashSet<>();
+            List<UUID> bestEffortAffinityNodeIds = new ArrayList<>();
 
             for (int part : parts)
-                bestEffortAffinityNodeIds.add(cacheDistr.get(part));
+                bestEffortAffinityNodeIds.add(cacheDistr[part]);
 
             return bestEffortAffinityNodeIds;
         }
@@ -999,20 +985,20 @@ public class JdbcThinConnection implements Connection {
      * Retrieve cache destribution for specified cache Id.
      *
      * @param cacheId Cache Id.
-     * @return Partitions cache distibution.
+     * @param partCnt Partitons count.
+     * @return Partitions cache distribution.
+     * @throws IOException If Exception occured during the network partiton destribution retrieval.
      */
-    private Map<Integer, UUID> retrieveCacheDistribution(int cacheId) {
+    private UUID[] retrieveCacheDistribution(int cacheId, int partCnt) throws IOException {
+        UUID[] cacheDistr = affinityCache.cacheDistribution(cacheId);
+
+        if (cacheDistr != null)
+            return cacheDistr;
+
         JdbcResponse res;
 
-        try {
-            res = cliIo(null).sendRequest(
-                new JdbcCachePartitionsRequest(Collections.singleton(cacheId)), null);
-        }
-        catch (IOException e) {
-            onDisconnect();
-
-            return null;
-        }
+        res = cliIo(null).sendRequest(
+            new JdbcCachePartitionsRequest(Collections.singleton(cacheId)), null);
 
         assert res.status() == ClientListenerResponse.STATUS_SUCCESS;
 
@@ -1036,7 +1022,7 @@ public class JdbcThinConnection implements Connection {
 
         JdbcThinAffinityAwarenessMappingGroup mappingGrp = mappings.get(0);
 
-        Map<Integer, UUID> cacheDistr = mappingGrp.revertMappings();
+        cacheDistr = mappingGrp.revertMappings(partCnt);
 
         for (int mpCacheId : mappingGrp.cacheIds())
             affinityCache.addCacheDistribution(mpCacheId, cacheDistr);
@@ -1050,32 +1036,18 @@ public class JdbcThinConnection implements Connection {
      * @param partResDesc Partition result descriptor.
      * @param args Arguments.
      * @return Calculated partitions or {@code null} if failed to calculate and there should be a broadcast.
+     * @throws SQLException If Failed to calculate derived partitions.
      */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
-    public static int[] calculatePartitions(JdbcThinPartitionResultDescriptor partResDesc, Object[] args) {
+    public static Collection<Integer> calculatePartitions(JdbcThinPartitionResultDescriptor partResDesc, Object[] args)
+        throws SQLException {
         PartitionResult derivedParts = partResDesc.partitionResult();
 
         if (derivedParts != null) {
             try {
-                Collection<Integer> realParts = derivedParts.tree().apply(partResDesc.partitionClientContext(), args);
-
-                if (realParts == null)
-                    return null;
-                else if (realParts.isEmpty())
-                    return IgniteUtils.EMPTY_INTS;
-                else {
-                    int[] realParts0 = new int[realParts.size()];
-
-                    int i = 0;
-
-                    for (Integer realPart : realParts)
-                        realParts0[i++] = realPart;
-
-                    return realParts0;
-                }
+                return derivedParts.tree().apply(partResDesc.partitionClientContext(), args);
             }
             catch (IgniteCheckedException e) {
-                throw new CacheException("Failed to calculate derived partitions for query.", e);
+                throw new SQLException("Failed to calculate derived partitions for query.", SqlStateCode.INTERNAL_ERROR);
             }
         }
 
@@ -1425,7 +1397,7 @@ public class JdbcThinConnection implements Connection {
      * @return Ignite endpoint to use for request/response transferring.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
-    private JdbcThinTcpIo cliIo(Set<UUID> nodeIds) {
+    private JdbcThinTcpIo cliIo(List<UUID> nodeIds) {
         if (!bestEffortAffinity)
             return singleIo;
 
@@ -1435,21 +1407,25 @@ public class JdbcThinConnection implements Connection {
         if (nodeIds == null || nodeIds.isEmpty())
             return iosArr[RND.nextInt(iosArr.length)];
 
-        JdbcThinTcpIo io;
+        JdbcThinTcpIo io = null;
 
         if (nodeIds.size() == 1)
             io = ios.get(nodeIds.iterator().next());
         else {
-            Set<JdbcThinTcpIo> conns = new HashSet<>();
+            int initNodeId = RND.nextInt(nodeIds.size());
 
-            for (UUID nodeId : nodeIds) {
-                JdbcThinTcpIo conn = ios.get(nodeId);
+            int iterCnt = 0;
 
-                if (conn != null)
-                    conns.add(conn);
+            while (io == null) {
+                io = ios.get(nodeIds.get(initNodeId));
+
+                initNodeId = initNodeId == nodeIds.size() ? 0 : initNodeId + 1;
+
+                iterCnt++;
+
+                if (iterCnt == nodeIds.size())
+                    break;
             }
-
-            io = conns.toArray(new JdbcThinTcpIo[0])[RND.nextInt(conns.size())];
         }
 
         return io != null ? io : iosArr[RND.nextInt(iosArr.length)];
@@ -1686,6 +1662,38 @@ public class JdbcThinConnection implements Connection {
                     "Request timeout processing failure: unable to cancel request [reqId=" + reqId + ']', e);
 
                 cancel();
+            }
+        }
+    }
+
+    /**
+     * Recreates affinity cache if affinity topology version was changed and adds partition result to sql cache.
+     * @param qryReq Query request.
+     * @param res Jdbc Response.
+     */
+    private void updateAffinityCache(JdbcQueryExecuteRequest qryReq, JdbcResponse res) {
+        if (bestEffortAffinity) {
+            AffinityTopologyVersion resAffinityVer = res.affinityVersion();
+
+            if (resAffinityVer != null &&
+                (affinityCache == null || affinityCache.version().compareTo(resAffinityVer) < 0))
+                affinityCache = new AffinityCache(resAffinityVer);
+
+            // Partition result was requested.
+            if (res.response() instanceof JdbcQueryExecuteResult && qryReq.partitionResponseRequest()) {
+                PartitionResult partRes = ((JdbcQueryExecuteResult)res.response()).partitionResult();
+
+                if (partRes == null || affinityCache.version().equals(partRes.topologyVersion())) {
+                    affinityCache.addSqlQuery(new QualifiedSQLQuery(qryReq.schemaName(), qryReq.sqlQuery()),
+                        new JdbcThinPartitionResultDescriptor(
+                            partRes,
+                            (partRes != null && partRes.tree() != null) ?
+                                GridCacheUtils.cacheId(partRes.cacheName()) :
+                                -1,
+                            partRes != null ?
+                                new PartitionClientContext(partRes.partitionsCount()) :
+                                null));
+                }
             }
         }
     }
