@@ -1160,6 +1160,8 @@ public class GridCacheSharedContext<K, V> {
      * @return {@code True} if lazy memory allocation enabled. {@code False} otherwise.
      */
     public boolean isLazyMemoryAllocation() {
-        return gridConfig().getDataStorageConfiguration().isLazyMemoryAllocation() || gridConfig().isClientMode() ;
+        return gridConfig().isClientMode() ||
+            (gridConfig().getDataStorageConfiguration() != null &&
+                gridConfig().getDataStorageConfiguration().isLazyMemoryAllocation());
     }
 }
