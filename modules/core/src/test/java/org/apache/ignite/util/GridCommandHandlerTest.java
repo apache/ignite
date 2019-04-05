@@ -1402,7 +1402,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished",
-            "idle_verify task args were following: --cache-filter SYSTEM --exclude-caches wrong.* ",
+            "idle_verify task was executed with the following args: --cache-filter SYSTEM --exclude-caches wrong.* ",
             "--cache", "idle_verify", "--dump", "--cache-filter", "SYSTEM", "--exclude-caches", "wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
@@ -1453,6 +1453,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             "idle_verify check has finished, no conflicts have been found.",
             null,
             "--cache", "idle_verify", ".*", "--exclude-caches", "wrong-.*"
+        );
+        testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
+            true,
+            "idle_verify check has finished, no conflicts have been found.",
+            null,
+            "--cache", "idle_verify", ".*", "--cache-filter", "PERSISTENT"
         );
     }
 
