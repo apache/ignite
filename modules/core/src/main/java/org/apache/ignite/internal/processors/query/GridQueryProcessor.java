@@ -1252,23 +1252,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         op0.tableName());
             }
             else {
-                Map<String, String> aliases = e.getAliases();
-
                 for (String colName : op0.columns()) {
                     if (err != null)
                         break;
 
-                    String fldName = colName;
-
-                    if (!F.isEmpty(aliases)) {
-                        for (Map.Entry<String, String> a : aliases.entrySet()) {
-                            if (colName.equals(a.getValue())) {
-                                fldName = a.getKey();
-
-                                break;
-                            }
-                        }
-                    }
+                    String fldName = QueryUtils.fieldNameByAlias(e, colName);
 
                     if (!e.getFields().containsKey(fldName)) {
                         if (op0.ifExists()) {

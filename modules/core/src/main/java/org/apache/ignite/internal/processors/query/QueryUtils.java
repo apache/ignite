@@ -1547,6 +1547,35 @@ public class QueryUtils {
     }
 
     /**
+     * Get field name by alias.
+     *
+     * @param entity Query entity.
+     * @param alias Filed's alias.
+     * @return Field name.
+     */
+    public static String fieldNameByAlias(QueryEntity entity, String alias) {
+        if (!F.isEmpty(entity.getAliases())) {
+            for (Map.Entry<String, String> aliasEntry : entity.getAliases().entrySet()) {
+                if (F.eq(aliasEntry.getValue(), alias))
+                    return aliasEntry.getKey();
+            }
+        }
+
+        return alias;
+    }
+
+    /**
+     * Remove field by alias.
+     *
+     * @param entity Query entity.
+     * @param alias Filed's alias.
+     * @return {@code true} if the field is removed. Otherwise returns {@code false}.
+     */
+    public static boolean removeField(QueryEntity entity, String alias) {
+        return entity.getFields().remove(fieldNameByAlias(entity, alias)) != null;
+    }
+
+    /**
      * Private constructor.
      */
     private QueryUtils() {
