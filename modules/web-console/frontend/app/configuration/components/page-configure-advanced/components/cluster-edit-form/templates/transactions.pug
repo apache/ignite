@@ -95,5 +95,30 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     name: '"txManagerFactory"',
                     tip: 'Class name of transaction manager factory for integration with JEE app servers'
                 })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.5.0")')
+                +form-field__number({
+                    label: 'Partition map exchange timeout:',
+                    model: `${model}.txTimeoutOnPartitionMapExchange`,
+                    name: '"txTimeoutOnPartitionMapExchange"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Transaction timeout for partition map synchronization in milliseconds'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.8.0")')
+                +form-field__number({
+                    label: 'Deadlock timeout:',
+                    model: `${model}.deadlockTimeout`,
+                    name: '"deadlockTimeout"',
+                    placeholder: '10000',
+                    min: '0',
+                    tip: 'Timeout before starting deadlock detection for caches configured with TRANSACTIONAL_SNAPSHOT atomicity mode in milliseconds'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Use JTA synchronization',
+                    model: `${model}.useJtaSynchronization`,
+                    name: '"useJtaSynchronization"',
+                    tip: 'Use lightweight JTA synchronization callback to enlist into JTA transaction instead of creating a separate XA resource'
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterTransactions')

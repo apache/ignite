@@ -767,7 +767,10 @@ module.exports.factory = function(mongoose) {
             pessimisticTxLogLinger: Number,
             pessimisticTxLogSize: Number,
             txSerializableEnabled: Boolean,
-            txManagerFactory: String
+            txManagerFactory: String,
+            useJtaSynchronization: Boolean,
+            txTimeoutOnPartitionMapExchange: Number, // 2.5
+            deadlockTimeout: Number // 2.8
         },
         sslEnabled: Boolean,
         sslContextFactory: {
@@ -1185,7 +1188,8 @@ module.exports.factory = function(mongoose) {
             lockWaitTime: Number,
             rateTimeInterval: Number,
             tlbSize: Number,
-            subIntervals: Number
+            subIntervals: Number,
+            walAutoArchiveAfterInactivity: Number
         },
         mvccVacuumThreadCount: Number,
         mvccVacuumFrequency: Number
