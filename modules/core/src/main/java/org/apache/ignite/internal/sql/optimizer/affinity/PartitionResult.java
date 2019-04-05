@@ -57,7 +57,7 @@ public class PartitionResult {
         this.aff = aff;
         this.topVer = topVer;
         cacheName = tree != null ? tree.cacheName() : null;
-        partsCnt = aff.parts();
+        partsCnt = aff != null ? aff.parts() : 0;
     }
 
     /**
