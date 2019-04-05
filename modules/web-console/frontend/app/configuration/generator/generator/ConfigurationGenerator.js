@@ -1241,6 +1241,13 @@ export default class IgniteConfigurationGenerator {
             }
         }
 
+        cfg.mapProperty('localEventListeners', _.map(cluster.localEventListeners,
+            (lnr) => ({className: new EmptyBean(lnr.className), eventTypes: _.map(lnr.eventTypes, (evt) => {
+                const grp = _.find(this.eventGrps, ((grp) => grp.events.indexOf(evt) >= 0));
+
+                return {class: grp.class, label: evt};
+            })})), 'localEventListeners');
+
         return cfg;
     }
 
