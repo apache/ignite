@@ -715,7 +715,8 @@ public class GridReduceQueryExecutor {
                             null,
                             null,
                             null,
-                            null
+                            null,
+                            true
                         );
 
                         QueryContextRegistry qryCtxRegistry = h2.queryContextRegistry();

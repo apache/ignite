@@ -411,7 +411,8 @@ public class GridMapQueryExecutor {
                 h2.backupFilter(topVer, parts),
                 distributedJoinCtx,
                 mvccSnapshot,
-                reserved
+                reserved,
+                true
             );
 
             qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, lazy, qctx);

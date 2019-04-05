@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -65,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.StaticMvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -147,12 +151,14 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
@@ -475,7 +481,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 filter,
                 null,
                 mvccSnapshot,
-                null
+                null,
+                true
             );
 
             return new GridQueryFieldsResultAdapter(select.meta(), null) {
@@ -834,7 +841,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
 
             if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout())
-                qryInfo.printLogMessage(log, connMgr, "Long running query is finished");            return rs;
+                qryInfo.printLogMessage(log, connMgr, "Long running query is finished");
+
+            return rs;
         }
         catch (Throwable e) {
             if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout()) {
@@ -2712,5 +2721,112 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public LongRunningQueryManager longRunningQueries() {
         return longRunningQryMgr;
+    }
+
+    public void updateTableStatistics() {
+        for (GridH2Table tbl : schemaMgr.dataTables()) {
+            Column[] cols = tbl.getColumns();
+
+            List<Column> intCols  = new ArrayList<>(cols.length);
+
+            for (int i = 0; i < cols.length; i++){
+                Column col = cols[i];
+
+                if (col.getType() == 4) // Integer TODO: support other types
+                    intCols.add(col);
+            }
+
+            StringBuilder statsQry = new StringBuilder("SELECT ");
+
+            String colsExp = intCols.stream().map(Column::getName).collect(Collectors.joining(","));
+
+            statsQry.append(colsExp)
+                .append(" FROM ")
+                .append(tbl.getName());
+
+            SqlFieldsQuery selectFieldsQry = new SqlFieldsQuery(statsQry.toString())
+                .setLocal(true)
+                .setDataPageScanEnabled(true);
+
+            QueryParserResult selectParseRes = parser.parse(tbl.getSchema().getName(), selectFieldsQry, false);
+
+            IgniteSpiCloseableIterator<List<?>> it = null;
+
+            try {
+                GridQueryFieldsResult res = executeSelectLocal(
+                    selectParseRes.queryDescriptor(),
+                    selectParseRes.queryParameters(),
+                    selectParseRes.select(),
+                    backupFilter(null, null),
+                    tbl.cacheInfo().cacheContext().mvccEnabled() ? new StaticMvccQueryTracker(tbl.cacheContext(), new MvccSnapshotWithoutTxs(Long.MAX_VALUE, Long.MAX_VALUE, 0, 0)) : null, // TODO mvcc
+                    null,
+                    false,
+                    0
+                );
+
+                it = res.iterator();
+
+                List<Integer> mins = new ArrayList<>(Collections.nCopies(intCols.size(), null));
+                List<Integer> maxs = new ArrayList<>(Collections.nCopies(intCols.size(), null));
+                Map<Integer, Set<Integer>> ndvs = new HashMap<>(intCols.size());
+
+                // TODO corner case: empty table
+                assert it.hasNext();
+
+                while (it.hasNext()) {
+                    List<?> row = it.next();
+
+                    assert row.size() == intCols.size();
+
+                    for (int i = 0; i < row.size(); i++) {
+                        Integer val = (Integer)row.get(i);
+
+                        // TODO support nulls.
+                        assert val != null;
+
+                        // Min stats.
+                        Integer curMin = mins.get(i);
+
+                        if (curMin == null || val < curMin)
+                            mins.set(i, val);
+
+                        // Max stats.
+                        Integer curMax = maxs.get(i);
+
+                        if (curMax == null || val > curMax)
+                            maxs.set(i, val);
+
+                        // Number of distinct values stats (NDV).
+                        Set<Integer> distVals = ndvs.computeIfAbsent(i, k -> new HashSet<>());
+
+                        distVals.add(val);
+                    }
+                }
+
+                Map<Integer, GridH2Table.ColumnStatistics> colStats = new HashMap<>(intCols.size());
+
+                for (int i = 0; i < intCols.size(); i++) {
+                    int colId = intCols.get(i).getColumnId();
+                    int min = mins.get(i);
+                    int max = maxs.get(i);
+                    int ndv = ndvs.get(i).size();
+
+                    GridH2Table.ColumnStatistics colStat = new GridH2Table.ColumnStatistics(min, max, ndv);
+
+                    colStats.put(colId, colStat);
+                }
+
+                System.err.println("========= set colStats for tbl=" + tbl.getName() + ", stats=" + colStats);
+
+                tbl.setColumnStatistics(colStats);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                U.close(it, log);
+            }
+
+        }
     }
 }

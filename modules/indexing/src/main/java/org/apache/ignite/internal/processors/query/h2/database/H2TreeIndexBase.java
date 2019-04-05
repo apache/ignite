@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.engine.Session;
 import org.h2.result.SortOrder;
@@ -39,6 +40,8 @@ import org.h2.table.TableFilter;
 public abstract class H2TreeIndexBase extends GridH2IndexBase {
     /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
     public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
+
+    public static volatile boolean useStats;
 
     /**
      * Constructor.
@@ -57,13 +60,31 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
         HashSet<Column> allColumnsSet) {
-        long rowCnt = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
+        QueryContext qctx = queryContextRegistry().getThreadLocal();
 
-        int mul = getDistributedMultiplier(ses, filters, filter);
+        assert qctx != null;
 
-        return mul * baseCost;
+        boolean locQry = qctx.local();
+
+        double cost = 0;
+
+        if (locQry && useStats) {
+            long rowCnt = getRowCountApproximation();
+
+            cost = getCostUsingStatistics(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
+        }
+        else {
+            long rowCnt = 10_000; // Fallback to the previous behaviour
+
+            double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
+
+            int mul = getDistributedMultiplier(ses, filters, filter);
+
+            cost = mul * baseCost;
+        }
+
+        return cost;
     }
 
     /**
@@ -144,10 +165,5 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return 10_000; // TODO
     }
 }

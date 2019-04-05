@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.HashSet;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.h2.engine.Session;
 import org.h2.result.SortOrder;
@@ -24,7 +25,7 @@ import org.h2.table.Column;
 import org.h2.table.TableFilter;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashSet;
+import static org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase.useStats;
 
 /**
  * Scan index for {@link GridH2Table}. Delegates to {@link CacheDataTree} when either index rebuild is in progress,
@@ -72,11 +73,22 @@ public class H2TableScanIndex extends H2ScanIndex<GridH2IndexBase> {
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
         SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+
+        if (delegate().localQuery() && useStats) {
+            long rowCnt = getRowCountApproximation();
+
+            double cost = delegate().getCostUsingStatistics(masks, rowCnt, filters, filter, sortOrder, true, allColumnsSet);
+
+            return cost;
+        }
+
         double baseCost = super.getCost(ses, masks, filters, filter, sortOrder, allColumnsSet);
 
         int mul = delegate().getDistributedMultiplier(ses, filters, filter);
 
-        return mul * baseCost;
+        double cost =  mul * baseCost;
+
+        return cost;
     }
 
     /** {@inheritDoc} */

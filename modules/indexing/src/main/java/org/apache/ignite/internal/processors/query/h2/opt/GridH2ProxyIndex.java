@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.HashSet;
+import java.util.List;
 import org.apache.ignite.internal.processors.query.h2.opt.join.ProxyDistributedLookupBatch;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
@@ -32,9 +34,6 @@ import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
-
-import java.util.HashSet;
-import java.util.List;
 
 /**
  * Allows to have 'free' index for alias columns
@@ -79,44 +78,38 @@ public class GridH2ProxyIndex extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public void close(Session session) {
+    @Override public void close(Session ses) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void add(Session session, Row row) {
+    @Override public void add(Session ses, Row row) {
         throw DbException.getUnsupportedException("add");
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(Session session, Row row) {
+    @Override public void remove(Session ses, Row row) {
         throw DbException.getUnsupportedException("remove row");
     }
 
     /** {@inheritDoc} */
-    @Override public Cursor find(Session session, SearchRow first, SearchRow last) {
+    @Override public Cursor find(Session ses, SearchRow first, SearchRow last) {
         GridH2RowDescriptor desc = ((GridH2Table)idx.getTable()).rowDescriptor();
-        return idx.find(session, desc.prepareProxyIndexRow(first), desc.prepareProxyIndexRow(last));
+        return idx.find(ses, desc.prepareProxyIndexRow(first), desc.prepareProxyIndexRow(last));
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
-        long rowCnt = getRowCountApproximation();
-
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
-
-        int mul = ((GridH2IndexBase)idx).getDistributedMultiplier(session, filters, filter);
-
-        return mul * baseCost;
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+        return idx.getCost(ses, masks, filters, filter, sortOrder, allColumnsSet);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(Session session) {
+    @Override public void remove(Session ses) {
         throw DbException.getUnsupportedException("remove index");
     }
 
     /** {@inheritDoc} */
-    @Override public void truncate(Session session) {
+    @Override public void truncate(Session ses) {
         throw DbException.getUnsupportedException("truncate");
     }
 
@@ -126,8 +119,8 @@ public class GridH2ProxyIndex extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public Cursor findFirstOrLast(Session session, boolean first) {
-        return idx.findFirstOrLast(session, first);
+    @Override public Cursor findFirstOrLast(Session ses, boolean first) {
+        return idx.findFirstOrLast(ses, first);
     }
 
     /** {@inheritDoc} */
@@ -136,8 +129,8 @@ public class GridH2ProxyIndex extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCount(Session session) {
-        return idx.getRowCount(session);
+    @Override public long getRowCount(Session ses) {
+        return idx.getRowCount(ses);
     }
 
     /** {@inheritDoc} */
@@ -163,7 +156,7 @@ public class GridH2ProxyIndex extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeChildrenAndResources(Session session) {
+    @Override public void removeChildrenAndResources(Session ses) {
         // No-op. Will be removed when underlying index is removed
     }
 

@@ -113,7 +113,7 @@ public abstract class ReduceIndex extends BaseIndex {
     private Row lastEvictedRow;
 
     /** */
-    private final GridKernalContext ctx;
+    protected final GridKernalContext ctx;
 
     /** DO NOT change name field of this field, updated through {@link #LAST_PAGES_UPDATER} */
     @SuppressWarnings("unused")

@@ -149,6 +149,9 @@ public class GridH2Table extends TableBase {
     /** Table version. The version is changed when exclusive lock is acquired (DDL operation is started). */
     private final AtomicLong ver = new AtomicLong();
 
+    /** Column statistics. ColId -> stats */
+    private volatile Map<Integer, ColumnStatistics> colStats;
+
     /**
      * Creates table.
      *
@@ -1374,6 +1377,14 @@ public class GridH2Table extends TableBase {
         }
     }
 
+    public Map<Integer, ColumnStatistics> columnStatistics() {
+        return colStats;
+    }
+
+    public void setColumnStatistics(Map<Integer, ColumnStatistics> colStats) {
+        this.colStats = colStats;
+    }
+
     /**
      *
      */
@@ -1421,6 +1432,38 @@ public class GridH2Table extends TableBase {
          */
         long version() {
             return ver;
+        }
+    }
+
+    public static class ColumnStatistics {
+        final int min;
+        final int max;
+        final int ndv;
+
+        public ColumnStatistics(int min, int max, int ndv) {
+            this.min = min;
+            this.max = max;
+            this.ndv = ndv;
+        }
+
+        public int min() {
+            return min;
+        }
+
+        public int max() {
+            return max;
+        }
+
+        public int ndv() {
+            return ndv;
+        }
+
+        @Override public String toString() {
+            return "ColumnStatistics{" +
+                "min=" + min +
+                ", max=" + max +
+                ", ndv=" + ndv +
+                '}';
         }
     }
 }
