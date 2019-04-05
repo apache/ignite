@@ -3913,7 +3913,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (trackTimeout)
                 rmv = removeTimeoutHandler();
 
-            if (state != COMMITTING && state != ROLLING_BACK && (!trackTimeout || rmv))
+            if (state != COMMITTING && state != ROLLING_BACK &&
+                (!trackTimeout || rmv || (prepFut != null && prepFut.isDone())))
                 rollbackNearTxLocalAsync(clearThreadMap, false).get();
 
             synchronized (this) {

@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.CacheReadThroughReplicatedRes
 import org.apache.ignite.internal.processors.cache.CacheReadThroughRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheRemoveAllSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheStopAndDestroySelfTest;
+import org.apache.ignite.internal.processors.cache.CacheStoreTxPutAllMultiNodeTest;
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeDynamicStartAtomicTest;
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeDynamicStartTxTest;
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeStaticStartAtomicTest;
@@ -317,6 +318,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheReadThroughLocalRestartSelfTest.class);
         suite.addTestSuite(CacheReadThroughLocalAtomicRestartSelfTest.class);
         suite.addTestSuite(CacheReadThroughAtomicRestartSelfTest.class);
+        suite.addTestSuite(CacheStoreTxPutAllMultiNodeTest.class);
 
         // Versioned entry tests
         suite.addTestSuite(CacheVersionedEntryLocalAtomicSwapDisabledSelfTest.class);
