@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.BitSetIntSet;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -37,10 +38,10 @@ import org.junit.Test;
 import org.mockito.internal.util.reflection.Whitebox;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
@@ -124,7 +125,7 @@ public class GridAffinityAssignmentV2Test {
 
         assertPartitions(gridAffinityAssignment2);
 
-        if (AffinityAssignment.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
+        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION))
             assertSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
         else
             assertNotSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
@@ -152,7 +153,7 @@ public class GridAffinityAssignmentV2Test {
             "c"
         );
 
-        if (AffinityAssignment.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
+        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION))
             assertTrue(unwrapped instanceof HashSet);
         else
             assertTrue(unwrapped instanceof BitSetIntSet);
@@ -198,7 +199,7 @@ public class GridAffinityAssignmentV2Test {
     public void testBackupsMoreThanThreshold() {
         List<ClusterNode> nodes = new ArrayList<>();
 
-        for(int i = 0; i < 10; i++)
+        for (int i = 0; i < 10; i++)
             nodes.add(node(metrics, ver, "1" + i));
 
         GridAffinityAssignment gridAffinityAssignment = new GridAffinityAssignment(
@@ -213,14 +214,13 @@ public class GridAffinityAssignmentV2Test {
     }
 
     /**
-     *
      * @throws IOException If error.
      */
     @Test
     public void testSerialization() throws IOException, ClassNotFoundException {
         List<ClusterNode> nodes = new ArrayList<>();
 
-        for(int i = 0; i < 10; i++)
+        for (int i = 0; i < 10; i++)
             nodes.add(node(metrics, ver, "1" + i));
 
         GridAffinityAssignmentV2 gridAffinityAssignment2 = new GridAffinityAssignmentV2(
@@ -244,9 +244,7 @@ public class GridAffinityAssignmentV2Test {
         assertEquals(deserialized.topologyVersion(), gridAffinityAssignment2.topologyVersion());
     }
 
-
     /**
-     *
      * @param metrics Metrics.
      * @param v Version.
      * @param consistentId ConsistentId.
@@ -266,5 +264,67 @@ public class GridAffinityAssignmentV2Test {
         node.setAttributes(Collections.emptyMap());
 
         return node;
+    }
+
+    /**
+     * Test effect change ignite system property.
+     */
+    @Test
+    public void testChangeIgniteSystemPropertiesForAffinityAssigment() {
+        GridAffinityAssignmentV2 gridAffinityAssignment2 = new GridAffinityAssignmentV2(
+            new AffinityTopologyVersion(1, 0),
+            new ArrayList<List<ClusterNode>>() {{
+                add(new ArrayList<ClusterNode>() {{
+                    add(clusterNode1);
+                    add(clusterNode2);
+                }});
+            }},
+            new ArrayList<>()
+        );
+
+        Set<Integer> unwrapped = (Set<Integer>)Whitebox.getInternalState(
+            gridAffinityAssignment2.primaryPartitions(clusterNode1.id()),
+            "c"
+        );
+
+        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)) {
+
+            assertSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
+            assertTrue(unwrapped instanceof HashSet);
+
+            System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, Boolean.FALSE.toString());
+            assertSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
+            assertTrue(unwrapped instanceof HashSet);
+
+            gridAffinityAssignment2 = new GridAffinityAssignmentV2(gridAffinityAssignment2.topologyVersion(),
+                gridAffinityAssignment2.assignment(), gridAffinityAssignment2.idealAssignment());
+            unwrapped = (Set<Integer>)Whitebox.getInternalState(
+                gridAffinityAssignment2.primaryPartitions(clusterNode1.id()),
+                "c"
+            );
+            assertTrue(unwrapped instanceof BitSetIntSet);
+            assertNotSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
+
+            System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, Boolean.TRUE.toString());
+        }
+        else {
+            assertNotSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
+            assertTrue(unwrapped instanceof BitSetIntSet);
+
+            System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, Boolean.TRUE.toString());
+            assertNotSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
+            assertTrue(unwrapped instanceof BitSetIntSet);
+
+            gridAffinityAssignment2 = new GridAffinityAssignmentV2(gridAffinityAssignment2.topologyVersion(),
+                gridAffinityAssignment2.assignment(), gridAffinityAssignment2.idealAssignment());
+            unwrapped = (Set<Integer>)Whitebox.getInternalState(
+                gridAffinityAssignment2.primaryPartitions(clusterNode1.id()),
+                "c"
+            );
+            assertSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
+            assertTrue(unwrapped instanceof HashSet);
+
+            System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, Boolean.FALSE.toString());
+        }
     }
 }

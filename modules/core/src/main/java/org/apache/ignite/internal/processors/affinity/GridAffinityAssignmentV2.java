@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.BitSetIntSet;
@@ -68,6 +69,14 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
 
     /** */
     private transient List<List<ClusterNode>> idealAssignment;
+
+    /** Disable memory affinity optimizations. */
+    private final boolean iganteDisableAffinityMemotyOptimization = IgniteSystemProperties.getBoolean(
+        IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION);
+
+    /** Size threshold to use Map instead of List view. */
+    private final int igniteAffinityBackupsThreshold =
+        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_AFFINITY_BACKUPS_THRESHOLD, 5);
 
     /**
      * Default constructor for deserialization.
@@ -125,7 +134,7 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
                     We need to replace it with sparse bitsets.
                  */
                 tmp.computeIfAbsent(id, uuid ->
-                    !IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION ? new BitSetIntSet() : new HashSet<>()
+                    !iganteDisableAffinityMemotyOptimization ? new BitSetIntSet() : new HashSet<>()
                 ).add(p);
 
                 isPrimary =  false;
@@ -193,12 +202,12 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
-        if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
+        if (iganteDisableAffinityMemotyOptimization)
             return getOrCreateAssignmentsIds(part);
         else {
             List<ClusterNode> nodes = assignment.get(part);
 
-            return nodes.size() > GridAffinityAssignmentV2.IGNITE_AFFINITY_BACKUPS_THRESHOLD
+            return nodes.size() > igniteAffinityBackupsThreshold
                     ? getOrCreateAssignmentsIds(part)
                     : F.viewReadOnly(nodes, F.node2id());
         }

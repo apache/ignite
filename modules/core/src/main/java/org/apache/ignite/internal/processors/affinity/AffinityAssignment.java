@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -30,18 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Cached affinity calculations.
  */
 public interface AffinityAssignment {
-    /** Size threshold to use Map instead of List view. */
-    int IGNITE_AFFINITY_BACKUPS_THRESHOLD = IgniteSystemProperties.getInteger(
-        IgniteSystemProperties.IGNITE_AFFINITY_BACKUPS_THRESHOLD,
-        5
-    );
-
-    /** Disable memory affinity optimizations. */
-    boolean IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = IgniteSystemProperties.getBoolean(
-        IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION,
-        false
-    );
-
     /**
      * @return Affinity assignment computed by affinity function.
      */

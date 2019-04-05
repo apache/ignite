@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.BitSetIntSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -56,6 +57,14 @@ public class HistoryAffinityAssignmentImpl implements HistoryAffinityAssignment 
     /** Diff with ideal. */
     private final Map<Integer, char[]> assignmentDiff;
 
+    /** Disable memory affinity optimizations. */
+    private final boolean iganteDisableAffinityMemotyOptimization = IgniteSystemProperties.getBoolean(
+        IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION);
+
+    /** Size threshold to use Map instead of List view. */
+    private final int igniteAffinityBackupsThreshold =
+        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_AFFINITY_BACKUPS_THRESHOLD, 5);
+
     /**
      * @param assign Assignment.
      * @param backups Backups.
@@ -63,7 +72,7 @@ public class HistoryAffinityAssignmentImpl implements HistoryAffinityAssignment 
     public HistoryAffinityAssignmentImpl(AffinityAssignment assign, int backups) {
         topVer = assign.topologyVersion();
 
-        if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION || backups > IGNITE_AFFINITY_BACKUPS_THRESHOLD) {
+        if (iganteDisableAffinityMemotyOptimization || backups > igniteAffinityBackupsThreshold) {
             assignment = assign.assignment();
 
             idealAssignment = assign.idealAssignment();
@@ -245,12 +254,12 @@ public class HistoryAffinityAssignmentImpl implements HistoryAffinityAssignment 
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
-        if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
+        if (iganteDisableAffinityMemotyOptimization)
             return assignments2ids(assignment.get(part));
         else {
             List<ClusterNode> nodes = assignment.get(part);
 
-            return nodes.size() > AffinityAssignment.IGNITE_AFFINITY_BACKUPS_THRESHOLD
+            return nodes.size() > igniteAffinityBackupsThreshold
                     ? assignments2ids(nodes)
                     : F.viewReadOnly(nodes, F.node2id());
         }
@@ -286,7 +295,7 @@ public class HistoryAffinityAssignmentImpl implements HistoryAffinityAssignment 
 
     /** {@inheritDoc} */
     @Override public Set<Integer> primaryPartitions(UUID nodeId) {
-        Set<Integer> res = IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION ? new HashSet<>() : new BitSetIntSet();
+        Set<Integer> res = iganteDisableAffinityMemotyOptimization ? new HashSet<>() : new BitSetIntSet();
 
         for (int p = 0; p < assignment.size(); p++) {
             List<ClusterNode> nodes = assignment.get(p);
@@ -300,7 +309,7 @@ public class HistoryAffinityAssignmentImpl implements HistoryAffinityAssignment 
 
     /** {@inheritDoc} */
     @Override public Set<Integer> backupPartitions(UUID nodeId) {
-        Set<Integer> res = IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION ? new HashSet<>() : new BitSetIntSet();
+        Set<Integer> res = iganteDisableAffinityMemotyOptimization ? new HashSet<>() : new BitSetIntSet();
 
         for (int p = 0; p < assignment.size(); p++) {
             List<ClusterNode> nodes = assignment.get(p);
