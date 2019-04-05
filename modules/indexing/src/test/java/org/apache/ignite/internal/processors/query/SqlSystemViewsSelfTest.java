@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.lang.reflect.Field;
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Collection;
@@ -136,7 +135,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             "FROM IGNITE.COLUMNS " +
             "WHERE TABLE_NAME=? AND COLUMN_NAME=?", table, col);
     }
-
 
     /**
      * @param sql Sql.
