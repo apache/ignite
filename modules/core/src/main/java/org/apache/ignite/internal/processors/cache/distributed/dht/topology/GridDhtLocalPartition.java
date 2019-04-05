@@ -407,6 +407,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         while (rmvQueue.sizex() >= rmvQueueMaxSize) {
             RemovedEntryHolder item = rmvQueue.pollFirst();
 
+            log.info("ZZZ: cleaning item=" + item);
+
             if (item != null)
                 removeVersionedEntry(item.cacheId(), item.key(), item.version());
         }
