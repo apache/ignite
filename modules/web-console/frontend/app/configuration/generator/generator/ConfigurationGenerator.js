@@ -1952,8 +1952,54 @@ export default class IgniteConfigurationGenerator {
     // Generate domain model for query group.
     static domainModelQuery(domain, available, cfg = this.domainConfigurationBean(domain)) {
         if (cfg.valueOf('queryMetadata') === 'Configuration') {
+            const notNull = [];
+            const precisions = [];
+            const scales = [];
+            const defaultValues = [];
+
+            const notNullAvailable = available('2.3.0');
+            const defaultAvailable = available('2.4.0');
+            const precisionAvailable = available('2.7.0');
+
             const fields = _.filter(_.map(domain.fields,
-                (e) => ({name: e.name, className: javaTypes.stringClassName(e.className)})), (field) => {
+                (e) => {
+                    if (notNullAvailable && e.notNull)
+                        notNull.push(e.name);
+
+                    if (defaultAvailable && e.defaultValue) {
+                        let value = e.defaultValue;
+
+                        switch (e.className) {
+                            case 'String':
+                                value = new Bean('java.lang.String', 'value', e).stringConstructorArgument('defaultValue');
+
+                                break;
+
+                            case 'BigDecimal':
+                                value = new Bean('java.math.BigDecimal', 'value', e).stringConstructorArgument('defaultValue');
+
+                                break;
+
+                            case 'byte[]':
+                                value = null;
+
+                                break;
+
+                            default: // No-op.
+                        }
+
+                        defaultValues.push({name: e.name, value});
+                    }
+
+                    if (precisionAvailable && e.precision) {
+                        precisions.push({name: e.name, value: e.precision});
+
+                        if (e.scale)
+                            scales.push({name: e.name, value: e.scale});
+                    }
+
+                    return {name: e.name, className: javaTypes.stringClassName(e.className)};
+                }), (field) => {
                 return field.name !== domain.keyFieldName && field.name !== domain.valueFieldName;
             });
 
@@ -1977,12 +2023,30 @@ export default class IgniteConfigurationGenerator {
                 .mapProperty('fields', fields, 'fields', true)
                 .mapProperty('aliases', 'aliases');
 
-            const indexes = _.map(domain.indexes, (index) =>
-                new Bean('org.apache.ignite.cache.QueryIndex', 'index', index, cacheDflts.indexes)
+            if (notNullAvailable && notNull)
+                cfg.collectionProperty('notNullFields', 'notNullFields', notNull, 'java.lang.String', 'java.util.HashSet');
+
+            if (defaultAvailable && defaultValues)
+                cfg.mapProperty('defaultFieldValues', defaultValues, 'defaultFieldValues');
+
+            if (precisionAvailable && precisions) {
+                cfg.mapProperty('fieldsPrecision', precisions, 'fieldsPrecision');
+
+                if (scales)
+                    cfg.mapProperty('fieldsScale', scales, 'fieldsScale');
+            }
+
+            const indexes = _.map(domain.indexes, (index) => {
+                const bean = new Bean('org.apache.ignite.cache.QueryIndex', 'index', index, cacheDflts.indexes)
                     .stringProperty('name')
                     .enumProperty('indexType')
-                    .mapProperty('indFlds', 'fields', 'fields', true)
-            );
+                    .mapProperty('indFlds', 'fields', 'fields', true);
+
+                if (available('2.3.0'))
+                    bean.intProperty('inlineSize');
+
+                return bean;
+            });
 
             cfg.collectionProperty('indexes', 'indexes', indexes, 'org.apache.ignite.cache.QueryIndex');
         }
