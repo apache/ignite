@@ -18,7 +18,8 @@ include /app/helpers/jade/mixins
 include /app/configuration/mixins
 
 -var form = 'dataStorageConfiguration'
--var model = '$ctrl.clonedCluster.dataStorageConfiguration'
+-var clusterModel = '$ctrl.clonedCluster'
+-var model = clusterModel + '.dataStorageConfiguration'
 -var dfltRegionModel = model + '.defaultDataRegionConfiguration'
 -var dataRegionConfigurations = model + '.dataRegionConfigurations'
 
@@ -501,6 +502,14 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.lo
                     name: '"DataStorageWalCompactionEnabled"',
                     tip: 'If true, system filters and compresses WAL archive in background'
                 })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.5.0")')
+                +form-field__checkbox({
+                    label: 'Authentication enabled',
+                    model: `${clusterModel}.authenticationEnabled`,
+                    name: '"authenticationEnabled"',
+                    disabled: `!$ctrl.Clusters.persistenceEnabled(${model})`,
+                    tip: 'Enable user authentication for cluster with persistence'
+                })
 
         .pca-form-column-6
-            +preview-xml-java(model, 'clusterDataStorageConfiguration')
+            +preview-xml-java(clusterModel, 'clusterDataStorageConfiguration')

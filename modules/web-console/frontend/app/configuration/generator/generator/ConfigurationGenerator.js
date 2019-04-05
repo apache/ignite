@@ -96,7 +96,7 @@ export default class IgniteConfigurationGenerator {
 
         // Since ignite 2.3
         if (available('2.3.0'))
-            this.clusterDataStorageConfiguration(cluster.dataStorageConfiguration, available, cfg);
+            this.clusterDataStorageConfiguration(cluster, available, cfg);
 
         this.clusterDeployment(cluster, available, cfg);
         this.clusterEvents(cluster, available, cfg);
@@ -979,6 +979,12 @@ export default class IgniteConfigurationGenerator {
             .longProperty('networkSendRetryDelay')
             .intProperty('networkSendRetryCount');
 
+        if (available('2.8.0'))
+            cfg.intProperty('networkCompressionLevel');
+
+        if (available('2.5.0'))
+            cfg.emptyBeanProperty('communicationFailureResolver');
+
         if (available(['1.0.0', '2.3.0']))
             cfg.longProperty('discoveryStartupDelay');
 
@@ -1511,12 +1517,16 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate data storage configuration.
-    static clusterDataStorageConfiguration(dataStorageCfg, available, cfg = this.igniteConfigurationBean()) {
+    static clusterDataStorageConfiguration(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         if (!available('2.3.0'))
             return cfg;
 
         const available2_4 = available('2.4.0');
+
         const available2_7 = available('2.7.0');
+
+        const dataStorageCfg = cluster.dataStorageConfiguration;
+
         const storageBean = new Bean('org.apache.ignite.configuration.DataStorageConfiguration', 'dataStorageCfg', dataStorageCfg, clusterDflts.dataStorageConfiguration);
 
         storageBean.intProperty('pageSize')
@@ -1596,24 +1606,49 @@ export default class IgniteConfigurationGenerator {
         if (factoryBean)
             storageBean.beanProperty('fileIOFactory', factoryBean);
 
-        if (storageBean.isEmpty())
-            return cfg;
+        if (_.get(dataStorageCfg, 'defaultDataRegionConfiguration.persistenceEnabled')
+            || _.find(_.get(dataStorageCfg, 'dataRegionConfigurations'), (storeCfg) => storeCfg.persistenceEnabled))
+            cfg.boolProperty('authenticationEnabled');
 
-        cfg.beanProperty('dataStorageConfiguration', storageBean);
+        if (storageBean.nonEmpty())
+            cfg.beanProperty('dataStorageConfiguration', storageBean);
 
         return cfg;
     }
 
     // Generate miscellaneous configuration.
     static clusterMisc(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        cfg.stringProperty('workDirectory');
+        const available2_0 = available('2.0.0');
 
-        if (available('2.0.0')) {
-            cfg.stringProperty('consistentId')
+        cfg.pathProperty('workDirectory')
+            .pathProperty('igniteHome')
+            .varArgProperty('lifecycleBeans', 'lifecycleBeans', _.map(cluster.lifecycleBeans, (bean) => new EmptyBean(bean)), 'org.apache.ignite.lifecycle.LifecycleBean')
+            .emptyBeanProperty('addressResolver')
+            .emptyBeanProperty('mBeanServer')
+            .varArgProperty('includeProperties', 'includeProperties', cluster.includeProperties);
+
+        if (cluster.cacheStoreSessionListenerFactories) {
+            const factories = _.map(cluster.cacheStoreSessionListenerFactories, (factory) => new EmptyBean(factory));
+
+            cfg.varArgProperty('cacheStoreSessionListenerFactories', 'cacheStoreSessionListenerFactories', factories, 'javax.cache.configuration.Factory');
+        }
+
+        if (available2_0) {
+            cfg
+                .stringProperty('consistentId')
                 .emptyBeanProperty('warmupClosure')
                 .boolProperty('activeOnStart')
                 .boolProperty('cacheSanityCheckEnabled');
         }
+
+        if (available('2.7.0'))
+            cfg.varArgProperty('sqlSchemas', 'sqlSchemas', cluster.sqlSchemas);
+
+        if (available('2.8.0'))
+            cfg.intProperty('sqlQueryHistorySize');
+
+        if (available('2.4.0'))
+            cfg.boolProperty('autoActivationEnabled');
 
         if (available(['1.0.0', '2.1.0']))
             cfg.boolProperty('lateAffinityAssignment');
