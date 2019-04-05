@@ -123,7 +123,7 @@ export default class IgniteConfigurationGenerator {
             this.clusterQuery(cluster, available, cfg);
 
         this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
-        this.clusterSsl(cluster, cfg);
+        this.clusterSsl(cluster, available, cfg);
 
         // Deprecated in ignite 2.0
         if (available(['1.0.0', '2.0.0']))
@@ -1784,7 +1784,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Java code generator for cluster's SSL configuration.
-    static clusterSsl(cluster, cfg = this.igniteConfigurationBean(cluster)) {
+    static clusterSsl(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         if (cluster.sslEnabled && nonNil(cluster.sslContextFactory)) {
             const bean = new Bean('org.apache.ignite.ssl.SslContextFactory', 'sslCtxFactory',
                 cluster.sslContextFactory);
@@ -1810,6 +1810,11 @@ export default class IgniteConfigurationGenerator {
                     bean.propertyChar('trustStorePassword', 'ssl.trust.storage.password', 'YOUR_SSL_TRUST_STORAGE_PASSWORD');
 
                 bean.intProperty('trustStoreType');
+            }
+
+            if (available('2.7.0')) {
+                bean.varArgProperty('cipherSuites', 'cipherSuites', cluster.sslContextFactory.cipherSuites)
+                    .varArgProperty('protocols', 'protocols', cluster.sslContextFactory.protocols);
             }
 
             cfg.beanProperty('sslContextFactory', bean);
@@ -2132,6 +2137,29 @@ export default class IgniteConfigurationGenerator {
         return ccfg;
     }
 
+    // Generate key configurations of cache.
+    static cacheKeyConfiguration(keyCfgs, available, cfg = this.igniteConfigurationBean()) {
+        if (available('2.1.0')) {
+            const items = _.reduce(keyCfgs, (acc, keyCfg) => {
+                if (keyCfg.typeName && keyCfg.affinityKeyFieldName) {
+                    acc.push(new Bean('org.apache.ignite.cache.CacheKeyConfiguration', null, keyCfg)
+                        .stringConstructorArgument('typeName')
+                        .stringConstructorArgument('affinityKeyFieldName'));
+                }
+
+                return acc;
+            }, []);
+
+            if (_.isEmpty(items))
+                return cfg;
+
+            cfg.arrayProperty('keyConfiguration', 'keyConfiguration', items,
+                'org.apache.ignite.cache.CacheKeyConfiguration');
+        }
+
+        return cfg;
+    }
+
     // Generate cache memory group.
     static cacheMemory(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         // Since ignite 2.0
@@ -2162,6 +2190,15 @@ export default class IgniteConfigurationGenerator {
             ccfg.intProperty('startSize')
                 .boolProperty('swapEnabled');
         }
+
+        if (cache.cacheWriterFactory)
+            ccfg.beanProperty('cacheWriterFactory', new EmptyBean(cache.cacheWriterFactory));
+
+        if (cache.cacheLoaderFactory)
+            ccfg.beanProperty('cacheLoaderFactory', new EmptyBean(cache.cacheLoaderFactory));
+
+        if (cache.expiryPolicyFactory)
+            ccfg.beanProperty('expiryPolicyFactory', new EmptyBean(cache.expiryPolicyFactory));
 
         return ccfg;
     }
@@ -2197,6 +2234,13 @@ export default class IgniteConfigurationGenerator {
             ccfg.intProperty('queryParallelism')
                 .intProperty('sqlIndexMaxInlineSize');
         }
+
+        if (available('2.4.0') && cache.sqlOnheapCacheEnabled) {
+            ccfg.boolProperty('sqlOnheapCacheEnabled')
+                .intProperty('sqlOnheapCacheMaxSize');
+        }
+
+        ccfg.intProperty('maxQueryIteratorsCount');
 
         return ccfg;
     }
@@ -2292,7 +2336,8 @@ export default class IgniteConfigurationGenerator {
                 ccfg.beanProperty('cacheStoreFactory', bean);
         }
 
-        ccfg.boolProperty('storeKeepBinary')
+        ccfg.intProperty('storeConcurrentLoadAllThreshold')
+            .boolProperty('storeKeepBinary')
             .boolProperty('loadPreviousValue')
             .boolProperty('readThrough')
             .boolProperty('writeThrough');
@@ -2390,6 +2435,31 @@ export default class IgniteConfigurationGenerator {
         return ccfg;
     }
 
+    // Generate miscellaneous configuration.
+    static cacheMisc(cache, available, cfg = this.cacheConfigurationBean(cache)) {
+        if (cache.interceptor)
+            cfg.beanProperty('interceptor', new EmptyBean(cache.interceptor));
+
+        if (available('2.0.0'))
+            cfg.boolProperty('storeByValue');
+
+        cfg.boolProperty('eagerTtl');
+
+        if (available('2.7.0'))
+            cfg.boolProperty('encryptionEnabled');
+
+        if (available('2.5.0'))
+            cfg.boolProperty('eventsDisabled');
+
+        if (cache.cacheStoreSessionListenerFactories) {
+            const factories = _.map(cache.cacheStoreSessionListenerFactories, (factory) => new EmptyBean(factory));
+
+            cfg.varArgProperty('cacheStoreSessionListenerFactories', 'cacheStoreSessionListenerFactories', factories, 'javax.cache.configuration.Factory');
+        }
+
+        return cfg;
+    }
+
     // Generate server near cache group.
     static cacheNearServer(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && _.get(cache, 'nearConfiguration.enabled')) {
@@ -2454,11 +2524,13 @@ export default class IgniteConfigurationGenerator {
         this.cacheMemory(cache, available, ccfg);
         this.cacheQuery(cache, cache.domains, available, ccfg);
         this.cacheStore(cache, cache.domains, available, deps, ccfg);
+        this.cacheKeyConfiguration(cache.keyConfiguration, available, ccfg);
 
         const igfs = _.get(cache, 'nodeFilter.IGFS.instance');
         this.cacheNodeFilter(cache, igfs ? [igfs] : [], ccfg);
         this.cacheConcurrency(cache, available, ccfg);
         this.cacheRebalance(cache, ccfg);
+        this.cacheMisc(cache, available, ccfg);
         this.cacheNearServer(cache, available, ccfg);
         this.cacheStatistics(cache, ccfg);
         this.cacheDomains(cache.domains, available, ccfg);
@@ -2484,6 +2556,48 @@ export default class IgniteConfigurationGenerator {
         return cfg;
     }
 
+    static _userNameMapperBean(mapper) {
+        let bean = null;
+
+        switch (mapper.kind) {
+            case 'Chained':
+                bean = new Bean('org.apache.ignite.hadoop.util.ChainedUserNameMapper', 'mameMapper', mapper.Chained);
+
+                bean.arrayProperty('mappers', 'mappers',
+                    _.map(_.get(mapper, 'Chained.mappers'), IgniteConfigurationGenerator._userNameMapperBean),
+                    'org.apache.ignite.hadoop.util.UserNameMapper');
+
+                break;
+
+            case 'Basic':
+                bean = new Bean('org.apache.ignite.hadoop.util.BasicUserNameMapper', 'mameMapper', mapper.Basic, igfsDflts.secondaryFileSystem.userNameMapper.Basic);
+
+                bean.stringProperty('defaultUserName')
+                    .boolProperty('useDefaultUserName')
+                    .mapProperty('mappings', 'mappings');
+
+                break;
+
+            case 'Kerberos':
+                bean = new Bean('org.apache.ignite.hadoop.util.KerberosUserNameMapper', 'nameMapper', mapper.Kerberos);
+
+                bean.stringProperty('instance')
+                    .stringProperty('realm');
+
+                break;
+
+            case 'Custom':
+                if (_.get(mapper, 'Custom.className'))
+                    bean = new EmptyBean(mapper.Custom.className);
+
+                break;
+
+            default:
+        }
+
+        return bean;
+    }
+
     // Generate IGFS secondary file system group.
     static igfsSecondFS(igfs, cfg = this.igfsConfigurationBean(igfs)) {
         if (igfs.secondaryFileSystemEnabled) {
@@ -2494,11 +2608,46 @@ export default class IgniteConfigurationGenerator {
 
             bean.stringProperty('userName', 'defaultUserName');
 
-            const factoryBean = new Bean('org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory',
-                'fac', secondFs);
+            let factoryBean = null;
 
-            factoryBean.stringProperty('uri')
-                .pathProperty('cfgPath', 'configPaths');
+            switch (secondFs.kind || 'Caching') {
+                case 'Caching':
+                    factoryBean = new Bean('org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory', 'fac', secondFs);
+                    break;
+
+                case 'Kerberos':
+                    factoryBean = new Bean('org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory', 'fac', secondFs, igfsDflts.secondaryFileSystem);
+                    break;
+
+                case 'Custom':
+                    if (_get(secondFs, 'Custom.className'))
+                        factoryBean = new Bean(secondFs.Custom.className, 'fac', null);
+
+                    break;
+
+                default:
+            }
+
+            if (!factoryBean)
+                return cfg;
+
+            if (secondFs.kind !== 'Custom') {
+                factoryBean.stringProperty('uri')
+                    .pathArrayProperty('cfgPaths', 'configPaths', secondFs.cfgPaths, true);
+
+                if (secondFs.kind === 'Kerberos') {
+                    factoryBean.stringProperty('Kerberos.keyTab', 'keyTab')
+                        .stringProperty('Kerberos.keyTabPrincipal', 'keyTabPrincipal')
+                        .longProperty('Kerberos.reloginInterval', 'reloginInterval');
+                }
+
+                if (_.get(secondFs, 'userNameMapper.kind')) {
+                    const mapper = IgniteConfigurationGenerator._userNameMapperBean(secondFs.userNameMapper);
+
+                    if (mapper)
+                        factoryBean.beanProperty('userNameMapper', mapper);
+                }
+            }
 
             bean.beanProperty('fileSystemFactory', factoryBean);
 
