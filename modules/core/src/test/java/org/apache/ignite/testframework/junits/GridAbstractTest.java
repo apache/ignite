@@ -183,7 +183,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     @ClassRule public static final TestRule firstLastTestRule = new BeforeFirstAndAfterLastTestRule();
 
     /** Manages test execution and reporting. */
-    @Rule public transient TestRule runRule = (base, desc) -> new Statement() {
+    protected transient TestRule runRule = (base, desc) -> new Statement() {
         @Override public void evaluate() throws Throwable {
             assert getName() != null : "getName returned null";
 
@@ -195,14 +195,14 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Supports obtaining test name for JUnit4 framework in a way that makes it available for methods invoked
      * from {@code runTest(Statement)}.
      */
-    @Rule public transient TestName nameRule = new TestName();
+    private transient TestName nameRule = new TestName();
 
     /**
      * Gets the name of the currently executed test case.
      *
      * @return Name of the currently executed test case.
      */
-    public String getName() {
+    protected String getName() {
         return nameRule.getMethodName();
     }
 
@@ -210,8 +210,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Provides the order of JUnit TestRules. Because of JUnit framework specifics {@link #nameRule} must be invoked
      * first.
      */
-    @Rule
-    public transient RuleChain nameAndRunRulesChain = RuleChain
+    @Rule public transient RuleChain nameAndRunRulesChain = RuleChain
         .outerRule(nameRule)
         .around(runRule);
 
