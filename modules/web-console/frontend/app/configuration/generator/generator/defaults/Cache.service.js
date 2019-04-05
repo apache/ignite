@@ -48,6 +48,7 @@ const DFLT_CACHE = {
             sqlEscapeAll: false
         }
     },
+    storeConcurrentLoadAllThreshold: 5,
     readThrough: false,
     writeThrough: false,
     writeBehindEnabled: false,
@@ -120,7 +121,13 @@ const DFLT_CACHE = {
             clsName: 'java.sql.Types'
         }
     },
-    memoryPolicyName: 'default'
+    memoryPolicyName: 'default',
+    sqlOnheapCacheEnabled: false,
+    sqlOnheapCacheMaxSize: 0,
+    storeByValue: false,
+    encryptionEnabled: false,
+    eventsDisabled: false,
+    maxQueryIteratorsCount: 1024
 };
 
 export default class IgniteCacheDefaults {

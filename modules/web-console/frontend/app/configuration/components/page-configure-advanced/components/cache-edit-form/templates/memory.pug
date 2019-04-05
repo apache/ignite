@@ -189,6 +189,27 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     name: '"swapEnabled"',
                     tip: 'Flag indicating whether swap storage is enabled or not for this cache'
                 })
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Cache writer factory:',
+                    model: `${model}.cacheWriterFactory`,
+                    name: `"CacheWriterFactory"`,
+                    tip: 'Factory for writer that is used for write-through to an external resource'
+                })
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Cache loader factory:',
+                    model: `${model}.cacheLoaderFactory`,
+                    name: `"CacheLoaderFactory"`,
+                    tip: 'Factory for loader that is used for a cache is read-through or when loading data into a cache via the Cache.loadAll(java.util.Set, boolean, CompletionListener) method'
+                })
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Expiry policy factory:',
+                    model: `${model}.expiryPolicyFactory`,
+                    name: `"ExpiryPolicyFactory"`,
+                    tip: 'Factory for functions that determine when cache entries will expire based on creation, access and modification operations'
+                })
 
         .pca-form-column-6
             +preview-xml-java(model, 'cacheMemory')
