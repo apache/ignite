@@ -3760,7 +3760,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
         try {
-            U.<CacheGroupContext, Void>doInParallel(
+            U.<CacheGroupContext, Void>doInParallelUninterruptibly( // TODO FIXME throws InterruptedException ???
                 parallelismLvl,
                 cctx.kernalContext().getSystemExecutorService(),
                 nonLocalCacheGroups(),

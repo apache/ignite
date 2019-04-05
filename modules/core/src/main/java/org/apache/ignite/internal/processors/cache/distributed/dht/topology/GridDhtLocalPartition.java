@@ -212,7 +212,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         int delQueueSize = grp.systemCache() ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / grp.affinity().partitions(), 20);
 
-        rmvQueueMaxSize = U.ceilPow2(delQueueSize);
+        rmvQueueMaxSize = 500000; // U.ceilPow2(delQueueSize);
+
+        log.info("ZZZ: grpId=" + grp.groupId() + ", partId=" + id() + ", qSize=" + rmvQueueMaxSize);
 
         rmvdEntryTtl = Long.getLong(IGNITE_CACHE_REMOVED_ENTRIES_TTL, 10_000);
 
@@ -409,20 +411,20 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 removeVersionedEntry(item.cacheId(), item.key(), item.version());
         }
 
-        if (!grp.isDrEnabled()) {
-            RemovedEntryHolder item = rmvQueue.peekFirst();
-
-            while (item != null && item.expireTime() < U.currentTimeMillis()) {
-                item = rmvQueue.pollFirst();
-
-                if (item == null)
-                    break;
-
-                removeVersionedEntry(item.cacheId(), item.key(), item.version());
-
-                item = rmvQueue.peekFirst();
-            }
-        }
+//        if (!grp.isDrEnabled()) {
+//            RemovedEntryHolder item = rmvQueue.peekFirst();
+//
+//            while (item != null && item.expireTime() < U.currentTimeMillis()) {
+//                item = rmvQueue.pollFirst();
+//
+//                if (item == null)
+//                    break;
+//
+//                removeVersionedEntry(item.cacheId(), item.key(), item.version());
+//
+//                item = rmvQueue.peekFirst();
+//            }
+//        }
     }
 
     /**
@@ -431,8 +433,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param ver Removed version.
      */
     public void onDeferredDelete(int cacheId, KeyCacheObject key, GridCacheVersion ver) {
-        log.info("ZZZ:" + key);
-
         cleanupRemoveQueue();
 
         rmvQueue.add(new RemovedEntryHolder(cacheId, key, ver, rmvdEntryTtl));
