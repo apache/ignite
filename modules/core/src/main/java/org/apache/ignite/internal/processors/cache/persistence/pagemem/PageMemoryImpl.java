@@ -440,10 +440,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
     }
 
-    @Override public boolean stopped() {
-        return stopped;
-    }
-
     /** {@inheritDoc} */
     @Override public void releasePage(int grpId, long pageId, long page) {
         assert !stopped;
@@ -1779,6 +1775,9 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return Segment.
      */
     private Segment segment(int grpId, long pageId) {
+        if (segments == null)
+            System.out.println("PageMemoryImpl.segment");
+
         int idx = segmentIndex(grpId, pageId, segments.length);
 
         return segments[idx];
