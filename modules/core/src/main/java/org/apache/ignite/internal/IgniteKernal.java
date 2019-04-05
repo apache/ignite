@@ -4083,7 +4083,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             reconnectState.firstReconnectFut.onDone(e);
 
-                            ctx.closure().runLocalSafe(IgniteKernal.this::close);
+                            new Thread(() -> {
+                                log.error("Stopping node after failed attempt to reconnect.");
+
+                                close();
+                            }, "node-stopper").start();
                         }
                         else {
                             assert ctx.discovery().reconnectSupported();
