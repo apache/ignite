@@ -96,8 +96,10 @@ public class DynamicCacheDescriptor {
     /** */
     private final CacheGroupDescriptor grpDesc;
 
+    /** Cache config enrichment. */
     private final @Nullable CacheConfigurationEnrichment cacheCfgEnrichment;
 
+    /** Cache config enriched. */
     private volatile boolean cacheCfgEnriched;
 
     /**
@@ -409,24 +411,25 @@ public class DynamicCacheDescriptor {
         return res;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(DynamicCacheDescriptor.class, this, "cacheName", U.maskName(cacheCfg.getName()));
-    }
-
-    public CacheConfigurationEnrichment cacheConfigEnrichment() {
+    public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
         return cacheCfgEnrichment;
     }
 
+    /**
+     *
+     */
     public boolean isConfigurationEnriched() {
         return cacheCfgEnrichment == null || cacheCfgEnriched;
     }
 
+    /**
+     * Enriches stored cache config with enrichment.
+     *
+     * @param affinityNode {@code True} If local node is affinity node for that cache.
+     */
     public void enrich(boolean affinityNode) {
         if (CU.isUtilityCache(cacheName()))
             return;
-
-        System.err.println("Try to enrich -> " + cacheName() + " " + cacheCfgEnriched + " " + cacheCfgEnrichment + " " + affinityNode);
 
         if (isConfigurationEnriched())
             return;
@@ -434,5 +437,10 @@ public class DynamicCacheDescriptor {
         cacheCfg = CacheConfigurationEnricher.enrich(cacheCfg, cacheCfgEnrichment, affinityNode);
 
         cacheCfgEnriched = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DynamicCacheDescriptor.class, this, "cacheName", U.maskName(cacheCfg.getName()));
     }
 }

@@ -1222,13 +1222,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         GridDhtPartitionState state,
         GridDhtPartitionState... states
     ) {
-        try {
-            F.nodeIds(discoCache.cacheGroupAffinityNodes(grp.groupId()));
-        }
-        catch (Exception e) {
-            int k = 2;
-        }
-
         Collection<UUID> allIds = F.nodeIds(discoCache.cacheGroupAffinityNodes(grp.groupId()));
 
         lock.readLock().lock();

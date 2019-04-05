@@ -51,7 +51,7 @@ public class CacheConfigurationSplitter {
     public T2<CacheConfiguration, CacheConfigurationEnrichment> split(CacheGroupDescriptor desc) {
         if (!splitAllowed) {
             if (!desc.isConfigurationEnriched())
-                return new T2<>(CacheConfigurationEnricher.enrichFully(desc.config(), desc.cacheConfigEnrichment()), null);
+                return new T2<>(CacheConfigurationEnricher.enrichFully(desc.config(), desc.cacheConfigurationEnrichment()), null);
             else
                 return new T2<>(desc.config(), null);
         }
@@ -59,7 +59,7 @@ public class CacheConfigurationSplitter {
         if (desc.isConfigurationEnriched())
             return split(desc.config());
 
-        return new T2<>(desc.config(), desc.cacheConfigEnrichment());
+        return new T2<>(desc.config(), desc.cacheConfigurationEnrichment());
     }
 
     /**
@@ -68,7 +68,7 @@ public class CacheConfigurationSplitter {
     public T2<CacheConfiguration, CacheConfigurationEnrichment> split(DynamicCacheDescriptor desc) {
         if (!splitAllowed) {
             if (!desc.isConfigurationEnriched())
-                return new T2<>(CacheConfigurationEnricher.enrichFully(desc.cacheConfiguration(), desc.cacheConfigEnrichment()), null);
+                return new T2<>(CacheConfigurationEnricher.enrichFully(desc.cacheConfiguration(), desc.cacheConfigurationEnrichment()), null);
             else
                 return new T2<>(desc.cacheConfiguration(), null);
         }
@@ -76,7 +76,7 @@ public class CacheConfigurationSplitter {
         if (desc.isConfigurationEnriched())
             return split(desc.cacheConfiguration());
 
-        return new T2<>(desc.cacheConfiguration(), desc.cacheConfigEnrichment());
+        return new T2<>(desc.cacheConfiguration(), desc.cacheConfigurationEnrichment());
     }
 
     /**

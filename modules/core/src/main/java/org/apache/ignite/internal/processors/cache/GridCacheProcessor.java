@@ -2476,8 +2476,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     : "Cache " + cacheAdapter.context() + " is still in recovery mode after start, but not activated.";
 
                 stopCacheSafely(cacheContext);
-
-                log.info("Shutdown " + cacheContext.name());
             }
         }
     }
@@ -2658,7 +2656,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private GridCacheContext<?, ?> startCacheInRecoveryMode(
         DynamicCacheDescriptor desc
     ) throws IgniteCheckedException {
-        // Only affinity node caches are able to start in recovery mode.
+        // Only affinity node caches are able to start cache in recovery mode.
         desc.enrich(true);
 
         CacheConfiguration cfg = desc.cacheConfiguration();
@@ -4390,8 +4388,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!sndReqs.isEmpty()) {
             try {
-                log.warning("Destroy caches event has sent.");
-
                 ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs));
 
                 err = checkNodeState();
@@ -5575,7 +5571,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(desc);
 
                         req.startCacheConfiguration(splitCfg.get1());
-                        req.setCacheCfgEnrichment(splitCfg.get2());
+                        req.cacheConfigurationEnrichment(splitCfg.get2());
                     }
                     else
                         req.startCacheConfiguration(descCfg);
@@ -5597,7 +5593,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(cfg);
 
                     req.startCacheConfiguration(splitCfg.get1());
-                    req.setCacheCfgEnrichment(splitCfg.get2());
+                    req.cacheConfigurationEnrichment(splitCfg.get2());
                 }
                 else
                     req.startCacheConfiguration(cfg);
@@ -5639,7 +5635,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(ccfg);
 
                 req.startCacheConfiguration(splitCfg.get1());
-                req.setCacheCfgEnrichment(splitCfg.get2());
+                req.cacheConfigurationEnrichment(splitCfg.get2());
             }
             else
                 req.startCacheConfiguration(ccfg);

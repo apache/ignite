@@ -69,6 +69,7 @@ public class CacheGroupData implements Serializable {
     /** WAL change requests. */
     private final List<WalStateProposeMessage> walChangeReqs;
 
+    /** Cache configuration enrichment. */
     private final CacheConfigurationEnrichment cacheCfgEnrichment;
 
     /**
@@ -185,12 +186,15 @@ public class CacheGroupData implements Serializable {
         return walChangeReqs;
     }
 
+    /**
+     * @return Cache configuration enrichment.
+     */
+    public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
+        return cacheCfgEnrichment;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheGroupData.class, this);
-    }
-
-    public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
-        return cacheCfgEnrichment;
     }
 }

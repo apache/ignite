@@ -318,6 +318,35 @@ public class CacheGroupDescriptor {
         return persistenceEnabled;
     }
 
+    /**
+     * @return Cache configuration enrichment.
+     */
+    public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
+        return cacheCfgEnrichment;
+    }
+
+    /**
+     * @return {@code True} if cache configuration is already enriched.
+     */
+    public boolean isConfigurationEnriched() {
+        return cacheCfgEnrichment == null || isConfigurationEnriched;
+    }
+
+    /**
+     * @param affinityNode Affinity node.
+     */
+    public void enrich(boolean affinityNode) {
+        if (CU.isUtilityCache(cacheOrGroupName()))
+            return;
+
+        if (isConfigurationEnriched())
+            return;
+
+        cacheCfg = CacheConfigurationEnricher.enrich(cacheCfg, cacheCfgEnrichment, affinityNode);
+
+        isConfigurationEnriched = true;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheGroupDescriptor.class, this, "cacheName", cacheCfg.getName());
@@ -339,25 +368,5 @@ public class CacheGroupDescriptor {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(grpId);
-    }
-
-    public CacheConfigurationEnrichment cacheConfigEnrichment() {
-        return cacheCfgEnrichment;
-    }
-
-    public boolean isConfigurationEnriched() {
-        return cacheCfgEnrichment == null || isConfigurationEnriched;
-    }
-
-    public void enrich(boolean affinityNode) {
-        if (CU.isUtilityCache(cacheOrGroupName()))
-            return;
-
-        if (isConfigurationEnriched())
-            return;
-
-        cacheCfg = CacheConfigurationEnricher.enrich(cacheCfg, cacheCfgEnrichment, affinityNode);
-
-        isConfigurationEnriched = true;
     }
 }

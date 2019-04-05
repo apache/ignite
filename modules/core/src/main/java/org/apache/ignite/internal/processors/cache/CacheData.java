@@ -64,6 +64,7 @@ public class CacheData implements Serializable {
     /** Flags added for future usage. */
     private final long flags;
 
+    /** Cache configuration enrichment. */
     private final CacheConfigurationEnrichment cacheCfgEnrichment;
 
     /**
@@ -189,6 +190,9 @@ public class CacheData implements Serializable {
         return flags;
     }
 
+    /**
+     *
+     */
     public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
         return cacheCfgEnrichment;
     }

@@ -103,7 +103,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Encryption key. */
     @Nullable private byte[] encKey;
 
-    /** */
+    /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheCfgEnrichment;
 
     /**
@@ -154,7 +154,7 @@ public class DynamicCacheChangeRequest implements Serializable {
             T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(cfg);
 
             req.startCacheConfiguration(splitCfg.get1());
-            req.setCacheCfgEnrichment(splitCfg.get2());
+            req.cacheConfigurationEnrichment(splitCfg.get2());
         }
         else
             req.startCacheConfiguration(cfg);
@@ -477,6 +477,20 @@ public class DynamicCacheChangeRequest implements Serializable {
         return encKey;
     }
 
+    /**
+     * @return Cache configuration enrichment.
+     */
+    public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
+        return cacheCfgEnrichment;
+    }
+
+    /**
+     * @param cacheCfgEnrichment Cache config enrichment.
+     */
+    public void cacheConfigurationEnrichment(CacheConfigurationEnrichment cacheCfgEnrichment) {
+        this.cacheCfgEnrichment = cacheCfgEnrichment;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return "DynamicCacheChangeRequest [cacheName=" + cacheName() +
@@ -487,13 +501,5 @@ public class DynamicCacheChangeRequest implements Serializable {
             ", destroy=" + destroy +
             ", disabledAfterStart" + disabledAfterStart +
             ']';
-    }
-
-    public CacheConfigurationEnrichment getCacheCfgEnrichment() {
-        return cacheCfgEnrichment;
-    }
-
-    public void setCacheCfgEnrichment(CacheConfigurationEnrichment cacheCfgEnrichment) {
-        this.cacheCfgEnrichment = cacheCfgEnrichment;
     }
 }

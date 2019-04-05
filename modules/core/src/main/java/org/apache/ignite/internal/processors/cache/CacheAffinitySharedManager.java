@@ -934,8 +934,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
 
             if (startCache) {
-                log.warning("Need to start cache -> " + req.cacheName());
-
                 startCacheInfos.put(
                     new StartCacheInfo(
                         req.startCacheConfiguration(),
@@ -2439,7 +2437,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         ", node=" + newPrimary +
                         ", topVer=" + topVer + ']';
 
-                    List<ClusterNode> owners = top.owners(p, topVer);
+                    List<ClusterNode> owners = top.owners(p);
 
                     // It is essential that curPrimary node has partition in OWNING state.
                     if (!owners.isEmpty() && !owners.contains(curPrimary))

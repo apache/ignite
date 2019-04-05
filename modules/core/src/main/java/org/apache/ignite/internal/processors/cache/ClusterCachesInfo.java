@@ -354,10 +354,6 @@ class ClusterCachesInfo {
 
             if (CU.affinityNode(ctx.discovery().localNode(), locInfo.cacheData().config().getNodeFilter())
                 && rmtNode != null && CU.affinityNode(rmtNode, rmtData.cacheConfiguration().getNodeFilter())) {
-
-                log.warning("Remote enrichment = " + rmtData.cacheConfigurationEnrichment());
-                log.warning("Local enrichment = " + locInfo.cacheData().cacheConfigurationEnrichment());
-
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeFactory", "Store factory",
                     locAttr.storeFactoryClassName(), rmtAttr.storeFactoryClassName(), true);
             }
@@ -932,7 +928,7 @@ class ClusterCachesInfo {
             req.initiatingNodeId(),
             req.deploymentId(),
             req.encryptionKey(),
-            req.getCacheCfgEnrichment()
+            req.cacheConfigurationEnrichment()
         );
 
         DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
@@ -945,7 +941,7 @@ class ClusterCachesInfo {
             req.sql(),
             req.deploymentId(),
             req.schema(),
-            req.getCacheCfgEnrichment()
+            req.cacheConfigurationEnrichment()
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
@@ -1366,8 +1362,6 @@ class ClusterCachesInfo {
                 cacheData.cacheConfigurationEnrichment()
             );
 
-            log.warning("Received -> " + cacheData.cacheConfiguration().getName() + " " + cacheData.cacheConfigurationEnrichment());
-
             Collection<QueryEntity> localQueryEntities = getLocalQueryEntities(cfg.getName());
 
             QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(localQueryEntities);
@@ -1594,11 +1588,8 @@ class ClusterCachesInfo {
                 if (locCfg != null ||
                     joinDiscoData.startCaches() ||
                     CU.affinityNode(ctx.discovery().localNode(), desc.groupDescriptor().config().getNodeFilter())) {
-                    if (active) {
+                    if (active)
                         locJoinStartCaches.add(new T2<>(desc, nearCfg));
-
-                        log.warning("Need to start -> " + desc.cacheName() + " " + locCfg + " " + joinDiscoData.startCaches());
-                    }
                     else
                         locCfgsForActivation.put(desc.cacheName(), new T2<>(desc.cacheConfiguration(), nearCfg));
                 }
