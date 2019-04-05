@@ -143,11 +143,6 @@ namespace ignite
                 {
                     SP_DataChannel channel = GetBestChannel(hint);
 
-                    if (!channel.IsValid())
-                        Connect();
-
-                    channel = GetBestChannel(hint);
-
                     int32_t metaVer = typeMgr.GetVersion();
 
                     SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
@@ -227,37 +222,28 @@ namespace ignite
                 {
                     SP_DataChannel channel = preferred;
 
-                    while (true)
+                    if (!channel.IsValid())
+                        channel = GetRandomChannel();
+
+                    if (!channel.IsValid())
                     {
-                        if (!channel.IsValid())
-                            channel = GetRandomChannel();
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                            "Can not connect to any available cluster node. Please restart client");
+                    }
 
-                        if (!channel.IsValid())
-                        {
-                            Connect();
-
-                            channel = GetRandomChannel();
-                        }
-
-                        if (!channel.IsValid())
-                            break;
-
-                        try
-                        {
-                            channel.Get()->SyncMessage(req, rsp, ioTimeout);
-
-                            break;
-                        }
-                        catch (IgniteError&)
-                        {
-                            InvalidateChannel(channel);
-                        }
+                    try
+                    {
+                        channel.Get()->SyncMessage(req, rsp, ioTimeout);
+                    }
+                    catch (IgniteError&)
+                    {
+                        InvalidateChannel(channel);
                     }
 
                     if (!channel.IsValid())
                     {
                         throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
-                            "Can not connect to any available cluster node.");
+                            "Connection failure during command processing. Please re-run command");
                     }
 
                     CheckAffinity(rsp);

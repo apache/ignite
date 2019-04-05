@@ -50,6 +50,22 @@ public:
     }
 
     template<typename K, typename V>
+    void PutWithRetry(cache::CacheClient<K,V>& cache, const K& key, const V& value)
+    {
+        try
+        {
+            cache.Put(key, value);
+        }
+        catch(const ignite::IgniteError& err)
+        {
+            if (err.GetCode() == ignite::IgniteError::IGNITE_ERR_NETWORK_FAILURE)
+            {
+                cache.Put(key, value);
+            }
+        }
+    }
+
+    template<typename K, typename V>
     void LocalPeek(cache::CacheClient<K,V>& cache, const K& key, V& value)
     {
         using namespace ignite::impl::thin;
@@ -885,10 +901,10 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsRebalance)
 
     ignite::Ignition::Stop("node3", true);
 
-    boost::this_thread::sleep_for(boost::chrono::seconds(2));
+    boost::this_thread::sleep_for(boost::chrono::seconds(3));
 
     for (int64_t i = 1; i < 1000; ++i)
-        cache.Put(ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
+        PutWithRetry(cache, ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
 
     for (int64_t i = 1; i < 1000; ++i)
     {
