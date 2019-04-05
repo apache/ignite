@@ -17,6 +17,8 @@
 
 import _ from 'lodash';
 
+import { Bean } from './Beans';
+
 import AbstractTransformer from './AbstractTransformer';
 import StringBuilder from './StringBuilder';
 import VersionService from 'app/services/Version.service';
@@ -138,8 +140,8 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
             const key = entry[map.keyField];
             const val = entry[map.valField];
 
-            const isKeyBean = this._isBean(map.keyClsName);
-            const isValBean = this._isBean(map.valClsName);
+            const isKeyBean = key instanceof Bean || this._isBean(map.keyClsName);
+            const isValBean = val instanceof Bean || this._isBean(map.valClsName);
 
 
             if (isKeyBean || isValBean) {
