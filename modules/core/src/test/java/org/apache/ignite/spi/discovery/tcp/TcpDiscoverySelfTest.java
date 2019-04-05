@@ -392,34 +392,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         assertTrue("Expected IgniteSpiException was not thrown", exceptionThrown);
     }
 
-    /**
-     * //TODO write meaningful comment decribing the test.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNodeIdsHistorySpreading() throws Exception {
-        usePortFromNodeName = true;
-
-        System.setProperty(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, "false");
-
-        startGrid(NODE_WITH_PORT_ID_0);
-
-        specialSpi = node1SpecialSpi;
-
-        startGrid(NODE_WITH_PORT_ID_1);
-
-        specialSpi = null;
-
-        nodeId = failedNodeId;
-
-        specialIpFinder = new TcpDiscoveryVmIpFinder(false);
-
-        ((TcpDiscoveryVmIpFinder)specialIpFinder).setAddresses(Arrays.asList("127.0.0.1:47500", "127.0.0.1:47503"));
-
-        startGrid(NODE_WITH_PORT_ID_2);
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         discoMap = null;
