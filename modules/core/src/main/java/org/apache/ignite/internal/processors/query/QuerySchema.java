@@ -298,8 +298,12 @@ public class QuerySchema implements Serializable {
 
                 QueryEntity entity = ((List<QueryEntity>)entities).get(targetIdx);
 
-                for (String field : op0.columns())
-                    entity.getFields().remove(field);
+                for (String field : op0.columns()) {
+                    boolean rmv = QueryUtils.removeField(entity, field);
+
+                    assert rmv || op0.ifExists() : "Invalid operation state [removed=" + rmv
+                        + ", ifExists=" + op0.ifExists() + ']';
+                }
             }
         }
     }
