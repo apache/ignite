@@ -216,7 +216,7 @@ public class CacheMvccSqlTxModesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed
      */
     @Test
-    public void testConsequentMvccNonMvccOperations2() throws Exception {
+    public void testConsequentMvccNonMvccMixedOperations() throws Exception {
         IgniteEx node = startGrid(0);
 
         IgniteCache<Object, Object> mvccCache = node.createCache(new CacheConfiguration<>("mvcc-cache")
@@ -225,18 +225,36 @@ public class CacheMvccSqlTxModesTest extends CacheMvccAbstractTest {
         IgniteCache<Object, Object> nonMvccCache = node.createCache(new CacheConfiguration<>("no-mvcc-cache")
             .setAtomicityMode(TRANSACTIONAL).setIndexedTypes(Integer.class, Integer.class));
 
-        nonMvccCache.query(new SqlFieldsQuery("INSERT INTO Integer (_key, _val) VALUES (3,3)")).getAll();
+        nonMvccCache.query(new SqlFieldsQuery("INSERT INTO Integer (_key, _val) VALUES (1,1)")).getAll();
 
         try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            mvccCache.put(1, 1);
+            nonMvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer")).getAll();
+
+            mvccCache.put(2, 2);
 
             tx.commit();
         }
 
-        nonMvccCache.query(new SqlFieldsQuery("INSERT INTO Integer (_key, _val) VALUES (5,5)")).getAll();
+        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            nonMvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer")).getAll();
+
+            mvccCache.query(new SqlFieldsQuery("INSERT INTO Integer (_key, _val) VALUES (3,3)")).getAll();
+
+            tx.commit();
+        }
 
         try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            mvccCache.put(2, 2);
+            mvccCache.put(4, 4);
+
+            nonMvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer")).getAll();
+
+            tx.commit();
+        }
+
+        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            mvccCache.query(new SqlFieldsQuery("INSERT INTO Integer (_key, _val) VALUES (5,5)")).getAll();
+
+            nonMvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer")).getAll();
 
             tx.commit();
         }
