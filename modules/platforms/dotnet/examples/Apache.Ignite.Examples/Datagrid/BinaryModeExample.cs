@@ -176,8 +176,7 @@ namespace Apache.Ignite.Examples.Datagrid
             const string orgName = "Apache";
 
             var qry = cache.Query(new SqlFieldsQuery(
-                PersonType,
-                "select Person.* from Person, Company where Person.CompanyId = Company.Id and Company.Name = ?",
+                "select pers.* from Person as pers, Company as comp where pers.CompanyId = comp.Id and comp.Name = ?",
                 orgName)
             {
                 EnableDistributedJoins = true,
@@ -188,7 +187,7 @@ namespace Apache.Ignite.Examples.Datagrid
             Console.WriteLine(">>> Persons working for " + orgName + ":");
 
             foreach (var entry in qry)
-                Console.WriteLine(">>>     " + entry.Value);
+                Console.WriteLine(">>>     " + entry);
         }
 
         /// <summary>
