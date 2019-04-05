@@ -115,7 +115,7 @@ namespace Apache.Ignite.Examples.Sql
             const string orgName = "Apache";
 
             var qry = cache.Query(new SqlFieldsQuery(
-                "select name from from Employee, \"dotnet_cache_query_organization\".Organization " +
+                "select Employee.name from Employee, \"dotnet_cache_query_organization\".Organization " +
                 "where Employee.organizationId = Organization._key and Organization.name = ?", orgName));
 
             Console.WriteLine();
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Examples.Sql
             const string orgName = "Apache";
 
             var qry = cache.Query(new SqlFieldsQuery(
-                "select name from from Employee, \"dotnet_cache_query_organization\".Organization " +
+                "select Employee.name from Employee, \"dotnet_cache_query_organization\".Organization " +
                 "where Employee.organizationId = Organization._key and Organization.name = ?", orgName)
             {
                 EnableDistributedJoins = true,
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Examples.Sql
             });
 
             Console.WriteLine();
-            Console.WriteLine(">>> Employees working for " + orgName + ":");
+            Console.WriteLine(">>> Employees working for " + orgName + " (distributed joins enabled):");
 
             foreach (var entry in qry)
                 Console.WriteLine(">>>     " + entry[0]);
