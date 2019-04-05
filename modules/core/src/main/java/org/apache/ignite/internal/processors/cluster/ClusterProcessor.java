@@ -48,7 +48,6 @@ import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridTimerTask;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -73,7 +72,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DIAGNOSTIC_ENABLED
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CLUSTER_PROC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_INTERNAL_DIAGNOSTIC;
@@ -171,8 +169,6 @@ public class ClusterProcessor extends GridProcessorAdapter {
                 allNodesMetrics.remove(nodeId);
             }
         }, EVT_NODE_FAILED, EVT_NODE_LEFT);
-
-        ctx.event().addLocalEventListener(new ChangeTopologyWatcher(ctx), EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
 
         ctx.io().addMessageListener(TOPIC_INTERNAL_DIAGNOSTIC, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {

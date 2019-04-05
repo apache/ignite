@@ -97,22 +97,22 @@ public class UriDeploymentFileScanner implements UriDeploymentScanner {
             throw new IgniteSpiException("URI is either not provided or is not a directory: " +
                 U.hidePassword(uri.toString()));
 
-        FileFilter garFilter = new FileFilter() {
+        FileFilter pkgFilter = new FileFilter() {
             /** {@inheritDoc} */
             @Override public boolean accept(File pathname) {
                 return scanCtx.getFilter().accept(null, pathname.getName());
             }
         };
 
-        FileFilter garDirFilesFilter = new FileFilter() {
+        FileFilter pkgDirFilesFilter = new FileFilter() {
             /** {@inheritDoc} */
             @Override public boolean accept(File pathname) {
-                // Allow all files in GAR-directory.
+                // Allow all files in package.
                 return pathname.isFile();
             }
         };
 
-        return new URIContext(scanDir, garFilter, garDirFilesFilter);
+        return new URIContext(scanDir, pkgFilter, pkgDirFilesFilter);
     }
 
     /**
@@ -136,29 +136,29 @@ public class UriDeploymentFileScanner implements UriDeploymentScanner {
         /** Scanning directory or file. */
         private final File scanDir;
 
-        /** GAR filter. */
-        private final FileFilter garFilter;
+        /** Package filter. */
+        private final FileFilter pkgFilter;
 
-        /** GAR directory files filter. */
-        private final FileFilter garDirFilesFilter;
+        /** Package directory files filter. */
+        private final FileFilter pkgDirFilesFilter;
 
-        /** Cache of found GAR-files or GAR-directories to check if any of it has been updated. */
+        /** Cache of found package files or directories to check if any of it has been updated. */
         private final Map<File, Long> tstampCache = new HashMap<>();
 
-        /** Cache of found files in GAR-folder to check if any of it has been updated. */
-        private final Map<File, Map<File, Long>> garDirFilesTstampCache = new HashMap<>();
+        /** Cache of found files in a package to check if any of it has been updated. */
+        private final Map<File, Map<File, Long>> pkgDirFilesTstampCache = new HashMap<>();
 
         /**
          * Constructor.
          *
          * @param scanDir Scan directory.
-         * @param garFilter Gar filter.
-         * @param garDirFilesFilter GAR directory files filter.
+         * @param pkgFilter Package file filter.
+         * @param pkgDirFilesFilter Package directory files filter.
          */
-        private URIContext(File scanDir, FileFilter garFilter, FileFilter garDirFilesFilter) {
+        private URIContext(File scanDir, FileFilter pkgFilter, FileFilter pkgDirFilesFilter) {
             this.scanDir = scanDir;
-            this.garFilter = garFilter;
-            this.garDirFilesFilter = garDirFilesFilter;
+            this.pkgFilter = pkgFilter;
+            this.pkgDirFilesFilter = pkgDirFilesFilter;
         }
 
         /**
@@ -180,11 +180,11 @@ public class UriDeploymentFileScanner implements UriDeploymentScanner {
             };
 
             // Scan directory for deploy units.
-            GridDeploymentFolderScannerHelper.scanFolder(scanDir, garFilter, hnd);
+            GridDeploymentFolderScannerHelper.scanFolder(scanDir, pkgFilter, hnd);
 
-            // Print warning if no GAR-units found first time.
+            // Print warning if no packages found first time.
             if (scanCtx.isFirstScan() && foundFiles.isEmpty())
-                U.warn(scanCtx.getLogger(), "No GAR-units found in: " + U.hidePassword(scanCtx.getUri().toString()));
+                U.warn(scanCtx.getLogger(), "No packages found in: " + U.hidePassword(scanCtx.getUri().toString()));
 
             if (!scanCtx.isFirstScan()) {
                 Collection<File> deletedFiles = new HashSet<>(tstampCache.keySet());
@@ -201,7 +201,7 @@ public class UriDeploymentFileScanner implements UriDeploymentScanner {
                     // Clear cache.
                     tstampCache.keySet().removeAll(deletedFiles);
 
-                    garDirFilesTstampCache.keySet().removeAll(deletedFiles);
+                    pkgDirFilesTstampCache.keySet().removeAll(deletedFiles);
 
                     scanCtx.getListener().onDeletedFiles(uris);
                 }
@@ -224,7 +224,7 @@ public class UriDeploymentFileScanner implements UriDeploymentScanner {
             if (file.isDirectory()) {
                 GridTuple<Long> dirLastModified = F.t(file.lastModified());
 
-                changed = checkGarDirectoryChanged(file, dirLastModified);
+                changed = checkPackageDirectoryChanged(file, dirLastModified);
 
                 lastMod = dirLastModified.get();
             }
@@ -287,18 +287,18 @@ public class UriDeploymentFileScanner implements UriDeploymentScanner {
          *      {@code false} otherwise.
          */
         @SuppressWarnings("ConstantConditions")
-        private boolean checkGarDirectoryChanged(File dir, final GridTuple<Long> lastModified) {
+        private boolean checkPackageDirectoryChanged(File dir, final GridTuple<Long> lastModified) {
             final Map<File, Long> clssTstampCache;
 
             boolean firstScan = false;
 
-            if (!garDirFilesTstampCache.containsKey(dir)) {
+            if (!pkgDirFilesTstampCache.containsKey(dir)) {
                 firstScan = true;
 
-                garDirFilesTstampCache.put(dir, clssTstampCache = new HashMap<>());
+                pkgDirFilesTstampCache.put(dir, clssTstampCache = new HashMap<>());
             }
             else
-                clssTstampCache = garDirFilesTstampCache.get(dir);
+                clssTstampCache = pkgDirFilesTstampCache.get(dir);
 
             assert clssTstampCache != null;
 
@@ -324,8 +324,8 @@ public class UriDeploymentFileScanner implements UriDeploymentScanner {
                 }
             };
 
-            // Scan GAR-directory for changes.
-            GridDeploymentFolderScannerHelper.scanFolder(dir, garDirFilesFilter, hnd);
+            // Scan package for changes.
+            GridDeploymentFolderScannerHelper.scanFolder(dir, pkgDirFilesFilter, hnd);
 
             // Clear cache for deleted files.
             if (!firstScan && clssTstampCache.keySet().retainAll(foundFiles))

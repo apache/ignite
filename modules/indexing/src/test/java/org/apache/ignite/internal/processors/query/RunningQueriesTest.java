@@ -64,8 +64,11 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 
@@ -80,13 +83,39 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     private static final long TIMEOUT_IN_MS = TIMEOUT_IN_SEC * 1000;
 
     /** Barrier. */
-    private static CyclicBarrier barrier;
+    private static volatile CyclicBarrier barrier;
 
     /** Ignite. */
     private static IgniteEx ignite;
 
     /** Node count. */
     private static final int NODE_CNT = 2;
+
+    /** Restarts the grid if if the last test failed. */
+    @Rule public final TestWatcher restarter = new TestWatcher() {
+        /** {@inheritDoc} */
+        @Override protected void failed(Throwable e, Description lastTest) {
+            try {
+                log().error("Last test failed [name=" + lastTest.getMethodName() +
+                    ", reason=" + e.getMessage() + "]. Restarting the grid.");
+
+                // Release the indexing.
+                if (barrier != null)
+                    barrier.reset();
+
+                stopAllGrids();
+
+                beforeTestsStarted();
+
+                log().error("Grid restarted.");
+            }
+            catch (Exception restartFailure) {
+                throw new RuntimeException("Failed to recover after test failure [test=" + lastTest.getMethodName() +
+                    ", reason=" + e.getMessage() + "]. Subsequent test results of this test class are incorrect.",
+                    restartFailure);
+            }
+        }
+    };
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -148,7 +177,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
                             .findAny()
                             .ifPresent((c) -> {
                                 try {
-                                    awaitTimeouted();
+                                    awaitTimeout();
                                 }
                                 catch (Exception e) {
                                     e.printStackTrace();
@@ -157,7 +186,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
                     }
                     else if (SchemaProposeDiscoveryMessage.class.isAssignableFrom(delegate.getClass())) {
                         try {
-                            awaitTimeouted();
+                            awaitTimeout();
                         }
                         catch (Exception e) {
                             e.printStackTrace();
@@ -179,7 +208,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
                         || GridNearAtomicFullUpdateRequest.class.isAssignableFrom(gridMsg.getClass())
                     ) {
                         try {
-                            awaitTimeouted();
+                            awaitTimeout();
                         }
                         catch (Exception ignore) {
                         }
@@ -222,10 +251,9 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Check auto clenup running queries on fully readed iterator.
-     *
-     * @throws Exception Exception in case of failure.
+     * Check auto cleanup running queries on fully read iterator.
      */
+    @SuppressWarnings("CodeBlock2Expr")
     @Test
     public void testAutoCloseQueryAfterIteratorIsExhausted(){
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -246,11 +274,9 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
     /**
      * Check cluster wide query id generation.
-     *
-     * @throws Exception Exception in case of failure.
      */
     @Test
-    public void testClusterWideQueryIdGeneration() throws Exception {
+    public void testClusterWideQueryIdGeneration() {
         newBarrier(1);
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -300,7 +326,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         assertNoRunningQueries(ignite);
 
-        awaitTimeouted();
+        awaitTimeout();
 
         fut1.get(TIMEOUT_IN_MS);
 
@@ -367,7 +393,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         IgniteInternalFuture<Integer> fut1 = GridTestUtils.runAsync(() -> barrier.await());
 
-        awaitTimeouted();
+        awaitTimeout();
 
         fut1.get(TIMEOUT_IN_MS);
 
@@ -385,9 +411,9 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE TABLE tst_idx_drop(id long PRIMARY KEY, cnt integer)"));
 
-        ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX tst_idx_drop_idx ON default.tst_idx_drop(cnt)"));
+        ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX tst_idx_drop_idx ON tst_idx_drop(cnt)"));
 
-        testQueryDDL("DROP INDEX default.tst_idx_drop_idx");
+        testQueryDDL("DROP INDEX tst_idx_drop_idx");
     }
 
     /**
@@ -401,7 +427,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE TABLE tst_idx_create(id long PRIMARY KEY, cnt integer)"));
 
-        testQueryDDL("CREATE INDEX tst_idx_create_idx ON default.tst_idx_create(cnt)");
+        testQueryDDL("CREATE INDEX tst_idx_create_idx ON tst_idx_create(cnt)");
     }
 
     /**
@@ -415,7 +441,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE TABLE tst_drop(id long PRIMARY KEY, cnt integer)"));
 
-        testQueryDDL("DROP TABLE default.tst_drop");
+        testQueryDDL("DROP TABLE tst_drop");
     }
 
     /**
@@ -452,9 +478,9 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         runningQueries.forEach((info) -> Assert.assertEquals(qry.getSql(), info.query()));
 
-        awaitTimeouted();
+        awaitTimeout();
 
-        awaitTimeouted();
+        awaitTimeout();
 
         fut.get(TIMEOUT_IN_MS);
     }
@@ -493,11 +519,11 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
                 assertEquals(1, runningQueries.size());
 
-                awaitTimeouted();
+                awaitTimeout();
 
                 assertWaitingOnBarrier();
 
-                awaitTimeouted();
+                awaitTimeout();
             }
 
             fut.get(TIMEOUT_IN_MS);
@@ -505,7 +531,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Check tracking running queries for multistatements.
+     * Check tracking running queries for multi-statements.
      *
      * @throws Exception Exception in case of failure.
      */
@@ -548,7 +574,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
                 assertEquals(query, runningQueries.get(0).query());
 
-                awaitTimeouted();
+                awaitTimeout();
             }
 
             fut.get(TIMEOUT_IN_MS);
@@ -589,7 +615,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
             assertEquals(sql, runningQueries.get(0).query());
 
-            awaitTimeouted();
+            awaitTimeout();
 
             fut.get(TIMEOUT_IN_MS);
         }
@@ -608,7 +634,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     /**
      * Check all nodes except passed as parameter on no any running queries.
      *
-     * @param excludeNodes Nodes shich will be excluded from check.
+     * @param excludeNodes Nodes which will be excluded from check.
      */
     private void assertNoRunningQueries(IgniteEx... excludeNodes) {
         Set<UUID> excludeIds = Stream.of(excludeNodes).map((ignite) -> ignite.localNode().id()).collect(Collectors.toSet());
@@ -638,7 +664,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
      * @throws TimeoutException In case of failure.
      * @throws BrokenBarrierException In case of failure.
      */
-    private static void awaitTimeouted() throws InterruptedException, TimeoutException, BrokenBarrierException {
+    private static void awaitTimeout() throws InterruptedException, TimeoutException, BrokenBarrierException {
         barrier.await(TIMEOUT_IN_MS, TimeUnit.SECONDS);
     }
 
@@ -665,7 +691,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
             );
 
             try {
-                awaitTimeouted();
+                awaitTimeout();
             }
             catch (Exception e) {
                 throw new IgniteException(e);

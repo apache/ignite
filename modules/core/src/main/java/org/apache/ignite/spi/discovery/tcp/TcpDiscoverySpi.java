@@ -2080,8 +2080,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        sslEnable = ignite().configuration().getSslContextFactory() != null;
-
         initializeImpl();
 
         registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
@@ -2095,6 +2093,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private void initializeImpl() {
         if (impl != null)
             return;
+
+        sslEnable = ignite().configuration().getSslContextFactory() != null;
 
         initFailureDetectionTimeout();
 

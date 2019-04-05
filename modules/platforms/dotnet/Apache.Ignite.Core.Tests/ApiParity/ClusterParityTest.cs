@@ -33,7 +33,10 @@
             "startNodesAsync",
             "stopNodes",
             "restartNodes",
-            "baselineConfiguration"
+            "isBaselineAutoAdjustEnabled",
+            "baselineAutoAdjustEnabled",
+            "baselineAutoAdjustTimeout",
+            "baselineAutoAdjustStatus"
         };
 
         /** Members that are missing on .NET side and should be added in future. */

@@ -182,7 +182,7 @@ mixin query-actions
     button.btn-ignite.btn-ignite--secondary(ng-disabled='!queryAvailable(paragraph)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{queryTooltip(paragraph, "explain query")}}')
         | Explain
 
-    button.btn-ignite.btn-ignite--secondary(ng-if='cancelQueryAvailable(paragraph)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
+    button.btn-ignite.btn-ignite--secondary(ng-if='paragraph.executionInProgress(false) || paragraph.executionInProgress(true)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
         | Cancel
 
 mixin table-result-heading-query
@@ -199,35 +199,29 @@ mixin table-result-heading-query
                 +result-toolbar
         .col-xs-3
             .pull-right
-                .btn-group.panel-tip-container
-                    button.btn.btn-primary.btn--with-icon(
+                .btn-ignite-group
+                    button.btn-ignite.btn-ignite--primary(
                         ng-click='exportCsv(paragraph)'
-
                         ng-disabled='paragraph.loading'
-
                         bs-tooltip=''
                         ng-attr-title='{{ queryTooltip(paragraph, "export query results") }}'
-
                         data-trigger='hover'
                         data-placement='bottom'
                     )
                         svg(ignite-icon='csv' ng-if='!paragraph.csvIsPreparing')
-                        i.fa.fa-fw.fa-refresh.fa-spin(ng-if='paragraph.csvIsPreparing')
-                        span Export
+                        svg.fa-spin(ignite-icon='refresh' ng-if='paragraph.csvIsPreparing')
+                        |  &nbsp; Export
 
                     -var options = [{ text: 'Export', click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }, { divider: true }, { text: '<span title="Copy current result page to clipboard">Copy to clipboard</span>', click: 'exportCsvToClipBoard(paragraph)' }]
-                    button.btn.dropdown-toggle.btn-primary(
+                    button.btn-ignite.btn-ignite--primary(
                         ng-disabled='paragraph.loading'
-
                         bs-dropdown=`${JSON.stringify(options)}`
-
                         data-toggle='dropdown'
                         data-container='body'
                         data-placement='bottom-right'
                         data-html='true'
                     )
-                        span.caret
-
+                        span.icon.fa.fa-caret-down
 
 
 mixin table-result-heading-scan
@@ -338,7 +332,7 @@ mixin paragraph-scan
                     span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(true)')
                     | Scan on selected node
 
-                button.btn-ignite.btn-ignite--secondary(ng-if='cancelQueryAvailable(paragraph)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
+                button.btn-ignite.btn-ignite--secondary(ng-if='paragraph.checkScanInProgress(false) || paragraph.checkScanInProgress(true)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
                     | Cancel
             div
 
@@ -354,7 +348,7 @@ mixin paragraph-scan
                     span(ng-if='paragraph.queryArgs.filter') &nbsp; with filter: #[b {{ paragraph.queryArgs.filter }}]
                     span(ng-if='paragraph.queryArgs.localNid') &nbsp; on node: #[b {{ paragraph.queryArgs.localNid | limitTo:8 }}]
 
-                -var nextVisibleCondition = 'paragraph.resultType() != "error" && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
+                -var nextVisibleCondition = 'paragraph.resultType() != "error" && !paragraph.loading && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
 
                 .pull-right(ng-show=`${nextVisibleCondition}` ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)')
                     i.fa.fa-chevron-circle-right
@@ -422,7 +416,7 @@ mixin paragraph-query
             .footer.clearfix(ng-show='paragraph.resultType() !== "error"')
                 a.pull-left(ng-click='showResultQuery(paragraph)') Show query
 
-                -var nextVisibleCondition = 'paragraph.resultType() !== "error" && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
+                -var nextVisibleCondition = 'paragraph.resultType() !== "error" && !paragraph.loading && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
 
                 .pull-right(ng-show=`${nextVisibleCondition}` ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)')
                     i.fa.fa-chevron-circle-right
