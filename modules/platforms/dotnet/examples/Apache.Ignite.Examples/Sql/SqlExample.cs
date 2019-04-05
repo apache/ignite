@@ -133,8 +133,8 @@ namespace Apache.Ignite.Examples.Sql
         {
             const string orgName = "Apache";
 
-            var qry = cache.Query(new SqlQuery("Employee",
-                "from Employee, \"dotnet_cache_query_organization\".Organization " +
+            var qry = cache.Query(new SqlFieldsQuery(
+                "select name from from Employee, \"dotnet_cache_query_organization\".Organization " +
                 "where Employee.organizationId = Organization._key and Organization.name = ?", orgName)
             {
                 EnableDistributedJoins = true,
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Examples.Sql
             Console.WriteLine(">>> Employees working for " + orgName + ":");
 
             foreach (var entry in qry)
-                Console.WriteLine(">>>     " + entry.Value);
+                Console.WriteLine(">>>     " + entry[0]);
         }
 
         /// <summary>
