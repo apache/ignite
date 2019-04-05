@@ -23,6 +23,8 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -155,6 +157,8 @@ public class WalReader {
                 }
             }
 
+            System.setOut(new PrintStream(new File("C:\\work\\logs\\d_3.txt")));
+
             System.out.println("Program arguments:");
             System.out.printf("\t%s = %d%n", PAGE_SIZE, pageSize);
             if (binaryMetadataFileStoreDir != null)
@@ -281,15 +285,19 @@ public class WalReader {
      */
     private static void printRecord(WALRecord record, Set<String> types, String recordContainsText, boolean archive) {
         if (F.isEmpty(types) || types.contains(record.type().name())) {
-            try {
-                String recordStr = record.toString();
+            DataRecord dRec = (DataRecord)record;
 
-                if (F.isEmpty(recordContainsText) || recordStr.contains(recordContainsText))
-                    System.out.printf("[%s] %s%n", archive ? "A" : "W", recordStr);
-            }
-            catch (Exception e) {
-                System.err.printf("Failed to print record (type=%s)%n", record.type());
-            }
+            for (DataEntry entry : dRec.writeEntries())
+                System.out.println("DataEntry: op=" + entry.op() + ", grpId=" + entry.cacheId() + ", partId=" + entry.partitionId() + ", key=" + entry.key().value(null, false) + ", cntr=" + entry.partitionCounter());
+//            try {
+//                String recordStr = record.toString();
+//
+//                if (F.isEmpty(recordContainsText) || recordStr.contains(recordContainsText))
+//                    System.out.printf("[%s] %s%n", archive ? "A" : "W", recordStr);
+//            }
+//            catch (Exception e) {
+//                System.err.printf("Failed to print record (type=%s)%n", record.type());
+//            }
         }
     }
 }

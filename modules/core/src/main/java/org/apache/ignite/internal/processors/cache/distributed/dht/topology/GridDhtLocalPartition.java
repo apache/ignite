@@ -409,20 +409,20 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 removeVersionedEntry(item.cacheId(), item.key(), item.version());
         }
 
-//        if (!grp.isDrEnabled()) {
-//            RemovedEntryHolder item = rmvQueue.peekFirst();
-//
-//            while (item != null && item.expireTime() < U.currentTimeMillis()) {
-//                item = rmvQueue.pollFirst();
-//
-//                if (item == null)
-//                    break;
-//
-//                removeVersionedEntry(item.cacheId(), item.key(), item.version());
-//
-//                item = rmvQueue.peekFirst();
-//            }
-//        }
+        if (!grp.isDrEnabled()) {
+            RemovedEntryHolder item = rmvQueue.peekFirst();
+
+            while (item != null && item.expireTime() < U.currentTimeMillis()) {
+                item = rmvQueue.pollFirst();
+
+                if (item == null)
+                    break;
+
+                removeVersionedEntry(item.cacheId(), item.key(), item.version());
+
+                item = rmvQueue.peekFirst();
+            }
+        }
     }
 
     /**

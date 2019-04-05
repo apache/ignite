@@ -26,8 +26,11 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -35,10 +38,15 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -54,7 +62,7 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
     public static final int PARTITION_ID = 0;
 
     /** */
-    public static final int SERVER_NODES = 4;
+    public static final int SERVER_NODES = 3;
 
     /**
      * Should observe same order of updates on all owners.
@@ -102,10 +110,6 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
 
             checkWAL((IgniteEx)ignite, new LinkedList<>(ops), 6);
         }
-    }
-
-    @Override protected boolean isMultiJvm() {
-        return true;
     }
 
     /**
@@ -159,8 +163,8 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
 
                 String name = restartNode.name();
 
-                //stopGrid(true, name);
-                IgniteProcessProxy.kill(name);
+                stopGrid(true, name);
+                //IgniteProcessProxy.kill(name);
 
                 try {
                     //waitForTopology(SERVER_NODES - 1);
@@ -225,6 +229,68 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
 //        cur.close();
 //
 //        assertEquals(size, events.size());
+    }
+
+    @Test
+    public void testDelete() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL, "1000");
+        System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
+
+        try {
+            backups = 2;
+
+            Ignite crd = startGridsMultiThreaded(SERVER_NODES);
+
+            List<Integer> keys = partitionKeys(crd.cache(DEFAULT_CACHE_NAME), PARTITION_ID, 2, 0);
+
+            Ignite prim = primaryNode(keys.get(0), DEFAULT_CACHE_NAME);
+
+            prim.cache(DEFAULT_CACHE_NAME).put(keys.get(0), keys.get(0));
+            prim.cache(DEFAULT_CACHE_NAME).put(keys.get(1), keys.get(1));
+
+            forceCheckpoint();
+
+            List<Ignite> backups = backupNodes(keys.get(0), DEFAULT_CACHE_NAME);
+
+            stopGrid(true, backups.get(0).name());
+
+            prim.cache(DEFAULT_CACHE_NAME).put(keys.get(0), keys.get(0));
+
+            TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(prim);
+
+            spi.blockMessages((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage);
+
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        spi.waitForBlocked();
+                    }
+                    catch (InterruptedException e) {
+                        fail(X.getFullStackTrace(e));
+                    }
+
+                    prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(0));
+
+                    doSleep(5000);
+
+                    prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(1));
+
+                    spi.stopBlock();
+                }
+            });
+
+            startGrid(backups.get(0).name());
+
+            awaitPartitionMapExchange();
+
+            fut.get();
+
+            assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL);
+            System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+        }
     }
 
     /**
