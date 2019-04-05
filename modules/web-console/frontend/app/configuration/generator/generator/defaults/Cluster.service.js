@@ -443,6 +443,12 @@ const DFLT_CLUSTER = {
         useIgniteSslContextFactory: true,
         sslClientAuth: false
     },
+    encryptionSpi: {
+        Keystore: {
+            keySize: 256,
+            masterKeyName: 'ignite.master.key'
+        }
+    },
     authenticationEnabled: false,
     sqlQueryHistorySize: 1000,
     allSegmentationResolversPassRequired: true,

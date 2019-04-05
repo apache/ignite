@@ -1212,6 +1212,17 @@ module.exports.factory = function(mongoose) {
             subIntervals: Number,
             walAutoArchiveAfterInactivity: Number
         },
+        encryptionSpi: {
+            kind: {type: String, enum: ['Noop', 'Keystore', 'Custom']},
+            Keystore: {
+                keySize: Number,
+                masterKeyName: String,
+                keyStorePath: String
+            },
+            Custom: {
+                className: String
+            }
+        },
         mvccVacuumThreadCount: Number,
         mvccVacuumFrequency: Number,
         authenticationEnabled: Boolean,
