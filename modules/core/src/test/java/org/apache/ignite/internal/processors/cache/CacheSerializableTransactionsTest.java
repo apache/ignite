@@ -58,7 +58,6 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -104,7 +103,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     private static final int SRVS = 4;
 
     /** */
-    private static final int CLIENTS = 4;
+    private static final int CLIENTS = 3;
 
     /** */
     private boolean client;
@@ -3958,69 +3957,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     @Test
     public void testGetRemoveTxNearCache2() throws Exception {
         getRemoveTx(true, true);
-    }
-
-    /**
-     * Sample reproducer.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void test() throws Exception {
-        IgniteEx grid = grid(0);
-
-        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, false, false);
-
-        Ignite client0 = clients().get(0);
-        Ignite client1 = clients().get(1);
-
-        String cacheName = grid.createCache(ccfg).getName();
-
-        try {
-            IgniteCache<Integer, Integer> cache0 = client0.createNearCache(cacheName, new NearCacheConfiguration<>());
-            IgniteCache<Integer, Integer> cache1 = client1.createNearCache(cacheName, new NearCacheConfiguration<>());
-
-            AtomicInteger threadIdx = new AtomicInteger();
-
-            runMultiThreadedAsync(() -> {
-                IgniteTransactions txs = client0.transactions();
-
-                int thread = threadIdx.getAndIncrement();
-
-                try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-                    cache0.get(0);
-
-                    if (thread == 0)
-                        assertTrue(cache0.remove(0));
-                    else
-                        cache0.put(0, 1);
-
-                    tx.commit();
-                }
-                catch (TransactionOptimisticException ignore) {
-                    // Retry.
-                }
-
-                return null;
-            }, 2, "update-thread").get();
-
-            Integer expVal;
-
-            try (Transaction tx = client1.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                Integer val = cache1.get(0);
-
-                expVal = val == null ? 1 : 2;
-
-                cache1.put(0, expVal);
-
-                tx.commit();
-            }
-
-            assertEquals(expVal, cache0.get(0));
-        }
-        finally {
-            destroyCache(cacheName);
-        }
     }
 
     /**
