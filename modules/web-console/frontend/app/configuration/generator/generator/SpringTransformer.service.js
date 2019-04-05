@@ -17,6 +17,8 @@
 
 import _ from 'lodash';
 
+import { Bean } from './Beans';
+
 import AbstractTransformer from './AbstractTransformer';
 import StringBuilder from './StringBuilder';
 import VersionService from 'app/services/Version.service';
@@ -100,6 +102,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
                     return `${item}`;
                 case 'java.lang.String':
                 case 'PATH':
+                case 'PATH_ARRAY':
                     return this.escapeXml(item);
                 default:
                     return item;
@@ -137,8 +140,8 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
             const key = entry[map.keyField];
             const val = entry[map.valField];
 
-            const isKeyBean = this._isBean(map.keyClsName);
-            const isValBean = this._isBean(map.valClsName);
+            const isKeyBean = key instanceof Bean || this._isBean(map.keyClsName);
+            const isValBean = val instanceof Bean || this._isBean(map.valClsName);
 
 
             if (isKeyBean || isValBean) {
@@ -209,6 +212,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
 
                     break;
                 case 'ARRAY':
+                case 'PATH_ARRAY':
                 case 'COLLECTION':
                     this._setCollection(sb, prop);
 

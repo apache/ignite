@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -54,7 +55,11 @@ import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
+import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.mapreduce.IgniteHadoopWeightedMapReducePlanner;
+import org.apache.ignite.hadoop.util.BasicUserNameMapper;
+import org.apache.ignite.hadoop.util.ChainedUserNameMapper;
+import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -70,6 +75,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi;
@@ -167,7 +173,6 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgProps.add("serviceThreadPoolSize");
         igniteCfgProps.add("managementThreadPoolSize");
         igniteCfgProps.add("igfsThreadPoolSize");
-        igniteCfgProps.add("rebalanceThreadPoolSize");
         igniteCfgProps.add("utilityCacheThreadPoolSize");
         igniteCfgProps.add("utilityCacheKeepAliveTime");
         igniteCfgProps.add("asyncCallbackPoolSize");
@@ -189,6 +194,19 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgProps.add("pluginConfigurations");
         igniteCfgProps.add("mvccVacuumFrequency");
         igniteCfgProps.add("mvccVacuumThreadCount");
+        igniteCfgProps.add("encryptionSpi");
+        igniteCfgProps.add("authenticationEnabled");
+        igniteCfgProps.add("sqlQueryHistorySize");
+        igniteCfgProps.add("lifecycleBeans");
+        igniteCfgProps.add("addressResolver");
+        igniteCfgProps.add("mBeanServer");
+        igniteCfgProps.add("networkCompressionLevel");
+        igniteCfgProps.add("systemWorkerBlockedTimeout");
+        igniteCfgProps.add("includeProperties");
+        igniteCfgProps.add("cacheStoreSessionListenerFactories");
+        igniteCfgProps.add("sqlSchemas");
+        igniteCfgProps.add("igniteInstanceName");
+        igniteCfgProps.add("communicationFailureResolver");
 
         Set<String> igniteCfgPropsDep = new HashSet<>();
         igniteCfgPropsDep.add("gridName");
@@ -204,15 +222,37 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgPropsExcl.add("clientMode");
         igniteCfgPropsExcl.add("indexingSpi");
         igniteCfgPropsExcl.add("nodeId");
+        igniteCfgPropsExcl.add("segmentCheckFrequency");
+        igniteCfgPropsExcl.add("allSegmentationResolversPassRequired");
+        igniteCfgPropsExcl.add("segmentationPolicy");
+        igniteCfgPropsExcl.add("segmentationResolveAttempts");
+        igniteCfgPropsExcl.add("waitForSegmentOnStart");
+        igniteCfgPropsExcl.add("segmentationResolvers");
+        igniteCfgPropsExcl.add("autoActivationEnabled");
+        igniteCfgPropsExcl.add("igniteHome");
+        igniteCfgPropsExcl.add("platformConfiguration");
 
         metadata.put(IgniteConfiguration.class,
             new MetadataInfo(igniteCfgProps, igniteCfgPropsDep, igniteCfgPropsExcl));
+
+        Set<String> encriptionSpiProps = new HashSet<>();
+        encriptionSpiProps.add("keySize");
+        encriptionSpiProps.add("masterKeyName");
+        encriptionSpiProps.add("keyStorePath");
+        metadata.put(KeystoreEncryptionSpi.class, new MetadataInfo(encriptionSpiProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
+
+        Set<String> cacheKeyCfgProps = new HashSet<>();
+        cacheKeyCfgProps.add("typeName");
+        cacheKeyCfgProps.add("affinityKeyFieldName");
+
+        metadata.put(CacheKeyConfiguration.class, new MetadataInfo(cacheKeyCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> atomicCfgProps = new HashSet<>();
         atomicCfgProps.add("cacheMode");
         atomicCfgProps.add("atomicSequenceReserveSize");
         atomicCfgProps.add("backups");
         atomicCfgProps.add("affinity");
+        atomicCfgProps.add("groupName");
 
         metadata.put(AtomicConfiguration.class, new MetadataInfo(atomicCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
@@ -235,7 +275,8 @@ public class WebConsoleConfigurationSelfTest {
 
         Set<String> sharedFsCheckpointProps = new HashSet<>();
         sharedFsCheckpointProps.add("directoryPaths");
-        metadata.put(SharedFsCheckpointSpi.class, new MetadataInfo(sharedFsCheckpointProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
+        metadata.put(SharedFsCheckpointSpi.class,
+            new MetadataInfo(sharedFsCheckpointProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
 
         Set<String> s3CheckpointProps = new HashSet<>();
         s3CheckpointProps.add("bucketNameSuffix");
@@ -335,17 +376,13 @@ public class WebConsoleConfigurationSelfTest {
         commProps.add("directBuffer");
         commProps.add("directSendBuffer");
         commProps.add("tcpNoDelay");
+        commProps.add("selectorSpins");
+        commProps.add("connectionsPerNode");
+        commProps.add("usePairedConnections");
+        commProps.add("filterReachableAddresses");
+        commProps.add("soLinger");
 
-        Set<String> commPropsDep = new HashSet<>();
-        commPropsDep.add("discoveryStartupDelay");
-
-        // Removed from configuration since ignite 2.3
-        Set<String> commPropsExcl = new HashSet<>();
-        commPropsExcl.add("discoveryStartupDelay");
-        commPropsExcl.addAll(SPI_EXCLUDED_FIELDS);
-
-        metadata.put(TcpCommunicationSpi.class,
-            new MetadataInfo(commProps, commPropsDep, commPropsExcl));
+        metadata.put(TcpCommunicationSpi.class, new MetadataInfo(commProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
 
         Set<String> discoverySpiProps = new HashSet<>();
         discoverySpiProps.add("ipFinder");
@@ -373,7 +410,13 @@ public class WebConsoleConfigurationSelfTest {
         discoverySpiProps.add("authenticator");
         discoverySpiProps.add("forceServerMode");
         discoverySpiProps.add("clientReconnectDisabled");
-        metadata.put(TcpDiscoverySpi.class, new MetadataInfo(discoverySpiProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
+        discoverySpiProps.add("connectionRecoveryTimeout");
+        discoverySpiProps.add("reconnectDelay");
+
+        Set<String> discoverySpiExclProps = new HashSet<>();
+        discoverySpiExclProps.addAll(SPI_EXCLUDED_FIELDS);
+        discoverySpiExclProps.add("nodeAttributes");
+        metadata.put(TcpDiscoverySpi.class, new MetadataInfo(discoverySpiProps, EMPTY_FIELDS, discoverySpiExclProps));
 
         Set<String> connectorProps = new HashSet<>();
         connectorProps.add("jettyPath");
@@ -395,7 +438,10 @@ public class WebConsoleConfigurationSelfTest {
         connectorProps.add("sslEnabled");
         connectorProps.add("sslClientAuth");
         connectorProps.add("sslFactory");
-        metadata.put(ConnectorConfiguration.class, new MetadataInfo(connectorProps, EMPTY_FIELDS, EMPTY_FIELDS));
+
+        Set<String> connectorPropsDep = new HashSet<>();
+        connectorPropsDep.add("sslContextFactory");
+        metadata.put(ConnectorConfiguration.class, new MetadataInfo(connectorProps, connectorPropsDep, EMPTY_FIELDS));
 
         Set<String> dataStorageProps = new HashSet<>();
         dataStorageProps.add("pageSize");
@@ -427,7 +473,10 @@ public class WebConsoleConfigurationSelfTest {
         dataStorageProps.add("metricsEnabled");
         dataStorageProps.add("alwaysWriteFullPages");
         dataStorageProps.add("writeThrottlingEnabled");
+        dataStorageProps.add("checkpointReadLockTimeout");
+        dataStorageProps.add("maxWalArchiveSize");
         dataStorageProps.add("walCompactionEnabled");
+        dataStorageProps.add("walCompactionLevel");
         metadata.put(DataStorageConfiguration.class, new MetadataInfo(dataStorageProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> dataRegionProps = new HashSet<>();
@@ -462,7 +511,8 @@ public class WebConsoleConfigurationSelfTest {
         memoryEvtStorageProps.add("expireAgeMs");
         memoryEvtStorageProps.add("expireCount");
         memoryEvtStorageProps.add("filter");
-        metadata.put(MemoryEventStorageSpi.class, new MetadataInfo(memoryEvtStorageProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
+        metadata.put(MemoryEventStorageSpi.class,
+            new MetadataInfo(memoryEvtStorageProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
 
         Set<String> alwaysFailoverProps = new HashSet<>();
         alwaysFailoverProps.add("maximumFailoverAttempts");
@@ -470,7 +520,8 @@ public class WebConsoleConfigurationSelfTest {
 
         Set<String> jobStealingFailoverProps = new HashSet<>();
         jobStealingFailoverProps.add("maximumFailoverAttempts");
-        metadata.put(JobStealingFailoverSpi.class, new MetadataInfo(jobStealingFailoverProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
+        metadata.put(JobStealingFailoverSpi.class,
+            new MetadataInfo(jobStealingFailoverProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
 
         Set<String> hadoopCfgProps = new HashSet<>();
         hadoopCfgProps.add("mapReducePlanner");
@@ -507,7 +558,8 @@ public class WebConsoleConfigurationSelfTest {
 
         Set<String> jobCntProbeProps = new HashSet<>();
         jobCntProbeProps.add("useAverage");
-        metadata.put(AdaptiveJobCountLoadProbe.class, new MetadataInfo(jobCntProbeProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
+        metadata.put(AdaptiveJobCountLoadProbe.class,
+            new MetadataInfo(jobCntProbeProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
 
         Set<String> cpuLoadProbeProps = new HashSet<>();
         cpuLoadProbeProps.add("useAverage");
@@ -580,7 +632,14 @@ public class WebConsoleConfigurationSelfTest {
         persistenceCfgProps.add("rateTimeInterval");
         persistenceCfgProps.add("tlbSize");
         persistenceCfgProps.add("subIntervals");
-        metadata.put(PersistentStoreConfiguration.class, new MetadataInfo(EMPTY_FIELDS, persistenceCfgProps, EMPTY_FIELDS));
+        persistenceCfgProps.add("walMode");
+        persistenceCfgProps.add("walAutoArchiveAfterInactivity");
+        persistenceCfgProps.add("writeThrottlingEnabled");
+        persistenceCfgProps.add("checkpointWriteOrder");
+        persistenceCfgProps.add("fileIOFactory");
+        persistenceCfgProps.add("walBufferSize");
+        metadata.put(PersistentStoreConfiguration.class,
+            new MetadataInfo(EMPTY_FIELDS, persistenceCfgProps, EMPTY_FIELDS));
 
         Set<String> srvcCfgProps = new HashSet<>();
         srvcCfgProps.add("name");
@@ -605,7 +664,8 @@ public class WebConsoleConfigurationSelfTest {
         sqlConnectorCfgProps.add("maxOpenCursorsPerConnection");
         sqlConnectorCfgProps.add("threadPoolSize");
         sqlConnectorCfgProps.add("tcpNoDelay");
-        metadata.put(SqlConnectorConfiguration.class, new MetadataInfo(EMPTY_FIELDS, sqlConnectorCfgProps, EMPTY_FIELDS));
+        metadata.put(SqlConnectorConfiguration.class,
+            new MetadataInfo(EMPTY_FIELDS, sqlConnectorCfgProps, EMPTY_FIELDS));
 
         Set<String> sslCfgProps = new HashSet<>();
         sslCfgProps.add("keyAlgorithm");
@@ -619,6 +679,8 @@ public class WebConsoleConfigurationSelfTest {
         // Only on code generation.
         sslCfgProps.add("trustStorePassword");
         sslCfgProps.add("trustStoreType");
+        sslCfgProps.add("cipherSuites");
+        sslCfgProps.add("protocols");
         metadata.put(SslContextFactory.class, new MetadataInfo(sslCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> executorProps = new HashSet<>();
@@ -633,7 +695,12 @@ public class WebConsoleConfigurationSelfTest {
         transactionCfgProps.add("pessimisticTxLogLinger");
         transactionCfgProps.add("pessimisticTxLogSize");
         transactionCfgProps.add("txManagerFactory");
-        metadata.put(TransactionConfiguration.class, new MetadataInfo(transactionCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
+
+        Set<String> transactionCfgPropsDep = new HashSet<>();
+        transactionCfgPropsDep.add("txSerializableEnabled");
+        transactionCfgPropsDep.add("txManagerLookupClassName");
+        metadata.put(TransactionConfiguration.class,
+            new MetadataInfo(transactionCfgProps, transactionCfgPropsDep, EMPTY_FIELDS));
 
         // Cache configuration.
 
@@ -646,7 +713,7 @@ public class WebConsoleConfigurationSelfTest {
         cacheCfgProps.add("partitionLossPolicy");
         cacheCfgProps.add("readFromBackup");
         cacheCfgProps.add("copyOnRead");
-        cacheCfgProps.add("isInvalidate");
+        cacheCfgProps.add("invalidate");
         cacheCfgProps.add("affinityMapper");
         cacheCfgProps.add("topologyValidator");
         cacheCfgProps.add("maxConcurrentAsyncOperations");
@@ -658,7 +725,7 @@ public class WebConsoleConfigurationSelfTest {
         // cacheCfgProps.add("memoryMode");
         // cacheCfgProps.add("offHeapMode");
         // cacheCfgProps.add("offHeapMaxMemory");
-        cacheCfgProps.add("evictionPolicy");
+        cacheCfgProps.add("evictionPolicyFactory");
         cacheCfgProps.add("evictionFilter");
         // Removed since 2.0.
         // cacheCfgProps.add("startSize");
@@ -696,15 +763,37 @@ public class WebConsoleConfigurationSelfTest {
         cacheCfgProps.add("indexedTypes");
         cacheCfgProps.add("queryEntities");
         cacheCfgProps.add("pluginConfigurations");
+        cacheCfgProps.add("cacheWriterFactory");
+        cacheCfgProps.add("cacheLoaderFactory");
+        cacheCfgProps.add("expiryPolicyFactory");
+        cacheCfgProps.add("storeConcurrentLoadAllThreshold");
+        cacheCfgProps.add("sqlIndexMaxInlineSize");
+        cacheCfgProps.add("sqlOnheapCacheEnabled");
+        cacheCfgProps.add("sqlOnheapCacheMaxSize");
+        cacheCfgProps.add("diskPageCompression");
+        cacheCfgProps.add("diskPageCompressionLevel");
+        cacheCfgProps.add("interceptor");
+        cacheCfgProps.add("storeByValue");
+        cacheCfgProps.add("eagerTtl");
+        cacheCfgProps.add("encryptionEnabled");
+        cacheCfgProps.add("eventsDisabled");
+        cacheCfgProps.add("maxQueryIteratorsCount");
+        cacheCfgProps.add("keyConfiguration");
+        cacheCfgProps.add("cacheStoreSessionListenerFactories");
+        cacheCfgProps.add("affinity");
 
         Set<String> cacheCfgPropsDep = new HashSet<>();
         // Removed since 2.0.
         // cacheCfgPropsDep.add("atomicWriteOrderMode");
         cacheCfgPropsDep.add("memoryPolicyName");
         cacheCfgPropsDep.add("longQueryWarningTimeout");
+        cacheCfgPropsDep.add("rebalanceThreadPoolSize");
+        cacheCfgPropsDep.add("transactionManagerLookupClassName");
+        cacheCfgPropsDep.add("evictionPolicy");
 
         Set<String> cacheCfgPropsExcl = new HashSet<>();
         cacheCfgPropsExcl.add("nodeFilter");
+        cacheCfgPropsExcl.add("types");
 
         metadata.put(CacheConfiguration.class, new MetadataInfo(cacheCfgProps, cacheCfgPropsDep, cacheCfgPropsExcl));
 
@@ -712,7 +801,11 @@ public class WebConsoleConfigurationSelfTest {
         rendezvousAffinityProps.add("partitions");
         rendezvousAffinityProps.add("affinityBackupFilter");
         rendezvousAffinityProps.add("excludeNeighbors");
-        metadata.put(RendezvousAffinityFunction.class, new MetadataInfo(rendezvousAffinityProps, EMPTY_FIELDS, EMPTY_FIELDS));
+
+        Set<String> rendezvousAffinityPropsDep = new HashSet<>();
+        rendezvousAffinityPropsDep.add("backupFilter");
+        metadata.put(RendezvousAffinityFunction.class,
+            new MetadataInfo(rendezvousAffinityProps, rendezvousAffinityPropsDep, EMPTY_FIELDS));
 
         Set<String> nearCfgProps = new HashSet<>();
         nearCfgProps.add("nearStartSize");
@@ -734,14 +827,15 @@ public class WebConsoleConfigurationSelfTest {
         jdbcPojoStoreProps.add("hasher");
         jdbcPojoStoreProps.add("transformer");
         jdbcPojoStoreProps.add("sqlEscapeAll");
+        jdbcPojoStoreProps.add("types");
 
         // Configured via dataSource property.
         Set<String> jdbcPojoStorePropsExcl = new HashSet<>();
         jdbcPojoStorePropsExcl.add("dataSourceBean");
         jdbcPojoStorePropsExcl.add("dataSourceFactory");
 
-        metadata.put(CacheJdbcPojoStoreFactory.class, new MetadataInfo(jdbcPojoStoreProps, EMPTY_FIELDS,
-            jdbcPojoStorePropsExcl));
+        metadata.put(CacheJdbcPojoStoreFactory.class,
+            new MetadataInfo(jdbcPojoStoreProps, EMPTY_FIELDS, jdbcPojoStorePropsExcl));
 
         Set<String> jdbcBlobStoreProps = new HashSet<>();
         jdbcBlobStoreProps.add("connectionUrl");
@@ -759,7 +853,8 @@ public class WebConsoleConfigurationSelfTest {
 
         Set<String> hibernateBlobStoreProps = new HashSet<>();
         hibernateBlobStoreProps.add("hibernateProperties");
-        metadata.put(CacheHibernateBlobStore.class, new MetadataInfo(hibernateBlobStoreProps, EMPTY_FIELDS, EMPTY_FIELDS));
+        metadata.put(CacheHibernateBlobStore.class,
+            new MetadataInfo(hibernateBlobStoreProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> igfsCfgProps = new HashSet<>();
         igfsCfgProps.add("name");
@@ -803,7 +898,8 @@ public class WebConsoleConfigurationSelfTest {
         Set<String> igfsBlocMapperProps = new HashSet<>();
         igfsBlocMapperProps.add("groupSize");
 
-        metadata.put(IgfsGroupDataBlocksKeyMapper.class, new MetadataInfo(igfsBlocMapperProps, EMPTY_FIELDS, EMPTY_FIELDS));
+        metadata.put(IgfsGroupDataBlocksKeyMapper.class,
+            new MetadataInfo(igfsBlocMapperProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> secHadoopIgfsCfgProps = new HashSet<>();
         secHadoopIgfsCfgProps.add("defaultUserName");
@@ -815,8 +911,38 @@ public class WebConsoleConfigurationSelfTest {
         Set<String> cachingIgfsCfgProps = new HashSet<>();
         cachingIgfsCfgProps.add("uri");
         cachingIgfsCfgProps.add("configPaths");
+        cachingIgfsCfgProps.add("userNameMapper");
 
-        metadata.put(CachingHadoopFileSystemFactory.class, new MetadataInfo(cachingIgfsCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
+        metadata.put(CachingHadoopFileSystemFactory.class,
+            new MetadataInfo(cachingIgfsCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
+
+        Set<String> kerberosIgfsCfgProps = new HashSet<>();
+        kerberosIgfsCfgProps.add("uri");
+        kerberosIgfsCfgProps.add("configPaths");
+        kerberosIgfsCfgProps.add("userNameMapper");
+        kerberosIgfsCfgProps.add("keyTab");
+        kerberosIgfsCfgProps.add("keyTabPrincipal");
+        kerberosIgfsCfgProps.add("reloginInterval");
+
+        metadata.put(KerberosHadoopFileSystemFactory.class, new MetadataInfo(kerberosIgfsCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
+
+        Set<String> chainedIgfsUsrNameMapperProps = new HashSet<>();
+        chainedIgfsUsrNameMapperProps.add("mappers");
+
+        metadata.put(ChainedUserNameMapper.class, new MetadataInfo(chainedIgfsUsrNameMapperProps, EMPTY_FIELDS, EMPTY_FIELDS));
+
+        Set<String> basicIgfsUsrNameMapperProps = new HashSet<>();
+        basicIgfsUsrNameMapperProps.add("defaultUserName");
+        basicIgfsUsrNameMapperProps.add("useDefaultUserName");
+        basicIgfsUsrNameMapperProps.add("mappings");
+
+        metadata.put(BasicUserNameMapper.class, new MetadataInfo(basicIgfsUsrNameMapperProps, EMPTY_FIELDS, EMPTY_FIELDS));
+
+        Set<String> kerberosIgfsUsrNameMapperProps = new HashSet<>();
+        kerberosIgfsUsrNameMapperProps.add("instance");
+        kerberosIgfsUsrNameMapperProps.add("realm");
+
+        metadata.put(KerberosUserNameMapper.class, new MetadataInfo(kerberosIgfsUsrNameMapperProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> ipcEndpointProps = new HashSet<>();
         ipcEndpointProps.add("type");
@@ -837,12 +963,17 @@ public class WebConsoleConfigurationSelfTest {
         qryEntityProps.add("keyFieldName");
         qryEntityProps.add("valueFieldName");
         qryEntityProps.add("keyFields");
+        qryEntityProps.add("fieldsPrecision");
+        qryEntityProps.add("notNullFields");
+        qryEntityProps.add("fieldsScale");
+        qryEntityProps.add("defaultFieldValues");
         metadata.put(QueryEntity.class, new MetadataInfo(qryEntityProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> qryIdxProps = new HashSet<>();
         qryIdxProps.add("name");
         qryIdxProps.add("indexType");
         qryIdxProps.add("fields");
+        qryIdxProps.add("inlineSize");
 
         Set<String> qryIdxPropsExcl = new HashSet<>();
         qryIdxPropsExcl.add("fieldNames");
