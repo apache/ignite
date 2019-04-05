@@ -185,6 +185,21 @@ module.exports.factory = function(mongoose) {
         offHeapMaxMemory: Number,
         startSize: Number,
         swapEnabled: Boolean,
+        cacheWriterFactory: String,
+        cacheLoaderFactory: String,
+        expiryPolicyFactory: String,
+        interceptor: String,
+        storeByValue: Boolean,
+        eagerTtl: {type: Boolean, default: true},
+        encryptionEnabled: Boolean,
+        eventsDisabled: Boolean,
+
+        keyConfiguration: [{
+            typeName: String,
+            affinityKeyFieldName: String
+        }],
+
+        cacheStoreSessionListenerFactories: [String],
 
         onheapCacheEnabled: Boolean,
 
@@ -255,6 +270,8 @@ module.exports.factory = function(mongoose) {
                 hibernateProperties: [{name: String, value: String}]
             }
         },
+        storeConcurrentLoadAllThreshold: Number,
+        maxQueryIteratorsCount: Number,
         storeKeepBinary: Boolean,
         loadPreviousValue: Boolean,
         readThrough: Boolean,
@@ -377,9 +394,57 @@ module.exports.factory = function(mongoose) {
         trashPurgeTimeout: Number,
         secondaryFileSystemEnabled: Boolean,
         secondaryFileSystem: {
+            userName: String,
+            kind: {type: String, enum: ['Caching', 'Kerberos', 'Custom'], default: 'Caching'},
             uri: String,
             cfgPath: String,
-            userName: String
+            cfgPaths: [String],
+            userNameMapper: {
+                kind: {type: String, enum: ['Chained', 'Basic', 'Kerberos', 'Custom']},
+                Chained: {
+                    mappers: [{
+                        kind: {type: String, enum: ['Basic', 'Kerberos', 'Custom']},
+                        Basic: {
+                            defaultUserName: String,
+                            useDefaultUserName: Boolean,
+                            mappings: [{
+                                name: String,
+                                value: String
+                            }]
+                        },
+                        Kerberos: {
+                            instance: String,
+                            realm: String
+                        },
+                        Custom: {
+                            className: String,
+                        }
+                    }]
+                },
+                Basic: {
+                    defaultUserName: String,
+                    useDefaultUserName: Boolean,
+                    mappings: [{
+                        name: String,
+                        value: String
+                    }]
+                },
+                Kerberos: {
+                    instance: String,
+                    realm: String
+                },
+                Custom: {
+                    className: String,
+                }
+            },
+            Kerberos: {
+                keyTab: String,
+                keyTabPrincipal: String,
+                reloginInterval: Number
+            },
+            Custom: {
+                className: String
+            }
         },
         colocateMetadata: Boolean,
         relaxedConsistency: Boolean,
@@ -714,7 +779,9 @@ module.exports.factory = function(mongoose) {
             protocol: String,
             trustStoreFilePath: String,
             trustStoreType: String,
-            trustManagers: [String]
+            trustManagers: [String],
+            cipherSuites: [String],
+            protocols: [String]
         },
         rebalanceThreadPoolSize: Number,
         odbc: {

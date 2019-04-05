@@ -28,8 +28,11 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -46,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.h2.util.DateTimeUtils;
 import org.h2.util.LocalDateTimeUtils;
@@ -341,9 +345,16 @@ public class DmlUtils {
             if (row.size() != 2)
                 continue;
 
+            Object key = row.get(0);
+
+            ClusterNode node = sender.primaryNodeByKey(key);
+
+            IgniteInClosure<MutableEntry<Object, Object>> rmvC =
+                DmlStatementsProcessor.getRemoveClosure(node, key);
+
             sender.add(
-                row.get(0),
-                new DmlStatementsProcessor.ModifyingEntryProcessor(row.get(1), DmlStatementsProcessor.RMV),
+                key,
+                new DmlStatementsProcessor.ModifyingEntryProcessor(row.get(1), rmvC),
                 0
             );
         }
@@ -369,7 +380,8 @@ public class DmlUtils {
             throw new IgniteSQLException(resEx);
         }
 
-        return new UpdateResult(sender.updateCount(), sender.failedKeys().toArray());
+        return new UpdateResult(sender.updateCount(), sender.failedKeys().toArray(),
+            cursor instanceof QueryCursorImpl ? ((QueryCursorImpl) cursor).partitionResult() : null);
     }
 
     /**

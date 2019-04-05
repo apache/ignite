@@ -88,7 +88,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Request handler. */
     private JdbcRequestHandler handler = null;
 
-
     /** Last reported affinity topology version. */
     private AtomicReference<AffinityTopologyVersion> lastAffinityTopVer = new AtomicReference<>();
 
@@ -228,27 +227,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         handler.onDisconnect();
 
         super.onDisconnected();
-    }
-
-    /**
-     * @return Retrieves current affinity topology version and sets it as a last.
-     */
-    public AffinityTopologyVersion getAffinityTopologyVersion() {
-        while (true) {
-            AffinityTopologyVersion oldVer = lastAffinityTopVer.get();
-            AffinityTopologyVersion newVer = ctx.cache().context().exchange().readyAffinityVersion();
-
-            boolean changed = oldVer == null || oldVer.compareTo(newVer) < 0;
-
-            if (changed) {
-                boolean success = lastAffinityTopVer.compareAndSet(oldVer, newVer);
-
-                if (!success)
-                    continue;
-            }
-
-            return newVer;
-        }
     }
 
     /**

@@ -38,17 +38,6 @@ public class PartitionConstantNode extends PartitionSingleNode {
         this.part = part;
     }
 
-    /**
-     * Constructor.
-     *
-     * @param cacheName Cache name.
-     */
-    protected PartitionConstantNode(String cacheName, int part) {
-        super(cacheName);
-
-        this.part = part;
-    }
-
     /** {@inheritDoc} */
     @Override public Integer applySingle(PartitionClientContext cliCtx, Object... args) {
         return part;

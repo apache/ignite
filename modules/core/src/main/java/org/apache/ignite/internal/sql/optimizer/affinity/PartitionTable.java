@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRawBinarylizable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Single table with affinity info.
  */
-public class PartitionTable implements JdbcRawBinarylizable {
+public class PartitionTable {
     /** Alias used in the query. */
     private final String alias;
 
@@ -114,52 +109,5 @@ public class PartitionTable implements JdbcRawBinarylizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionTable.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        writer.writeString(alias);
-
-        writer.writeString(cacheName);
-
-        writer.writeString(affColName);
-
-        writer.writeString(secondAffColName);
-
-        writer.writeInt(joinGrp);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        // No-op.
-    }
-
-    /**
-     * Returns debinarized partition table.
-     *
-     * @param reader Binary reader.
-     * @param ver Protocol verssion.
-     * @return Debinarized partition table.
-     * @throws BinaryObjectException On error.
-     */
-    public static PartitionTable readTable(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver)
-        throws BinaryObjectException {
-        String alias = reader.readString();
-
-        String cacheName = reader.readString();
-
-        String affColName = reader.readString();
-
-        String secondAffColName = reader.readString();
-
-        int joinGrp = reader.readInt();
-
-        PartitionTable partTbl = new PartitionTable(alias, cacheName, affColName, secondAffColName);
-
-        partTbl.joinGroup(joinGrp);
-
-        return partTbl;
     }
 }

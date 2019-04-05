@@ -28,7 +28,7 @@ public class BinaryClassificationMetricsValuesTest {
     /** */
     @Test
     public void testDefaultBehaviour() {
-        BinaryClassificationMetricValues metricValues = new BinaryClassificationMetricValues(10, 10, 5, 5);
+        BinaryClassificationMetricValues metricValues = new BinaryClassificationMetricValues(10, 10, 5, 5, 0.5);
 
         assertEquals(10, metricValues.tp(), 1e-2);
         assertEquals(10, metricValues.tn(), 1e-2);
@@ -44,5 +44,6 @@ public class BinaryClassificationMetricsValuesTest {
         assertEquals(0.66, metricValues.precision(), 1e-2);
         assertEquals(0.66, metricValues.recall(), 1e-2);
         assertEquals(0.66, metricValues.specificity(), 1e-2);
+        assertEquals(0.5, metricValues.rocauc(), 1e-2);
     }
 }

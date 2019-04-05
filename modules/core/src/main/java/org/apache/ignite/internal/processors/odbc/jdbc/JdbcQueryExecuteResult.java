@@ -142,7 +142,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         writer.writeBoolean(partRes != null);
 
         if (partRes != null)
-            PartitionResultMarshaler.marshal(writer, ver, partRes);
+            PartitionResultMarshaler.marshal(writer, partRes);
     }
 
     /** {@inheritDoc} */
@@ -165,7 +165,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         }
 
         if (reader.readBoolean())
-            partRes = PartitionResultMarshaler.unmarshal(reader, ver);
+            partRes = PartitionResultMarshaler.unmarshal(reader);
     }
 
     /**

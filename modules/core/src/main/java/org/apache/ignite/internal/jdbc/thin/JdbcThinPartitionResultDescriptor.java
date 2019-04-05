@@ -24,7 +24,6 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
  * Partition result descriptor.
  */
 public class JdbcThinPartitionResultDescriptor {
-
     /** Partition result. */
     private final PartitionResult partRes;
 
@@ -33,6 +32,10 @@ public class JdbcThinPartitionResultDescriptor {
 
     /** Partition client context. */
     private final PartitionClientContext partClientCtx;
+
+    /** Stub to use as empty descriptor. */
+    public static final JdbcThinPartitionResultDescriptor EMPTY_DESCRIPTOR =
+        new JdbcThinPartitionResultDescriptor(null, -1, null);
 
     /**
      * Constructor.
