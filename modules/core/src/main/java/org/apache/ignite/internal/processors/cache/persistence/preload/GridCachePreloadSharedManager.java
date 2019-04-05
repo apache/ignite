@@ -51,6 +51,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
@@ -241,11 +243,26 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         // Re-init data store at first access to it.
         store.updateCounter();
 
-        GridFutureAdapter<Boolean> fut = pumpMgr.registerPumpSource(part.dataStoreCatchLog());
+        GridFutureAdapter<?> catchFut = pumpMgr.registerPumpSource(part.dataStoreCatchLog());
 
         // TODO Rebuild indexes by partition
+        IgniteInternalFuture<?> rebuildFut = dbMgr.rebuildIndexesOnDemand(cctx.cacheContext(grp.groupId()),
+            p -> p.id() == part.id(),
+            true);
 
-        fut.listen(f -> {
+        if (rebuildFut == null)
+            rebuildFut = new GridFinishedFuture<>();
+
+        rebuildFut.listen(rf0 -> U.log(log, "Rebuild indexex finished [grpId=" + grp.groupId() + ", partId=" + part.id() + ']'));
+
+        GridCompoundFuture rebuilCatchfut = new GridCompoundFuture();
+
+        rebuilCatchfut.add(rebuildFut);
+        rebuilCatchfut.add(catchFut);
+
+        rebuilCatchfut.markInitialized();
+
+        rebuilCatchfut.listen(f -> {
             // TODO switch mode when the next checkpoint finished.
             U.log(log, "The partition will be swithed to the FULL mode: " + part);
 
@@ -256,9 +273,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             switchPartitionsMode(CacheDataStoreEx.StorageMode.FULL, parts).listen(
                 new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                     @Override public void applyx(IgniteInternalFuture<Boolean> f0) throws IgniteCheckedException {
-                        if (!f0.get())
-                            return;
-
                         U.log(log, "The partition file will be owned by node: " + part);
 
                         // TODO Register owning partition listener here to own it on checkpoint done
