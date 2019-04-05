@@ -382,6 +382,14 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> rebuildIndexesOnDemand(
+            GridCacheContext cctx,
+            SchemaIndexCacheVisitor cacheVisitor
+        ) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public void markAsRebuildNeeded(GridCacheContext cctx) {
             // No-op.
         }

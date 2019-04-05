@@ -288,6 +288,13 @@ public interface GridQueryIndexing {
     public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
 
     /**
+     * @param cctx Cache context.
+     * @param cacheVisitor Cache visitor.
+     * @return Future completed when index rebuild request will be finished.
+     */
+    public IgniteInternalFuture<?> rebuildIndexesOnDemand(GridCacheContext cctx, SchemaIndexCacheVisitor cacheVisitor);
+
+    /**
      * Mark as rebuild needed for the given cache.
      *
      * @param cctx Cache context.

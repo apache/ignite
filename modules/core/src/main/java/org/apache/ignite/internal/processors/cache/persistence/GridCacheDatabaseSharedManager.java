@@ -1495,6 +1495,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> rebuildIndexesOnDemand(
+        GridCacheContext cacheCtx,
+        Predicate<GridDhtLocalPartition> pred,
+        boolean restore
+    ) {
+        GridQueryProcessor qryProc = cctx.kernalContext().query();
+
+        if (!qryProc.moduleEnabled())
+            return null;
+
+        // TODO do we need to take checkpoint readLock here?
+        // TODO to evict all rebuilded index entries in case of node crash need to write undo-WAL records.
+        return qryProc.rebuildIndexesOnDemand(cacheCtx, pred, restore);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public IgniteInternalFuture indexRebuildFuture(int cacheId) {
         return idxRebuildFuts.get(cacheId);
     }

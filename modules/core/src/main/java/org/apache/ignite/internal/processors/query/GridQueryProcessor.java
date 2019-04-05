@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -66,9 +67,9 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -1483,7 +1484,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     SchemaIndexCacheFilter filter = new TableCacheFilter(cctx, op0.tableName());
 
-                    visitor = new SchemaIndexCacheVisitorImpl(cctx, filter, cancelTok, op0.parallel());
+                    visitor = new SchemaIndexCacheVisitorImpl(cctx, filter, cancelTok, op0.parallel(), p -> true);
                 }
                 else
                     //For not started caches we shouldn't add any data to index.
@@ -1868,28 +1869,42 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Rebuilds indexes for provided caches from corresponding hash indexes.
-     *
      * @param cctx Cache context.
-     * @return Future that will be completed when rebuilding is finished.
+     * @param pred The cache partition filter.
+     * @param restore <tt>true</tt> to check original stores.
+     * @return <tt>true</tt> if rebuild indexes required.
      */
-    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+    private boolean skipRebuildIndexes(
+        GridCacheContext cctx,
+        Predicate<GridDhtLocalPartition> pred,
+        boolean restore
+    ) {
         // Indexing module is disabled, nothing to rebuild.
         if (rebuildIsMeaningless(cctx))
-            return null;
+            return true;
 
         // No need to rebuild if cache has no data.
         boolean empty = true;
 
-        for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
-            if (!store.isEmpty()) {
+        for (GridDhtLocalPartition part : cctx.group().topology().localPartitions()) {
+            if(pred.test(part) && !part.dataStore(restore).isEmpty()) {
                 empty = false;
 
                 break;
             }
         }
 
-        if (empty)
+        return empty;
+    }
+
+    /**
+     * Rebuilds indexes for provided caches from corresponding hash indexes.
+     *
+     * @param cctx Cache context.
+     * @return Future that will be completed when rebuilding is finished.
+     */
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+        if (skipRebuildIndexes(cctx, p -> true, false))
             return null;
 
         if (!busyLock.enterBusy())
@@ -1898,6 +1913,32 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             return idx.rebuildIndexesFromHash(cctx);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param pred The cache partition filter.
+     * @param restore <tt>true</tt> the original cache data storage will be used.
+     * @return Future that will be completed when rebuilding is finished.
+     */
+    public IgniteInternalFuture<?> rebuildIndexesOnDemand(
+        GridCacheContext cctx,
+        Predicate<GridDhtLocalPartition> pred,
+        boolean restore
+    ) {
+        if (skipRebuildIndexes(cctx, pred, restore))
+            return null;
+
+        if (!busyLock.enterBusy())
+            return new GridFinishedFuture<>(new NodeStoppingException("Failed to rebuild indexes from hash " +
+                "(grid is stopping)."));
+
+        try {
+            return idx.rebuildIndexesOnDemand(cctx, new SchemaIndexCacheVisitorImpl(cctx, pred));
         }
         finally {
             busyLock.leaveBusy();

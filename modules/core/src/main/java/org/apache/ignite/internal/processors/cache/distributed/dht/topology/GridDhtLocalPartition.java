@@ -303,7 +303,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Data store.
      */
     public CacheDataStore dataStore() {
-        return store;
+        return dataStore(false);
     }
 
     /**
@@ -311,7 +311,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return The cache data store.
      */
     public CacheDataStore dataStore(boolean restore) {
-        return restore ? store.store(CacheDataStoreEx.StorageMode.FULL) : dataStore();
+        return restore ? store.store(CacheDataStoreEx.StorageMode.FULL) : store;
     }
 
     /**

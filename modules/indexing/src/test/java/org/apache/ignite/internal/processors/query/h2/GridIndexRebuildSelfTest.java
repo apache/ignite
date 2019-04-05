@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.index.DynamicIndexAbstractSel
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -232,14 +233,17 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         private boolean firstRbld = true;
 
         /** {@inheritDoc} */
-        @Override protected void rebuildIndexesFromHash0(GridCacheContext cctx, SchemaIndexCacheVisitorClosure clo)
-            throws IgniteCheckedException {
+        @Override protected void doRebuildIndexesVisit(
+            GridCacheContext cctx,
+            SchemaIndexCacheVisitorClosure clo,
+            SchemaIndexCacheVisitor visitor
+        ) throws IgniteCheckedException {
             if (!firstRbld)
                 U.await(INSTANCE.rebuildLatch);
             else
                 firstRbld = false;
 
-            super.rebuildIndexesFromHash0(cctx, clo);
+            super.doRebuildIndexesVisit(cctx, clo, visitor);
         }
     }
 }
