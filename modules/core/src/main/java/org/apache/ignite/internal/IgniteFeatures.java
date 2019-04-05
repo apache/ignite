@@ -40,7 +40,10 @@ public enum IgniteFeatures {
     DISTRIBUTED_METASTORAGE(2),
 
     /** Data paket compression. */
-    DATA_PACKET_COMPRESSION(3);
+    DATA_PACKET_COMPRESSION(3),
+
+    /** Support of different rebalance size for nodes.  */
+    DIFFERENT_REBALANCE_POOL_SIZE(4);
 
     /**
      * Unique feature identifier.
@@ -84,11 +87,7 @@ public enum IgniteFeatures {
 
         int bitIdx = featureId & 0x7;
 
-        boolean res = (features[byteIdx] & (1 << bitIdx)) != 0;
-
-        assert res == BitSet.valueOf(features).get(featureId);
-
-        return res;
+        return (features[byteIdx] & (1 << bitIdx)) != 0;
     }
 
     /**

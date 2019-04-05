@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
@@ -80,6 +81,16 @@ public class GridH2Table extends TableBase {
     /** Exclusive lock constant. */
     private static final long EXCLUSIVE_LOCK = -1;
 
+    /** 'rebuildFromHashInProgress' field updater */
+    private static final AtomicIntegerFieldUpdater<GridH2Table> rebuildFromHashInProgressFiledUpdater =
+        AtomicIntegerFieldUpdater.newUpdater(GridH2Table.class, "rebuildFromHashInProgress");
+
+    /** False representation */
+    private static final int FALSE = 0;
+
+    /** True representation */
+    private static final int TRUE = 1;
+
     /** Cache context info. */
     private final GridCacheContextInfo cacheInfo;
 
@@ -121,7 +132,7 @@ public class GridH2Table extends TableBase {
     private final LongAdder size = new LongAdder();
 
     /** */
-    private volatile boolean rebuildFromHashInProgress;
+    private volatile int rebuildFromHashInProgress = FALSE;
 
     /** Identifier. */
     private final QueryTable identifier;
@@ -684,10 +695,10 @@ public class GridH2Table extends TableBase {
 
                 boolean replaced;
 
-                if (prevRowAvailable)
+                if (prevRowAvailable && rebuildFromHashInProgress == FALSE)
                     replaced = pk().putx(row0);
                 else {
-                    prevRow0 = (H2CacheRow)pk().put(row0);
+                    prevRow0 = pk().put(row0);
 
                     replaced = prevRow0 != null;
                 }
@@ -797,15 +808,15 @@ public class GridH2Table extends TableBase {
     public void markRebuildFromHashInProgress(boolean value) {
         assert !value || (idxs.size() >= 2 && index(1).getIndexType().isHash()) : "Table has no hash index.";
 
-        rebuildFromHashInProgress = value;
+        if (rebuildFromHashInProgressFiledUpdater.compareAndSet(this, value? FALSE: TRUE, value ? TRUE: FALSE)) {
+            lock.writeLock().lock();
 
-        lock.writeLock().lock();
-
-        try {
-            incrementModificationCounter();
-        }
-        finally {
-            lock.writeLock().unlock();
+            try {
+                incrementModificationCounter();
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
         }
     }
 
@@ -813,7 +824,7 @@ public class GridH2Table extends TableBase {
      *
      */
     public boolean rebuildFromHashInProgress() {
-        return rebuildFromHashInProgress;
+        return rebuildFromHashInProgress == TRUE;
     }
 
     /** {@inheritDoc} */
@@ -1009,7 +1020,7 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public Index getUniqueIndex() {
-        if (rebuildFromHashInProgress)
+        if (rebuildFromHashInProgress == TRUE)
             return index(1);
         else
             return index(2);
@@ -1017,7 +1028,7 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public ArrayList<Index> getIndexes() {
-        if (!rebuildFromHashInProgress)
+        if (rebuildFromHashInProgress == FALSE)
             return idxs;
 
         ArrayList<Index> idxs = new ArrayList<>(2);

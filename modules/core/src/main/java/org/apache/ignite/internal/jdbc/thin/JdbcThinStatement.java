@@ -32,7 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -66,7 +66,7 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
  */
 public class JdbcThinStatement implements Statement {
     /** Default queryPage size. */
-    private static final int DFLT_PAGE_SIZE = SqlQuery.DFLT_PAGE_SIZE;
+    private static final int DFLT_PAGE_SIZE = Query.DFLT_PAGE_SIZE;
 
     /** JDBC Connection implementation. */
     protected final JdbcThinConnection conn;
