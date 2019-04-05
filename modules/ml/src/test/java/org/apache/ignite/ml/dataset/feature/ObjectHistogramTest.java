@@ -142,8 +142,8 @@ public class ObjectHistogramTest {
         ObjectHistogram<Double> forAllHistogram = new TestHist2();
         Random rnd = new Random();
         List<ObjectHistogram<Double>> partitions = new ArrayList<>();
-        int cntOfPartitions = rnd.nextInt(100);
-        int sizeOfDataset = rnd.nextInt(10000);
+        int cntOfPartitions = rnd.nextInt(100) + 1;
+        int sizeOfDataset = rnd.nextInt(10000) + 1;
         for (int i = 0; i < cntOfPartitions; i++)
             partitions.add(new TestHist2());
 
