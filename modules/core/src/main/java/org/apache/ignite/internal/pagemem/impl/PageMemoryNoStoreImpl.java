@@ -274,11 +274,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean stopped() {
-        return stopped;
-    }
-
-    /** {@inheritDoc} */
     @Override public ByteBuffer pageBuffer(long pageAddr) {
         return wrapPointer(pageAddr, pageSize());
     }
