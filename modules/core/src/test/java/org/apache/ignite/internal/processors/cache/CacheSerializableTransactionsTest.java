@@ -101,10 +101,10 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     private static Map<Integer, Integer> storeMap = new ConcurrentHashMap<>();
 
     /** */
-    private static final int SRVS = 1;
+    private static final int SRVS = 4;
 
     /** */
-    private static final int CLIENTS = 2;
+    private static final int CLIENTS = 4;
 
     /** */
     private boolean client;
