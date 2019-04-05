@@ -103,8 +103,8 @@ namespace Apache.Ignite.Examples
             Console.WriteLine();
             Console.WriteLine($">>> Employees with salary > {minSalary}:");
 
-            foreach (var entry in qry)
-                Console.WriteLine(">>>    " + entry[0]);
+            foreach (var row in qry)
+                Console.WriteLine(">>>    " + row[0]);
         }
 
         /// <summary>
@@ -122,8 +122,8 @@ namespace Apache.Ignite.Examples
             Console.WriteLine();
             Console.WriteLine($">>> Employees working for {orgName}:");
 
-            foreach (var entry in qry)
-                Console.WriteLine(">>>     " + entry[0]);
+            foreach (var row in qry)
+                Console.WriteLine(">>>     " + row[0]);
         }
 
         /// <summary>
@@ -134,8 +134,8 @@ namespace Apache.Ignite.Examples
         {
             const string orgName = "Apache";
 
-            var qry = cache.Query(new SqlQuery("Employee",
-                "from Employee, \"dotnet_cache_query_organization\".Organization " +
+            var qry = cache.Query(new SqlFieldsQuery(
+                "select Employee.name from Employee, \"dotnet_cache_query_organization\".Organization " +
                 "where Employee.organizationId = Organization._key and Organization.name = ?", orgName)
             {
                 EnableDistributedJoins = true
@@ -144,8 +144,8 @@ namespace Apache.Ignite.Examples
             Console.WriteLine();
             Console.WriteLine(">>> Employees working for " + orgName + " (distributed joins):");
 
-            foreach (var entry in qry)
-                Console.WriteLine(">>>     " + entry.Value);
+            foreach (var row in qry)
+                Console.WriteLine(">>>     " + row[0]);
         }
 
         /// <summary>
