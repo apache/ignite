@@ -187,7 +187,7 @@ namespace Apache.Ignite.Examples.Datagrid
             Console.WriteLine(">>> Persons working for " + orgName + ":");
 
             foreach (var entry in qry)
-                Console.WriteLine(">>>     " + entry);
+                Console.WriteLine(">>>     " + entry); // TODO: What do we print?
         }
 
         /// <summary>
