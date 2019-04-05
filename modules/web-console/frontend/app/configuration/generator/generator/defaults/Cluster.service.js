@@ -210,7 +210,10 @@ const DFLT_CLUSTER = {
             value: 'REPEATABLE_READ'
         },
         defaultTxTimeout: 0,
-        pessimisticTxLogLinger: 10000
+        pessimisticTxLogLinger: 10000,
+        useJtaSynchronization: false,
+        txTimeoutOnPartitionMapExchange: 0,
+        deadlockTimeout: 10000
     },
     attributes: {
         keyClsName: 'java.lang.String',
@@ -402,7 +405,12 @@ const DFLT_CLUSTER = {
         lockWaitTime: 10000,
         rateTimeInterval: 60000,
         tlbSize: 131072,
-        subIntervals: 5
+        subIntervals: 5,
+        walMode: {
+            clsName: 'org.apache.ignite.configuration.WALMode',
+            value: 'DEFAULT'
+        },
+        walAutoArchiveAfterInactivity: -1
     },
     sqlConnectorConfiguration: {
         port: 10800,

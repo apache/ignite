@@ -70,7 +70,6 @@ const DFLT_CACHE = {
         clsName: 'org.apache.ignite.cache.CacheRebalanceMode',
         value: 'ASYNC'
     },
-    rebalanceThreadPoolSize: 1,
     rebalanceBatchSize: 524288,
     rebalanceBatchesPrefetchCount: 2,
     rebalanceOrder: 0,
