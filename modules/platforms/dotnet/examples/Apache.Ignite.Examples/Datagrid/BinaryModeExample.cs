@@ -23,6 +23,7 @@ namespace Apache.Ignite.Examples.Datagrid
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.ExamplesDll.Binary;
 
     /// <summary>
     /// This example works with cache entirely in binary mode: no classes or configurations are needed.
@@ -75,11 +76,10 @@ namespace Apache.Ignite.Examples.Datagrid
                         {
                             KeyType = typeof(int),
                             ValueTypeName = PersonType,
-                            ValueFieldName = "valueObj",
                             Fields = new[]
                             {
                                 new QueryField(NameField, typeof(string)),
-                                new QueryField(CompanyIdField, typeof(int))
+                                new QueryField(CompanyIdField, typeof(int)),
                             },
                             Indexes = new[]
                             {
@@ -114,9 +114,6 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 // Run SQL query example.
                 SqlQueryExample(cache);
-
-                // Run SQL filter query example.
-                SqlFilterQueryExample(cache);
 
                 // Run SQL query with join example.
                 SqlJoinQueryExample(cache);
@@ -166,21 +163,6 @@ namespace Apache.Ignite.Examples.Datagrid
 
             foreach (var row in qry)
                 Console.WriteLine(">>>     " + row[0]);
-        }
-
-        /// <summary>
-        /// Queries persons that have a specific name using SQL.
-        /// </summary>
-        /// <param name="cache">Cache.</param>
-        private static void SqlFilterQueryExample(ICache<int, IBinaryObject> cache)
-        {
-            var qry = cache.Query(new SqlFieldsQuery("select valueObj from Person where name like 'James%'"));
-
-            Console.WriteLine();
-            Console.WriteLine(">>> Persons named James:");
-
-            foreach (var entry in qry)
-                Console.WriteLine(">>>    " + entry[0]);
         }
 
         /// <summary>
