@@ -211,7 +211,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * first.
      */
     @Rule
-    public RuleChain nameAndRunRulesChain = RuleChain
+    public transient RuleChain nameAndRunRulesChain = RuleChain
         .outerRule(nameRule)
         .around(runRule);
 
