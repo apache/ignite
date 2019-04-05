@@ -65,31 +65,46 @@ namespace Apache.Ignite.Examples
             // Run SQL query example.
             SqlQueryExample(employeeCache);
 
+            // Run SQL filter query example.
+            SqlFilterQueryExample(employeeCache);
+
             // Run SQL query with join example.
             SqlJoinQueryExample(employeeCacheColocated);
 
             // Run SQL query with distributed join example.
             SqlDistributedJoinQueryExample(employeeCache);
+        }
 
-            // Run SQL fields query example.
-            SqlFieldsQueryExample(employeeCache);
+        /// <summary>
+        /// Queries names and salaries for all employees.
+        /// </summary>
+        /// <param name="cache">Cache.</param>
+        private static void SqlQueryExample(ICache<int, Employee> cache)
+        {
+            var qry = cache.Query(new SqlFieldsQuery("select name, salary from Employee"));
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Employee names and their salaries:");
+
+            foreach (var row in qry)
+                Console.WriteLine($">>>     [Name={row[0]}, salary={row[1]}{']'}");
         }
 
         /// <summary>
         /// Queries employees that have specified salary.
         /// </summary>
         /// <param name="cache">Cache.</param>
-        private static void SqlQueryExample(ICache<int, Employee> cache)
+        private static void SqlFilterQueryExample(ICache<int, Employee> cache)
         {
             const int minSalary = 10000;
 
-            var qry = cache.Query(new SqlQuery(typeof(Employee), "salary > ?", minSalary));
+            var qry = cache.Query(new SqlFieldsQuery("select name from Employee where salary > ?", minSalary));
 
             Console.WriteLine();
             Console.WriteLine($">>> Employees with salary > {minSalary} (SQL):");
 
             foreach (var entry in qry)
-                Console.WriteLine(">>>    " + entry.Value);
+                Console.WriteLine(">>>    " + entry[0]);
         }
 
         /// <summary>
@@ -131,21 +146,6 @@ namespace Apache.Ignite.Examples
 
             foreach (var entry in qry)
                 Console.WriteLine(">>>     " + entry.Value);
-        }
-
-        /// <summary>
-        /// Queries names and salaries for all employees.
-        /// </summary>
-        /// <param name="cache">Cache.</param>
-        private static void SqlFieldsQueryExample(ICache<int, Employee> cache)
-        {
-            var qry = cache.Query(new SqlFieldsQuery("select name, salary from Employee"));
-
-            Console.WriteLine();
-            Console.WriteLine(">>> Employee names and their salaries:");
-
-            foreach (IList row in qry)
-                Console.WriteLine($">>>     [Name={row[0]}, salary={row[1]}{']'}");
         }
 
         /// <summary>
