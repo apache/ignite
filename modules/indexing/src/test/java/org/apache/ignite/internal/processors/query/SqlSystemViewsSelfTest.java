@@ -132,7 +132,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     private List<List<?>> selectColumnInfo(String table, String col) {
         return execSql("SELECT " +
             "SCHEMA_NAME, TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION, DEFAULT_VALUE, IS_NULLABLE, DATA_TYPE, " +
-            "CHARACTER_LENGTH, NUMERIC_PRECISION, NUMERIC_SCALE, IS_AFFINITY_KEY " +
+            "CHARACTER_LENGTH, NUMERIC_PRECISION, NUMERIC_SCALE, IS_AFFINITY_KEY, IS_HIDDEN " +
             "FROM IGNITE.COLUMNS " +
             "WHERE TABLE_NAME=? AND COLUMN_NAME=?", table, col);
     }
@@ -1059,6 +1059,50 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      * @throws Exception On error.
      */
     @Test
+    public void testColumnsKeyVal() throws Exception {
+        startGrid();
+
+        // Wrap key and val
+        execSql("CREATE TABLE TEST_WRAP (" +
+            "ID INT PRIMARY KEY, " +
+            "VAL INT) " +
+            "WITH \"WRAP_KEY=true,WRAP_VALUE=true,KEY_TYPE=key_type,VALUE_TYPE=val_type \" ");
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST_WRAP", "_KEY", 0, null, false,
+                "BINOBJ:key_type",
+                0, 0, 0, false, true)),
+            selectColumnInfo("TEST_WRAP", "_KEY"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST_WRAP", "_VAL", 0, null, false,
+                "BINOBJ:val_type",
+                0, 0, 0, false, true)),
+            selectColumnInfo("TEST_WRAP", "_VAL"));
+
+        // Unwrap key and val
+        execSql("CREATE TABLE TEST_UNWRAP (" +
+            "ID INT PRIMARY KEY, " +
+            "VAL VARCHAR(80) DEFAULT 'dflt') " +
+            "WITH \"WRAP_KEY=false,WRAP_VALUE=false\"");
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST_UNWRAP", "_KEY", 1, null, false, "INTEGER",
+                0, 10, 0, false, true)),
+            selectColumnInfo("TEST_UNWRAP", "_KEY"));
+
+        assertEquals(
+            Collections.singletonList(asList("PUBLIC", "TEST_UNWRAP", "_VAL", 2, "'dflt'", false, "VARCHAR",
+                80, 0, 0, false, true)),
+            selectColumnInfo("TEST_UNWRAP", "_VAL"));
+    }
+
+    /**
+     * Test for all column types {@link SqlSystemViewColumns}
+     *
+     * @throws Exception On error.
+     */
+    @Test
     public void testColumnsViewAllTypes() throws Exception {
         startGrid();
 
@@ -1090,94 +1134,95 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "ID0", 1, null, true, "INTEGER",
-                0, 10, 0, false)),
+                0, 10, 0, false, false)),
             selectColumnInfo("TEST", "ID0"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "ID_AFF", 2, null, true, "INTEGER",
-                0, 10, 0, true)),
+                0, 10, 0, true, false)),
             selectColumnInfo("TEST", "ID_AFF"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_BOOL", 3, "TRUE", false, "BOOLEAN",
-                0, 0, 0, false)),
+                0, 0, 0, false, false)),
             selectColumnInfo("TEST", "VAL_BOOL"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_TINYINT", 4, "0", false, "TINYINT",
-                0, 3, 0, false)),
+                0, 3, 0, false, false)),
             selectColumnInfo("TEST", "VAL_TINYINT"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_SMALLINT", 5, "28", false, "SMALLINT",
-                0, 5, 0, false)),
+                0, 5, 0, false, false)),
             selectColumnInfo("TEST", "VAL_SMALLINT"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_LONG", 6, null, false, "BIGINT",
-                0, 19, 0, false)),
+                0, 19, 0, false, false)),
             selectColumnInfo("TEST", "VAL_LONG"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_REAL", 7, null, true, "REAL",
-                0, 7, 0, false)),
+                0, 7, 0, false, false)),
             selectColumnInfo("TEST", "VAL_REAL"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_DBL", 8, null, true, "DOUBLE",
-                0, 17, 0, false)),
+                0, 17, 0, false, false)),
             selectColumnInfo("TEST", "VAL_DBL"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_UUID", 9, null, true, "UUID",
-                0, 0, 0, false)),
+                0, 0, 0, false, false)),
             selectColumnInfo("TEST", "VAL_UUID"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_DEC", 10, "314.15", true, "DECIMAL",
-                0, 10, 3, false)),
+                0, 10, 3, false, false)),
             selectColumnInfo("TEST", "VAL_DEC"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_CHAR", 11, "'dflt_char'", false, "VARCHAR",
-                10, 0, 0, false)),
+                10, 0, 0, false, false)),
             selectColumnInfo("TEST", "VAL_CHAR"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_VARCHAR", 12, "'dflt_varchar'", true, "VARCHAR",
-                80, 0, 0, false)),
+                80, 0, 0, false, false)),
             selectColumnInfo("TEST", "VAL_VARCHAR"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_VARCHAR_IC", 13, null, true, "VARCHAR",
-                80, 0, 0, false)),
+                80, 0, 0, false, false)),
             selectColumnInfo("TEST", "VAL_VARCHAR_IC"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_BIN", 14, null, true, "VARBINARY",
-                0, 0, 0, false)),
+                0, 0, 0, false, false)),
             selectColumnInfo("TEST", "VAL_BIN"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_VARBIN", 15, null, true, "VARBINARY",
-                0, 0, 0, false)),
+                0, 0, 0, false, false)),
             selectColumnInfo("TEST", "VAL_VARBIN"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_TIME", 16, null, true, "TIME",
-                0, 0, 0, false)),
+                0, 0, 0, false, false)),
             selectColumnInfo("TEST", "VAL_TIME"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_DATE", 17, null, true, "DATE",
-                0, 0, 0, false)),
+                0, 0, 0, false, false)),
             selectColumnInfo("TEST", "VAL_DATE"));
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_TIMESTAMP", 18, null, true, "TIMESTAMP",
-                0, 0, 0, false)),
+                0, 0, 0, false, false)),
             selectColumnInfo("TEST", "VAL_TIMESTAMP"));
     }
+
 
     /**
      * Test for drop / add column {@link SqlSystemViewColumns}
@@ -1196,7 +1241,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL1", 3, null, true, "VARCHAR",
-                2147483647, 0, 0, false)),
+                2147483647, 0, 0, false, false)),
             selectColumnInfo("TEST", "VAL1"));
 
         execSql("ALTER TABLE test DROP COLUMN VAL1");
@@ -1209,7 +1254,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(
             Collections.singletonList(asList("PUBLIC", "TEST", "VAL_T", 3, null, true, "TIMESTAMP",
-                0, 0, 0, false)),
+                0, 0, 0, false, false)),
             selectColumnInfo("TEST", "VAL_T"));
     }
 

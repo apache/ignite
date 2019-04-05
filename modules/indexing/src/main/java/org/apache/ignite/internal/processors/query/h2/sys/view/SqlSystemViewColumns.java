@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.engine.Session;
@@ -104,6 +105,9 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
 
             IndexColumn affCol = tbl.getExplicitAffinityKeyColumn();
 
+            res.add(keyValueRow(ses, tbl, affCol, true));
+            res.add(keyValueRow(ses, tbl, affCol, false));
+
             for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT; i < tbl.getColumns().length; ++i) {
                 Column col = tbl.getColumns()[i];
 
@@ -111,8 +115,8 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
                     continue;
 
                 Object[] data = new Object[] {
-                    col.getTable().getSchema().getName(),
-                    col.getTable().getName(),
+                    tbl.getSchema().getName(),
+                    tbl.getName(),
                     col.getName(),
                     col.getColumnId() - QueryUtils.DEFAULT_COLUMNS_COUNT + 1, // ordinal
                     col.getDefaultExpression() != null ? toStringSafe(col.getDefaultExpression().getValue(ses)) : null,
@@ -133,11 +137,45 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
     }
 
     /**
+     * @param ses Session.
+     * @param tbl Table.
+     * @param affCol Affinity column.
+     * @param isKey {@code true} for _KEY column, {@code false} for _VAL column.
+     * @return Results row.
+     */
+    private Row keyValueRow(Session ses, GridH2Table tbl, IndexColumn affCol, boolean isKey) {
+        GridH2RowDescriptor desc = tbl.rowDescriptor();
+
+        int aliasColId = desc.getAlternativeColumnId(isKey ? QueryUtils.KEY_COL : QueryUtils.VAL_COL);
+
+        Column aliasCol = aliasColId >= QueryUtils.DEFAULT_COLUMNS_COUNT ? tbl.getColumn(aliasColId) : null;
+
+        String colType = aliasCol != null ?
+            DataType.getDataType(aliasCol.getType()).name
+            : "BINOBJ:" + (isKey ? desc.type().keyTypeName() : desc.type().valueTypeName());
+
+        return createRow(ses,
+            tbl.getSchema().getName(),
+            tbl.getName(),
+            isKey ? "_KEY" : "_VAL",
+            aliasColId > 0 ? aliasColId - QueryUtils.DEFAULT_COLUMNS_COUNT + 1 : 0, // ordinal
+            aliasCol != null && aliasCol.getDefaultExpression() != null ?
+                toStringSafe(aliasCol.getDefaultExpression().getValue(ses)) : null,
+            false,
+            colType,
+            characterLength(aliasCol),
+            numericPrecision(aliasCol),
+            numericScale(aliasCol),
+            affCol != null && F.eq(aliasColId, affCol.column.getColumnId()),
+            true);
+    }
+
+    /**
      * @param col Column.
      * @return Character length for CHAR and VARCHAR columns. Otherwise return 0.
      */
     private static int characterLength(Column col) {
-        if (col.getType() == Value.STRING || col.getType() == Value.STRING_IGNORECASE)
+        if (col != null && (col.getType() == Value.STRING || col.getType() == Value.STRING_IGNORECASE))
             return (int)col.getPrecision();
         else
             return 0;
@@ -148,14 +186,14 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
      * @return Precision for numeric columns. Otherwise return 0.
      */
     private static int numericPrecision(Column col) {
-        if (col.getType() == Value.BYTE
+        if (col != null && (col.getType() == Value.BYTE
             || col.getType() == Value.SHORT
             || col.getType() == Value.INT
             || col.getType() == Value.LONG
             || col.getType() == Value.DOUBLE
             || col.getType() == Value.FLOAT
             || col.getType() == Value.DECIMAL
-        )
+        ))
             return (int)col.getPrecision();
         else
             return 0;
@@ -166,13 +204,14 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
      * @return Scale for numeric columns. Otherwise return 0.
      */
     private static int numericScale(Column col) {
-        if (col.getType() == Value.BYTE
+        if (col != null && (col.getType() == Value.BYTE
             || col.getType() == Value.SHORT
             || col.getType() == Value.INT
             || col.getType() == Value.LONG
             || col.getType() == Value.DOUBLE
+            || col.getType() == Value.FLOAT
             || col.getType() == Value.DECIMAL
-        )
+        ))
             return col.getScale();
         else
             return 0;
