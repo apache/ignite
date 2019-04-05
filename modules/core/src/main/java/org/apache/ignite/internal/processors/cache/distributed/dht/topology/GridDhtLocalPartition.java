@@ -212,9 +212,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         int delQueueSize = grp.systemCache() ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / grp.affinity().partitions(), 20);
 
-        rmvQueueMaxSize = 500000; // U.ceilPow2(delQueueSize);
-
-        log.info("ZZZ: grpId=" + grp.groupId() + ", partId=" + id() + ", qSize=" + rmvQueueMaxSize);
+        rmvQueueMaxSize = U.ceilPow2(delQueueSize);
 
         rmvdEntryTtl = Long.getLong(IGNITE_CACHE_REMOVED_ENTRIES_TTL, 10_000);
 
@@ -407,26 +405,26 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         while (rmvQueue.sizex() >= rmvQueueMaxSize) {
             RemovedEntryHolder item = rmvQueue.pollFirst();
 
-            log.info("ZZZ: cleaning item=" + item);
-
             if (item != null)
                 removeVersionedEntry(item.cacheId(), item.key(), item.version());
         }
 
-//        if (!grp.isDrEnabled()) {
-//            RemovedEntryHolder item = rmvQueue.peekFirst();
-//
-//            while (item != null && item.expireTime() < U.currentTimeMillis()) {
-//                item = rmvQueue.pollFirst();
-//
-//                if (item == null)
-//                    break;
-//
-//                removeVersionedEntry(item.cacheId(), item.key(), item.version());
-//
-//                item = rmvQueue.peekFirst();
-//            }
-//        }
+        // Prevent ttl removal for rebalancing partition or partition desync may happen.
+        // TODO FIXME store removed keys until rebalance finish.
+        if (!grp.isDrEnabled() && state() != MOVING) {
+            RemovedEntryHolder item = rmvQueue.peekFirst();
+
+            while (item != null && item.expireTime() < U.currentTimeMillis()) {
+                item = rmvQueue.pollFirst();
+
+                if (item == null)
+                    break;
+
+                removeVersionedEntry(item.cacheId(), item.key(), item.version());
+
+                item = rmvQueue.peekFirst();
+            }
+        }
     }
 
     /**

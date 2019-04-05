@@ -271,9 +271,9 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
 
                     prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(0));
 
-                    doSleep(5000);
+                    doSleep(2000);
 
-                    //prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(1));
+                    prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(1)); // Ensure queue cleanup is triggered.
 
                     spi.stopBlock();
                 }
