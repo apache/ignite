@@ -16,6 +16,7 @@
  */
 
 import get from 'lodash/get';
+import find from 'lodash/find';
 import {from} from 'rxjs';
 import ObjectID from 'bson-objectid/objectid';
 import {uniqueName} from 'app/utils/uniqueName';
@@ -202,7 +203,8 @@ export default class Clusters {
             igfss: [],
             models: [],
             checkpointSpi: [],
-            loadBalancingSpi: []
+            loadBalancingSpi: [],
+            autoActivationEnabled: true
         };
     }
 
@@ -339,6 +341,7 @@ export default class Clusters {
                 const maxSize = memoryPolicy.maxSize;
                 const pageSize = cluster.memoryConfiguration.pageSize || this.memoryConfiguration.pageSize.default;
                 const maxPoolSize = Math.floor(maxSize / pageSize / perThreadLimit);
+
                 return maxPoolSize;
             }
         }
@@ -468,6 +471,11 @@ export default class Clusters {
             }
         }
     };
+
+    persistenceEnabled(dataStorage) {
+        return !!(get(dataStorage, 'defaultDataRegionConfiguration.persistenceEnabled')
+            || find(get(dataStorage, 'dataRegionConfigurations'), (storeCfg) => storeCfg.persistenceEnabled));
+    }
 
     swapSpaceSpi = {
         readStripesNumber: {
