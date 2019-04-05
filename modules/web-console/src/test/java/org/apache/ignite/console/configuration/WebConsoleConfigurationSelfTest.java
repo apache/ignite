@@ -75,6 +75,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi;
@@ -193,6 +194,7 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgProps.add("pluginConfigurations");
         igniteCfgProps.add("mvccVacuumFrequency");
         igniteCfgProps.add("mvccVacuumThreadCount");
+        igniteCfgProps.add("encryptionSpi");
         igniteCfgProps.add("authenticationEnabled");
         igniteCfgProps.add("sqlQueryHistorySize");
         igniteCfgProps.add("lifecycleBeans");
@@ -232,6 +234,12 @@ public class WebConsoleConfigurationSelfTest {
 
         metadata.put(IgniteConfiguration.class,
             new MetadataInfo(igniteCfgProps, igniteCfgPropsDep, igniteCfgPropsExcl));
+
+        Set<String> encriptionSpiProps = new HashSet<>();
+        encriptionSpiProps.add("keySize");
+        encriptionSpiProps.add("masterKeyName");
+        encriptionSpiProps.add("keyStorePath");
+        metadata.put(KeystoreEncryptionSpi.class, new MetadataInfo(encriptionSpiProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
 
         Set<String> cacheKeyCfgProps = new HashSet<>();
         cacheKeyCfgProps.add("typeName");

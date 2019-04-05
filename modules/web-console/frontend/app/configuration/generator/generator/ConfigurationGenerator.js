@@ -99,6 +99,7 @@ export default class IgniteConfigurationGenerator {
             this.clusterDataStorageConfiguration(cluster, available, cfg);
 
         this.clusterDeployment(cluster, available, cfg);
+        this.clusterEncryption(cluster.encryptionSpi, available, cfg);
         this.clusterEvents(cluster, available, cfg);
         this.clusterFailover(cluster, available, cfg);
         this.clusterHadoop(cluster.hadoopConfiguration, cfg);
@@ -1159,6 +1160,46 @@ export default class IgniteConfigurationGenerator {
         }
 
         return eventGrps;
+    }
+
+    // Generate events group.
+    static clusterEncryption(encryption, available, cfg = this.igniteConfigurationBean(cluster)) {
+        if (!available('2.7.0'))
+            return cfg;
+
+        let bean;
+
+        switch (_.get(encryption, 'kind')) {
+            case 'Keystore':
+                bean = new Bean('org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi', 'encryptionSpi',
+                    encryption.Keystore, clusterDflts.encryptionSpi.Keystore)
+                    .stringProperty('keyStorePath');
+
+                if (nonEmpty(bean.valueOf('keyStorePath')))
+                    bean.propertyChar('keyStorePassword', 'encryption.key.storage.password', 'YOUR_ENCRYPTION_KEY_STORAGE_PASSWORD');
+
+
+                bean.intProperty('keySize')
+                    .stringProperty('masterKeyName');
+
+                break;
+
+            case 'Custom':
+                const clsName = _.get(encryption, 'Custom.className');
+
+                if (clsName)
+                    bean = new EmptyBean(clsName);
+
+                break;
+
+            default:
+                // No-op.
+        }
+
+        if (bean)
+            cfg.beanProperty('encryptionSpi', bean);
+
+        return cfg;
     }
 
     // Generate events group.
