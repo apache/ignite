@@ -1083,6 +1083,7 @@ module.exports.factory = function(mongoose) {
         clientFailureDetectionTimeout: Number,
         systemWorkerBlockedTimeout: Number,
         workDirectory: String,
+        igniteHome: String,
         lateAffinityAssignment: Boolean,
         utilityCacheKeepAliveTime: Number,
         asyncCallbackPoolSize: Number,
@@ -1212,7 +1213,18 @@ module.exports.factory = function(mongoose) {
             walAutoArchiveAfterInactivity: Number
         },
         mvccVacuumThreadCount: Number,
-        mvccVacuumFrequency: Number
+        mvccVacuumFrequency: Number,
+        authenticationEnabled: Boolean,
+        sqlQueryHistorySize: Number,
+        lifecycleBeans: [String],
+        addressResolver: String,
+        mBeanServer: String,
+        networkCompressionLevel: Number,
+        includeProperties: [String],
+        cacheStoreSessionListenerFactories: [String],
+        autoActivationEnabled: {type: Boolean, default: true},
+        sqlSchemas: [String],
+        communicationFailureResolver: String
     });
 
     Cluster.index({name: 1, space: 1}, {unique: true});

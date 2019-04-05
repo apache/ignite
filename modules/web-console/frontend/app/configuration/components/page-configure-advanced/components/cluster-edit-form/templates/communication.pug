@@ -56,6 +56,16 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     min: '1',
                     tip: 'Message send retries count'
                 })
+            .pc-form-grid-col-30(ng-if='$ctrl.available("2.8.0")')
+                +form-field__number({
+                    label: 'Compression level:',
+                    model: `${model}.networkCompressionLevel`,
+                    name: '"networkCompressionLevel"',
+                    placeholder: '1',
+                    min: '0',
+                    max: '9',
+                    tip: 'Compression level of internal network messages'
+                })
             .pc-form-grid-col-30(ng-if='$ctrl.available(["1.0.0", "2.3.0"])')
                 +form-field__number({
                     label: 'Discovery startup delay:',
@@ -64,6 +74,13 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     placeholder: '60000',
                     min: '1',
                     tip: 'This value is used to expire messages from waiting list whenever node discovery discrepancies happen'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.5.0")')
+                +form-field__java-class({
+                    label: 'Failure resolver:',
+                    model: `${model}.communicationFailureResolver`,
+                    name: '"communicationFailureResolver"',
+                    tip: 'Communication failure resovler'
                 })
             .pc-form-grid-col-60
                 +form-field__java-class({
