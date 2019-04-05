@@ -37,6 +37,9 @@ const DFLT_CLUSTER = {
         ipFinderCleanFrequency: 60000,
         forceServerMode: false,
         clientReconnectDisabled: false,
+        reconnectDelay: 2000,
+        connectionRecoveryTimeout: 10000,
+        soLinger: 5,
         Multicast: {
             multicastGroup: '228.1.2.4',
             multicastPort: 47400,
@@ -87,7 +90,6 @@ const DFLT_CLUSTER = {
     },
     atomics: {
         atomicSequenceReserveSize: 1000,
-        backups: 0,
         cacheMode: {
             clsName: 'org.apache.ignite.cache.CacheMode',
             value: 'PARTITIONED'
@@ -142,7 +144,11 @@ const DFLT_CLUSTER = {
         tcpNoDelay: true,
         ackSendThreshold: 16,
         unacknowledgedMessagesBufferSize: 0,
-        socketWriteTimeout: 2000
+        socketWriteTimeout: 2000,
+        selectorSpins: 0,
+        connectionsPerNode: 1,
+        usePairedConnections: false,
+        filterReachableAddresses: false
     },
     networkTimeout: 5000,
     networkSendRetryDelay: 1000,
@@ -369,7 +375,9 @@ const DFLT_CLUSTER = {
         lockWaitTime: 10000,
         walThreadLocalBufferSize: 131072,
         metricsSubIntervalCount: 5,
-        metricsRateTimeInterval: 60000
+        metricsRateTimeInterval: 60000,
+        maxWalArchiveSize: 1073741824,
+        walCompactionLevel: 1
     },
     utilityCacheKeepAliveTime: 60000,
     hadoopConfiguration: {
