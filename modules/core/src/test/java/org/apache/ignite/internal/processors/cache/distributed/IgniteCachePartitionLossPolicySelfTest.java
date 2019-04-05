@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
@@ -996,7 +997,12 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
             for (Map<Integer, Semaphore> map : lostMap) {
                 for (Map.Entry<Integer, Semaphore> entry : map.entrySet())
-                    assertTrue("Failed to wait for partition LOST event for partition: " + entry.getKey(), entry.getValue().tryAcquire(1));
+                    try {
+                        assertTrue("Failed to wait for partition LOST event for partition: " + entry.getKey(), entry.getValue().tryAcquire(1));
+                    } catch (AssertionError e) {
+                        U.dumpThreads(log);
+                        throw e;
+                    }
             }
 
             for (Map<Integer, Semaphore> map : lostMap) {
