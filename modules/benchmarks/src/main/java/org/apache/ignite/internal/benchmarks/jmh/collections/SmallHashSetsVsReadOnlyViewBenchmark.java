@@ -23,10 +23,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.benchmarks.model.Node;
-import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteClosure;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -47,7 +47,8 @@ import static org.openjdk.jmh.annotations.Mode.Throughput;
 @BenchmarkMode(Throughput)
 public class SmallHashSetsVsReadOnlyViewBenchmark extends JmhAbstractBenchmark {
     /** */
-    private static final int SIZE = AffinityAssignment.IGNITE_AFFINITY_BACKUPS_THRESHOLD;
+    private static final int SIZE = IgniteSystemProperties.getInteger(IgniteSystemProperties
+        .IGNITE_AFFINITY_BACKUPS_THRESHOLD, 5);
 
     /** */
     private static final int PARTS = 8192;
