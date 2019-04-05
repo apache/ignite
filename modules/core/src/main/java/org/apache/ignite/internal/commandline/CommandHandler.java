@@ -1659,9 +1659,9 @@ public class CommandHandler {
                 return "Show the keys that are point of contention for multiple transactions.";
 
             case IDLE_VERIFY:
-                return "Verify counters and hash sums of primary and backup partitions for the specified caches on an idle cluster and print out the differences, if any. " +
+                return "Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. " +
                     "Cache filtering options configure the set of caches that will be processed by " + IDLE_VERIFY + " command. " +
-                    "Default value for the set of cache names is all caches. Default value for " + EXCLUDE_CACHES + " is empty set. " +
+                    "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
                     "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently filtered by cache name " +
                     "regexps, by cache type and after all by exclude regexps.";
 
@@ -2354,7 +2354,8 @@ public class CommandHandler {
 
             try {
                 Pattern.compile(cacheName);
-            } catch (PatternSyntaxException e) {
+            }
+            catch (PatternSyntaxException e) {
                 throw new RuntimeException(format("Invalid cache name regexp '%s': %s", cacheName, e.getMessage()));
             }
 

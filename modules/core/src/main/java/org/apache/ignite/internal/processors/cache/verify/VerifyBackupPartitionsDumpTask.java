@@ -210,7 +210,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         }
 
         writer.write("idle_verify check has finished, found " + partitions.size() + " partitions\n");
-        writer.write("idle_verify task args were following: " + taskArgsAsCmd() + "\n");
+        writer.write("idle_verify task was executed with the following args: " + taskArgsAsCmd() + "\n");
 
         if (skippedRecords > 0)
             writer.write(skippedRecords + " partitions was skipped\n");
