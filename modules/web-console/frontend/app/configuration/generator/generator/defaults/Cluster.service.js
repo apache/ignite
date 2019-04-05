@@ -449,6 +449,9 @@ const DFLT_CLUSTER = {
             masterKeyName: 'ignite.master.key'
         }
     },
+    failureHandler: {
+        ignoredFailureTypes: {clsName: 'org.apache.ignite.failure.FailureType'}
+    },
     authenticationEnabled: false,
     sqlQueryHistorySize: 1000,
     allSegmentationResolversPassRequired: true,
