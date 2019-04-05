@@ -101,7 +101,7 @@ namespace Apache.Ignite.Examples
             var qry = cache.Query(new SqlFieldsQuery("select name from Employee where salary > ?", minSalary));
 
             Console.WriteLine();
-            Console.WriteLine($">>> Employees with salary > {minSalary} (SQL):");
+            Console.WriteLine($">>> Employees with salary > {minSalary}:");
 
             foreach (var entry in qry)
                 Console.WriteLine(">>>    " + entry[0]);
