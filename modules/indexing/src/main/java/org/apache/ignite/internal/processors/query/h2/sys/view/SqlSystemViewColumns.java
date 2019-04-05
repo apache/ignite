@@ -66,8 +66,7 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
             newColumn("CHARACTER_LENGTH", Value.INT),
             newColumn("NUMERIC_PRECISION", Value.INT),
             newColumn("NUMERIC_SCALE", Value.INT),
-            newColumn("IS_AFFINITY_KEY", Value.BOOLEAN),
-            newColumn("IS_HIDDEN", Value.BOOLEAN)
+            newColumn("IS_AFFINITY_KEY", Value.BOOLEAN)
         );
 
         this.schemaMgr = schemaMgr;
@@ -105,9 +104,6 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
 
             IndexColumn affCol = tbl.getExplicitAffinityKeyColumn();
 
-            res.add(keyValueRow(ses, tbl, affCol, true));
-            res.add(keyValueRow(ses, tbl, affCol, false));
-
             for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT; i < tbl.getColumns().length; ++i) {
                 Column col = tbl.getColumns()[i];
 
@@ -126,7 +122,6 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
                     numericPrecision(col),
                     numericScale(col),
                     affCol != null && F.eq(col.getColumnId(), affCol.column.getColumnId()),
-                    false
                 };
 
                 res.add(createRow(ses, data));
@@ -134,40 +129,6 @@ public class SqlSystemViewColumns extends SqlAbstractLocalSystemView {
         }
 
         return res.iterator();
-    }
-
-    /**
-     * @param ses Session.
-     * @param tbl Table.
-     * @param affCol Affinity column.
-     * @param isKey {@code true} for _KEY column, {@code false} for _VAL column.
-     * @return Results row.
-     */
-    private Row keyValueRow(Session ses, GridH2Table tbl, IndexColumn affCol, boolean isKey) {
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
-
-        int aliasColId = desc.getAlternativeColumnId(isKey ? QueryUtils.KEY_COL : QueryUtils.VAL_COL);
-
-        Column aliasCol = aliasColId >= QueryUtils.DEFAULT_COLUMNS_COUNT ? tbl.getColumn(aliasColId) : null;
-
-        String colType = aliasCol != null ?
-            DataType.getDataType(aliasCol.getType()).name
-            : "BINOBJ:" + (isKey ? desc.type().keyTypeName() : desc.type().valueTypeName());
-
-        return createRow(ses,
-            tbl.getSchema().getName(),
-            tbl.getName(),
-            isKey ? "_KEY" : "_VAL",
-            aliasColId > 0 ? aliasColId - QueryUtils.DEFAULT_COLUMNS_COUNT + 1 : 0, // ordinal
-            aliasCol != null && aliasCol.getDefaultExpression() != null ?
-                toStringSafe(aliasCol.getDefaultExpression().getValue(ses)) : null,
-            false,
-            colType,
-            characterLength(aliasCol),
-            numericPrecision(aliasCol),
-            numericScale(aliasCol),
-            affCol != null && F.eq(aliasColId, affCol.column.getColumnId()),
-            true);
     }
 
     /**
