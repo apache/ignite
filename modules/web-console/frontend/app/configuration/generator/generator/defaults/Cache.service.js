@@ -97,6 +97,18 @@ const DFLT_CACHE = {
         valField: 'className',
         entries: []
     },
+    defaultFieldValues: {
+        keyClsName: 'java.lang.String',
+        valClsName: 'java.lang.Object'
+    },
+    fieldsPrecision: {
+        keyClsName: 'java.lang.String',
+        valClsName: 'java.lang.Integer'
+    },
+    fieldsScale: {
+        keyClsName: 'java.lang.String',
+        valClsName: 'java.lang.Integer'
+    },
     aliases: {
         keyClsName: 'java.lang.String',
         valClsName: 'java.lang.String',
