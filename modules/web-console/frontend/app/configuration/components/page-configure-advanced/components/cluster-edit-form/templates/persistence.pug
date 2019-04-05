@@ -95,6 +95,27 @@ panel-collapsible(
                     tip: 'A number of threads to use for the checkpointing purposes'
                 })
             .pc-form-grid-col-60
+                +form-field__dropdown({
+                    label: 'WAL mode:',
+                    model: `${model}.walMode`,
+                    name: '"PersistenceWalMode"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'DEFAULT',
+                    options: '[\
+                        {value: "DEFAULT", label: "DEFAULT"},\
+                        {value: "LOG_ONLY", label: "LOG_ONLY"},\
+                        {value: "BACKGROUND", label: "BACKGROUND"},\
+                        {value: "NONE", label: "NONE"}\
+                    ]',
+                    tip: 'Type define behavior wal fsync.\
+                        <ul>\
+                            <li>DEFAULT - full-sync disk writes</li>\
+                            <li>LOG_ONLY - flushes application buffers</li>\
+                            <li>BACKGROUND - does not force application&#39;s buffer flush</li>\
+                            <li>NONE - WAL is disabled</li>\
+                        </ul>'
+                })
+            .pc-form-grid-col-60
                 +form-field__text({
                     label: 'WAL store path:',
                     model: `${model}.walStorePath`,
@@ -211,6 +232,16 @@ panel-collapsible(
                     placeholder: '5',
                     min: '1',
                     tip: 'Number of sub - intervals the whole rate time interval will be split into to calculate rate - based metrics'
+                })
+            .pc-form-grid-col-60
+                +form-field__number({
+                    label: 'WAL auto archive after inactivity:',
+                    model: `${model}.walAutoArchiveAfterInactivity`,
+                    name: '"PersistenceWalAutoArchiveAfterInactivity"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '-1',
+                    min: '-1',
+                    tip: 'Time in millis to run auto archiving segment after last record logging'
                 })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterPersistence')

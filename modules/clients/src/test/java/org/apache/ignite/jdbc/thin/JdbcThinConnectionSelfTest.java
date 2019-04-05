@@ -136,7 +136,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testInvalidEndpoint() {
-        assertInvalid("jdbc:ignite:thin://", "Host name is empty");
+        assertInvalid("jdbc:ignite:thin://", "Address is empty");
         assertInvalid("jdbc:ignite:thin://:10000", "Host name is empty");
         assertInvalid("jdbc:ignite:thin://     :10000", "Host name is empty");
 
