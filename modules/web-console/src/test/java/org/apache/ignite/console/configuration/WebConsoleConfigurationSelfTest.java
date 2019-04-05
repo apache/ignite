@@ -207,6 +207,9 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgProps.add("sqlSchemas");
         igniteCfgProps.add("igniteInstanceName");
         igniteCfgProps.add("communicationFailureResolver");
+        igniteCfgProps.add("failureHandler");
+        igniteCfgProps.add("rebalanceThreadPoolSize");
+        igniteCfgProps.add("localEventListeners");
 
         Set<String> igniteCfgPropsDep = new HashSet<>();
         igniteCfgPropsDep.add("gridName");
@@ -222,6 +225,7 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgPropsExcl.add("clientMode");
         igniteCfgPropsExcl.add("indexingSpi");
         igniteCfgPropsExcl.add("nodeId");
+        igniteCfgPropsExcl.add("platformConfiguration");
         igniteCfgPropsExcl.add("segmentCheckFrequency");
         igniteCfgPropsExcl.add("allSegmentationResolversPassRequired");
         igniteCfgPropsExcl.add("segmentationPolicy");
@@ -380,7 +384,6 @@ public class WebConsoleConfigurationSelfTest {
         commProps.add("connectionsPerNode");
         commProps.add("usePairedConnections");
         commProps.add("filterReachableAddresses");
-        commProps.add("soLinger");
 
         metadata.put(TcpCommunicationSpi.class, new MetadataInfo(commProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
 
@@ -412,6 +415,7 @@ public class WebConsoleConfigurationSelfTest {
         discoverySpiProps.add("clientReconnectDisabled");
         discoverySpiProps.add("connectionRecoveryTimeout");
         discoverySpiProps.add("reconnectDelay");
+        discoverySpiProps.add("soLinger");
 
         Set<String> discoverySpiExclProps = new HashSet<>();
         discoverySpiExclProps.addAll(SPI_EXCLUDED_FIELDS);
@@ -695,6 +699,9 @@ public class WebConsoleConfigurationSelfTest {
         transactionCfgProps.add("pessimisticTxLogLinger");
         transactionCfgProps.add("pessimisticTxLogSize");
         transactionCfgProps.add("txManagerFactory");
+        transactionCfgProps.add("deadlockTimeout");
+        transactionCfgProps.add("useJtaSynchronization");
+        transactionCfgProps.add("txTimeoutOnPartitionMapExchange");
 
         Set<String> transactionCfgPropsDep = new HashSet<>();
         transactionCfgPropsDep.add("txSerializableEnabled");
