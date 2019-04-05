@@ -110,6 +110,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_2_0;
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_3_0;
 
 /**
  * Configuration utils.
@@ -815,7 +816,7 @@ public class PlatformConfigurationUtils {
             cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
 
         if (in.readBoolean())
-            cfg.setDataStorageConfiguration(readDataStorageConfiguration(in));
+            cfg.setDataStorageConfiguration(readDataStorageConfiguration(in, ver));
 
         if (in.readBoolean())
             cfg.setSslContextFactory(readSslContextFactory(in));
@@ -1410,7 +1411,7 @@ public class PlatformConfigurationUtils {
 
         writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
 
-        writeDataStorageConfiguration(w, cfg.getDataStorageConfiguration());
+        writeDataStorageConfiguration(w, cfg.getDataStorageConfiguration(), ver);
 
         writeSslContextFactory(w, cfg.getSslContextFactory());
 
@@ -1885,9 +1886,11 @@ public class PlatformConfigurationUtils {
      * Reads the data storage configuration.
      *
      * @param in Reader.
+     * @param ver Client version.
      * @return Config.
      */
-    private static DataStorageConfiguration readDataStorageConfiguration(BinaryRawReader in) {
+    private static DataStorageConfiguration readDataStorageConfiguration(BinaryRawReader in,
+        ClientListenerProtocolVersion ver) {
         DataStorageConfiguration res = new DataStorageConfiguration()
                 .setStoragePath(in.readString())
                 .setCheckpointFrequency(in.readLong())
@@ -1919,6 +1922,9 @@ public class PlatformConfigurationUtils {
 
         if (in.readBoolean())
             res.setCheckpointReadLockTimeout(in.readLong());
+
+        if (ver.compareTo(VER_1_3_0) >= 0)
+            res.setLazyMemoryAllocation(in.readBoolean());
 
         int cnt = in.readInt();
 
@@ -2011,8 +2017,11 @@ public class PlatformConfigurationUtils {
      * Writes the data storage configuration.
      *
      * @param w Writer.
+     * @param cfg Data storage configuration.
+     * @param ver Client version.
      */
-    private static void writeDataStorageConfiguration(BinaryRawWriter w, DataStorageConfiguration cfg) {
+    private static void writeDataStorageConfiguration(BinaryRawWriter w, DataStorageConfiguration cfg,
+        ClientListenerProtocolVersion ver) {
         assert w != null;
 
         if (cfg != null) {
@@ -2052,6 +2061,9 @@ public class PlatformConfigurationUtils {
             }
             else
                 w.writeBoolean(false);
+
+            if (ver.compareTo(VER_1_3_0) >= 0)
+                w.writeBoolean(cfg.isLazyMemoryAllocation());
 
             if (cfg.getDataRegionConfigurations() != null) {
                 w.writeInt(cfg.getDataRegionConfigurations().length);

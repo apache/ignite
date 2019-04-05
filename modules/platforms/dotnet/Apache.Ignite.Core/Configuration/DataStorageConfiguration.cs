@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Configuration
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Data storage configuration for Ignite page memory.
@@ -169,6 +170,11 @@ namespace Apache.Ignite.Core.Configuration
         public const long DefaultMaxWalArchiveSize = 1024 * 1024 * 1024;
 
         /// <summary>
+        /// Default value for <see cref="LazyMemoryAllocation"/>.
+        /// </summary>
+        public const bool DefaultLazyMemoryAllocation = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DataStorageConfiguration"/> class.
         /// </summary>
         public DataStorageConfiguration()
@@ -196,13 +202,15 @@ namespace Apache.Ignite.Core.Configuration
             PageSize = DefaultPageSize;
             WalAutoArchiveAfterInactivity = DefaultWalAutoArchiveAfterInactivity;
             MaxWalArchiveSize = DefaultMaxWalArchiveSize;
+            LazyMemoryAllocation = DefaultLazyMemoryAllocation;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DataStorageConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal DataStorageConfiguration(IBinaryRawReader reader)
+        /// <param name="srvVer">Server version.</param>
+        internal DataStorageConfiguration(IBinaryRawReader reader, ClientProtocolVersion srvVer)
         {
             Debug.Assert(reader != null);
 
@@ -236,6 +244,11 @@ namespace Apache.Ignite.Core.Configuration
             WalAutoArchiveAfterInactivity = reader.ReadLongAsTimespan();
             CheckpointReadLockTimeout = reader.ReadTimeSpanNullable();
 
+            if (srvVer.CompareTo(ClientSocket.Ver130) >= 0)
+            {
+                LazyMemoryAllocation = reader.ReadBoolean();
+            }
+
             var count = reader.ReadInt();
 
             if (count > 0)
@@ -255,7 +268,8 @@ namespace Apache.Ignite.Core.Configuration
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        internal void Write(IBinaryRawWriter writer)
+        /// <param name="srvVer">Server version.</param>
+        internal void Write(IBinaryRawWriter writer, ClientProtocolVersion srvVer)
         {
             Debug.Assert(writer != null);
 
@@ -288,6 +302,11 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteInt(ConcurrencyLevel);
             writer.WriteTimeSpanAsLong(WalAutoArchiveAfterInactivity);
             writer.WriteTimeSpanAsLongNullable(CheckpointReadLockTimeout);
+
+            if (srvVer.CompareTo(ClientSocket.Ver130) >= 0)
+            {
+                writer.WriteBoolean(LazyMemoryAllocation);
+            }
 
             if (DataRegionConfigurations != null)
             {
@@ -505,5 +524,11 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the default region configuration.
         /// </summary>
         public DataRegionConfiguration DefaultDataRegionConfiguration { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the lazy memory allocation flag.
+        /// </summary>
+        [DefaultValue(DefaultLazyMemoryAllocation)]
+        public bool LazyMemoryAllocation { get; set; }
     }
 }
