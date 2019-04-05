@@ -97,13 +97,13 @@ namespace Apache.Ignite.Examples.Sql
         {
             const int zip = 94109;
 
-            var qry = cache.Query(new SqlFieldsQuery("select name from Employee where zip = ?", zip));
+            var qry = cache.Query(new SqlFieldsQuery("select name, salary from Employee where zip = ?", zip));
 
             Console.WriteLine();
             Console.WriteLine(">>> Employees with zipcode {0} (SQL):", zip);
 
-            foreach (var entry in qry)
-                Console.WriteLine(">>>    " + entry[0]);
+            foreach (var row in qry)
+                Console.WriteLine(">>>     [Name=" + row[0] + ", salary=" + row[1] + ']');
         }
 
         /// <summary>
