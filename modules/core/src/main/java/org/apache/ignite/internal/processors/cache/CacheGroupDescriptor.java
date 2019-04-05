@@ -73,8 +73,10 @@ public class CacheGroupDescriptor {
     /** Pending WAL change requests. */
     private final LinkedList<WalStateProposeMessage> walChangeReqs;
 
+    /** Cache config enrichment. */
     private final CacheConfigurationEnrichment cacheCfgEnrichment;
 
+    /** Is configuration enriched. */
     private volatile boolean isConfigurationEnriched;
 
     /**

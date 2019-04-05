@@ -401,10 +401,10 @@ public class DynamicCacheDescriptor {
             T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(this);
 
             res.config(splitCfg.get1());
-            res.cacheCfgEnrichment(splitCfg.get2());
+            res.cacheConfigurationEnrichment(splitCfg.get2());
         }
         else
-            res.cacheCfgEnrichment(cacheCfgEnrichment);
+            res.cacheConfigurationEnrichment(cacheCfgEnrichment);
 
         return res;
     }
@@ -425,6 +425,8 @@ public class DynamicCacheDescriptor {
     public void enrich(boolean affinityNode) {
         if (CU.isUtilityCache(cacheName()))
             return;
+
+        System.err.println("Try to enrich -> " + cacheName() + " " + cacheCfgEnriched + " " + cacheCfgEnrichment + " " + affinityNode);
 
         if (isConfigurationEnriched())
             return;

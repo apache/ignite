@@ -934,6 +934,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 for (DatabaseLifecycleListener lsnr : listeners)
                     lsnr.onBaselineChange();
+
+                log.warning("Baseline changed!");
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();

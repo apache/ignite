@@ -41,26 +41,26 @@ public class CacheConfigurationEnricher {
         CacheConfigurationEnrichment enrichment,
         boolean affinityNode
     ) {
-        CacheConfiguration<?, ?> enrichedCopy = new CacheConfiguration<>(ccfg);
+        CacheConfiguration<?, ?> enrichedCp = new CacheConfiguration<>(ccfg);
 
         try {
             for (Field field : CacheConfiguration.class.getDeclaredFields())
                 if (field.getDeclaredAnnotation(SerializeSeparately.class) != null) {
-                    if (skipDeserialization(ccfg, field))
+                    if (!affinityNode && skipDeserialization(ccfg, field))
                         continue;
 
                     field.setAccessible(true);
 
-                    Object enrichedValue = enrichment.getFieldValue(field.getName());
+                    Object enrichedVal = enrichment.getFieldValue(field.getName());
 
-                    field.set(enrichedCopy, enrichedValue);
+                    field.set(enrichedCp, enrichedVal);
                 }
         }
         catch (Exception e) {
             throw new IgniteException("Failed to enrich cache configuration " + ccfg.getName(), e);
         }
 
-        return enrichedCopy;
+        return enrichedCp;
     }
 
     /**
@@ -83,7 +83,7 @@ public class CacheConfigurationEnricher {
      * @return {@code true} if deserialization for given field should be skipped.
      */
     private static boolean skipDeserialization(CacheConfiguration<?, ?> ccfg, Field field) {
-        if (field.getName().equals("storeFactory") && ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC)
+        if ("storeFactory".equals(field.getName()) && ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC)
             return true;
 
         return false;

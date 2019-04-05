@@ -934,6 +934,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
 
             if (startCache) {
+                log.warning("Need to start cache -> " + req.cacheName());
+
                 startCacheInfos.put(
                     new StartCacheInfo(
                         req.startCacheConfiguration(),

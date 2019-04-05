@@ -880,7 +880,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(cfg);
 
         cacheData.config(splitCfg.get1());
-        cacheData.cacheCfgEnrichment(splitCfg.get2());
+        cacheData.cacheConfigurationEnrichment(splitCfg.get2());
 
         if (GridCacheUtils.isCacheTemplateName(cacheName))
             templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
@@ -950,15 +950,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
                     // Backward compatibility for old stored caches data.
-                    if (storedCacheData.cacheCfgEnrichment() == null) {
-                        storedCacheData = new StoredCacheData(storedCacheData.config());
+                    if (storedCacheData.hasOldCacheConfigurationFormat()) {
+                        storedCacheData = new StoredCacheData(storedCacheData);
 
                         CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
 
                         T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(storedCacheData.config());
 
                         storedCacheData.config(splitCfg.get1());
-                        storedCacheData.cacheCfgEnrichment(splitCfg.get2());
+                        storedCacheData.cacheConfigurationEnrichment(splitCfg.get2());
+
+                        // Overwrite with new format.
+                        saveCacheConfiguration(storedCacheData);
                     }
 
                     String cacheName = storedCacheData.config().getName();
@@ -4301,6 +4304,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Save cache configuration to persistent store if necessary.
+     *
+     * @param storedCacheData Stored cache data.
+     */
+    public void saveCacheConfiguration(StoredCacheData storedCacheData) throws IgniteCheckedException {
+        assert storedCacheData != null;
+
+        if (sharedCtx.pageStore() != null && !sharedCtx.kernalContext().clientNode() &&
+            isPersistentCache(storedCacheData.config(), sharedCtx.gridConfig().getDataStorageConfiguration()))
+            sharedCtx.pageStore().storeCacheData(storedCacheData, true);
+    }
+
+    /**
      * Remove all persistent files for all registered caches.
      */
     public void cleanupCachesDirectories() throws IgniteCheckedException {
@@ -4374,6 +4390,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!sndReqs.isEmpty()) {
             try {
+                log.warning("Destroy caches event has sent.");
+
                 ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs));
 
                 err = checkNodeState();

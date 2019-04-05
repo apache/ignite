@@ -43,9 +43,11 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridCachePluginContext;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
@@ -327,7 +329,7 @@ class ClusterCachesInfo {
     private void checkCache(CacheJoinNodeDiscoveryData.CacheInfo locInfo, CacheData rmtData, UUID rmt)
         throws IgniteCheckedException {
         GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtData.cacheConfiguration(), rmtData.cacheConfigurationEnrichment());
-        GridCacheAttributes locAttr = new GridCacheAttributes(locInfo.cacheData().config(), locInfo.cacheData().cacheCfgEnrichment());
+        GridCacheAttributes locAttr = new GridCacheAttributes(locInfo.cacheData().config(), locInfo.cacheData().cacheConfigurationEnrichment());
 
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
             locAttr.cacheMode(), rmtAttr.cacheMode(), true);
@@ -352,6 +354,10 @@ class ClusterCachesInfo {
 
             if (CU.affinityNode(ctx.discovery().localNode(), locInfo.cacheData().config().getNodeFilter())
                 && rmtNode != null && CU.affinityNode(rmtNode, rmtData.cacheConfiguration().getNodeFilter())) {
+
+                log.warning("Remote enrichment = " + rmtData.cacheConfigurationEnrichment());
+                log.warning("Local enrichment = " + locInfo.cacheData().cacheConfigurationEnrichment());
+
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeFactory", "Store factory",
                     locAttr.storeFactoryClassName(), rmtAttr.storeFactoryClassName(), true);
             }
@@ -1132,8 +1138,11 @@ class ClusterCachesInfo {
         if (ctx.isDaemon())
             return;
 
-        if (!dataBag.commonDataCollectedFor(CACHE_PROC.ordinal()))
-            dataBag.addGridCommonData(CACHE_PROC.ordinal(), collectCommonDiscoveryData(true));
+        if (!dataBag.commonDataCollectedFor(CACHE_PROC.ordinal())) {
+            IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+
+            dataBag.addGridCommonData(CACHE_PROC.ordinal(), collectCommonDiscoveryData(spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS)));
+        }
     }
 
     /**
@@ -1229,6 +1238,8 @@ class ClusterCachesInfo {
 
         CacheNodeCommonDiscoveryData cachesData = (CacheNodeCommonDiscoveryData)data.commonData();
 
+        validateNoNewCachesWithNewFormat(cachesData);
+
         // CacheGroup configurations that were created from local node configuration.
         Map<Integer, CacheGroupDescriptor> locCacheGrps = new HashMap<>(registeredCacheGroups());
 
@@ -1249,6 +1260,36 @@ class ClusterCachesInfo {
 
         if (cachesOnDisconnect == null || cachesOnDisconnect.clusterActive())
             initStartCachesForLocalJoin(false, disconnectedState());
+    }
+
+    /**
+     * Validates that joining node doesn't have newly configured caches
+     * in case when there is no cluster-wide support of SPLITTED_CACHE_CONFIGURATIONS.
+     *
+     * If validation is failed that caches will be destroyed cluster-wide and node joining process will be failed.
+     *
+     * @param clusterWideCacheData Cluster wide cache data.
+     */
+    public void validateNoNewCachesWithNewFormat(CacheNodeCommonDiscoveryData clusterWideCacheData) {
+        IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+
+        boolean allowSplitCacheConfigurations = spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS);
+
+        List<String> cachesToDestroy = new ArrayList<>();
+
+        if (!allowSplitCacheConfigurations) {
+            for (DynamicCacheDescriptor cacheDescriptor : registeredCaches().values()) {
+                CacheData clusterCacheData = clusterWideCacheData.caches().get(cacheDescriptor.cacheName());
+
+                // Node spawned new cache.
+                if (clusterCacheData.receivedFrom().equals(cacheDescriptor.receivedFrom()))
+                    cachesToDestroy.add(cacheDescriptor.cacheName());
+            }
+        }
+
+        ctx.cache().dynamicDestroyCaches(cachesToDestroy, false);
+
+        throw new IllegalStateException("Node can't join to cluster in compatibility mode with newly configured caches: " + cachesToDestroy);
     }
 
     /**
@@ -1324,6 +1365,8 @@ class ClusterCachesInfo {
                 new QuerySchema(cacheData.schema().entities()),
                 cacheData.cacheConfigurationEnrichment()
             );
+
+            log.warning("Received -> " + cacheData.cacheConfiguration().getName() + " " + cacheData.cacheConfigurationEnrichment());
 
             Collection<QueryEntity> localQueryEntities = getLocalQueryEntities(cfg.getName());
 
@@ -1536,7 +1579,7 @@ class ClusterCachesInfo {
                         desc.sql(),
                         desc.deploymentId(),
                         desc.schema().copy(),
-                        locCfg.cacheData().cacheCfgEnrichment()
+                        locCfg.cacheData().cacheConfigurationEnrichment()
                     );
 
                     desc0.startTopologyVersion(desc.startTopologyVersion());
@@ -1551,8 +1594,11 @@ class ClusterCachesInfo {
                 if (locCfg != null ||
                     joinDiscoData.startCaches() ||
                     CU.affinityNode(ctx.discovery().localNode(), desc.groupDescriptor().config().getNodeFilter())) {
-                    if (active)
+                    if (active) {
                         locJoinStartCaches.add(new T2<>(desc, nearCfg));
+
+                        log.warning("Need to start -> " + desc.cacheName() + " " + locCfg + " " + joinDiscoData.startCaches());
+                    }
                     else
                         locCfgsForActivation.put(desc.cacheName(), new T2<>(desc.cacheConfiguration(), nearCfg));
                 }
@@ -1867,7 +1913,7 @@ class ClusterCachesInfo {
             nodeId,
             joinData.cacheDeploymentId(),
             null,
-            cacheInfo.cacheData().cacheCfgEnrichment()
+            cacheInfo.cacheData().cacheConfigurationEnrichment()
         );
 
         ctx.discovery().setCacheFilter(
@@ -1887,7 +1933,7 @@ class ClusterCachesInfo {
             cacheInfo.sql(),
             joinData.cacheDeploymentId(),
             new QuerySchema(cacheInfo.cacheData().queryEntities()),
-            cacheInfo.cacheData().cacheCfgEnrichment()
+            cacheInfo.cacheData().cacheConfigurationEnrichment()
         );
 
         DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
@@ -1916,7 +1962,7 @@ class ClusterCachesInfo {
                     false,
                     joinData.cacheDeploymentId(),
                     new QuerySchema(cacheInfo.cacheData().queryEntities()),
-                    cacheInfo.cacheData().cacheCfgEnrichment()
+                    cacheInfo.cacheData().cacheConfigurationEnrichment()
                 );
 
                 DynamicCacheDescriptor old = registeredTemplates.put(cfg.getName(), desc);

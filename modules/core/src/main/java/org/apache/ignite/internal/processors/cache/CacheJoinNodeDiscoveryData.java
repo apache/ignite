@@ -23,6 +23,7 @@ import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -57,7 +58,8 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
         IgniteUuid cacheDeploymentId,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates,
-        boolean startCaches) {
+        boolean startCaches
+    ) {
         this.cacheDeploymentId = cacheDeploymentId;
         this.caches = caches;
         this.templates = templates;
@@ -90,6 +92,30 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
      */
     public Map<String, CacheInfo> caches() {
         return caches;
+    }
+
+    /**
+     *
+     */
+    public CacheJoinNodeDiscoveryData withOldCacheConfigurations() {
+        return new CacheJoinNodeDiscoveryData(
+            cacheDeploymentId,
+            withOldCacheConfigurations(caches),
+            withOldCacheConfigurations(templates),
+            startCaches
+        );
+    }
+
+    /**
+     * @param caches Caches.
+     */
+    private static Map<String, CacheInfo> withOldCacheConfigurations(Map<String, CacheInfo> caches) {
+        Map<String, CacheInfo> newCaches = U.newHashMap(caches.size());
+
+        for (Map.Entry<String, CacheInfo> e : caches.entrySet())
+            newCaches.put(e.getKey(), e.getValue().withOldCacheConfig());
+
+        return newCaches;
     }
 
     /**
@@ -159,6 +185,19 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
          */
         public boolean isStaticallyConfigured() {
             return staticallyConfigured;
+        }
+
+        /**
+         *
+         */
+        public CacheInfo withOldCacheConfig() {
+            return new CacheInfo(
+                new StoredCacheData(cacheData).withOldCacheConfig(),
+                cacheType,
+                sql,
+                flags,
+                staticallyConfigured
+            );
         }
 
         /**

@@ -50,7 +50,7 @@ public class StoredCacheData implements Serializable {
     private boolean sql;
 
     /** */
-    private CacheConfigurationEnrichment cacheCfgEnrichment;
+    private CacheConfigurationEnrichment cacheConfigurationEnrichment;
 
     /**
      * Constructor.
@@ -62,6 +62,16 @@ public class StoredCacheData implements Serializable {
 
         this.ccfg = ccfg;
         this.qryEntities = ccfg.getQueryEntities();
+    }
+
+    /**
+     * @param cacheData Cache data.
+     */
+    public StoredCacheData(StoredCacheData cacheData) {
+        this.ccfg = cacheData.ccfg;
+        this.qryEntities = cacheData.qryEntities;
+        this.sql = cacheData.sql;
+        this.cacheConfigurationEnrichment = cacheData.cacheConfigurationEnrichment;
     }
 
     /**
@@ -108,34 +118,53 @@ public class StoredCacheData implements Serializable {
         return this;
     }
 
-    public StoredCacheData cacheCfgEnrichment(CacheConfigurationEnrichment ccfgEnrichment) {
-        this.cacheCfgEnrichment = ccfgEnrichment;
+    /**
+     * @param ccfgEnrichment Ccfg enrichment.
+     */
+    public StoredCacheData cacheConfigurationEnrichment(CacheConfigurationEnrichment ccfgEnrichment) {
+        this.cacheConfigurationEnrichment = ccfgEnrichment;
 
         return this;
     }
 
-    public CacheConfigurationEnrichment cacheCfgEnrichment() {
-        return cacheCfgEnrichment;
+    /**
+     *
+     */
+    public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
+        return cacheConfigurationEnrichment;
     }
 
+    /**
+     *
+     */
+    public boolean hasOldCacheConfigurationFormat() {
+        return cacheConfigurationEnrichment == null;
+    }
+
+    /**
+     *
+     */
     public StoredCacheData withSplittedCacheConfig() {
-        if (cacheCfgEnrichment == null) {
+        if (cacheConfigurationEnrichment == null) {
             CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
 
             T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(ccfg);
 
             ccfg = splitCfg.get1();
-            cacheCfgEnrichment = splitCfg.get2();
+            cacheConfigurationEnrichment = splitCfg.get2();
         }
 
         return this;
     }
 
+    /**
+     *
+     */
     public StoredCacheData withOldCacheConfig() {
-        if (cacheCfgEnrichment != null) {
-            ccfg = CacheConfigurationEnricher.enrichFully(ccfg, cacheCfgEnrichment);
+        if (cacheConfigurationEnrichment != null) {
+            ccfg = CacheConfigurationEnricher.enrichFully(ccfg, cacheConfigurationEnrichment);
 
-            cacheCfgEnrichment = null;
+            cacheConfigurationEnrichment = null;
         }
 
         return this;
