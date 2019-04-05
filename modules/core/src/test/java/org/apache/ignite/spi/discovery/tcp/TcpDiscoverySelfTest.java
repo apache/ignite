@@ -43,7 +43,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -79,7 +78,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -95,6 +93,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -125,9 +124,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     private static final String NODE_WITH_PORT_ID_2 = "node2-47502";
 
     /** */
-    private static final String NODE_WITH_PORT_ID_3 = "node3-47503";
-
-    /** */
     private TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
@@ -155,13 +151,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     private UUID failedNodeId = UUID.randomUUID();
 
     /** */
-    private boolean usePortFromNodeName;
-
-    /** */
     private TcpDiscoverySpi specialSpi;
-
-    /** */
-    private TcpDiscoveryIpFinder specialIpFinder;
 
     /** Discovery SPI aimed to fail node with it when another server node joins the topology. */
     private TcpDiscoverySpi failingNodeOnNodeJoinSpi = new TcpDiscoverySpi() {
@@ -183,55 +173,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     return;
                 }
-            }
-
-            super.startMessageProcess(msg);
-        }
-    };
-
-    /** */
-    private TcpDiscoverySpi node1SpecialSpi = new TcpDiscoverySpi() {
-        @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
-            if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                UUID nodeId = ((TcpDiscoveryNodeAddedMessage)msg).node().id();
-
-                if (nodeId.equals(failedNodeId)/* && !startRequestSent*/)
-                    try {
-                        GridTestUtils.runAsync(() -> startGrid(NODE_WITH_PORT_ID_3));
-                    }
-                    catch (Exception ignored) {
-                        // No-op.
-                    }
-            }
-
-            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                UUID nodeId = ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId();
-
-                if (nodeId.equals(failedNodeId)) {
-                    Object workerObj = GridTestUtils.getFieldValue(impl, "msgWorker");
-
-                    OutputStream out = GridTestUtils.getFieldValue(workerObj, "out");
-
-                    try {
-                        out.close();
-                    }
-                    catch (Exception ignored) {
-                        // No-op.
-                    }
-
-                    return;
-                }
-            }
-
-            if (msg instanceof TcpDiscoveryNodeFailedMessage) {
-                try {
-                    GridTestUtils.runAsync(() -> stopGrid(NODE_WITH_PORT_ID_0));
-                }
-                catch (Exception ignored) {
-                    // No-op.
-                }
-
-                throw new RuntimeException("Node01 shutdown exception");
             }
 
             super.startMessageProcess(msg);
@@ -265,13 +206,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         discoMap.put(igniteInstanceName, spi);
 
-        if (usePortFromNodeName)
-            spi.setLocalPort(Integer.parseInt(igniteInstanceName.split("-")[1]));
-
-        if (specialIpFinder != null && igniteInstanceName.equals(NODE_WITH_PORT_ID_2))
-            spi.setIpFinder(specialIpFinder);
-        else
-            spi.setIpFinder(ipFinder);
+        spi.setIpFinder(ipFinder);
 
         spi.setNetworkTimeout(2500);
 
@@ -311,7 +246,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(null);
 
-        if (nodeId != null && igniteInstanceName.equals(NODE_WITH_PORT_ID_2))
+        if (nodeId != null)
             cfg.setNodeId(nodeId);
 
         if (igniteInstanceName.contains("NonSharedIpFinder")) {
