@@ -833,16 +833,12 @@ public class H2Utils {
      *
      * @param idx Indexing.
      * @param cacheIds Cache IDs.
-     * @param mvccEnabled MVCC enabled flag.
-     * @param forUpdate For update flag.
      * @param tbls Tables.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public static void checkQuery(
         IgniteH2Indexing idx,
         List<Integer> cacheIds,
-        boolean mvccEnabled,
-        boolean forUpdate,
         Collection<QueryTable> tbls
     ) {
         GridCacheSharedContext sharedCtx = idx.kernalContext().cache().context();
@@ -866,17 +862,6 @@ public class H2Utils {
                 throw new IllegalStateException("Using indexes with different parallelism levels in same query is " +
                     "forbidden.");
             }
-        }
-
-        // Check FOR UPDATE invariants: only one table, MVCC is there.
-        if (forUpdate) {
-            if (cacheIds.size() != 1)
-                throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
-                    "that involve single transactional cache.");
-
-            if (!mvccEnabled)
-                throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
-                    "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
         // Check for joins between system views and normal tables.
