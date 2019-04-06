@@ -75,6 +75,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi;
@@ -193,6 +194,22 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgProps.add("pluginConfigurations");
         igniteCfgProps.add("mvccVacuumFrequency");
         igniteCfgProps.add("mvccVacuumThreadCount");
+        igniteCfgProps.add("encryptionSpi");
+        igniteCfgProps.add("authenticationEnabled");
+        igniteCfgProps.add("sqlQueryHistorySize");
+        igniteCfgProps.add("lifecycleBeans");
+        igniteCfgProps.add("addressResolver");
+        igniteCfgProps.add("mBeanServer");
+        igniteCfgProps.add("networkCompressionLevel");
+        igniteCfgProps.add("systemWorkerBlockedTimeout");
+        igniteCfgProps.add("includeProperties");
+        igniteCfgProps.add("cacheStoreSessionListenerFactories");
+        igniteCfgProps.add("sqlSchemas");
+        igniteCfgProps.add("igniteInstanceName");
+        igniteCfgProps.add("communicationFailureResolver");
+        igniteCfgProps.add("failureHandler");
+        igniteCfgProps.add("rebalanceThreadPoolSize");
+        igniteCfgProps.add("localEventListeners");
 
         Set<String> igniteCfgPropsDep = new HashSet<>();
         igniteCfgPropsDep.add("gridName");
@@ -208,9 +225,25 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgPropsExcl.add("clientMode");
         igniteCfgPropsExcl.add("indexingSpi");
         igniteCfgPropsExcl.add("nodeId");
+        igniteCfgPropsExcl.add("platformConfiguration");
+        igniteCfgPropsExcl.add("segmentCheckFrequency");
+        igniteCfgPropsExcl.add("allSegmentationResolversPassRequired");
+        igniteCfgPropsExcl.add("segmentationPolicy");
+        igniteCfgPropsExcl.add("segmentationResolveAttempts");
+        igniteCfgPropsExcl.add("waitForSegmentOnStart");
+        igniteCfgPropsExcl.add("segmentationResolvers");
+        igniteCfgPropsExcl.add("autoActivationEnabled");
+        igniteCfgPropsExcl.add("igniteHome");
+        igniteCfgPropsExcl.add("platformConfiguration");
 
         metadata.put(IgniteConfiguration.class,
             new MetadataInfo(igniteCfgProps, igniteCfgPropsDep, igniteCfgPropsExcl));
+
+        Set<String> encriptionSpiProps = new HashSet<>();
+        encriptionSpiProps.add("keySize");
+        encriptionSpiProps.add("masterKeyName");
+        encriptionSpiProps.add("keyStorePath");
+        metadata.put(KeystoreEncryptionSpi.class, new MetadataInfo(encriptionSpiProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
 
         Set<String> cacheKeyCfgProps = new HashSet<>();
         cacheKeyCfgProps.add("typeName");
@@ -223,6 +256,7 @@ public class WebConsoleConfigurationSelfTest {
         atomicCfgProps.add("atomicSequenceReserveSize");
         atomicCfgProps.add("backups");
         atomicCfgProps.add("affinity");
+        atomicCfgProps.add("groupName");
 
         metadata.put(AtomicConfiguration.class, new MetadataInfo(atomicCfgProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
@@ -346,17 +380,12 @@ public class WebConsoleConfigurationSelfTest {
         commProps.add("directBuffer");
         commProps.add("directSendBuffer");
         commProps.add("tcpNoDelay");
+        commProps.add("selectorSpins");
+        commProps.add("connectionsPerNode");
+        commProps.add("usePairedConnections");
+        commProps.add("filterReachableAddresses");
 
-        Set<String> commPropsDep = new HashSet<>();
-        commPropsDep.add("discoveryStartupDelay");
-
-        // Removed from configuration since ignite 2.3
-        Set<String> commPropsExcl = new HashSet<>();
-        commPropsExcl.add("discoveryStartupDelay");
-        commPropsExcl.addAll(SPI_EXCLUDED_FIELDS);
-
-        metadata.put(TcpCommunicationSpi.class,
-            new MetadataInfo(commProps, commPropsDep, commPropsExcl));
+        metadata.put(TcpCommunicationSpi.class, new MetadataInfo(commProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
 
         Set<String> discoverySpiProps = new HashSet<>();
         discoverySpiProps.add("ipFinder");
@@ -384,7 +413,14 @@ public class WebConsoleConfigurationSelfTest {
         discoverySpiProps.add("authenticator");
         discoverySpiProps.add("forceServerMode");
         discoverySpiProps.add("clientReconnectDisabled");
-        metadata.put(TcpDiscoverySpi.class, new MetadataInfo(discoverySpiProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
+        discoverySpiProps.add("connectionRecoveryTimeout");
+        discoverySpiProps.add("reconnectDelay");
+        discoverySpiProps.add("soLinger");
+
+        Set<String> discoverySpiExclProps = new HashSet<>();
+        discoverySpiExclProps.addAll(SPI_EXCLUDED_FIELDS);
+        discoverySpiExclProps.add("nodeAttributes");
+        metadata.put(TcpDiscoverySpi.class, new MetadataInfo(discoverySpiProps, EMPTY_FIELDS, discoverySpiExclProps));
 
         Set<String> connectorProps = new HashSet<>();
         connectorProps.add("jettyPath");
@@ -441,7 +477,10 @@ public class WebConsoleConfigurationSelfTest {
         dataStorageProps.add("metricsEnabled");
         dataStorageProps.add("alwaysWriteFullPages");
         dataStorageProps.add("writeThrottlingEnabled");
+        dataStorageProps.add("checkpointReadLockTimeout");
+        dataStorageProps.add("maxWalArchiveSize");
         dataStorageProps.add("walCompactionEnabled");
+        dataStorageProps.add("walCompactionLevel");
         metadata.put(DataStorageConfiguration.class, new MetadataInfo(dataStorageProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> dataRegionProps = new HashSet<>();
@@ -660,6 +699,9 @@ public class WebConsoleConfigurationSelfTest {
         transactionCfgProps.add("pessimisticTxLogLinger");
         transactionCfgProps.add("pessimisticTxLogSize");
         transactionCfgProps.add("txManagerFactory");
+        transactionCfgProps.add("deadlockTimeout");
+        transactionCfgProps.add("useJtaSynchronization");
+        transactionCfgProps.add("txTimeoutOnPartitionMapExchange");
 
         Set<String> transactionCfgPropsDep = new HashSet<>();
         transactionCfgPropsDep.add("txSerializableEnabled");
@@ -792,6 +834,7 @@ public class WebConsoleConfigurationSelfTest {
         jdbcPojoStoreProps.add("hasher");
         jdbcPojoStoreProps.add("transformer");
         jdbcPojoStoreProps.add("sqlEscapeAll");
+        jdbcPojoStoreProps.add("types");
 
         // Configured via dataSource property.
         Set<String> jdbcPojoStorePropsExcl = new HashSet<>();
@@ -927,12 +970,17 @@ public class WebConsoleConfigurationSelfTest {
         qryEntityProps.add("keyFieldName");
         qryEntityProps.add("valueFieldName");
         qryEntityProps.add("keyFields");
+        qryEntityProps.add("fieldsPrecision");
+        qryEntityProps.add("notNullFields");
+        qryEntityProps.add("fieldsScale");
+        qryEntityProps.add("defaultFieldValues");
         metadata.put(QueryEntity.class, new MetadataInfo(qryEntityProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> qryIdxProps = new HashSet<>();
         qryIdxProps.add("name");
         qryIdxProps.add("indexType");
         qryIdxProps.add("fields");
+        qryIdxProps.add("inlineSize");
 
         Set<String> qryIdxPropsExcl = new HashSet<>();
         qryIdxPropsExcl.add("fieldNames");

@@ -122,12 +122,21 @@ module.exports.factory = function(mongoose) {
             javaFieldType: String
         }],
         queryKeyFields: [String],
-        fields: [{name: String, className: String}],
+        fields: [{
+            name: String,
+            className: String,
+            notNull: Boolean,
+            defaultValue: String,
+            precision: Number,
+            scale: Number
+        }],
         aliases: [{field: String, alias: String}],
         indexes: [{
             name: String,
             indexType: {type: String, enum: ['SORTED', 'FULLTEXT', 'GEOSPATIAL']},
-            fields: [{name: String, direction: Boolean}]
+            fields: [{name: String, direction: Boolean}],
+            inlineSizeType: Number,
+            inlineSize: Number
         }],
         generatePojo: Boolean
     });
@@ -182,6 +191,7 @@ module.exports.factory = function(mongoose) {
 
         backups: Number,
         memoryMode: {type: String, enum: ['ONHEAP_TIERED', 'OFFHEAP_TIERED', 'OFFHEAP_VALUES']},
+        offHeapMode: Number,
         offHeapMaxMemory: Number,
         startSize: Number,
         swapEnabled: Boolean,
@@ -484,6 +494,9 @@ module.exports.factory = function(mongoose) {
             authenticator: String,
             forceServerMode: Boolean,
             clientReconnectDisabled: Boolean,
+            connectionRecoveryTimeout: Number,
+            reconnectDelay: Number,
+            soLinger: Number,
             kind: {
                 type: String,
                 enum: ['Vm', 'Multicast', 'S3', 'Cloud', 'GoogleStorage', 'Jdbc', 'SharedFs', 'ZooKeeper', 'Kubernetes']
@@ -645,7 +658,8 @@ module.exports.factory = function(mongoose) {
                 Custom: {
                     className: String
                 }
-            }
+            },
+            groupName: String
         },
         binaryConfiguration: {
             idMapper: String,
@@ -720,7 +734,11 @@ module.exports.factory = function(mongoose) {
             unacknowledgedMessagesBufferSize: Number,
             socketWriteTimeout: Number,
             selectorsCount: Number,
-            addressResolver: String
+            addressResolver: String,
+            selectorSpins: Number,
+            connectionsPerNode: Number,
+            usePairedConnections: Boolean,
+            filterReachableAddresses: Boolean
         },
         connector: {
             enabled: Boolean,
@@ -1067,6 +1085,7 @@ module.exports.factory = function(mongoose) {
         clientFailureDetectionTimeout: Number,
         systemWorkerBlockedTimeout: Number,
         workDirectory: String,
+        igniteHome: String,
         lateAffinityAssignment: Boolean,
         utilityCacheKeepAliveTime: Number,
         asyncCallbackPoolSize: Number,
@@ -1136,7 +1155,9 @@ module.exports.factory = function(mongoose) {
             walAutoArchiveAfterInactivity: Number,
             writeThrottlingEnabled: Boolean,
             walCompactionEnabled: Boolean,
-            checkpointReadLockTimeout: Number
+            checkpointReadLockTimeout: Number,
+            maxWalArchiveSize: Number,
+            walCompactionLevel: Number
         },
         memoryConfiguration: {
             systemCacheInitialSize: Number,
@@ -1193,8 +1214,46 @@ module.exports.factory = function(mongoose) {
             subIntervals: Number,
             walAutoArchiveAfterInactivity: Number
         },
+        encryptionSpi: {
+            kind: {type: String, enum: ['Noop', 'Keystore', 'Custom']},
+            Keystore: {
+                keySize: Number,
+                masterKeyName: String,
+                keyStorePath: String
+            },
+            Custom: {
+                className: String
+            }
+        },
+        failureHandler: {
+            kind: {type: String, enum: ['RestartProcess', 'StopNodeOnHalt', 'StopNode', 'Noop', 'Custom']},
+            ignoredFailureTypes: [{type: String, enum: ['SEGMENTATION', 'SYSTEM_WORKER_TERMINATION',
+                    'SYSTEM_WORKER_BLOCKED', 'CRITICAL_ERROR', 'SYSTEM_CRITICAL_OPERATION_TIMEOUT']}],
+            StopNodeOnHalt: {
+                tryStop: Boolean,
+                timeout: Number
+            },
+            Custom: {
+                className: String
+            }
+        },
+        localEventListeners: [{
+            className: String,
+            eventTypes: [String]
+        }],
         mvccVacuumThreadCount: Number,
-        mvccVacuumFrequency: Number
+        mvccVacuumFrequency: Number,
+        authenticationEnabled: Boolean,
+        sqlQueryHistorySize: Number,
+        lifecycleBeans: [String],
+        addressResolver: String,
+        mBeanServer: String,
+        networkCompressionLevel: Number,
+        includeProperties: [String],
+        cacheStoreSessionListenerFactories: [String],
+        autoActivationEnabled: {type: Boolean, default: true},
+        sqlSchemas: [String],
+        communicationFailureResolver: String
     });
 
     Cluster.index({name: 1, space: 1}, {unique: true});
