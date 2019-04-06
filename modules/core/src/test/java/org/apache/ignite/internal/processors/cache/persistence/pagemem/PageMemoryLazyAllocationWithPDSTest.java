@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.IgniteUtils.GB;
@@ -32,8 +33,9 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
     public static final long PETA_BYTE = 1024 * GB;
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11677")
     @Override public void testLocalCacheOnClientNodeWithLazyAllocation() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-11677");
+        // No-op.
     }
 
     /** */
