@@ -260,6 +260,13 @@ export class Bean extends EmptyBean {
         return this._property(this.properties, 'PATH', model, name, nonEmpty);
     }
 
+    pathArrayProperty(id, name, items, varArg) {
+        if (items && items.length)
+            this.properties.push({clsName: 'PATH_ARRAY', id, name, items, varArg, typeClsName: 'PATH'});
+
+        return this;
+    }
+
     classProperty(model, name = model) {
         return this._property(this.properties, 'java.lang.Class', model, name, nonEmpty);
     }

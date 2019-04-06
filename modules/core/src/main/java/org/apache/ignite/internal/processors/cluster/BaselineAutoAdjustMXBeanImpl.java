@@ -21,20 +21,23 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
-import org.apache.ignite.mxbean.BaselineConfigurationMXBean;
+import org.apache.ignite.mxbean.BaselineAutoAdjustMXBean;
 
 /**
- * {@link BaselineConfigurationMXBean} implementation.
+ * {@link BaselineAutoAdjustMXBean} implementation.
  */
-public class BaselineConfigurationMXBeanImpl implements BaselineConfigurationMXBean {
+public class BaselineAutoAdjustMXBeanImpl implements BaselineAutoAdjustMXBean {
     /** */
     private final DistributedBaselineConfiguration baselineConfiguration;
+
+    private final GridClusterStateProcessor state;
 
     /**
      * @param ctx Context.
      */
-    public BaselineConfigurationMXBeanImpl(GridKernalContext ctx) {
-        baselineConfiguration = ctx.cluster().get().baselineConfiguration();
+    public BaselineAutoAdjustMXBeanImpl(GridKernalContext ctx) {
+        baselineConfiguration = ctx.state().baselineConfiguration();
+        state = ctx.state();
     }
 
     /** {@inheritDoc} */
@@ -45,6 +48,16 @@ public class BaselineConfigurationMXBeanImpl implements BaselineConfigurationMXB
     /** {@inheritDoc} */
     @Override public long getAutoAdjustmentTimeout() {
         return baselineConfiguration.getBaselineAutoAdjustTimeout();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTimeUntilAutoAdjust() {
+        return state.baselineAutoAdjustStatus().getTimeUntilAutoAdjust();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getTaskState() {
+        return state.baselineAutoAdjustStatus().getTaskState().toString();
     }
 
     /** {@inheritDoc} */
