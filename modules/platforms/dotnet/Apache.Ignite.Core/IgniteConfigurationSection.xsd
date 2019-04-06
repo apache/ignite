@@ -1935,6 +1935,13 @@
                                 </xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="lazyMemoryAllocation" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Enable lazy memory allocation.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="sslContextFactory" minOccurs="0">
