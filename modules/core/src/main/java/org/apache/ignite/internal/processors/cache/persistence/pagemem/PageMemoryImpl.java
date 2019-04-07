@@ -1775,9 +1775,6 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return Segment.
      */
     private Segment segment(int grpId, long pageId) {
-        if (segments == null)
-            System.out.println("PageMemoryImpl.segment");
-
         int idx = segmentIndex(grpId, pageId, segments.length);
 
         return segments[idx];
