@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -80,6 +81,13 @@ public final class FastUpdate {
      */
     @SuppressWarnings({"unchecked"})
     public UpdateResult execute(GridCacheAdapter cache, Object[] args) throws IgniteCheckedException {
+        // We cannot remove/replace BigDecimal types due to equals() method restrictions.
+        if (keyArg.expectedType() == Value.DECIMAL)
+            return null;
+
+        if (valArg.expectedType() == Value.DECIMAL)
+            return null;
+
         // We need to convert all the objects, otherwise cache won't find existing entry by incorrect typed key/val.
         CacheObjectContext coCtx = cache.context().cacheObjectContext();
 

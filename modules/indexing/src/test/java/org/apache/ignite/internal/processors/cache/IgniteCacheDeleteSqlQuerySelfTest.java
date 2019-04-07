@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -29,6 +26,8 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.junit.Before;
 import org.junit.Test;
+
+import static java.util.Arrays.asList;
 
 /**
  *
@@ -58,10 +57,10 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         assertEquals(2, leftovers.size());
 
-        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+        assertEqualsCollections(asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
             leftovers.get(0));
 
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+        assertEqualsCollections(asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
             leftovers.get(1));
     }
 
@@ -83,13 +82,13 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         assertEquals(3, leftovers.size());
 
-        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+        assertEqualsCollections(asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
             leftovers.get(0));
 
-        assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
+        assertEqualsCollections(asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
             leftovers.get(1));
 
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+        assertEqualsCollections(asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
             leftovers.get(2));
     }
 
@@ -112,34 +111,113 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         assertEquals(2, leftovers.size());
 
-        assertEqualsCollections(Arrays.asList("SecondKey", new Person(2, "Joe", "Black"), 2, "Joe", "Black"),
+        assertEqualsCollections(asList("SecondKey", new Person(2, "Joe", "Black"), 2, "Joe", "Black"),
             leftovers.get(0));
 
-        assertEqualsCollections(Arrays.asList("f0u4thk3y", new Person(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+        assertEqualsCollections(asList("f0u4thk3y", new Person(4, "Jane", "Silver"), 4, "Jane", "Silver"),
             leftovers.get(1));
     }
 
+    /**
+     * Check delete type conversions in case of delete by "key = ?" and decimal key.
+     */
     @Test
-    public void testFastDeleteByKey() {
+    public void testDeleteDecimalByKey() {
         execute("CREATE TABLE TEST_TABLE (" +
-            "ID NUMBER(19,0)," +
+            "ID NUMBER(19,1)," +
             "VALUE VARCHAR2(255 CHAR)," +
             "PRIMARY KEY (ID))");
 
-        Stream.of(1, 1L, 1d, "1", new BigDecimal(1))
+        Stream.of(1, 1L, 1d, "1", "1.0", new BigDecimal("1.0"), new BigDecimal("1"))
             .forEach((Object one) -> {
                 execute("DELETE FROM TEST_TABLE");
 
                 execute("Insert INTO test_table (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
 
-                execute("DELETE FROM TEST_TABLE WHERE ID = 1.0001", one);
+                execute("DELETE FROM TEST_TABLE WHERE ID = ?", one);
 
-                List<List<?>> expRows = Collections.singletonList(Arrays.asList(new BigDecimal(2), "value"));
+                List<List<?>> expRows = Collections.singletonList(asList(new BigDecimal(2), "value"));
 
                 assertEqualsCollections("Argument of class " + one.getClass().getSimpleName() + " is converted incorrectly",
                     expRows, execute("SELECT * FROM TEST_TABLE ORDER BY ID"));
             });
     }
+
+    /**
+     * Check fast delete type conversions in case of delete by "key = ?".
+     */
+    @Test
+    public void testFastDeleteDecimalByKey() {
+        execute("CREATE TABLE TEST_TABLE (" +
+            "ID DOUBLE," +
+            "VALUE VARCHAR2(255 CHAR)," +
+            "PRIMARY KEY (ID))");
+
+        Stream.of(1, 1L, 1d,"1", "1.0", new BigDecimal("1.0"), new BigDecimal("1"))
+            .forEach((Object one) -> {
+                execute("DELETE FROM TEST_TABLE");
+
+                execute("Insert INTO test_table (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
+
+                execute("DELETE FROM TEST_TABLE WHERE ID = ?", one);
+
+                List<List<?>> expRows = Collections.singletonList(asList(2.0, "value"));
+
+                assertEqualsCollections("Argument of class " + one.getClass().getSimpleName() + " is converted incorrectly",
+                    expRows, execute("SELECT * FROM TEST_TABLE ORDER BY ID"));
+            });
+    }
+
+    /**
+     * Check delete type conversions in case of delete by "key = ? and val = ?" and decimal key.
+     */
+    @Test
+    public void testDeleteDecimalByKeyAndValue() {
+        execute("CREATE TABLE TEST_TABLE (" +
+            "ID NUMBER(19,1)," +
+            "VALUE VARCHAR2(255 CHAR)," +
+            "PRIMARY KEY (ID))");
+
+        Stream.of(1, 1L, 1d, "1", "1.0", new BigDecimal("1.0"), new BigDecimal("1"))
+            .forEach((Object one) -> {
+                execute("DELETE FROM TEST_TABLE");
+
+                execute("Insert INTO test_table (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
+
+                execute("DELETE FROM TEST_TABLE WHERE ID = ? AND VALUE = 'this row should be deleted'", one);
+
+                List<List<?>> expRows = Collections.singletonList(asList(new BigDecimal(2), "value"));
+
+                assertEqualsCollections("Argument of class " + one.getClass().getSimpleName() + " is converted incorrectly",
+                    expRows, execute("SELECT * FROM TEST_TABLE ORDER BY ID"));
+            });
+    }
+
+    /**
+     * Check fast delete type conversions in case of delete by "key = ? and val = ?".
+     */
+    @Test
+    public void testFastDeleteByKeyAndValue() {
+        execute("CREATE TABLE TEST_TABLE (" +
+            "ID DOUBLE," +
+            "VALUE VARCHAR2(255 CHAR)," +
+            "PRIMARY KEY (ID))");
+
+        Stream.of(1, 1L, 1d,"1", "1.0", new BigDecimal("1.0"), new BigDecimal("1"))
+            .forEach((Object one) -> {
+                execute("DELETE FROM TEST_TABLE");
+
+                execute("Insert INTO test_table (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
+
+                execute("DELETE FROM TEST_TABLE WHERE ID = ? AND VALUE = 'this row should be deleted'", one);
+
+                List<List<?>> expRows = Collections.singletonList(asList(2.0, "value"));
+
+                assertEqualsCollections("Argument of class " + one.getClass().getSimpleName() + " is converted incorrectly",
+                    expRows, execute("SELECT * FROM TEST_TABLE ORDER BY ID"));
+            });
+    }
+
 
 
     /**
