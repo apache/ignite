@@ -96,9 +96,10 @@ export default class IgniteConfigurationGenerator {
 
         // Since ignite 2.3
         if (available('2.3.0'))
-            this.clusterDataStorageConfiguration(cluster.dataStorageConfiguration, available, cfg);
+            this.clusterDataStorageConfiguration(cluster, available, cfg);
 
         this.clusterDeployment(cluster, available, cfg);
+        this.clusterEncryption(cluster.encryptionSpi, available, cfg);
         this.clusterEvents(cluster, available, cfg);
         this.clusterFailover(cluster, available, cfg);
         this.clusterHadoop(cluster.hadoopConfiguration, cfg);
@@ -979,6 +980,12 @@ export default class IgniteConfigurationGenerator {
             .longProperty('networkSendRetryDelay')
             .intProperty('networkSendRetryCount');
 
+        if (available('2.8.0'))
+            cfg.intProperty('networkCompressionLevel');
+
+        if (available('2.5.0'))
+            cfg.emptyBeanProperty('communicationFailureResolver');
+
         if (available(['1.0.0', '2.3.0']))
             cfg.longProperty('discoveryStartupDelay');
 
@@ -1156,6 +1163,46 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate events group.
+    static clusterEncryption(encryption, available, cfg = this.igniteConfigurationBean(cluster)) {
+        if (!available('2.7.0'))
+            return cfg;
+
+        let bean;
+
+        switch (_.get(encryption, 'kind')) {
+            case 'Keystore':
+                bean = new Bean('org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi', 'encryptionSpi',
+                    encryption.Keystore, clusterDflts.encryptionSpi.Keystore)
+                    .stringProperty('keyStorePath');
+
+                if (nonEmpty(bean.valueOf('keyStorePath')))
+                    bean.propertyChar('keyStorePassword', 'encryption.key.storage.password', 'YOUR_ENCRYPTION_KEY_STORAGE_PASSWORD');
+
+
+                bean.intProperty('keySize')
+                    .stringProperty('masterKeyName');
+
+                break;
+
+            case 'Custom':
+                const clsName = _.get(encryption, 'Custom.className');
+
+                if (clsName)
+                    bean = new EmptyBean(clsName);
+
+                break;
+
+            default:
+                // No-op.
+        }
+
+        if (bean)
+            cfg.beanProperty('encryptionSpi', bean);
+
+        return cfg;
+    }
+
+    // Generate events group.
     static clusterEvents(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         const eventStorage = cluster.eventStorage;
 
@@ -1193,6 +1240,13 @@ export default class IgniteConfigurationGenerator {
                 cfg.eventTypes('evts', 'includeEventTypes', this.filterEvents(eventGrps, available));
             }
         }
+
+        cfg.mapProperty('localEventListeners', _.map(cluster.localEventListeners,
+            (lnr) => ({className: new EmptyBean(lnr.className), eventTypes: _.map(lnr.eventTypes, (evt) => {
+                const grp = _.find(this.eventGrps, ((grp) => grp.events.indexOf(evt) >= 0));
+
+                return {class: grp.class, label: evt};
+            })})), 'localEventListeners');
 
         return cfg;
     }
@@ -1250,6 +1304,65 @@ export default class IgniteConfigurationGenerator {
 
         if (spis.length)
             cfg.arrayProperty('failoverSpi', 'failoverSpi', spis, 'org.apache.ignite.spi.failover.FailoverSpi');
+
+        if (available('2.5.0')) {
+            const handler = cluster.failureHandler;
+            const kind = _.get(handler, 'kind');
+
+            let bean;
+
+            switch (kind) {
+                case 'RestartProcess':
+                    bean = new Bean('org.apache.ignite.failure.RestartProcessFailureHandler', 'failureHandler', handler);
+
+                    break;
+
+                case 'StopNodeOnHalt':
+                    const failover = handler.StopNodeOnHalt;
+
+                    bean = new Bean('org.apache.ignite.failure.StopNodeOrHaltFailureHandler', 'failureHandler', handler.StopNodeOnHalt);
+
+                    if (failover || failover.tryStop || failover.timeout) {
+                        failover.tryStop = failover.tryStop || false;
+                        failover.timeout = failover.timeout || 0;
+
+                        bean.boolConstructorArgument('tryStop')
+                            .longConstructorArgument('timeout');
+                    }
+
+                    break;
+
+                case 'StopNode':
+                    bean = new Bean('org.apache.ignite.failure.StopNodeFailureHandler', 'failureHandler', handler);
+
+                    break;
+
+                case 'Noop':
+                    bean = new Bean('org.apache.ignite.failure.NoOpFailureHandler', 'failureHandler', handler);
+
+                    break;
+
+                case 'Custom':
+                    const clsName = _.get(handler, 'Custom.className');
+
+                    if (clsName)
+                        bean = new Bean(clsName, 'failureHandler', handler);
+
+                    break;
+
+                default:
+                    // No-op.
+            }
+
+            if (bean) {
+                if (['RestartProcess', 'StopNodeOnHalt', 'StopNode'].indexOf(kind) >= 0) {
+                    bean.collectionProperty('ignoredFailureTypes', 'ignoredFailureTypes', handler.ignoredFailureTypes,
+                        'org.apache.ignite.failure.FailureType', 'java.util.HashSet');
+                }
+
+                cfg.beanProperty('failureHandler', bean);
+            }
+        }
 
         return cfg;
     }
@@ -1511,12 +1624,16 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate data storage configuration.
-    static clusterDataStorageConfiguration(dataStorageCfg, available, cfg = this.igniteConfigurationBean()) {
+    static clusterDataStorageConfiguration(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         if (!available('2.3.0'))
             return cfg;
 
         const available2_4 = available('2.4.0');
+
         const available2_7 = available('2.7.0');
+
+        const dataStorageCfg = cluster.dataStorageConfiguration;
+
         const storageBean = new Bean('org.apache.ignite.configuration.DataStorageConfiguration', 'dataStorageCfg', dataStorageCfg, clusterDflts.dataStorageConfiguration);
 
         storageBean.intProperty('pageSize')
@@ -1596,24 +1713,49 @@ export default class IgniteConfigurationGenerator {
         if (factoryBean)
             storageBean.beanProperty('fileIOFactory', factoryBean);
 
-        if (storageBean.isEmpty())
-            return cfg;
+        if (_.get(dataStorageCfg, 'defaultDataRegionConfiguration.persistenceEnabled')
+            || _.find(_.get(dataStorageCfg, 'dataRegionConfigurations'), (storeCfg) => storeCfg.persistenceEnabled))
+            cfg.boolProperty('authenticationEnabled');
 
-        cfg.beanProperty('dataStorageConfiguration', storageBean);
+        if (storageBean.nonEmpty())
+            cfg.beanProperty('dataStorageConfiguration', storageBean);
 
         return cfg;
     }
 
     // Generate miscellaneous configuration.
     static clusterMisc(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        cfg.stringProperty('workDirectory');
+        const available2_0 = available('2.0.0');
 
-        if (available('2.0.0')) {
-            cfg.stringProperty('consistentId')
+        cfg.pathProperty('workDirectory')
+            .pathProperty('igniteHome')
+            .varArgProperty('lifecycleBeans', 'lifecycleBeans', _.map(cluster.lifecycleBeans, (bean) => new EmptyBean(bean)), 'org.apache.ignite.lifecycle.LifecycleBean')
+            .emptyBeanProperty('addressResolver')
+            .emptyBeanProperty('mBeanServer')
+            .varArgProperty('includeProperties', 'includeProperties', cluster.includeProperties);
+
+        if (cluster.cacheStoreSessionListenerFactories) {
+            const factories = _.map(cluster.cacheStoreSessionListenerFactories, (factory) => new EmptyBean(factory));
+
+            cfg.varArgProperty('cacheStoreSessionListenerFactories', 'cacheStoreSessionListenerFactories', factories, 'javax.cache.configuration.Factory');
+        }
+
+        if (available2_0) {
+            cfg
+                .stringProperty('consistentId')
                 .emptyBeanProperty('warmupClosure')
                 .boolProperty('activeOnStart')
                 .boolProperty('cacheSanityCheckEnabled');
         }
+
+        if (available('2.7.0'))
+            cfg.varArgProperty('sqlSchemas', 'sqlSchemas', cluster.sqlSchemas);
+
+        if (available('2.8.0'))
+            cfg.intProperty('sqlQueryHistorySize');
+
+        if (available('2.4.0'))
+            cfg.boolProperty('autoActivationEnabled');
 
         if (available(['1.0.0', '2.1.0']))
             cfg.boolProperty('lateAffinityAssignment');

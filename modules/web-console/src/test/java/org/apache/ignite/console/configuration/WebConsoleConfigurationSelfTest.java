@@ -75,6 +75,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi;
@@ -193,6 +194,22 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgProps.add("pluginConfigurations");
         igniteCfgProps.add("mvccVacuumFrequency");
         igniteCfgProps.add("mvccVacuumThreadCount");
+        igniteCfgProps.add("encryptionSpi");
+        igniteCfgProps.add("authenticationEnabled");
+        igniteCfgProps.add("sqlQueryHistorySize");
+        igniteCfgProps.add("lifecycleBeans");
+        igniteCfgProps.add("addressResolver");
+        igniteCfgProps.add("mBeanServer");
+        igniteCfgProps.add("networkCompressionLevel");
+        igniteCfgProps.add("systemWorkerBlockedTimeout");
+        igniteCfgProps.add("includeProperties");
+        igniteCfgProps.add("cacheStoreSessionListenerFactories");
+        igniteCfgProps.add("sqlSchemas");
+        igniteCfgProps.add("igniteInstanceName");
+        igniteCfgProps.add("communicationFailureResolver");
+        igniteCfgProps.add("failureHandler");
+        igniteCfgProps.add("rebalanceThreadPoolSize");
+        igniteCfgProps.add("localEventListeners");
 
         Set<String> igniteCfgPropsDep = new HashSet<>();
         igniteCfgPropsDep.add("gridName");
@@ -208,9 +225,25 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgPropsExcl.add("clientMode");
         igniteCfgPropsExcl.add("indexingSpi");
         igniteCfgPropsExcl.add("nodeId");
+        igniteCfgPropsExcl.add("platformConfiguration");
+        igniteCfgPropsExcl.add("segmentCheckFrequency");
+        igniteCfgPropsExcl.add("allSegmentationResolversPassRequired");
+        igniteCfgPropsExcl.add("segmentationPolicy");
+        igniteCfgPropsExcl.add("segmentationResolveAttempts");
+        igniteCfgPropsExcl.add("waitForSegmentOnStart");
+        igniteCfgPropsExcl.add("segmentationResolvers");
+        igniteCfgPropsExcl.add("autoActivationEnabled");
+        igniteCfgPropsExcl.add("igniteHome");
+        igniteCfgPropsExcl.add("platformConfiguration");
 
         metadata.put(IgniteConfiguration.class,
             new MetadataInfo(igniteCfgProps, igniteCfgPropsDep, igniteCfgPropsExcl));
+
+        Set<String> encriptionSpiProps = new HashSet<>();
+        encriptionSpiProps.add("keySize");
+        encriptionSpiProps.add("masterKeyName");
+        encriptionSpiProps.add("keyStorePath");
+        metadata.put(KeystoreEncryptionSpi.class, new MetadataInfo(encriptionSpiProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
 
         Set<String> cacheKeyCfgProps = new HashSet<>();
         cacheKeyCfgProps.add("typeName");
@@ -351,7 +384,6 @@ public class WebConsoleConfigurationSelfTest {
         commProps.add("connectionsPerNode");
         commProps.add("usePairedConnections");
         commProps.add("filterReachableAddresses");
-        commProps.add("soLinger");
 
         metadata.put(TcpCommunicationSpi.class, new MetadataInfo(commProps, EMPTY_FIELDS, SPI_EXCLUDED_FIELDS));
 
@@ -383,6 +415,7 @@ public class WebConsoleConfigurationSelfTest {
         discoverySpiProps.add("clientReconnectDisabled");
         discoverySpiProps.add("connectionRecoveryTimeout");
         discoverySpiProps.add("reconnectDelay");
+        discoverySpiProps.add("soLinger");
 
         Set<String> discoverySpiExclProps = new HashSet<>();
         discoverySpiExclProps.addAll(SPI_EXCLUDED_FIELDS);
@@ -666,6 +699,9 @@ public class WebConsoleConfigurationSelfTest {
         transactionCfgProps.add("pessimisticTxLogLinger");
         transactionCfgProps.add("pessimisticTxLogSize");
         transactionCfgProps.add("txManagerFactory");
+        transactionCfgProps.add("deadlockTimeout");
+        transactionCfgProps.add("useJtaSynchronization");
+        transactionCfgProps.add("txTimeoutOnPartitionMapExchange");
 
         Set<String> transactionCfgPropsDep = new HashSet<>();
         transactionCfgPropsDep.add("txSerializableEnabled");

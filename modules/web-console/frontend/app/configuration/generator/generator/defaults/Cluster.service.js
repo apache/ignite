@@ -442,7 +442,30 @@ const DFLT_CLUSTER = {
         sslEnabled: false,
         useIgniteSslContextFactory: true,
         sslClientAuth: false
-    }
+    },
+    encryptionSpi: {
+        Keystore: {
+            keySize: 256,
+            masterKeyName: 'ignite.master.key'
+        }
+    },
+    failureHandler: {
+        ignoredFailureTypes: {clsName: 'org.apache.ignite.failure.FailureType'}
+    },
+    localEventListeners: {
+        keyClsName: 'org.apache.ignite.lang.IgnitePredicate',
+        keyClsGenericType: 'org.apache.ignite.events.Event',
+        isKeyClsGenericTypeExtended: true,
+        valClsName: 'int[]',
+        valClsNameShow: 'EVENTS',
+        keyField: 'className',
+        valField: 'eventTypes'
+    },
+    authenticationEnabled: false,
+    sqlQueryHistorySize: 1000,
+    allSegmentationResolversPassRequired: true,
+    networkCompressionLevel: 1,
+    autoActivationEnabled: true
 };
 
 export default class IgniteClusterDefaults {

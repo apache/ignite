@@ -1085,6 +1085,7 @@ module.exports.factory = function(mongoose) {
         clientFailureDetectionTimeout: Number,
         systemWorkerBlockedTimeout: Number,
         workDirectory: String,
+        igniteHome: String,
         lateAffinityAssignment: Boolean,
         utilityCacheKeepAliveTime: Number,
         asyncCallbackPoolSize: Number,
@@ -1213,8 +1214,46 @@ module.exports.factory = function(mongoose) {
             subIntervals: Number,
             walAutoArchiveAfterInactivity: Number
         },
+        encryptionSpi: {
+            kind: {type: String, enum: ['Noop', 'Keystore', 'Custom']},
+            Keystore: {
+                keySize: Number,
+                masterKeyName: String,
+                keyStorePath: String
+            },
+            Custom: {
+                className: String
+            }
+        },
+        failureHandler: {
+            kind: {type: String, enum: ['RestartProcess', 'StopNodeOnHalt', 'StopNode', 'Noop', 'Custom']},
+            ignoredFailureTypes: [{type: String, enum: ['SEGMENTATION', 'SYSTEM_WORKER_TERMINATION',
+                    'SYSTEM_WORKER_BLOCKED', 'CRITICAL_ERROR', 'SYSTEM_CRITICAL_OPERATION_TIMEOUT']}],
+            StopNodeOnHalt: {
+                tryStop: Boolean,
+                timeout: Number
+            },
+            Custom: {
+                className: String
+            }
+        },
+        localEventListeners: [{
+            className: String,
+            eventTypes: [String]
+        }],
         mvccVacuumThreadCount: Number,
-        mvccVacuumFrequency: Number
+        mvccVacuumFrequency: Number,
+        authenticationEnabled: Boolean,
+        sqlQueryHistorySize: Number,
+        lifecycleBeans: [String],
+        addressResolver: String,
+        mBeanServer: String,
+        networkCompressionLevel: Number,
+        includeProperties: [String],
+        cacheStoreSessionListenerFactories: [String],
+        autoActivationEnabled: {type: Boolean, default: true},
+        sqlSchemas: [String],
+        communicationFailureResolver: String
     });
 
     Cluster.index({name: 1, space: 1}, {unique: true});
