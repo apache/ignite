@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Common
 {
     using System;
     using System.IO;
-    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
