@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Common
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
@@ -142,7 +143,7 @@ namespace Apache.Ignite.Core.Common
         /// <summary>
         /// Gets the revision hash
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public byte[] RevisionHash
         {
             get { return _revHash; }
@@ -161,7 +162,7 @@ namespace Apache.Ignite.Core.Common
         }
 
         /** <inheritDoc /> */
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase")]
+        [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase")]
         public override string ToString()
         {
             string hash = null;
