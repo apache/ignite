@@ -294,7 +294,7 @@ public class DataStorageConfiguration implements Serializable {
      * If {@code true}, memory for {@code DataRegion} will be allocated only on the creation of the first cache
      * belonged to this {@code DataRegion}.
      *
-     * Default is true.
+     * Default is {@code true}.
      */
     private boolean lazyMemoryAllocation = true;
 
@@ -1043,7 +1043,7 @@ public class DataStorageConfiguration implements Serializable {
      * If {@code true}, memory for {@code DataRegion} will be allocated only on the creation of the first cache
      * belonged to this {@code DataRegion}.
      *
-     * @param lazyMemoryAllocation
+     * @param lazyMemoryAllocation Flag value.
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setLazyMemoryAllocation(boolean lazyMemoryAllocation) {
