@@ -28,6 +28,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.query.h2.H2QueryFetchSizeInterceptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
@@ -101,23 +102,8 @@ class MapQueryResult {
     /** Lazy worker. */
     private final MapQueryLazyWorker lazyWorker;
 
-    /** Query info. */
-    private final MapH2QueryInfo qryInfo;
-
-    /** Logger. */
-    private final IgniteLogger log;
-
-    /** Result set size threshold. */
-    private long threshold;
-
-    /** Result set size threshold multiplier. */
-    private final int thresholdMult;
-
-    /** Fetched count of rows. */
-    private long fetchedSize;
-
-    /** Big results flag. */
-    private boolean bigResults;
+    /** Fetch size interceptor. */
+    final H2QueryFetchSizeInterceptor fetchSizeInterceptor;
 
     /**
      * @param h2 Indexing SPI.
@@ -154,21 +140,14 @@ class MapQueryResult {
             rowCnt = (res instanceof LazyResult) ? -1 : res.getRowCount();
             cols = res.getVisibleColumnCount();
 
-            this.log = log;
-            this.qryInfo = qryInfo;
-            this.threshold = h2.longRunningQueries().getResultSetSizeThreshold();
-            this.thresholdMult = h2.longRunningQueries().getResultSetSizeThresholdMultiplier();
+            fetchSizeInterceptor = new H2QueryFetchSizeInterceptor(h2, qryInfo, log);
         }
         else {
             this.rs = null;
             this.res = null;
             this.cols = -1;
             this.rowCnt = -1;
-            this.qryInfo = null;
-            this.threshold = -1;
-            this.thresholdMult = 0;
-            this.log = null;
-
+            fetchSizeInterceptor = null;
             closed = true;
         }
     }
@@ -271,17 +250,7 @@ class MapQueryResult {
 
             rows.add(res.currentRow());
 
-            ++fetchedSize;
-
-            if (threshold > 0 && fetchedSize >= threshold) {
-                qryInfo.printLogMessage(log, "Query produced big result set. ",
-                    "fetched=" + fetchedSize);
-
-                if (thresholdMult > 1)
-                    threshold *= thresholdMult;
-
-                bigResults = true;
-            }
+            fetchSizeInterceptor.checkOnFetchNext();
         }
 
         return !res.hasNext();
@@ -324,10 +293,7 @@ class MapQueryResult {
 
             closed = true;
 
-            if (bigResults) {
-                qryInfo.printLogMessage(log, "Query produced big result set. ",
-                    "fetched=" + fetchedSize);
-            }
+            fetchSizeInterceptor.checkOnClose();
 
             U.closeQuiet(rs);
 

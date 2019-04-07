@@ -142,7 +142,7 @@ public final class LongRunningQueryManager {
             H2QueryInfo qinfo = e.getKey();
 
             if (e.getValue().checkTimeout(qinfo.time())) {
-                qinfo.printLogMessage(log, connMgr, "Query execution is too long");
+                qinfo.printLogMessage(log, connMgr, "Query execution is too long", null);
 
                 if (e.getValue().timeoutMult <= 1)
                     qrys.remove(qinfo);

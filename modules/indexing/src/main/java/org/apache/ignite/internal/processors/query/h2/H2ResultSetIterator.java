@@ -68,23 +68,8 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     /** */
     private boolean hasRow;
 
-    /** Logger. */
-    private final IgniteLogger log;
-
-    /** Result set size threshold. */
-    private long threshold;
-
-    /** Result set size threshold multiplier. */
-    private final int thresholdMult;
-
-    /** Query info to print log message. */
-    private H2QueryInfo qryInfo;
-
-    /** Fetched count of rows. */
-    private long fetchedSize;
-
-    /** Big results flag. */
-    private boolean bigResults;
+    /** Fetch size interceptor. */
+    final H2QueryFetchSizeInterceptor fetchSizeInterceptor;
 
     /**
      * @param data Data array.
@@ -119,10 +104,7 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
         assert h2 != null;
         assert qryInfo != null;
 
-        this.log = log;
-        threshold = h2.longRunningQueries().getResultSetSizeThreshold();
-        thresholdMult = h2.longRunningQueries().getResultSetSizeThresholdMultiplier();
-        this.qryInfo = qryInfo;
+        fetchSizeInterceptor = new H2QueryFetchSizeInterceptor(h2, qryInfo, log);
     }
 
     /**
@@ -159,17 +141,7 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
                     row[c] = data.getObject(c + 1);
             }
 
-            fetchedSize++;
-
-            if (threshold > 0 && fetchedSize >= threshold) {
-                qryInfo.printLogMessage(log, "Query produced big result set. ",
-                    "fetched=" + fetchedSize);
-
-                if (thresholdMult > 1)
-                    threshold *= thresholdMult;
-
-                bigResults = true;
-            }
+            fetchSizeInterceptor.checkOnFetchNext();
 
             return true;
         }
@@ -210,16 +182,12 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
             // Nothing to close.
             return;
 
-        if (bigResults) {
-            qryInfo.printLogMessage(log, "Query produced big result set. ",
-                "fetched=" + fetchedSize);
-        }
+        fetchSizeInterceptor.checkOnFetchNext();
 
         U.closeQuiet(data);
 
         res = null;
         data = null;
-        qryInfo = null;
     }
 
     /** {@inheritDoc} */

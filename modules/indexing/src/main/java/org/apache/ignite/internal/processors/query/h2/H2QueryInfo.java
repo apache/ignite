@@ -100,23 +100,23 @@ public class H2QueryInfo {
     /**
      * @param log Logger.
      * @param msg Log message
-     * @param additionalQryInfo Additional query info.
+     * @param additionalInfo Additional query info.
      */
-    public void printLogMessage(IgniteLogger log, String msg, String... additionalQryInfo) {
-        printLogMessage(log, null, msg, additionalQryInfo);
+    public void printLogMessage(IgniteLogger log, String msg, String additionalInfo) {
+        printLogMessage(log, null, msg, additionalInfo);
     }
 
     /**
      * @param log Logger.
      * @param msg Log message
      * @param connMgr Connection manager.
-     * @param additionalQryInfo Additional query info.
+     * @param additionalInfo Additional query info.
      */
-    public void printLogMessage(IgniteLogger log, ConnectionManager connMgr, String msg, String... additionalQryInfo) {
+    public void printLogMessage(IgniteLogger log, ConnectionManager connMgr, String msg, String additionalInfo) {
         StringBuilder msgSb = new StringBuilder(msg + " [");
 
-        for (String s : additionalQryInfo)
-            msgSb.append(s).append(", ");
+        if (additionalInfo != null)
+            msgSb.append(additionalInfo).append(", ");
 
         msgSb.append("duration=").append(time()).append("ms")
             .append(", type=").append(type)
