@@ -49,10 +49,10 @@ namespace Apache.Ignite.Examples
             Console.WriteLine(">>> Cache LINQ example started.");
 
             var employeeCache = ignite.GetOrCreateCache<int, Employee>(
-                new CacheConfiguration(EmployeeCacheName, typeof(Employee)));
+                new CacheConfiguration(EmployeeCacheName, new QueryEntity(typeof(Employee))));
 
             var employeeCacheColocated = ignite.GetOrCreateCache<AffinityKey, Employee>(
-                new CacheConfiguration(EmployeeCacheNameColocated, typeof(Employee)));
+                new CacheConfiguration(EmployeeCacheNameColocated, new QueryEntity(typeof(Employee))));
 
             var organizationCache = ignite.GetOrCreateCache<int, Organization>(
                 new CacheConfiguration(OrganizationCacheName, new QueryEntity(typeof(int), typeof(Organization))));
