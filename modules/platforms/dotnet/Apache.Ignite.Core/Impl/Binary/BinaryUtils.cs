@@ -410,14 +410,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Convert Java ticks to DateTime struct
+        /// Convert Java ticks to DateTime.
         /// </summary>
-        /// <param name="stream">Stream.</param>
-        /// <returns>Parsed DateTime</returns>
-        public static DateTime ParseDateTimeFromJavaTicks(IBinaryRawReader stream)
+        /// <param name="javaTicks">Ticks.</param>
+        /// <returns>Resulting DateTime.</returns>
+        public static DateTime JavaTicksToDateTime(long javaTicks)
         {
-            long revTs = stream.ReadLong();
-            return new DateTime(JavaDateTicks + revTs * 1000, DateTimeKind.Utc); 
+            return new DateTime(JavaDateTicks + javaTicks * 1000, DateTimeKind.Utc);
         }
 
         /// <summary>
