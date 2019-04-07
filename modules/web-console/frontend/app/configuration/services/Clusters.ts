@@ -16,6 +16,7 @@
  */
 
 import get from 'lodash/get';
+import find from 'lodash/find';
 import {from} from 'rxjs';
 import ObjectID from 'bson-objectid/objectid';
 import {uniqueName} from 'app/utils/uniqueName';
@@ -28,7 +29,7 @@ const uniqueNameValidator = (defaultName = '') => (a, items = []) => {
 };
 
 export default class Clusters {
-    static $inject = ['$http'];
+    static $inject = ['$http', 'JDBC_LINKS'];
 
     discoveries: Menu<DiscoveryKinds> = [
         {value: 'Vm', label: 'Static IPs'},
@@ -76,7 +77,7 @@ export default class Clusters {
     /**
      * Cluster-related configuration stuff
      */
-    constructor(private $http: ng.IHttpService) {}
+    constructor(private $http: ng.IHttpService, private JDBC_LINKS) {}
 
     getConfiguration(clusterID: string) {
         return this.$http.get(`/api/v1/configuration/${clusterID}`);
@@ -202,7 +203,8 @@ export default class Clusters {
             igfss: [],
             models: [],
             checkpointSpi: [],
-            loadBalancingSpi: []
+            loadBalancingSpi: [],
+            autoActivationEnabled: true
         };
     }
 
@@ -224,16 +226,12 @@ export default class Clusters {
         };
     }
 
-    requiresProprietaryDrivers(cluster) {
-        return get(cluster, 'discovery.kind') === 'Jdbc' && ['Oracle', 'DB2', 'SQLServer'].includes(get(cluster, 'discovery.Jdbc.dialect'));
+    requiresProprietaryDrivers(dataSrc) {
+        return ['Oracle', 'DB2', 'SQLServer'].includes(get(dataSrc, 'dialect'));
     }
 
-    JDBCDriverURL(cluster) {
-        return ({
-            Oracle: 'http://www.oracle.com/technetwork/database/features/jdbc/default-2280470.html',
-            DB2: 'http://www-01.ibm.com/support/docview.wss?uid=swg21363866',
-            SQLServer: 'https://www.microsoft.com/en-us/download/details.aspx?id=11774'
-        })[get(cluster, 'discovery.Jdbc.dialect')];
+    JDBCDriverURL(dataSrc) {
+        return this.JDBC_LINKS[get(dataSrc, 'dialect')];
     }
 
     dataRegion = {
@@ -343,6 +341,7 @@ export default class Clusters {
                 const maxSize = memoryPolicy.maxSize;
                 const pageSize = cluster.memoryConfiguration.pageSize || this.memoryConfiguration.pageSize.default;
                 const maxPoolSize = Math.floor(maxSize / pageSize / perThreadLimit);
+
                 return maxPoolSize;
             }
         }
@@ -473,6 +472,11 @@ export default class Clusters {
         }
     };
 
+    persistenceEnabled(dataStorage) {
+        return !!(get(dataStorage, 'defaultDataRegionConfiguration.persistenceEnabled')
+            || find(get(dataStorage, 'dataRegionConfigurations'), (storeCfg) => storeCfg.persistenceEnabled));
+    }
+
     swapSpaceSpi = {
         readStripesNumber: {
             default: 'availableProcessors',
@@ -581,6 +585,17 @@ export default class Clusters {
         if (!cluster.binaryConfiguration.typeConfigurations) cluster.binaryConfiguration.typeConfigurations = [];
         const item = {_id: ObjectID.generate()};
         cluster.binaryConfiguration.typeConfigurations.push(item);
+        return item;
+    }
+
+    addLocalEventListener(cluster) {
+        if (!cluster.localEventListeners)
+            cluster.localEventListeners = [];
+
+        const item = {_id: ObjectID.generate()};
+
+        cluster.localEventListeners.push(item);
+
         return item;
     }
 }
