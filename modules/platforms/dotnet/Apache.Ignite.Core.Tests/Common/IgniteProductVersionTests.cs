@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Common
         }
 
         [Test]
-        public void TestClientVersionMatchesServerNodeVersion()
+        public void TestAssemblyVersionMatchesIgniteVersion()
         {
             Version clientVer = typeof(IIgnite).Assembly.GetName().Version;
 
