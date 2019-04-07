@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Common
 {
     using System;
-    using System.Globalization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
