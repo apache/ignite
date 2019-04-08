@@ -544,6 +544,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * @return Start time.
+     */
+    public long getStartTime() {
+        return startTime;
+    }
+
+    /**
      * @return {@code True}
      */
     public boolean onAdded() {
