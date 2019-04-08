@@ -413,4 +413,19 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(cluster);
     }
+
+    /** {@inheritDoc} */
+    @Override public void activeReadOnly() throws IgniteException {
+        cluster.activeReadOnly();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readOnly() {
+        return cluster.readOnly();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readOnly(boolean readOnly) throws IgniteException {
+        cluster.readOnly(readOnly);
+    }
 }

@@ -84,6 +84,8 @@ public class StateChangeRequest {
         return msg.activate();
     }
 
+    public boolean
+
     /**
      * @return {@code True} if active state was changed.
      */

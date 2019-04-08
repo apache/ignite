@@ -459,6 +459,29 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void active(boolean active);
 
     /**
+     * Changes Ignite grid state to active with enabled read-only mode.
+     *
+     * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     */
+    public void activeReadOnly() throws IgniteException;
+
+    /**
+     * Checks Ignite grid in read-only mode or not.
+     *
+     * @return {@code True} if grid is in read-only mode and {@code False} If grid allows data modification operations.
+     */
+    public boolean readOnly();
+
+    /**
+     * Enable or disable Ignite grid read-only mode.
+     *
+     * @param readOnly If {@code True} enable read-only mode. If {@code False} disable read-only mode.
+     * @throws IgniteException If Ignite grid isn't active. For grid activation in read-only mode use {@link
+     * #activeReadOnly()}.
+     */
+    public void readOnly(boolean readOnly) throws IgniteException;
+
+    /**
      * Gets current baseline topology. If baseline topology was not set, will return {@code null}.
      *
      * @return Collection of nodes included to the current baseline topology.

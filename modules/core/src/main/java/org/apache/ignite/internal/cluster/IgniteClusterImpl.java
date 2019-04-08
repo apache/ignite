@@ -44,8 +44,6 @@ import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.ClusterActivationEvent;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -71,7 +69,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
@@ -312,6 +309,51 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
         try {
             ctx.state().changeGlobalState(active, baselineNodes(), false).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void activeReadOnly() throws IgniteException {
+        guard();
+
+        try {
+            ctx.state().changeGlobalState(true, true, baselineNodes(), false).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readOnly() {
+        guard();
+
+        try {
+            return ctx.state().publicApiReadOnlyMode(true);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readOnly(boolean readOnly) throws IgniteException {
+        if (!ctx.state().publicApiActiveState(false))
+            throw new IgniteException("Cluster not active!");
+
+        guard();
+
+        try {
+            ctx.state().changeGlobalState(readOnly).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

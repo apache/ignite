@@ -192,6 +192,17 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
+    @Override public boolean publicApiReadOnlyMode(boolean waitForTransition) {
+        return publicApiActiveStateAsync(waitForTransition).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> publicApiReadOnlyModeAsync(boolean waitForTransition) {
+        // TODO!
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean publicApiActiveState(boolean waitForTransition) {
         return publicApiActiveStateAsync(waitForTransition).get();
     }
@@ -783,27 +794,78 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         return changeGlobalState(activate, baselineNodes, forceChangeBaselineTopology, false);
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> changeGlobalState(
+        boolean activate,
+        boolean readOnly,
+        Collection<? extends BaselineNode> baselineNodes,
+        boolean forceChangeBaselineTopology
+    ) {
+        return changeGlobalState(activate, readOnly, baselineNodes, forceChangeBaselineTopology, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> changeGlobalState(boolean readOnly) {
+        if (!publicApiActiveState(false))
+            return new GridFinishedFuture<>(new IgniteException("Cluster not active!"));
+
+        DiscoveryDataClusterState state = globalState;
+
+        List<BaselineNode> bltNodes = state.hasBaselineTopology() ? state.baselineTopology().currentBaseline() : null;
+
+        return changeGlobalState(state.active(), readOnly, bltNodes, false, false);
+    }
+
+    /**
+     * @param activate New activate state.
+     * @param baselineNodes New BLT nodes.
+     * @param forceChangeBaselineTopology Force change BLT.
+     * @param isAutoAdjust Auto adjusting flag.
+     * @return Global change state future.
+     */
     public IgniteInternalFuture<?> changeGlobalState(
         final boolean activate,
         Collection<? extends BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
+        boolean readOnly = ctx.cache().context().readOnlyMode();
+
+        return changeGlobalState(activate, readOnly, baselineNodes, forceChangeBaselineTopology, isAutoAdjust);
+    }
+
+    /**
+     * @param activate New activate state.
+     * @param readOnly Read-only mode.
+     * @param baselineNodes New BLT nodes.
+     * @param forceChangeBaselineTopology Force change BLT.
+     * @param isAutoAdjust Auto adjusting flag.
+     * @return Global change state future.
+     */
+    public IgniteInternalFuture<?> changeGlobalState(
+        final boolean activate,
+        boolean readOnly,
+        Collection<? extends BaselineNode> baselineNodes,
+        boolean forceChangeBaselineTopology,
+        boolean isAutoAdjust
+    ) {
         if (inMemoryMode)
-            return changeGlobalState0(activate, null, false, isAutoAdjust);
+            return changeGlobalState0(activate, readOnly,null, false, isAutoAdjust);
 
         BaselineTopology newBlt = (compatibilityMode && !forceChangeBaselineTopology) ? null :
             calculateNewBaselineTopology(activate, baselineNodes, forceChangeBaselineTopology);
 
-        return changeGlobalState0(activate, newBlt, forceChangeBaselineTopology, isAutoAdjust);
+        return changeGlobalState0(activate, readOnly, newBlt, forceChangeBaselineTopology, isAutoAdjust);
     }
 
     /**
      *
      */
-    private BaselineTopology calculateNewBaselineTopology(final boolean activate,
+    private BaselineTopology calculateNewBaselineTopology(
+        final boolean activate,
         Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology) {
+        boolean forceChangeBaselineTopology
+    ) {
         BaselineTopology newBlt;
 
         BaselineTopology currentBlt = globalState.baselineTopology();
@@ -863,14 +925,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** */
-    private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
-        BaselineTopology blt, boolean forceChangeBaselineTopology) {
-        return changeGlobalState0(activate, blt, forceChangeBaselineTopology, false);
-    }
-
-    /** */
-    private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
-        BaselineTopology blt, boolean forceChangeBaselineTopology, boolean isAutoAdjust) {
+    private IgniteInternalFuture<?> changeGlobalState0(
+        final boolean activate,
+        boolean readOnly,
+        BaselineTopology blt,
+        boolean forceChangeBaselineTopology,
+        boolean isAutoAdjust
+    ) {
         boolean isBaselineAutoAdjustEnabled = isBaselineAutoAdjustEnabled();
 
         if (forceChangeBaselineTopology && isBaselineAutoAdjustEnabled != isAutoAdjust)
@@ -942,6 +1003,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             ctx.localNodeId(),
             storedCfgs,
             activate,
+            readOnly,
             blt,
             forceChangeBaselineTopology,
             System.currentTimeMillis()
