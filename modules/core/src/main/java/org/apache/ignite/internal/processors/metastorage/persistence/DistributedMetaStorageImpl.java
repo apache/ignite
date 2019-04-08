@@ -19,16 +19,16 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.BitSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.LongStream;
@@ -39,10 +39,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -55,32 +54,51 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageListener;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
-import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
-import static org.apache.ignite.internal.IgniteFeatures.DISTRIBUTED_METASTORAGE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
+import static org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage.isSupported;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemPrefix;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemVer;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.marshal;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.unmarshal;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageVersion.INITIAL_VERSION;
 
 /**
- * Implementation of {@link DistributedMetaStorage} based on {@link MetaStorage} for persistence and discovery SPI for
- * communication.
+ * <p>Implementation of {@link DistributedMetaStorage} based on {@link MetaStorage} for persistence and discovery SPI
+ * for communication.
+ * </p>
+ * <p>It is based on existing local metastorage API for persistent clusters (in-memory clusters and client nodes will
+ * store data in memory). Write/remove operation use Discovery SPI to send updates to the cluster, it guarantees updates
+ * order and the fact that all existing (alive) nodes have handled the update message.
+ * </p>
+ * <p>As a way to find out which node has the latest data there is a "version" value of distributed metastorage,
+ * ({@link DistributedMetaStorageVersion}) which is basically the pair {@code <number of all updates, hash of all
+ * updates>}. First element of the pair is the value of {@link #getUpdatesCount()}.
+ * </p>
+ * <p>Whole updates history until some point in the past is stored along with the data, so when an outdated node
+ * connects to the cluster it will receive all the missing data and apply it locally. Listeners will also be invoked
+ * after such updates. If there's not enough history stored or joining node is clear then it'll receive shapshot of
+ * distributed metastorage (usually called {@code fullData} in code) so there won't be inconsistencies.
+ * </p>
+ *
+ * @see DistributedMetaStorageUpdateMessage
+ * @see DistributedMetaStorageUpdateAckMessage
  */
 public class DistributedMetaStorageImpl extends GridProcessorAdapter
     implements DistributedMetaStorage, IgniteChangeGlobalStateSupport {
@@ -91,13 +109,33 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private static final long DFLT_MAX_HISTORY_BYTES = 100 * 1024 * 1024;
 
     /** Message indicating that clusted is in a mixed state and writing cannot be completed because of that. */
-    public static final String NOT_SUPPORTED_MSG = "Ignite cluster has nodes that don't support distributed metastorage" +
-        " feature. Writing cannot be completed.";
+    public static final String NOT_SUPPORTED_MSG = "Ignite cluster has nodes that don't support" +
+        " distributed metastorage feature. Writing cannot be completed.";
 
-    /** Cached subscription processor instance. Exists to make code shorter. */
-    private final GridInternalSubscriptionProcessor subscrProcessor;
+    /**
+     * {@code true} if local node is client.
+     */
+    private final boolean isClient;
 
-    /** Bridge. Has some "phase-specific" code. Exists to avoid countless {@code if}s in code. */
+    /**
+     * {@code true} if local node has persistent region in configuration and is not a client.
+     */
+    private final boolean isPersistenceEnabled;
+
+    /**
+     * Cached subscription processor instance. Exists to make code shorter.
+     */
+    private final GridInternalSubscriptionProcessor isp;
+
+    /**
+     * Bridge. Has some "phase-specific" code. Exists to avoid countless {@code if}s in code.
+     *
+     * @see NotAvailableDistributedMetaStorageBridge
+     * @see EmptyDistributedMetaStorageBridge
+     * @see ReadOnlyDistributedMetaStorageBridge
+     * @see InMemoryCachedDistributedMetaStorageBridge
+     * @see WritableDistributedMetaStorageBridge
+     */
     private volatile DistributedMetaStorageBridge bridge = new NotAvailableDistributedMetaStorageBridge();
 
     /**
@@ -111,25 +149,23 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /**
      * Version of distributed metastorage.
      */
-    volatile DistributedMetaStorageVersion ver;
-
-    /** Listeners set. */
-    final Set<IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>>> lsnrs =
-        new GridConcurrentLinkedHashSet<>();
+    private volatile DistributedMetaStorageVersion ver;
 
     /**
-     * Map that contains latest changes in distributed metastorage. There should be no gaps in versions and the latest
-     * version is always present in the map. This means that the map is empty only if version is 0.
+     * Listeners collection. Preserves the order in which listeners were added.
      */
-    //TODO Use something similar to java.util.ArrayDeque.
-    private final Map<Long, DistributedMetaStorageHistoryItem> histCache = new ConcurrentHashMap<>();
-
-    /** Approximate number of bytes in values of {@link #histCache} map. */
-    private long histSizeApproximation;
+    final List<IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>>> lsnrs =
+        new CopyOnWriteArrayList<>();
 
     /**
-     * Maximal acceptable value of {@link #histSizeApproximation}. After every write history would shrink until its size
-     * is not greater then given value.
+     * All available history. Contains latest changes in distributed metastorage. Latest version is always present in
+     * the cache. This means that the it is empty only if version is {@code 0}.
+     */
+    private final DistributedMetaStorageHistoryCache histCache = new DistributedMetaStorageHistoryCache();
+
+    /**
+     * Maximal acceptable value of {@link #histCache}'s size in bytes. History will shrink after every write until its
+     * size is not greater then given value.
      */
     private final long histMaxBytes = IgniteSystemProperties.getLong(
         IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES,
@@ -152,14 +188,19 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /**
      * Lock to access/update {@link #bridge} and {@link #startupExtras} fields (probably some others as well).
      */
-    private final Object innerStateLock = new Object();
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /**
      * Becomes {@code true} if node was deactivated, this information is useful for joining node validation.
      *
-     * @see #validateNode(ClusterNode, DiscoveryDataBag.JoiningNodeDiscoveryData)
+     * @see #validateNode(ClusterNode, JoiningNodeDiscoveryData)
      */
     private boolean wasDeactivated;
+
+    /**
+     * Context marshaller.
+     */
+    public final JdkMarshaller marshaller;
 
     /**
      * @param ctx Kernal context.
@@ -167,32 +208,23 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     public DistributedMetaStorageImpl(GridKernalContext ctx) {
         super(ctx);
 
-        subscrProcessor = ctx.internalSubscriptionProcessor();
+        isClient = ctx.clientNode();
+
+        isPersistenceEnabled = !isClient && isPersistenceEnabled(ctx.config());
+
+        isp = ctx.internalSubscriptionProcessor();
+
+        marshaller = ctx.marshallerContext().jdkMarshaller();
     }
 
     /**
-     * @return {@code True} if all nodes in the cluster support discributed metastorage feature.
-     * @see IgniteFeatures#DISTRIBUTED_METASTORAGE
+     * {@inheritDoc}
+     * <br/>
+     * Create all required listeners.
      */
-    private boolean isSupported() {
-        DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
-
-        if (discoSpi instanceof IgniteDiscoverySpi)
-            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(DISTRIBUTED_METASTORAGE);
-        else {
-            Collection<ClusterNode> nodes = discoSpi.getRemoteNodes();
-
-            return IgniteFeatures.allNodesSupports(nodes, DISTRIBUTED_METASTORAGE);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.clientNode() || ctx.isDaemon())
-            return;
-
-        if (isPersistenceEnabled(ctx.config())) {
-            subscrProcessor.registerMetastorageListener(new MetastorageLifecycleListener() {
+        if (isPersistenceEnabled) {
+            isp.registerMetastorageListener(new MetastorageLifecycleListener() {
                 /** {@inheritDoc} */
                 @Override public void onReadyForRead(
                     ReadOnlyMetastorage metastorage
@@ -209,7 +241,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             });
         }
         else {
-            ver = DistributedMetaStorageVersion.INITIAL_VERSION;
+            ver = INITIAL_VERSION;
 
             bridge = new EmptyDistributedMetaStorageBridge();
         }
@@ -227,13 +259,15 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         );
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * <br/>
+     * Makes sense only if {@link #isPersistenceEnabled} is {@code false}. In this case metastorage will be declared as
+     * {@code readyForRead} and then {@code readyForWrite} if {@code active} flag happened to be {@code true}.
+     */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        if (ctx.clientNode() || ctx.isDaemon())
-            return;
-
-        if (!isPersistenceEnabled(ctx.config())) {
-            for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
+        if (!isPersistenceEnabled) {
+            for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
                 subscriber.onReadyForRead(this);
         }
 
@@ -241,14 +275,18 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             onActivate(ctx);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * <br/>
+     * Makes sense only if {@link #isPersistenceEnabled} is {@code false}. In this case metastorage will be declared as
+     * {@code readyForWrite}.
+     */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        if (ctx.clientNode() || ctx.isDaemon())
-            return;
+        if (!isPersistenceEnabled) {
+            lock.writeLock().lock();
 
-        if (!isPersistenceEnabled(ctx.config())) {
-            if (!(bridge instanceof InMemoryCachedDistributedMetaStorageBridge)) {
-                synchronized (innerStateLock) {
+            try {
+                if (!(bridge instanceof InMemoryCachedDistributedMetaStorageBridge)) {
                     assert startupExtras != null;
 
                     InMemoryCachedDistributedMetaStorageBridge memCachedBridge =
@@ -263,27 +301,36 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     startupExtras = null;
                 }
             }
+            finally {
+                lock.writeLock().unlock();
+            }
 
-            for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
+            for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
                 subscriber.onReadyForWrite(this);
 
             writeAvailable.countDown();
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * <br/>
+     * Moves persistent metastorage into read-only state. Does nothing if metastorage is not persistent.q
+     */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        if (ctx.clientNode() || ctx.isDaemon())
+        if (isClient)
             return;
 
-        synchronized (innerStateLock) {
+        lock.writeLock().lock();
+
+        try {
             wasDeactivated = true;
 
-            if (isPersistenceEnabled(ctx.config())) {
+            if (isPersistenceEnabled) {
                 try {
-                    DistributedMetaStorageHistoryItem[] locFullData = bridge.localFullData();
+                    DistributedMetaStorageKeyValuePair[] locFullData = bridge.localFullData();
 
-                    bridge = new ReadOnlyDistributedMetaStorageBridge(locFullData);
+                    bridge = new ReadOnlyDistributedMetaStorageBridge(marshaller, locFullData);
                 }
                 catch (IgniteCheckedException e) {
                     throw criticalError(e);
@@ -297,9 +344,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             writeAvailable = new CountDownLatch(1);
         }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
-    /** Whether cluster is active at this moment or not. Also returns {@code true} if cluster is being activated. */
+    /**
+     * Whether cluster is active at this moment or not. Also returns {@code true} if cluster is being activated.
+     */
     private boolean isActive() {
         return ctx.state().clusterState().active();
     }
@@ -313,13 +365,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @see MetastorageLifecycleListener#onReadyForRead(ReadOnlyMetastorage)
      */
     private void onMetaStorageReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
-        assert isPersistenceEnabled(ctx.config());
+        assert isPersistenceEnabled;
 
         assert startupExtras != null;
 
-        ReadOnlyDistributedMetaStorageBridge readOnlyBridge = new ReadOnlyDistributedMetaStorageBridge();
+        ReadOnlyDistributedMetaStorageBridge readOnlyBridge = new ReadOnlyDistributedMetaStorageBridge(marshaller);
 
-        lock();
+        localMetastorageLock();
 
         try {
             ver = readOnlyBridge.readInitialData(metastorage, startupExtras);
@@ -331,12 +383,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             );
         }
         finally {
-            unlock();
+            localMetastorageUnlock();
         }
 
         bridge = readOnlyBridge;
 
-        for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
+        for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
             subscriber.onReadyForRead(this);
     }
 
@@ -349,19 +401,21 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @see MetastorageLifecycleListener#onReadyForReadWrite(ReadWriteMetastorage)
      */
     private void onMetaStorageReadyForWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
-        assert isPersistenceEnabled(ctx.config());
+        assert isPersistenceEnabled;
 
-        synchronized (innerStateLock) {
+        lock.writeLock().lock();
+
+        try {
             WritableDistributedMetaStorageBridge writableBridge = new WritableDistributedMetaStorageBridge(this, metastorage);
 
             if (startupExtras != null) {
-                lock();
+                localMetastorageLock();
 
                 try {
                     writableBridge.restore(startupExtras);
                 }
                 finally {
-                    unlock();
+                    localMetastorageUnlock();
                 }
 
                 executeDeferredUpdates(writableBridge);
@@ -371,22 +425,32 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             startupExtras = null;
         }
+        finally {
+            lock.writeLock().unlock();
+        }
 
-        for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
+        for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
             subscriber.onReadyForWrite(this);
 
         writeAvailable.countDown();
     }
 
     /** {@inheritDoc} */
+    @Override public long getUpdatesCount() {
+        return bridge instanceof ReadOnlyDistributedMetaStorageBridge
+            ? ((ReadOnlyDistributedMetaStorageBridge)bridge).version().id
+            : ver.id;
+    }
+
+    /** {@inheritDoc} */
     @Override @Nullable public <T extends Serializable> T read(@NotNull String key) throws IgniteCheckedException {
-        lock();
+        localMetastorageLock();
 
         try {
             return (T)bridge.read(key, true);
         }
         finally {
-            unlock();
+            localMetastorageUnlock();
         }
     }
 
@@ -394,15 +458,17 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     @Override public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
         assert val != null : key;
 
-        startWrite(key, marshal(val)).get();
+        startWrite(key, marshal(marshaller, val)).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridFutureAdapter<?> writeAsync(@NotNull String key, @NotNull Serializable val)
-        throws IgniteCheckedException {
+    @Override public GridFutureAdapter<?> writeAsync(
+        @NotNull String key,
+        @NotNull Serializable val
+    ) throws IgniteCheckedException {
         assert val != null : key;
 
-        return startWrite(key, marshal(val));
+        return startWrite(key, marshal(marshaller, val));
     }
 
     /** {@inheritDoc} */
@@ -429,7 +495,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) throws IgniteCheckedException {
         assert newVal != null : key;
 
-        return startCas(key, marshal(expVal), marshal(newVal));
+        return startCas(key, marshal(marshaller, expVal), marshal(marshaller, newVal));
     }
 
     /** {@inheritDoc} */
@@ -439,7 +505,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) throws IgniteCheckedException {
         assert expVal != null : key;
 
-        return startCas(key, marshal(expVal), null).get();
+        return startCas(key, marshal(marshaller, expVal), null).get();
     }
 
     /** {@inheritDoc} */
@@ -447,13 +513,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         @NotNull String keyPrefix,
         @NotNull BiConsumer<String, ? super Serializable> cb
     ) throws IgniteCheckedException {
-        lock();
+        localMetastorageLock();
 
         try {
             bridge.iterate(keyPrefix, cb, true);
         }
         finally {
-            unlock();
+            localMetastorageUnlock();
         }
     }
 
@@ -471,55 +537,100 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        if (ctx.clientNode() || ctx.isDaemon())
-            return;
-
-        assert startupExtras != null;
-
-        DistributedMetaStorageHistoryItem[] hist = new TreeMap<>(histCache) // Sorting might be avoided if histCache is a queue
-            .values()
-            .toArray(EMPTY_ARRAY);
-
-        DistributedMetaStorageVersion verToSnd = bridge instanceof ReadOnlyDistributedMetaStorageBridge
-            ? ((ReadOnlyDistributedMetaStorageBridge)bridge).version()
-            : ver;
-
-        Serializable data = new DistributedMetaStorageJoiningNodeData(
-            getBaselineTopologyId(),
-            verToSnd,
-            hist
-        );
+        lock.readLock().lock();
 
         try {
-            dataBag.addJoiningNodeData(COMPONENT_ID, JdkMarshaller.DEFAULT.marshal(data));
+            if (isClient) {
+                Serializable data = new DistributedMetaStorageJoiningNodeData(
+                    getBaselineTopologyId(),
+                    getActualVersion(),
+                    EMPTY_ARRAY
+                );
+
+                try {
+                    dataBag.addJoiningNodeData(COMPONENT_ID, marshaller.marshal(data));
+
+                    return;
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+
+            assert startupExtras != null;
+
+            DistributedMetaStorageVersion verToSnd = bridge instanceof ReadOnlyDistributedMetaStorageBridge
+                ? ((ReadOnlyDistributedMetaStorageBridge)bridge).version()
+                : ver;
+
+            DistributedMetaStorageHistoryItem[] hist = histCache.toArray();
+
+            Serializable data = new DistributedMetaStorageJoiningNodeData(
+                getBaselineTopologyId(),
+                verToSnd,
+                hist
+            );
+
+            try {
+                dataBag.addJoiningNodeData(COMPONENT_ID, marshaller.marshal(data));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+        finally {
+            lock.readLock().unlock();
         }
     }
 
-    /** Returns current baseline topology id of {@code -1} if there's no baseline topology found. */
+    /**
+     * @return Current baseline topology id or {@code -1} if there was no baseline topology found.
+     */
     private int getBaselineTopologyId() {
         BaselineTopology baselineTop = ctx.state().clusterState().baselineTopology();
 
         return baselineTop != null ? baselineTop.id() : -1;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * <br/>
+     * If local node is client then method should do nothing. It is expected that this method is invoked on coordinator
+     * node, but there might be exceptions to this. Validation rules:
+     * <ul>
+     *     <li>
+     *         Do not join node that has no distributed metastorage if feature is supported in current topology and
+     *         distributed metastorage has already been used ({@link #getUpdatesCount()} is not zero).
+     *     </li>
+     *     <li>
+     *         Do not join node that has updates count greater then on local node and hasn't provided enough history
+     *         to apply it to the cluster.
+     *     </li>
+     *     <li>
+     *         Do not join node that has updates count greater then on local node and cluster is active.
+     *     </li>
+     *     <li>
+     *         Do not join node if its distributed metastorage version hash differs from the local one. In such cases
+     *         node is probably from different cluster or has some inconsistent data.
+     *     </li>
+     * </ul>
+     */
     @Override @Nullable public IgniteNodeValidationResult validateNode(
         ClusterNode node,
-        DiscoveryDataBag.JoiningNodeDiscoveryData discoData
+        JoiningNodeDiscoveryData discoData
     ) {
-        if (ctx.clientNode() || ctx.isDaemon())
+        if (isClient)
             return null;
 
-        synchronized (innerStateLock) {
+        lock.readLock().lock();
+
+        try {
             DistributedMetaStorageVersion locVer = getActualVersion();
 
             if (!discoData.hasJoiningNodeData()) {
                 // Joining node doesn't support distributed metastorage feature.
 
-                if (isSupported() && locVer.id > 0 && !(node.isClient() || node.isDaemon())) {
+                if (isSupported(ctx) && locVer.id > 0 && !(node.isClient() || node.isDaemon())) {
                     String errorMsg = "Node not supporting distributed metastorage feature" +
                         " is not allowed to join the cluster";
 
@@ -537,7 +648,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 return new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
             }
 
-            if (!isPersistenceEnabled(ctx.config()))
+            if (!isPersistenceEnabled)
                 return null;
 
             DistributedMetaStorageVersion remoteVer = joiningData.ver;
@@ -625,13 +736,22 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             return (errorMsg == null) ? null : new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
         }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
-    /** {@inheritDoc} */
-    @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
-        if (ctx.clientNode() || ctx.isDaemon())
-            return;
-
+    /**
+     * {@inheritDoc}
+     * <br/>
+     * Since {@link #validateNode(ClusterNode, DiscoveryDataBag.JoiningNodeDiscoveryData)} has already been invoked we
+     * can be sure that joining node has valid discovery data. Current method does something meaningful only if joining
+     * node has bigger distributed metastorage version, in this case all required updates will be added to deferred
+     * updates queue.
+     *
+     * @see StartupExtras#deferredUpdates
+     */
+    @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData discoData) {
         if (!discoData.hasJoiningNodeData())
             return;
 
@@ -642,10 +762,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
-        if (!isSupported() && remoteVer.id > 0)
+        if (!isSupported(ctx) && remoteVer.id > 0)
             return;
 
-        synchronized (innerStateLock) {
+        lock.writeLock().lock();
+
+        try {
             DistributedMetaStorageVersion actualVer = getActualVersion();
 
             if (remoteVer.id > actualVer.id) {
@@ -664,22 +786,34 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     assert false : "Joining node is too far ahead [remoteVer=" + remoteVer + "]";
             }
         }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * <br/>
+     * Does nothing on client nodes. Also does nothinf if feature is not supported on some node in topology.
+     * Otherwise it fills databag with data required for joining node so it could be consistent with the cluster.
+     * There are 2 main cases: local node has enough history to send only updates or it doesn't. In first case
+     * the history is collected, otherwise whole distributed metastorage ({@code fullData}) is collected along with
+     * available history. Goal of collecting history in second case is to allow all nodes in cluster to have the same
+     * history so connection of new server will always give the same result.
+     */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (ctx.clientNode() || ctx.isDaemon())
+        if (isClient)
             return;
 
         if (dataBag.commonDataCollectedFor(COMPONENT_ID))
             return;
 
-        DiscoveryDataBag.JoiningNodeDiscoveryData discoData = dataBag.newJoinerDiscoveryData(COMPONENT_ID);
+        JoiningNodeDiscoveryData discoData = dataBag.newJoinerDiscoveryData(COMPONENT_ID);
 
         if (!discoData.hasJoiningNodeData())
             return;
 
-        if (!isSupported())
+        if (!isSupported(ctx))
             return;
 
         DistributedMetaStorageJoiningNodeData joiningData = getJoiningNodeData(discoData);
@@ -689,84 +823,98 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
-        synchronized (innerStateLock) {
+        lock.readLock().lock();
+
+        try {
             //TODO Store it precalculated? Maybe later.
             DistributedMetaStorageVersion actualVer = getActualVersion();
 
-            if (remoteVer.id > actualVer.id) {
+            if (remoteVer.id > actualVer.id) { // Impossible for client.
                 Serializable nodeData = new DistributedMetaStorageClusterNodeData(remoteVer, null, null, null);
 
                 dataBag.addGridCommonData(COMPONENT_ID, nodeData);
             }
+            else if (remoteVer.id == actualVer.id) { // On client this would mean that cluster metastorage is empty.
+                Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, null);
+
+                dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+            }
             else {
-                if (remoteVer.id == actualVer.id) {
-                    Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, null);
+                int availableHistSize = getAvailableHistorySize();
+
+                if (actualVer.id - remoteVer.id <= availableHistSize && !dataBag.isJoiningNodeClient()) {
+                    DistributedMetaStorageHistoryItem[] updates = history(remoteVer.id + 1, actualVer.id);
+
+                    Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, updates);
 
                     dataBag.addGridCommonData(COMPONENT_ID, nodeData);
                 }
                 else {
-                    int availableHistSize = getAvailableHistorySize();
+                    DistributedMetaStorageVersion ver0;
 
-                    if (actualVer.id - remoteVer.id <= availableHistSize) {
-                        DistributedMetaStorageHistoryItem[] hist = history(remoteVer.id + 1, actualVer.id);
+                    DistributedMetaStorageKeyValuePair[] fullData;
 
-                        Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, hist);
+                    DistributedMetaStorageHistoryItem[] hist;
 
-                        dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                    if (startupExtras == null || startupExtras.fullNodeData == null) {
+                        ver0 = ver;
+
+                        try {
+                            fullData = bridge.localFullData();
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw criticalError(e);
+                        }
+
+                        if (dataBag.isJoiningNodeClient())
+                            hist = EMPTY_ARRAY;
+                        else
+                            hist = history(ver.id - histCache.size() + 1, actualVer.id);
                     }
                     else {
-                        DistributedMetaStorageVersion ver0;
+                        ver0 = startupExtras.fullNodeData.ver;
 
-                        DistributedMetaStorageHistoryItem[] fullData;
+                        fullData = startupExtras.fullNodeData.fullData;
 
-                        DistributedMetaStorageHistoryItem[] hist;
-
-                        if (startupExtras == null || startupExtras.fullNodeData == null) {
-                            ver0 = ver;
-
-                            try {
-                                fullData = bridge.localFullData();
-                            }
-                            catch (IgniteCheckedException e) {
-                                throw criticalError(e);
-                            }
-
-                            hist = history(ver.id - histCache.size() + 1, actualVer.id);
-                        }
-                        else {
-                            ver0 = startupExtras.fullNodeData.ver;
-
-                            fullData = startupExtras.fullNodeData.fullData;
-
-                            hist = startupExtras.fullNodeData.hist;
-                        }
-
-                        DistributedMetaStorageHistoryItem[] updates;
-
-                        if (startupExtras != null)
-                            updates = startupExtras.deferredUpdates.toArray(EMPTY_ARRAY);
+                        if (dataBag.isJoiningNodeClient())
+                            hist = EMPTY_ARRAY;
                         else
-                            updates = null;
-
-                        Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver0, fullData, hist, updates);
-
-                        dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                            hist = startupExtras.fullNodeData.hist;
                     }
+
+                    DistributedMetaStorageHistoryItem[] updates;
+
+                    if (startupExtras != null)
+                        updates = startupExtras.deferredUpdates.toArray(EMPTY_ARRAY);
+                    else
+                        updates = null;
+
+                    Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver0, fullData, hist, updates);
+
+                    dataBag.addGridCommonData(COMPONENT_ID, nodeData);
                 }
             }
         }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
-    /** */
+    /**
+     * Retrieve joining node data from discovery data. It is expected that it is present as a {@code byte[]} object.
+     *
+     * @param discoData Joining node discovery data.
+     * @return Unmarshalled data or null if unmarshalling failed.
+     */
     @Nullable private DistributedMetaStorageJoiningNodeData getJoiningNodeData(
-        DiscoveryDataBag.JoiningNodeDiscoveryData discoData
+        JoiningNodeDiscoveryData discoData
     ) {
         byte[] data = (byte[])discoData.joiningNodeData();
 
         assert data != null;
 
         try {
-            return JdkMarshaller.DEFAULT.unmarshal(data, U.gridClassLoader());
+            return marshaller.unmarshal(data, U.gridClassLoader());
         }
         catch (IgniteCheckedException e) {
             log.error("Unable to unmarshal joinging node data for distributed metastorage component.", e);
@@ -775,13 +923,51 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        assert isClient;
+
+        lock.writeLock().lock();
+
+        try {
+            startupExtras = new StartupExtras();
+
+            bridge = new EmptyDistributedMetaStorageBridge();
+
+            if (writeAvailable.getCount() > 0)
+                writeAvailable.countDown();
+
+            writeAvailable = new CountDownLatch(1);
+
+            ver = INITIAL_VERSION;
+
+            wasDeactivated = false;
+
+            for (GridFutureAdapter<Boolean> fut : updateFuts.values())
+                fut.onDone(new IgniteCheckedException("Client was disconnected during the operation."));
+
+            updateFuts.clear();
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        assert isClient;
+
+        if (isActive())
+            onActivate(ctx);
+
+        return null;
+    }
+
     /**
      * Returns number of all available history items. Might be a history from remote node snapshot or/and deferred
      * updates from another remote node. Depends on the current node state.
      */
     private int getAvailableHistorySize() {
-        assert Thread.holdsLock(innerStateLock);
-
         if (startupExtras == null)
             return histCache.size();
         else if (startupExtras.fullNodeData == null)
@@ -795,8 +981,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * otherwise.
      */
     private DistributedMetaStorageVersion getActualVersion() {
-        assert Thread.holdsLock(innerStateLock);
-
         if (startupExtras == null)
             return ver;
         else if (startupExtras.fullNodeData == null)
@@ -812,8 +996,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @return {@code <key, value>} pair if it was found, {@code null} otherwise.
      */
     private DistributedMetaStorageHistoryItem historyItem(long specificVer) {
-        assert Thread.holdsLock(innerStateLock);
-
         if (startupExtras == null)
             return histCache.get(specificVer);
         else {
@@ -867,13 +1049,21 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * {@link DistributedMetaStorageBridge#localFullData()} invoked on {@link #bridge}.
      */
     @TestOnly
-    private DistributedMetaStorageHistoryItem[] localFullData() throws IgniteCheckedException {
+    private DistributedMetaStorageKeyValuePair[] localFullData() throws IgniteCheckedException {
         return bridge.localFullData();
     }
 
-    /** {@inheritDoc} */
-    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        synchronized (innerStateLock) {
+    /**
+     * {@inheritDoc}
+     * <br/>
+     * Applies received updates if they are present in response.
+     *
+     * @param data Grid discovery data.
+     */
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
+        lock.writeLock().lock();
+
+        try {
             DistributedMetaStorageClusterNodeData nodeData = (DistributedMetaStorageClusterNodeData)data.commonData();
 
             if (nodeData != null) {
@@ -886,10 +1076,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 else
                     writeFullDataLater(nodeData);
             }
-            else if (!(ctx.clientNode() || ctx.isDaemon()) && getActualVersion().id > 0) {
+            else if (!isClient && getActualVersion().id > 0) {
                 throw new IgniteException("Cannot join the cluster because it doesn't support distributed metastorage" +
                     " feature and this node has not empty distributed metastorage data");
             }
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -903,7 +1096,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * cluster is not active.
      */
     private GridFutureAdapter<?> startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
-       if (!isSupported())
+       if (!isSupported(ctx))
             throw new IgniteCheckedException(NOT_SUPPORTED_MSG);
 
         UUID reqId = UUID.randomUUID();
@@ -924,7 +1117,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      */
     private GridFutureAdapter<Boolean> startCas(String key, byte[] expValBytes, byte[] newValBytes)
         throws IgniteCheckedException {
-         if (!isSupported())
+         if (!isSupported(ctx))
             throw new IgniteCheckedException(NOT_SUPPORTED_MSG);
 
         UUID reqId = UUID.randomUUID();
@@ -962,7 +1155,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             return;
         }
 
-        if (!isSupported()) {
+        if (!isSupported(ctx)) {
             msg.errorMessage(NOT_SUPPORTED_MSG);
 
             return;
@@ -974,7 +1167,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (msg instanceof DistributedMetaStorageCasMessage)
                 completeCas(bridge, (DistributedMetaStorageCasMessage)msg);
             else
-                completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), true);
+                completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), false, true);
         }
         catch (IgniteCheckedException | Error e) {
             throw criticalError(e);
@@ -1028,6 +1221,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      *
      * @param bridge Bridge to get the access to the storage.
      * @param histItem {@code <key, value>} pair to process.
+     * @param force If {@code true} then apply all updates even if data is the same.
      * @param notifyListeners Whether listeners should be notified or not. {@code false} for data restore on
      * activation.
      * @throws IgniteCheckedException In case of IO/unmarshalling errors.
@@ -1035,19 +1229,30 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void completeWrite(
         DistributedMetaStorageBridge bridge,
         DistributedMetaStorageHistoryItem histItem,
+        boolean force,
         boolean notifyListeners
     ) throws IgniteCheckedException {
-        Serializable val = notifyListeners ? unmarshal(histItem.valBytes) : null;
-
-        lock();
+        localMetastorageLock();
 
         try {
-            bridge.onUpdateMessage(histItem, val, notifyListeners);
+            if (!force) {
+                histItem = optimizeHistoryItem(bridge, histItem);
 
-            bridge.write(histItem.key, histItem.valBytes);
+                if (histItem == null)
+                    return;
+            }
+
+            bridge.onUpdateMessage(histItem);
+
+            if (notifyListeners)
+                for (int i = 0, len = histItem.keys.length; i < len; i++)
+                    notifyListeners(histItem.keys[i], bridge.read(histItem.keys[i], true), unmarshal(marshaller, histItem.valBytesArray[i]));
+
+            for (int i = 0, len = histItem.keys.length; i < len; i++)
+                bridge.write(histItem.keys[i], histItem.valBytesArray[i]);
         }
         finally {
-            unlock();
+            localMetastorageUnlock();
         }
 
         addToHistoryCache(ver.id, histItem);
@@ -1056,11 +1261,64 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /**
+     * Remove updates that match already existing values.
+     *
+     * @param bridge Bridge for data access.
+     * @param histItem New history item.
+     * @return Updated history item or null is resulting history item turned out to be empty.
+     * @throws IgniteCheckedException In case of IO/unmarshalling errors.
+     */
+    @Nullable private DistributedMetaStorageHistoryItem optimizeHistoryItem(
+        DistributedMetaStorageBridge bridge,
+        DistributedMetaStorageHistoryItem histItem
+    ) throws IgniteCheckedException {
+        String[] keys = histItem.keys;
+        byte[][] valBytesArr = histItem.valBytesArray;
+
+        int len = keys.length;
+        int cnt = 0;
+
+        BitSet matches = new BitSet(len);
+
+        for (int i = 0; i < len; i++) {
+            String key = keys[i];
+            byte[] valBytes = valBytesArr[i];
+            byte[] existingValBytes = (byte[])bridge.read(key, false);
+
+            if (Arrays.equals(valBytes, existingValBytes))
+                matches.set(i);
+            else
+                ++cnt;
+        }
+
+        if (cnt == 0)
+            return null;
+
+        if (cnt != len) {
+            String[] newKeys = new String[cnt];
+            byte[][] newValBytesArr = new byte[cnt][];
+
+            for (int src = 0, dst = 0; src < len; src++) {
+                if (!matches.get(src)) {
+                    newKeys[dst] = keys[src];
+                    newValBytesArr[dst] = valBytesArr[src];
+
+                    ++dst;
+                }
+            }
+
+            return new DistributedMetaStorageHistoryItem(newKeys, newValBytesArr);
+        }
+
+        return histItem;
+    }
+
+    /**
      * Store data in local metastorage or in memory.
      *
      * @param bridge Bridge to get the access to the storage.
      * @param msg Message with all required data.
-     * @see #completeWrite(DistributedMetaStorageBridge, DistributedMetaStorageHistoryItem, boolean)
+     * @see #completeWrite(DistributedMetaStorageBridge, DistributedMetaStorageHistoryItem, boolean, boolean)
      */
     private void completeCas(
         DistributedMetaStorageBridge bridge,
@@ -1069,12 +1327,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (!msg.matches())
             return;
 
-        lock();
+        localMetastorageLock();
 
         try {
             Serializable oldVal = bridge.read(msg.key(), true);
 
-            Serializable expVal = unmarshal(msg.expectedValue());
+            Serializable expVal = unmarshal(marshaller, msg.expectedValue());
 
             if (!Objects.deepEquals(oldVal, expVal)) {
                 msg.setMatches(false);
@@ -1084,38 +1342,21 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             }
         }
         finally {
-            unlock();
+            localMetastorageUnlock();
         }
 
-        completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), true);
+        completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), false, true);
     }
 
     /**
-     * Store current update into the in-memory history cache. {@link #histSizeApproximation} is recalculated during this
-     * process.
+     * Store current update into the in-memory history cache.
      *
      * @param ver Version for the update.
      * @param histItem Update itself.
      */
     void addToHistoryCache(long ver, DistributedMetaStorageHistoryItem histItem) {
-        DistributedMetaStorageHistoryItem old = histCache.put(ver, histItem);
-
-        assert old == null : old;
-
-        histSizeApproximation += histItem.estimateSize();
-    }
-
-    /**
-     * Remove specific update from the in-memory history cache. {@link #histSizeApproximation} is recalculated during
-     * this process.
-     *
-     * @param ver Version of the update.
-     */
-    void removeFromHistoryCache(long ver) {
-        DistributedMetaStorageHistoryItem old = histCache.remove(ver);
-
-        if (old != null)
-            histSizeApproximation -= old.estimateSize();
+        if (!isClient)
+            histCache.put(ver, histItem);
     }
 
     /**
@@ -1123,8 +1364,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      */
     void clearHistoryCache() {
         histCache.clear();
-
-        histSizeApproximation = 0L;
     }
 
     /**
@@ -1135,18 +1374,18 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) throws IgniteCheckedException {
         long maxBytes = histMaxBytes;
 
-        if (histSizeApproximation > maxBytes && histCache.size() > 1) {
-            lock();
+        if (histCache.sizeInBytes() > maxBytes && histCache.size() > 1) {
+            localMetastorageLock();
 
             try {
-                while (histSizeApproximation > maxBytes && histCache.size() > 1) {
+                while (histCache.sizeInBytes() > maxBytes && histCache.size() > 1) {
                     bridge.removeHistoryItem(ver.id + 1 - histCache.size());
 
-                    removeFromHistoryCache(ver.id + 1 - histCache.size());
+                    histCache.removeOldest();
                 }
             }
             finally {
-                unlock();
+                localMetastorageUnlock();
             }
         }
     }
@@ -1155,8 +1394,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Add update into the list of deferred updates. Works for inactive nodes only.
      */
     private void updateLater(DistributedMetaStorageHistoryItem update) {
-        assert Thread.holdsLock(innerStateLock);
-
         assert startupExtras != null;
 
         startupExtras.deferredUpdates.add(update);
@@ -1174,22 +1411,38 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         DistributedMetaStorageHistoryItem lastUpdate = histCache.get(ver.id);
 
         if (lastUpdate != null) {
-            byte[] valBytes = (byte[])bridge.read(lastUpdate.key, false);
+            localMetastorageLock();
 
-            if (!Arrays.equals(valBytes, lastUpdate.valBytes)) {
-                lock();
+            try {
+                boolean checkDataEquality = true;
 
-                try {
-                    bridge.write(lastUpdate.key, lastUpdate.valBytes);
+                for (int i = 0, len = lastUpdate.keys.length; i < len; i++) {
+                    String lastUpdateKey = lastUpdate.keys[i];
+                    byte[] lastUpdateValBytes = lastUpdate.valBytesArray[i];
+
+                    boolean write;
+
+                    if (!checkDataEquality)
+                        write = true;
+                    else {
+                        byte[] existingValBytes = (byte[])bridge.read(lastUpdateKey, false);
+
+                        write = !Arrays.equals(existingValBytes, lastUpdateValBytes);
+
+                        checkDataEquality = false;
+                    }
+
+                    if (write)
+                        bridge.write(lastUpdateKey, lastUpdateValBytes);
                 }
-                finally {
-                    unlock();
-                }
+            }
+            finally {
+                localMetastorageUnlock();
             }
         }
 
         for (DistributedMetaStorageHistoryItem histItem : startupExtras.deferredUpdates)
-            completeWrite(bridge, histItem, false);
+            completeWrite(bridge, histItem, true, false);
 
         notifyListenersBeforeReadyForWrite(bridge);
     }
@@ -1202,9 +1455,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void notifyListenersBeforeReadyForWrite(
         DistributedMetaStorageBridge bridge
     ) throws IgniteCheckedException {
-        DistributedMetaStorageHistoryItem[] oldData = this.bridge.localFullData();
+        DistributedMetaStorageKeyValuePair[] oldData = this.bridge.localFullData();
 
-        DistributedMetaStorageHistoryItem[] newData = bridge.localFullData();
+        DistributedMetaStorageKeyValuePair[] newData = bridge.localFullData();
 
         int oldIdx = 0, newIdx = 0;
 
@@ -1218,19 +1471,19 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             int c = oldKey.compareTo(newKey);
 
             if (c < 0) {
-                notifyListeners(oldKey, unmarshal(oldValBytes), null);
+                notifyListeners(oldKey, unmarshal(marshaller, oldValBytes), null);
 
                 ++oldIdx;
             }
             else if (c > 0) {
-                notifyListeners(newKey, null, unmarshal(newValBytes));
+                notifyListeners(newKey, null, unmarshal(marshaller, newValBytes));
 
                 ++newIdx;
             }
             else {
-                Serializable oldVal = unmarshal(oldValBytes);
+                Serializable oldVal = unmarshal(marshaller, oldValBytes);
 
-                Serializable newVal = Arrays.equals(oldValBytes, newValBytes) ? oldVal : unmarshal(newValBytes);
+                Serializable newVal = Arrays.equals(oldValBytes, newValBytes) ? oldVal : unmarshal(marshaller, newValBytes);
 
                 notifyListeners(oldKey, oldVal, newVal);
 
@@ -1241,10 +1494,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
 
         for (; oldIdx < oldData.length; ++oldIdx)
-            notifyListeners(oldData[oldIdx].key, unmarshal(oldData[oldIdx].valBytes), null);
+            notifyListeners(oldData[oldIdx].key, unmarshal(marshaller, oldData[oldIdx].valBytes), null);
 
         for (; newIdx < newData.length; ++newIdx)
-            notifyListeners(newData[newIdx].key, null, unmarshal(newData[newIdx].valBytes));
+            notifyListeners(newData[newIdx].key, null, unmarshal(marshaller, newData[newIdx].valBytes));
     }
 
     /**
@@ -1253,8 +1506,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @param nodeData Data received from remote node.
      */
     private void writeFullDataLater(DistributedMetaStorageClusterNodeData nodeData) {
-        assert Thread.holdsLock(innerStateLock);
-
         assert nodeData.fullData != null;
 
         startupExtras.fullNodeData = nodeData;
@@ -1276,7 +1527,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @param oldVal Old value.
      * @param newVal New value.
      */
-    void notifyListeners(String key, Serializable oldVal, Serializable newVal) {
+    private void notifyListeners(String key, Serializable oldVal, Serializable newVal) {
         for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : lsnrs) {
             if (entry.get1().test(key)) {
                 try {
@@ -1297,12 +1548,22 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** Checkpoint read lock. */
-    private void lock() {
+    private void localMetastorageLock() {
         ctx.cache().context().database().checkpointReadLock();
     }
 
     /** Checkpoint read unlock. */
-    private void unlock() {
+    private void localMetastorageUnlock() {
         ctx.cache().context().database().checkpointReadUnlock();
+    }
+
+    /** */
+    public DistributedMetaStorageVersion getVer() {
+        return ver;
+    }
+
+    /** */
+    public void setVer(DistributedMetaStorageVersion ver) {
+        this.ver = ver;
     }
 }

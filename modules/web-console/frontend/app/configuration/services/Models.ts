@@ -53,6 +53,47 @@ export default class Models {
         ]
     };
 
+    inlineSizeTypes = [
+        {label: 'Auto', value: -1},
+        {label: 'Custom', value: 1},
+        {label: 'Disabled', value: 0}
+    ];
+
+    inlineSizeType = {
+        _val(queryIndex) {
+            return (queryIndex.inlineSizeType === null || queryIndex.inlineSizeType === void 0) ? -1 : queryIndex.inlineSizeType;
+        },
+        onChange: (queryIndex) => {
+            const inlineSizeType = this.inlineSizeType._val(queryIndex);
+            switch (inlineSizeType) {
+                case 1:
+                    return queryIndex.inlineSize = queryIndex.inlineSize > 0 ? queryIndex.inlineSize : null;
+                case 0:
+                case -1:
+                    return queryIndex.inlineSize = queryIndex.inlineSizeType;
+                default: break;
+            }
+        },
+        default: 'Auto'
+    };
+
+    fieldProperties = {
+        typesWithPrecision: ['BigDecimal', 'String', 'byte[]'],
+        fieldPresentation: (entity, available) => {
+            if (!entity)
+                return '';
+
+            const precision = available('2.7.0') && this.fieldProperties.precisionAvailable(entity);
+            const scale = available('2.7.0') && this.fieldProperties.scaleAvailable(entity);
+
+            return `${entity.name || ''} ${entity.className || ''}${precision && entity.precision ? ' (' + entity.precision : ''}\
+${scale && entity.precision && entity.scale ? ',' + entity.scale : ''}${precision && entity.precision ? ')' : ''}\
+${available('2.3.0') && entity.notNull ? ' Not NULL' : ''}${available('2.4.0') && entity.defaultValue ? ' DEFAULT ' + entity.defaultValue : ''}`;
+        },
+        precisionAvailable: (entity) => entity && this.fieldProperties.typesWithPrecision.includes(entity.className),
+        scaleAvailable: (entity) => entity && entity.className === 'BigDecimal'
+    };
+
     indexSortDirection = {
         values: [
             {value: true, label: 'ASC'},

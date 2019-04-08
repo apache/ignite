@@ -59,7 +59,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     -var pojoStoreFactory = `${storeFactory}.CacheJdbcPojoStoreFactory`
                     -var required = `${storeFactoryKind} === 'CacheJdbcPojoStoreFactory'`
 
-                    .pc-form-grid-col-60
+                    .pc-form-grid-col-30
                         +form-field__text({
                             label: 'Data source bean name:',
                             model: `${pojoStoreFactory}.dataSourceBean`,
@@ -74,7 +74,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                             +form-field__error({ error: 'required', message: 'Data source bean name is required' })
                             +form-field__error({ error: 'isValidJavaIdentifier', message: 'Data source bean name is not a valid Java identifier' })
                             +form-field__error({ error: 'notJavaReservedWord', message: 'Data source bean name should not be a Java reserved word' })
-                    .pc-form-grid-col-60
+                    .pc-form-grid-col-30
                         +form-field__dialect({
                             label: 'Dialect:',
                             model: `${pojoStoreFactory}.dialect`,
@@ -82,8 +82,12 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                             required,
                             tip: 'Dialect of SQL implemented by a particular RDBMS:',
                             genericDialectName: 'Generic JDBC dialect',
-                            placeholder: 'Choose JDBC dialect'
+                            placeholder: 'Choose JDBC dialect',
+                            change:`$ctrl.clearImplementationVersion(${pojoStoreFactory})`
                         })
+                    .pc-form-grid-col-60(ng-if=`$ctrl.Caches.requiresProprietaryDrivers(${pojoStoreFactory})`)
+                        a.link-success(ng-href=`{{ $ctrl.Caches.JDBCDriverURL(${pojoStoreFactory}) }}` target='_blank')
+                            | Download JDBC drivers?
                     .pc-form-grid-col-30
                         +form-field__number({
                             label:'Batch size:',
@@ -193,7 +197,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
 
                     -var required = `${storeFactoryKind} === 'CacheJdbcBlobStoreFactory' && ${blobStoreFactoryVia} !== 'URL'`
 
-                    .pc-form-grid-col-60(ng-if-start=`${blobStoreFactoryVia} !== 'URL'`)
+                    .pc-form-grid-col-30(ng-if-start=`${blobStoreFactoryVia} !== 'URL'`)
                         +form-field__text({
                             label: 'Data source bean name:',
                             model: `${blobStoreFactory}.dataSourceBean`,
@@ -208,7 +212,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                             +form-field__error({ error: 'required', message: 'Data source bean name is required' })
                             +form-field__error({ error: 'isValidJavaIdentifier', message: 'Data source bean name is not a valid Java identifier' })
                             +form-field__error({ error: 'notJavaReservedWord', message: 'Data source bean name should not be a Java reserved word' })
-                    .pc-form-grid-col-60(ng-if-end)
+                    .pc-form-grid-col-30(ng-if-end)
                         +form-field__dialect({
                             label: 'Database:',
                             model: `${blobStoreFactory}.dialect`,
@@ -218,7 +222,9 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                             genericDialectName: 'Generic database',
                             placeholder: 'Choose database'
                         })
-
+                    .pc-form-grid-col-60(ng-if=`$ctrl.Caches.requiresProprietaryDrivers(${blobStoreFactory})`)
+                        a.link-success(ng-href=`{{ $ctrl.Caches.JDBCDriverURL(${blobStoreFactory}) }}` target='_blank')
+                            | Download JDBC drivers?
                     .pc-form-grid-col-60
                         +form-field__checkbox({
                             label: 'Init schema',
@@ -290,6 +296,15 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                             })
 
             - form = 'store'
+            .pc-form-grid-col-60
+                +form-field__number({
+                    label: 'Concurrent load all threshold:',
+                    model: `${model}.storeConcurrentLoadAllThreshold`,
+                    name: '"storeConcurrentLoadAllThreshold"',
+                    placeholder: '5',
+                    min: '1',
+                    tip: 'Threshold used in cases when values for multiple keys are being loaded from an underlying cache store in parallel'
+                })
             .pc-form-grid-col-60
                 +form-field__checkbox({
                     label: 'Keep binary in store',

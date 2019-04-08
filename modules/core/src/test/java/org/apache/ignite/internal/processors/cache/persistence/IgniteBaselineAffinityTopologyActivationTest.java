@@ -388,7 +388,9 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         nodeB = startGridWithConsistentId("B");
         nodeC = startGridWithConsistentId("C");
 
-        verifyBaselineTopologyOnNodes(verifier2, new Ignite[] {nodeA, nodeB, nodeC});
+        awaitPartitionMapExchange();
+
+        verifyBaselineTopologyOnNodes(verifier1, new Ignite[] {nodeA, nodeB, nodeC});
     }
 
     /**
