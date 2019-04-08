@@ -181,8 +181,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         assert rs != null;
 
-        assert stmt.getResultSet() == null;
-
         int cnt = 0;
 
         while (rs.next()) {
@@ -205,6 +203,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         }
 
         assert cnt == 2;
+
+        assertFalse("Statement has more results.", stmt.getMoreResults());
     }
 
     /**
@@ -395,15 +395,21 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         assert stmt.execute(sql.toString());
 
-        for (int i = 0; i < stmtCnt; ++i) {
-            assert stmt.getMoreResults();
-
+        for (int i = 0; i < stmtCnt - 1; ++i) {
             ResultSet rs = stmt.getResultSet();
 
             assert rs.next();
             assert rs.getInt(1) == i;
             assert !rs.next();
+
+            assert stmt.getMoreResults();
         }
+
+        ResultSet rs = stmt.getResultSet();
+
+        assert rs.next();
+        assert rs.getInt(1) == stmtCnt - 1;
+        assert !rs.next();
 
         assert !stmt.getMoreResults();
     }
@@ -429,6 +435,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         // DROP TABLE statement
         assert stmt0.getResultSet() == null;
         assert stmt0.getUpdateCount() == 0;
+
+        stmt0.getMoreResults();
 
         // CREATE TABLE statement
         assert stmt0.getResultSet() == null;
@@ -469,6 +477,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         // DROP TABLE statement
         assert stmt0.getResultSet() == null;
         assert stmt0.getUpdateCount() == 0;
+
+        assertTrue("Result set doesn't have more results.", stmt0.getMoreResults());
 
         // CREATE TABLE statement
         assert stmt0.getResultSet() == null;
@@ -861,7 +871,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @org.junit.Test
-    public void testGetMoreResults1() throws Exception {
+    public void testGetMoreResultsKeepCurrent() throws Exception {
         assert !stmt.getMoreResults(Statement.CLOSE_CURRENT_RESULT);
         assert !stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
         assert !stmt.getMoreResults(Statement.CLOSE_ALL_RESULTS);
@@ -874,9 +884,29 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         assert !rs.isClosed();
 
+        stmt.close();
+
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @org.junit.Test
+    public void testGetMoreResultsCloseAll() throws Exception {
+        assert !stmt.getMoreResults(Statement.CLOSE_CURRENT_RESULT);
+        assert !stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
         assert !stmt.getMoreResults(Statement.CLOSE_ALL_RESULTS);
 
-        assert rs.isClosed();
+        stmt.execute("select 1; ");
+
+        ResultSet rs = stmt.getResultSet();
+
+        assert !stmt.getMoreResults(Statement.CLOSE_ALL_RESULTS);
 
         stmt.close();
 

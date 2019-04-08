@@ -547,55 +547,36 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public ResultSet getResultSet() throws SQLException {
-        JdbcThinResultSet rs = nextResultSet();
+        ensureAlive();
 
-        if (rs == null)
+        if (resultSets == null || curRes >= resultSets.size())
             return null;
 
-        if (!rs.isQuery()) {
-            curRes--;
+        JdbcThinResultSet rs = resultSets.get(curRes);
 
+        if (!rs.isQuery())
             return null;
-        }
 
         return rs;
     }
 
     /** {@inheritDoc} */
     @Override public int getUpdateCount() throws SQLException {
-        JdbcThinResultSet rs = nextResultSet();
+        ensureAlive();
 
-        if (rs == null)
+        if (resultSets == null || curRes >= resultSets.size())
             return -1;
 
-        if (rs.isQuery()) {
-            curRes--;
+        JdbcThinResultSet rs = resultSets.get(curRes);
 
+        if (rs.isQuery())
             return -1;
-        }
 
         return (int)rs.updatedCount();
     }
 
-    /**
-     * Get last result set if any.
-     *
-     * @return Result set or null.
-     * @throws SQLException If failed.
-     */
-    private JdbcThinResultSet nextResultSet() throws SQLException {
-        ensureAlive();
-
-        if (resultSets == null || curRes >= resultSets.size())
-            return null;
-        else
-            return resultSets.get(curRes++);
-    }
-
     /** {@inheritDoc} */
     @Override public boolean getMoreResults() throws SQLException {
-        ensureAlive();
-
         return getMoreResults(CLOSE_CURRENT_RESULT);
     }
 
@@ -745,6 +726,11 @@ public class JdbcThinStatement implements Statement {
     /** {@inheritDoc} */
     @Override public boolean getMoreResults(int curr) throws SQLException {
         ensureAlive();
+
+        if (resultSets == null || curRes >= resultSets.size())
+            return false;
+
+        curRes++;
 
         if (resultSets != null) {
             assert curRes <= resultSets.size() : "Invalid results state: [resultsCount=" + resultSets.size() +
