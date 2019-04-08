@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.concurrent.Callable;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -25,7 +24,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.UnsupportedTxModeException;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -56,54 +57,21 @@ public class CacheMvccSqlTxModesTest extends CacheMvccAbstractTest {
         IgniteCache<Object, Object> nonMvccCache = node.createCache(new CacheConfiguration<>("no-mvcc-cache")
             .setAtomicityMode(TRANSACTIONAL).setIndexedTypes(Integer.class, Integer.class));
 
-        nonMvccCache.put(1,1);
+        nonMvccCache.put(1, 1);
 
-        try (Transaction tx = node.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
-            nonMvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer")).getAll();
+        for (TransactionConcurrency conc : TransactionConcurrency.values()) {
+            for (TransactionIsolation iso : TransactionIsolation.values()) {
+                try (Transaction tx = node.transactions().txStart(conc, iso)) {
+                    nonMvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer")).getAll();
 
-            tx.commit();
-        }
+                    tx.commit();
+                }
+                catch (Throwable t) {
+                    log.error("Transaction failed: concurrency=" + conc + ", isolation=" + iso, t);
 
-        try (Transaction tx = node.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-            nonMvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer")).getAll();
-
-            tx.commit();
-        }
-
-        try (Transaction tx = node.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-            nonMvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer")).getAll();
-
-            tx.commit();
-        }
-
-        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            nonMvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer")).getAll();
-
-            tx.commit();
-        }
-
-        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            nonMvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer")).getAll();
-
-            tx.commit();
-        }
-
-        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
-            nonMvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer")).getAll();
-
-            tx.commit();
-        }
-
-        try (Transaction tx = node.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-            nonMvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer").setLocal(true)).getAll();
-
-            tx.commit();
-        }
-
-        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
-            nonMvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer").setLocal(true)).getAll();
-
-            tx.commit();
+                    throw t;
+                }
+            }
         }
     }
 
@@ -129,7 +97,7 @@ public class CacheMvccSqlTxModesTest extends CacheMvccAbstractTest {
 
                 return null;
             }
-        }, UnsupportedTxModeException.class, "Only pessimistic transactions are supported when MVCC is enabled");
+        }, TransactionUnsupportedConcurrencyException.class, "Only pessimistic transactions are supported when MVCC is enabled");
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -141,7 +109,7 @@ public class CacheMvccSqlTxModesTest extends CacheMvccAbstractTest {
 
                 return null;
             }
-        }, UnsupportedTxModeException.class, "Only pessimistic transactions are supported when MVCC is enabled");
+        }, TransactionUnsupportedConcurrencyException.class, "Only pessimistic transactions are supported when MVCC is enabled");
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -153,7 +121,7 @@ public class CacheMvccSqlTxModesTest extends CacheMvccAbstractTest {
 
                 return null;
             }
-        }, UnsupportedTxModeException.class, "Only pessimistic transactions are supported when MVCC is enabled");
+        }, TransactionUnsupportedConcurrencyException.class, "Only pessimistic transactions are supported when MVCC is enabled");
 
         try (Transaction tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             mvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer")).getAll();
@@ -187,11 +155,7 @@ public class CacheMvccSqlTxModesTest extends CacheMvccAbstractTest {
         IgniteCache<Object, Object> nonMvccCache = node.createCache(new CacheConfiguration<>("no-mvcc-cache")
             .setAtomicityMode(TRANSACTIONAL).setIndexedTypes(Integer.class, Integer.class));
 
-        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            nonMvccCache.put(1, 1);
-
-            tx.commit();
-        }
+        nonMvccCache.put(1, 1);
 
         try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             mvccCache.query(new SqlFieldsQuery("INSERT INTO Integer (_key, _val) VALUES (3,3)")).getAll();
@@ -207,6 +171,14 @@ public class CacheMvccSqlTxModesTest extends CacheMvccAbstractTest {
 
         try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             mvccCache.query(new SqlFieldsQuery("INSERT INTO Integer (_key, _val) VALUES (5,5)")).getAll();
+
+            tx.commit();
+        }
+
+        nonMvccCache.put(6, 6);
+
+        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            mvccCache.query(new SqlFieldsQuery("INSERT INTO Integer (_key, _val) VALUES (7,7)")).getAll();
 
             tx.commit();
         }

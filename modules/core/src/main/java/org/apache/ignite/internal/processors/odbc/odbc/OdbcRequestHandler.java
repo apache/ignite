@@ -41,8 +41,8 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.transactions.NonMvccTransactionException;
-import org.apache.ignite.transactions.UnsupportedTxModeException;
+import org.apache.ignite.transactions.TransactionMixedModeException;
+import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -984,9 +984,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, msg);
         if (e instanceof TransactionAlreadyCompletedException)
             return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_COMPLETED, msg);
-        if (e instanceof NonMvccTransactionException)
+        if (e instanceof TransactionMixedModeException)
             return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH, msg);
-        if (e instanceof UnsupportedTxModeException)
+        if (e instanceof TransactionUnsupportedConcurrencyException)
             return new OdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION, msg);
         if (e instanceof TransactionDuplicateKeyException)
             return new OdbcResponse(IgniteQueryErrorCode.DUPLICATE_KEY, msg);

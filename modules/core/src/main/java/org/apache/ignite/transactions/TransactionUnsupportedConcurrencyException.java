@@ -18,11 +18,11 @@
 package org.apache.ignite.transactions;
 
 /** */
-public class NonMvccTransactionException extends TransactionException {
+public class TransactionUnsupportedConcurrencyException extends TransactionException {
     /** */
     private static final long serialVersionUID = 0L;
     /** */
-    public NonMvccTransactionException() {
-        super("Operations on MVCC caches are not permitted in transactions spanning non MVCC caches.");
+    public TransactionUnsupportedConcurrencyException() {
+        super("Only pessimistic transactions are supported when MVCC is enabled.");
     }
 }

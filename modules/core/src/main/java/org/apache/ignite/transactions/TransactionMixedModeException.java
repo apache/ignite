@@ -18,11 +18,11 @@
 package org.apache.ignite.transactions;
 
 /** */
-public class UnsupportedTxModeException extends TransactionException {
+public class TransactionMixedModeException extends TransactionException {
     /** */
     private static final long serialVersionUID = 0L;
     /** */
-    public UnsupportedTxModeException() {
-        super("Only pessimistic transactions are supported when MVCC is enabled.");
+    public TransactionMixedModeException() {
+        super("Operations on MVCC caches are not permitted in transactions spanning non MVCC caches.");
     }
 }
