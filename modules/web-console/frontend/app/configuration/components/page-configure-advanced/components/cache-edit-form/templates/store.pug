@@ -297,6 +297,15 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
 
             - form = 'store'
             .pc-form-grid-col-60
+                +form-field__number({
+                    label: 'Concurrent load all threshold:',
+                    model: `${model}.storeConcurrentLoadAllThreshold`,
+                    name: '"storeConcurrentLoadAllThreshold"',
+                    placeholder: '5',
+                    min: '1',
+                    tip: 'Threshold used in cases when values for multiple keys are being loaded from an underlying cache store in parallel'
+                })
+            .pc-form-grid-col-60
                 +form-field__checkbox({
                     label: 'Keep binary in store',
                     model: `${model}.storeKeepBinary`,
