@@ -1737,14 +1737,20 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         if (mvcc == null || mvcc.isEmpty(tx.xidVersion()))
                             clearReaders();
                         else {
-                            Collection<GridCacheMvccCandidate> locs = mvcc.localCandidates(tx.xidVersion());
+                            // Optimize memory usage - do not allocate additional array.
+                            List<GridCacheMvccCandidate> locs = mvcc.localCandidatesNoCopy(false);
+
+                            GridCacheVersion txVer = tx.xidVersion();
 
                             UUID originatingNodeId = tx.originatingNodeId();
 
                             boolean hasOriginatingNodeId = false;
 
-                            for (GridCacheMvccCandidate candidate : locs) {
-                                if (Objects.equals(candidate.otherNodeId(), originatingNodeId)) {
+                            for (GridCacheMvccCandidate c : locs) {
+                                if (c.reentry() || Objects.equals(c.version(), txVer))
+                                    continue;
+
+                                if (Objects.equals(c.otherNodeId(), originatingNodeId)) {
                                     hasOriginatingNodeId = true;
 
                                     break;
