@@ -594,7 +594,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert firstDiscoEvt0 != null;
 
         return firstDiscoEvt0.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
-            || !firstDiscoEvt0.eventNode().isClient() || firstDiscoEvt0.eventNode().isLocal();
+            || !firstDiscoEvt0.eventNode().isClient()
+            || firstDiscoEvt0.eventNode().isLocal()
+            || ((firstDiscoEvt.type() == EVT_NODE_JOINED) &&
+                cctx.cache().hasCachesReceivedFromJoin(firstDiscoEvt.eventNode()));
     }
 
     /**
