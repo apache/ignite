@@ -1282,9 +1282,11 @@ class ClusterCachesInfo {
                     cachesToDestroy.add(cacheDescriptor.cacheName());
             }
 
-            ctx.cache().dynamicDestroyCaches(cachesToDestroy, false);
+            if (!cachesToDestroy.isEmpty()) {
+                ctx.cache().dynamicDestroyCaches(cachesToDestroy, false);
 
-            throw new IllegalStateException("Node can't join to cluster in compatibility mode with newly configured caches: " + cachesToDestroy);
+                throw new IllegalStateException("Node can't join to cluster in compatibility mode with newly configured caches: " + cachesToDestroy);
+            }
         }
     }
 
