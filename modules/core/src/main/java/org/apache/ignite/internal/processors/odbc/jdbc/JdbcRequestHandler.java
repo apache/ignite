@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.sql.BatchUpdateException;
-import java.sql.ParameterMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -549,30 +548,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         ((SqlFieldsQueryEx)qry).setSkipReducerOnUpdate(true);
             }
 
+            setupQuery(qry, prepareSchemaName(req.schemaName()));
+
             qry.setArgs(req.arguments());
-
-            qry.setDistributedJoins(cliCtx.isDistributedJoins());
-            qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
-            qry.setCollocated(cliCtx.isCollocated());
-            qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
-            qry.setLazy(cliCtx.isLazy());
-            qry.setNestedTxMode(nestedTxMode);
             qry.setAutoCommit(req.autoCommit());
-
-            if (cliCtx.dataPageScanEnabled() != null)
-                qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
 
             qry.setPageSize(req.pageSize());
-
-            String schemaName = req.schemaName();
-
-            if (F.isEmpty(schemaName))
-                schemaName = QueryUtils.DFLT_SCHEMA;
-
-            qry.setSchema(schemaName);
 
             List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFields(null, qry, cliCtx, true,
                 protocolVer.compareTo(VER_2_3_0) < 0, cancel);
@@ -849,10 +833,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
 
         try {
-            String schemaName = req.schemaName();
-
-            if (F.isEmpty(schemaName))
-                schemaName = QueryUtils.DFLT_SCHEMA;
+            String schemaName = prepareSchemaName(req.schemaName());
 
             int qryCnt = req.queries().size();
 
@@ -870,18 +851,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                     qry = new SqlFieldsQueryEx(q.sql(), false);
 
-                    qry.setDistributedJoins(cliCtx.isDistributedJoins());
-                    qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
-                    qry.setCollocated(cliCtx.isCollocated());
-                    qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
-                    qry.setLazy(cliCtx.isLazy());
-                    qry.setNestedTxMode(nestedTxMode);
+                    setupQuery(qry, schemaName);
+
                     qry.setAutoCommit(req.autoCommit());
-
-                    if (cliCtx.dataPageScanEnabled() != null)
-                        qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
-
-                    qry.setSchema(schemaName);
                 }
 
                 assert qry != null;
@@ -909,6 +881,38 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         finally {
             cleanupQueryCancellationMeta(true, req.requestId());
         }
+    }
+
+    /**
+     * Normalize schema name.
+     *
+     * @param schemaName Schema name.
+     * @return Normalized schema name.
+     */
+    private static String prepareSchemaName(@Nullable String schemaName) {
+        if (F.isEmpty(schemaName))
+            schemaName = QueryUtils.DFLT_SCHEMA;
+
+        return schemaName;
+    }
+
+    /**
+     * Sets up query object with settings from current client context state and handler state.
+     *
+     * @param qry Query to setup.
+     * @param schemaName Schema name.
+     */
+    private void setupQuery(SqlFieldsQueryEx qry, String schemaName) {
+        qry.setDistributedJoins(cliCtx.isDistributedJoins());
+        qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
+        qry.setCollocated(cliCtx.isCollocated());
+        qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
+        qry.setLazy(cliCtx.isLazy());
+        qry.setNestedTxMode(nestedTxMode);
+        qry.setSchema(schemaName);
+
+        if (cliCtx.dataPageScanEnabled() != null)
+            qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
     }
 
     /**
@@ -1070,16 +1074,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse getParametersMeta(JdbcMetaParamsRequest req) {
+        String schemaName = prepareSchemaName(req.schemaName());
+
+        SqlFieldsQueryEx qry = new SqlFieldsQueryEx(req.sql(), null);
+
+        setupQuery(qry, schemaName);
+
         try {
-            ParameterMetaData paramMeta = ctx.query().prepareNativeStatement(req.schemaName(), req.sql())
-                .getParameterMetaData();
-
-            int size = paramMeta.getParameterCount();
-
-            List<JdbcParameterMeta> meta = new ArrayList<>(size);
-
-            for (int i = 0; i < size; i++)
-                meta.add(new JdbcParameterMeta(paramMeta, i + 1));
+            List<JdbcParameterMeta> meta = ctx.query().getIndexing().parameterMetaData(schemaName, qry);
 
             JdbcMetaParamsResult res = new JdbcMetaParamsResult(meta);
 
