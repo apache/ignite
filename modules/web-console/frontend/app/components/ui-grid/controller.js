@@ -144,7 +144,7 @@ export default class IgniteUiGrid {
                 this.resizeObserver.observe(this.$element[0]);
 
                 if (this.onApiRegistered)
-                    this.onApiRegistered();
+                    this.onApiRegistered({$event: api});
             }
         };
 
