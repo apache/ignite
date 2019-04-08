@@ -22,6 +22,7 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Object that contains serialized values for fields marked with {@link org.apache.ignite.configuration.SerializeSeparately}
@@ -39,11 +40,17 @@ public class CacheConfigurationEnrichment implements Serializable {
     /** Field name -> Field value class name. */
     private final Map<String, String> fieldClassNames;
 
+    /** Enrichment fields for {@link org.apache.ignite.configuration.NearCacheConfiguration}. */
+    private @Nullable CacheConfigurationEnrichment nearCacheCfgEnrichment;
+
     /**
      * @param enrichFields Enrich fields.
      * @param fieldClassNames Field class names.
      */
-    public CacheConfigurationEnrichment(Map<String, byte[]> enrichFields, Map<String, String> fieldClassNames) {
+    public CacheConfigurationEnrichment(
+            Map<String, byte[]> enrichFields,
+            Map<String, String> fieldClassNames
+    ) {
         this.enrichFields = enrichFields;
         this.fieldClassNames = fieldClassNames;
     }
@@ -69,6 +76,20 @@ public class CacheConfigurationEnrichment implements Serializable {
      */
     public String getFieldClassName(String fieldName) {
         return fieldClassNames.get(fieldName);
+    }
+
+    /**
+     * @param nearCacheCfgEnrichment Enrichment configured for {@link org.apache.ignite.configuration.NearCacheConfiguration}.
+     */
+    public void nearCacheConfigurationEnrichment(CacheConfigurationEnrichment nearCacheCfgEnrichment) {
+        this.nearCacheCfgEnrichment = nearCacheCfgEnrichment;
+    }
+
+    /**
+     * @return Enrichment for configured {@link org.apache.ignite.configuration.NearCacheConfiguration}.
+     */
+    public CacheConfigurationEnrichment nearCacheConfigurationEnrichment() {
+        return nearCacheCfgEnrichment;
     }
 
     /** {@inheritDoc} */

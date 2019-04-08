@@ -40,8 +40,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Test suite to check that user-defined parameters for dynamic cache configurations are not explicitly deserialized
- * on non-affinity nodes.
+ * Test suite to check that user-defined parameters (marked as {@link org.apache.ignite.configuration.SerializeSeparately})
+ * for dynamic cache configurations are not explicitly deserialized on non-affinity nodes.
  */
 @RunWith(Parameterized.class)
 public class CacheConfigurationSerializationOnExchangeTest extends GridCommonAbstractTest {

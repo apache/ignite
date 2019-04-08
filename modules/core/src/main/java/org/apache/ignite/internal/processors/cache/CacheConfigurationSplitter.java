@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.SerializeSeparately;
 import org.apache.ignite.internal.util.typedef.T2;
 
@@ -31,8 +32,11 @@ import org.apache.ignite.internal.util.typedef.T2;
  *
  */
 public class CacheConfigurationSplitter {
-    /** Cache configuration to hold default values for configuration fields. */
+    /** Cache configuration to hold default field values. */
     private static final CacheConfiguration<?, ?> DEFAULT_CACHE_CONFIG = new CacheConfiguration<>();
+
+    /** Near cache configuration to hold default field values. */
+    private static final NearCacheConfiguration<?, ?> DEFAULT_NEAR_CACHE_CONFIG = new NearCacheConfiguration<>();
 
     /** If {@code false} object will return full cache configurations,
      * in other case it will return splitted cache configurations.  */
@@ -80,37 +84,69 @@ public class CacheConfigurationSplitter {
     }
 
     /**
-     * @param ccfg Ccfg.
+     * @param ccfg Cache configuration.
      */
     public T2<CacheConfiguration, CacheConfigurationEnrichment> split(CacheConfiguration ccfg) {
-        Map<String, byte[]> enrichment = new HashMap<>();
-        Map<String, String> fieldClassNames = new HashMap<>();
-
-        CacheConfiguration shrinkedCopy = new CacheConfiguration(ccfg);
-
         try {
-            for (Field field : CacheConfiguration.class.getDeclaredFields()) {
-                if (field.getDeclaredAnnotation(SerializeSeparately.class) != null) {
-                    field.setAccessible(true);
+            CacheConfiguration cfgCopy = new CacheConfiguration(ccfg);
 
-                    Object val = field.get(shrinkedCopy);
+            CacheConfigurationEnrichment enrichment = buildEnrichment(CacheConfiguration.class, cfgCopy, DEFAULT_CACHE_CONFIG);
 
-                    byte[] serializedVal = serialize(val);
+            if (ccfg.getNearConfiguration() != null) {
+                NearCacheConfiguration nearCfgCopy = new NearCacheConfiguration(ccfg.getNearConfiguration());
 
-                    enrichment.put(field.getName(), serializedVal);
+                CacheConfigurationEnrichment nearEnrichment = buildEnrichment(
+                        NearCacheConfiguration.class, nearCfgCopy, DEFAULT_NEAR_CACHE_CONFIG);
 
-                    fieldClassNames.put(field.getName(), val != null ? val.getClass().getName() : null);
+                enrichment.nearCacheConfigurationEnrichment(nearEnrichment);
 
-                    // Replace with default value.
-                    field.set(shrinkedCopy, field.get(DEFAULT_CACHE_CONFIG));
-                }
+                cfgCopy.setNearConfiguration(nearCfgCopy);
             }
+
+            return new T2<>(cfgCopy, enrichment);
         }
         catch (Exception e) {
             throw new IgniteException("Failed to split cache configuration", e);
         }
+    }
 
-        return new T2<>(shrinkedCopy, new CacheConfigurationEnrichment(enrichment, fieldClassNames));
+    /**
+     * Builds {@link CacheConfigurationEnrichment} from given config.
+     * It extracts all field values to enrichment object replacing values of that fields with default.
+     *
+     * @param configClass Configuration class.
+     * @param config Configuration to build enrichment from.
+     * @param defaultConfig Default configuration to replace enriched values with default.
+     * @param <T> Configuration class.
+     * @return Enrichment object for given config.
+     * @throws IllegalAccessException If failed.
+     */
+    private <T> CacheConfigurationEnrichment buildEnrichment(
+            Class<T> configClass,
+            T config,
+            T defaultConfig
+    ) throws IllegalAccessException {
+        Map<String, byte[]> enrichment = new HashMap<>();
+        Map<String, String> fieldClassNames = new HashMap<>();
+
+        for (Field field : configClass.getDeclaredFields()) {
+            if (field.getDeclaredAnnotation(SerializeSeparately.class) != null) {
+                field.setAccessible(true);
+
+                Object val = field.get(config);
+
+                byte[] serializedVal = serialize(val);
+
+                enrichment.put(field.getName(), serializedVal);
+
+                fieldClassNames.put(field.getName(), val != null ? val.getClass().getName() : null);
+
+                // Replace with default value.
+                field.set(config, field.get(defaultConfig));
+            }
+        }
+
+        return new CacheConfigurationEnrichment(enrichment, fieldClassNames);
     }
 
     /**

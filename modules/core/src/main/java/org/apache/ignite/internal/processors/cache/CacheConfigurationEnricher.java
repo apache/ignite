@@ -21,6 +21,7 @@ import java.lang.reflect.Field;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.SerializeSeparately;
 
 /**
@@ -55,6 +56,22 @@ public class CacheConfigurationEnricher {
 
                     field.set(enrichedCp, enrichedVal);
                 }
+
+            // Enrich near cache configuration as well.
+            if (enrichment.nearCacheConfigurationEnrichment() != null) {
+                NearCacheConfiguration nearEnrichedCp = new NearCacheConfiguration(ccfg.getNearConfiguration());
+
+                for (Field field : NearCacheConfiguration.class.getDeclaredFields())
+                    if (field.getDeclaredAnnotation(SerializeSeparately.class) != null) {
+                        field.setAccessible(true);
+
+                        Object enrichedVal = enrichment.nearCacheConfigurationEnrichment().getFieldValue(field.getName());
+
+                        field.set(nearEnrichedCp, enrichedVal);
+                    }
+
+                enrichedCp.setNearConfiguration(nearEnrichedCp);
+            }
         }
         catch (Exception e) {
             throw new IgniteException("Failed to enrich cache configuration " + ccfg.getName(), e);
