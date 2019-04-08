@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.pipeline;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -28,10 +31,6 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Tests for {@link Pipeline}.
@@ -63,8 +62,8 @@ public class PipelineTest extends TrainerTest {
         PipelineMdl<Integer, Double[]> mdl = new Pipeline<Integer, Double[], Vector>()
             .addFeatureExtractor((k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)))
             .addLabelExtractor((k, v) -> v[0])
-            .addPreprocessor(new MinMaxScalerTrainer<Integer, Object[]>())
-            .addPreprocessor(new NormalizationTrainer<Integer, Object[]>()
+            .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Object[]>())
+            .addPreprocessingTrainer(new NormalizationTrainer<Integer, Object[]>()
                 .withP(1))
             .addTrainer(trainer)
             .fit(
@@ -94,8 +93,8 @@ public class PipelineTest extends TrainerTest {
         PipelineMdl<Integer, Double[]> mdl = new Pipeline<Integer, Double[], Vector>()
             .addFeatureExtractor((k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)))
             .addLabelExtractor((k, v) -> v[0])
-            .addPreprocessor(new MinMaxScalerTrainer<Integer, Object[]>())
-            .addPreprocessor(new NormalizationTrainer<Integer, Object[]>()
+            .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Object[]>())
+            .addPreprocessingTrainer(new NormalizationTrainer<Integer, Object[]>()
                 .withP(1))
             .fit(
                 cacheMock,

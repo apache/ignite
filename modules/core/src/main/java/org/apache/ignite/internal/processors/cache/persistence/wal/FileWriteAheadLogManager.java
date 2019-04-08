@@ -2696,30 +2696,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (end == null) {
                         long nextWalSegmentIdx = curWalSegmIdx + 1;
 
+                        if (!isArchiverEnabled())
+                            if (canIgnoreCrcError(nextWalSegmentIdx, nextWalSegmentIdx, e, ptr))
+                                return null;
+
                         // Check that we should not look this segment up in archive directory.
                         // Basically the same check as in "advanceSegment" method.
-                        if (archiver != null)
+                        if (isArchiverEnabled() && archiver != null)
                             if (!canReadArchiveOrReserveWork(nextWalSegmentIdx))
                                 try {
                                     long workIdx = nextWalSegmentIdx % dsCfg.getWalSegments();
 
-                                    FileDescriptor fd = new FileDescriptor(
-                                        new File(walWorkDir, FileDescriptor.fileName(workIdx)),
-                                        nextWalSegmentIdx
-                                    );
-
-                                    try {
-                                        ReadFileHandle nextHandle = initReadHandle(fd, null);
-
-                                        // "nextHandle == null" is true only if current segment is the last one in the
-                                        // whole history. Only in such case we ignore crc validation error and just stop
-                                        // as if we reached the end of the WAL.
-                                        if (nextHandle == null)
-                                            return null;
-                                    }
-                                    catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
-                                        e.addSuppressed(initReadHandleException);
-                                    }
+                                    if (canIgnoreCrcError(workIdx, nextWalSegmentIdx, e, ptr))
+                                        return null;
                                 }
                                 finally {
                                     releaseWorkSegment(nextWalSegmentIdx);
@@ -2745,6 +2734,51 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private void releaseWorkSegment(long absIdx) {
             if (archiver != null)
                 archiver.releaseWorkSegment(absIdx);
+        }
+
+        /**
+         * Check that archiver is enabled
+         */
+        private boolean isArchiverEnabled() {
+            if (walArchiveDir != null && walWorkDir != null)
+                return !walArchiveDir.equals(walWorkDir);
+
+            return !new File(dsCfg.getWalArchivePath()).equals(new File(dsCfg.getWalPath()));
+        }
+
+        /**
+         * @param workIdx Work index.
+         * @param walSegmentIdx Wal segment index.
+         * @param e Exception.
+         * @param ptr Ptr.
+         */
+        private boolean canIgnoreCrcError(
+            long workIdx,
+            long walSegmentIdx,
+            @NotNull Exception e,
+            @Nullable FileWALPointer ptr) {
+            FileDescriptor fd = new FileDescriptor(
+                new File(walWorkDir, FileDescriptor.fileName(workIdx)),
+                walSegmentIdx
+            );
+
+            try {
+                if (!fd.file().exists())
+                    return true;
+
+                ReadFileHandle nextHandle = initReadHandle(fd, ptr);
+
+                // "nextHandle == null" is true only if current segment is the last one in the
+                // whole history. Only in such case we ignore crc validation error and just stop
+                // as if we reached the end of the WAL.
+                if (nextHandle == null)
+                    return true;
+            }
+            catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
+                e.addSuppressed(initReadHandleException);
+            }
+
+            return false;
         }
 
         /** {@inheritDoc} */

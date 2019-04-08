@@ -28,7 +28,7 @@ import org.junit.runners.model.Statement;
  */
 @SuppressWarnings({"TransientFieldInNonSerializableClass", "ExtendsUtilityClass"})
 @Deprecated
-public abstract class JUnit3TestLegacySupport extends JUnitAssertAware {
+public class JUnit3TestLegacySupport extends JUnitAssertAware {
     /**
      * Supports obtaining test name for JUnit4 framework in a way that makes it available for legacy methods invoked
      * from {@code runTest(Statement)}.
@@ -42,37 +42,6 @@ public abstract class JUnit3TestLegacySupport extends JUnitAssertAware {
      */
     public String getName() {
         return nameRule.getMethodName();
-    }
-
-    /** This method is called before a test is executed. */
-    abstract void setUp() throws Exception;
-
-    /** Runs test code in between {@code setUp} and {@code tearDown}. */
-    abstract void runTest(Statement testRoutine) throws Throwable;
-
-    /** This method is called after a test is executed. */
-    abstract void tearDown() throws Exception;
-
-    /**
-     * Runs the bare test sequence like in JUnit 3 class TestCase.
-     *
-     * @throws Throwable if any exception is thrown
-     */
-    protected final void runTestCase(Statement testRoutine) throws Throwable {
-        Throwable e = null;
-        setUp();
-        try {
-            runTest(testRoutine);
-        } catch (Throwable running) {
-            e = running;
-        } finally {
-            try {
-                tearDown();
-            } catch (Throwable tearingDown) {
-                if (e == null) e = tearingDown;
-            }
-        }
-        if (e != null) throw e;
     }
 
     /**
