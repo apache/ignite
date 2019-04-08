@@ -1845,7 +1845,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             var ex = Assert.Throws<BinaryObjectException>(action);
             var expectedExMessage = "DerivedSamePropertyClass derives from BaseSamePropertyClass and hides field Property " +
                                     "from the base class. Ignite can not serialize two fields with the same name.";
-            Assert.That(ex.Message, Is.EqualTo(expectedExMessage));
+            Assert.AreEqual(expectedExMessage, ex.Message);
         }
 
         [Test]
@@ -1863,12 +1863,12 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }
             };
 
+            // ReSharper disable once ObjectCreationAsStatement
             TestDelegate action = () => new Marshaller(cfg);
 
             var ex = Assert.Throws<BinaryObjectException>(action);
-            var expectedExMessage = "Ignite resolved two fields BaseName and Property to the same fieldId -1. " +
-                                    "Probably there is an issue with the custom field mapper.";
-            Assert.That(ex.Message, Is.EqualTo(expectedExMessage));
+            var expectedMessage = "Conflicting field IDs [type=BaseSamePropertyClass, field1=Property, field2=BaseName, fieldId=-1])";
+            Assert.AreEqual(expectedMessage, ex.Message);
         }
     }
 
@@ -2295,6 +2295,5 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class DerivedSamePropertyClass : BaseSamePropertyClass
     {
         public new int Property { get; private set; }
-        public string DerivedName { get; private set; }
     }
 }

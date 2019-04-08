@@ -152,18 +152,17 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (idMap.ContainsKey(fieldId))
                 {
-                    string existingFieldName = idMap[fieldId];
-                    string baseClassName = field.DeclaringType != null ? field.DeclaringType.Name : null;
-                    var msg = string.Format("{0} derives from {1} and hides field {2} from the base class. " +
-                                            "Ignite can not serialize two fields with the same name.", type.Name, baseClassName, fieldName);
-
-                    if (fieldName != existingFieldName)
+                    if (fieldName == idMap[fieldId])
                     {
-                        msg = string.Format("Ignite resolved two fields {0} and {1} to the same fieldId {2}. Probably " +
-                                            "there is an issue with the custom field mapper.", fieldName, existingFieldName, fieldId);
+                        string baseClassName = field.DeclaringType != null ? field.DeclaringType.Name : null;
+                        throw new BinaryObjectException(string.Format(
+                            "{0} derives from {1} and hides field {2} from the base class. " +
+                            "Ignite can not serialize two fields with the same name.", type.Name, baseClassName, fieldName));
                     }
 
-                    throw new BinaryObjectException(msg);
+                    throw new BinaryObjectException(string.Format(
+                        "Conflicting field IDs [type={0}, field1={1}, field2={2}, fieldId={3}])",
+                        type.Name, idMap[fieldId], fieldName, fieldId));
                 }
 
                 idMap[fieldId] = fieldName;
