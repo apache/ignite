@@ -101,15 +101,33 @@ namespace ignite
 {
     namespace binary
     {
-        IGNITE_BINARY_TYPE_START(ignite::examples::Person)
+        template<>
+        struct BinaryType<examples::Person>
+        {
+            static int32_t GetTypeId()
+            {
+                return GetBinaryStringHashCode("Person");
+            }
 
-            typedef ignite::examples::Person Person;
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "Person";
+            }
 
-            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Person)
-            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Person)
-            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_IS_NULL_FALSE(Person)
-            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Person)
+            static int32_t GetFieldId(const char* name)
+            {
+                return GetBinaryStringHashCode(name);
+            }
+
+            static bool IsNull(const examples::Person&)
+            {
+                return false;
+            }
+
+            static void GetNull(examples::Person& dst)
+            {
+                dst = examples::Person();
+            }
 
             static void Write(BinaryWriter& writer, const ignite::examples::Person& obj)
             {
@@ -128,18 +146,35 @@ namespace ignite
                 dst.resume = reader.ReadString("resume");
                 dst.salary = reader.ReadDouble("salary");
             }
+        };
 
-        IGNITE_BINARY_TYPE_END
+        template<>
+        struct BinaryType<examples::PersonKey>
+        {
+            static int32_t GetTypeId()
+            {
+                return GetBinaryStringHashCode("PersonKey");
+            }
 
-        IGNITE_BINARY_TYPE_START(ignite::examples::PersonKey)
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "PersonKey";
+            }
 
-            typedef ignite::examples::PersonKey PersonKey;
+            static int32_t GetFieldId(const char* name)
+            {
+                return GetBinaryStringHashCode(name);
+            }
 
-            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(PersonKey)
-            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(PersonKey)
-            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_IS_NULL_FALSE(PersonKey)
-            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(PersonKey)
+            static bool IsNull(const examples::PersonKey&)
+            {
+                return false;
+            }
+
+            static void GetNull(examples::PersonKey& dst)
+            {
+                dst = examples::PersonKey();
+            }
 
             static void Write(BinaryWriter& writer, const ignite::examples::PersonKey& obj)
             {
@@ -152,8 +187,7 @@ namespace ignite
                 dst.id = reader.ReadInt64("id");
                 dst.orgIdAff = reader.ReadInt64("orgIdAff");
             }
-
-        IGNITE_BINARY_TYPE_END
+        };
     }
 };
 
