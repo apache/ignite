@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -26,7 +25,6 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -81,35 +79,19 @@ public final class FastUpdate {
      */
     @SuppressWarnings({"unchecked"})
     public UpdateResult execute(GridCacheAdapter cache, Object[] args) throws IgniteCheckedException {
-        // We cannot remove/replace BigDecimal types due to equals() method restrictions.
-        if (keyArg.expectedType() == Value.DECIMAL)
-            return null;
-
-        if (valArg.expectedType() == Value.DECIMAL)
-            return null;
-
         // We need to convert all the objects, otherwise cache won't find existing entry by incorrect typed key/val.
         CacheObjectContext coCtx = cache.context().cacheObjectContext();
 
-        Object key = H2Utils.convert(keyArg.get(args), coCtx , keyArg.expectedType());
+        Object key = H2Utils.convert(keyArg.get(args), coCtx , keyArg.expectedType().type());
 
         assert key != null;
 
-        Object val = H2Utils.convert(valArg.get(args), coCtx, valArg.expectedType());
-        Object newVal = H2Utils.convert(newValArg.get(args), coCtx, newValArg.expectedType());
+        Object val = H2Utils.convert(valArg.get(args), coCtx, valArg.expectedType().type());
+        Object newVal = H2Utils.convert(newValArg.get(args), coCtx, newValArg.expectedType().type());
 
         boolean res;
 
-        if (key instanceof BigDecimal) {
-            System.out.println("+++ old scale = " + ((BigDecimal)key).scale());
-
-            try {
-                key = ((BigDecimal)key).setScale(0, RoundingMode.UNNECESSARY);
-            }
-            catch (ArithmeticException badRounding) {
-                throw new IgniteCheckedException("Bad scale for the decimal value " + key + " expected scale ");
-            }
-        }
+        assert !(key instanceof BigDecimal || val instanceof BigDecimal);
 
         // Debug
 

@@ -189,6 +189,9 @@ public final class DmlAstUtils {
         if (filter == null)
             return null;
 
+        if (!isValidFastUpdateFilter(filter))
+            return null;
+
         if (update.cols().size() != 1)
             return null;
 
@@ -218,7 +221,31 @@ public final class DmlAstUtils {
         if (filter == null)
             return null;
 
+        if (!isValidFastUpdateFilter(filter))
+            return null;
+
         return FastUpdate.create(filter.getKey(), filter.getValue(), null);
+    }
+
+    /**
+     * Determines, whether parsed WHERE "_key = ?" / "_key = ? and _val = ?" filter can be correctly translated to
+     * cache operations.
+     *
+     * @param filter parsed where condition.
+     * @return {@code true} if this condition is supported by fast update.
+     */
+    private static boolean isValidFastUpdateFilter(IgnitePair<GridSqlElement> filter){
+        // Decimal type is translated to java.math.BigInteger, which binary representation tells "1" and "1.0"
+        // so we have to use compareTo method, which cannot be used by fast cache operation.
+        if (filter.getKey().resultType().type() == Value.DECIMAL)
+            return false;
+
+        GridSqlElement val = filter.getValue();
+
+        if (val != null && val.resultType().type() == Value.DECIMAL)
+            return false;
+
+        return true;
     }
 
     /**

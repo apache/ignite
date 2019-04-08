@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.dml;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
-import org.h2.value.Value;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DmlArguments {
     /** Operand that always evaluates as {@code null}. */
-    private static final DmlArgument NULL_ARG = new ConstantArgument(null, Value.NULL);
+    private static final DmlArgument NULL_ARG = new ConstantArgument(null, GridSqlType.NULL);
 
     /**
      * Create argument from AST element.
@@ -43,14 +43,14 @@ public class DmlArguments {
             return NULL_ARG;
 
         if (el instanceof GridSqlConst) {
-            Value constVal = ((GridSqlConst)el).value();
+            GridSqlConst constVal = ((GridSqlConst)el);
 
-            return new ConstantArgument(constVal.getObject(), constVal.getType());
+            return new ConstantArgument(constVal.value().getObject(), constVal.resultType());
         }
         else {
             GridSqlParameter param = (GridSqlParameter)el;
 
-            return new ParamArgument(param.index(), param.type());
+            return new ParamArgument(param.index(), param.resultType());
         }
     }
 
@@ -69,15 +69,14 @@ public class DmlArguments {
         private final Object val;
 
         /** H2 type of this constant. */
-        private final int type;
+        private final GridSqlType type;
 
         /**
          * Constructor.
-         *
-         * @param val Value.
+         *  @param val Value.
          * @param type H2 type of this constant.
          */
-        private ConstantArgument(Object val, int type) {
+        private ConstantArgument(Object val, GridSqlType type) {
             this.val = val;
             this.type = type;
         }
@@ -88,7 +87,7 @@ public class DmlArguments {
         }
 
         /** {@inheritDoc} */
-        @Override public int expectedType() {
+        @Override public GridSqlType expectedType() {
             return type;
         }
     }
@@ -101,7 +100,7 @@ public class DmlArguments {
         private final int paramIdx;
 
         /** H2 type of this parameter. */
-        private final int type;
+        private final GridSqlType type;
 
         /**
          * Constructor.
@@ -109,7 +108,7 @@ public class DmlArguments {
          * @param paramIdx Parameter index.
          * @param type H2 type of this parameter.
          */
-        private ParamArgument(int paramIdx, int type) {
+        private ParamArgument(int paramIdx, GridSqlType type) {
             assert paramIdx >= 0;
 
             this.paramIdx = paramIdx;
@@ -123,7 +122,7 @@ public class DmlArguments {
             return params[paramIdx];
         }
 
-        @Override public int expectedType() {
+        @Override public GridSqlType expectedType() {
             return type;
         }
     }

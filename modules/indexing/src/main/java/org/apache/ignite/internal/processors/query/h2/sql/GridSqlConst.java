@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.Collections;
-import org.h2.expression.ValueExpression;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
 import org.h2.value.ValueNull;
@@ -28,8 +27,7 @@ import org.h2.value.ValueNull;
  */
 public class GridSqlConst extends GridSqlElement {
     /** */
-    public static final GridSqlElement NULL = new GridSqlConst(ValueNull.INSTANCE)
-        .resultType(GridSqlType.fromExpression(ValueExpression.getNull()));
+    public static final GridSqlElement NULL = new GridSqlConst(ValueNull.INSTANCE);
 
     /** */
     public static final GridSqlConst TRUE = (GridSqlConst)new GridSqlConst(ValueBoolean.get(true))
@@ -45,6 +43,8 @@ public class GridSqlConst extends GridSqlElement {
         super(Collections.<GridSqlAst>emptyList());
 
         this.val = val;
+
+        resultType(GridSqlType.fromConstant(val));
     }
 
     /**

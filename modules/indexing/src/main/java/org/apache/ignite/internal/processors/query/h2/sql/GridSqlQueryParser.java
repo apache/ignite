@@ -2360,7 +2360,7 @@ public class GridSqlQueryParser {
         if (expression instanceof Parameter) {
             Parameter param = (Parameter)expression;
 
-            return new GridSqlParameter(param.getIndex(), param.getType());
+            return new GridSqlParameter(param.getIndex(), GridSqlType.fromExpression(param));
         }
 
         if (expression instanceof Aggregate) {

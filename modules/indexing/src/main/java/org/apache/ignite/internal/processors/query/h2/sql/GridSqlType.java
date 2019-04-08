@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.expression.Expression;
+import org.h2.expression.ValueExpression;
 import org.h2.table.Column;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
@@ -30,6 +31,9 @@ import org.h2.value.ValueLong;
  * SQL Data type based on H2.
  */
 public final class GridSqlType {
+    /** */
+    public static final GridSqlType NULL = fromExpression(ValueExpression.getNull());
+
     /** */
     public static final GridSqlType UNKNOWN = new GridSqlType(Value.UNKNOWN, 0, 0, 0, null);
 
@@ -97,6 +101,13 @@ public final class GridSqlType {
             c = new Column(null, c.getType(), c.getPrecision(), c.getScale(), c.getDisplaySize());
 
         return new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(), c.getCreateSQL());
+    }
+
+    /**
+     * @param val constant h2 value take type information from.
+     */
+    public static GridSqlType fromConstant(Value val){
+       return new GridSqlType(val.getType(), val.getScale(), val.getPrecision(), val.getDisplaySize(), val.getSQL());
     }
 
     /**
