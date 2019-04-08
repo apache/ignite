@@ -100,6 +100,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private static final String METASTORE_CURR_BLT_KEY = "metastoreBltKey";
 
     /** */
+    private static final String METASTORE_READ_ONLY_MODE_KEY = "metastoreReadOnlyModeKey";
+
+    /** */
     private boolean inMemoryMode;
 
     /**
@@ -192,14 +195,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public boolean publicApiReadOnlyMode(boolean waitForTransition) {
-        return publicApiActiveStateAsync(waitForTransition).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> publicApiReadOnlyModeAsync(boolean waitForTransition) {
-        // TODO!
-        return null;
+    @Override public boolean publicApiReadOnlyMode() {
+        return globalState.readOnly();
     }
 
     /** {@inheritDoc} */
@@ -223,6 +220,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 return new IgniteFinishedFutureImpl<>(transitionRes);
             else {
                 GridFutureAdapter<Void> fut = transitionFuts.get(globalState.transitionRequestId());
+
                 if (fut != null) {
                     if (asyncWaitForTransition) {
                          return new IgniteFutureImpl<>(fut.chain(new C1<IgniteInternalFuture<Void>, Boolean>() {
@@ -254,6 +252,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
         BaselineTopology blt = (BaselineTopology) metastorage.read(METASTORE_CURR_BLT_KEY);
 
+        Boolean readOnly = (Boolean)metastorage.read(METASTORE_READ_ONLY_MODE_KEY);
+
         if (blt != null) {
             if (log.isInfoEnabled())
                 U.log(log, "Restoring history for BaselineTopology[id=" + blt.id() + "]");
@@ -261,12 +261,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             bltHist.restoreHistory(metastorage, blt.id());
         }
 
-        onStateRestored(blt);
+        onStateRestored(blt, readOnly != null && readOnly);
     }
 
     /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
         this.metastorage = metastorage;
+
+        writeReadOnlyMode(globalState.readOnly());
 
         if (compatibilityMode) {
             if (log.isInfoEnabled())
@@ -293,6 +295,25 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             U.log(log,
                 String.format("Branching history of current BaselineTopology is reset to the value %d", newBranchingHash));
+        }
+    }
+
+    /**
+     * Save to metastore new read only mode.
+     *
+     * @param readOnly Read only mode.
+     * @throws IgniteCheckedException If write failed.
+     */
+    private void writeReadOnlyMode(boolean readOnly) throws IgniteCheckedException {
+        if(CU.isPersistenceEnabled(ctx.config()) && !ctx.config().isClientMode()) {
+            sharedCtx.database().checkpointReadLock();
+
+            try {
+                metastorage.write(METASTORE_READ_ONLY_MODE_KEY, readOnly);
+            }
+            finally {
+                sharedCtx.database().checkpointReadUnlock();
+            }
         }
     }
 
@@ -341,7 +362,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         // Start first node as inactive if persistence is enabled.
         boolean activeOnStart = inMemoryMode && ctx.config().isActiveOnStart();
 
-        globalState = DiscoveryDataClusterState.createState(activeOnStart, null);
+        globalState = DiscoveryDataClusterState.createState(activeOnStart, false, null);
 
         ctx.event().addLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
@@ -456,6 +477,23 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             ctx.cache().onStateChangeFinish(msg);
 
+            if(msg.clusterActive()) {
+                boolean prev = ctx.cache().context().readOnlyMode();
+
+                if(prev != globalState.readOnly()) {
+                    ctx.cache().context().readOnlyMode(globalState.readOnly());
+
+                    log.info("Read-only mode was changed! Was enabled: " + prev + ", now enabled: " + globalState.readOnly());
+
+                    try {
+                        writeReadOnlyMode(globalState.readOnly());
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Update read-only mode flag failed!", e);
+                    }
+                }
+            }
+
             TransitionOnJoinWaitFuture joinFut = this.joinFut;
 
             if (joinFut != null)
@@ -487,9 +525,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         DiscoveryDataClusterState state = globalState;
 
         if (log.isInfoEnabled())
-            U.log(log, "Received " + prettyStr(msg.activate()) + " request with BaselineTopology" +
-                (msg.baselineTopology() == null ? ": null"
-                    : "[id=" + msg.baselineTopology().id() + "]"));
+            U.log(
+                log,
+                "Received " + prettyStr(msg.activate()) + " request with BaselineTopology" +
+                    (msg.baselineTopology() == null ? ": null" : "[id=" + msg.baselineTopology().id() + "]") +
+                    "readOnly=" + msg.readOnly()
+            );
 
         if (msg.baselineTopology() != null)
             compatibilityMode = false;
@@ -562,6 +603,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 globalState = DiscoveryDataClusterState.createTransitionState(
                     prevState,
                     msg.activate(),
+                    msg.readOnly(),
                     msg.activate() ? msg.baselineTopology() : prevState.baselineTopology(),
                     msg.requestId(),
                     topVer,
@@ -608,7 +650,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @return {@code True} if states are equivalent.
      */
     protected static boolean isEquivalent(ChangeGlobalStateMessage msg, DiscoveryDataClusterState state) {
-        return (msg.activate() == state.active() && BaselineTopology.equals(msg.baselineTopology(), state.baselineTopology()));
+        return msg.activate() == state.active() &&
+            msg.readOnly() == state.readOnly() &&
+            BaselineTopology.equals(msg.baselineTopology(), state.baselineTopology());
     }
 
     /** {@inheritDoc} */
@@ -618,8 +662,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public DiscoveryDataClusterState pendingState(ChangeGlobalStateMessage stateMsg) {
-        return DiscoveryDataClusterState.createState(stateMsg.activate() || stateMsg.forceChangeBaselineTopology(),
-            stateMsg.baselineTopology());
+        return DiscoveryDataClusterState.createState(
+            stateMsg.activate() || stateMsg.forceChangeBaselineTopology(),
+            stateMsg.readOnly(),
+            stateMsg.baselineTopology()
+        );
     }
 
     /**
@@ -940,19 +987,21 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (ctx.isDaemon() || ctx.clientNode()) {
             GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
-            sendComputeChangeGlobalState(activate, blt, forceChangeBaselineTopology, fut);
+            sendComputeChangeGlobalState(activate, readOnly, blt, forceChangeBaselineTopology, fut);
 
             return fut;
         }
 
         if (cacheProc.transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Failed to " + prettyStr(activate) +
-                " cluster (must invoke the method outside of an active transaction)."));
+                " cluster with readOnly=" + readOnly + " (must invoke the method outside of an active transaction)."));
         }
 
         DiscoveryDataClusterState curState = globalState;
 
-        if (!curState.transition() && curState.active() == activate
+        if (!curState.transition() &&
+            curState.active() == activate &&
+            curState.readOnly() == readOnly
             && (!activate || BaselineTopology.equals(curState.baselineTopology(), blt)))
             return new GridFinishedFuture<>();
 
@@ -961,7 +1010,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         GridChangeGlobalStateFuture fut = stateChangeFut.get();
 
         while (fut == null || fut.isDone()) {
-            fut = new GridChangeGlobalStateFuture(UUID.randomUUID(), activate, ctx);
+            fut = new GridChangeGlobalStateFuture(UUID.randomUUID(), activate, readOnly, ctx);
 
             if (stateChangeFut.compareAndSet(null, fut)) {
                 startedFut = fut;
@@ -973,9 +1022,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
 
         if (startedFut == null) {
-            if (fut.activate != activate) {
-                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to " + prettyStr(activate) +
-                    ", because another state change operation is currently in progress: " + prettyStr(fut.activate)));
+            if (fut.activate != activate && fut.readOnly != readOnly) {
+                return new GridFinishedFuture<>(
+                    new IgniteCheckedException("Failed to " + prettyStr(activate) + " with readOnly=" + readOnly +
+                        ", because another state change operation is currently in progress: " +
+                        prettyStr(fut.activate) + " with readOnly=" + fut.readOnly)
+                );
             }
             else
                 return fut;
@@ -1012,13 +1064,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
 
         try {
-            if (log.isInfoEnabled())
-                U.log(log, "Sending " + prettyStr(activate) + " request with BaselineTopology " + blt);
+            if (log.isInfoEnabled()) {
+                U.log(log, "Sending " + prettyStr(activate) + "  request with BaselineTopology " + blt +
+                    " readOnly=" + readOnly);
+            }
 
             ctx.discovery().sendCustomEvent(msg);
 
             if (ctx.isStopping()) {
-                String errMsg = "Failed to execute " + prettyStr(activate) + " request, node is stopping.";
+                String errMsg = "Failed to execute " + prettyStr(activate) + " request with readOnly=" + readOnly +
+                    ", node is stopping.";
 
                 startedFut.onDone(new IgniteCheckedException(errMsg));
             }
@@ -1033,7 +1088,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
+    @Nullable @Override public IgniteNodeValidationResult validateNode(
+        ClusterNode node,
+        DiscoveryDataBag.JoiningNodeDiscoveryData discoData
+    ) {
         if (node.isClient() || node.isDaemon())
             return null;
 
@@ -1146,10 +1204,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /**
      * @param activate New cluster state.
+     * @param readOnly New read-only mode.
      * @param resFut State change future.
      */
     private void sendComputeChangeGlobalState(
         boolean activate,
+        boolean readOnly,
         BaselineTopology blt,
         boolean forceBlt,
         final GridFutureAdapter<Void> resFut
@@ -1157,7 +1217,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
         if (log.isInfoEnabled()) {
-            log.info("Sending " + prettyStr(activate) + " request from node [id=" + ctx.localNodeId() +
+            log.info("Sending " + prettyStr(activate) + " request with readOnly=" + readOnly +
+                " from node [id=" + ctx.localNodeId() +
                 ", topVer=" + topVer +
                 ", client=" + ctx.clientNode() +
                 ", daemon=" + ctx.isDaemon() + "]");
@@ -1165,7 +1226,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
 
-        IgniteFuture<Void> fut = comp.runAsync(new ClientChangeGlobalStateComputeRequest(activate, blt, forceBlt));
+        IgniteFuture<Void> fut =
+            comp.runAsync(new ClientChangeGlobalStateComputeRequest(activate, readOnly, blt, forceBlt));
 
         fut.listen(new CI1<IgniteFuture>() {
             @Override public void apply(IgniteFuture fut) {
@@ -1243,7 +1305,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         if (fut != null) {
             IgniteCheckedException e = new IgniteCheckedException(
-                "Failed to " + prettyStr(req.activate()) + " cluster",
+                "Failed to " + prettyStr(req.activate()) + " cluster with readOnly=" + req.readOnly(),
                 null,
                 false
             );
@@ -1320,8 +1382,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public void onBaselineTopologyChanged
-    (
+    @Override public void onBaselineTopologyChanged(
         BaselineTopology blt,
         BaselineTopologyHistoryItem prevBltHistItem
     ) throws IgniteCheckedException {
@@ -1403,11 +1464,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** */
-    private void onStateRestored(BaselineTopology blt) {
+    private void onStateRestored(BaselineTopology blt, boolean readOnly) {
         DiscoveryDataClusterState state = globalState;
 
         if (!state.active() && !state.transition() && state.baselineTopology() == null) {
-            DiscoveryDataClusterState newState = DiscoveryDataClusterState.createState(false, blt);
+            DiscoveryDataClusterState newState = DiscoveryDataClusterState.createState(false, readOnly, blt);
 
             globalState = newState;
         }
@@ -1528,6 +1589,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         /** Activate. */
         private final boolean activate;
 
+        /** Read only. */
+        private final boolean readOnly;
+
         /** Nodes. */
         @GridToStringInclude
         private final Set<UUID> remaining = new HashSet<>();
@@ -1557,9 +1621,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
          * @param activate New cluster state.
          * @param ctx Context.
          */
-        GridChangeGlobalStateFuture(UUID requestId, boolean activate, GridKernalContext ctx) {
+        GridChangeGlobalStateFuture(UUID requestId, boolean activate, boolean readOnly, GridKernalContext ctx) {
             this.requestId = requestId;
             this.activate = activate;
+            this.readOnly = readOnly;
             this.ctx = ctx;
 
             log = ctx.log(getClass());
@@ -1680,6 +1745,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         private final boolean activate;
 
         /** */
+        private final boolean readOnly;
+
+        /** */
         private final BaselineTopology baselineTopology;
 
         /** */
@@ -1692,8 +1760,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         /**
          * @param activate New cluster state.
          */
-        private ClientChangeGlobalStateComputeRequest(boolean activate, BaselineTopology blt, boolean forceBlt) {
+        private ClientChangeGlobalStateComputeRequest(
+            boolean activate,
+            boolean readOnly,
+            BaselineTopology blt,
+            boolean forceBlt
+        ) {
             this.activate = activate;
+            this.readOnly = readOnly;
             this.baselineTopology = blt;
             this.forceChangeBaselineTopology = forceBlt;
         }
@@ -1703,6 +1777,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             try {
                 ig.context().state().changeGlobalState(
                     activate,
+                    readOnly,
                     baselineTopology != null ? baselineTopology.currentBaseline() : null,
                     forceChangeBaselineTopology
                 ).get();

@@ -29,6 +29,7 @@ import org.apache.ignite.cache.affinity.local.LocalAffinityFunctionTest;
 import org.apache.ignite.internal.GridCachePartitionExchangeManagerHistSizeTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTest;
+import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.ClusterStatePartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.ClusterStateReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.ConcurrentCacheStartTest;
@@ -63,6 +64,7 @@ public class IgniteCacheMvccTestSuite5 {
         ignoredTests.add(IgniteCacheStoreCollectionTest.class);
         ignoredTests.add(EntryVersionConsistencyReadThroughTest.class);
         ignoredTests.add(ClusterReadOnlyModeTest.class);
+        ignoredTests.add(ClusterReadOnlyModeWithPersistenceTest.class);
         ignoredTests.add(NotMappedPartitionInTxTest.class);
         ignoredTests.add(IgniteCacheTxIteratorSelfTest.class);
 

@@ -45,6 +45,9 @@ public class DiscoveryDataClusterState implements Serializable {
     /** Flag indicating if the cluster in in active state. */
     private final boolean active;
 
+    /** Flag indicating if the cluster in read-only mode. */
+    private final boolean readOnly;
+
     /** Current cluster baseline topology. */
     @Nullable private final BaselineTopology baselineTopology;
 
@@ -83,8 +86,12 @@ public class DiscoveryDataClusterState implements Serializable {
      * @param active Current status.
      * @return State instance.
      */
-    static DiscoveryDataClusterState createState(boolean active, @Nullable BaselineTopology baselineTopology) {
-        return new DiscoveryDataClusterState(null, active, baselineTopology, null, null, null);
+    static DiscoveryDataClusterState createState(
+        boolean active,
+        boolean readOnly,
+        @Nullable BaselineTopology baselineTopology
+    ) {
+        return new DiscoveryDataClusterState(null, active, readOnly, baselineTopology, null, null, null);
     }
 
     /**
@@ -97,6 +104,7 @@ public class DiscoveryDataClusterState implements Serializable {
     static DiscoveryDataClusterState createTransitionState(
         DiscoveryDataClusterState prevState,
         boolean active,
+        boolean readOnly,
         @Nullable BaselineTopology baselineTopology,
         UUID transitionReqId,
         AffinityTopologyVersion transitionTopVer,
@@ -110,15 +118,18 @@ public class DiscoveryDataClusterState implements Serializable {
         return new DiscoveryDataClusterState(
             prevState,
             active,
+            readOnly,
             baselineTopology,
             transitionReqId,
             transitionTopVer,
-            transitionNodes);
+            transitionNodes
+        );
     }
 
     /**
      * @param prevState Previous state. May be non-null only for transitional states.
      * @param active New state.
+     * @param readOnly New read-only mode.
      * @param transitionReqId State change request ID.
      * @param transitionTopVer State change topology version.
      * @param transitionNodes Nodes participating in state change exchange.
@@ -126,6 +137,7 @@ public class DiscoveryDataClusterState implements Serializable {
     private DiscoveryDataClusterState(
         DiscoveryDataClusterState prevState,
         boolean active,
+        boolean readOnly,
         @Nullable BaselineTopology baselineTopology,
         @Nullable UUID transitionReqId,
         @Nullable AffinityTopologyVersion transitionTopVer,
@@ -133,6 +145,7 @@ public class DiscoveryDataClusterState implements Serializable {
     ) {
         this.prevState = prevState;
         this.active = active;
+        this.readOnly = readOnly;
         this.baselineTopology = baselineTopology;
         this.transitionReqId = transitionReqId;
         this.transitionTopVer = transitionTopVer;
@@ -184,6 +197,13 @@ public class DiscoveryDataClusterState implements Serializable {
      */
     public boolean active() {
         return active;
+    }
+
+    /**
+     * @return Read only mode enabled flag.
+     */
+    public boolean readOnly() {
+        return readOnly;
     }
 
     /**
@@ -257,13 +277,14 @@ public class DiscoveryDataClusterState implements Serializable {
             new DiscoveryDataClusterState(
                 null,
                 active,
+                readOnly,
                 baselineTopology,
                 null,
                 null,
                 null
             ) :
             prevState != null ? prevState :
-                    DiscoveryDataClusterState.createState(false, null);
+                    DiscoveryDataClusterState.createState(false, false,null);
     }
 
     /** {@inheritDoc} */

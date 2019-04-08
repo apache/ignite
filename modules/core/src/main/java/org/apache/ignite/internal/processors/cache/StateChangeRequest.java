@@ -84,7 +84,12 @@ public class StateChangeRequest {
         return msg.activate();
     }
 
-    public boolean
+    /**
+     * @return Read-only mode flag.
+     */
+    public boolean readOnly() {
+        return msg.readOnly();
+    }
 
     /**
      * @return {@code True} if active state was changed.

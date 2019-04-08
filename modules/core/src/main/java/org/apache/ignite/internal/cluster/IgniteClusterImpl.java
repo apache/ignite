@@ -338,7 +338,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            return ctx.state().publicApiReadOnlyMode(true);
+            return ctx.state().publicApiReadOnlyMode();
         }
         finally {
             unguard();
@@ -347,9 +347,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void readOnly(boolean readOnly) throws IgniteException {
-        if (!ctx.state().publicApiActiveState(false))
-            throw new IgniteException("Cluster not active!");
-
         guard();
 
         try {

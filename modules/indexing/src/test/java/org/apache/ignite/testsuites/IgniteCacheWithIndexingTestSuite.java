@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.CacheQueryFilterExpiredTest;
 import org.apache.ignite.internal.processors.cache.CacheRandomOperationsMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.ClientReconnectAfterClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeSqlTest;
+import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeWithPersistenceSqlTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvictTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexGetSelfTest;
@@ -86,7 +87,8 @@ import org.junit.runners.Suite;
 
     BinaryTypeRegistrationTest.class,
 
-    ClusterReadOnlyModeSqlTest.class
+    ClusterReadOnlyModeSqlTest.class,
+    ClusterReadOnlyModeWithPersistenceSqlTest.class
 })
 public class IgniteCacheWithIndexingTestSuite {
 }
