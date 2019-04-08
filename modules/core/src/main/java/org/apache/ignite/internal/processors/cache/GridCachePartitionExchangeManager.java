@@ -3320,9 +3320,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             if (log.isDebugEnabled())
                                 log.debug("Refresh partitions due to scheduled timeout");
 
-                            refreshPartitions();
-
-                            ended = true;
+                            try {
+                                refreshPartitions();
+                            }
+                            finally {
+                                ended = true;
+                            }
                         }
                     }
                     finally {
