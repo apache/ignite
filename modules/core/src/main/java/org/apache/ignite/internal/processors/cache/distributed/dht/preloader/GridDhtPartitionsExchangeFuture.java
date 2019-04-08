@@ -843,6 +843,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         onLeft();
                 }
                 else if (isLocalAffinityRecalculation) {
+                    assert !exchCtx.mergeExchanges();
+
                     // Local affinity recalculation happens by baseline server node leaving.
                     onServerNodeEvent(crdNode);
 
