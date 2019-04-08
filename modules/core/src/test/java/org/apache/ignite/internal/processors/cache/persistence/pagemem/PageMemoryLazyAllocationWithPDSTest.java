@@ -82,21 +82,6 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
         assertEquals("test", cache.get(1));
     }
 
-
-    /** @throws Exception If failed. */
-    @Test
-    @Override public void testNotAllocatedIfNodeFilterApplied() throws Exception {
-        super.testNotAllocatedIfNodeFilterApplied();
-
-        stopAllGrids(false);
-
-        IgniteEx[] srvs = startSrv();
-
-        IgniteCache<Integer, String> cache = srvs[0].getOrCreateCache("my-cache-2");
-
-        assertEquals("test", cache.get(1));
-    }
-
     /** */
     @Test
     public void testHugeNotUsedMemoryRegion() throws Exception {
