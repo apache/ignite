@@ -355,6 +355,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Partitions scheduled for historical reblanace for this topology version. */
     private Map<Integer, Set<Integer>> histPartitions;
 
+    private volatile boolean isDetectLostPartitionsPerformed = false;
+
     /**
      * @param cctx Cache context.
      * @param busyLock Busy lock.
@@ -2207,8 +2209,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
 
-                if (serverNodeDiscoveryEvent() || localJoinExchange())
+                if (!isDetectLostPartitionsPerformed && (serverNodeDiscoveryEvent() || localJoinExchange())) {
+                    U.log(log, "Called detectLostPartitions inside of onDone of future " + exchId.toString().hashCode());
+
                     detectLostPartitions(res);
+                }
 
                 Map<Integer, CacheGroupValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
 
@@ -3190,6 +3195,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void detectLostPartitions(AffinityTopologyVersion resTopVer) {
         AtomicInteger detected = new AtomicInteger();
 
+        isDetectLostPartitionsPerformed = true;
+
         try {
             // Reserve at least 2 threads for system operations.
             doInParallelUninterruptibly(
@@ -3479,6 +3486,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else {
                 if (exchCtx.events().hasServerJoin())
                     assignPartitionsStates();
+
+                if (!isDetectLostPartitionsPerformed && exchCtx.events().hasServerLeft()) {
+                    U.log(log, "Called detectLostPartitions inside of finishExchangeOnCoordinator of future " +
+                        exchId.toString().hashCode());
+
+                    detectLostPartitions(resTopVer);
+                }
             }
 
             // Recalculate new affinity based on partitions availability.
