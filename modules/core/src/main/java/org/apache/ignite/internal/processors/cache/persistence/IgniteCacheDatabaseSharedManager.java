@@ -277,10 +277,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      */
     private void startDataRegions() {
-        boolean lazyMemoryAllocation = cctx.isLazyMemoryAllocation();
-
         for (Map.Entry<String, DataRegion> region : dataRegionMap.entrySet()) {
-            if (!lazyMemoryAllocation || METASTORE_DATA_REGION_NAME.equals(region.getKey()) ||
+            if (!cctx.isLazyMemoryAllocation(region.getValue()) ||
+                METASTORE_DATA_REGION_NAME.equals(region.getKey()) ||
                 TX_LOG_CACHE_NAME.equals(region.getKey())) {
                 region.getValue().pageMemory().start();
             }

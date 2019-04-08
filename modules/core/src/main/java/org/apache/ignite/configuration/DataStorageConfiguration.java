@@ -291,14 +291,6 @@ public class DataStorageConfiguration implements Serializable {
     private Long checkpointReadLockTimeout;
 
     /**
-     * If {@code true}, memory for {@code DataRegion} will be allocated only on the creation of the first cache
-     * belonged to this {@code DataRegion}.
-     *
-     * Default is {@code true}.
-     */
-    private boolean lazyMemoryAllocation = true;
-
-    /**
      * Initial size of a data region reserved for system cache.
      *
      * @return Size in bytes.
@@ -1025,29 +1017,6 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setCheckpointReadLockTimeout(long checkpointReadLockTimeout) {
         this.checkpointReadLockTimeout = checkpointReadLockTimeout;
-
-        return this;
-    }
-
-    /**
-     * @return {@code True} if memory for {@code DataRegion} will be allocated only on the creation of the first cache
-     * belonged to this {@code DataRegion}.
-     */
-    public boolean isLazyMemoryAllocation() {
-        return lazyMemoryAllocation;
-    }
-
-    /**
-     * Sets {@code lazyMemoryAllocation} flag value.
-     *
-     * If {@code true}, memory for {@code DataRegion} will be allocated only on the creation of the first cache
-     * belonged to this {@code DataRegion}.
-     *
-     * @param lazyMemoryAllocation Flag value.
-     * @return {@code this} for chaining.
-     */
-    public DataStorageConfiguration setLazyMemoryAllocation(boolean lazyMemoryAllocation) {
-        this.lazyMemoryAllocation = lazyMemoryAllocation;
 
         return this;
     }

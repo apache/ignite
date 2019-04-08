@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -1159,9 +1161,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return {@code True} if lazy memory allocation enabled. {@code False} otherwise.
      */
-    public boolean isLazyMemoryAllocation() {
-        return gridConfig().isClientMode() ||
-            (gridConfig().getDataStorageConfiguration() != null &&
-                gridConfig().getDataStorageConfiguration().isLazyMemoryAllocation());
+    public boolean isLazyMemoryAllocation(@Nullable DataRegion region) {
+        return gridConfig().isClientMode() || region == null || region.config().isLazyMemoryAllocation();
     }
 }

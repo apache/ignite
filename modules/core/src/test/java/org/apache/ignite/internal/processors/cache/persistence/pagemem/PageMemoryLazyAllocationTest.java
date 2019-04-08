@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -26,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
@@ -53,13 +56,14 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         cfg.setClientMode(client);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setLazyMemoryAllocation(lazyAllocation)
             .setDataRegionConfigurations(
                 new DataRegionConfiguration()
                     .setName(LAZY_REGION)
+                    .setLazyMemoryAllocation(lazyAllocation)
                     .setPersistenceEnabled(persistenceEnabled()),
                 new DataRegionConfiguration()
                     .setName(EAGER_REGION)
+                    .setLazyMemoryAllocation(lazyAllocation)
                     .setPersistenceEnabled(persistenceEnabled())));
 
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>("my-cache")
@@ -76,7 +80,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         lazyAllocation = true;
         client = false;
 
-        IgniteEx srv = startSrv();
+        IgniteEx srv = startSrv()[0];
 
         IgniteCacheDatabaseSharedManager db = srv.context().cache().context().database();
 
@@ -94,7 +98,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         lazyAllocation = true;
         client = false;
 
-        IgniteEx srv = startSrv();
+        IgniteEx srv = startSrv()[0];
 
         IgniteCacheDatabaseSharedManager srvDb = srv.context().cache().context().database();
 
@@ -124,7 +128,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         lazyAllocation = false;
         client = false;
 
-        IgniteEx g = startSrv();
+        IgniteEx g = startSrv()[0];
 
         IgniteCacheDatabaseSharedManager db = g.context().cache().context().database();
 
@@ -140,7 +144,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         lazyAllocation = false;
         client = false;
 
-        IgniteEx srv = startSrv();
+        IgniteEx srv = startSrv()[0];
 
         IgniteCacheDatabaseSharedManager srvDb = srv.context().cache().context().database();
 
@@ -168,7 +172,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         lazyAllocation = true;
         client = false;
 
-        IgniteEx srv = startSrv();
+        IgniteEx srv = startSrv()[0];
 
         IgniteCacheDatabaseSharedManager srvDb = srv.context().cache().context().database();
 
@@ -194,7 +198,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testStopNotAllocatedRegions() throws Exception {
-        IgniteEx srv = startSrv();
+        IgniteEx srv = startSrv()[0];
 
         IgniteCacheDatabaseSharedManager srvDb = srv.context().cache().context().database();
 
@@ -202,6 +206,22 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         checkMemoryNotAllocated(srvDb.dataRegion(LAZY_REGION).pageMemory());
 
         stopGrid(0);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testNotAllocatedIfNodeFilterApplied() throws Exception {
+        lazyAllocation = true;
+        client = false;
+
+        IgniteEx[] srvs = startSrv();
+
+        Object id = srvs[0].localNode().consistentId();
+
+        createCacheAndPut(srvs[1], CacheMode.PARTITIONED, node -> node.consistentId().equals(id));
+
+        checkMemoryAllocated(srvs[0].context().cache().context().database().dataRegion(LAZY_REGION).pageMemory());
+        checkMemoryAllocated(srvs[1].context().cache().context().database().dataRegion(LAZY_REGION).pageMemory());
     }
 
     @After
@@ -221,10 +241,16 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
 
     /** */
     private void createCacheAndPut(IgniteEx g, CacheMode cacheMode) {
+        createCacheAndPut(g, cacheMode, null);
+    }
+
+    /** */
+    private void createCacheAndPut(IgniteEx g, CacheMode cacheMode, IgnitePredicate<ClusterNode> fltr) {
         IgniteCache<Integer, String> cache =
             g.createCache(new CacheConfiguration<Integer, String>("my-cache-2")
                 .setCacheMode(cacheMode)
-                .setDataRegionName(LAZY_REGION));
+                .setDataRegionName(LAZY_REGION)
+                .setNodeFilter(fltr));
 
         cache.put(1, "test");
 
@@ -232,7 +258,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkMemoryAllocated(PageMemory pageMem) {
+    protected void checkMemoryAllocated(PageMemory pageMem) {
         Object[] segments = GridTestUtils.getFieldValue(pageMem, "segments");
 
         assertNotNull(segments);
@@ -241,23 +267,22 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkMemoryNotAllocated(PageMemory pageMem) {
+    protected void checkMemoryNotAllocated(PageMemory pageMem) {
         Object[] segments = GridTestUtils.getFieldValue(pageMem, "segments");
 
         assertNull(segments);
     }
 
     /** */
-    protected IgniteEx startSrv() throws Exception {
-        IgniteEx srv = startGrid(0);
+    protected IgniteEx[] startSrv() throws Exception {
+        IgniteEx srv0 = startGrid(0);
+        IgniteEx srv1 = startGrid(1);
 
-        startGrid(1);
-
-        srv.cluster().active(true);
+        srv0.cluster().active(true);
 
         awaitPartitionMapExchange();
 
-        return srv;
+        return new IgniteEx[] {srv0, srv1};
     }
 
     /** */
