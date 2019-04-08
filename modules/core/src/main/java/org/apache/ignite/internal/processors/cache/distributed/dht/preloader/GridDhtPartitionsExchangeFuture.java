@@ -2079,6 +2079,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         done.set(true);
 
+        cctx.exchange().stopBlockingResendPartitions();
+
         super.onDone(resVer, null);
     }
 
