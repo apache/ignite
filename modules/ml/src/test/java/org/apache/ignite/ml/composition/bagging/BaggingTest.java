@@ -25,6 +25,8 @@ import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictio
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
@@ -37,11 +39,10 @@ import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.trainers.AdaptableDatasetModel;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.junit.Test;
 
-import java.util.Arrays;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -87,12 +88,12 @@ public class BaggingTest extends TrainerTest {
      */
     @Test
     public void testNaiveBaggingLogRegression() {
-        Map<Integer, Double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
+        Map<Integer, double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
 
         DatasetTrainer<LogisticRegressionModel, Double> trainer =
             new LogisticRegressionSGDTrainer()
                 .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                    SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
+                    SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
                 .withMaxIterations(30000)
                 .withLocIterations(100)
                 .withBatchSize(10)
@@ -110,8 +111,7 @@ public class BaggingTest extends TrainerTest {
         BaggedModel mdl = baggedTrainer.fit(
             cacheMock,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
 
         Vector weights = ((LogisticRegressionModel)((AdaptableDatasetModel)((ModelsParallelComposition)((AdaptableDatasetModel)mdl
@@ -128,7 +128,7 @@ public class BaggingTest extends TrainerTest {
      * @param cntr Function specifying which data we should count.
      */
     protected void count(IgniteTriFunction<Long, CountData, LearningEnvironment, Long> cntr) {
-        Map<Integer, Double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
+        Map<Integer, double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
 
         CountTrainer cntTrainer = new CountTrainer(cntr);
 
@@ -141,10 +141,7 @@ public class BaggingTest extends TrainerTest {
             2,
             2,
             new MeanValuePredictionsAggregator())
-            .fit(cacheMock,
-                parts,
-                (integer, doubles) -> VectorUtils.of(doubles),
-                (integer, doubles) -> doubles[doubles.length - 1]);
+            .fit(cacheMock, parts, new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
 
         Double res = mdl.predict(null);
 
@@ -187,9 +184,9 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> IgniteModel<Vector, Double> fit(
+        @Override public <K, V, C extends Serializable> IgniteModel<Vector, Double> fit(
             DatasetBuilder<K, V> datasetBuilder,
-            FeatureLabelExtractor<K, V, Double> extractor) {
+            Vectorizer<K, V, C, Double> extractor) {
             Dataset<Long, CountData> dataset = datasetBuilder.build(
                 TestUtils.testEnvBuilder(),
                 (env, upstreamData, upstreamDataSize) -> upstreamDataSize,
@@ -207,10 +204,10 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected <K, V> IgniteModel<Vector, Double> updateModel(
+        @Override protected <K, V, C extends Serializable> IgniteModel<Vector, Double> updateModel(
             IgniteModel<Vector, Double> mdl,
             DatasetBuilder<K, V> datasetBuilder,
-            FeatureLabelExtractor<K, V, Double> extractor) {
+            Vectorizer<K, V, C, Double> extractor) {
             return fit(datasetBuilder, extractor);
         }
 

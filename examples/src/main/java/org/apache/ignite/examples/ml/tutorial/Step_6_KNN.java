@@ -20,6 +20,7 @@ package org.apache.ignite.examples.ml.tutorial;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
@@ -101,8 +102,7 @@ public class Step_6_KNN {
                 NNClassificationModel mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    normalizationPreprocessor,
-                    lbExtractor
+                    FeatureLabelExtractorWrapper.wrap(normalizationPreprocessor, lbExtractor) //TODO: IGNITE-11581
                 ).withK(1).withStrategy(NNStrategy.WEIGHTED);
 
                 System.out.println("\n>>> Trained model: " + mdl);

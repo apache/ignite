@@ -42,8 +42,11 @@ public enum IgniteFeatures {
     /** Data paket compression. */
     DATA_PACKET_COMPRESSION(3),
 
+    /** Support of different rebalance size for nodes.  */
+    DIFFERENT_REBALANCE_POOL_SIZE(4),
+
     /** Local affinity recalculation exchange. */
-    LOCAL_AFFINITY_RECALCULATION_EXCHANGE(4);
+    LOCAL_AFFINITY_RECALCULATION_EXCHANGE(5);
 
     /**
      * Unique feature identifier.
@@ -87,11 +90,7 @@ public enum IgniteFeatures {
 
         int bitIdx = featureId & 0x7;
 
-        boolean res = (features[byteIdx] & (1 << bitIdx)) != 0;
-
-        assert res == BitSet.valueOf(features).get(featureId);
-
-        return res;
+        return (features[byteIdx] & (1 << bitIdx)) != 0;
     }
 
     /**

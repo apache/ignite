@@ -20,6 +20,7 @@ package org.apache.ignite.examples.datagrid.starschema;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
@@ -29,7 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 
@@ -176,10 +177,9 @@ public class CacheStarSchemaExample {
         // ========================
 
         // Create cross cache query to get all purchases made at store1.
-        QueryCursor<Cache.Entry<Integer, FactPurchase>> storePurchases = factCache.query(new SqlQuery(
-            FactPurchase.class,
-            "from \"" + DIM_STORE_CACHE_NAME + "\".DimStore, \"" + FACT_CACHE_NAME + "\".FactPurchase "
-                + "where DimStore.id=FactPurchase.storeId and DimStore.name=?").setArgs("Store1"));
+        QueryCursor<List<?>> storePurchases = factCache.query(new SqlFieldsQuery(
+            "select fp.* from \"" + DIM_STORE_CACHE_NAME + "\".DimStore, \"" + FACT_CACHE_NAME + "\".FactPurchase as fp "
+                + "where DimStore.id=fp.storeId and DimStore.name=?").setArgs("Store1"));
 
         printQueryResults("All purchases made at store1:", storePurchases.getAll());
     }
@@ -206,11 +206,10 @@ public class CacheStarSchemaExample {
 
         // Create cross cache query to get all purchases made at store2
         // for specified products.
-        QueryCursor<Cache.Entry<Integer, FactPurchase>> prodPurchases = factCache.query(new SqlQuery(
-            FactPurchase.class,
-            "from \"" + DIM_STORE_CACHE_NAME + "\".DimStore, \"" + DIM_PROD_CACHE_NAME + "\".DimProduct, " +
-                "\"" + FACT_CACHE_NAME + "\".FactPurchase "
-                + "where DimStore.id=FactPurchase.storeId and DimProduct.id=FactPurchase.productId "
+        QueryCursor<List<?>> prodPurchases = factCache.query(new SqlFieldsQuery(
+            "select fp.* from \"" + DIM_STORE_CACHE_NAME + "\".DimStore, \"" + DIM_PROD_CACHE_NAME + "\".DimProduct, " +
+                "\"" + FACT_CACHE_NAME + "\".FactPurchase as fp "
+                + "where DimStore.id=fp.storeId and DimProduct.id=fp.productId "
                 + "and DimStore.name=? and DimProduct.id in(?, ?, ?)")
             .setArgs("Store2", p1.getId(), p2.getId(), p3.getId()));
 
@@ -223,11 +222,11 @@ public class CacheStarSchemaExample {
      * @param msg Initial message.
      * @param res Results to print.
      */
-    private static <V> void printQueryResults(String msg, Iterable<Cache.Entry<Integer, V>> res) {
+    private static void printQueryResults(String msg, Iterable<List<?>> res) {
         System.out.println(msg);
 
-        for (Cache.Entry<?, ?> e : res)
-            System.out.println("    " + e.getValue().toString());
+        for (List<?> row : res)
+            System.out.println("    " + row.toString());
     }
 
     /**

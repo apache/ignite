@@ -139,6 +139,7 @@ import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvent
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
+import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 
 /**
  * Future for exchanging partition maps.
@@ -887,6 +888,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 case NONE: {
                     initTopologies();
 
+                    synchronized (mux) {
+                        state = ExchangeLocalState.DONE;
+                    }
+
                     onDone(topVer);
 
                     break;
@@ -1191,6 +1196,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         cctx.exchange().exchangerBlockingSectionEnd();
                     }
 
+                    cctx.exchange().exchangerBlockingSectionBegin();
+
+                    try {
+                        ((IgniteChangeGlobalStateSupport)kctx.distributedMetastorage()).onActivate(kctx);
+                    }
+                    finally {
+                        cctx.exchange().exchangerBlockingSectionEnd();
+                    }
+
                     assert registerCachesFuture == null : "No caches registration should be scheduled before new caches have started.";
 
                     cctx.exchange().exchangerBlockingSectionBegin();
@@ -1242,8 +1256,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.exchange().exchangerBlockingSectionBegin();
 
                 try {
-                    ((IgniteChangeGlobalStateSupport)kctx.distributedMetastorage()).onDeActivate(kctx);
-
                     kctx.dataStructures().onDeActivate(kctx);
 
                     if (cctx.kernalContext().service() instanceof GridServiceProcessor)
@@ -1254,6 +1266,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
 
                     kctx.encryption().onDeActivate(kctx);
+
+                    ((IgniteChangeGlobalStateSupport)kctx.distributedMetastorage()).onDeActivate(kctx);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully deactivated data structures, services and caches [" +
@@ -2191,109 +2205,118 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert res != null || err != null;
 
-        waitUntilNewCachesAreRegistered();
+        try {
+            waitUntilNewCachesAreRegistered();
 
-        if (err == null &&
-            !cctx.kernalContext().clientNode() &&
-            (serverNodeDiscoveryEvent() || affChangeMsg != null)) {
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (!cacheCtx.affinityNode() || cacheCtx.isLocal())
-                    continue;
-
-                cacheCtx.continuousQueries().flushBackupQueue(res);
-            }
-        }
-
-        if (err == null) {
-            if (centralizedAff || forceAffReassignment) {
-                assert !exchCtx.mergeExchanges();
-
-                Collection<CacheGroupContext> grpToRefresh = U.newHashSet(cctx.cache().cacheGroups().size());
-
-                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                    if (grp.isLocal())
+            if (err == null &&
+                !cctx.kernalContext().clientNode() &&
+                (serverNodeDiscoveryEvent() || affChangeMsg != null)) {
+                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                    if (!cacheCtx.affinityNode() || cacheCtx.isLocal())
                         continue;
 
-                    try {
-                        if (grp.topology().initPartitionsWhenAffinityReady(res, this))
-                            grpToRefresh.add(grp);
-                    }
-                    catch (IgniteInterruptedCheckedException e) {
-                        U.error(log, "Failed to initialize partitions.", e);
-                    }
-
-                }
-
-                if (!grpToRefresh.isEmpty()){
-                    if (log.isDebugEnabled())
-                        log.debug("Refresh partitions due to partitions initialized when affinity ready [" +
-                            grpToRefresh.stream().map(CacheGroupContext::name).collect(Collectors.toList()) + ']');
-
-                    cctx.exchange().refreshPartitions(grpToRefresh);
+                    cacheCtx.continuousQueries().flushBackupQueue(res);
                 }
             }
 
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                GridCacheContext drCacheCtx = cacheCtx.isNear() ? cacheCtx.near().dht().context() : cacheCtx;
+            if (err == null) {
+                if (centralizedAff || forceAffReassignment) {
+                    assert !exchCtx.mergeExchanges();
 
-                if (drCacheCtx.isDrEnabled()) {
-                    try {
-                        drCacheCtx.dr().onExchange(res, exchId.isLeft(), activateCluster());
+                    Collection<CacheGroupContext> grpToRefresh = U.newHashSet(cctx.cache().cacheGroups().size());
+
+                    for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                        if (grp.isLocal())
+                            continue;
+
+                        try {
+                            if (grp.topology().initPartitionsWhenAffinityReady(res, this))
+                                grpToRefresh.add(grp);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            U.error(log, "Failed to initialize partitions.", e);
+                        }
+
                     }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to notify DR: " + e, e);
+
+                    if (!grpToRefresh.isEmpty()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Refresh partitions due to partitions initialized when affinity ready [" +
+                                grpToRefresh.stream().map(CacheGroupContext::name).collect(Collectors.toList()) + ']');
+
+                        cctx.exchange().refreshPartitions(grpToRefresh);
+                    }
+                }
+
+                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                    GridCacheContext drCacheCtx = cacheCtx.isNear() ? cacheCtx.near().dht().context() : cacheCtx;
+
+                    if (drCacheCtx.isDrEnabled()) {
+                        try {
+                            drCacheCtx.dr().onExchange(res, exchId.isLeft(), activateCluster());
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to notify DR: " + e, e);
+                        }
+                    }
+                }
+
+                if (serverNodeDiscoveryEvent() || localJoinExchange())
+                    detectLostPartitions(res);
+
+                Map<Integer, CacheGroupValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
+
+                for (CacheGroupContext grp : cctx.cache().cacheGroups())
+                    m.put(grp.groupId(), validateCacheGroup(grp, events().lastEvent().topologyNodes()));
+
+                grpValidRes = m;
+            }
+
+            if (!cctx.localNode().isClient())
+                tryToPerformLocalSnapshotOperation();
+
+            if (err == null)
+                cctx.coordinators().onExchangeDone(events().discoveryCache());
+
+            // Create and destory caches and cache proxies.
+            cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
+
+            cctx.kernalContext().authentication().onActivate();
+
+            Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
+
+            if (localReserved != null) {
+                for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
+                    boolean success = cctx.database().reserveHistoryForPreloading(
+                        e.getKey().get1(), e.getKey().get2(), e.getValue());
+
+                    if (!success) {
+                        // TODO: how to handle?
+                        err = new IgniteCheckedException("Could not reserve history");
                     }
                 }
             }
 
-            if (serverNodeDiscoveryEvent() || localJoinExchange())
-                detectLostPartitions(res);
+            cctx.database().releaseHistoryForExchange();
 
-            Map<Integer, CacheGroupValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
+            if (err == null) {
+                cctx.database().rebuildIndexesIfNeeded(this);
 
-            for (CacheGroupContext grp : cctx.cache().cacheGroups())
-                m.put(grp.groupId(), validateCacheGroup(grp, events().lastEvent().topologyNodes()));
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                    if (!grp.isLocal())
+                        grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
+                }
 
-            grpValidRes = m;
+                if (changedAffinity())
+                    cctx.walState().changeLocalStatesOnExchangeDone(res, changedBaseline());
+            }
         }
+        catch (Throwable t) {
+            // In any case, this exchange future has to be completed. The original error should be preserved if exists.
+            if (err != null)
+                t.addSuppressed(err);
 
-        if (!cctx.localNode().isClient())
-            tryToPerformLocalSnapshotOperation();
-
-        if (err == null)
-            cctx.coordinators().onExchangeDone(events().discoveryCache());
-
-        // Create and destory caches and cache proxies.
-        cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
-
-        cctx.kernalContext().authentication().onActivate();
-
-        Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
-
-        if (localReserved != null) {
-            for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
-                boolean success = cctx.database().reserveHistoryForPreloading(
-                    e.getKey().get1(), e.getKey().get2(), e.getValue());
-
-                if (!success) {
-                    // TODO: how to handle?
-                    err = new IgniteCheckedException("Could not reserve history");
-                }
-            }
-        }
-
-        cctx.database().releaseHistoryForExchange();
-
-        if (err == null) {
-            cctx.database().rebuildIndexesIfNeeded(this);
-
-            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (!grp.isLocal())
-                    grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
-            }
-
-            if (changedAffinity())
-                cctx.walState().changeLocalStatesOnExchangeDone(res, changedBaseline());
+            err = t;
         }
 
         final Throwable err0 = err;
@@ -2342,6 +2365,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             initFut.onDone(err == null);
+
+            cctx.exchange().latch().dropLatch(DISTRIBUTED_LATCH_ID, initialVersion());
 
             if (exchCtx != null && exchCtx.events().hasServerLeft()) {
                 ExchangeDiscoveryEvents evts = exchCtx.events();
@@ -3218,7 +3243,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         try {
             // Reserve at least 2 threads for system operations.
-            doInParallel(
+            doInParallelUninterruptibly(
                 U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2),
                 cctx.kernalContext().getSystemExecutorService(),
                 cctx.cache().cacheGroups(),

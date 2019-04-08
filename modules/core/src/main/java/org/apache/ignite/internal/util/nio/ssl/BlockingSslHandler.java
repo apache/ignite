@@ -510,7 +510,7 @@ public class BlockingSslHandler {
      */
     private void writeNetBuffer() throws IgniteCheckedException {
         try {
-            ch.write(outNetBuf);
+            U.writeFully(ch, outNetBuf);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to write byte to socket.", e);

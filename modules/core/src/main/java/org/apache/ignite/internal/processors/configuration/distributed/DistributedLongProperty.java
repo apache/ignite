@@ -23,16 +23,15 @@ package org.apache.ignite.internal.processors.configuration.distributed;
 public class DistributedLongProperty extends DistributedComparableProperty<Long> {
 
     /** {@inheritDoc} */
-    DistributedLongProperty(String name, Long initVal) {
-        super(name, initVal);
+    DistributedLongProperty(String name) {
+        super(name);
     }
 
     /**
      * @param name Name of property.
-     * @param initVal Initial initVal of property.
      * @return Property detached from processor.(Distributed updating are not accessable).
      */
-    public static DistributedLongProperty detachedLongProperty(String name, Long initVal) {
-        return new DistributedLongProperty(name, initVal);
+    public static DistributedLongProperty detachedLongProperty(String name) {
+        return new DistributedLongProperty(name);
     }
 }

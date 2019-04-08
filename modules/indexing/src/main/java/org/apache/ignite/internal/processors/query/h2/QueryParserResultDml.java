@@ -29,9 +29,6 @@ public class QueryParserResultDml {
     /** Command. */
     private final GridSqlStatement stmt;
 
-    /** Number of parameters. */
-    private final int paramsCnt;
-
     /** MVCC enabled flag. */
     private final boolean mvccEnabled;
 
@@ -45,20 +42,17 @@ public class QueryParserResultDml {
      * Constructor.
      *
      * @param stmt Command.
-     * @param paramsCnt Number of parameters.
      * @param mvccEnabled Whether MVCC is enabled.
      * @param streamTbl Streamer table.
      * @param plan Update plan.
      */
     public QueryParserResultDml(
         GridSqlStatement stmt,
-        int paramsCnt,
         boolean mvccEnabled,
         @Nullable GridH2Table streamTbl,
         UpdatePlan plan
     ) {
         this.stmt = stmt;
-        this.paramsCnt = paramsCnt;
         this.mvccEnabled = mvccEnabled;
         this.streamTbl = streamTbl;
         this.plan = plan;
@@ -90,13 +84,6 @@ public class QueryParserResultDml {
      */
     public boolean streamable() {
         return streamTbl != null;
-    }
-
-    /**
-     * @return Number of parameters.
-     */
-    public int parametersCount() {
-        return paramsCnt;
     }
 
     /**
