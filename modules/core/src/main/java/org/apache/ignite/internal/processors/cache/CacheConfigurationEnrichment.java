@@ -30,7 +30,10 @@ import org.apache.ignite.IgniteException;
  * during deserialization on nodes where some specific class may not exist.
  */
 public class CacheConfigurationEnrichment implements Serializable {
-    /** Field name -> field serialized value. */
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Field name -> Field serialized value. */
     private final Map<String, byte[]> enrichFields;
 
     /** Field name -> Field value class name. */
