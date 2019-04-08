@@ -202,7 +202,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      *
      * @return Name of the currently executed test case.
      */
-    protected String getName() {
+    public String getName() {
         return nameRule.getMethodName();
     }
 
