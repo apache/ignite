@@ -2127,9 +2127,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         longRunningQryMgr.stop();
         connMgr.stop();
 
-        ctx.io().removeMessageListener(GridTopic.TOPIC_QUERY, qryLsnr);
-        ctx.event().removeLocalEventListener(discoLsnr);
-
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
     }
@@ -2262,6 +2259,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void onKernalStop() {
         connMgr.onKernalStop();
+
+        ctx.io().removeMessageListener(GridTopic.TOPIC_QUERY, qryLsnr);
+        ctx.event().removeLocalEventListener(discoLsnr);
     }
 
     /**
