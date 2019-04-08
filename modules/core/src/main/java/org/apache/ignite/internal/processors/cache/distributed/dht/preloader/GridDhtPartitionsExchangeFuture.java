@@ -355,6 +355,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Partitions scheduled for historical reblanace for this topology version. */
     private Map<Integer, Set<Integer>> histPartitions;
 
+    /** */
     private volatile boolean isDetectLostPartitionsPerformed = false;
 
     /**
