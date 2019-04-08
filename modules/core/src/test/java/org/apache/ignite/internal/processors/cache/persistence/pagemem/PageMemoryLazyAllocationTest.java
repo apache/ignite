@@ -208,22 +208,6 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         stopGrid(0);
     }
 
-    /** @throws Exception If failed. */
-    @Test
-    public void testNotAllocatedIfNodeFilterApplied() throws Exception {
-        lazyAllocation = true;
-        client = false;
-
-        IgniteEx[] srvs = startSrv();
-
-        Object id = srvs[0].localNode().consistentId();
-
-        createCacheAndPut(srvs[1], CacheMode.PARTITIONED, node -> node.consistentId().equals(id));
-
-        checkMemoryAllocated(srvs[0].context().cache().context().database().dataRegion(LAZY_REGION).pageMemory());
-        checkMemoryAllocated(srvs[1].context().cache().context().database().dataRegion(LAZY_REGION).pageMemory());
-    }
-
     @After
     public void after() {
         stopAllGrids();
