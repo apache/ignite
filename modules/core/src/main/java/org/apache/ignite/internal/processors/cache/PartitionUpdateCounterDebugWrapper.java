@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class PartitionUpdateCounterDebug extends PartitionUpdateCounterImpl {
+public class PartitionUpdateCounterDebugWrapper extends PartitionUpdateCounterImpl {
     /** */
     private IgniteLogger log;
 
@@ -20,25 +20,25 @@ public class PartitionUpdateCounterDebug extends PartitionUpdateCounterImpl {
     private CacheGroupContext grp;
 
     /** */
-    private int filterGrpId;
+    private boolean doLogging;
 
     /**
      * @param grp Group.
      * @param partId Part id.
      * @param filterGrpId Filter group id.
      */
-    public PartitionUpdateCounterDebug(CacheGroupContext grp, int partId, int filterGrpId) {
+    public PartitionUpdateCounterDebugWrapper(CacheGroupContext grp, int partId, int filterGrpId) {
         this.log = grp.shared().logger(getClass());
         this.partId = partId;
         this.grp = grp;
-        this.filterGrpId = filterGrpId;
+        this.doLogging = filterGrpId == 0 || filterGrpId == grp.groupId();
     }
 
     /** {@inheritDoc} */
     @Override public void init(long initUpdCntr, @Nullable byte[] rawGapsData) {
         super.init(initUpdCntr, rawGapsData);
 
-        if (logIfNeeded())
+        if (doLogging)
             log.info("[op=init" +
                 ", grpId=" + grp.groupId() +
                 ", grpName=" + grp.cacheOrGroupName() +
@@ -56,7 +56,7 @@ public class PartitionUpdateCounterDebug extends PartitionUpdateCounterImpl {
     @Override public synchronized void update(long val) throws IgniteCheckedException {
         SB sb = new SB();
 
-        if (logIfNeeded())
+        if (doLogging)
             sb.a("[op=set" +
                 ", grpId=" + grp.groupId() +
                 ", partId=" + partId +
@@ -67,7 +67,7 @@ public class PartitionUpdateCounterDebug extends PartitionUpdateCounterImpl {
             super.update(val);
         }
         finally {
-            if (logIfNeeded())
+            if (doLogging)
                 log.info(sb.a(", after=" + toString() +
                     ']').toString());
         }
@@ -77,7 +77,7 @@ public class PartitionUpdateCounterDebug extends PartitionUpdateCounterImpl {
     @Override public synchronized GridLongList finalizeUpdateCounters() {
         SB sb = new SB();
 
-        if (logIfNeeded())
+        if (doLogging)
             sb.a("[op=finalizeUpdateCounters" +
                 ", grpId=" + grp.groupId() +
                 ", partId=" + partId +
@@ -88,7 +88,7 @@ public class PartitionUpdateCounterDebug extends PartitionUpdateCounterImpl {
             return super.finalizeUpdateCounters();
         }
         finally {
-            if (logIfNeeded())
+            if (doLogging)
                 log.info(sb.a(", after=" + toString() +
                     ']').toString());
         }
@@ -98,7 +98,7 @@ public class PartitionUpdateCounterDebug extends PartitionUpdateCounterImpl {
     @Override public synchronized long reserve(long delta) {
         SB sb = new SB();
 
-        if (logIfNeeded())
+        if (doLogging)
             sb.a("[op=reserve" +
                 ", grpId=" + grp.groupId() +
                 ", partId=" + partId +
@@ -115,7 +115,7 @@ public class PartitionUpdateCounterDebug extends PartitionUpdateCounterImpl {
             return reserved;
         }
         finally {
-            if (logIfNeeded())
+            if (doLogging)
                 log.info(sb.a(", after=" + toString() +
                     ']').toString());
         }
@@ -125,7 +125,7 @@ public class PartitionUpdateCounterDebug extends PartitionUpdateCounterImpl {
     @Override public synchronized boolean update(long start, long delta) {
         SB sb = new SB();
 
-        if (logIfNeeded())
+        if (doLogging)
             sb.a("[op=update" +
                 ", grpId=" + grp.groupId() +
                 ", partId=" + partId +
@@ -138,18 +138,11 @@ public class PartitionUpdateCounterDebug extends PartitionUpdateCounterImpl {
             updated = super.update(start, delta);
         }
         finally {
-            if (logIfNeeded())
+            if (doLogging)
                 log.info(sb.a(", after=" + toString() +
                     ']').toString());
         }
 
         return updated;
-    }
-
-    /**
-     * @return {@code True} if logging is needed.
-     */
-    private boolean logIfNeeded() {
-        return filterGrpId == 0 || filterGrpId == grp.groupId();
     }
 }

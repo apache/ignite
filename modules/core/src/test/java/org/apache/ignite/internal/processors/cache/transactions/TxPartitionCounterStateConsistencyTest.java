@@ -116,45 +116,52 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      */
     @Test
     public void testPartitionConsistencyWithPrimaryRestart() throws Exception {
-        backups = 2;
+        System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
-        Ignite prim = startGridsMultiThreaded(SERVER_NODES);
+        try {
+            backups = 2;
 
-        IgniteEx client = startGrid("client");
+            Ignite prim = startGridsMultiThreaded(SERVER_NODES);
 
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
+            IgniteEx client = startGrid("client");
 
-        List<Integer> primaryKeys = primaryKeys(prim.cache(DEFAULT_CACHE_NAME), 10_000);
+            IgniteCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        long stop = U.currentTimeMillis() + 60_000;
+            List<Integer> primaryKeys = primaryKeys(prim.cache(DEFAULT_CACHE_NAME), 10_000);
 
-        Random r = new Random();
+            long stop = U.currentTimeMillis() + 60_000;
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
-            while(U.currentTimeMillis() < stop) {
-                doSleep(3000);
+            Random r = new Random();
 
-                stopGrid(true, prim.name());
+            IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+                while (U.currentTimeMillis() < stop) {
+                    doSleep(3000);
 
-                try {
-                    awaitPartitionMapExchange();
+                    stopGrid(true, prim.name());
 
-                    startGrid(prim.name());
+                    try {
+                        awaitPartitionMapExchange();
 
-                    awaitPartitionMapExchange();
+                        startGrid(prim.name());
 
-                    doSleep(5000);
+                        awaitPartitionMapExchange();
+
+                        doSleep(5000);
+                    }
+                    catch (Exception e) {
+                        fail(X.getFullStackTrace(e));
+                    }
                 }
-                catch (Exception e) {
-                    fail(X.getFullStackTrace(e));
-                }
-            }
-        }, 1, "node-restarter");
+            }, 1, "node-restarter");
 
-        doRandomUpdates(r, client, primaryKeys, cache, stop).get();
-        fut.get();
+            doRandomUpdates(r, client, primaryKeys, cache, stop).get();
+            fut.get();
 
-        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+            assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+        }
     }
 
     /**
@@ -162,55 +169,62 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      */
     @Test
     public void testPartitionConsistencyWithBackupsRestart() throws Exception {
-        backups = 2;
+        System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
-        final int srvNodes = SERVER_NODES + 1; // Add one non-owner node to test to increase entropy.
+        try {
+            backups = 2;
 
-        Ignite prim = startGrids(srvNodes);
+            final int srvNodes = SERVER_NODES + 1; // Add one non-owner node to test to increase entropy.
 
-        prim.cluster().active(true);
+            Ignite prim = startGrids(srvNodes);
 
-        IgniteCache<Object, Object> cache = prim.cache(DEFAULT_CACHE_NAME);
+            prim.cluster().active(true);
 
-        List<Integer> primaryKeys = primaryKeys(cache, 10_000);
+            IgniteCache<Object, Object> cache = prim.cache(DEFAULT_CACHE_NAME);
 
-        long stop = U.currentTimeMillis() + 60_000;
+            List<Integer> primaryKeys = primaryKeys(cache, 10_000);
 
-        Random r = new Random();
+            long stop = U.currentTimeMillis() + 3 * 60_000;
 
-        assertTrue(prim == grid(0));
+            Random r = new Random();
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
-            while(U.currentTimeMillis() < stop) {
-                doSleep(3_000);
+            assertTrue(prim == grid(0));
 
-                Ignite restartNode = grid(1 + r.nextInt(srvNodes - 1));
+            IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+                while (U.currentTimeMillis() < stop) {
+                    doSleep(3_000);
 
-                assertFalse(prim == restartNode);
+                    Ignite restartNode = grid(1 + r.nextInt(srvNodes - 1));
 
-                String name = restartNode.name();
+                    assertFalse(prim == restartNode);
 
-                stopGrid(true, name);
+                    String name = restartNode.name();
 
-                try {
-                    waitForTopology(SERVER_NODES);
+                    stopGrid(true, name);
 
-                    doSleep(10_000);
+                    try {
+                        waitForTopology(SERVER_NODES);
 
-                    startGrid(name);
+                        doSleep(10_000);
 
-                    awaitPartitionMapExchange();
+                        startGrid(name);
+
+                        awaitPartitionMapExchange();
+                    }
+                    catch (Exception e) {
+                        fail(X.getFullStackTrace(e));
+                    }
                 }
-                catch (Exception e) {
-                    fail(X.getFullStackTrace(e));
-                }
-            }
-        }, 1, "node-restarter");
+            }, 1, "node-restarter");
 
-        doRandomUpdates(r, prim, primaryKeys, cache, stop).get();
-        fut.get();
+            doRandomUpdates(r, prim, primaryKeys, cache, stop).get();
+            fut.get();
 
-        assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
+            assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+        }
     }
 
     /**
@@ -227,12 +241,12 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         LongAdder puts = new LongAdder();
         LongAdder removes = new LongAdder();
 
-        final int max = 35;
+        final int max = 100;
 
         return multithreadedAsync(() -> {
             while (U.currentTimeMillis() < stop) {
                 int rangeStart = r.nextInt(primaryKeys.size() - max);
-                int range = 5 + r.nextInt(30);
+                int range = 5 + r.nextInt(max - 5);
 
                 List<Integer> keys = primaryKeys.subList(rangeStart, rangeStart + range);
 
