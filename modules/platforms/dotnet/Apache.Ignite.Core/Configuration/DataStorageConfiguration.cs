@@ -170,11 +170,6 @@ namespace Apache.Ignite.Core.Configuration
         public const long DefaultMaxWalArchiveSize = 1024 * 1024 * 1024;
 
         /// <summary>
-        /// Default value for <see cref="LazyMemoryAllocation"/>.
-        /// </summary>
-        public const bool DefaultLazyMemoryAllocation = true;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="DataStorageConfiguration"/> class.
         /// </summary>
         public DataStorageConfiguration()
@@ -202,7 +197,6 @@ namespace Apache.Ignite.Core.Configuration
             PageSize = DefaultPageSize;
             WalAutoArchiveAfterInactivity = DefaultWalAutoArchiveAfterInactivity;
             MaxWalArchiveSize = DefaultMaxWalArchiveSize;
-            LazyMemoryAllocation = DefaultLazyMemoryAllocation;
         }
 
         /// <summary>
@@ -244,23 +238,18 @@ namespace Apache.Ignite.Core.Configuration
             WalAutoArchiveAfterInactivity = reader.ReadLongAsTimespan();
             CheckpointReadLockTimeout = reader.ReadTimeSpanNullable();
 
-            if (srvVer.CompareTo(ClientSocket.Ver130) >= 0)
-            {
-                LazyMemoryAllocation = reader.ReadBoolean();
-            }
-
             var count = reader.ReadInt();
 
             if (count > 0)
             {
                 DataRegionConfigurations = Enumerable.Range(0, count)
-                    .Select(x => new DataRegionConfiguration(reader))
+                    .Select(x => new DataRegionConfiguration(reader, srvVer))
                     .ToArray();
             }
 
             if (reader.ReadBoolean())
             {
-                DefaultDataRegionConfiguration = new DataRegionConfiguration(reader);
+                DefaultDataRegionConfiguration = new DataRegionConfiguration(reader, srvVer);
             }
         }
 
@@ -303,11 +292,6 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteTimeSpanAsLong(WalAutoArchiveAfterInactivity);
             writer.WriteTimeSpanAsLongNullable(CheckpointReadLockTimeout);
 
-            if (srvVer.CompareTo(ClientSocket.Ver130) >= 0)
-            {
-                writer.WriteBoolean(LazyMemoryAllocation);
-            }
-
             if (DataRegionConfigurations != null)
             {
                 writer.WriteInt(DataRegionConfigurations.Count);
@@ -320,7 +304,7 @@ namespace Apache.Ignite.Core.Configuration
                             "DataStorageConfiguration.DataRegionConfigurations must not contain null items.");
                     }
 
-                    region.Write(writer);
+                    region.Write(writer, srvVer);
                 }
             }
             else
@@ -331,7 +315,7 @@ namespace Apache.Ignite.Core.Configuration
             if (DefaultDataRegionConfiguration != null)
             {
                 writer.WriteBoolean(true);
-                DefaultDataRegionConfiguration.Write(writer);
+                DefaultDataRegionConfiguration.Write(writer, srvVer);
             }
             else
             {
@@ -524,11 +508,5 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the default region configuration.
         /// </summary>
         public DataRegionConfiguration DefaultDataRegionConfiguration { get; set; }
-        
-        /// <summary>
-        /// Gets or sets the lazy memory allocation flag.
-        /// </summary>
-        [DefaultValue(DefaultLazyMemoryAllocation)]
-        public bool LazyMemoryAllocation { get; set; }
     }
 }

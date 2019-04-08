@@ -44,15 +44,15 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
         lazyAllocation = true;
         client = false;
 
-        IgniteEx srv = startSrv();
+        IgniteEx srv = startSrv()[0];
 
         createCacheAndPut(srv);
 
         stopAllGrids(false);
 
-        IgniteCache<Integer, String> cache = startSrv().cache("my-cache-2");
+        IgniteCache<Integer, String> cache = startSrv()[0].cache("my-cache-2");
 
-        assertEquals(cache.get(1), "test");
+        assertEquals("test", cache.get(1));
     }
 
     /** */
@@ -61,7 +61,7 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
         lazyAllocation = true;
         client = false;
 
-        IgniteEx srv = startSrv();
+        IgniteEx srv = startSrv()[0];
 
         client = true;
 
@@ -73,13 +73,28 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
 
         client = false;
 
-        srv = startSrv();
+        srv = startSrv()[0];
 
         client = true;
 
         IgniteCache<Integer, String> cache = startGrid(2).cache("my-cache-2");
 
-        assertEquals(cache.get(1), "test");
+        assertEquals("test", cache.get(1));
+    }
+
+
+    /** @throws Exception If failed. */
+    @Test
+    @Override public void testNotAllocatedIfNodeFilterApplied() throws Exception {
+        super.testNotAllocatedIfNodeFilterApplied();
+
+        stopAllGrids(false);
+
+        IgniteEx[] srvs = startSrv();
+
+        IgniteCache<Integer, String> cache = srvs[0].getOrCreateCache("my-cache-2");
+
+        assertEquals("test", cache.get(1));
     }
 
     /** */

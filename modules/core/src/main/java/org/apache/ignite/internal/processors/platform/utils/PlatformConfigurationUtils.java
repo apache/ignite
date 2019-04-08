@@ -1923,22 +1923,19 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             res.setCheckpointReadLockTimeout(in.readLong());
 
-        if (ver.compareTo(VER_1_3_0) >= 0)
-            res.setLazyMemoryAllocation(in.readBoolean());
-
         int cnt = in.readInt();
 
         if (cnt > 0) {
             DataRegionConfiguration[] regs = new DataRegionConfiguration[cnt];
 
             for (int i = 0; i < cnt; i++)
-                regs[i] = readDataRegionConfiguration(in);
+                regs[i] = readDataRegionConfiguration(in, ver);
 
             res.setDataRegionConfigurations(regs);
         }
 
         if (in.readBoolean())
-            res.setDefaultDataRegionConfiguration(readDataRegionConfiguration(in));
+            res.setDefaultDataRegionConfiguration(readDataRegionConfiguration(in, ver));
 
         return res;
     }
@@ -2062,21 +2059,18 @@ public class PlatformConfigurationUtils {
             else
                 w.writeBoolean(false);
 
-            if (ver.compareTo(VER_1_3_0) >= 0)
-                w.writeBoolean(cfg.isLazyMemoryAllocation());
-
             if (cfg.getDataRegionConfigurations() != null) {
                 w.writeInt(cfg.getDataRegionConfigurations().length);
 
                 for (DataRegionConfiguration d : cfg.getDataRegionConfigurations())
-                    writeDataRegionConfiguration(w, d);
+                    writeDataRegionConfiguration(w, d, ver);
             }
             else
                 w.writeInt(0);
 
             if (cfg.getDefaultDataRegionConfiguration() != null) {
                 w.writeBoolean(true);
-                writeDataRegionConfiguration(w, cfg.getDefaultDataRegionConfiguration());
+                writeDataRegionConfiguration(w, cfg.getDefaultDataRegionConfiguration(), ver);
             }
             else
                 w.writeBoolean(false);
@@ -2089,8 +2083,10 @@ public class PlatformConfigurationUtils {
      * Writes the data region configuration.
      *
      * @param w Writer.
+     * @param ver Client version.
      */
-    private static void writeDataRegionConfiguration(BinaryRawWriter w, DataRegionConfiguration cfg) {
+    private static void writeDataRegionConfiguration(BinaryRawWriter w, DataRegionConfiguration cfg,
+        ClientListenerProtocolVersion ver) {
         assert w != null;
         assert cfg != null;
 
@@ -2106,6 +2102,9 @@ public class PlatformConfigurationUtils {
         w.writeInt(cfg.getMetricsSubIntervalCount());
         w.writeLong(cfg.getMetricsRateTimeInterval());
         w.writeLong(cfg.getCheckpointPageBufferSize());
+
+        if (ver.compareTo(VER_1_3_0) >= 0)
+            w.writeBoolean(cfg.isLazyMemoryAllocation());
     }
 
     /**
@@ -2143,23 +2142,30 @@ public class PlatformConfigurationUtils {
      * Reads the data region configuration.
      *
      * @param r Reader.
+     * @param ver
      */
-    private static DataRegionConfiguration readDataRegionConfiguration(BinaryRawReader r) {
+    private static DataRegionConfiguration readDataRegionConfiguration(BinaryRawReader r,
+        ClientListenerProtocolVersion ver) {
         assert r != null;
 
-        return new DataRegionConfiguration()
-                .setName(r.readString())
-                .setPersistenceEnabled(r.readBoolean())
-                .setInitialSize(r.readLong())
-                .setMaxSize(r.readLong())
-                .setSwapPath(r.readString())
-                .setPageEvictionMode(DataPageEvictionMode.fromOrdinal(r.readInt()))
-                .setEvictionThreshold(r.readDouble())
-                .setEmptyPagesPoolSize(r.readInt())
-                .setMetricsEnabled(r.readBoolean())
-                .setMetricsSubIntervalCount(r.readInt())
-                .setMetricsRateTimeInterval(r.readLong())
-                .setCheckpointPageBufferSize(r.readLong());
+        DataRegionConfiguration cfg = new DataRegionConfiguration()
+            .setName(r.readString())
+            .setPersistenceEnabled(r.readBoolean())
+            .setInitialSize(r.readLong())
+            .setMaxSize(r.readLong())
+            .setSwapPath(r.readString())
+            .setPageEvictionMode(DataPageEvictionMode.fromOrdinal(r.readInt()))
+            .setEvictionThreshold(r.readDouble())
+            .setEmptyPagesPoolSize(r.readInt())
+            .setMetricsEnabled(r.readBoolean())
+            .setMetricsSubIntervalCount(r.readInt())
+            .setMetricsRateTimeInterval(r.readLong())
+            .setCheckpointPageBufferSize(r.readLong());
+
+        if (ver.compareTo(VER_1_3_0) >= 0)
+            cfg.setLazyMemoryAllocation(r.readBoolean());
+
+        return cfg;
     }
 
     /**

@@ -203,6 +203,8 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
+import static org.apache.ignite.internal.processors.cache.CacheType.USER;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.affinityNode;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
@@ -873,7 +875,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cacheData.sql(sql);
 
         if (GridCacheUtils.isCacheTemplateName(cacheName))
-            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
+            templates.put(cacheName, new CacheInfo(cacheData, USER, false, 0, true));
         else {
             if (caches.containsKey(cacheName)) {
                 throw new IgniteCheckedException("Duplicate cache name found (check configuration and " +
@@ -882,7 +884,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CacheType cacheType = cacheType(cacheName);
 
-            if (cacheType != CacheType.USER && cfg.getDataRegionName() == null)
+            if (cacheType != USER && cfg.getDataRegionName() == null)
                 cfg.setDataRegionName(sharedCtx.database().systemDateRegionName());
 
             addStoredCache(caches, cacheData, cacheName, cacheType, true);
@@ -956,7 +958,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         if (!keepStaticCacheConfiguration) {
                             addStoredCache(caches, storedCacheData, cacheName, type, false);
 
-                            if (type == CacheType.USER)
+                            if (type == USER)
                                 skippedConfigs.add(cacheName);
                         }
                     }
@@ -2117,7 +2119,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code true} if local node is affinity node for cache.
      */
     private boolean isLocalAffinity(CacheConfiguration cacheConfiguration) {
-        return CU.affinityNode(ctx.discovery().localNode(), cacheConfiguration.getNodeFilter());
+        return affinityNode(ctx.discovery().localNode(), cacheConfiguration.getNodeFilter());
     }
 
     /**
@@ -2779,8 +2781,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         DataRegion dataRegion = sharedCtx.database().dataRegion(memPlcName);
 
-        if (sharedCtx.isLazyMemoryAllocation() && dataRegion != null &&
-            (!ctx.clientNode() || desc.config().getCacheMode() == LOCAL)) {
+        if (cacheType != USER || sharedCtx.isLazyMemoryAllocation(dataRegion) ||
+            (cacheObjCtx.kernalContext().clientNode() && cfg.getCacheMode() == LOCAL)) {
             dataRegion.pageMemory().start();
         }
 
@@ -3382,7 +3384,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (secCtxBytes != null) {
                         SecurityContext secCtx = U.unmarshal(marsh, secCtxBytes, U.resolveClassLoader(ctx.config()));
 
-                        if (secCtx != null && cacheInfo.cacheType() == CacheType.USER)
+                        if (secCtx != null && cacheInfo.cacheType() == USER)
                             authorizeCacheCreate(cacheInfo.cacheData().config(), secCtx);
                     }
                 }
@@ -3780,7 +3782,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return dynamicStartCache(ccfg,
             cacheName,
             nearCfg,
-            CacheType.USER,
+            USER,
             false,
             failIfExists,
             failIfNotStarted,
@@ -3800,7 +3802,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return dynamicStartCache(ccfg,
             ccfg.getName(),
             ccfg.getNearConfiguration(),
-            CacheType.USER,
+            USER,
             true,
             false,
             true,
@@ -4064,7 +4066,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else if (DataStructuresProcessor.isDataStructureCache(ccfg.getName()))
             return CacheType.DATA_STRUCTURES;
         else
-            return CacheType.USER;
+            return USER;
     }
 
     /**
@@ -4263,7 +4265,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else if (DataStructuresProcessor.isDataStructureCache(cacheName))
             return CacheType.DATA_STRUCTURES;
         else
-            return CacheType.USER;
+            return USER;
     }
 
     /**
@@ -4391,7 +4393,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void authorizeCacheChange(DynamicCacheChangeRequest req) {
         // Null security context means authorize this node.
-        if (req.cacheType() == null || req.cacheType() == CacheType.USER) {
+        if (req.cacheType() == null || req.cacheType() == USER) {
             if (req.stop())
                 ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, null);
             else
