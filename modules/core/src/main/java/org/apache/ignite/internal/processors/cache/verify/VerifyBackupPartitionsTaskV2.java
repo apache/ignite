@@ -117,7 +117,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
         reduceResults(results, clusterHashes, exceptions);
 
-        return checkConflicts(clusterHashes, exceptions);
+        if (results.size() != exceptions.size())
+            return checkConflicts(clusterHashes, exceptions);
+        else
+            return new IdleVerifyResultV2(new HashMap<>(), new HashMap<>(), new HashMap<>(), exceptions, false);
     }
 
     /** {@inheritDoc} */
@@ -185,7 +188,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
         }
 
-        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, exceptions);
+        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, exceptions, true);
     }
 
     /** */
@@ -409,7 +412,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 .result();
 
             if (F.isEmpty(grpIds))
-                throw new IgniteException("There are no caches matching given filter options.");
+                throw new NoMatchingCachesException();
 
             return grpIds;
         }

@@ -1423,7 +1423,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             null,
             "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
         );
-
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, found 160 partitions",
@@ -1438,7 +1437,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify failed on 2 nodes.",
+            "There are no caches matching given filter options.",
             null,
             "--cache", "idle_verify", "--exclude-caches", ".*"
         );
@@ -1458,7 +1457,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             true,
             "idle_verify check has finished, no conflicts have been found.",
             null,
-            "--cache", "idle_verify", ".*", "--cache-filter", "PERSISTENT"
+            "--cache", "idle_verify", "--dump", ".*", "--cache-filter", "PERSISTENT"
         );
     }
 
