@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -169,8 +170,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         prim.cluster().active(true);
 
-        assertFalse(isRemoteJvm(prim.name()));
-
         IgniteCache<Object, Object> cache = prim.cache(DEFAULT_CACHE_NAME);
 
         List<Integer> primaryKeys = primaryKeys(cache, 10_000);
@@ -228,32 +227,40 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         LongAdder puts = new LongAdder();
         LongAdder removes = new LongAdder();
 
+        final int max = 35;
+
         return multithreadedAsync(() -> {
             while (U.currentTimeMillis() < stop) {
-                int rangeStart = r.nextInt(primaryKeys.size() - 3);
-                int range = 1 + r.nextInt(3);
+                int rangeStart = r.nextInt(primaryKeys.size() - max);
+                int range = 5 + r.nextInt(30);
 
                 List<Integer> keys = primaryKeys.subList(rangeStart, rangeStart + range);
 
                 try(Transaction tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+                    List<Integer> insertedKeys = new ArrayList<>();
+
                     for (Integer key : keys) {
+                        cache.put(key, key);
+                        insertedKeys.add(key);
+
+                        puts.increment();
+
                         boolean rmv = r.nextFloat() < 0.4;
                         if (rmv) {
+                            key = insertedKeys.get(r.nextInt(insertedKeys.size()));
+
                             cache.remove(key);
 
-                            removes.increment();
-                        }
-                        else {
-                            cache.put(key, key);
+                            insertedKeys.remove(key);
 
-                            puts.increment();
+                            removes.increment();
                         }
                     }
 
                     tx.commit();
                 }
                 catch (Exception e) {
-                    assertTrue(X.hasCause(e, ClusterTopologyException.class) ||
+                    assertTrue(X.getFullStackTrace(e), X.hasCause(e, ClusterTopologyException.class) ||
                         X.hasCause(e, TransactionRollbackException.class));
                 }
             }

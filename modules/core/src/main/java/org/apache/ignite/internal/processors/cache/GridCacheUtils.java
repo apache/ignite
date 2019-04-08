@@ -848,6 +848,7 @@ public class GridCacheUtils {
 
         return tx.getClass().getSimpleName() + "[xid=" + tx.xid() +
             ", xidVersion=" + tx.xidVersion() +
+            ", nearXidVersion=" + tx.nearXidVersion() +
             ", concurrency=" + tx.concurrency() +
             ", isolation=" + tx.isolation() +
             ", state=" + tx.state() +
@@ -856,7 +857,7 @@ public class GridCacheUtils {
             ", nodeId=" + tx.nodeId() +
             ", timeout=" + tx.timeout() +
             ", duration=" + (U.currentTimeMillis() - tx.startTime()) +
-            (tx instanceof GridNearTxLocal ? ", label=" + ((GridNearTxLocal)tx).label() : "") +
+            (tx instanceof GridNearTxLocal ? ", label=" + tx.label() : "") +
             ']';
     }
 

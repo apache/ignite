@@ -95,7 +95,7 @@ public class PartitionUpdateCounterDebug extends PartitionUpdateCounterImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public long reserve(long delta) {
+    @Override public synchronized long reserve(long delta) {
         SB sb = new SB();
 
         if (logIfNeeded())

@@ -3836,7 +3836,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 prepareFut = prepareNearTxLocal();
             }
             catch (Throwable t) {
-                prepareFut = new GridFinishedFuture<>(t); // Process unhandled exceptions during prepare.
+                prepareFut = prepFut;
+
+                // TODO FIXME critical errors must be handled inside prep fut.
+                assert prepareFut != null; // Prep future must be set.
+
+                ((GridNearTxPrepareFutureAdapter)prepFut).onDone(t);
             }
 
             prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
