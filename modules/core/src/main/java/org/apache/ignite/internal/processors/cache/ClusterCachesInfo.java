@@ -1271,9 +1271,9 @@ class ClusterCachesInfo {
 
         boolean allowSplitCacheConfigurations = spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS);
 
-        List<String> cachesToDestroy = new ArrayList<>();
-
         if (!allowSplitCacheConfigurations) {
+            List<String> cachesToDestroy = new ArrayList<>();
+
             for (DynamicCacheDescriptor cacheDescriptor : registeredCaches().values()) {
                 CacheData clusterCacheData = clusterWideCacheData.caches().get(cacheDescriptor.cacheName());
 
@@ -1281,11 +1281,11 @@ class ClusterCachesInfo {
                 if (clusterCacheData.receivedFrom().equals(cacheDescriptor.receivedFrom()))
                     cachesToDestroy.add(cacheDescriptor.cacheName());
             }
+
+            ctx.cache().dynamicDestroyCaches(cachesToDestroy, false);
+
+            throw new IllegalStateException("Node can't join to cluster in compatibility mode with newly configured caches: " + cachesToDestroy);
         }
-
-        ctx.cache().dynamicDestroyCaches(cachesToDestroy, false);
-
-        throw new IllegalStateException("Node can't join to cluster in compatibility mode with newly configured caches: " + cachesToDestroy);
     }
 
     /**
