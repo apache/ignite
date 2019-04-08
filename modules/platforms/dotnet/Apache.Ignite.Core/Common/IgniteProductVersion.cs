@@ -96,6 +96,7 @@ namespace Apache.Ignite.Core.Common
             _major = reader.ReadByte();
             _minor = reader.ReadByte();
             _maintenance = reader.ReadByte();
+            _stage = reader.ReadString();
             _releaseDate = BinaryUtils.JavaTicksToDateTime(reader.ReadLong());
             _revHash = reader.ReadByteArray();
         }

@@ -1278,6 +1278,7 @@ public class PlatformUtils {
         out.writeByte(productVersion.major());
         out.writeByte(productVersion.minor());
         out.writeByte(productVersion.maintenance());
+        out.writeString(productVersion.stage());
         out.writeLong(productVersion.revisionTimestamp());
         out.writeByteArray(productVersion.revisionHash());
     }

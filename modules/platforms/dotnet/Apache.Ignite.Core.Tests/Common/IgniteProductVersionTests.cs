@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Common
         [SetUp]
         public void SetUp()
         {
-            _defaultVersion = new IgniteProductVersion(2, 5, 7, DefaultReleaseDate, null);
+            _defaultVersion = new IgniteProductVersion(2, 5, 7, "Stage", DefaultReleaseDate, null);
         }
 
         [Test]
@@ -62,6 +62,7 @@ namespace Apache.Ignite.Core.Tests.Common
                 writer.WriteByte(_defaultVersion.Major);
                 writer.WriteByte(_defaultVersion.Minor);
                 writer.WriteByte(_defaultVersion.Maintenance);
+                writer.WriteString(_defaultVersion.Stage);
                 writer.WriteLong(BinaryUtils.DateTimeToJavaTicks(_defaultVersion.ReleaseDate));
                 writer.WriteByteArray(hash);
 
