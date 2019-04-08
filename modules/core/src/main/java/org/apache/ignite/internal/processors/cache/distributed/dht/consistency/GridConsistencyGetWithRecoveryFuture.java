@@ -136,6 +136,15 @@ public class GridConsistencyGetWithRecoveryFuture extends GridConsistencyAbstrac
      * @param fixedMap Fixed map.
      */
     private void recordConsistencyViolation(Map<KeyCacheObject, EntryGetResult> fixedMap) {
+        GridEventStorageManager evtMgr = ctx.gridEvents();
+
+        if (!evtMgr.isRecordable(EVT_CONSISTENCY_VIOLATION)) {
+            logger().warning("Consistency violation found but can not be recorded since " +
+                "EVT_CONSISTENCY_VIOLATION event is not recordable according to the current configuration.");
+
+            return;
+        }
+
         if (fixedMap.isEmpty())
             return;
 
@@ -187,14 +196,10 @@ public class GridConsistencyGetWithRecoveryFuture extends GridConsistencyAbstrac
             }
         }
 
-        GridEventStorageManager evtMgr = ctx.gridEvents();
-
-        if (evtMgr.isRecordable(EVT_CONSISTENCY_VIOLATION))
-            evtMgr.record(new CacheConsistencyViolationEvent(
-                ctx.discovery().localNode(),
-                "Consistency violation detected.",
-                inconsistentMap,
-                consistentMap));
-
+        evtMgr.record(new CacheConsistencyViolationEvent(
+            ctx.discovery().localNode(),
+            "Consistency violation detected.",
+            inconsistentMap,
+            consistentMap));
     }
 }
