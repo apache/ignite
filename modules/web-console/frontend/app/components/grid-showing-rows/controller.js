@@ -36,7 +36,13 @@ export default class {
             this.gridApi.core.on.rowsVisibleChanged(this.$scope, () => {
                 this.applyValues();
             });
+            this.gridApi.selection.on.rowSelectionChanged(this.$scope, () => this.updateSelectedCount());
+            this.gridApi.selection.on.rowSelectionChangedBatch(this.$scope, () => this.updateSelectedCount());
         }
+    }
+
+    updateSelectedCount() {
+        this.selected = this.gridApi.selection.getSelectedCount();
     }
 
     applyValues() {
@@ -49,7 +55,7 @@ export default class {
 
         this.count = this.gridApi.grid.rows.length;
         this.visible = _.sumBy(this.gridApi.grid.rows, (row) => Number(row.visible));
-        this.selected = this.gridApi.selection.getSelectedCount();
+        this.updateSelectedCount();
     }
 
     copyToClipBoard() {
