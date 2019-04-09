@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -107,6 +108,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_OWNER_DUMP_REQU
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
@@ -118,6 +120,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
@@ -235,6 +238,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Flag indicates that {@link TxRecord} records will be logged to WAL. */
     private boolean logTxRecords;
 
+    /**
+     * Indicates whether {@code suspend()} and {@code resume()} operations are supported for pessimistic transactions
+     * cluster wide.
+     */
+    private volatile boolean suspendResumeForPessimisticSupported;
+
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
         cctx.gridIO().removeMessageListener(TOPIC_TX);
@@ -279,36 +288,45 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         cctx.gridEvents().addDiscoveryEventListener(
             new DiscoveryEventListener() {
                 @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
-                    assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
+                    if (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) {
+                        UUID nodeId = evt.eventNode().id();
 
-                    UUID nodeId = evt.eventNode().id();
+                        // Wait some time in case there are some unprocessed messages from failed node.
+                        cctx.time().addTimeoutObject(
+                            new NodeFailureTimeoutObject(evt.eventNode(), cctx.coordinators().currentCoordinator()));
 
-                    // Wait some time in case there are some unprocessed messages from failed node.
-                    cctx.time().addTimeoutObject(
-                        new NodeFailureTimeoutObject(evt.eventNode(), cctx.coordinators().currentCoordinator()));
+                        if (txFinishSync != null)
+                            txFinishSync.onNodeLeft(nodeId);
 
-                    if (txFinishSync != null)
-                        txFinishSync.onNodeLeft(nodeId);
+                        for (TxDeadlockFuture fut : deadlockDetectFuts.values())
+                            fut.onNodeLeft(nodeId);
 
-                    for (TxDeadlockFuture fut : deadlockDetectFuts.values())
-                        fut.onNodeLeft(nodeId);
+                        for (Map.Entry<GridCacheVersion, Object> entry : completedVersHashMap.entrySet()) {
+                            Object obj = entry.getValue();
 
-                    for (Map.Entry<GridCacheVersion, Object> entry : completedVersHashMap.entrySet()) {
-                        Object obj = entry.getValue();
-
-                        if (obj instanceof GridCacheReturnCompletableWrapper &&
-                            nodeId.equals(((GridCacheReturnCompletableWrapper)obj).nodeId()))
-                            removeTxReturn(entry.getKey());
+                            if (obj instanceof GridCacheReturnCompletableWrapper &&
+                                nodeId.equals(((GridCacheReturnCompletableWrapper)obj).nodeId()))
+                                removeTxReturn(entry.getKey());
+                        }
                     }
+
+                    suspendResumeForPessimisticSupported = IgniteFeatures.allNodesSupports(
+                        cctx.discovery().remoteNodes(), IgniteFeatures.SUSPEND_RESUME_PESSIMISTIC_TX);
                 }
             },
-            EVT_NODE_FAILED, EVT_NODE_LEFT);
+            EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
 
         this.txDeadlockDetection = new TxDeadlockDetection(cctx);
 
         cctx.gridIO().addMessageListener(TOPIC_TX, new DeadlockDetectionListener());
 
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onKernalStart0(boolean active) {
+        suspendResumeForPessimisticSupported = IgniteFeatures.allNodesSupports(
+            cctx.discovery().remoteNodes(), IgniteFeatures.SUSPEND_RESUME_PESSIMISTIC_TX);
     }
 
     /**
@@ -1689,49 +1707,65 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Callback called by near finish future before sending near finish request to remote node. Will increment
-     * per-thread counter so that further awaitAck call will wait for finish response.
+     * per-tx counter so that further awaitAck call will wait for finish response.
      *
      * @param rmtNodeId Remote node ID for which finish request is being sent.
-     * @param threadId Near tx thread ID.
+     * @param xid Near tx ID.
      */
-    public void beforeFinishRemote(UUID rmtNodeId, long threadId) {
+    public void beforeFinishRemote(UUID rmtNodeId, GridCacheVersion xid) {
         if (finishSyncDisabled)
             return;
 
         assert txFinishSync != null;
 
-        txFinishSync.onFinishSend(rmtNodeId, threadId);
+        txFinishSync.onFinishSend(rmtNodeId, xid);
     }
 
     /**
      * Callback invoked when near finish response is received from remote node.
      *
      * @param rmtNodeId Remote node ID from which response is received.
-     * @param threadId Near tx thread ID.
+     * @param xid Near tx ID.
      */
-    public void onFinishedRemote(UUID rmtNodeId, long threadId) {
+    public void onFinishedRemote(UUID rmtNodeId, GridCacheVersion xid) {
         if (finishSyncDisabled)
             return;
 
         assert txFinishSync != null;
 
-        txFinishSync.onAckReceived(rmtNodeId, threadId);
+        txFinishSync.onAckReceived(rmtNodeId, xid);
+    }
+
+    /**
+     * Callback invoked when near finish request failed.
+     *
+     * @param nodeId Remote node ID.
+     * @param xid Near tx ID.
+     * @param e Error.
+     */
+    public void onFinishRequestFail(UUID nodeId, GridCacheVersion xid, Exception e) {
+        if (finishSyncDisabled)
+            return;
+
+        assert txFinishSync != null;
+
+        txFinishSync.onFail(nodeId, xid, e);
     }
 
     /**
      * Asynchronously waits for last finish request ack.
      *
      * @param rmtNodeId Remote node ID.
-     * @param threadId Near tx thread ID.
+     * @param xid Near tx ID.
      * @return {@code null} if ack was received or future that will be completed when ack is received.
      */
-    @Nullable public IgniteInternalFuture<?> awaitFinishAckAsync(UUID rmtNodeId, long threadId) {
+    @Nullable public IgniteInternalFuture<?> awaitFinishAckAsync(UUID rmtNodeId, GridCacheVersion xid) {
         if (finishSyncDisabled)
             return null;
 
         assert txFinishSync != null;
 
-        return txFinishSync.awaitAckAsync(rmtNodeId, threadId);
+        return txFinishSync.awaitAckAsync(rmtNodeId, xid);
     }
 
     /**
@@ -2372,6 +2406,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                                 TxLock txLock = new TxLock(
                                     txId == null ? loc.version() : txId,
                                     nearNodeId == null ? loc.nodeId() : nearNodeId,
+                                    // We can get outdated value of thread ID, but this value only for information here.
                                     loc.threadId(),
                                     loc.owner() ? TxLock.OWNERSHIP_OWNER : TxLock.OWNERSHIP_CANDIDATE);
 
@@ -2472,6 +2507,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void suspendTx(final GridNearTxLocal tx) throws IgniteCheckedException {
         assert tx != null && !tx.system() : tx;
+
+        if (tx.concurrency == PESSIMISTIC && !suspendResumeForPessimisticSupported) {
+            throw new IgniteCheckedException("Suspend operation cannot be called " +
+                "because some nodes in the cluster don't support this feature.");
+        }
 
         if (!tx.state(SUSPENDED)) {
             throw new IgniteCheckedException("Trying to suspend transaction with incorrect state "

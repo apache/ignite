@@ -36,7 +36,7 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 /**
  * JTA Tx Manager test.
  */
-public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
+public abstract class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     /** Java Open Transaction Manager facade. */
     private static Jotm jotm;
 
@@ -67,6 +67,11 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Transaction concurrency.
+     */
+    protected abstract TransactionConcurrency txConcurrency();
+
+    /**
      * Test for switching tx context by JTA Manager.
      *
      * @throws Exception If failed.
@@ -76,7 +81,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             TransactionConfiguration cfg = grid().context().config().getTransactionConfiguration();
 
-            cfg.setDefaultTxConcurrency(TransactionConcurrency.OPTIMISTIC);
+            cfg.setDefaultTxConcurrency(txConcurrency());
             cfg.setDefaultTxIsolation(isolation);
 
             TransactionManager jtaTm = jotm.getTransactionManager();
@@ -151,7 +156,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             TransactionConfiguration cfg = grid().context().config().getTransactionConfiguration();
 
-            cfg.setDefaultTxConcurrency(TransactionConcurrency.OPTIMISTIC);
+            cfg.setDefaultTxConcurrency(txConcurrency());
             cfg.setDefaultTxIsolation(isolation);
 
             TransactionManager jtaTm = jotm.getTransactionManager();

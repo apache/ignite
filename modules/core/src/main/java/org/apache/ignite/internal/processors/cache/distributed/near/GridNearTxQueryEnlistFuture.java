@@ -241,7 +241,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
      * @throws IgniteCheckedException if failed to send.
      */
     private void sendRequest(GridCacheMessage req, UUID nodeId, MiniFuture fut) throws IgniteCheckedException {
-        IgniteInternalFuture<?> txSync = cctx.tm().awaitFinishAckAsync(nodeId, tx.threadId());
+        IgniteInternalFuture<?> txSync = cctx.tm().awaitFinishAckAsync(nodeId, tx.xidVersion());
 
         if (txSync == null || txSync.isDone())
             cctx.io().send(nodeId, req, QUERY_POOL); // Process query requests in query pool.

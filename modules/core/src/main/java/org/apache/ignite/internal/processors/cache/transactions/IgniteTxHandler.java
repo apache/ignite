@@ -796,7 +796,7 @@ public class IgniteTxHandler {
         if (txFinishMsgLog.isDebugEnabled())
             txFinishMsgLog.debug("Received near finish response [txId=" + res.xid() + ", node=" + nodeId + ']');
 
-        ctx.tm().onFinishedRemote(nodeId, res.threadId());
+        ctx.tm().onFinishedRemote(nodeId, res.xid());
 
         GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 

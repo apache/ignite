@@ -26,14 +26,14 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Synchronization structure for asynchronous waiting for near tx finish responses based on per-node per-thread
- * basis.
+ * Synchronization structure for asynchronous waiting for near tx finish responses based on per-node per-tx basis.
  */
 public class GridCacheTxFinishSync<K, V> {
     /** Cache context. */
@@ -42,8 +42,8 @@ public class GridCacheTxFinishSync<K, V> {
     /** Logger. */
     private IgniteLogger log;
 
-    /** Nodes map. */
-    private ConcurrentMap<Long, ThreadFinishSync> threadMap = new ConcurrentHashMap<>();
+    /** Tx map. */
+    private ConcurrentMap<GridCacheVersion, TxFinishSync> xidMap = new ConcurrentHashMap<>();
 
     /**
      * @param cctx Cache context.
@@ -58,63 +58,58 @@ public class GridCacheTxFinishSync<K, V> {
      * Callback invoked before finish request is sent to remote node.
      *
      * @param nodeId Node ID request being sent to.
-     * @param threadId Thread ID started transaction.
+     * @param xid Tx ID.
      */
-    public void onFinishSend(UUID nodeId, long threadId) {
-        ThreadFinishSync threadSync = threadMap.get(threadId);
+    public void onFinishSend(UUID nodeId, GridCacheVersion xid) {
+        TxFinishSync txSync = xidMap.computeIfAbsent(xid, sync -> new TxFinishSync(xid));
 
-        if (threadSync == null)
-            threadMap.put(threadId, threadSync = new ThreadFinishSync(threadId));
+        synchronized (txSync) {
+            txSync.onSend(nodeId);
 
-        synchronized (threadSync) {
-            //thread has to create new ThreadFinishSync
-            //if other thread executing onAckReceived method removed previous threadSync object
-            if (threadMap.get(threadId) == null)
-                threadMap.put(threadId, threadSync = new ThreadFinishSync(threadId));
-
-            threadSync.onSend(nodeId);
+            // Entries for this tx can be removed concurrently by other nodes events before we call onSend() method.
+            xidMap.putIfAbsent(xid, txSync);
         }
     }
 
     /**
      * @param nodeId Node ID to wait ack from.
-     * @param threadId Thread ID to wait ack.
+     * @param xid Tx ID.
      * @return {@code null} if ack was received or future that will be completed when ack is received.
      */
-    public IgniteInternalFuture<?> awaitAckAsync(UUID nodeId, long threadId) {
-        ThreadFinishSync threadSync = threadMap.get(threadId);
+    public IgniteInternalFuture<?> awaitAckAsync(UUID nodeId, GridCacheVersion xid) {
+        TxFinishSync txSync = xidMap.get(xid);
 
-        if (threadSync == null)
+        if (txSync == null)
             return null;
 
-        return threadSync.awaitAckAsync(nodeId);
+        return txSync.awaitAckAsync(nodeId);
     }
 
     /**
      * @param reconnectFut Reconnect future.
      */
     public void onDisconnected(IgniteFuture<?> reconnectFut) {
-       for (ThreadFinishSync threadSync : threadMap.values())
-            threadSync.onDisconnected(reconnectFut);
+       for (TxFinishSync txSync : xidMap.values())
+            txSync.onDisconnected(reconnectFut);
 
-        threadMap.clear();
+        xidMap.clear();
     }
 
     /**
      * Callback invoked when finish response is received from remote node.
      *
      * @param nodeId Node ID response was received from.
-     * @param threadId Thread ID started transaction.
+     * @param xid Tx ID.
      */
-    public void onAckReceived(UUID nodeId, long threadId) {
-        ThreadFinishSync threadSync = threadMap.get(threadId);
+    public void onAckReceived(UUID nodeId, GridCacheVersion xid) {
+        TxFinishSync txSync = xidMap.get(xid);
 
-        if (threadSync != null) {
-            threadSync.onReceive(nodeId);
+        if (txSync != null) {
+            txSync.onReceive(nodeId);
 
-            synchronized (threadSync) {
-                if (threadSync.isEmpty())
-                    threadMap.remove(threadId);
+            synchronized (txSync) {
+                if (txSync.isEmpty())
+                    xidMap.remove(xid, txSync);
             }
         }
     }
@@ -125,43 +120,63 @@ public class GridCacheTxFinishSync<K, V> {
      * @param nodeId Left node ID.
      */
     public void onNodeLeft(UUID nodeId) {
-        for (ThreadFinishSync threadSync : threadMap.values()) {
-            threadSync.onNodeLeft(nodeId);
+        for (TxFinishSync txSync : xidMap.values()) {
+            txSync.onNodeLeft(nodeId);
 
-            synchronized (threadSync) {
-                if (threadSync.isEmpty())
-                    threadMap.remove(threadSync);
+            synchronized (txSync) {
+                if (txSync.isEmpty())
+                    xidMap.remove(txSync.xid, txSync);
             }
         }
     }
 
     /**
-     * Per-node sync.
+     * Callback invoked when failure occurs.
+     *
+     * @param nodeId Node ID.
+     * @param xid Tx ID.
+     * @param e Error.
      */
-    private class ThreadFinishSync {
-        /** Thread ID. */
-        private long threadId;
+    public void onFail(UUID nodeId, GridCacheVersion xid, Exception e) {
+        TxFinishSync txSync = xidMap.get(xid);
+
+        if (txSync != null) {
+            txSync.onFail(nodeId, e);
+
+            synchronized (txSync) {
+                if (txSync.isEmpty())
+                    xidMap.remove(xid, txSync);
+            }
+        }
+    }
+
+    /**
+     * Per-tx sync.
+     */
+    private class TxFinishSync {
+        /** Tx ID. */
+        private final GridCacheVersion xid;
 
         /** Thread map. */
-        private final Map<UUID, TxFinishSync> nodeMap = new ConcurrentHashMap<>();
+        private final Map<UUID, TxNodeFinishSync> nodeMap = new ConcurrentHashMap<>();
 
         /**
-         * @param threadId Thread ID.
+         * @param xid Tx ID.
          */
-        private ThreadFinishSync(long threadId) {
-            this.threadId = threadId;
+        private TxFinishSync(GridCacheVersion xid) {
+            this.xid = xid;
         }
 
         /**
          * @param nodeId Node ID request being sent to.
          */
         public void onSend(UUID nodeId) {
-            TxFinishSync sync = nodeMap.get(nodeId);
+            TxNodeFinishSync sync = nodeMap.get(nodeId);
 
             if (sync == null) {
-                sync = new TxFinishSync(nodeId, threadId);
+                sync = new TxNodeFinishSync(nodeId, xid);
 
-                TxFinishSync old = nodeMap.put(nodeId, sync);
+                TxNodeFinishSync old = nodeMap.put(nodeId, sync);
 
                 assert old == null : "Only user thread can add sync objects to the map.";
 
@@ -188,7 +203,7 @@ public class GridCacheTxFinishSync<K, V> {
          * @return {@code null} if ack has been received or future that will be completed when ack is received.
          */
         public IgniteInternalFuture<?> awaitAckAsync(UUID nodeId) {
-            TxFinishSync sync = nodeMap.get(nodeId);
+            TxNodeFinishSync sync = nodeMap.get(nodeId);
 
             if (sync == null)
                 return null;
@@ -200,7 +215,7 @@ public class GridCacheTxFinishSync<K, V> {
          * @param reconnectFut Reconnect future.
          */
         public void onDisconnected(IgniteFuture<?> reconnectFut) {
-            for (TxFinishSync sync : nodeMap.values())
+            for (TxNodeFinishSync sync : nodeMap.values())
                 sync.onDisconnected(reconnectFut);
 
             nodeMap.clear();
@@ -210,7 +225,7 @@ public class GridCacheTxFinishSync<K, V> {
          * @param nodeId Node ID response received from.
          */
         public void onReceive(UUID nodeId) {
-            TxFinishSync sync = nodeMap.remove(nodeId);
+            TxNodeFinishSync sync = nodeMap.remove(nodeId);
 
             if (sync != null)
                 sync.onReceive();
@@ -220,14 +235,25 @@ public class GridCacheTxFinishSync<K, V> {
          * @param nodeId Left node ID.
          */
         public void onNodeLeft(UUID nodeId) {
-            TxFinishSync sync = nodeMap.remove(nodeId);
+            TxNodeFinishSync sync = nodeMap.remove(nodeId);
 
             if (sync != null)
                 sync.onNodeLeft();
         }
 
         /**
-         *
+         * @param nodeId Node ID.
+         * @param e Error.
+         */
+        public void onFail(UUID nodeId, Exception e) {
+            TxNodeFinishSync sync = nodeMap.remove(nodeId);
+
+            if (sync != null)
+                sync.onFail(e);
+        }
+
+        /**
+         * Ack's received from all alive nodes.
          */
         private boolean isEmpty() {
             return nodeMap.isEmpty();
@@ -235,14 +261,14 @@ public class GridCacheTxFinishSync<K, V> {
     }
 
     /**
-     * Tx sync. Allocated per-node per-thread.
+     * Tx sync. Allocated per-node per-transaction.
      */
-    private class TxFinishSync {
+    private class TxNodeFinishSync {
         /** Node ID. */
         private final UUID nodeId;
 
-        /** Thread ID. */
-        private final long threadId;
+        /** Tx ID. */
+        private final GridCacheVersion xid;
 
         /** Number of awaiting messages. */
         private int cnt;
@@ -255,11 +281,11 @@ public class GridCacheTxFinishSync<K, V> {
 
         /**
          * @param nodeId Sync node ID. Used to construct correct error message.
-         * @param threadId Thread ID.
+         * @param xid Tx ID.
          */
-        private TxFinishSync(UUID nodeId, long threadId) {
+        private TxNodeFinishSync(UUID nodeId, GridCacheVersion xid) {
             this.nodeId = nodeId;
-            this.threadId = threadId;
+            this.xid = xid;
         }
 
         /**
@@ -270,7 +296,7 @@ public class GridCacheTxFinishSync<K, V> {
             synchronized (this) {
                 if (log.isTraceEnabled())
                     log.trace("Moved transaction synchronizer to waiting state [nodeId=" + nodeId +
-                        ", threadId=" + threadId + ']');
+                        ", xid=" + xid + ']');
 
                 assert cnt == 0 || nodeLeft : cnt;
 
@@ -299,7 +325,7 @@ public class GridCacheTxFinishSync<K, V> {
                 if (pendingFut == null) {
                     if (log.isTraceEnabled())
                         log.trace("Creating transaction synchronizer future [nodeId=" + nodeId +
-                            ", threadId=" + threadId + ']');
+                            ", xid=" + xid + ']');
 
                     pendingFut = new GridFutureAdapter<>();
                 }
@@ -315,7 +341,7 @@ public class GridCacheTxFinishSync<K, V> {
             synchronized (this) {
                 if (log.isTraceEnabled())
                     log.trace("Moving transaction synchronizer to completed state [nodeId=" + nodeId +
-                        ", threadId=" + threadId + ']');
+                        ", xid=" + xid + ']');
 
                 cnt = 0;
 
@@ -357,6 +383,22 @@ public class GridCacheTxFinishSync<K, V> {
                         reconnectFut,
                         "Failed to wait for transaction synchronizer, client node disconnected: " + nodeId);
                     pendingFut.onDone(err);
+
+                    pendingFut = null;
+                }
+            }
+        }
+
+        /**
+         * Callback for request send failure.
+         */
+        public void onFail(Exception e) {
+            synchronized (this) {
+                nodeLeft = true;
+
+                if (pendingFut != null) {
+                    pendingFut.onDone(new IgniteCheckedException("Failed to wait for transaction synchronizer " +
+                        "completed state, failed to send request to node: " + nodeId, e));
 
                     pendingFut = null;
                 }
