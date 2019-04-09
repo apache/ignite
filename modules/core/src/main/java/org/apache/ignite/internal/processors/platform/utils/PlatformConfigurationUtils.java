@@ -2142,7 +2142,7 @@ public class PlatformConfigurationUtils {
      * Reads the data region configuration.
      *
      * @param r Reader.
-     * @param ver
+     * @param ver Client version.
      */
     private static DataRegionConfiguration readDataRegionConfiguration(BinaryRawReader r,
         ClientListenerProtocolVersion ver) {
