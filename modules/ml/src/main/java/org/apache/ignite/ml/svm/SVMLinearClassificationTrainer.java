@@ -30,6 +30,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -59,19 +60,19 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
      * Trains model based on the specified data.
      *
      * @param datasetBuilder Dataset builder.
-     * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
+     * @param preprocessor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
      * @return Model.
      */
     @Override public <K, V, C extends Serializable> SVMLinearClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
+                                                                                     Preprocessor<K, V> preprocessor) {
 
-        return updateModel(null, datasetBuilder, extractor);
+        return updateModel(null, datasetBuilder, preprocessor);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V, C extends Serializable> SVMLinearClassificationModel updateModel(SVMLinearClassificationModel mdl,
-        DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
+                                                                                                DatasetBuilder<K, V> datasetBuilder,
+                                                                                                Preprocessor<K, V> preprocessor) {
 
         assert datasetBuilder != null;
 
@@ -81,7 +82,7 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
             else
                 return lb;
         };
-        Vectorizer<K, V, C, Double> patchedVectorizer = patchVectorizer(extractor, patchedLbExtractor);
+        Vectorizer<K, V, C, Double> patchedVectorizer = patchVectorizer(preprocessor, patchedLbExtractor);
 
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder =
             new LabeledDatasetPartitionDataBuilderOnHeap<>(patchedVectorizer);

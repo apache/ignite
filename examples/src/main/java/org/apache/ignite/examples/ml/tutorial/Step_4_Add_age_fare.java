@@ -59,7 +59,7 @@ public class Step_4_Add_age_fare {
                 final Vectorizer<Integer, Vector, Integer, Double> vectorizer
                     = new DummyVectorizer<Integer>(0, 3, 4, 5, 6, 8, 10).labeled(1);
 
-                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<>()
+                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Vector>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
                     .withEncodedFeature(1)
                     .withEncodedFeature(6) // <--- Changed index here.
@@ -68,7 +68,7 @@ public class Step_4_Add_age_fare {
                         vectorizer
                 );
 
-                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<>()
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
                         dataCache,
                         strEncoderPreprocessor

@@ -61,7 +61,7 @@ public class Step_3_Categorial_with_One_Hot_Encoder {
                 // "pclass", "sibsp", "parch", "sex", "embarked"
                 final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 3, 5, 6, 10).labeled(1);
 
-                Preprocessor<Integer, Vector> oneHotEncoderPreprocessor = new EncoderTrainer<>()
+                Preprocessor<Integer, Vector> oneHotEncoderPreprocessor = new EncoderTrainer<Integer, Vector>()
                     .withEncoderType(EncoderType.ONE_HOT_ENCODER)
                     .withEncodedFeature(0)
                     .withEncodedFeature(1)
@@ -71,7 +71,7 @@ public class Step_3_Categorial_with_One_Hot_Encoder {
                         vectorizer
                 );
 
-                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<>()
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
                         dataCache,
                         oneHotEncoderPreprocessor

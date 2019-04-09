@@ -38,13 +38,6 @@ public interface FeatureLabelExtractor<K, V, L> extends Preprocessor<K, V> {
      */
     public LabeledVector<L> extract(K k, V v);
 
-    /** */
-    /*public default <L1> FeatureLabelExtractor<K, V, L1> andThen(IgniteFunction<? super LabeledVector<L>, ? extends LabeledVector<L1>> after) {
-        Objects.requireNonNull(after);
-        final FeatureLabelExtractor<K, V, L1> extractor = (FeatureLabelExtractor<K, V, L1>) (K k, V v) -> after.apply(extract(k, v));
-        return extractor;
-    }*/
-
     /**
      * Extract features from key and value.
      *

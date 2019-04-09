@@ -17,15 +17,14 @@
 
 package org.apache.ignite.ml.dataset.primitive.builder.data;
 
+import java.io.Serializable;
+import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-
-import java.io.Serializable;
-import java.util.Iterator;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * A partition {@code data} builder that makes {@link SimpleDatasetData}.
@@ -41,14 +40,14 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends S
     private static final long serialVersionUID = 756800193212149975L;
 
     /** Function that extracts features from an {@code upstream} data. */
-    private final Vectorizer<K, V, CO, ?> featureExtractor;
+    private final Preprocessor<K, V> featureExtractor;
 
     /**
      * Construct a new instance of partition {@code data} builder that makes {@link SimpleDatasetData}.
      *
      * @param featureExtractor Function that extracts features from an {@code upstream} data.
      */
-    public SimpleDatasetDataBuilder(Vectorizer<K, V, CO, ?> featureExtractor) {
+    public SimpleDatasetDataBuilder(Preprocessor<K, V> featureExtractor) {
         this.featureExtractor = featureExtractor;
     }
 

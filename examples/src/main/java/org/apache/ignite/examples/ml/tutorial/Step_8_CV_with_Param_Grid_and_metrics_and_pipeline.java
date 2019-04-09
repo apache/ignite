@@ -83,8 +83,8 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
 
                 Pipeline<Integer, Vector> pipeline = new Pipeline<>()
                     .addVectorizer(vectorizer)
-                    .addPreprocessingTrainer(new ImputerTrainer<>())
-                    .addPreprocessingTrainer(new MinMaxScalerTrainer<>())
+                    .addPreprocessingTrainer(new ImputerTrainer<Integer, Vector>())
+                    .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Vector>())
                     .addTrainer(new DecisionTreeClassificationTrainer(5, 0));
 
                 // Tune hyperparams with K-fold Cross-Validation on the split training set.

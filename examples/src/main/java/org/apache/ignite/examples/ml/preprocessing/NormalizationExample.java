@@ -17,19 +17,20 @@
 
 package org.apache.ignite.examples.ml.preprocessing;
 
+import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.examples.ml.util.DatasetHelper;
 import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 
 /**
@@ -50,46 +51,43 @@ public class NormalizationExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Normalization example started.");
 
-            IgniteCache<Integer, Person> persons = null;
+            IgniteCache<Integer, Vector> data = null;
             try {
-                persons = createCache(ignite);
+                data = createCache(ignite);
 
-                // Defines first preprocessor that extracts features from an upstream data.
-                IgniteBiFunction<Integer, Person, Vector> featureExtractor = (k, v) -> VectorUtils.of(
-                    v.getAge(),
-                    v.getSalary()
-                );
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer
+                    = new DummyVectorizer<Integer>(1, 2).labeled(Vectorizer.LabelCoordinate.FIRST);
 
                 // Defines second preprocessor that normalizes features.
-                IgniteBiFunction<Integer, Person, Vector> preprocessor = new NormalizationTrainer<Integer, Person>()
+                Preprocessor<Integer, Vector> preprocessor = new NormalizationTrainer<Integer, Vector>()
                     .withP(1)
-                    .fit(ignite, persons, featureExtractor);
+                    .fit(ignite, data, vectorizer);
 
                 // Creates a cache based simple dataset containing features and providing standard dataset API.
-                try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, FeatureLabelExtractorWrapper.wrap(preprocessor))) {
+                try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, data, preprocessor)) {
                     new DatasetHelper(dataset).describe();
                 }
 
                 System.out.println(">>> Normalization example completed.");
             } finally {
-                persons.destroy();
+                data.destroy();
             }
         }
     }
 
     /** */
-    private static IgniteCache<Integer, Person> createCache(Ignite ignite) {
-        CacheConfiguration<Integer, Person> cacheConfiguration = new CacheConfiguration<>();
+    private static IgniteCache<Integer, Vector> createCache(Ignite ignite) {
+        CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
 
         cacheConfiguration.setName("PERSONS");
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 2));
 
-        IgniteCache<Integer, Person> persons = ignite.createCache(cacheConfiguration);
+        IgniteCache<Integer, Vector> persons = ignite.createCache(cacheConfiguration);
 
-        persons.put(1, new Person("Mike", 10, 20));
-        persons.put(2, new Person("John", 20, 10));
-        persons.put(3, new Person("George", 30, 0));
-        persons.put(4, new Person("Karl", 25, 15));
+        persons.put(1, new DenseVector(new Serializable[]{"Mike", 10, 20}));
+        persons.put(2, new DenseVector(new Serializable[]{"John", 20, 10}));
+        persons.put(3, new DenseVector(new Serializable[]{"George", 30, 0}));
+        persons.put(4, new DenseVector(new Serializable[]{"Karl", 25, 15}));
 
         return persons;
     }

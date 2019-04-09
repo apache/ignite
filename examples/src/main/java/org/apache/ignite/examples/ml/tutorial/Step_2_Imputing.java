@@ -55,7 +55,7 @@ public class Step_2_Imputing {
 
                 final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 5, 6).labeled(1);
 
-                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<>()
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
                         dataCache,
                         vectorizer // "pclass", "sibsp", "parch"

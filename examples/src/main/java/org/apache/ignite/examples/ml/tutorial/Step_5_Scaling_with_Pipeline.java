@@ -64,13 +64,13 @@ public class Step_5_Scaling_with_Pipeline {
 
                 PipelineMdl<Integer, Vector> mdl = new Pipeline<>()
                     .addVectorizer(vectorizer)
-                    .addPreprocessingTrainer(new EncoderTrainer<>()
+                    .addPreprocessingTrainer(new EncoderTrainer<Integer, Vector>()
                         .withEncoderType(EncoderType.STRING_ENCODER)
                         .withEncodedFeature(1)
                         .withEncodedFeature(6))
-                    .addPreprocessingTrainer(new ImputerTrainer<>())
-                    .addPreprocessingTrainer(new MinMaxScalerTrainer<>())
-                    .addPreprocessingTrainer(new NormalizationTrainer<>()
+                    .addPreprocessingTrainer(new ImputerTrainer<Integer, Vector>())
+                    .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Vector>())
+                    .addPreprocessingTrainer(new NormalizationTrainer<Integer, Vector>()
                         .withP(1))
                     .addTrainer(new DecisionTreeClassificationTrainer(5, 0))
                     .fit(ignite, dataCache);

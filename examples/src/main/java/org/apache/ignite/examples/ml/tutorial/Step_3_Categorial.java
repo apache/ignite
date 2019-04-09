@@ -60,7 +60,7 @@ public class Step_3_Categorial {
                 // "pclass", "sibsp", "parch", "sex", "embarked"
                 final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 3, 5, 6, 10).labeled(1);
 
-                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<>()
+                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Vector>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
                     .withEncodedFeature(1)
                     .withEncodedFeature(4)
@@ -69,7 +69,7 @@ public class Step_3_Categorial {
                         vectorizer
                 );
 
-                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<>()
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
                         dataCache,
                         strEncoderPreprocessor

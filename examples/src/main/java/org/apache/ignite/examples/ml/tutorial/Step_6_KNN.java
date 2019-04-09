@@ -63,7 +63,7 @@ public class Step_6_KNN {
                 final Vectorizer<Integer, Vector, Integer, Double> vectorizer
                     = new DummyVectorizer<Integer>(0, 3, 4, 5, 6, 8, 10).labeled(1);
 
-                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<>()
+                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Vector>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
                     .withEncodedFeature(1)
                     .withEncodedFeature(6) // <--- Changed index here.
@@ -72,20 +72,20 @@ public class Step_6_KNN {
                         vectorizer
                     );
 
-                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<>()
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
                         dataCache,
                         strEncoderPreprocessor
                     );
 
-                Preprocessor<Integer, Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<>()
+                Preprocessor<Integer, Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Vector>()
                     .fit(
                         ignite,
                         dataCache,
                         imputingPreprocessor
                     );
 
-                Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<>()
+                Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Vector>()
                     .withP(1)
                     .fit(
                         ignite,

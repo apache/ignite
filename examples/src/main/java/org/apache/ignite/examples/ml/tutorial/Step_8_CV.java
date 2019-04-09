@@ -80,7 +80,7 @@ public class Step_8_CV {
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
                     .split(0.75);
 
-                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<>()
+                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Vector>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
                     .withEncodedFeature(1)
                     .withEncodedFeature(6) // <--- Changed index here.
@@ -89,13 +89,13 @@ public class Step_8_CV {
                         vectorizer
                     );
 
-                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<>()
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
                         dataCache,
                         strEncoderPreprocessor
                     );
 
-                Preprocessor<Integer, Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<>()
+                Preprocessor<Integer, Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Vector>()
                     .fit(
                         ignite,
                         dataCache,
@@ -113,7 +113,7 @@ public class Step_8_CV {
                 for(int p: pSet){
                     for(int maxDeep: maxDeepSet){
 
-                        Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<>()
+                        Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Vector>()
                             .withP(p)
                             .fit(
                                 ignite,
@@ -153,7 +153,7 @@ public class Step_8_CV {
 
                 System.out.println("Train with p: " + bestP + " and maxDeep: " + bestMaxDeep);
 
-                Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<>()
+                Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Vector>()
                     .withP(bestP)
                     .fit(
                         ignite,

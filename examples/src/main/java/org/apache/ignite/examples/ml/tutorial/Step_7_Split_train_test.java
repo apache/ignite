@@ -68,7 +68,7 @@ public class Step_7_Split_train_test {
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
                     .split(0.75);
 
-                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<>()
+                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Vector>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
                     .withEncodedFeature(1)
                     .withEncodedFeature(6) // <--- Changed index here.
@@ -77,20 +77,20 @@ public class Step_7_Split_train_test {
                         vectorizer
                     );
 
-                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<>()
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
                         dataCache,
                         strEncoderPreprocessor
                     );
 
-                Preprocessor<Integer, Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<>()
+                Preprocessor<Integer, Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Vector>()
                     .fit(
                         ignite,
                         dataCache,
                         imputingPreprocessor
                     );
 
-                Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<>()
+                Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Vector>()
                     .withP(1)
                     .fit(
                         ignite,
