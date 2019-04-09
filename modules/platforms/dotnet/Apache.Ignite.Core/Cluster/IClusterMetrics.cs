@@ -343,5 +343,10 @@ namespace Apache.Ignite.Core.Cluster
         /// Gets total number of nodes.
         /// </summary>
         int TotalNodes { get; }
+
+        /// <summary>
+        /// Gets current PME time.
+        /// </summary>
+        long CurrentPmeTime { get; }
     }
 }
