@@ -184,7 +184,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             List<Integer> primaryKeys = primaryKeys(cache, 10_000);
 
-            long stop = U.currentTimeMillis() + 3 * 60_000;
+            long stop = U.currentTimeMillis() + 5 * 60_000;
 
             Random r = new Random();
 
@@ -192,7 +192,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
                 while (U.currentTimeMillis() < stop) {
-                    doSleep(3_000);
+                    doSleep(5_000);
 
                     Ignite restartNode = grid(1);
 
@@ -205,7 +205,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
                     try {
                         waitForTopology(SERVER_NODES);
 
-                        doSleep(10_000);
+                        doSleep(15_000);
 
                         startGrid(name);
 
@@ -228,7 +228,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     }
 
     @Override protected long getPartitionMapExchangeTimeout() {
-        return 60_000;
+        return 1200000000;
     }
 
     /**
@@ -286,6 +286,10 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             log.info("TX: puts=" + puts.sum() + ", removes=" + removes.sum() + ", size=" + cache.size());
 
         }, Runtime.getRuntime().availableProcessors() * 2, "tx-update-thread");
+    }
+
+    @Override protected long getTestTimeout() {
+        return 1000000000000000L;
     }
 
     /**

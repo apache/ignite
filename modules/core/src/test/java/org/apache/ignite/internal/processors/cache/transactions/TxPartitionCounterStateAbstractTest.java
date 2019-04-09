@@ -120,6 +120,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         cfg.setConsistentId("node" + igniteInstanceName);
         cfg.setFailureHandler(new StopNodeFailureHandler());
+        cfg.setRebalanceThreadPoolSize(4);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 

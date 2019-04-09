@@ -255,8 +255,8 @@ class GridDhtPartitionSupplier {
             long maxBatchesCnt = grp.config().getRebalanceBatchesPrefetchCount();
 
             if (sctx == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Starting supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) +
+                if (log.isInfoEnabled())
+                    log.info("Starting supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) +
                         ", fullPartitions=" + S.compact(demandMsg.partitions().fullSet()) +
                         ", histPartitions=" + S.compact(demandMsg.partitions().historicalSet()) + "]");
             }
