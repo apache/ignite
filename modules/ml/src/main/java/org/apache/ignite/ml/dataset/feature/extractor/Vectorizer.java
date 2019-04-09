@@ -17,6 +17,11 @@
 
 package org.apache.ignite.ml.dataset.feature.extractor;
 
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -24,12 +29,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
-
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Class for extracting labeled vectors from upstream. This is an abstract class providing API for extracting feature
@@ -64,7 +63,7 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
      * @param value Value.
      * @return vector.
      */
-    public LabeledVector<L> apply(K key, V value) {
+    @Override public LabeledVector<L> apply(K key, V value) {
         L lbl = isLabeled() ? label(labelCoord(key, value), key, value) : zero();
 
         List<C> allCoords = null;

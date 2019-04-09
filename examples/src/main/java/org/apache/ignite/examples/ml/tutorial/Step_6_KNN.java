@@ -17,15 +17,17 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
@@ -33,8 +35,6 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
-
-import java.io.FileNotFoundException;
 
 /**
  * Change classification algorithm that was used in {@link Step_5_Scaling} from decision tree to kNN
@@ -57,38 +57,35 @@ public class Step_6_KNN {
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
-                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+                IgniteCache<Integer, Vector> dataCache = TitanicUtils.readPassengers(ignite);
 
-                // Defines first preprocessor that extracts features from an upstream data.
                 // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
-                IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                    = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+                final Vectorizer<Integer, Vector, Integer, Double> vectorizer
+                    = new DummyVectorizer<Integer>(0, 3, 4, 5, 6, 8, 10).labeled(1);
 
-                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
-
-                IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
                     .withEncodedFeature(1)
                     .withEncodedFeature(6) // <--- Changed index here.
                     .fit(ignite,
                         dataCache,
-                        featureExtractor
-                );
+                        vectorizer
+                    );
 
-                IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<>()
                     .fit(ignite,
                         dataCache,
                         strEncoderPreprocessor
                     );
 
-                IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<>()
                     .fit(
                         ignite,
                         dataCache,
                         imputingPreprocessor
                     );
 
-                IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<>()
                     .withP(1)
                     .fit(
                         ignite,
@@ -102,7 +99,7 @@ public class Step_6_KNN {
                 NNClassificationModel mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    FeatureLabelExtractorWrapper.wrap(normalizationPreprocessor, lbExtractor) //TODO: IGNITE-11581
+                    normalizationPreprocessor
                 ).withK(1).withStrategy(NNStrategy.WEIGHTED);
 
                 System.out.println("\n>>> Trained model: " + mdl);
@@ -111,7 +108,6 @@ public class Step_6_KNN {
                     dataCache,
                     mdl,
                     normalizationPreprocessor,
-                    lbExtractor,
                     new Accuracy<>()
                 );
 

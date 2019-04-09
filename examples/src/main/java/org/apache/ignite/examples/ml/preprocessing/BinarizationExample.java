@@ -30,6 +30,7 @@ import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer;
 
 /**
@@ -60,7 +61,7 @@ public class BinarizationExample {
                 );
 
                 // Defines second preprocessor that normalizes features.
-                IgniteBiFunction<Integer, Person, Vector> preprocessor = new BinarizationTrainer<Integer, Person>()
+                Preprocessor<Integer, Person> preprocessor = new BinarizationTrainer<Integer, Person>()
                     .withThreshold(40)
                     .fit(ignite, persons, featureExtractor);
 

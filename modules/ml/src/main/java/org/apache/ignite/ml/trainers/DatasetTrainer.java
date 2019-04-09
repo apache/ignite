@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.trainers;
 
+import java.io.Serializable;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -33,11 +35,9 @@ import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.Serializable;
-import java.util.Map;
 
 /**
  * Interface for trainers. Trainer is just a function which produces model from the data.
@@ -100,12 +100,12 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * Trains model based on the specified data.
      *
      * @param datasetBuilder Dataset builder.
-     * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
+     * @param preprocessor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public abstract <K, V, C extends Serializable> M fit(DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor);
+    public abstract <K, V, C extends Serializable> M fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor);
 
     /**
      * Gets state of model in arguments, compare it with training parameters of trainer and if they are fit then trainer
@@ -113,16 +113,16 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      *
      * @param mdl Learned model.
      * @param datasetBuilder Dataset builder.
-     * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
+     * @param preprocessor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public <K, V, C extends Serializable> M update(M mdl, DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor) {
+    public <K, V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
 
         if (mdl != null) {
             if (isUpdateable(mdl))
-                return updateModel(mdl, datasetBuilder, extractor);
+                return updateModel(mdl, datasetBuilder, preprocessor);
             else {
                 environment.logger(getClass()).log(
                     MLLogger.VerboseLevel.HIGH,
@@ -132,7 +132,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
             }
         }
 
-        return fit(datasetBuilder, extractor);
+        return fit(datasetBuilder, preprocessor);
     }
 
     /**
@@ -308,14 +308,14 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      *
      * @param mdl Learned model.
      * @param datasetBuilder Dataset builder.
-     * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
+     * @param preprocessor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
     protected abstract <K, V, C extends Serializable> M updateModel(M mdl,
-        DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, L> extractor);
+                                                                    DatasetBuilder<K, V> datasetBuilder,
+                                                                    Preprocessor<K, V> preprocessor);
 
     /**
      * Get learning environment.

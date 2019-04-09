@@ -19,8 +19,7 @@ package org.apache.ignite.ml.preprocessing.encoding;
 
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Preprocessing function that makes encoding.
@@ -30,7 +29,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public abstract class EncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
+public abstract class EncoderPreprocessor<K, V> implements Preprocessor<K, V> {
     /** */
     protected static final String KEY_FOR_NULL_VALUES = "";
 
@@ -38,7 +37,7 @@ public abstract class EncoderPreprocessor<K, V> implements IgniteBiFunction<K, V
     protected final Map<String, Integer>[] encodingValues;
 
     /** Base preprocessor. */
-    protected final IgniteBiFunction<K, V, Object[]> basePreprocessor;
+    protected final Preprocessor<K, V> basePreprocessor;
 
     /** Feature indices to apply encoder. */
     protected final Set<Integer> handledIndices;
@@ -50,7 +49,7 @@ public abstract class EncoderPreprocessor<K, V> implements IgniteBiFunction<K, V
      * @param handledIndices   Handled indices.
      */
     public EncoderPreprocessor(Map<String, Integer>[] encodingValues,
-                               IgniteBiFunction<K, V, Object[]> basePreprocessor, Set<Integer> handledIndices) {
+                               Preprocessor<K, V> basePreprocessor, Set<Integer> handledIndices) {
         this.handledIndices = handledIndices;
         this.encodingValues = encodingValues;
         this.basePreprocessor = basePreprocessor;

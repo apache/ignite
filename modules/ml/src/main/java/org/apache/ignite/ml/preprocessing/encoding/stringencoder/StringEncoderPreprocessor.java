@@ -20,10 +20,10 @@ package org.apache.ignite.ml.preprocessing.encoding.stringencoder;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderPreprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Preprocessing function that makes String encoding.
@@ -56,7 +56,7 @@ public class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
      * @param handledIndices   Handled indices.
      */
     public StringEncoderPreprocessor(Map<String, Integer>[] encodingValues,
-                                     IgniteBiFunction<K, V, Object[]> basePreprocessor, Set<Integer> handledIndices) {
+                                     Preprocessor<K, V> basePreprocessor, Set<Integer> handledIndices) {
         super(encodingValues, basePreprocessor, handledIndices);
     }
 
@@ -67,7 +67,7 @@ public class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public Vector apply(K k, V v) {
+    @Override public LabeledVector apply(K k, V v) {
         Object[] tmp = basePreprocessor.apply(k, v);
         double[] res = new double[tmp.length];
 

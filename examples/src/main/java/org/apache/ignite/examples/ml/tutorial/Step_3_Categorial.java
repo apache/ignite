@@ -17,12 +17,14 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
@@ -30,8 +32,6 @@ import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-
-import java.io.FileNotFoundException;
 
 /**
  * Let's add two categorial features "sex", "embarked" to predict more precisely than in {@link Step_1_Read_and_Learn}.
@@ -55,24 +55,21 @@ public class Step_3_Categorial {
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
-                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+                IgniteCache<Integer, Vector> dataCache = TitanicUtils.readPassengers(ignite);
 
-                // Defines first preprocessor that extracts features from an upstream data.
-                IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                    = (k, v) -> new Object[]{v[0], v[3], v[5], v[6], v[10]}; // "pclass", "sibsp", "parch", "sex", "embarked"
+                // "pclass", "sibsp", "parch", "sex", "embarked"
+                final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 3, 5, 6, 10).labeled(1);
 
-                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
-
-                IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
                     .withEncodedFeature(1)
                     .withEncodedFeature(4)
                     .fit(ignite,
                         dataCache,
-                        featureExtractor
+                        vectorizer
                 );
 
-                IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<>()
                     .fit(ignite,
                         dataCache,
                         strEncoderPreprocessor
@@ -84,7 +81,7 @@ public class Step_3_Categorial {
                 DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    FeatureLabelExtractorWrapper.wrap(imputingPreprocessor, lbExtractor) //TODO: IGNITE-11581
+                    imputingPreprocessor
                 );
 
                 System.out.println("\n>>> Trained model: " + mdl);
@@ -93,7 +90,6 @@ public class Step_3_Categorial {
                     dataCache,
                     mdl,
                     imputingPreprocessor,
-                    lbExtractor,
                     new Accuracy<>()
                 );
 

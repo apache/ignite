@@ -30,9 +30,8 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.onehotencoder.OneHotEncoderPreprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
 import org.jetbrains.annotations.NotNull;
@@ -43,7 +42,7 @@ import org.jetbrains.annotations.NotNull;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[], Vector> {
+public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
     /** Indices of features which should be encoded. */
     private Set<Integer> handledIndices = new HashSet<>();
 
@@ -57,7 +56,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
     @Override public EncoderPreprocessor<K, V> fit(
         LearningEnvironmentBuilder envBuilder,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Object[]> basePreprocessor) {
+        Preprocessor<K, V> basePreprocessor) {
         if (handledIndices.isEmpty())
             throw new RuntimeException("Add indices of handled features");
 

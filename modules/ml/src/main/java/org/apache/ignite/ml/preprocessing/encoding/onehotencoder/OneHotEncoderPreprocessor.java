@@ -20,11 +20,11 @@ package org.apache.ignite.ml.preprocessing.encoding.onehotencoder;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderPreprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Preprocessing function that makes one-hot encoding.
@@ -57,7 +57,7 @@ public class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
      * @param handledIndices   Handled indices.
      */
     public OneHotEncoderPreprocessor(Map<String, Integer>[] encodingValues,
-                                     IgniteBiFunction<K, V, Object[]> basePreprocessor, Set<Integer> handledIndices) {
+                                     Preprocessor<K, V> basePreprocessor, Set<Integer> handledIndices) {
         super(encodingValues, basePreprocessor, handledIndices);
     }
 
@@ -68,7 +68,7 @@ public class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public Vector apply(K k, V v) {
+    @Override public LabeledVector apply(K k, V v) {
         Object[] tmp = basePreprocessor.apply(k, v);
         int amountOfCategorialFeatures = handledIndices.size();
 

@@ -17,10 +17,8 @@
 
 package org.apache.ignite.ml.trainers;
 
-import java.io.Serializable;
-import java.util.Objects;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
@@ -30,7 +28,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * @param <V> Type of values.
  * @param <L> Type of labels.
  */
-public interface FeatureLabelExtractor<K, V, L> extends Serializable {
+public interface FeatureLabelExtractor<K, V, L> extends Preprocessor<K, V> {
     /**
      * Extract {@link LabeledVector} from key and value.
      *
@@ -41,10 +39,11 @@ public interface FeatureLabelExtractor<K, V, L> extends Serializable {
     public LabeledVector<L> extract(K k, V v);
 
     /** */
-    public default <L1> FeatureLabelExtractor<K, V, L1> andThen(IgniteFunction<? super LabeledVector<L>, ? extends LabeledVector<L1>> after) {
+    /*public default <L1> FeatureLabelExtractor<K, V, L1> andThen(IgniteFunction<? super LabeledVector<L>, ? extends LabeledVector<L1>> after) {
         Objects.requireNonNull(after);
-        return (K k, V v) -> after.apply(extract(k, v));
-    }
+        final FeatureLabelExtractor<K, V, L1> extractor = (FeatureLabelExtractor<K, V, L1>) (K k, V v) -> after.apply(extract(k, v));
+        return extractor;
+    }*/
 
     /**
      * Extract features from key and value.

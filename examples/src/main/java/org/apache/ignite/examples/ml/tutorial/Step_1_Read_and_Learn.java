@@ -17,19 +17,17 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-
-import java.io.FileNotFoundException;
 
 /**
  * Usage of {@link DecisionTreeClassificationTrainer} to predict death in the disaster.
@@ -50,28 +48,17 @@ public class Step_1_Read_and_Learn {
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
-                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+                IgniteCache<Integer, Vector> dataCache = TitanicUtils.readPassengers(ignite);
 
-                IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
-                    double[] data = new double[] {(double)v[0], (double)v[5], (double)v[6]};
-                    data[0] = Double.isNaN(data[0]) ? 0 : data[0];
-                    data[1] = Double.isNaN(data[1]) ? 0 : data[1];
-                    data[2] = Double.isNaN(data[2]) ? 0 : data[2];
+                final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 5, 6).labeled(1);
 
-                    return VectorUtils.of(data);
-                };
-
-                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
 
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                 DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    FeatureLabelExtractorWrapper.wrap( //TODO: IGNITE-11581
-                        featureExtractor, // "pclass", "sibsp", "parch"
-                        lbExtractor
-                    )
+                    vectorizer
                 );
 
                 System.out.println("\n>>> Trained model: " + mdl);
@@ -79,8 +66,7 @@ public class Step_1_Read_and_Learn {
                 double accuracy = Evaluator.evaluate(
                     dataCache,
                     mdl,
-                    featureExtractor,
-                    lbExtractor,
+                    vectorizer,
                     new Accuracy<>()
                 );
 
