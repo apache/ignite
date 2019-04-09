@@ -2195,7 +2195,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 try {
                     DataRegion region = cctx.database().dataRegion(desc.config().getDataRegionName());
 
-                    if (!cctx.isLazyMemoryAllocation(region))
+                    if (region == null || !cctx.isLazyMemoryAllocation(region))
                         return;
 
                     region.pageMemory().start();
