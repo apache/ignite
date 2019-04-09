@@ -72,11 +72,15 @@ namespace Apache.Ignite.Core.Impl.Deployment
             // Assembly may be present but not loaded - attempt to load into main context.
             try
             {
-                asm = Assembly.Load(arg.AssemblyName);
-
-                if (asm != null)
+                using (PeerAssemblyResolver.Disable())
                 {
-                    return new AssemblyRequestResult(AssemblyLoader.GetAssemblyBytes(asm), null);
+                    // Assembly may be present but not loaded - attempt to load into main context.
+                    asm = Assembly.Load(arg.AssemblyName);
+
+                    if (asm != null)
+                    {
+                        return new AssemblyRequestResult(AssemblyLoader.GetAssemblyBytes(asm), null);
+                    }
                 }
             }
             catch (FileNotFoundException)

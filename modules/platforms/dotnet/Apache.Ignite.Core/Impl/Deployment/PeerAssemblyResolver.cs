@@ -18,9 +18,11 @@
 namespace Apache.Ignite.Core.Impl.Deployment
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Reflection;
+    using System.Runtime.Remoting.Messaging;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
@@ -36,6 +38,9 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /** Assembly resolve handler. */
         private readonly ResolveEventHandler _handler;
 
+        /** DataSlot name to be examined during peer loading  */
+        private const string DisablePeerLoadingMark = "DisablePeerLoading";
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PeerAssemblyResolver"/> class.
         /// </summary>
@@ -43,9 +48,19 @@ namespace Apache.Ignite.Core.Impl.Deployment
         {
             Debug.Assert(ignite != null);
 
-            _handler = (sender, args) => GetAssembly(ignite, args.Name, originNodeId);
+            _handler = (sender, args) =>
+            {
+                object result = CallContext.LogicalGetData(DisablePeerLoadingMark);
+                if (result != null)
+                {
+                    //custom resolver is disabled, return null
+                    return null;
+                }
+             
+                return GetAssembly(ignite, args.Name, originNodeId);
+            };
 
-            // AssemblyResolve handler is called only when aseembly can't be found via normal lookup,
+            // AssemblyResolve handler is called only when assembly can't be found via normal lookup,
             // so we won't end up loading assemblies that are already present.
             AppDomain.CurrentDomain.AssemblyResolve += _handler;
         }
@@ -209,6 +224,36 @@ namespace Apache.Ignite.Core.Impl.Deployment
                 aex.Handle(e => e is ClusterGroupEmptyException);
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Sets the special thread marker indicating that there is no need in peer assembly loading handler
+        /// </summary>
+        private sealed class DefaultAssemblyLoader : IDisposable
+        {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            public DefaultAssemblyLoader()
+            {
+                CallContext.LogicalSetData(DisablePeerLoadingMark, true);
+            }
+
+            /** <inheritdoc /> */
+            public void Dispose()
+            {
+                CallContext.FreeNamedDataSlot(DisablePeerLoadingMark);
+            }
+        }
+
+        /// <summary>
+        /// Disable remove assembly loading, default functionality will be used instead
+        /// This is useful to prevent cycled resolution, for sample consider <see cref="GetAssemblyFunc"/>
+        /// </summary>
+        /// <returns></returns>
+        public static IDisposable Disable()
+        {
+            return new DefaultAssemblyLoader();
         }
     }
 }
