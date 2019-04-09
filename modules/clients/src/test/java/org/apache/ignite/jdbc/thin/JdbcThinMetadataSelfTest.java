@@ -734,7 +734,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("IGNITE", "PUBLIC", "pers",
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("SYS", "PUBLIC", "pers",
                 "org", "dep", "PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
 
             Set<String> schemas = new HashSet<>();
