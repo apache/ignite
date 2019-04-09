@@ -62,7 +62,7 @@ public class Step_5_Scaling_with_Pipeline {
                 final Vectorizer<Integer, Vector, Integer, Double> vectorizer
                     = new DummyVectorizer<Integer>(0, 3, 4, 5, 6, 8, 10).labeled(1);
 
-                PipelineMdl<Integer, Vector> mdl = new Pipeline<>()
+                PipelineMdl<Integer, Vector> mdl = new Pipeline<Integer, Vector, Integer, Double>()
                     .addVectorizer(vectorizer)
                     .addPreprocessingTrainer(new EncoderTrainer<Integer, Vector>()
                         .withEncoderType(EncoderType.STRING_ENCODER)

@@ -32,7 +32,6 @@ import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.pipeline.Pipeline;
 import org.apache.ignite.ml.pipeline.PipelineMdl;
@@ -333,17 +332,15 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> {
      * @param ignite          Ignite instance.
      * @param upstreamCache   Ignite cache with {@code upstream} data.
      * @param filter          Base {@code upstream} data filter.
-     * @param lbExtractor     Label extractor.
      * @param amountOfFolds   Amount of folds.
      * @param paramGrid       Parameter grid.
      * @return Array of scores of the estimator for each run of the cross validation.
      */
-    public CrossValidationResult score(Pipeline<K, V, Vector> pipeline,
+    public CrossValidationResult score(Pipeline<K, V, Integer, Double> pipeline,
                                        Metric<L> scoreCalculator,
                                        Ignite ignite,
                                        IgniteCache<K, V> upstreamCache,
                                        IgniteBiPredicate<K, V> filter,
-                                       IgniteBiFunction<K, V, L> lbExtractor,
                                        int amountOfFolds,
                                        ParamGrid paramGrid) {
 
@@ -396,8 +393,7 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> {
                 (predicate, mdl) -> new CacheBasedLabelPairCursor<>(
                     upstreamCache,
                     (k, v) -> filter.apply(k, v) && !predicate.apply(k, v),
-                    ((PipelineMdl<K, V>) mdl).getVectorizer(),
-                    lbExtractor,
+                    ((PipelineMdl<K, V>) mdl).getPreprocessor(),
                     mdl
                 ),
                 scoreCalculator,
@@ -432,7 +428,7 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> {
      * @param cv                     Number of folds.
      * @return Array of scores of the estimator for each run of the cross validation.
      */
-    private double[] scorePipeline(Pipeline<K, V, Vector> pipeline,
+    private double[] scorePipeline(Pipeline<K, V, Integer, Double> pipeline,
                                    Function<IgniteBiPredicate<K, V>, DatasetBuilder<K, V>> datasetBuilderSupplier,
                                    BiFunction<IgniteBiPredicate<K, V>, M, LabelPairCursor<L>> testDataIterSupplier,
                                    Metric<L> scoreCalculator,

@@ -81,7 +81,7 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
                     .split(0.75);
 
-                Pipeline<Integer, Vector> pipeline = new Pipeline<>()
+                Pipeline<Integer, Vector, Integer, Double> pipeline = new Pipeline<Integer, Vector, Integer, Double>()
                     .addVectorizer(vectorizer)
                     .addPreprocessingTrainer(new ImputerTrainer<Integer, Vector>())
                     .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Vector>())
