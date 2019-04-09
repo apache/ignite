@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
+import org.apache.ignite.internal.processors.cache.version.ClusterReadOnlyModeSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -93,6 +94,7 @@ public class IgniteCacheTestSuite5 {
         GridTestUtils.addTestIfNeeded(suite, ClusterStateReplicatedSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ClusterReadOnlyModeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ClusterReadOnlyModeWithPersistenceTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClusterReadOnlyModeSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCachePartitionLossPolicySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheGroupsPartitionLossPolicySelfTest.class, ignoredTests);
 
