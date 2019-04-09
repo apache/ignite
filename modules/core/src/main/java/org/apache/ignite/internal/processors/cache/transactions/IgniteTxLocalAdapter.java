@@ -914,6 +914,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
 
                     for (IgniteTxEntry entry : commitEntries) {
+                        log.info("[op=log, grpId=" + entry.context().groupId() + ", partId=" + entry.cached().partition() +
+                            ", cntr=" + entry.updateCounter() +
+                            ", key=" + entry.key().value(null, true) +
+                            ", op=" + entry.op() + ", ver=" + entry.cached().version() + ']');
+
                         if (entry.cqNotifyClosure() != null)
                             entry.cqNotifyClosure().applyx();
                     }

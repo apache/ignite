@@ -184,7 +184,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             List<Integer> primaryKeys = primaryKeys(cache, 10_000);
 
-            long stop = U.currentTimeMillis() + 5 * 60_000;
+            long stop = U.currentTimeMillis() + 60_000;
 
             Random r = new Random();
 
