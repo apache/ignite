@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcDriver;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -607,14 +608,9 @@ public class JdbcConnection implements Connection {
         else {
             GridQueryIndexing idx = ignite().context().query().getIndexing();
 
-            PreparedStatement nativeStmt = prepareNativeStatement(sql);
-
-            try {
-                idx.checkStatementStreamable(nativeStmt);
-            }
-            catch (IgniteSQLException e) {
-                throw e.toJdbcException();
-            }
+            if (!idx.isStreamableInsertStatement(schemaName(), new SqlFieldsQuery(sql)))
+                throw new IgniteSQLException("Streaming mode supports only INSERT commands without subqueries.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION).toJdbcException();
 
             IgniteDataStreamer streamer = ignite().dataStreamer(cacheName);
 
@@ -627,7 +623,7 @@ public class JdbcConnection implements Connection {
             if (streamNodeParOps > 0)
                 streamer.perNodeParallelOperations(streamNodeParOps);
 
-            stmt = new JdbcStreamedPreparedStatement(this, sql, streamer, nativeStmt);
+            stmt = new JdbcStreamedPreparedStatement(this, sql, streamer);
         }
 
         statements.add(stmt);
@@ -912,15 +908,6 @@ public class JdbcConnection implements Connection {
      */
     JdbcStatement createStatement0() throws SQLException {
         return (JdbcStatement)createStatement();
-    }
-
-    /**
-     * @param sql Query.
-     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
-     * @throws SQLException On error.
-     */
-    PreparedStatement prepareNativeStatement(String sql) throws SQLException {
-        return ignite().context().query().prepareNativeStatement(schemaName(), sql);
     }
 
     /**
