@@ -1167,6 +1167,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_KEEP_STATIC_CACHE_CONFIGURATION = "IGNITE_KEEP_STATIC_CACHE_CONFIGURATION";
 
+    /** Enable backward compatible to use 'IGNITE' as SQL system schema. */
+    public static final String IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE = "IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE";
+
     /**
      * Enforces singleton.
      */
