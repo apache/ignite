@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClientReconnectTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccConfigurationValidationTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccIteratorWithConcurrentTransactionTest;
@@ -80,6 +81,7 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(CacheMvccPartitionedCoordinatorFailoverTest.class));
         suite.addTest(new JUnit4TestAdapter(CacheMvccReplicatedCoordinatorFailoverTest.class));
         suite.addTest(new JUnit4TestAdapter(CacheMvccProcessorLazyStartTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccClientReconnectTest.class));
 
         return suite;
     }
