@@ -842,6 +842,7 @@ public class JdbcThinConnection implements Connection {
      * @return Server response.
      * @throws SQLException On any error.
      */
+    // TODO VO: Inspection shows that it is always null.
     JdbcResultWithIo sendRequest(JdbcRequest req, @Nullable JdbcThinTcpIo stickyIo) throws SQLException {
         return sendRequest(req, null, stickyIo);
     }
@@ -955,7 +956,7 @@ public class JdbcThinConnection implements Connection {
         if (partResDesc == JdbcThinPartitionResultDescriptor.EMPTY_DESCRIPTOR)
             return null;
 
-        // Key is missinging.
+        // Key is missing.
         if (partResDesc == null) {
             qry.partitionResponseRequest(true);
 
@@ -991,6 +992,8 @@ public class JdbcThinConnection implements Connection {
      * @throws IOException If Exception occured during the network partiton destribution retrieval.
      */
     private UUID[] retrieveCacheDistribution(int cacheId, int partCnt) throws IOException {
+        // TODO VO: Can affinityCache be null at this point? Seems that it is possible due to null-check
+        // TODO VO: several lines below.
         UUID[] cacheDistr = affinityCache.cacheDistribution(cacheId);
 
         if (cacheDistr != null)
@@ -998,8 +1001,7 @@ public class JdbcThinConnection implements Connection {
 
         JdbcResponse res;
 
-        res = cliIo(null).sendRequest(
-            new JdbcCachePartitionsRequest(Collections.singleton(cacheId)), null);
+        res = cliIo(null).sendRequest(new JdbcCachePartitionsRequest(Collections.singleton(cacheId)), null);
 
         assert res.status() == ClientListenerResponse.STATUS_SUCCESS;
 
@@ -1672,6 +1674,7 @@ public class JdbcThinConnection implements Connection {
      * @param qryReq Query request.
      * @param res Jdbc Response.
      */
+    // TODO VO: Simplify by adding proper formatting and line separators.
     private void updateAffinityCache(JdbcQueryExecuteRequest qryReq, JdbcResponse res) {
         if (bestEffortAffinity) {
             AffinityTopologyVersion resAffinityVer = res.affinityVersion();
