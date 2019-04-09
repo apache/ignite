@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
 import java.sql.BatchUpdateException;
-import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,6 +46,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -743,16 +742,16 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             String sql = OdbcEscapeUtils.parse(req.query());
             String schema = OdbcUtils.prepareSchema(req.schema());
 
-            PreparedStatement stmt = ctx.query().getIndexing().prepareNativeStatement(schema, sql);
+            SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
-            ParameterMetaData pmd = stmt.getParameterMetaData();
+            List<JdbcParameterMeta> params = ctx.query().getIndexing().parameterMetaData(schema, qry);
 
-            byte[] typeIds = new byte[pmd.getParameterCount()];
+            byte[] typeIds = new byte[params.size()];
 
-            for (int i = 1; i <= pmd.getParameterCount(); ++i) {
-                int sqlType = pmd.getParameterType(i);
+            for (int i = 0; i < params.size(); ++i) {
+                int sqlType = params.get(i).type();
 
-                typeIds[i - 1] = sqlTypeToBinary(sqlType);
+                typeIds[i] = sqlTypeToBinary(sqlType);
             }
 
             OdbcQueryGetParamsMetaResult res = new OdbcQueryGetParamsMetaResult(typeIds);

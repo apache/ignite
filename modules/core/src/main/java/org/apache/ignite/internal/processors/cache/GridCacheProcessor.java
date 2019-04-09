@@ -2086,7 +2086,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param node Joined node.
      * @return {@code True} if there are new caches received from joined node.
      */
-    boolean hasCachesReceivedFromJoin(ClusterNode node) {
+    public boolean hasCachesReceivedFromJoin(ClusterNode node) {
         return cachesInfo.hasCachesReceivedFromJoin(node.id());
     }
 
