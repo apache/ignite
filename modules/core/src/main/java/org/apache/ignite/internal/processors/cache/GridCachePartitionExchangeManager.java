@@ -173,9 +173,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     private volatile boolean blockResendingPartitionStates;
 
-    /** */
-    private volatile boolean resendPartitionStatesAfterBlocking;
-
     /** Partition resend timeout after eviction. */
     private final long partResendTimeout = getLong(IGNITE_PRELOAD_RESEND_TIMEOUT, DFLT_PRELOAD_RESEND_TIMEOUT);
 
@@ -1124,11 +1121,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Schedules next full partitions update.
      */
     public void scheduleResendPartitions() {
-        if (blockResendingPartitionStates) {
-            resendPartitionStatesAfterBlocking = true;
-
+        if (blockResendingPartitionStates)
             return;
-        }
 
         ResendTimeoutObject timeout = pendingResend.get();
 
@@ -1177,13 +1171,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (timeout != null)
             cctx.time().removeTimeoutObject(timeout);
 
-        blockResendingPartitionStates = false;
-
-        if (resendPartitionStatesAfterBlocking) {
-            resendPartitionStatesAfterBlocking = false;
-
-            scheduleResendPartitions();
-        }
+        scheduleResendPartitions();
     }
 
     /**
