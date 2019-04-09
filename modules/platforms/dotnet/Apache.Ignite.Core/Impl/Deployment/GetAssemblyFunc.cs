@@ -74,7 +74,6 @@ namespace Apache.Ignite.Core.Impl.Deployment
             {
                 using (PeerAssemblyResolver.Disable())
                 {
-                    // Assembly may be present but not loaded - attempt to load into main context.
                     asm = Assembly.Load(arg.AssemblyName);
 
                     if (asm != null)

@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Deployment
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Reflection;
