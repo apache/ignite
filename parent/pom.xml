@@ -972,6 +972,8 @@
                                         <exclude>**/web-console/frontend/**/*.svg</exclude>
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
+                                        <!-- H2 forked module. -->
+                                        <exclude>modules/h2/**</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
