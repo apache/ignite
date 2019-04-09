@@ -157,7 +157,7 @@ public class WalReader {
                 }
             }
 
-            System.setOut(new PrintStream(new File("C:\\work\\logs\\d_3.txt")));
+            System.setOut(new PrintStream(new File("C:\\work\\logs\\d_1.txt")));
 
             System.out.println("Program arguments:");
             System.out.printf("\t%s = %d%n", PAGE_SIZE, pageSize);

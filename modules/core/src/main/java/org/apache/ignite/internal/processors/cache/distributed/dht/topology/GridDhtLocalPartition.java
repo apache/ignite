@@ -62,6 +62,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -399,9 +400,17 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     *
+     * TODO Get rid of deferred delete queue: https://issues.apache.org/jira/browse/IGNITE-11704
      */
     public void cleanupRemoveQueue() {
+        if (state() == MOVING) {
+            if (rmvQueue.sizex() >= rmvQueueMaxSize)
+                LT.warn(log, "Deferred delete buffer is exceeded " +
+                    "[part=" + this + ", size=" + rmvQueueMaxSize + ']');
+
+            return;
+        }
+
         while (rmvQueue.sizex() >= rmvQueueMaxSize) {
             RemovedEntryHolder item = rmvQueue.pollFirst();
 
@@ -411,7 +420,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         // Prevent ttl removal for rebalancing partition or partition desync may happen.
         // TODO FIXME store removed keys until rebalance finish.
-        if (!grp.isDrEnabled() && state() != MOVING) {
+        if (!grp.isDrEnabled()) {
             RemovedEntryHolder item = rmvQueue.peekFirst();
 
             while (item != null && item.expireTime() < U.currentTimeMillis()) {

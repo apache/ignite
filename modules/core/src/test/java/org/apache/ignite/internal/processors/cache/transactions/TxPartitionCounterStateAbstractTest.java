@@ -131,6 +131,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         cfg.setClientMode(client);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().
+            setWalHistorySize(1000).
             setWalSegmentSize(8 * MB).setWalMode(LOG_ONLY).setPageSize(1024).
             setCheckpointFrequency(MILLISECONDS.convert(365, DAYS)).
             setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).
@@ -164,7 +165,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         stopAllGrids();
 
-        cleanPersistenceDir();
+        //cleanPersistenceDir();
     }
 
     /**

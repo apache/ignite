@@ -3863,7 +3863,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
 
                         if (!(e instanceof NodeStoppingException))
-                            fut.finish(false, true, true);
+                            fut.finish(false, true, true); // TODO FIXME add test for this scenario.
                         else
                             fut.onNodeStop(e);
                     }

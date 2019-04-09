@@ -194,7 +194,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
                 while (U.currentTimeMillis() < stop) {
                     doSleep(3_000);
 
-                    Ignite restartNode = grid(1 + r.nextInt(srvNodes - 1));
+                    Ignite restartNode = grid(1);
 
                     assertFalse(prim == restartNode);
 
@@ -225,6 +225,10 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         finally {
             System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
         }
+    }
+
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return 60_000;
     }
 
     /**
