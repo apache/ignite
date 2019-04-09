@@ -351,6 +351,13 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         return 1;
     }
 
+    /** {@inheritDoc} */
+    @Override public long getCurrentPmeTime() {
+        return (ctx.cache().context().exchange().lastTopologyFuture() == null ||
+            ctx.cache().context().exchange().lastTopologyFuture().isDone()) ? 0 :
+            (System.nanoTime() - ctx.cache().context().exchange().lastTopologyFuture().getStartTime());
+    }
+
     /**
      * Job metrics
      */

@@ -257,6 +257,10 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     @Override @MXBeanDescription("Total number of nodes.")
     public int getTotalNodes();
 
+    /** {@inheritDoc} */
+    @Override @MXBeanDescription("Current PME time.")
+    public long getCurrentPmeTime();
+
     /**
      * Get count of total baseline nodes.
      *
