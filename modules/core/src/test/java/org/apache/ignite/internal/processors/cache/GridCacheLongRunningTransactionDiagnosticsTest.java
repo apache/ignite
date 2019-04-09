@@ -16,6 +16,10 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
+import java.lang.management.ManagementFactory;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectName;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteRequest;
@@ -27,13 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
-import java.lang.management.ManagementFactory;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -85,26 +83,31 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
     /**
      * Setting long op timeout to small value to make this tests faster
      */
-    @BeforeClass
-    public static void setLongOpTimeoutBefore() {
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         longOpTimeoutCommon = System.getProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
+
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(LONG_OP_TIMEOUT));
     }
 
     /**
      * Returning long operations timeout to its former value.
      */
-    @AfterClass
-    public static void setLongOpTimeoutAfter() {
+    @Override protected void afterTestsStopped() throws Exception {
         if (longOpTimeoutCommon != null)
             System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, longOpTimeoutCommon);
         else
             System.clearProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        super.afterTest();
     }
 
     /**
@@ -132,19 +135,13 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
         TransactionsMXBean tMXBean0 = txMXBean(0);
         TransactionsMXBean tMXBean1 = txMXBean(1);
 
-        boolean g0 = tMXBean0.getTxOwnerDumpRequestsAllowed();
-        boolean g1 = tMXBean1.getTxOwnerDumpRequestsAllowed();
-
-        assertTrue(g0);
-        assertTrue(g1);
+        assertTrue(tMXBean0.getTxOwnerDumpRequestsAllowed());
+        assertTrue(tMXBean1.getTxOwnerDumpRequestsAllowed());
 
         tMXBean0.setTxOwnerDumpRequestsAllowed(false);
 
-        g0 = tMXBean0.getTxOwnerDumpRequestsAllowed();
-        g1 = tMXBean1.getTxOwnerDumpRequestsAllowed();
-
-        assertFalse(g0);
-        assertFalse(g1);
+        assertFalse(tMXBean0.getTxOwnerDumpRequestsAllowed());
+        assertFalse(tMXBean1.getTxOwnerDumpRequestsAllowed());
 
         imitateLongTransaction(false);
     }

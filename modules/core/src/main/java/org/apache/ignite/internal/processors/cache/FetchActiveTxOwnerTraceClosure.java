@@ -41,7 +41,6 @@ public class FetchActiveTxOwnerTraceClosure implements IgniteCallable<String> {
      * Builds the stack trace dump of the transaction owner thread
      *
      * @return stack trace dump string
-     *
      * @throws Exception If failed
      */
     @Override public String call() throws Exception {

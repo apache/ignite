@@ -68,7 +68,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -2000,16 +1999,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             WarningsGroup warnings = new WarningsGroup("First %d long running transactions [total=%d]",
                 diagnosticLog, DIAGNOSTIC_WARN_LIMIT);
 
-            for (IgniteInternalTx tx : tm.activeTransactions()) {
-                if (curTime - tx.startTime() > timeout) {
-                    found = true;
+            synchronized (ltrDumpLimiter) {
+                for (IgniteInternalTx tx : tm.activeTransactions()) {
+                    if (curTime - tx.startTime() > timeout) {
+                        found = true;
 
-                    if (ltrDumpLimiter.allowAction(tx))
-                        dumpLongRunningTransaction(tx, curTime, warnings);
+                        if (ltrDumpLimiter.allowAction(tx))
+                            dumpLongRunningTransaction(tx, curTime, warnings);
+                    }
                 }
-            }
 
-            ltrDumpLimiter.trim();
+                ltrDumpLimiter.trim();
+            }
 
             warnings.printToLog();
         }
@@ -2090,17 +2091,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         else
             warnings.incTotal();
 
-        Ignite ignite = cctx.kernalContext().grid();
-
-        boolean txOwnerDumpAllowed = cctx.tm().txOwnerDumpRequestsAllowed();
-
-        if (txOwnerDumpAllowed && tx.local() && tx.state() == TransactionState.ACTIVE) {
+        if (cctx.tm().txOwnerDumpRequestsAllowed() && tx.local() && tx.state() == TransactionState.ACTIVE) {
             Collection<UUID> masterNodeIds = tx.masterNodeIds();
 
             if (masterNodeIds.size() == 1) {
                 UUID nearNodeId = masterNodeIds.iterator().next();
 
                 long txOwnerThreadId = tx.threadId();
+
+                Ignite ignite = cctx.kernalContext().grid();
 
                 IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(nearNodeId));
 
@@ -3590,6 +3589,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * Class to limit action count for unique objects.
+     * <p>
+     * NO guarantees of thread safety are provided.
      */
     private static class ActionLimiter<T> {
         /** */
@@ -3598,12 +3599,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /**
          * Internal storage of objects and counters for each of object.
          */
-        private final ConcurrentMap<T, AtomicInteger> actionsCnt = new ConcurrentHashMap<>();
+        private final Map<T, AtomicInteger> actionsCnt = new HashMap<>();
 
         /**
          * Set of active objects.
          */
-        private final Set<T> activeObjects = new GridConcurrentHashSet<>();
+        private final Set<T> activeObjects = new HashSet<>();
 
         /**
          * @param limit Limit.
@@ -3621,19 +3622,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         boolean allowAction(T obj) {
             activeObjects.add(obj);
 
-            AtomicInteger cnt = actionsCnt.get(obj);
+            int cnt = actionsCnt.computeIfAbsent(obj, o -> new AtomicInteger(0))
+                .incrementAndGet();
 
-            if (cnt != null)
-                cnt.incrementAndGet();
-            else
-                actionsCnt.put(obj, new AtomicInteger(1));
-
-            return (!actionsCnt.containsKey(obj) || actionsCnt.get(obj).get() <= limit);
+            return (cnt <= limit);
         }
 
         /**
          * Removes old objects from limiter's internal storage. All objects that are contained in internal
-         * storage but not in set of active objects, are assumed as 'old'.
+         * storage but not in set of active objects, are assumed as 'old'. This method is to be called
+         * after processing of collection of objects to purge limiter's internal storage.
          */
         void trim() {
             actionsCnt.keySet().removeIf(key -> !activeObjects.contains(key));
