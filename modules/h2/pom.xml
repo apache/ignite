@@ -25,16 +25,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    <!--
-        <parent>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-parent</artifactId>
-            <version>1</version>
-            <relativePath>../../parent</relativePath>
-        </parent>-->
+    <parent>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-parent</artifactId>
+        <version>1</version>
+        <relativePath>../../parent</relativePath>
+    </parent>
 
     <artifactId>ignite-h2</artifactId>
-    <groupId>org.apache.ignite</groupId>
     <version>2.8.0-SNAPSHOT</version>
     <description>H2 Database Engine Fork</description>
 
@@ -53,14 +51,12 @@
 
     <properties>
         <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
         <osgi.version>4.2.0</osgi.version>
-        <slf4j.version>1.6.0</slf4j.version>
+        <h2.lucene.version>5.5.5</h2.lucene.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencies>
-
         <!-- START COMPILE DEPENDENCIES !-->
         <dependency>
             <groupId>javax.servlet</groupId>
@@ -70,25 +66,25 @@
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
-            <version>5.5.5</version>
+            <version>${h2.lucene.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
-            <version>5.5.5</version>
+            <version>${h2.lucene.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
-            <version>5.5.5</version>
+            <version>${h2.lucene.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
+            <version>${slf4j16.version}</version>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
@@ -112,19 +108,13 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
+            <version>${slf4j16.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>42.2.5.jre7</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -140,45 +130,11 @@
          where to possibly find tools.jar and annoyingly its called classes.jar on OSX -->
     <profiles>
         <profile>
-            <id>jigsaw-jdk</id>
+            <id>java9+</id>
             <activation>
                 <jdk>[1.9,)</jdk>
             </activation>
             <dependencies/>
-        </profile>
-        <profile>
-            <id>default-tools.jar</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/../lib/tools.jar</exists>
-                </file>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <scope>system</scope>
-                    <version>1.7</version>
-                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>default-tools.jar-mac</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/../Classes/classes.jar</exists>
-                </file>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <scope>system</scope>
-                    <version>1.7</version>
-                    <systemPath>${java.home}/../Classes/classes.jar</systemPath>
-                </dependency>
-            </dependencies>
         </profile>
     </profiles>
 
@@ -219,28 +175,10 @@
             </testResource>
         </testResources>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                            <mainClass>org.h2.tools.Console</mainClass>
-                        </manifest>
-                        <manifestEntries>
-                            <Automatic-Module-Name>com.h2database</Automatic-Module-Name>
-                            <Multi-Release>true</Multi-Release>
-                            <Premain-Class>org.h2.util.Profiler</Premain-Class>
-                        </manifestEntries>
-                    </archive>
-                </configuration>
-            </plugin>
             <!-- Add tools folder to test sources but consider moving them to src/test -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <phase>generate-test-sources</phase>
@@ -255,61 +193,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Make sure neither we nor one of our dependencies uses anything outside JDK 1.7 -->
-            <!-- commented out for now because it fails to build under JDK1.8+ because we are manually adding the tools jar
-                  <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>3.0.0-M1</version>
-                    <executions>
-                      <execution>
-                        <id>check-java-version</id>
-                        <goals>
-                          <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                          <rules>
-                            <enforceBytecodeVersion>
-                              <maxJdkVersion>1.7</maxJdkVersion>
-                            </enforceBytecodeVersion>
-                            <checkSignatureRule implementation="org.codehaus.mojo.animal_sniffer.enforcer.CheckSignatureRule">
-                              <signature>
-                                <groupId>org.codehaus.mojo.signature</groupId>
-                                <artifactId>java17</artifactId>
-                                <version>1.0</version>
-                              </signature>
-                            </checkSignatureRule>
-                          </rules>
-                          <fail>true</fail>
-                        </configuration>
-                      </execution>
-                    </executions>
-                    <dependencies>
-                      <dependency>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>extra-enforcer-rules</artifactId>
-                        <version>1.0-beta-6</version>
-                      </dependency>
-                      <dependency>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>animal-sniffer-enforcer-rule</artifactId>
-                        <version>1.16</version>
-                      </dependency>
-                    </dependencies>
-                  </plugin>
-            -->
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.0</version>
-                <configuration>
-                    <excludes>
-                        <exclude>TestAllJunit.java</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-
         </plugins>
     </build>
 
