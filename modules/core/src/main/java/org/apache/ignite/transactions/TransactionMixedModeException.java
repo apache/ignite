@@ -17,12 +17,18 @@
 
 package org.apache.ignite.transactions;
 
-/** */
+/**
+ *  Exception thrown whenever transaction spans over MVCC and non-MVCC caches.
+ */
 public class TransactionMixedModeException extends TransactionException {
     /** */
     private static final long serialVersionUID = 0L;
-    /** */
-    public TransactionMixedModeException() {
-        super("Operations on MVCC caches are not permitted in transactions spanning non MVCC caches.");
+    /**
+     * Creates new exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public TransactionMixedModeException(String msg) {
+        super(msg);
     }
 }

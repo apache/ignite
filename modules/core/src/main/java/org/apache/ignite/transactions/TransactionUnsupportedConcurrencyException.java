@@ -17,12 +17,18 @@
 
 package org.apache.ignite.transactions;
 
-/** */
+/**
+ * Exception thrown whenever transaction concurrency level is not supported.
+ */
 public class TransactionUnsupportedConcurrencyException extends TransactionException {
     /** */
     private static final long serialVersionUID = 0L;
-    /** */
-    public TransactionUnsupportedConcurrencyException() {
-        super("Only pessimistic transactions are supported when MVCC is enabled.");
+    /**
+     * Creates new exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public TransactionUnsupportedConcurrencyException(String msg) {
+        super(msg);
     }
 }

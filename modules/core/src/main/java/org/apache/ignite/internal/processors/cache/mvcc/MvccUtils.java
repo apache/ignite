@@ -715,13 +715,13 @@ public class MvccUtils {
             if (!tx.pessimistic()) {
                 tx.setRollbackOnly();
 
-                throw new TransactionUnsupportedConcurrencyException();
+                throw new TransactionUnsupportedConcurrencyException("Only pessimistic transactions are supported when MVCC is enabled.");
             }
 
             if (!tx.isOperationAllowed(true)) {
                 tx.setRollbackOnly();
 
-                throw new TransactionMixedModeException();
+                throw new TransactionMixedModeException("Operations on MVCC caches are not permitted in transactions spanning non MVCC caches.");
             }
         }
 
