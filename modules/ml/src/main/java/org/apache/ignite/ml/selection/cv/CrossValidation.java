@@ -286,8 +286,6 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> {
      * @param trainer                Trainer of the model.
      * @param datasetBuilderSupplier Dataset builder supplier.
      * @param testDataIterSupplier   Test data iterator supplier.
-     * @param featureExtractor       Feature extractor.
-     * @param lbExtractor            Label extractor.
      * @param scoreCalculator        Base score calculator.
      * @param mapper                 Mapper used to map a key-value pair to a point on the segment (0, 1).
      * @param cv                     Number of folds.
@@ -398,7 +396,7 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> {
                 (predicate, mdl) -> new CacheBasedLabelPairCursor<>(
                     upstreamCache,
                     (k, v) -> filter.apply(k, v) && !predicate.apply(k, v),
-                    ((PipelineMdl<K, V>) mdl).getFeatureExtractor(),
+                    ((PipelineMdl<K, V>) mdl).getVectorizer(),
                     lbExtractor,
                     mdl
                 ),
