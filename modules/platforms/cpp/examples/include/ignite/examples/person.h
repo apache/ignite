@@ -65,6 +65,35 @@ namespace ignite
             std::string resume;
             double salary;
         };
+
+        // Person key with affinity Organization info. If we want to to collocate Persons with the same value of orgId
+        // we need to put struct as a cache key that contains fields: 1) id of the record (person id or serial id number)
+        // 2) collocation column info (orgId). This is required because of constraint : affinity key must be part of the
+        // key.
+        struct PersonKey {
+            PersonKey(int64_t _id, int64_t _orgId) : id(_id), orgIdAff(_id)
+            {
+                // No-op.
+            }
+
+            PersonKey() : id(0), orgIdAff(0)
+            {
+                // No-op.
+            }
+
+            std::string ToString() const
+            {
+                std::ostringstream oss;
+
+                oss << "PersonKey [id=" << id
+                    << ", orgIdAff=" << orgIdAff
+                    << "]";
+                return oss.str();
+            }
+
+            int64_t  id;
+            int64_t  orgIdAff;
+        };
     }
 }
 
@@ -98,6 +127,30 @@ namespace ignite
                 dst.lastName = reader.ReadString("lastName");
                 dst.resume = reader.ReadString("resume");
                 dst.salary = reader.ReadDouble("salary");
+            }
+
+        IGNITE_BINARY_TYPE_END
+
+        IGNITE_BINARY_TYPE_START(ignite::examples::PersonKey)
+
+            typedef ignite::examples::PersonKey PersonKey;
+
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(PersonKey)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(PersonKey)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_IS_NULL_FALSE(PersonKey)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(PersonKey)
+
+            static void Write(BinaryWriter& writer, const ignite::examples::PersonKey& obj)
+            {
+                writer.WriteInt64("id", obj.id);
+                writer.WriteInt64("orgIdAff", obj.orgIdAff);
+            }
+
+            static void Read(BinaryReader& reader, ignite::examples::PersonKey& dst)
+            {
+                dst.id = reader.ReadInt64("id");
+                dst.orgIdAff = reader.ReadInt64("orgIdAff");
             }
 
         IGNITE_BINARY_TYPE_END
