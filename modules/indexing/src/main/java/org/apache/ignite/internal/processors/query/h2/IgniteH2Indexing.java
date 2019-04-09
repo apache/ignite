@@ -804,9 +804,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridNearTxLocal tx = null;
 
-        boolean mvccEnabled = mvccEnabled(kernalContext());
-
-        assert mvccEnabled || mvccTracker == null;
+        boolean mvccEnabled = mvccTracker != null;
 
         try {
             final Connection conn = connMgr.connectionForThread().connection(schemaName);
@@ -1788,7 +1786,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
         @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
         GridQueryCancel cancel) {
-        boolean mvccEnabled = mvccEnabled(ctx), startTx = autoStartTx(qry);
+        boolean startTx = autoStartTx(qry);
 
         try {
             SqlCommand nativeCmd = parseQueryNative(schemaName, qry);
@@ -1882,9 +1880,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return res;
         }
         catch (RuntimeException | Error e) {
-            GridNearTxLocal tx;
+            GridNearTxLocal tx = ctx.cache().context().tm().tx();
 
-            if (mvccEnabled && (tx = tx(ctx)) != null &&
+            if (tx != null && tx.mvccSnapshot() != null &&
                 (!(e instanceof IgniteSQLException) || /* Parsing errors should not rollback Tx. */
                     ((IgniteSQLException)e).sqlState() != SqlStateCode.PARSING_EXCEPTION) ) {
 
