@@ -157,6 +157,16 @@ public class PartitionResult {
         return partsCnt;
     }
 
+    /**
+     * @return True if applicable to jdbc thin client side best effort affinity:
+     *   1. Rendezvous affinity function without map filters was used;
+     *   2. Partition result tree neither PartitoinAllNode nor PartitionNoneNode;
+     */
+    public boolean isClientBestEffortAffinityApplicable() {
+        return aff != null && aff.isClientBestEffortAffinityApplicable() &&
+            !(tree instanceof PartitionNoneNode) && !(tree instanceof PartitionAllNode);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionResult.class, this);

@@ -17,17 +17,13 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Affinity function descriptor. Used to compare affinity functions of two tables.
  */
-public class PartitionTableAffinityDescriptor implements Serializable {
-    /** */
-    private static final long serialVersionUID = 1L;
-
+public class PartitionTableAffinityDescriptor {
     /** Affinity function type. */
     private final PartitionAffinityFunctionType affFunc;
 

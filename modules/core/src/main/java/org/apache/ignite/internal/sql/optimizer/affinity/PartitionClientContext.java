@@ -60,6 +60,9 @@ public class PartitionClientContext {
         if (key == PartitionDataTypeUtils.CONVERTATION_FAILURE)
             return null;
 
+        if (key == null)
+            return null;
+
         return RendezvousAffinityFunction.calculatePartition(key, mask, parts);
     }
 }
