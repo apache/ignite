@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -147,6 +149,7 @@ public class QueryParser {
                 qryDesc,
                 QueryParameters.fromQuery(qry),
                 null,
+                cached.parametersMeta(),
                 cached.select(),
                 cached.dml(),
                 cached.command()
@@ -161,7 +164,7 @@ public class QueryParser {
 
         // Add to cache if not multi-statement.
         if (parseRes.remainingQuery() == null) {
-            cached = new QueryParserCacheEntry(parseRes.select(), parseRes.dml(), parseRes.command());
+            cached = new QueryParserCacheEntry(parseRes.parametersMeta(), parseRes.select(), parseRes.dml(), parseRes.command());
 
             cache.put(qryDesc, cached);
         }
@@ -227,6 +230,7 @@ public class QueryParser {
                 newPlanKey,
                 QueryParameters.fromQuery(newQry),
                 remainingQry,
+                Collections.emptyList(), // Currently none of native statements supports parameters.
                 null,
                 null,
                 cmd
@@ -338,6 +342,17 @@ public class QueryParser {
             if (remainingQry != null)
                 remainingQry.setArgs(remainingArgs);
 
+            final List<JdbcParameterMeta> paramsMeta;
+
+            try {
+                paramsMeta = H2Utils.parametersMeta(stmt.getParameterMetaData());
+
+                assert prepared.getParameters().size() == paramsMeta.size();
+            }
+            catch (IgniteCheckedException | SQLException e) {
+                throw new IgniteSQLException("Failed to get parameters metadata", IgniteQueryErrorCode.UNKNOWN, e);
+            }
+
             // Do actual parsing.
             if (CommandProcessor.isCommand(prepared)) {
                 GridSqlStatement cmdH2 = new GridSqlQueryParser(false).parse(prepared);
@@ -348,6 +363,7 @@ public class QueryParser {
                     newQryDesc,
                     QueryParameters.fromQuery(newQry),
                     remainingQry,
+                    paramsMeta,
                     null,
                     null,
                     cmd
@@ -360,6 +376,7 @@ public class QueryParser {
                     newQryDesc,
                     QueryParameters.fromQuery(newQry),
                     remainingQry,
+                    paramsMeta,
                     null,
                     null,
                     cmd
@@ -372,6 +389,7 @@ public class QueryParser {
                     newQryDesc,
                     QueryParameters.fromQuery(newQry),
                     remainingQry,
+                    paramsMeta,
                     null,
                     dml,
                     null
@@ -491,7 +509,6 @@ public class QueryParser {
                     twoStepQry,
                     forUpdateTwoStepQry,
                     meta,
-                    paramsCnt,
                     cacheIds,
                     mvccCacheId,
                     forUpdateQryOutTx,
@@ -502,6 +519,7 @@ public class QueryParser {
                     newQryDesc,
                     QueryParameters.fromQuery(newQry),
                     remainingQry,
+                    paramsMeta,
                     select,
                     null,
                     null
@@ -646,7 +664,6 @@ public class QueryParser {
 
         return new QueryParserResultDml(
             stmt,
-            prepared.getParameters().size(),
             mvccEnabled,
             streamTbl,
             plan
