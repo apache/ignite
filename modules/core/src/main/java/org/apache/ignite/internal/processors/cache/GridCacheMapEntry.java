@@ -5704,15 +5704,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** {@inheritDoc} */
         @Override public void call(@Nullable CacheDataRow oldRow) throws IgniteCheckedException {
             if (oldRow != null) {
-                if (ver.compareTo(oldRow.version()) <= 0) {
-                    if (ver.compareTo(oldRow.version()) < 0)
-                        log.error("ERR: Detected out of order update [oldRow=" + oldRow + ", newVer=" + ver + ']', new Exception());
-
-                    treeOp = IgniteTree.OperationType.NOOP;
-
-                    return;
-                }
-
                 oldRow.key(entry.key);
 
                 oldRow = checkRowExpired(oldRow);
@@ -5721,6 +5712,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             this.oldRow = oldRow;
 
             if (predicate != null && !predicate.apply(oldRow)) {
+                treeOp = IgniteTree.OperationType.NOOP;
+
+                return;
+            }
+
+            if (oldRow != null && ver.compareTo(oldRow.version()) <= 0) {
+                if (ver.compareTo(oldRow.version()) < 0)
+                    log.error("ERR: Detected out of order update [oldRow=" + oldRow + ", newVer=" + ver + ']', new Exception());
+
                 treeOp = IgniteTree.OperationType.NOOP;
 
                 return;
