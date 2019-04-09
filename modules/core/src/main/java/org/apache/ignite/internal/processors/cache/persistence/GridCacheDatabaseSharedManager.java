@@ -508,6 +508,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         cfg.setInitialSize(storageCfg.getSystemRegionInitialSize());
         cfg.setMaxSize(storageCfg.getSystemRegionMaxSize());
         cfg.setPersistenceEnabled(true);
+        cfg.setLazyMemoryAllocation(false);
 
         return cfg;
     }

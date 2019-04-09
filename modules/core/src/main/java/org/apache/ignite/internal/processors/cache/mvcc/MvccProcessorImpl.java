@@ -955,6 +955,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         cfg.setInitialSize(dscfg.getSystemRegionInitialSize());
         cfg.setMaxSize(dscfg.getSystemRegionMaxSize());
         cfg.setPersistenceEnabled(CU.isPersistenceEnabled(dscfg));
+        cfg.setLazyMemoryAllocation(false);
+
         return cfg;
     }
 
