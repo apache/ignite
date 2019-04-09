@@ -70,7 +70,6 @@ const DFLT_CACHE = {
         clsName: 'org.apache.ignite.cache.CacheRebalanceMode',
         value: 'ASYNC'
     },
-    rebalanceThreadPoolSize: 1,
     rebalanceBatchSize: 524288,
     rebalanceBatchesPrefetchCount: 2,
     rebalanceOrder: 0,
@@ -97,6 +96,18 @@ const DFLT_CACHE = {
         valClsName: 'java.lang.String',
         valField: 'className',
         entries: []
+    },
+    defaultFieldValues: {
+        keyClsName: 'java.lang.String',
+        valClsName: 'java.lang.Object'
+    },
+    fieldsPrecision: {
+        keyClsName: 'java.lang.String',
+        valClsName: 'java.lang.Integer'
+    },
+    fieldsScale: {
+        keyClsName: 'java.lang.String',
+        valClsName: 'java.lang.Integer'
     },
     aliases: {
         keyClsName: 'java.lang.String',

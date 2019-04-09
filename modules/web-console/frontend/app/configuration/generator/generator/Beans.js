@@ -128,6 +128,10 @@ export class Bean extends EmptyBean {
         return this._property(this.arguments, 'boolean', model, null, nonNil);
     }
 
+    longConstructorArgument(model) {
+        return this._property(this.arguments, 'long', model, null, nonNil);
+    }
+
     classConstructorArgument(model) {
         return this._property(this.arguments, 'java.lang.Class', model, null, nonEmpty);
     }
@@ -374,8 +378,11 @@ export class Bean extends EmptyBean {
                 keyClsName: dflt.keyClsName,
                 keyField: dflt.keyField || 'name',
                 valClsName: dflt.valClsName,
+                valClsNameShow: dflt.valClsNameShow,
                 valField: dflt.valField || 'value',
-                entries
+                entries,
+                keyClsGenericType: dflt.keyClsGenericType,
+                isKeyClsGenericTypeExtended: dflt.isKeyClsGenericTypeExtended
             });
         }
 
