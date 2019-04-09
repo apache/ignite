@@ -368,7 +368,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
         if (metaData != null)
             return metaData;
 
-        JdbcMetaParamsResult res = conn.sendRequest(new JdbcMetaParamsRequest(conn.getSchema(), sql), null).
+        JdbcMetaParamsResult res = conn.sendRequest(new JdbcMetaParamsRequest(conn.getSchema(), sql)).
             response();
 
         metaData = new JdbcThinParameterMetadata(res.meta());

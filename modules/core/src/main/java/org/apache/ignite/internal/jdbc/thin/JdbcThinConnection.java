@@ -835,15 +835,14 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
-     * Send request for execution via corresponding singleIo from {@link #ios} or sticky singleIo.
+     * Send request for execution via corresponding singleIo from {@link #ios}.
      *
      * @param req Request.
-     * @param stickyIo Sticky ignite endpoint.
      * @return Server response.
      * @throws SQLException On any error.
      */
-    JdbcResultWithIo sendRequest(JdbcRequest req, @Nullable JdbcThinTcpIo stickyIo) throws SQLException {
-        return sendRequest(req, null, stickyIo);
+    JdbcResultWithIo sendRequest(JdbcRequest req) throws SQLException {
+        return sendRequest(req, null, null);
     }
 
     /**
@@ -884,8 +883,9 @@ public class JdbcThinConnection implements Connection {
                 }
 
                 JdbcQueryExecuteRequest qryReq = null;
+
                 if (req instanceof JdbcQueryExecuteRequest)
-                    qryReq = (JdbcQueryExecuteRequest) req;
+                    qryReq = (JdbcQueryExecuteRequest)req;
 
                 JdbcResponse res = cliIo.sendRequest(req, stmt);
 
@@ -954,7 +954,7 @@ public class JdbcThinConnection implements Connection {
         if (partResDesc == JdbcThinPartitionResultDescriptor.EMPTY_DESCRIPTOR)
             return null;
 
-        // Key is missinging.
+        // Key is missing.
         if (partResDesc == null) {
             qry.partitionResponseRequest(true);
 
@@ -997,14 +997,13 @@ public class JdbcThinConnection implements Connection {
 
         JdbcResponse res;
 
-        res = cliIo(null).sendRequest(
-            new JdbcCachePartitionsRequest(Collections.singleton(cacheId)), null);
+        res = cliIo(null).sendRequest(new JdbcCachePartitionsRequest(Collections.singleton(cacheId)), null);
 
         assert res.status() == ClientListenerResponse.STATUS_SUCCESS;
 
         AffinityTopologyVersion resAffinityVer = res.affinityVersion();
 
-        if (affinityCache == null || affinityCache.version().compareTo(resAffinityVer) < 0)
+        if (affinityCache.version().compareTo(resAffinityVer) < 0)
             affinityCache = new AffinityCache(resAffinityVer);
         else if (affinityCache.version().compareTo(resAffinityVer) > 0) {
             // Jdbc thin affinity cache is binded to the newer affinity topology version, so we should ignore retrieved
@@ -1668,31 +1667,36 @@ public class JdbcThinConnection implements Connection {
 
     /**
      * Recreates affinity cache if affinity topology version was changed and adds partition result to sql cache.
+     *
      * @param qryReq Query request.
      * @param res Jdbc Response.
      */
     private void updateAffinityCache(JdbcQueryExecuteRequest qryReq, JdbcResponse res) {
         if (bestEffortAffinity) {
-            AffinityTopologyVersion resAffinityVer = res.affinityVersion();
+            AffinityTopologyVersion resAffVer = res.affinityVersion();
 
-            if (resAffinityVer != null &&
-                (affinityCache == null || affinityCache.version().compareTo(resAffinityVer) < 0))
-                affinityCache = new AffinityCache(resAffinityVer);
+            if (resAffVer != null && (affinityCache == null || affinityCache.version().compareTo(resAffVer) < 0))
+                affinityCache = new AffinityCache(resAffVer);
 
             // Partition result was requested.
             if (res.response() instanceof JdbcQueryExecuteResult && qryReq.partitionResponseRequest()) {
                 PartitionResult partRes = ((JdbcQueryExecuteResult)res.response()).partitionResult();
 
                 if (partRes == null || affinityCache.version().equals(partRes.topologyVersion())) {
-                    affinityCache.addSqlQuery(new QualifiedSQLQuery(qryReq.schemaName(), qryReq.sqlQuery()),
-                        new JdbcThinPartitionResultDescriptor(
-                            partRes,
-                            (partRes != null && partRes.tree() != null) ?
-                                GridCacheUtils.cacheId(partRes.cacheName()) :
-                                -1,
-                            partRes != null ?
-                                new PartitionClientContext(partRes.partitionsCount()) :
-                                null));
+                    int cacheId = (partRes != null && partRes.tree() != null) ?
+                        GridCacheUtils.cacheId(partRes.cacheName()) :
+                        -1;
+
+                    PartitionClientContext partClientCtx = partRes != null ?
+                        new PartitionClientContext(partRes.partitionsCount()) :
+                        null;
+
+                    QualifiedSQLQuery qry = new QualifiedSQLQuery(qryReq.schemaName(), qryReq.sqlQuery());
+
+                    JdbcThinPartitionResultDescriptor partResDescr =
+                        new JdbcThinPartitionResultDescriptor(partRes, cacheId, partClientCtx);
+
+                    affinityCache.addSqlQuery(qry, partResDescr);
                 }
             }
         }
