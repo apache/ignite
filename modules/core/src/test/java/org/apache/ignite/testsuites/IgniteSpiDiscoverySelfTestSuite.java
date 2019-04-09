@@ -47,6 +47,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNetworkIssuesTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeAttributesUpdateOnReconnectTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConsistentIdSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeJoinAndFailureTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryPendingMessageDeliveryTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryReconnectUnstableTopologyTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryRestartTest;
@@ -104,6 +105,7 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(TcpDiscoverySpiConfigSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(TcpDiscoveryMarshallerCheckSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(TcpDiscoverySnapshotHistoryTest.class));
+        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryNodeJoinAndFailureTest.class));
 
         suite.addTest(new JUnit4TestAdapter(GridTcpSpiForwardingSelfTest.class));
 
