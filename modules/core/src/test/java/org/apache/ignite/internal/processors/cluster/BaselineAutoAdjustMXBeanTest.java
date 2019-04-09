@@ -24,12 +24,12 @@ import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.BaselineConfigurationMXBean;
+import org.apache.ignite.mxbean.BaselineAutoAdjustMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
-public class BaselineConfigurationMXBeanTest extends GridCommonAbstractTest {
+public class BaselineAutoAdjustMXBeanTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testTimeoutAndEnabledFlag() throws Exception {
@@ -38,7 +38,7 @@ public class BaselineConfigurationMXBeanTest extends GridCommonAbstractTest {
         try {
             IgniteCluster cluster = ignite.cluster();
 
-            BaselineConfigurationMXBean bltMxBean = bltMxBean();
+            BaselineAutoAdjustMXBean bltMxBean = bltMxBean();
 
             assertTrue(cluster.isBaselineAutoAdjustEnabled());
             assertTrue(bltMxBean.isAutoAdjustmentEnabled());
@@ -60,6 +60,17 @@ public class BaselineConfigurationMXBeanTest extends GridCommonAbstractTest {
 
             bltMxBean.setAutoAdjustmentTimeout(60_000L);
             assertEquals(60_000L, cluster.baselineAutoAdjustTimeout());
+
+            assertEquals("NOT_SCHEDULED", bltMxBean.getTaskState());
+
+            bltMxBean.setAutoAdjustmentEnabled(true);
+
+            startGrid(1);
+
+            long timeUntilAutoAdjust = bltMxBean.getTimeUntilAutoAdjust();
+            assertTrue(Long.toString(timeUntilAutoAdjust), timeUntilAutoAdjust > 0 && timeUntilAutoAdjust < 60_000L);
+
+            assertEquals("SCHEDULED", bltMxBean.getTaskState());
         }
         finally {
             stopGrid();
@@ -69,15 +80,15 @@ public class BaselineConfigurationMXBeanTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private BaselineConfigurationMXBean bltMxBean() throws Exception {
+    private BaselineAutoAdjustMXBean bltMxBean() throws Exception {
         ObjectName mBeanName = U.makeMBeanName(getTestIgniteInstanceName(), "Baseline",
-            BaselineConfigurationMXBeanImpl.class.getSimpleName());
+            BaselineAutoAdjustMXBeanImpl.class.getSimpleName());
 
         MBeanServer mBeanSrv = ManagementFactory.getPlatformMBeanServer();
 
         assertTrue(mBeanSrv.isRegistered(mBeanName));
 
-        Class<BaselineConfigurationMXBean> itfCls = BaselineConfigurationMXBean.class;
+        Class<BaselineAutoAdjustMXBean> itfCls = BaselineAutoAdjustMXBean.class;
 
         return MBeanServerInvocationHandler.newProxyInstance(mBeanSrv, mBeanName, itfCls, true);
     }

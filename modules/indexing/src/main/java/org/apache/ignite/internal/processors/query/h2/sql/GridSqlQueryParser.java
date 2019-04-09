@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteUuid;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.CommandInterface;
@@ -618,52 +617,6 @@ public class GridSqlQueryParser {
     }
 
     /**
-     * @param p Statement to rewrite, if needed.
-     * @param inTx Whether there is an active transaction.
-     * @return Query with {@code key} and {@code val} columns appended to the list of columns,
-     *     if it's an {@code FOR UPDATE} query, or {@code null} if nothing has to be done.
-     */
-    @NotNull public static String rewriteQueryForUpdateIfNeeded(Prepared p, boolean inTx) {
-        GridSqlStatement gridStmt = new GridSqlQueryParser(false).parse(p);
-        return rewriteQueryForUpdateIfNeeded(gridStmt, inTx);
-    }
-
-    /**
-     * @param stmt Statement to rewrite, if needed.
-     * @param inTx Whether there is an active transaction.
-     * @return Query with {@code key} and {@code val} columns appended to the list of columns,
-     *     if it's an {@code FOR UPDATE} query, or {@code null} if nothing has to be done.
-     */
-    @NotNull public static String rewriteQueryForUpdateIfNeeded(GridSqlStatement stmt, boolean inTx) {
-        // We have checked above that it's not an UNION query, so it's got to be SELECT.
-        assert stmt instanceof GridSqlSelect;
-
-        GridSqlSelect sel = (GridSqlSelect)stmt;
-
-        // How'd we get here otherwise?
-        assert sel.isForUpdate();
-
-        if (inTx) {
-            GridSqlAst from = sel.from();
-
-            GridSqlTable gridTbl = from instanceof GridSqlTable ? (GridSqlTable)from :
-                ((GridSqlAlias)from).child();
-
-            GridH2Table tbl = gridTbl.dataTable();
-
-            Column keyCol = tbl.getColumn(0);
-
-            sel.addColumn(new GridSqlAlias("_key_" + IgniteUuid.vmId(),
-                new GridSqlColumn(keyCol, null, keyCol.getName()), true), true);
-        }
-
-        // We need to remove this flag for final flag we'll feed to H2.
-        sel.forUpdate(false);
-
-        return sel.getSQL();
-    }
-
-    /**
      * @param qry Query expression to parse.
      * @return Subquery AST.
      */
@@ -825,6 +778,14 @@ public class GridSqlQueryParser {
                 throw new IgniteSQLException("SELECT FOR UPDATE with aggregates and/or GROUP BY is not supported.",
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
+
+            if (select.isDistinct())
+                throw new IgniteSQLException("DISTINCT clause is not supported for SELECT FOR UPDATE.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (SplitterUtils.hasSubQueries(res))
+                throw new IgniteSQLException("Sub queries are not supported for SELECT FOR UPDATE.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
         ArrayList<Expression> expressions = select.getExpressions();
@@ -2409,18 +2370,6 @@ public class GridSqlQueryParser {
 
         throw new IgniteException("Unsupported expression: " + expression + " [type=" +
             expression.getClass().getSimpleName() + ']');
-    }
-
-    /**
-     * Check if passed statement is insert statement eligible for streaming.
-     *
-     * @param nativeStmt Native statement.
-     * @return {@code True} if streamable insert.
-     */
-    public static boolean isStreamableInsertStatement(PreparedStatement nativeStmt) {
-        Prepared prep = prepared(nativeStmt);
-
-        return isStreamableInsertStatement(prep);
     }
 
     /**
