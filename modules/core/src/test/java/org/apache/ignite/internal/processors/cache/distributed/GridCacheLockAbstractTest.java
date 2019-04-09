@@ -514,6 +514,14 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLockReentrancy() throws Throwable {
+        /**
+         * awaitPartitionMapExchange is needed, otherwise deadlock is possible:
+         * main thread acquires lock and starts and wait for new thread while lock is acquired.
+         * New thread tries to get lock, at this moment exchanges starts and new thread
+         * waits for it. But exchange is not able to finish since there is acquired lock.
+         */
+        awaitPartitionMapExchange();
+
         Affinity<Integer> aff = ignite1.affinity(DEFAULT_CACHE_NAME);
 
         for (int i = 10; i < 100; i++) {
@@ -578,6 +586,14 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             finally {
                 lock.unlock();
             }
+
+            GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    assertTrue(lock.tryLock());
+
+                    lock.unlock();
+                }
+            }, "lock-thread");
         }
     }
 }

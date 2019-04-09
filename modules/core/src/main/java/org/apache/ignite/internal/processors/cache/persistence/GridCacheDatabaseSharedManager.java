@@ -3510,6 +3510,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                     }
                 }
+
+                // Final run after the cancellation.
+                if (checkpointsEnabled && !shutdownNow)
+                    doCheckpoint();
             }
             catch (Throwable t) {
                 err = t;
@@ -3526,18 +3530,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
-            }
 
-            // Final run after the cancellation.
-            if (checkpointsEnabled && !shutdownNow) {
-                try {
-                    doCheckpoint();
-
-                    scheduledCp.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
-                }
-                catch (Throwable e) {
-                    scheduledCp.cpFinishFut.onDone(e);
-                }
+                scheduledCp.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
             }
         }
 
