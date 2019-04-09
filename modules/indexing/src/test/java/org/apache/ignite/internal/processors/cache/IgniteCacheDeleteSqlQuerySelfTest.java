@@ -18,12 +18,18 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -93,8 +99,8 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     }
 
     /**
-     * In binary mode, this test checks that inner forcing of keepBinary works - without it, EntryProcessors
-     * inside DML engine would compare binary and non-binary objects with the same keys and thus fail.
+     * In binary mode, this test checks that inner forcing of keepBinary works - without it, EntryProcessors inside DML
+     * engine would compare binary and non-binary objects with the same keys and thus fail.
      */
     @Test
     public void testDeleteSimpleWithoutKeepBinary() {
@@ -124,7 +130,7 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     @Test
     public void testDeleteDecimalByKey() {
         execute("CREATE TABLE TEST_TABLE (" +
-            "ID NUMBER(19,1)," +
+            "ID DECIMAL(19,1)," +
             "VALUE VARCHAR2(255 CHAR)," +
             "PRIMARY KEY (ID))");
 
@@ -132,7 +138,7 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             .forEach((Object one) -> {
                 execute("DELETE FROM TEST_TABLE");
 
-                execute("Insert INTO test_table (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
+                execute("Insert INTO TEST_TABLE (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
 
                 execute("DELETE FROM TEST_TABLE WHERE ID = ?", one);
 
@@ -147,17 +153,17 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
      * Check fast delete type conversions in case of delete by "key = ?".
      */
     @Test
-    public void testFastDeleteDecimalByKey() {
+    public void testFastDeleteByKey() {
         execute("CREATE TABLE TEST_TABLE (" +
             "ID DOUBLE," +
             "VALUE VARCHAR2(255 CHAR)," +
             "PRIMARY KEY (ID))");
 
-        Stream.of(1, 1L, 1d,"1", "1.0", new BigDecimal("1.0"), new BigDecimal("1"))
+        Stream.of(1, 1L, 1d, "1", "1.0", new BigDecimal("1.0"), new BigDecimal("1"))
             .forEach((Object one) -> {
                 execute("DELETE FROM TEST_TABLE");
 
-                execute("Insert INTO test_table (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
+                execute("Insert INTO TEST_TABLE (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
 
                 execute("DELETE FROM TEST_TABLE WHERE ID = ?", one);
 
@@ -174,15 +180,15 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     @Test
     public void testDeleteDecimalByKeyAndValue() {
         execute("CREATE TABLE TEST_TABLE (" +
-            "ID NUMBER(19,1)," +
+            "ID DECIMAL(19,1)," +
             "VALUE VARCHAR2(255 CHAR)," +
             "PRIMARY KEY (ID))");
 
-        Stream.of(1, 1L, 1d, "1", "1.0", new BigDecimal("1.0"), new BigDecimal("1"))
+        Stream.of(1, 1L, /*1d,*/ "1", "1.0", new BigDecimal("1.0"), new BigDecimal("1"))
             .forEach((Object one) -> {
                 execute("DELETE FROM TEST_TABLE");
 
-                execute("Insert INTO test_table (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
+                execute("Insert INTO TEST_TABLE (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
 
                 execute("DELETE FROM TEST_TABLE WHERE ID = ? AND VALUE = 'this row should be deleted'", one);
 
@@ -191,6 +197,59 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
                 assertEqualsCollections("Argument of class " + one.getClass().getSimpleName() + " is converted incorrectly",
                     expRows, execute("SELECT * FROM TEST_TABLE ORDER BY ID"));
             });
+    }
+
+    /**
+     * Check delete type conversions in case of delete by "key = ? and val = ?" and decimal key.
+     */
+    @Test
+    public void testDeleteDecimalByKeyAndValueDOUBLE() {
+        execute("CREATE TABLE TEST_TABLE (" +
+            "ID DECIMAL(19,1)," +
+            "VALUE VARCHAR2(255 CHAR)," +
+            "PRIMARY KEY (ID))with \"template=partitioned\"");
+
+        Object one = 1.0d;
+
+        execute("DELETE FROM TEST_TABLE");
+
+        execute("INSERT INTO TEST_TABLE (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
+
+        execute("DELETE FROM TEST_TABLE WHERE ID = ? AND VALUE = 'this row should be deleted'", one);
+
+        List<List<?>> expRows = Collections.singletonList(asList(new BigDecimal(2), "value"));
+
+        assertEqualsCollections("Argument of class " + one.getClass().getSimpleName() + " is converted incorrectly",
+            expRows, execute("SELECT * FROM TEST_TABLE ORDER BY ID"));
+    }
+
+    /**
+     * Check delete type conversions in case of delete by "key = ? and val = ?" and decimal key.
+     */
+    @Test
+    public void testDeleteDecimalByKeyAndValueSelect() {
+        execute("CREATE TABLE TEST_TABLE (" +
+            "ID DECIMAL(19, 1)," +
+            "VALUE VARCHAR2(255 CHAR)," +
+            "PRIMARY KEY (ID)) with \"template=partitioned\"");
+
+        Object one = 1.0d;
+
+        execute("DELETE FROM TEST_TABLE");
+
+        execute("INSERT INTO TEST_TABLE (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
+
+       // List<List<?>> actual = toList(executeH2("SELECT ID, VALUE FROM PUBLIC.TEST_TABLE WHERE ID = 1"));
+
+        List<List<?>> actual = execute("SELECT\n" +
+            "_KEY,\n" +
+            "VALUE\n" +
+            "FROM PUBLIC.TEST_TABLE\n" +
+            "WHERE (ID = ?1) AND (VALUE = 'this row should be deleted')", one);
+        List<List<?>> expRows = Collections.singletonList(asList(new BigDecimal(1), "this row should be deleted"));
+
+        assertEqualsCollections("Argument of class " + one.getClass().getSimpleName() + " is converted incorrectly",
+            expRows, actual);
     }
 
     /**
@@ -207,7 +266,7 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             .forEach((Object one) -> {
                 execute("DELETE FROM TEST_TABLE");
 
-                execute("Insert INTO test_table (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
+                execute("Insert INTO TEST_TABLE (id, value) VALUES (1, 'this row should be deleted'), (2, 'value')");
 
                 execute("DELETE FROM TEST_TABLE WHERE ID = ? AND VALUE = 'this row should be deleted'", one);
 
@@ -218,8 +277,6 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             });
     }
 
-
-
     /**
      * Execute sql query using cache API.
      *
@@ -228,5 +285,42 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
      */
     private List<List<?>> execute(String sql, Object... args) {
         return cache().query(new SqlFieldsQuery(sql).setArgs(args).setSchema("PUBLIC")).getAll();
+    }
+
+
+    private ResultSet executeH2(String sql) {
+        IgniteH2Indexing idx = (IgniteH2Indexing)grid(0).context().query().getIndexing();
+
+        PreparedStatement stmt = idx.prepareNativeStatement("PUBLIC", sql);
+
+        try {
+            return stmt.executeQuery();
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private static List<List<?>> toList(ResultSet rs) {
+        try {
+            ResultSetMetaData meta = rs.getMetaData();
+
+            ArrayList tab = new ArrayList<>();
+
+            while (rs.next()) {
+                ArrayList row = new ArrayList<>(meta.getColumnCount());
+
+                for (int i = 1; i <= meta.getColumnCount(); i++)
+                    row.add(rs.getObject(i));
+
+                tab.add(row);
+            }
+
+            return tab;
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
