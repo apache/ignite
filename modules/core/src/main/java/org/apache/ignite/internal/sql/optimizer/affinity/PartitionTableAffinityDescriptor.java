@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class PartitionTableAffinityDescriptor implements Serializable {
     /** */
+    // TODO: Why do we need this change?  Do we need this class to be serializable at all?
     private static final long serialVersionUID = 1L;
 
     /** Affinity function type. */

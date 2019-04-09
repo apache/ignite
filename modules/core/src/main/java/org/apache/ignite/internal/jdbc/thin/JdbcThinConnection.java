@@ -884,8 +884,9 @@ public class JdbcThinConnection implements Connection {
                 }
 
                 JdbcQueryExecuteRequest qryReq = null;
+
                 if (req instanceof JdbcQueryExecuteRequest)
-                    qryReq = (JdbcQueryExecuteRequest) req;
+                    qryReq = (JdbcQueryExecuteRequest)req;
 
                 JdbcResponse res = cliIo.sendRequest(req, stmt);
 

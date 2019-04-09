@@ -81,4 +81,6 @@ public class JdbcCachePartitionsRequest extends JdbcRequest {
         for (int i = 0; i < cacheIdsSize; i++)
             cacheIds.add(reader.readInt());
     }
+
+    // TODO VO: Add toString() methods
 }

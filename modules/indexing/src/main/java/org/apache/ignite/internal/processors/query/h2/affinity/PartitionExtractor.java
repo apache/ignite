@@ -183,6 +183,8 @@ public class PartitionExtractor {
         // If there is no affinity, then we assume "NONE" result.
         assert aff != null || tree == PartitionNoneNode.INSTANCE;
 
+        // TODO VO: This should be done upper in call stack, see usage of extract() method.
+        // TODO VO: + document it properly
         return new PartitionResult(tree, aff, ctx.cache().context().exchange().readyAffinityVersion());
     }
 

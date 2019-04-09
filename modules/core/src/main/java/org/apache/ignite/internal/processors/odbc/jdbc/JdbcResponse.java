@@ -154,7 +154,6 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
             boolean affinityVerChanged = reader.readBoolean();
 
             if (affinityVerChanged) {
-
                 long topVer = reader.readLong();
                 int minorTopVer = reader.readInt();
 

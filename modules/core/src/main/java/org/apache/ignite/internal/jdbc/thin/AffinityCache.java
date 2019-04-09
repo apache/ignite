@@ -28,9 +28,11 @@ import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
  */
 public final class AffinityCache {
     /** Partition distributions cache limit. */
+    // TODO VO: Create ticket to control cache size(s)
     public static final int DISTRIBUTIONS_CACHE_LIMIT = 1000;
 
     /** SQL cache limit. */
+    // TODO VO: Create ticket to control cache size(s)
     public static final int SQL_CACHE_LIMIT = 100_000;
 
     /** Affinity topology version. */
@@ -73,6 +75,7 @@ public final class AffinityCache {
             if (Arrays.equals(entry.getValue(), distribution)) {
                 // put link to alrady existing distribution instead of creating new one.
                 cachePartitionsDistribution.put(cacheId, entry.getValue());
+
                 return;
             }
         }

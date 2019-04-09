@@ -85,4 +85,6 @@ public class JdbcCachePartitionsResult extends JdbcResult {
 
         mappings = res;
     }
+
+    // TODO VO: Add toString() methods
 }

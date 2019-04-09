@@ -57,6 +57,7 @@ public enum PartitionAffinityFunctionType {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
+    // TODO VO: Unused method?
     @Nullable public static PartitionAffinityFunctionType fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }

@@ -59,15 +59,19 @@ public final class QualifiedSQLQuery {
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
+
         QualifiedSQLQuery qry = (QualifiedSQLQuery)o;
+
         return Objects.equals(schemaName, qry.schemaName) &&
             Objects.equals(sqlQry, qry.sqlQry);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
+        // TODO VO: Calculate hash code manually to avoid array allocation (see Objects.hash signature).
         return Objects.hash(schemaName, sqlQry);
     }
 

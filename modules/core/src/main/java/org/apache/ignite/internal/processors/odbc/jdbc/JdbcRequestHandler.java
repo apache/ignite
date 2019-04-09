@@ -1458,6 +1458,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      *     b. Partition result tree neither PartitoinAllNode nor PartitionNoneNode;
      */
     private static boolean isClientBestEffortAffinityApplicable(boolean partResRequested, PartitionResult partRes) {
+        // TODO VO: Encapsulate to PartitionResult
         return partResRequested && (partRes == null || (partRes.affinity() != null &&
             partRes.affinity().isClientBestEffortAffinityApplicable() &&
             !(partRes.tree() instanceof PartitionNoneNode) && !(partRes.tree() instanceof PartitionAllNode)));
