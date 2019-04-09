@@ -943,9 +943,9 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD = "IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD";
 
     /**
-     * When set to {@code true}, WAL will be automatically disabled during rebalancing if there is no partition in
+     * When set to {@code false}, WAL will not be automatically disabled during rebalancing if there is no partition in
      * OWNING state.
-     * Default is {@code false}.
+     * Default is {@code true}.
      */
     public static final String IGNITE_DISABLE_WAL_DURING_REBALANCING = "IGNITE_DISABLE_WAL_DURING_REBALANCING";
 
