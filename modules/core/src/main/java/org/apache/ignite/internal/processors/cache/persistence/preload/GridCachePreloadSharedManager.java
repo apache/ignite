@@ -255,14 +255,14 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
         rebuildFut.listen(rf0 -> U.log(log, "Rebuild indexex finished [grpId=" + grp.groupId() + ", partId=" + part.id() + ']'));
 
-        GridCompoundFuture rebuilCatchfut = new GridCompoundFuture();
+        GridCompoundFuture rebuildCatchFut = new GridCompoundFuture();
 
-        rebuilCatchfut.add(rebuildFut);
-        rebuilCatchfut.add(catchFut);
+        rebuildCatchFut.add(rebuildFut);
+        rebuildCatchFut.add(catchFut);
 
-        rebuilCatchfut.markInitialized();
+        rebuildCatchFut.markInitialized();
 
-        rebuilCatchfut.listen(f -> {
+        rebuildCatchFut.listen(f -> {
             // TODO switch mode when the next checkpoint finished.
             U.log(log, "The partition will be swithed to the FULL mode: " + part);
 
@@ -284,6 +284,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                         assert isOwned : "Partition must be owned: " + part;
 
                         // TODO Send EVT_CACHE_REBALANCE_PART_LOADED
+
+                        fut0.onDone(true);
                     }
                 });
         });
