@@ -28,6 +28,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
@@ -163,6 +164,8 @@ public class PartitionExtractor {
         // Merge.
         PartitionNode tree = null;
 
+        AffinityTopologyVersion affinityTopVer = null;
+
         for (GridCacheSqlQuery qry : qrys) {
             PartitionResult qryRes = (PartitionResult)qry.derivedPartitions();
 
@@ -170,6 +173,12 @@ public class PartitionExtractor {
                 tree = qryRes.tree();
             else
                 tree = new PartitionCompositeNode(tree, qryRes.tree(), PartitionCompositeNodeOperator.OR);
+
+
+            if (affinityTopVer == null)
+                affinityTopVer = qryRes.topologyVersion();
+            else
+                assert affinityTopVer.equals(qryRes.topologyVersion());
         }
 
         // Optimize.
@@ -183,9 +192,12 @@ public class PartitionExtractor {
         // If there is no affinity, then we assume "NONE" result.
         assert aff != null || tree == PartitionNoneNode.INSTANCE;
 
-        // TODO VO: This should be done upper in call stack, see usage of extract() method.
-        // TODO VO: + document it properly
-        return new PartitionResult(tree, aff, ctx.cache().context().exchange().readyAffinityVersion());
+        // Affinity topology version expected to be the same for all partition results derived from map queries.
+        // TODO: 09.04.19 IGNITE-11507: SQL: Ensure that affinity topology version doesn't change
+        // TODO: during PartitionResult construction/application.
+        assert affinityTopVer != null;
+        
+        return new PartitionResult(tree, aff, affinityTopVer);
     }
 
     /**

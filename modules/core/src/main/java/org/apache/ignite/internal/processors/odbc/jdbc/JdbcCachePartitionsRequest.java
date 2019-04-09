@@ -24,6 +24,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Jdbc thin request for partiton distribution.
@@ -82,5 +83,8 @@ public class JdbcCachePartitionsRequest extends JdbcRequest {
             cacheIds.add(reader.readInt());
     }
 
-    // TODO VO: Add toString() methods
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcCachePartitionsRequest.class, this);
+    }
 }

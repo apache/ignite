@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.jetbrains.annotations.Nullable;
-
 /**
  * Affinity function type.
  */
@@ -28,9 +26,6 @@ public enum PartitionAffinityFunctionType {
 
     /** Rendezvous affinity function. */
     RENDEZVOUS(1);
-
-    /** Enumerated values. */
-    private static final PartitionAffinityFunctionType[] VALS = values();
 
     /** Value. */
     private final int val;
@@ -49,16 +44,5 @@ public enum PartitionAffinityFunctionType {
      */
     public int value() {
         return val;
-    }
-
-    /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
-     */
-    // TODO VO: Unused method?
-    @Nullable public static PartitionAffinityFunctionType fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinAffinityAwarenessMappingGroup;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Jdbc thin partiton result that contains partition mappings.
@@ -86,5 +87,8 @@ public class JdbcCachePartitionsResult extends JdbcResult {
         mappings = res;
     }
 
-    // TODO VO: Add toString() methods
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcCachePartitionsResult.class, this);
+    }
 }

@@ -28,11 +28,11 @@ import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
  */
 public final class AffinityCache {
     /** Partition distributions cache limit. */
-    // TODO VO: Create ticket to control cache size(s)
+    // TODO: 09.04.19 IGNITE-11705 Jdbc Thin: add ability to control affinity cache size.
     public static final int DISTRIBUTIONS_CACHE_LIMIT = 1000;
 
     /** SQL cache limit. */
-    // TODO VO: Create ticket to control cache size(s)
+    // TODO: 09.04.19 IGNITE-11705 Jdbc Thin: add ability to control affinity cache size.
     public static final int SQL_CACHE_LIMIT = 100_000;
 
     /** Affinity topology version. */

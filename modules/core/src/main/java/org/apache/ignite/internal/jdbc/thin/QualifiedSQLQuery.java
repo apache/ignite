@@ -71,8 +71,11 @@ public final class QualifiedSQLQuery {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        // TODO VO: Calculate hash code manually to avoid array allocation (see Objects.hash signature).
-        return Objects.hash(schemaName, sqlQry);
+        int res = schemaName != null ? schemaName.hashCode() : 0;
+
+        res = 31 * res + (sqlQry != null ? sqlQry.hashCode() : 0);
+
+        return res;
     }
 
     /** {@inheritDoc} */

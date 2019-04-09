@@ -62,8 +62,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionAllNode;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNoneNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1448,7 +1446,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /**
-     *
      * @param partResRequested Boolean flag that signals whether client requested partiton result.
      * @param partRes Direved partition result.
      * @return True if applicable to jdbc thin client side best effort affinity:
@@ -1458,9 +1455,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      *     b. Partition result tree neither PartitoinAllNode nor PartitionNoneNode;
      */
     private static boolean isClientBestEffortAffinityApplicable(boolean partResRequested, PartitionResult partRes) {
-        // TODO VO: Encapsulate to PartitionResult
-        return partResRequested && (partRes == null || (partRes.affinity() != null &&
-            partRes.affinity().isClientBestEffortAffinityApplicable() &&
-            !(partRes.tree() instanceof PartitionNoneNode) && !(partRes.tree() instanceof PartitionAllNode)));
+        return partResRequested && (partRes == null || partRes.isClientBestEffortAffinityApplicable());
     }
 }
