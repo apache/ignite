@@ -19,14 +19,11 @@ package org.apache.ignite.ml.composition;
 
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
-
-import java.io.Serializable;
 
 /**
  * Various utility functions for trainers composition.
@@ -47,15 +44,15 @@ public class CompositionUtils {
         DatasetTrainer<? extends M, L> trainer) {
         return new DatasetTrainer<IgniteModel<I, O>, L>() {
             /** {@inheritDoc} */
-            @Override public <K, V, C extends Serializable> IgniteModel<I, O> fit(DatasetBuilder<K, V> datasetBuilder,
-                Vectorizer<K, V, C, L> extractor) {
+            @Override public <K, V> IgniteModel<I, O> fit(DatasetBuilder<K, V> datasetBuilder,
+                Preprocessor<K, V> extractor) {
                 return trainer.fit(datasetBuilder, extractor);
             }
 
             /** {@inheritDoc} */
-            @Override public <K, V, C extends Serializable> IgniteModel<I, O> update(IgniteModel<I, O> mdl,
+            @Override public <K, V> IgniteModel<I, O> update(IgniteModel<I, O> mdl,
                 DatasetBuilder<K, V> datasetBuilder,
-                Vectorizer<K, V, C, L> extractor) {
+                Preprocessor<K, V> extractor) {
                 DatasetTrainer<IgniteModel<I, O>, L> trainer1 = (DatasetTrainer<IgniteModel<I, O>, L>)trainer;
                 return trainer1.update(mdl, datasetBuilder, extractor);
             }
@@ -75,16 +72,15 @@ public class CompositionUtils {
 
             /**
              * This method is never called, instead of constructing logic of update from
-             * {@link DatasetTrainer#isUpdateable(IgniteModel)} and
-             * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, Vectorizer)} 
+             * {@link DatasetTrainer#isUpdateable(IgniteModel)}
              * in this class we explicitly override update method.
              *
              * @param mdl Model.
              * @return Updated model.
              */
-            @Override protected <K, V, C extends Serializable> IgniteModel<I, O> updateModel(IgniteModel<I, O> mdl,
+            @Override protected <K, V> IgniteModel<I, O> updateModel(IgniteModel<I, O> mdl,
                 DatasetBuilder<K, V> datasetBuilder,
-                Vectorizer<K, V, C, L> extractor) {
+                Preprocessor<K, V> extractor) {
                 throw new IllegalStateException();
             }
         };
@@ -127,9 +123,9 @@ public class CompositionUtils {
      * @param <L> Type of labels.
      * @return Label extractor created from given mapping {@code (key, value) -> LabeledVector}.
      */
-    public static <K, V, L> FeatureLabelExtractor<K, V, L> asFeatureLabelExtractor(
+    /*public static <K, V, L> FeatureLabelExtractor<K, V, L> asFeatureLabelExtractor(
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
         return (k, v) -> new LabeledVector<>(featureExtractor.apply(k, v), lbExtractor.apply(k, v));
-    }
+    }*/
 }

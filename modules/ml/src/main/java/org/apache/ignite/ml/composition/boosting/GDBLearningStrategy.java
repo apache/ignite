@@ -97,7 +97,7 @@ public class GDBLearningStrategy {
      *
      * @param mdlToUpdate Learned model.
      * @param datasetBuilder Dataset builder.
-     * @param vectorizer Upstream vectorizer.
+     * @param preprocessor Upstream preprocessor.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated models list.

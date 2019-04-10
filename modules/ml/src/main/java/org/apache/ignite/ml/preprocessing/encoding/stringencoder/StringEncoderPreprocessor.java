@@ -68,11 +68,11 @@ public class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
      * @return Preprocessed row.
      */
     @Override public LabeledVector apply(K k, V v) {
-        Object[] tmp = basePreprocessor.apply(k, v);
-        double[] res = new double[tmp.length];
+        LabeledVector tmp = basePreprocessor.apply(k, v);
+        double[] res = new double[tmp.size()];
 
         for (int i = 0; i < res.length; i++) {
-            Object tmpObj = tmp[i];
+            Object tmpObj = tmp.get(i);
             if (handledIndices.contains(i)) {
                 if (tmpObj.equals(Double.NaN) && encodingValues[i].containsKey(KEY_FOR_NULL_VALUES))
                     res[i] = encodingValues[i].get(KEY_FOR_NULL_VALUES);
@@ -83,6 +83,6 @@ public class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
             } else
                 res[i] = (double) tmpObj;
         }
-        return VectorUtils.of(res);
+        return new LabeledVector(VectorUtils.of(res), tmp.label());
     }
 }
