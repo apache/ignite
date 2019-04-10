@@ -424,6 +424,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** {@inheritDoc} */
     @Override public void stop(boolean deallocate) throws IgniteException {
         synchronized (segmentsLock) {
+            if (stopped)
+                return;
+
             if (log.isDebugEnabled())
                 log.debug("Stopping page memory.");
 
