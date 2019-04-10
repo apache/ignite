@@ -256,13 +256,12 @@ namespace ignite
     namespace binary
     {
         template<>
-        struct BinaryType<TestEntry>
+        struct BinaryType<TestEntry> : BinaryTypeDefaultAll<TestEntry>
         {
-            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(TestEntry)
-            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(TestEntry)
-            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_IS_NULL_FALSE(TestEntry)
-            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(TestEntry)
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "TestEntry";
+            }
 
             static void Write(BinaryWriter& writer, const TestEntry& obj)
             {
@@ -275,30 +274,17 @@ namespace ignite
             }
         };
 
-        template<typename K, typename V>
-        struct BinaryType< RangeFilter<K,V> >
+        namespace
         {
-            static int32_t GetTypeId()
-            {
-                return GetBinaryStringHashCode("RangeFilter");
-            }
+            extern const char typeName[] = "RangeFilter";
+        }
 
+        template<typename K, typename V>
+        struct BinaryType< RangeFilter<K,V> > : BinaryTypeDefaultAll< RangeFilter<K,V> >
+        {
             static void GetTypeName(std::string& dst)
             {
                 dst = "RangeFilter";
-
-            }
-
-            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-
-            static bool IsNull(const RangeFilter<K,V>&)
-            {
-                return false;
-            }
-
-            static void GetNull(RangeFilter<K, V>& dst)
-            {
-                dst = RangeFilter<K,V>();
             }
 
             static void Write(BinaryWriter& writer, const RangeFilter<K,V>& obj)
