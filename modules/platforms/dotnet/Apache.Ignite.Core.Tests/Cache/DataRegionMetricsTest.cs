@@ -61,7 +61,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             var ignite = StartIgniteWithThreeDataRegions();
             
             // Verify metrics.
-            var metrics = ignite.GetDataRegionMetrics().OrderBy(x => x.Name).ToArray();
+            var metrics = ignite.GetDataRegionMetrics()
+                .OrderBy(x => x.Name, StringComparer.InvariantCultureIgnoreCase).ToArray();
+
             var names = metrics.Select(x => x.Name).ToArray();
 
             Assert.AreEqual(
