@@ -18,9 +18,13 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -103,6 +107,51 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
         startGrid(cfgWithHugeRegion("test-server-2"));
 
         srv.cluster().active(true);
+    }
+
+    /** */
+    @Test
+    public void testCreateCacheFailsInHugeMemoryRegion() throws Exception {
+        lazyAllocation = true;
+        client = false;
+
+        IgniteEx srv = startGrid(cfgWithHugeRegion("test-server")
+            .setFailureHandler(new StopNodeFailureHandler()));
+
+        srv.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        GridTestUtils.assertThrowsWithCause(() -> {
+            srv.createCache(new CacheConfiguration<>()
+                .setName("cache-in-huge-region")
+                .setDataRegionName(LAZY_REGION));
+        }, IgniteCheckedException.class);
+    }
+
+    /** */
+    @Test
+    public void testCreateCacheFromClientFailsInHugeMemoryRegion() throws Exception {
+        lazyAllocation = true;
+        client = false;
+
+        IgniteEx srv = startGrid(cfgWithHugeRegion("test-server")
+            .setFailureHandler(new StopNodeFailureHandler()));
+
+        client = true;
+
+        IgniteEx clnt = startGrid(cfgWithHugeRegion("test-client")
+            .setFailureHandler(new StopNodeFailureHandler()));
+
+        srv.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        GridTestUtils.assertThrowsWithCause(() -> {
+            clnt.createCache(new CacheConfiguration<>()
+                .setName("cache-in-huge-region")
+                .setDataRegionName(LAZY_REGION));
+        }, IgniteCheckedException.class);
     }
 
     @NotNull private IgniteConfiguration cfgWithHugeRegion(String name) throws Exception {
