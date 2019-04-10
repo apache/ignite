@@ -77,16 +77,6 @@ class ReplicatedVectorMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return vector.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return vector.isRandomAccess();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return vector.isDense();
     }
@@ -362,7 +352,7 @@ class ReplicatedVectorMatrix implements Matrix {
      * Specialized optimized version of minus for ReplicatedVectorMatrix.
      *
      * @param mtx Matrix to be subtracted.
-     * @return new ReplicatedVectorMatrix resulting from subtraction.
+     * @return New ReplicatedVectorMatrix resulting from subtraction.
      */
     public Matrix minus(ReplicatedVectorMatrix mtx) {
         if (isColumnReplicated() == mtx.isColumnReplicated()) {
@@ -390,7 +380,7 @@ class ReplicatedVectorMatrix implements Matrix {
      * Specialized optimized version of plus for ReplicatedVectorMatrix.
      *
      * @param mtx Matrix to be added.
-     * @return new ReplicatedVectorMatrix resulting from addition.
+     * @return New ReplicatedVectorMatrix resulting from addition.
      */
     public Matrix plus(ReplicatedVectorMatrix mtx) {
         if (isColumnReplicated() == mtx.isColumnReplicated()) {

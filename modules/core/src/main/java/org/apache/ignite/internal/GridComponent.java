@@ -164,7 +164,14 @@ public interface GridComponent {
      */
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
 
-    /** */
+    /**
+     * Validates that new node can join grid topology, this method is called on coordinator
+     * node before new node joins topology.
+     *
+     * @param node Joining node.
+     * @param discoData Joining node discovery data.
+     * @return Validation result or {@code null} in case of success.
+     */
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, JoiningNodeDiscoveryData discoData);
 
     /**

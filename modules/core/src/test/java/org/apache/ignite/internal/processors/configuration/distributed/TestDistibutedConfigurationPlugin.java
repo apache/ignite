@@ -46,6 +46,14 @@ public class TestDistibutedConfigurationPlugin implements PluginProvider {
     public static Consumer<GridKernalContext> supplier = (ctx) -> {
     };
 
+    /**
+     * Clear current supplier.
+     */
+    public static void clear() {
+        supplier = (ctx) -> {
+        };
+    }
+
     /** {@inheritDoc} */
     @Override public String name() {
         return "TestDistibutedConfigurationPlugin";

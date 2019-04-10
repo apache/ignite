@@ -17,15 +17,16 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * This class encapsulates statistics aggregation logic for feature vector covariance matrix computation of one GMM
@@ -107,7 +108,7 @@ public class CovarianceMatricesAggregator implements Serializable {
 
     /**
      * @param other Other.
-     * @return sum of aggregators.
+     * @return Sum of aggregators.
      */
     CovarianceMatricesAggregator plus(CovarianceMatricesAggregator other) {
         A.ensure(this.mean.equals(other.mean), "this.mean == other.mean");
@@ -143,7 +144,7 @@ public class CovarianceMatricesAggregator implements Serializable {
 
     /**
      * @param clusterProb GMM component probability.
-     * @return computed covariance matrix.
+     * @return Computed covariance matrix.
      */
     private Matrix covariance(double clusterProb) {
         return weightedSum.divide(rowCount * clusterProb);
@@ -174,21 +175,21 @@ public class CovarianceMatricesAggregator implements Serializable {
     }
 
     /**
-     * @return mean vector.
+     * @return Mean vector.
      */
     Vector mean() {
         return mean.copy();
     }
 
     /**
-     * @return weighted sum.
+     * @return Weighted sum.
      */
     Matrix weightedSum() {
         return weightedSum.copy();
     }
 
     /**
-     * @return rows count.
+     * @return Rows count.
      */
     public int rowCount() {
         return rowCount;
