@@ -483,9 +483,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else
             qry = qryDesc.sql();
 
-        boolean mvccEnabled = mvccEnabled(kernalContext());
-
-        assert mvccEnabled || mvccTracker == null;
+        boolean mvccEnabled = mvccTracker != null;
 
         try {
             assert select != null;
@@ -495,7 +493,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             MvccSnapshot mvccSnapshot = null;
 
-            if (select.mvccEnabled())
+            if (mvccEnabled)
                 mvccSnapshot = mvccTracker.snapshot();
 
             final QueryContext qctx = new QueryContext(
@@ -1003,8 +1001,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean failOnMultipleStmts,
         GridQueryCancel cancel
     ) {
-        boolean mvccEnabled = mvccEnabled(ctx);
-
         try {
             List<FieldsQueryCursor<List<?>>> res = new ArrayList<>(1);
 
@@ -1084,9 +1080,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return res;
         }
         catch (RuntimeException | Error e) {
-            GridNearTxLocal tx;
+            GridNearTxLocal tx = ctx.cache().context().tm().tx();
 
-            if (mvccEnabled && (tx = tx(ctx)) != null &&
+            if (tx != null && tx.mvccSnapshot() != null &&
                 (!(e instanceof IgniteSQLException) || /* Parsing errors should not rollback Tx. */
                     ((IgniteSQLException)e).sqlState() != SqlStateCode.PARSING_EXCEPTION)) {
 
