@@ -298,56 +298,77 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (actx != null)
             AuthorizationContext.context(actx);
 
+        JdbcResponse resp;
         try {
             switch (req.type()) {
                 case QRY_EXEC:
-                    return executeQuery((JdbcQueryExecuteRequest)req);
+                    resp = executeQuery((JdbcQueryExecuteRequest)req);
+                    break;
 
                 case QRY_FETCH:
-                    return fetchQuery((JdbcQueryFetchRequest)req);
+                    resp =  fetchQuery((JdbcQueryFetchRequest)req);
+                    break;
 
                 case QRY_CLOSE:
-                    return closeQuery((JdbcQueryCloseRequest)req);
+                    resp = closeQuery((JdbcQueryCloseRequest)req);
+                    break;
 
                 case QRY_META:
-                    return getQueryMeta((JdbcQueryMetadataRequest)req);
+                    resp = getQueryMeta((JdbcQueryMetadataRequest)req);
+                    break;
 
                 case BATCH_EXEC:
-                    return executeBatch((JdbcBatchExecuteRequest)req);
+                    resp = executeBatch((JdbcBatchExecuteRequest)req);
+                    break;
 
                 case BATCH_EXEC_ORDERED:
-                    return dispatchBatchOrdered((JdbcOrderedBatchExecuteRequest)req);
+                    resp = dispatchBatchOrdered((JdbcOrderedBatchExecuteRequest)req);
+                    break;
 
                 case META_TABLES:
-                    return getTablesMeta((JdbcMetaTablesRequest)req);
+                    resp = getTablesMeta((JdbcMetaTablesRequest)req);
+                    break;
 
                 case META_COLUMNS:
-                    return getColumnsMeta((JdbcMetaColumnsRequest)req);
+                    resp = getColumnsMeta((JdbcMetaColumnsRequest)req);
+                    break;
 
                 case META_INDEXES:
-                    return getIndexesMeta((JdbcMetaIndexesRequest)req);
+                    resp = getIndexesMeta((JdbcMetaIndexesRequest)req);
+                    break;
 
                 case META_PARAMS:
-                    return getParametersMeta((JdbcMetaParamsRequest)req);
+                    resp = getParametersMeta((JdbcMetaParamsRequest)req);
+                    break;
 
                 case META_PRIMARY_KEYS:
-                    return getPrimaryKeys((JdbcMetaPrimaryKeysRequest)req);
+                    resp = getPrimaryKeys((JdbcMetaPrimaryKeysRequest)req);
+                    break;
 
                 case META_SCHEMAS:
-                    return getSchemas((JdbcMetaSchemasRequest)req);
+                    resp = getSchemas((JdbcMetaSchemasRequest)req);
+                    break;
 
                 case BULK_LOAD_BATCH:
-                    return processBulkLoadFileBatch((JdbcBulkLoadBatchRequest)req);
+                    resp = processBulkLoadFileBatch((JdbcBulkLoadBatchRequest)req);
+                    break;
 
                 case QRY_CANCEL:
-                    return cancelQuery((JdbcQueryCancelRequest)req);
+                    resp = cancelQuery((JdbcQueryCancelRequest)req);
+                    break;
 
                 case CACHE_PARTITIONS:
-                    return getCachePartitions((JdbcCachePartitionsRequest) req);
+                    resp = getCachePartitions((JdbcCachePartitionsRequest)req);
+                    break;
+
+                default:
+                    resp = new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+                        "Unsupported JDBC request [req=" + req + ']');
             }
 
-            return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
-                "Unsupported JDBC request [req=" + req + ']');
+            resp.activeTransaction(connCtx.kernalContext().cache().context().tm().inUserTx());
+
+            return resp;
         }
         finally {
             AuthorizationContext.clear();
