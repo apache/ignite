@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Random;
-import javax.cache.CacheException;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
-import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertCachesReadOnlyMode;
+import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertDataStreamerReadOnlyMode;
 
 /**
  * Tests cache get/put/remove and data streaming in read-only cluster mode.
@@ -35,15 +31,15 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
      */
     @Test
     public void testCacheGetPutRemove() {
-        assertCachesReadOnlyMode(false);
+        assertCachesReadOnlyMode(false, CACHE_NAMES);
 
         changeClusterReadOnlyMode(true);
 
-        assertCachesReadOnlyMode(true);
+        assertCachesReadOnlyMode(true, CACHE_NAMES);
 
         changeClusterReadOnlyMode(false);
 
-        assertCachesReadOnlyMode(false);
+        assertCachesReadOnlyMode(false, CACHE_NAMES);
     }
 
     /**
@@ -51,87 +47,14 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
      */
     @Test
     public void testDataStreamerReadOnly() {
-        assertDataStreamerReadOnlyMode(false);
+        assertDataStreamerReadOnlyMode(false, CACHE_NAMES);
 
         changeClusterReadOnlyMode(true);
 
-        assertDataStreamerReadOnlyMode(true);
+        assertDataStreamerReadOnlyMode(true, CACHE_NAMES);
 
         changeClusterReadOnlyMode(false);
 
-        assertDataStreamerReadOnlyMode(false);
-    }
-
-    /**
-     * Asserts that all caches in read-only or in read/write mode on all nodes.
-     *
-     * @param readOnly If {@code true} then cache must be in read only mode, else in read/write mode.
-     */
-    private void assertCachesReadOnlyMode(boolean readOnly) {
-        Random rnd = new Random();
-
-        for (Ignite ignite : G.allGrids()) {
-            for (String cacheName : CACHE_NAMES) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
-
-                for (int i = 0; i < 10; i++) {
-                    cache.get(rnd.nextInt(100)); // All gets must succeed.
-
-                    if (readOnly) {
-                        // All puts must fail.
-                        try {
-                            cache.put(rnd.nextInt(100), rnd.nextInt());
-
-                            fail("Put must fail for cache " + cacheName);
-                        }
-                        catch (Exception e) {
-                            // No-op.
-                        }
-
-                        // All removes must fail.
-                        try {
-                            cache.remove(rnd.nextInt(100));
-
-                            fail("Remove must fail for cache " + cacheName);
-                        }
-                        catch (Exception e) {
-                            // No-op.
-                        }
-                    }
-                    else {
-                        cache.put(rnd.nextInt(100), rnd.nextInt()); // All puts must succeed.
-
-                        cache.remove(rnd.nextInt(100)); // All removes must succeed.
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * @param readOnly If {@code true} then data streamer must fail, else succeed.
-     */
-    private void assertDataStreamerReadOnlyMode(boolean readOnly) {
-        Random rnd = new Random();
-
-        for (Ignite ignite : G.allGrids()) {
-            for (String cacheName : CACHE_NAMES) {
-                boolean failed = false;
-
-                try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(cacheName)) {
-                    for (int i = 0; i < 10; i++) {
-                        ((DataStreamerImpl)streamer).maxRemapCount(5);
-
-                        streamer.addData(rnd.nextInt(1000), rnd.nextInt());
-                    }
-                }
-                catch (CacheException ignored) {
-                    failed = true;
-                }
-
-                if (failed != readOnly)
-                    fail("Streaming to " + cacheName + " must " + (readOnly ? "fail" : "succeed"));
-            }
-        }
+        assertDataStreamerReadOnlyMode(false, CACHE_NAMES);
     }
 }

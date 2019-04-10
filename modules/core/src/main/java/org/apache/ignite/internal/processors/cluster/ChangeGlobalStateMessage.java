@@ -53,6 +53,9 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     /** If true read-only mode. */
     private boolean readOnly;
 
+    /** Read-only mode version. Growing sequence. */
+    private final int readOnlyVer;
+
     /** Configurations read from persistent store. */
     private List<StoredCacheData> storedCfgs;
 
@@ -79,6 +82,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      * @param storedCfgs Configurations read from persistent store.
      * @param activate New cluster state.
      * @param readOnly New read-only mode flag.
+     * @param readOnly New read-only mode version.
      * @param baselineTopology Baseline topology.
      * @param forceChangeBaselineTopology Force change baseline topology flag.
      * @param timestamp Timestamp.
@@ -89,6 +93,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         @Nullable List<StoredCacheData> storedCfgs,
         boolean activate,
         boolean readOnly,
+        int readOnlyVer,
         BaselineTopology baselineTopology,
         boolean forceChangeBaselineTopology,
         long timestamp
@@ -101,6 +106,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         this.storedCfgs = storedCfgs;
         this.activate = activate;
         this.readOnly = readOnly;
+        this.readOnlyVer = readOnlyVer;
         this.baselineTopology = baselineTopology;
         this.forceChangeBaselineTopology = forceChangeBaselineTopology;
         this.timestamp = timestamp;
@@ -191,6 +197,13 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      */
     public boolean readOnly() {
         return readOnly;
+    }
+
+    /**
+     * @return Read-only mode version.
+     */
+    public int readOnlyVersion() {
+        return readOnlyVer;
     }
 
     /**

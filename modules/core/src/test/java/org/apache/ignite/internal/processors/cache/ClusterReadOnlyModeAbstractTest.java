@@ -41,27 +41,8 @@ public class ClusterReadOnlyModeAbstractTest extends GridCommonAbstractTest {
     /** */
     private static final int SRVS = 3;
 
-    /** Replicated atomic cache. */
-    private static final String REPL_ATOMIC_CACHE = "repl_atomic_cache";
-
-    /** Replicated transactional cache. */
-    private static final String REPL_TX_CACHE = "repl_tx_cache";
-
-    /** Replicated transactional cache. */
-    private static final String REPL_MVCC_CACHE = "repl_mvcc_cache";
-
-    /** Partitioned atomic cache. */
-    private static final String PART_ATOMIC_CACHE = "part_atomic_cache";
-
-    /** Partitioned transactional cache. */
-    private static final String PART_TX_CACHE = "part_tx_cache";
-
-    /** Partitioned mvcc transactional cache. */
-    private static final String PART_MVCC_CACHE = "part_mvcc_cache";
-
     /** Cache names. */
-    protected static final Collection<String> CACHE_NAMES = F.asList(REPL_ATOMIC_CACHE, REPL_TX_CACHE,
-        PART_ATOMIC_CACHE, PART_TX_CACHE);
+    protected static final Collection<String> CACHE_NAMES = ClusterReadOnlyModeTestUtils.cacheNames();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -81,31 +62,9 @@ public class ClusterReadOnlyModeAbstractTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(
-            cacheConfiguration(REPL_ATOMIC_CACHE, REPLICATED, ATOMIC, null),
-            cacheConfiguration(REPL_TX_CACHE, REPLICATED, TRANSACTIONAL, null),
-            cacheConfiguration(REPL_MVCC_CACHE, REPLICATED, TRANSACTIONAL_SNAPSHOT, "mvcc_repl_grp"),
-            cacheConfiguration(PART_ATOMIC_CACHE, PARTITIONED, ATOMIC, "part_grp"),
-            cacheConfiguration(PART_TX_CACHE, PARTITIONED, TRANSACTIONAL, "part_grp"),
-            cacheConfiguration(PART_MVCC_CACHE, PARTITIONED, TRANSACTIONAL_SNAPSHOT, "mvcc_part_grp")
-        );
+        cfg.setCacheConfiguration(ClusterReadOnlyModeTestUtils.cacheConfigurations());
 
         return cfg;
-    }
-
-    /**
-     * @param cacheMode Cache mode.
-     * @param atomicityMode Atomicity mode.
-     * @param grpName Cache group name.
-     */
-    private CacheConfiguration<Integer, Integer> cacheConfiguration(String name, CacheMode cacheMode,
-        CacheAtomicityMode atomicityMode, String grpName) {
-        return new CacheConfiguration<Integer, Integer>()
-            .setName(name)
-            .setCacheMode(cacheMode)
-            .setAtomicityMode(atomicityMode)
-            .setGroupName(grpName)
-            .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)));
     }
 
     /**

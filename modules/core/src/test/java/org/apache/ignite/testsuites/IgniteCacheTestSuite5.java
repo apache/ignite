@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.CacheKeepBinaryTransactionTes
 import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
+import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeSelfTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.ClusterStatePartitionedSelfTest;
@@ -52,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
-import org.apache.ignite.internal.processors.cache.version.ClusterReadOnlyModeSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
