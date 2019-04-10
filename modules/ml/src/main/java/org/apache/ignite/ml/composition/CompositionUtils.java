@@ -22,6 +22,7 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
@@ -123,9 +124,9 @@ public class CompositionUtils {
      * @param <L> Type of labels.
      * @return Label extractor created from given mapping {@code (key, value) -> LabeledVector}.
      */
-    /*public static <K, V, L> FeatureLabelExtractor<K, V, L> asFeatureLabelExtractor(
+    public static <K, V, L> FeatureLabelExtractor<K, V, L> asFeatureLabelExtractor(
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
         return (k, v) -> new LabeledVector<>(featureExtractor.apply(k, v), lbExtractor.apply(k, v));
-    }*/
+    }
 }

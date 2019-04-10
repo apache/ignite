@@ -17,15 +17,14 @@
 
 package org.apache.ignite.ml.dataset.feature.extractor.impl;
 
+import java.io.Serializable;
+import java.util.List;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
-
-import java.io.Serializable;
-import java.util.List;
 
 /**
  * Temporary class for Features/Label extracting.
@@ -48,7 +47,7 @@ public class FeatureLabelExtractorWrapper<K, V, C extends Serializable, L> exten
      * @return wrapper.
      */
     public static <K, V, C extends Serializable> FeatureLabelExtractorWrapper<K, V, C, Double> wrap(IgniteBiFunction<K, V, Vector> featuresEx) {
-        return new FeatureLabelExtractorWrapper<>((k, v) -> featuresEx.apply(k, v).labeled(0.0));
+        return new FeatureLabelExtractorWrapper<K, V, C, Double>((k, v) -> featuresEx.apply(k, v).labeled(0.0));
     }
 
     public static <K, V, C extends Serializable, L> FeatureLabelExtractorWrapper<K, V, C, L> wrap(IgniteBiFunction<K, V, Vector> featuresEx,

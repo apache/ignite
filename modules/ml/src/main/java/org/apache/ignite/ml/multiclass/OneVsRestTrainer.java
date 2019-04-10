@@ -29,11 +29,12 @@ import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.PatchedPreprocessor;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
@@ -73,22 +74,18 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
         MultiClassModel<M> multiClsMdl = new MultiClassModel<>();
 
         classes.forEach(clsLb -> {
-            IgniteBiFunction<K, V, Double> lbTransformer = (k, v) -> {
-                Double lb = (Double) extractor.apply(k, v).label();
-
-                if (lb.equals(clsLb))
-                    return 1.0;
-                else
-                    return 0.0;
+            IgniteFunction<Double, Double> lbTransformer = lb -> {
+                return lb.equals(clsLb) ? 1.0 : 0.0;
             };
 
+            IgniteFunction<LabeledVector<Double>, LabeledVector<Double>> func = lv -> new LabeledVector<>(lv.features(), lbTransformer.apply(lv.label()));
 
+            PatchedPreprocessor<K, V, Double, Double> patchedPreprocessor = new PatchedPreprocessor<>(func, extractor);
 
-            FeatureLabelExtractorWrapper<K, V, Integer, Double> vectorizer = FeatureLabelExtractorWrapper.wrap(featureExtractor, lbTransformer);
             M mdl = Optional.ofNullable(newMdl)
                 .flatMap(multiClassModel -> multiClassModel.getModel(clsLb))
-                .map(learnedModel -> classifier.update(learnedModel, datasetBuilder, vectorizer))
-                .orElseGet(() -> classifier.fit(datasetBuilder, vectorizer));
+                .map(learnedModel -> classifier.update(learnedModel, datasetBuilder, patchedPreprocessor))
+                .orElseGet(() -> classifier.fit(datasetBuilder, patchedPreprocessor));
 
             multiClsMdl.add(clsLb, mdl);
         });

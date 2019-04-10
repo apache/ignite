@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.composition.bagging;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
@@ -35,16 +37,13 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.trainers.AdaptableDatasetModel;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.junit.Test;
-
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Tests for bagging algorithm.
@@ -184,9 +183,9 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V, C extends Serializable> IgniteModel<Vector, Double> fit(
+        @Override public <K, V> IgniteModel<Vector, Double> fit(
             DatasetBuilder<K, V> datasetBuilder,
-            Vectorizer<K, V, C, Double> extractor) {
+            Preprocessor<K, V> extractor) {
             Dataset<Long, CountData> dataset = datasetBuilder.build(
                 TestUtils.testEnvBuilder(),
                 (env, upstreamData, upstreamDataSize) -> upstreamDataSize,
@@ -204,10 +203,10 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected <K, V, C extends Serializable> IgniteModel<Vector, Double> updateModel(
+        @Override protected <K, V> IgniteModel<Vector, Double> updateModel(
             IgniteModel<Vector, Double> mdl,
             DatasetBuilder<K, V> datasetBuilder,
-            Vectorizer<K, V, C, Double> extractor) {
+            Preprocessor<K, V> extractor) {
             return fit(datasetBuilder, extractor);
         }
 

@@ -17,38 +17,11 @@
 
 package org.apache.ignite.ml.util.generators;
 
-import org.apache.ignite.ml.composition.CompositionUtils;
-import org.apache.ignite.ml.dataset.*;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
-import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
-import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
-import org.junit.Test;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static org.junit.Assert.*;
-
 /**
  * Tests for {@link DataStreamGenerator}.
  */
 public class DataStreamGeneratorTest {
-    /** */
+/*    *//** *//*
     @Test
     public void testUnlabeled() {
         DataStreamGenerator generator = new DataStreamGenerator() {
@@ -62,7 +35,7 @@ public class DataStreamGeneratorTest {
         });
     }
 
-    /** */
+    *//** *//*
     @Test
     public void testLabeled() {
         DataStreamGenerator generator = new DataStreamGenerator() {
@@ -77,7 +50,7 @@ public class DataStreamGeneratorTest {
         });
     }
 
-    /** */
+    *//** *//*
     @Test
     public void testMapVectors() {
         DataStreamGenerator generator = new DataStreamGenerator() {
@@ -92,7 +65,7 @@ public class DataStreamGeneratorTest {
         });
     }
 
-    /** */
+    *//** *//*
     @Test
     public void testBlur() {
         DataStreamGenerator generator = new DataStreamGenerator() {
@@ -107,7 +80,7 @@ public class DataStreamGeneratorTest {
         });
     }
 
-    /** */
+    *//** *//*
     @Test
     public void testAsMap() {
         DataStreamGenerator generator = new DataStreamGenerator() {
@@ -125,7 +98,7 @@ public class DataStreamGeneratorTest {
         }));
     }
 
-    /** */
+    *//** *//*
     @Test
     public void testAsDatasetBuilder() throws Exception {
         AtomicInteger counter = new AtomicInteger();
@@ -158,7 +131,7 @@ public class DataStreamGeneratorTest {
 
 
 
-    /** */
+    *//** *//*
     private void checkDataset(int sampleSize, DatasetBuilder<Vector, Double> datasetBuilder,
         Predicate<LabeledVector> labelCheck) throws Exception {
 
@@ -170,7 +143,7 @@ public class DataStreamGeneratorTest {
         }
     }
 
-    /** */
+    *//** *//*
     private Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> buildDataset(
         DatasetBuilder<Vector, Double> b1) {
         FeatureLabelExtractorWrapper<Vector, Double, ? extends Serializable, Double> wrapper = new FeatureLabelExtractorWrapper<>(
@@ -182,12 +155,12 @@ public class DataStreamGeneratorTest {
         );
     }
 
-    /** */
+    *//** *//*
     private List<LabeledVector> map(LabeledVectorSet<Double, LabeledVector> d) {
         return IntStream.range(0, d.rowSize()).mapToObj(d::getRow).collect(Collectors.toList());
     }
 
-    /** */
+    *//** *//*
     private List<LabeledVector> reduce(List<LabeledVector> l, List<LabeledVector> r) {
         if (l == null) {
             if (r == null)
@@ -203,11 +176,11 @@ public class DataStreamGeneratorTest {
         }
     }
 
-    /** */
+    *//** *//*
     private static class UpstreamTransformerForTest implements UpstreamTransformer {
         @Override public Stream<UpstreamEntry> transform(
             Stream<UpstreamEntry> upstream) {
             return upstream.map(entry -> new UpstreamEntry<>(entry.getKey(), -((double)entry.getValue())));
         }
-    }
+    }*/
 }
