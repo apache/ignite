@@ -617,7 +617,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert firstDiscoEvt0 != null;
 
         return firstDiscoEvt0.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
-            || !firstDiscoEvt0.eventNode().isClient() || firstDiscoEvt0.eventNode().isLocal();
+            || !firstDiscoEvt0.eventNode().isClient()
+            || firstDiscoEvt0.eventNode().isLocal()
+            || ((firstDiscoEvt.type() == EVT_NODE_JOINED) &&
+                cctx.cache().hasCachesReceivedFromJoin(firstDiscoEvt.eventNode()));
     }
 
     /**
@@ -1117,6 +1120,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         cctx.exchange().exchangerBlockingSectionEnd();
                     }
 
+                    cctx.exchange().exchangerBlockingSectionBegin();
+
+                    try {
+                        ((IgniteChangeGlobalStateSupport)kctx.distributedMetastorage()).onActivate(kctx);
+                    }
+                    finally {
+                        cctx.exchange().exchangerBlockingSectionEnd();
+                    }
+
                     assert registerCachesFuture == null : "No caches registration should be scheduled before new caches have started.";
 
                     cctx.exchange().exchangerBlockingSectionBegin();
@@ -1168,8 +1180,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.exchange().exchangerBlockingSectionBegin();
 
                 try {
-                    ((IgniteChangeGlobalStateSupport)kctx.distributedMetastorage()).onDeActivate(kctx);
-
                     kctx.dataStructures().onDeActivate(kctx);
 
                     if (cctx.kernalContext().service() instanceof GridServiceProcessor)
@@ -1180,6 +1190,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
 
                     kctx.encryption().onDeActivate(kctx);
+
+                    ((IgniteChangeGlobalStateSupport)kctx.distributedMetastorage()).onDeActivate(kctx);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully deactivated data structures, services and caches [" +
