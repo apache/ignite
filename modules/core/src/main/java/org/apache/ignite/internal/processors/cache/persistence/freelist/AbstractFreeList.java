@@ -470,38 +470,46 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         int written = 0;
 
-        do {
-            if (written != 0)
-                memMetrics.incrementLargeEntriesPages();
+        try {
+            do {
+                if (written != 0)
+                    memMetrics.incrementLargeEntriesPages();
 
-            int remaining = rowSize - written;
+                int remaining = rowSize - written;
 
-            long pageId = 0L;
+                long pageId = 0L;
 
-            for (int b = remaining < MIN_SIZE_FOR_DATA_PAGE ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS; b++) {
-                pageId = takeEmptyPage(b, ioVersions());
+                for (int b = remaining < MIN_SIZE_FOR_DATA_PAGE ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS; b++) {
+                    pageId = takeEmptyPage(b, ioVersions());
 
-                if (pageId != 0L)
-                    break;
+                    if (pageId != 0L)
+                        break;
+                }
+
+                AbstractDataPageIO<T> initIo = null;
+
+                if (pageId == 0L) {
+                    pageId = allocateDataPage(row.partition());
+
+                    initIo = ioVersions().latest();
+                }
+                else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
+                    pageId = initReusedPage(pageId, row.partition());
+                else
+                    pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
+
+                written = write(pageId, writeRow, initIo, row, written, FAIL_I);
+
+                assert written != FAIL_I; // We can't fail here.
             }
-
-            AbstractDataPageIO<T> initIo = null;
-
-            if (pageId == 0L) {
-                pageId = allocateDataPage(row.partition());
-
-                initIo = ioVersions().latest();
-            }
-            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
-                pageId = initReusedPage(pageId, row.partition());
-            else
-                pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
-
-            written = write(pageId, writeRow, initIo, row, written, FAIL_I);
-
-            assert written != FAIL_I; // We can't fail here.
+            while (written != COMPLETE);
         }
-        while (written != COMPLETE);
+        catch (IgniteCheckedException | Error e) {
+            throw e;
+        }
+        catch (Throwable t) {
+            throw new CorruptedFreeListException("Failed to insert data row", t);
+        }
     }
 
     /**
@@ -535,55 +543,79 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     @Override public boolean updateDataRow(long link, T row) throws IgniteCheckedException {
         assert link != 0;
 
-        long pageId = PageIdUtils.pageId(link);
-        int itemId = PageIdUtils.itemId(link);
+        try {
+            long pageId = PageIdUtils.pageId(link);
+            int itemId = PageIdUtils.itemId(link);
 
-        Boolean updated = write(pageId, updateRow, row, itemId, null);
+            Boolean updated = write(pageId, updateRow, row, itemId, null);
 
-        assert updated != null; // Can't fail here.
+            assert updated != null; // Can't fail here.
 
-        return updated;
+            return updated;
+        }
+        catch (IgniteCheckedException | Error e) {
+            throw e;
+        }
+        catch (Throwable t) {
+            throw new CorruptedFreeListException("Failed to update data row", t);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public <S, R> R updateDataRow(long link, PageHandler<S, R> pageHnd, S arg) throws IgniteCheckedException {
         assert link != 0;
 
-        long pageId = PageIdUtils.pageId(link);
-        int itemId = PageIdUtils.itemId(link);
+        try {
+            long pageId = PageIdUtils.pageId(link);
+            int itemId = PageIdUtils.itemId(link);
 
-        R updRes = write(pageId, pageHnd, arg, itemId, null);
+            R updRes = write(pageId, pageHnd, arg, itemId, null);
 
-        assert updRes != null; // Can't fail here.
+            assert updRes != null; // Can't fail here.
 
-        return updRes;
+            return updRes;
+        }
+        catch (IgniteCheckedException | Error e) {
+            throw e;
+        }
+        catch (Throwable t) {
+            throw new CorruptedFreeListException("Failed to update data row", t);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void removeDataRowByLink(long link) throws IgniteCheckedException {
         assert link != 0;
 
-        long pageId = PageIdUtils.pageId(link);
-        int itemId = PageIdUtils.itemId(link);
+        try {
+            long pageId = PageIdUtils.pageId(link);
+            int itemId = PageIdUtils.itemId(link);
 
-        ReuseBag bag = new LongListReuseBag();
+            ReuseBag bag = new LongListReuseBag();
 
-        long nextLink = write(pageId, rmvRow, bag, itemId, FAIL_L);
-
-        assert nextLink != FAIL_L; // Can't fail here.
-
-        while (nextLink != 0L) {
-            memMetrics.decrementLargeEntriesPages();
-
-            itemId = PageIdUtils.itemId(nextLink);
-            pageId = PageIdUtils.pageId(nextLink);
-
-            nextLink = write(pageId, rmvRow, bag, itemId, FAIL_L);
+            long nextLink = write(pageId, rmvRow, bag, itemId, FAIL_L);
 
             assert nextLink != FAIL_L; // Can't fail here.
-        }
 
-        reuseList.addForRecycle(bag);
+            while (nextLink != 0L) {
+                memMetrics.decrementLargeEntriesPages();
+
+                itemId = PageIdUtils.itemId(nextLink);
+                pageId = PageIdUtils.pageId(nextLink);
+
+                nextLink = write(pageId, rmvRow, bag, itemId, FAIL_L);
+
+                assert nextLink != FAIL_L; // Can't fail here.
+            }
+
+            reuseList.addForRecycle(bag);
+        }
+        catch (IgniteCheckedException | Error e) {
+            throw e;
+        }
+        catch (Throwable t) {
+            throw new CorruptedFreeListException("Failed to remove data by link", t);
+        }
     }
 
     /** {@inheritDoc} */
@@ -612,21 +644,45 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
         assert reuseList == this : "not allowed to be a reuse list";
 
-        put(bag, 0, 0, 0L, REUSE_BUCKET);
+        try {
+            put(bag, 0, 0, 0L, REUSE_BUCKET);
+        }
+        catch (IgniteCheckedException | Error e) {
+            throw e;
+        }
+        catch (Throwable t) {
+            throw new CorruptedFreeListException("Failed to add page for recycle", t);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public long takeRecycledPage() throws IgniteCheckedException {
         assert reuseList == this : "not allowed to be a reuse list";
 
-        return takeEmptyPage(REUSE_BUCKET, null);
+        try {
+            return takeEmptyPage(REUSE_BUCKET, null);
+        }
+        catch (IgniteCheckedException | Error e) {
+            throw e;
+        }
+        catch (Throwable t) {
+            throw new CorruptedFreeListException("Failed to take recycled page", t);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public long recycledPagesCount() throws IgniteCheckedException {
         assert reuseList == this : "not allowed to be a reuse list";
 
-        return storedPagesCount(REUSE_BUCKET);
+        try {
+            return storedPagesCount(REUSE_BUCKET);
+        }
+        catch (IgniteCheckedException | Error e) {
+            throw e;
+        }
+        catch (Throwable t) {
+            throw new CorruptedFreeListException("Failed to count recycled pages", t);
+        }
     }
 
     /**

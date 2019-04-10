@@ -28,6 +28,7 @@ import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.CorruptedPersistenceException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -131,6 +132,13 @@ public class FailureProcessor extends GridProcessorAdapter {
 
         if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
             reserveBuf = null;
+
+        if (X.hasCause(failureCtx.error(), CorruptedPersistenceException.class))
+            log.error("A critical problem with persistence data structures was detected." +
+                " Please make backup of persistence storage and WAL files for further analysis." +
+                " Persistence storage path: " + ctx.config().getDataStorageConfiguration().getStoragePath() +
+                " WAL path: " + ctx.config().getDataStorageConfiguration().getWalPath() +
+                " WAL archive path: " + ctx.config().getDataStorageConfiguration().getWalArchivePath());
 
         if (IGNITE_DUMP_THREADS_ON_FAILURE)
             U.dumpThreads(log);

@@ -15,24 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.tree;
-
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.CorruptedPersistenceException;
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.internal.processors.cache.persistence;
 
 /**
- * Exception to distinguish {@link BPlusTree} tree broken invariants.
+ * Marker interface to distinguish exceptions that were caused by broken persistence datastructures invariants.
  */
-public class CorruptedTreeException extends IgniteCheckedException implements CorruptedPersistenceException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * @param msg Message.
-     * @param cause Cause.
-     */
-    public CorruptedTreeException(String msg, @Nullable Throwable cause) {
-        super(msg, cause);
-    }
+public interface CorruptedPersistenceException {
 }
