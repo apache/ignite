@@ -884,6 +884,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cacheData.config(splitCfg.get1());
         cacheData.cacheConfigurationEnrichment(splitCfg.get2());
 
+        cfg = splitCfg.get1();
+
         if (GridCacheUtils.isCacheTemplateName(cacheName))
             templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
         else {
