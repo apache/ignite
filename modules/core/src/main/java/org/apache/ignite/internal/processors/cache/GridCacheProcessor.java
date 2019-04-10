@@ -5603,6 +5603,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     req.startCacheConfiguration(splitCfg.get1());
                     req.cacheConfigurationEnrichment(splitCfg.get2());
+
+                    cfg = splitCfg.get1();
                 }
                 else
                     req.startCacheConfiguration(cfg);
