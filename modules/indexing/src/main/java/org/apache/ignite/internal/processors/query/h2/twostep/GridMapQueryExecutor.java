@@ -827,7 +827,8 @@ public class GridMapQueryExecutor {
                         assert rs instanceof JdbcResultSet : rs.getClass();
                     }
 
-                    qr.addResult(qryIdx, qry, node.id(), rs, params);
+                    qr.addResult(qryIdx, qry, node.id(), rs, params,
+                        log, qryInfo);
 
                     if (qr.cancelled()) {
                         qr.result(qryIdx).close();

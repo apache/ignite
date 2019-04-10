@@ -22,12 +22,15 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.query.h2.H2QueryFetchSizeInterceptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -99,16 +102,23 @@ class MapQueryResult {
     /** Lazy worker. */
     private final MapQueryLazyWorker lazyWorker;
 
+    /** Fetch size interceptor. */
+    final H2QueryFetchSizeInterceptor fetchSizeInterceptor;
+
     /**
+     * @param h2 Indexing SPI.
      * @param rs Result set.
      * @param cctx Cache context.
      * @param qrySrcNodeId Query source node.
      * @param qry Query.
      * @param params Query params.
      * @param lazyWorker Lazy worker.
+     * @param log Logger.
+     * @param qryInfo Query info.
      */
     MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
-        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker) {
+        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker,
+        IgniteLogger log, MapH2QueryInfo qryInfo) {
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;
@@ -129,13 +139,15 @@ class MapQueryResult {
 
             rowCnt = (res instanceof LazyResult) ? -1 : res.getRowCount();
             cols = res.getVisibleColumnCount();
+
+            fetchSizeInterceptor = new H2QueryFetchSizeInterceptor(h2, qryInfo, log);
         }
         else {
             this.rs = null;
             this.res = null;
             this.cols = -1;
             this.rowCnt = -1;
-
+            fetchSizeInterceptor = null;
             closed = true;
         }
     }
@@ -237,6 +249,8 @@ class MapQueryResult {
             }
 
             rows.add(res.currentRow());
+
+            fetchSizeInterceptor.checkOnFetchNext();
         }
 
         return !res.hasNext();
@@ -278,6 +292,8 @@ class MapQueryResult {
                 return;
 
             closed = true;
+
+            fetchSizeInterceptor.checkOnClose();
 
             U.closeQuiet(rs);
 

@@ -849,7 +849,7 @@ public class GridReduceQueryExecutor {
                                 cancel,
                                 qryInfo);
 
-                            resIter = new H2FieldsIterator(res, null);
+                            resIter = new H2FieldsIterator(res, null, log, h2, qryInfo);
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();

@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.sql.ResultSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -101,14 +103,18 @@ class MapQueryResults {
 
     /**
      * Add result.
-     *
      * @param qry Query result index.
      * @param q Query object.
      * @param qrySrcNodeId Query source node.
      * @param rs Result set.
+     * @param params Query
+     * @param log Logger.
+     * @param qryInfo Query info.
      */
-    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, lazyWorker);
+    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params,
+        IgniteLogger log, MapH2QueryInfo qryInfo) {
+        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, lazyWorker,
+            log, qryInfo);
 
         if (lazyWorker != null)
             lazyWorker.result(res);
