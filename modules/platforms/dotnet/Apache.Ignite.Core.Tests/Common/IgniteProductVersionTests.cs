@@ -102,6 +102,7 @@ namespace Apache.Ignite.Core.Tests.Common
             Assert.GreaterOrEqual(nodeVersion.Major, 2);
             Assert.GreaterOrEqual(nodeVersion.Minor, 0);
             Assert.GreaterOrEqual(nodeVersion.Maintenance, 0);
+            Assert.GreaterOrEqual(nodeVersion.Stage, "SNAPSHOT");
         }
 
         [Test]
