@@ -324,4 +324,12 @@ public class CacheArguments {
     public void idleCheckCrc(boolean idleCheckCrc) {
         this.idleCheckCrc = idleCheckCrc;
     }
+
+    public Set<String> groups() {
+        return null;
+    }
+
+    public boolean delete() {
+        return false;
+    }
 }

@@ -56,7 +56,12 @@ public enum CacheCommand {
     /**
      * Reset lost partitions
      */
-    RESET_LOST_PARTITIONS("reset_lost_partitions");
+    RESET_LOST_PARTITIONS("reset_lost_partitions"),
+
+    /**
+     * Find and remove garbage.
+     */
+    FIND_AND_REMOVE_GARBAGE("find_garbage");
 
     /** Enumerated values. */
     private static final CacheCommand[] VALS = values();

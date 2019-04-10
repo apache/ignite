@@ -97,6 +97,9 @@ import org.apache.ignite.internal.visor.cache.VisorCacheEvictionConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheNearConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheStoreConfiguration;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceJobResult;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTaskArg;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTaskResult;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
@@ -153,6 +156,7 @@ import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.baseline.BaselineCommand.of;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.CONTENTION;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.DISTRIBUTION;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.FIND_AND_REMOVE_GARBAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.IDLE_VERIFY;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.LIST;
@@ -313,6 +317,9 @@ public class CommandHandler {
 
     /** Validate indexes task name. */
     private static final String VALIDATE_INDEXES_TASK = "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask";
+
+    /** Find and delete garbarge task name. */
+    private static final String FIND_AND_DELETE_GARBARGE_TASK = "org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTask";
 
     /** */
     private static final String TX_LIMIT = "--limit";
@@ -809,6 +816,11 @@ public class CommandHandler {
 
                 break;
 
+            case FIND_AND_REMOVE_GARBAGE:
+                findAndDeleteGarbage(client, cacheArgs);
+
+                break;
+
             case CONTENTION:
                 cacheContention(client, cacheArgs);
 
@@ -844,6 +856,8 @@ public class CommandHandler {
 
         String CACHES = "cacheName1,...,cacheNameN";
 
+        String GROUPS = "groupName1,...,groupNameN";
+
         usageCache(LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
         usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
@@ -851,6 +865,7 @@ public class CommandHandler {
         usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or(NODE_ID, NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, CACHES);
+        usageCache(FIND_AND_REMOVE_GARBAGE, op(GROUPS), OP_NODE_ID, op(""));
         nl();
     }
 
@@ -887,6 +902,66 @@ public class CommandHandler {
      * @param client Client.
      * @param cacheArgs Cache args.
      */
+    private void findAndDeleteGarbage(GridClient client, CacheArguments cacheArgs) throws GridClientException {
+        VisorFindAndDeleteGarbargeInPersistenceTaskArg taskArg = new VisorFindAndDeleteGarbargeInPersistenceTaskArg(
+            cacheArgs.groups(),
+            cacheArgs.delete(),
+            cacheArgs.nodeId() != null ? Collections.singleton(cacheArgs.nodeId()) : null
+        );
+
+        VisorFindAndDeleteGarbargeInPersistenceTaskResult taskRes = executeTaskByNameOnNode(
+            client, FIND_AND_DELETE_GARBARGE_TASK, taskArg, null);
+
+        printErrors(taskRes.exceptions(), "Scanning for garbage failed on nodes:");
+
+        for (Map.Entry<UUID, VisorFindAndDeleteGarbargeInPersistenceJobResult> nodeEntry : taskRes.result().entrySet()) {
+            if (!nodeEntry.getValue().hasGarbarge())
+                continue;
+
+            log("Garbarge found on node " + nodeEntry.getKey() + ":");
+
+            VisorFindAndDeleteGarbargeInPersistenceJobResult value = nodeEntry.getValue();
+
+            Map<Integer, Map<Integer, Long>> grpPartErrorsCount = value.checkResult();
+
+            if (!grpPartErrorsCount.isEmpty()) {
+                for (Map.Entry<Integer, Map<Integer, Long>> entry : grpPartErrorsCount.entrySet()) {
+                    for (Map.Entry<Integer, Long> e : entry.getValue().entrySet()) {
+                        log(i("Group=" + entry.getKey() +
+                            ", partition=" + e.getKey() +
+                            ", count of keys=" + e.getValue()));
+                    }
+                }
+            }
+
+            nl();
+        }
+
+        nl();
+    }
+
+    private boolean printErrors(Map<UUID, Exception> exceptions, String s) {
+        if (!F.isEmpty(exceptions)) {
+            log(s);
+
+            for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
+                log(i("Node ID: " + e.getKey()));
+
+                log(i("Exception message:"));
+                log(i(e.getValue().getMessage(), 2));
+                nl();
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param client Client.
+     * @param cacheArgs Cache args.
+     */
     private void cacheValidateIndexes(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(
             cacheArgs.caches(),
@@ -898,21 +973,7 @@ public class CommandHandler {
         VisorValidateIndexesTaskResult taskRes = executeTaskByNameOnNode(
             client, VALIDATE_INDEXES_TASK, taskArg, null);
 
-        boolean errors = false;
-
-        if (!F.isEmpty(taskRes.exceptions())) {
-            errors = true;
-
-            log("Index validation failed on nodes:");
-
-            for (Map.Entry<UUID, Exception> e : taskRes.exceptions().entrySet()) {
-                log(i("Node ID: " + e.getKey()));
-
-                log(i("Exception message:"));
-                log(i(e.getValue().getMessage(), 2));
-                nl();
-            }
-        }
+        boolean errors = printErrors(taskRes.exceptions(), "Index validation failed on nodes:");
 
         for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
             if (!nodeEntry.getValue().hasIssues())
