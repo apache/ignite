@@ -122,9 +122,9 @@ public class CacheConfigurationSplitter {
      * @throws IllegalAccessException If failed.
      */
     private <T> CacheConfigurationEnrichment buildEnrichment(
-            Class<T> configClass,
-            T config,
-            T defaultConfig
+        Class<T> configClass,
+        T config,
+        T defaultConfig
     ) throws IllegalAccessException {
         Map<String, byte[]> enrichment = new HashMap<>();
         Map<String, String> fieldClassNames = new HashMap<>();
@@ -135,7 +135,7 @@ public class CacheConfigurationSplitter {
 
                 Object val = field.get(config);
 
-                byte[] serializedVal = serialize(val);
+                byte[] serializedVal = serialize(field.getName(), val);
 
                 enrichment.put(field.getName(), serializedVal);
 
@@ -152,14 +152,14 @@ public class CacheConfigurationSplitter {
     /**
      * @param val Value.
      */
-    private byte[] serialize(Object val) {
+    private byte[] serialize(String fieldName, Object val) {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
 
         try (ObjectOutputStream oos = new ObjectOutputStream(os)) {
             oos.writeObject(val);
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to serialize field", e);
+            throw new IgniteException("Failed to serialize field [fieldName=" + fieldName + ", value=" + val + ']', e);
         }
 
         return os.toByteArray();
