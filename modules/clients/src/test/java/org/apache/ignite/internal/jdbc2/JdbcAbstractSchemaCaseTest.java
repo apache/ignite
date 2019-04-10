@@ -202,7 +202,7 @@ public abstract class JdbcAbstractSchemaCaseTest extends GridCommonAbstractTest 
             ArrayList<String> schemasWithTab = new ArrayList<>();
 
             try (ResultSet tabs = stmt.executeQuery(
-                "SELECT SCHEMA_NAME, TABLE_NAME FROM IGNITE.TABLES " +
+                "SELECT SCHEMA_NAME, TABLE_NAME FROM SYS.TABLES " +
                     "WHERE TABLE_NAME = 'TAB' ORDER BY SCHEMA_NAME;")) {
                 while (tabs.next())
                     schemasWithTab.add(tabs.getString("SCHEMA_NAME"));
