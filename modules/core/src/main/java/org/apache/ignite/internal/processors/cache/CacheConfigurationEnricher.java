@@ -23,6 +23,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.SerializeSeparately;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -39,9 +40,12 @@ public class CacheConfigurationEnricher {
      */
     public static CacheConfiguration<?, ?> enrich(
         CacheConfiguration<?, ?> ccfg,
-        CacheConfigurationEnrichment enrichment,
+        @Nullable CacheConfigurationEnrichment enrichment,
         boolean affinityNode
     ) {
+        if (enrichment == null)
+            return ccfg;
+
         CacheConfiguration<?, ?> enrichedCp = new CacheConfiguration<>(ccfg);
 
         try {
