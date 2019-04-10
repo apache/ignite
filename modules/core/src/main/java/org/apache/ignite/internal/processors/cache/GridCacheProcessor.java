@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -3709,11 +3708,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public CacheConfiguration getConfigFromTemplate(String cacheName) throws IgniteCheckedException {
-        CacheConfiguration cfgTemplate = null;
+        DynamicCacheDescriptor cfgTemplate = null;
 
-        CacheConfiguration dfltCacheCfg = null;
+        DynamicCacheDescriptor dfltCacheCfg = null;
 
-        List<CacheConfiguration> wildcardNameCfgs = null;
+        List<DynamicCacheDescriptor> wildcardNameCfgs = null;
 
         for (DynamicCacheDescriptor desc : cachesInfo.registeredTemplates().values()) {
             assert desc.template();
@@ -3723,7 +3722,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             assert cfg != null;
 
             if (F.eq(cacheName, cfg.getName())) {
-                cfgTemplate = cfg;
+                cfgTemplate = desc;
 
                 break;
             }
@@ -3734,29 +3733,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         if (wildcardNameCfgs == null)
                             wildcardNameCfgs = new ArrayList<>();
 
-                        wildcardNameCfgs.add(cfg);
+                        wildcardNameCfgs.add(desc);
                     }
                     else
-                        dfltCacheCfg = cfg; // Template with name '*'.
+                        dfltCacheCfg = desc; // Template with name '*'.
                 }
             }
             else if (dfltCacheCfg == null)
-                dfltCacheCfg = cfg;
+                dfltCacheCfg = desc;
         }
 
         if (cfgTemplate == null && cacheName != null && wildcardNameCfgs != null) {
-            Collections.sort(wildcardNameCfgs, new Comparator<CacheConfiguration>() {
-                @Override public int compare(CacheConfiguration cfg1, CacheConfiguration cfg2) {
-                    Integer len1 = cfg1.getName() != null ? cfg1.getName().length() : 0;
-                    Integer len2 = cfg2.getName() != null ? cfg2.getName().length() : 0;
+            wildcardNameCfgs.sort((a, b) ->
+                Integer.compare(b.cacheConfiguration().getName().length(), a.cacheConfiguration().getName().length()));
 
-                    return len2.compareTo(len1);
-                }
-            });
+            for (DynamicCacheDescriptor desc : wildcardNameCfgs) {
+                String wildcardCacheName = desc.cacheConfiguration().getName();
 
-            for (CacheConfiguration cfg : wildcardNameCfgs) {
-                if (cacheName.startsWith(cfg.getName().substring(0, cfg.getName().length() - 1))) {
-                    cfgTemplate = cfg;
+                if (cacheName.startsWith(wildcardCacheName.substring(0, wildcardCacheName.length() - 1))) {
+                    cfgTemplate = desc;
 
                     break;
                 }
@@ -3769,9 +3764,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfgTemplate == null)
             return null;
 
-        cfgTemplate = cloneCheckSerializable(cfgTemplate);
+        // It's safe to enrich cache configuration here because we requested this cache from current node.
+        CacheConfiguration enrichedTemplate = CacheConfigurationEnricher.enrichFully(
+            cfgTemplate.cacheConfiguration(), cfgTemplate.cacheConfigurationEnrichment());
 
-        CacheConfiguration cfg = new CacheConfiguration(cfgTemplate);
+        enrichedTemplate = cloneCheckSerializable(enrichedTemplate);
+
+        CacheConfiguration cfg = new CacheConfiguration(enrichedTemplate);
 
         cfg.setName(cacheName);
 
