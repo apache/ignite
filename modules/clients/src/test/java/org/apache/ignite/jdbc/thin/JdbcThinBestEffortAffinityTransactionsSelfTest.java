@@ -39,7 +39,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class JdbcThinBestEffortAffinityTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /** */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?bestEffortAffinityEnabled=true";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true";
 
     /** Nodes count. */
     private static final int NODES_CNT = 3;

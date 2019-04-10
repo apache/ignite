@@ -407,14 +407,14 @@ public interface ConnectionProperties {
     public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled);
 
     /**
-     * @return {@code True} if jdbc thin best effort affinity is enabled for this connection,
+     * @return {@code True} if jdbc thin affinity awareness is enabled for this connection,
      * {@code false} if it's disabled.
      */
-    public boolean isBestEffortAffinityEnabled();
+    public boolean isAffinityAwareness();
 
     /**
-     * @param bestEffortAffinityEnabled {@code True} if jdbc thin best effort affinity is enabled
+     * @param affinityAwareness {@code True} if jdbc thin affinity awareness is enabled
      * for this connection, if {@code false} then it's disabled.
      */
-    public void setBestEffortAffinityEnabled(boolean bestEffortAffinityEnabled);
+    public void setAffinityAwareness(boolean affinityAwareness);
 }

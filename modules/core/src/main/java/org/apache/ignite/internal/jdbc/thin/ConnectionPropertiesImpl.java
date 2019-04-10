@@ -189,10 +189,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Whether data page scan for queries is allowed. If not specified, server defines the default behaviour.",
         null, false);
 
-    /** Best effort affinity flag. */
-    private BooleanProperty bestEffortAffinityEnabled = new BooleanProperty(
-        "bestEffortAffinityEnabled",
-        "Whether jdbc thin best effort affinity is enabled.",
+    /** affinity awareness flag. */
+    private BooleanProperty affinityAwareness = new BooleanProperty(
+        "affinityAwareness",
+        "Whether jdbc thin affinity awareness is enabled.",
         false, false);
 
     /** Properties array. */
@@ -205,7 +205,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslTrustAll, sslFactory,
         user, passwd,
         dataPageScanEnabled,
-        bestEffortAffinityEnabled
+        affinityAwareness
     };
 
     /** {@inheritDoc} */
@@ -512,13 +512,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isBestEffortAffinityEnabled() {
-        return bestEffortAffinityEnabled.value();
+    @Override public boolean isAffinityAwareness() {
+        return affinityAwareness.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setBestEffortAffinityEnabled(boolean bestEffortAffinityEnabled) {
-        this.bestEffortAffinityEnabled.setValue(bestEffortAffinityEnabled);
+    @Override public void setAffinityAwareness(boolean affinityAwareness) {
+        this.affinityAwareness.setValue(affinityAwareness);
     }
 
     /**

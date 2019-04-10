@@ -116,8 +116,8 @@ public class JdbcThinConnection implements Connection {
     /** Index generator. */
     private static final AtomicLong IDX_GEN = new AtomicLong();
 
-    /** Best effort affinity enabled flag. */
-    private final boolean bestEffortAffinity;
+    /** Affinity awareness enabled flag. */
+    private final boolean affinityAwareness;
 
     /** Statements modification mutex. */
     private final Object stmtsMux = new Object();
@@ -205,7 +205,7 @@ public class JdbcThinConnection implements Connection {
 
         timer = new Timer("query-timeout-timer");
 
-        bestEffortAffinity = connProps.isBestEffortAffinityEnabled();
+        affinityAwareness = connProps.isAffinityAwareness();
 
         ensureConnected();
     }
@@ -225,7 +225,7 @@ public class JdbcThinConnection implements Connection {
 
         HostAndPortRange[] srvs = connProps.getAddresses();
 
-        if (bestEffortAffinity)
+        if (affinityAwareness)
             connectInBestEffortAffinityMode(srvs);
         else
             connectInCommonMode(srvs);
@@ -459,7 +459,7 @@ public class JdbcThinConnection implements Connection {
 
         closed = true;
 
-        if (bestEffortAffinity) {
+        if (affinityAwareness) {
             for (JdbcThinTcpIo clioIo : ios.values())
                 clioIo.close();
 
@@ -794,7 +794,7 @@ public class JdbcThinConnection implements Connection {
 
         netTimeout = ms;
 
-        if (bestEffortAffinity) {
+        if (affinityAwareness) {
             for (JdbcThinTcpIo clioIo : ios.values())
                 clioIo.timeout(ms);
         }
@@ -936,7 +936,7 @@ public class JdbcThinConnection implements Connection {
      * @throws SQLException If Failed to calculate derived partitions.
      */
     @Nullable private List<UUID> calculateNodeIds(JdbcRequest req) throws IOException, SQLException {
-        if (!bestEffortAffinity || !(req instanceof JdbcQueryExecuteRequest))
+        if (!affinityAwareness || !(req instanceof JdbcQueryExecuteRequest))
             return null;
 
         JdbcQueryExecuteRequest qry = (JdbcQueryExecuteRequest)req;
@@ -1130,7 +1130,7 @@ public class JdbcThinConnection implements Connection {
         if (!connected)
             return;
 
-        if (bestEffortAffinity) {
+        if (affinityAwareness) {
             for (JdbcThinTcpIo clioIo : ios.values())
                 clioIo.close();
 
@@ -1397,7 +1397,7 @@ public class JdbcThinConnection implements Connection {
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
     private JdbcThinTcpIo cliIo(List<UUID> nodeIds) {
-        if (!bestEffortAffinity)
+        if (!affinityAwareness)
             return singleIo;
 
         if (txIo != null)
@@ -1672,7 +1672,7 @@ public class JdbcThinConnection implements Connection {
      * @param res Jdbc Response.
      */
     private void updateAffinityCache(JdbcQueryExecuteRequest qryReq, JdbcResponse res) {
-        if (bestEffortAffinity) {
+        if (affinityAwareness) {
             AffinityTopologyVersion resAffVer = res.affinityVersion();
 
             if (resAffVer != null && (affinityCache == null || affinityCache.version().compareTo(resAffVer) < 0))

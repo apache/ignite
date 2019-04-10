@@ -85,24 +85,24 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     private static final String LOCALHOST = "127.0.0.1";
 
     /** URL. */
-    private String url = bestEffortAffinity ?
+    private String url = affinityAwareness ?
         "jdbc:ignite:thin://127.0.0.1:10800..10802" :
         "jdbc:ignite:thin://127.0.0.1";
 
     /** URL with best effort affinity flag. */
     private String urlWithBestEffortAffinityFlag = url +
-        (bestEffortAffinity ?
-            "?bestEffortAffinityEnabled=true" :
-            "?bestEffortAffinityEnabled=false");
+        (affinityAwareness ?
+            "?affinityAwareness=true" :
+            "?affinityAwareness=false");
 
     /** URL with best effort affinity flag and semicolon as delimeter. */
     private String urlWithBestEffortAffinityFlagSemicolon = url +
-        (bestEffortAffinity ?
-            ";bestEffortAffinityEnabled=true" :
-            ";bestEffortAffinityEnabled=false");
+        (affinityAwareness ?
+            ";affinityAwareness=true" :
+            ";affinityAwareness=false");
 
     /** Nodes count. */
-    private int nodesCnt = bestEffortAffinity ? 4 : 2;
+    private int nodesCnt = affinityAwareness ? 4 : 2;
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
@@ -261,43 +261,44 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testSqlHints() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlag)) {
-            assertHints(conn, false, false, false, false, false, false, bestEffortAffinity);
+            assertHints(conn, false, false, false, false, false,
+                false, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlag + "&distributedJoins=true")) {
             assertHints(conn, true, false, false, false, false,
-                false, bestEffortAffinity);
+                false, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlag + "&enforceJoinOrder=true")) {
             assertHints(conn, false, true, false, false, false,
-                false, bestEffortAffinity);
+                false, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlag + "&collocated=true")) {
             assertHints(conn, false, false, true, false, false,
-                false, bestEffortAffinity);
+                false, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlag + "&replicatedOnly=true")) {
             assertHints(conn, false, false, false, true, false,
-                false, bestEffortAffinity);
+                false, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlag + "&lazy=true")) {
             assertHints(conn, false, false, false, false, true,
-                false, bestEffortAffinity);
+                false, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlag + "&skipReducerOnUpdate=true")) {
             assertHints(conn, false, false, false, false, false,
-                true, bestEffortAffinity);
+                true, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlag + "&distributedJoins=true&" +
             "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true&skipReducerOnUpdate=true")) {
             assertHints(conn, true, true, true, true, true,
-                true, bestEffortAffinity);
+                true, affinityAwareness);
         }
     }
 
@@ -310,38 +311,38 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testSqlHintsSemicolon() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlagSemicolon + ";distributedJoins=true")) {
             assertHints(conn, true, false, false, false, false,
-                false, bestEffortAffinity);
+                false, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlagSemicolon + ";enforceJoinOrder=true")) {
             assertHints(conn, false, true, false, false, false,
-                false, bestEffortAffinity);
+                false, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlagSemicolon + ";collocated=true")) {
             assertHints(conn, false, false, true, false, false,
-                false, bestEffortAffinity);
+                false, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlagSemicolon + ";replicatedOnly=true")) {
             assertHints(conn, false, false, false, true, false,
-                false, bestEffortAffinity);
+                false, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlagSemicolon + ";lazy=true")) {
             assertHints(conn, false, false, false, false, true,
-                false, bestEffortAffinity);
+                false, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlagSemicolon + ";skipReducerOnUpdate=true")) {
             assertHints(conn, false, false, false, false, false,
-                true, bestEffortAffinity);
+                true, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithBestEffortAffinityFlagSemicolon + ";distributedJoins=true;" +
             "enforceJoinOrder=true;collocated=true;replicatedOnly=true;lazy=true;skipReducerOnUpdate=true")) {
             assertHints(conn, true, true, true, true, true,
-                true, bestEffortAffinity);
+                true, affinityAwareness);
         }
     }
 
@@ -366,7 +367,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertEquals(replicatedOnly, io.connectionProperties().isReplicatedOnly());
             assertEquals(lazy, io.connectionProperties().isLazy());
             assertEquals(skipReducerOnUpdate, io.connectionProperties().isSkipReducerOnUpdate());
-            assertEquals(bestEffortAffinityEnabled, io.connectionProperties().isBestEffortAffinityEnabled());
+            assertEquals(bestEffortAffinityEnabled, io.connectionProperties().isAffinityAwareness());
         }
     }
 
@@ -587,7 +588,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     private static Collection<JdbcThinTcpIo> ios(Connection conn) throws Exception {
         JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
 
-        Collection<JdbcThinTcpIo> ios = bestEffortAffinity ? ((Map<UUID, JdbcThinTcpIo>)
+        Collection<JdbcThinTcpIo> ios = affinityAwareness ? ((Map<UUID, JdbcThinTcpIo>)
             GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "ios")).values() :
             Collections.singleton(GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "singleIo"));
 
@@ -2051,7 +2052,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         connProps.nestedTxMode("invalid");
 
-        connProps.setBestEffortAffinityEnabled(bestEffortAffinity);
+        connProps.setAffinityAwareness(affinityAwareness);
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @SuppressWarnings("ResultOfObjectAllocationIgnored")
@@ -2077,9 +2078,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
                 return null;
             }
-        }, SQLException.class, bestEffortAffinity ? "Failed to connect to server" : "Failed to SSL connect to server");
+        }, SQLException.class, affinityAwareness ? "Failed to connect to server" : "Failed to SSL connect to server");
 
-        if (bestEffortAffinity) {
+        if (affinityAwareness) {
             for (Throwable t: e.getSuppressed()) {
                 assertEquals(SQLException.class, t.getClass());
                 assertTrue(t.getMessage().contains("Failed to SSL connect to server"));

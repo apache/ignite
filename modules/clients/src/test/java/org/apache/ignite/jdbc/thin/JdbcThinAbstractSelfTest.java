@@ -43,7 +43,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
 
     /** Signals that tests should start in best effort affinity mode. */
-    public static boolean bestEffortAffinity;
+    public static boolean affinityAwareness;
 
     /**
      * @param r Runnable to check support.

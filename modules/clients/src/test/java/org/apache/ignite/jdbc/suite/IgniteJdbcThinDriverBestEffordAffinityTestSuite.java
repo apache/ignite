@@ -46,6 +46,6 @@ public class IgniteJdbcThinDriverBestEffordAffinityTestSuite {
      */
     @BeforeClass
     public static void setupBestEffortAffinity() {
-        GridTestUtils.setFieldValue(JdbcThinAbstractSelfTest.class, "bestEffortAffinity", true);
+        GridTestUtils.setFieldValue(JdbcThinAbstractSelfTest.class, "affinityAwareness", true);
     }
 }

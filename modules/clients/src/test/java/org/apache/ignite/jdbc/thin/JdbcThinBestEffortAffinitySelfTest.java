@@ -59,7 +59,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 @SuppressWarnings({"ThrowableNotThrown"})
 public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?bestEffortAffinityEnabled=true";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true";
 
     /** Nodes count. */
     private static final int NODES_CNT = 3;
@@ -407,14 +407,14 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
     }
 
     /**
-     * Check that client side best effort affinity optimizations are skipped if bestEffortAffinity is switched off.
+     * Check that client side best effort affinity optimizations are skipped if affinityAwareness is switched off.
      *
      * @throws Exception If failed.
      */
     @org.junit.Test
     public void testBestEffortAffinityIsSkippedIfItIsSwitchedOff() throws Exception {
         Connection conn = DriverManager.getConnection(
-            "jdbc:ignite:thin://127.0.0.1:10800..10802?bestEffortAffinityEnabled=false");
+            "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=false");
 
         Statement stmt = conn.createStatement();
 
