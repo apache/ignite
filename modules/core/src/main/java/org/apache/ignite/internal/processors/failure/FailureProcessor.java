@@ -131,8 +131,8 @@ public class FailureProcessor extends GridProcessorAdapter {
             reserveBuf = null;
 
         if (X.hasCause(failureCtx.error(), CorruptedPersistenceException.class))
-            log.error("An critical problem with persistence data structures has detected." +
-                " Please make backup for persistence storage and WAL files for further analysis." +
+            log.error("A critical problem with persistence data structures was detected." +
+                " Please make backup of persistence storage and WAL files for further analysis." +
                 " Persistence storage path: " + ctx.config().getDataStorageConfiguration().getStoragePath() +
                 " WAL path: " + ctx.config().getDataStorageConfiguration().getWalPath() +
                 " WAL archive path: " + ctx.config().getDataStorageConfiguration().getWalArchivePath());
