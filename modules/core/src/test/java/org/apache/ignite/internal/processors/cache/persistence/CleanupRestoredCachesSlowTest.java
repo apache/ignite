@@ -76,6 +76,7 @@ public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implem
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegate = asyncFileIOFactory.create(file, modes);
+
             return new SlowFileIO(delegate);
         }
     }
@@ -98,6 +99,7 @@ public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implem
          */
         @Override public void close() throws IOException {
             doSleep(100);
+
             super.close();
         }
     }
@@ -118,12 +120,14 @@ public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implem
         /** */
         MessageOrderLogListener(List<String> matchesList, boolean doAddDuplicates) {
             this.matchesList = matchesList;
+
             this.doAddDuplicates = doAddDuplicates;
         }
 
         /** {@inheritDoc} */
         @Override public boolean check() {
             List<String> list = new ArrayList<>(matchedMessages);
+
             return list.equals(matchesList);
         }
 
@@ -161,6 +165,7 @@ public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implem
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         ListeningTestLogger testLog =
             new ListeningTestLogger(false, super.getConfiguration(igniteInstanceName).getGridLogger());
+
         testLog.registerListener(logLsnr);
 
         return super.getConfiguration(igniteInstanceName)
