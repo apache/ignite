@@ -222,7 +222,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
         /// https://issues.apache.org/jira/browse/IGNITE-11690
         /// </summary>
         [Test]
-        public void TestMissingAssemblyResolutionWithPeerLoadingEnabled()
+        public void TestMissingAssemblyResolutionWithEnabledPeerLoadingFlag()
         {
             //we need to simulate two nodes that will be interacted with each other
             Ignition.Start(GetConfig());
@@ -236,7 +236,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
             });
             workerThread.Start();
 
-            bool isAssemblyResolved = workerThread.Join(TimeSpan.FromSeconds(5));
+            bool isAssemblyResolved = workerThread.Join(TimeSpan.FromSeconds(10));
             if (!isAssemblyResolved)
             {
                 //Ignite instances should be disposed in TearDown method

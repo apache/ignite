@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Deployment
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Reflection;
-    using System.Runtime.Remoting.Messaging;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
@@ -37,9 +36,6 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /** Assembly resolve handler. */
         private readonly ResolveEventHandler _handler;
 
-        /** DataSlot name to be examined during peer loading  */
-        private const string DisablePeerLoadingMark = "DisablePeerLoading";
-
         /// <summary>
         /// Initializes a new instance of the <see cref="PeerAssemblyResolver"/> class.
         /// </summary>
@@ -47,17 +43,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
         {
             Debug.Assert(ignite != null);
 
-            _handler = (sender, args) =>
-            {
-                object result = CallContext.LogicalGetData(DisablePeerLoadingMark);
-                if (result != null)
-                {
-                    //custom resolver is disabled, return null
-                    return null;
-                }
-             
-                return GetAssembly(ignite, args.Name, originNodeId);
-            };
+            _handler = (sender, args) => RemoteAssemblyLoadingBlock.IsActive ? null : GetAssembly(ignite, args.Name, originNodeId);
 
             // AssemblyResolve handler is called only when assembly can't be found via normal lookup,
             // so we won't end up loading assemblies that are already present.
@@ -226,33 +212,45 @@ namespace Apache.Ignite.Core.Impl.Deployment
         }
 
         /// <summary>
-        /// Sets the special thread marker indicating that there is no need in peer assembly loading handler
+        /// Special class that indicates that there is no need in remote assembly request
         /// </summary>
-        private sealed class DefaultAssemblyLoader : IDisposable
+        private sealed class RemoteAssemblyLoadingBlock : IDisposable
         {
+            /** Block status. */
+            [ThreadStatic]
+            private static bool _isActive;
+
+            /// <summary>
+            /// Gets the block status.
+            /// </summary>
+            public static bool IsActive
+            {
+                get { return _isActive; }
+            }
+
             /// <summary>
             /// Constructor.
             /// </summary>
-            public DefaultAssemblyLoader()
+            public RemoteAssemblyLoadingBlock()
             {
-                CallContext.LogicalSetData(DisablePeerLoadingMark, true);
+                _isActive = true;
             }
 
             /** <inheritdoc /> */
             public void Dispose()
             {
-                CallContext.FreeNamedDataSlot(DisablePeerLoadingMark);
+                _isActive = false;
             }
         }
 
         /// <summary>
         /// Disable remove assembly loading, default functionality will be used instead
-        /// This is useful to prevent cycled resolution, for sample consider <see cref="GetAssemblyFunc"/>
+        /// This is useful to prevent cycled resolution, for sample consider <see cref="GetAssemblyFunc" />
         /// </summary>
         /// <returns></returns>
         public static IDisposable Disable()
         {
-            return new DefaultAssemblyLoader();
+            return new RemoteAssemblyLoadingBlock();
         }
     }
 }
