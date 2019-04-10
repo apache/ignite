@@ -579,7 +579,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "Custom IndexingSpi cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
         }
 
-        if (cc.isWriteBehindEnabled()) {
+        if (cc.isWriteBehindEnabled() && ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cc.getName())) {
             if (cfgStore == null)
                 throw new IgniteCheckedException("Cannot enable write-behind (writer or store is not provided) " +
                     "for cache: " + U.maskName(cc.getName()));
