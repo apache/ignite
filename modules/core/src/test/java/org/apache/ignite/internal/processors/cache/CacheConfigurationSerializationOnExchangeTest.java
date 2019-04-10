@@ -232,9 +232,7 @@ public class CacheConfigurationSerializationOnExchangeTest extends GridCommonAbs
             if (CU.isUtilityCache(cacheDesc.cacheName()))
                 continue;
 
-            boolean affinityNode = CU.affinityNode(clusterNode, cacheDesc.cacheConfiguration().getNodeFilter())
-                // A cache can be started on node where it was configured in case of non-persistent mode.
-                || (!persistenceEnabled && cacheDesc.receivedFrom().equals(node.localNode().id()));
+            boolean affinityNode = CU.affinityNode(clusterNode, cacheDesc.cacheConfiguration().getNodeFilter());
 
             IgniteInternalCache cache = cacheProcessor.cache(cacheDesc.cacheName());
 

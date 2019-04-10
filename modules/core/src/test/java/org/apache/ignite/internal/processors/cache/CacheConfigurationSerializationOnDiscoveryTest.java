@@ -89,16 +89,20 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
      *
      */
     @Before
-    public void before() {
+    public void before() throws Exception {
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /**
      *
      */
     @After
-    public void after() {
+    public void after() throws Exception {
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /**
@@ -288,13 +292,11 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
             if (CU.isUtilityCache(cacheDesc.cacheName()))
                 continue;
 
-            boolean affinityNode = CU.affinityNode(clusterNode, cacheDesc.cacheConfiguration().getNodeFilter())
-                // A cache can be started on node where it was configured in case of non-persistent mode.
-                || (!persistenceEnabled && cacheDesc.receivedFrom().equals(node.localNode().id()));
+            boolean affinityNode = CU.affinityNode(clusterNode, cacheDesc.cacheConfiguration().getNodeFilter());
+
+            IgniteInternalCache cache = cacheProcessor.cache(cacheDesc.cacheName());
 
             if (affinityNode) {
-                IgniteInternalCache cache = cacheProcessor.cache(cacheDesc.cacheName());
-
                 Assert.assertTrue("Cache is not started " + cacheDesc.cacheName() + ", node " + node.name(), cache != null);
 
                 CacheConfiguration ccfg = cache.configuration();
@@ -302,9 +304,12 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
                 Assert.assertTrue("Cache store factory is null " + cacheDesc.cacheName() + ", node " + node.name(), ccfg.getCacheStoreFactory() != null);
             }
             else {
-                Assert.assertTrue("Cache is started " + cacheDesc.cacheName() + ", node " + node.name(), cacheProcessor.cache(cacheDesc.cacheName()) == null);
-                Assert.assertTrue("Cache configuration is enriched " + cacheDesc.cacheName() + ", node " + node.name(), !cacheDesc.isConfigurationEnriched());
-                Assert.assertTrue("Cache store factory is not null " + cacheDesc.cacheName() + ", node " + node.name(), cacheDesc.cacheConfiguration().getCacheStoreFactory() == null);
+                Assert.assertTrue("Cache is started " + cacheDesc.cacheName() + ", node " + node.name(), cache == null || !cache.context().affinityNode());
+
+                if (cache == null) {
+                    Assert.assertTrue("Cache configuration is enriched " + cacheDesc.cacheName() + ", node " + node.name(), !cacheDesc.isConfigurationEnriched());
+                    Assert.assertTrue("Cache store factory is not null " + cacheDesc.cacheName() + ", node " + node.name(), cacheDesc.cacheConfiguration().getCacheStoreFactory() == null);
+                }
             }
         }
     }

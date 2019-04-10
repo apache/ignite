@@ -58,7 +58,7 @@ public class CacheConfigurationEnricher {
                 }
 
             // Enrich near cache configuration as well.
-            if (enrichment.nearCacheConfigurationEnrichment() != null) {
+            if (enrichment.nearCacheConfigurationEnrichment() != null && ccfg.getNearConfiguration() != null) {
                 NearCacheConfiguration nearEnrichedCp = new NearCacheConfiguration(ccfg.getNearConfiguration());
 
                 for (Field field : NearCacheConfiguration.class.getDeclaredFields())
@@ -74,7 +74,7 @@ public class CacheConfigurationEnricher {
             }
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to enrich cache configuration " + ccfg.getName(), e);
+            throw new IgniteException("Failed to enrich cache configuration [cacheName=" + ccfg.getName() + "]", e);
         }
 
         return enrichedCp;

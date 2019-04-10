@@ -41,7 +41,7 @@ public class CacheConfigurationEnrichment implements Serializable {
     private final Map<String, String> fieldClassNames;
 
     /** Enrichment fields for {@link org.apache.ignite.configuration.NearCacheConfiguration}. */
-    private @Nullable CacheConfigurationEnrichment nearCacheCfgEnrichment;
+    private volatile @Nullable CacheConfigurationEnrichment nearCacheCfgEnrichment;
 
     /**
      * @param enrichFields Enrich fields.

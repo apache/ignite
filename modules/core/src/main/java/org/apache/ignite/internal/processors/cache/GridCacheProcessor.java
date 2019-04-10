@@ -595,11 +595,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "'writeBehindFlushSize' parameters to 0 for cache: " + U.maskName(cc.getName()));
         }
 
-        if (cc.isReadThrough() && cfgStore == null)
+        if (cc.isReadThrough() && cfgStore == null
+            && ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cc.getName()))
             throw new IgniteCheckedException("Cannot enable read-through (loader or store is not provided) " +
                 "for cache: " + U.maskName(cc.getName()));
 
-        if (cc.isWriteThrough() && cfgStore == null)
+        if (cc.isWriteThrough() && cfgStore == null
+            && ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cc.getName()))
             throw new IgniteCheckedException("Cannot enable write-through (writer or store is not provided) " +
                 "for cache: " + U.maskName(cc.getName()));
 
@@ -2322,8 +2324,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean disabledAfterStart,
         boolean clientCache
     ) throws IgniteCheckedException {
-        desc.enrich(desc.cacheConfiguration().getCacheMode() == LOCAL || isLocalAffinity(desc.cacheConfiguration()));
-
         GridCacheContext cacheCtx = prepareCacheContext(desc, reqNearCfg, exchTopVer, disabledAfterStart);
 
         if (cacheCtx.isRecoveryMode())
@@ -2356,7 +2356,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion exchTopVer,
         boolean disabledAfterStart
     ) throws IgniteCheckedException {
+        if (reqNearCfg != null) {
+            if (desc.cacheConfiguration().getNearConfiguration() == null)
+                desc.cacheConfiguration().setNearConfiguration(reqNearCfg);
+        }
+
         desc.enrich(desc.cacheConfiguration().getCacheMode() == LOCAL || isLocalAffinity(desc.cacheConfiguration()));
+
+        reqNearCfg = desc.cacheConfiguration().getNearConfiguration();
 
         CacheConfiguration startCfg = desc.cacheConfiguration();
 
