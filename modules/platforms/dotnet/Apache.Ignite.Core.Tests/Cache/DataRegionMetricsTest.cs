@@ -62,7 +62,20 @@ namespace Apache.Ignite.Core.Tests.Cache
             
             // Verify metrics.
             var metrics = ignite.GetDataRegionMetrics().OrderBy(x => x.Name).ToArray();
-            Assert.AreEqual(6, metrics.Length);  // three defined plus system, metastorage and TxLog.
+            var names = metrics.Select(x => x.Name).ToArray();
+
+            Assert.AreEqual(
+                new[]
+                {
+                    "metastoreMemPlc",
+                    RegionNoMetrics,
+                    RegionWithMetrics,
+                    RegionWithMetricsAndPersistence,
+                    "sysMemPlc",
+                    "TxLog"
+                },
+                names,
+                string.Join(", ", names));
 
             var emptyMetrics = metrics[1];
             Assert.AreEqual(RegionNoMetrics, emptyMetrics.Name);

@@ -15,35 +15,20 @@
  * limitations under the License.
  */
 
-import './style.scss';
-import template from './template.pug';
-import controller from './controller';
+package org.apache.ignite.transactions;
 
-export default {
-    template,
-    controller,
-    bindings: {
-        gridApi: '=?',
-        gridTreeView: '<?',
-        gridGrouping: '<?',
-        gridThin: '<?',
-        gridHeight: '<?',
-        tabName: '<?',
-        tableTitle: '<?',
-        maxRowsToShow: '<?',
-
-        // Input Events.
-        items: '<',
-        columnDefs: '<',
-        categories: '<?',
-        singleSelect: '<?',
-        oneWaySelection: '<?',
-        rowIdentityKey: '@?',
-        selectedRows: '<?',
-        selectedRowsId: '<?',
-
-        // Output events.
-        onSelectionChange: '&?',
-        onApiRegistered: '&?'
+/**
+ * Exception thrown whenever transaction concurrency level is not supported.
+ */
+public class TransactionUnsupportedConcurrencyException extends TransactionException {
+    /** */
+    private static final long serialVersionUID = 0L;
+    /**
+     * Creates new exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public TransactionUnsupportedConcurrencyException(String msg) {
+        super(msg);
     }
-};
+}
