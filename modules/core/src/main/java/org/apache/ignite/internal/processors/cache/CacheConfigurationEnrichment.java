@@ -48,8 +48,8 @@ public class CacheConfigurationEnrichment implements Serializable {
      * @param fieldClassNames Field class names.
      */
     public CacheConfigurationEnrichment(
-            Map<String, byte[]> enrichFields,
-            Map<String, String> fieldClassNames
+        Map<String, byte[]> enrichFields,
+        Map<String, String> fieldClassNames
     ) {
         this.enrichFields = enrichFields;
         this.fieldClassNames = fieldClassNames;
