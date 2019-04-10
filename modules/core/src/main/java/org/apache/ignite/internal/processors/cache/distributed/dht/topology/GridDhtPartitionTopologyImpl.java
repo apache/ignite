@@ -585,7 +585,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             assert !exchFut.context().mergeExchanges();
 
                             affVer = exchFut.initialVersion();
-                            affAssignment = grp.affinity().idealAssignment();
+                            affAssignment = grp.affinity().idealAssignmentRaw();
                         }
 
                         initPartitions(affVer, affAssignment, exchFut, updateSeq);
