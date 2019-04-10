@@ -23,7 +23,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
-import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -39,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  */
 class JdbcRequestHandlerWorker extends GridWorker {
     /** Requests queue.*/
-    private final LinkedBlockingQueue<T2<JdbcRequest, GridFutureAdapter<ClientListenerResponse>>> queue =
+    private final LinkedBlockingQueue<T2<JdbcRequest, GridFutureAdapter<JdbcResponse>>> queue =
         new LinkedBlockingQueue<>();
 
     /** Handler.*/
@@ -49,7 +48,7 @@ class JdbcRequestHandlerWorker extends GridWorker {
     private final GridKernalContext ctx;
 
     /** Response */
-    private static final ClientListenerResponse ERR_RESPONSE = new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
+    private static final JdbcResponse ERR_RESPONSE = new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
         "Connection closed.");
 
     /**
@@ -81,14 +80,12 @@ class JdbcRequestHandlerWorker extends GridWorker {
     @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
         try {
             while (!isCancelled()) {
-                T2<JdbcRequest, GridFutureAdapter<ClientListenerResponse>> req = queue.take();
+                T2<JdbcRequest, GridFutureAdapter<JdbcResponse>> req = queue.take();
 
-                GridFutureAdapter<ClientListenerResponse> fut = req.get2();
+                GridFutureAdapter<JdbcResponse> fut = req.get2();
 
                 try {
                     JdbcResponse res = hnd.doHandle(req.get1());
-
-                    res.activeTransaction(ctx.cache().context().tm().inUserTx());
 
                     fut.onDone(res);
                 }
@@ -107,7 +104,7 @@ class JdbcRequestHandlerWorker extends GridWorker {
             }
 
             // Drain the queue on stop.
-            T2<JdbcRequest, GridFutureAdapter<ClientListenerResponse>> req = queue.poll();
+            T2<JdbcRequest, GridFutureAdapter<JdbcResponse>> req = queue.poll();
 
             while (req != null) {
                 req.get2().onDone(ERR_RESPONSE);
@@ -122,8 +119,8 @@ class JdbcRequestHandlerWorker extends GridWorker {
      * @param req Request.
      * @return Future to track request processing.
      */
-    GridFutureAdapter<ClientListenerResponse> process(JdbcRequest req) {
-        GridFutureAdapter<ClientListenerResponse> fut = new GridFutureAdapter<>();
+    GridFutureAdapter<JdbcResponse> process(JdbcRequest req) {
+        GridFutureAdapter<JdbcResponse> fut = new GridFutureAdapter<>();
 
         queue.add(new T2<>(req, fut));
 
