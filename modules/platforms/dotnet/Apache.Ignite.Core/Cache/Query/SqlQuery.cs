@@ -27,6 +27,8 @@ namespace Apache.Ignite.Core.Cache.Query
     /// <summary>
     /// SQL Query.
     /// </summary>
+    [Obsolete("Use SqlFieldsQuery instead. For strongly-typed queries use Apache.Ignite.Linq. " +
+              "SqlQuery is a limited subset of SqlFieldsQuery.")]
     public class SqlQuery : QueryBase
     {
         /// <summary>

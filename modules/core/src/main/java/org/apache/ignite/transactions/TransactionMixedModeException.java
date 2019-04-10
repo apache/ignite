@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,33 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.transactions;
 
-import org.apache.ignite.cache.CacheMode;
-import org.junit.Test;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-
-/** */
-public class CacheMvccPartitionedSelectForUpdateQueryTest extends CacheMvccSelectForUpdateQueryAbstractTest {
-    /** {@inheritDoc} */
-    @Override public CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
+/**
+ *  Exception thrown whenever transaction spans over MVCC and non-MVCC caches.
+ */
+public class TransactionMixedModeException extends TransactionException {
+    /** */
+    private static final long serialVersionUID = 0L;
     /**
+     * Creates new exception with given error message.
      *
+     * @param msg Error message.
      */
-    @Test
-    public void testSelectForUpdateDistributedSegmented() throws Exception {
-        doTestSelectForUpdateDistributed("PersonSeg", false);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testSelectForUpdateLocalSegmented() throws Exception {
-        doTestSelectForUpdateLocal("PersonSeg", false);
+    public TransactionMixedModeException(String msg) {
+        super(msg);
     }
 }
