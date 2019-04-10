@@ -88,8 +88,6 @@ class JdbcRequestHandlerWorker extends GridWorker {
                 try {
                     JdbcResponse res = hnd.doHandle(req.get1());
 
-                    res.activeTransaction(ctx.cache().context().tm().inUserTx());
-
                     fut.onDone(res);
                 }
                 catch (Exception e) {
