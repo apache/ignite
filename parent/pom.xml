@@ -973,7 +973,7 @@
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
                                         <!-- H2 forked module. -->
-                                        <exclude>modules/h2/**</exclude>
+                                        <exclude>**/org/h2/**</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
