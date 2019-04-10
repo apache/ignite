@@ -50,7 +50,7 @@ class ClientCachePartitionsResponse extends ClientResponse {
 
     /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
-        super.encode(ctx, writer, affinityVer);
+        encode(ctx, writer, affinityVer);
 
         affinityVer.write(writer);
 

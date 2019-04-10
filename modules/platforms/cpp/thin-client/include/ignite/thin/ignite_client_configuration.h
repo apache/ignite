@@ -205,6 +205,12 @@ namespace ignite
             /**
              * Set Affinity Awareness.
              *
+             * Enable or disable feature that enables thin client to consider data affinity when making requests
+             * to the cluster. It means, thin client is going to connect to all available cluster servers listed by
+             * SetEndPoints() method and try to send request to a node which stores related data.
+             *
+             * Disabled by default.
+             *
              * @param enable Enable affinity awareness.
              */
             void SetAffinityAwareness(bool enable)
@@ -213,7 +219,9 @@ namespace ignite
             }
 
             /**
-             * Get Affinity Awareness.
+             * Get Affinity Awareness flag.
+             *
+             * @see SetAffinityAwareness() for details.
              *
              * @return @c true if affinity awareness is enabled and @c false otherwise.
              */
