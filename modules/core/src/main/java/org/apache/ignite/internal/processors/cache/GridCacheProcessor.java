@@ -2779,9 +2779,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         DataRegion dataRegion = sharedCtx.database().dataRegion(memPlcName);
 
-        boolean needToStart = (dataRegion != null) && (
-            cacheType != CacheType.USER || (sharedCtx.isLazyMemoryAllocation(dataRegion) &&
-                (!cacheObjCtx.kernalContext().clientNode() || cfg.getCacheMode() == LOCAL)));
+        boolean needToStart = (dataRegion != null)
+            && (cacheType != CacheType.USER
+                || (sharedCtx.isLazyMemoryAllocation(dataRegion)
+                    && (!cacheObjCtx.kernalContext().clientNode() || cfg.getCacheMode() == LOCAL)));
 
         if (needToStart)
             dataRegion.pageMemory().start();
