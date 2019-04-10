@@ -108,6 +108,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         public void async(Runnable runnable) {
             Thread asyncTask = new Thread(() -> {
                 readWriteLock.writeLock().lock();
+
                 try {
                     runnable.run();
                 }
@@ -115,6 +116,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     readWriteLock.writeLock().unlock();
                 }
             });
+
             asyncTask.start();
         }
 
@@ -1151,13 +1153,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
                     CacheStoreHolder holder0 = null;
 
-                    if (gDesc != null) {
-                        if (CU.isPersistentCache(gDesc.config(), cctx.gridConfig().getDataStorageConfiguration())) {
-                            try {
-                                holder0 = initForCache(gDesc, gDesc.config());
-                            } catch (IgniteCheckedException e) {
-                                throw new IgniteException(e);
-                            }
+                    if (gDesc != null && CU.isPersistentCache(gDesc.config(), cctx.gridConfig().getDataStorageConfiguration())) {
+                        try {
+                            holder0 = initForCache(gDesc, gDesc.config());
+                        } catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
                         }
                     }
 

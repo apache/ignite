@@ -200,7 +200,7 @@ public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implem
      * @throws Exception if failed.
      */
     @Test
-    public void cleanupSlowTest() throws Exception {
+    public void testCleanupSlow() throws Exception {
         Ignite ignite = startGrids(2);
 
         ClusterNode cn0 = grid(0).cluster().localNode();
@@ -231,7 +231,7 @@ public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implem
      * @throws Throwable if failed.
      */
     @Test
-    public void longOperationAsyncExecutorTest() throws Throwable {
+    public void testLongOperationAsyncExecutor() throws Throwable {
         FilePageStoreManagerChild.LongOperationAsyncExecutorChild executor =
             new FilePageStoreManagerChild.LongOperationAsyncExecutorChild();
 
