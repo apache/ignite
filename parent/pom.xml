@@ -974,6 +974,8 @@
                                         <exclude>packaging/**</exclude>
                                         <!-- H2 forked module. -->
                                         <exclude>**/org/h2/**</exclude>
+                                        <exclude>src/test/tools/WEB-INF/console.html</exclude>
+                                        <exclude>src/test/tools/WEB-INF/web.xml</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
