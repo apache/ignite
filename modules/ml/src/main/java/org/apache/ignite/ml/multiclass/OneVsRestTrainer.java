@@ -82,6 +82,8 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
                     return 0.0;
             };
 
+
+
             FeatureLabelExtractorWrapper<K, V, Integer, Double> vectorizer = FeatureLabelExtractorWrapper.wrap(featureExtractor, lbTransformer);
             M mdl = Optional.ofNullable(newMdl)
                 .flatMap(multiClassModel -> multiClassModel.getModel(clsLb))

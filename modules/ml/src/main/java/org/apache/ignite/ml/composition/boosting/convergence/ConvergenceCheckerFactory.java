@@ -48,7 +48,7 @@ public abstract class ConvergenceCheckerFactory {
      * @param vectorizer Upstream vectorizer.
      * @return ConvergenceCheckerFactory instance.
      */
-    public abstract <K, V> ConvergenceChecker<K, V, C> create(long sampleSize,
+    public abstract <K, V> ConvergenceChecker<K, V> create(long sampleSize,
                                                               IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
                                                               DatasetBuilder<K, V> datasetBuilder,
                                                               Preprocessor<K, V> vectorizer);

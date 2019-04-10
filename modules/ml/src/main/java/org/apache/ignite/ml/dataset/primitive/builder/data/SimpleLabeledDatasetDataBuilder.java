@@ -34,7 +34,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> type of a partition <tt>context</tt>.
  */
-public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable, CO extends Serializable>
+public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
     implements PartitionDataBuilder<K, V, C, SimpleLabeledDatasetData> {
     /** */
     private static final long serialVersionUID = 3678784980215216039L;

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -121,7 +122,7 @@ public class GDBLearningStrategy {
             if (convCheck.isConverged(envBuilder, datasetBuilder, currComposition))
                 break;
 
-            Vectorizer<K, V, C, Double> extractor = new Vectorizer.VectorizerAdapter<K, V, C, Double>() {
+            Vectorizer<K, V, Serializable, Double> extractor = new Vectorizer.VectorizerAdapter<K, V, Serializable, Double>() {
                 /** {@inheritDoc} */
                 @Override public LabeledVector<Double> extract(K k, V v) {
                     LabeledVector<Double> labeledVector = preprocessor.apply(k, v);
