@@ -331,6 +331,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public void markAsRebuildNeeded(GridCacheContext cctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts) {
             return null;
         }

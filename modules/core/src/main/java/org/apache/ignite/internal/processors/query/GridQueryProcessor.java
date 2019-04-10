@@ -1756,6 +1756,40 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Mark that for given cache index should/would be rebuilt.
+     *
+     * @param cctx Cache context.
+     */
+    public void markAsRebuildNeeded(GridCacheContext cctx) {
+        if (rebuildIsMeaningless(cctx))
+            return;
+
+        idx.markAsRebuildNeeded(cctx);
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @return True if index rebuild is meaningless (index module is disabled, local node is not an affinity
+     *      node fro this cache or queries are not enabled for the cache).
+     */
+    @SuppressWarnings("RedundantIfStatement")
+    private boolean rebuildIsMeaningless(GridCacheContext cctx) {
+        // Indexing module is disabled, nothing to rebuild.
+        if (idx == null)
+            return true;
+
+        // No data on non-affinity nodes.
+        if (!cctx.affinityNode())
+            return true;
+
+        // No indexes to rebuild when there are no QueryEntities.
+        if (!cctx.isQueryEnabled())
+            return true;
+
+        return false;
+    }
+
+    /**
      * Rebuilds indexes for provided caches from corresponding hash indexes.
      *
      * @param cctx Cache context.
@@ -1763,15 +1797,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
         // Indexing module is disabled, nothing to rebuild.
-        if (idx == null)
-            return null;
-
-        // No data on non-affinity nodes.
-        if (!cctx.affinityNode())
-            return null;
-
-        // No indexes to rebuild when there are no QueryEntities.
-        if (!cctx.isQueryEnabled())
+        if (rebuildIsMeaningless(cctx))
             return null;
 
         // No need to rebuild if cache has no data.
