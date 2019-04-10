@@ -80,16 +80,19 @@ public class DeadLockOnNodeLeftExchangeTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = ExchangeContext.IGNITE_EXCHANGE_COMPATIBILITY_VER_1, value = "true")
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void test() throws Exception {
-        startGrids(4);
+        startGrids(2);
 
         IgniteClusterEx cluster = grid(0).cluster();
 
         cluster.active(true);
 
-        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(3));
+        // Start not-baseline servers for distributed exchange on their leaving.
+        startGridsMultiThreaded(2, 2);
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
         spi.blockMessages(GridDhtPartitionsSingleMessage.class, getTestIgniteInstanceName(0));
 
-        stopGrid(1);
+        stopGrid(2);
 
         spi.waitForBlocked();
 
@@ -102,7 +105,7 @@ public class DeadLockOnNodeLeftExchangeTest extends GridCommonAbstractTest {
             5_000L
         ));
 
-        stopGrid(2);
+        stopGrid(3);
 
         spi.stopBlock();
 
