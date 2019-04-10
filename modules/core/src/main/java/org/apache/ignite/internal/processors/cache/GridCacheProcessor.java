@@ -2358,7 +2358,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean disabledAfterStart
     ) throws IgniteCheckedException {
         if (reqNearCfg != null) {
-            if (desc.cacheConfiguration().getNearConfiguration() == null)
+            if (desc.cacheConfiguration().getNearConfiguration() == null
+                && desc.cacheConfiguration().getCacheMode() != REPLICATED)
                 desc.cacheConfiguration().setNearConfiguration(reqNearCfg);
         }
 
