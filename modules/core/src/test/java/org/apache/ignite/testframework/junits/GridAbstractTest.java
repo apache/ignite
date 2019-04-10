@@ -183,7 +183,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     @ClassRule public static final TestRule firstLastTestRule = new BeforeFirstAndAfterLastTestRule();
 
     /** Manages test execution and reporting. */
-    protected transient TestRule runRule = (base, desc) -> new Statement() {
+    private transient TestRule runRule = (base, desc) -> new Statement() {
         @Override public void evaluate() throws Throwable {
             assert getName() != null : "getName returned null";
 
