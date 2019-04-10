@@ -100,9 +100,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private static final String METASTORE_CURR_BLT_KEY = "metastoreBltKey";
 
     /** */
-    private static final String METASTORE_READ_ONLY_MODE_KEY = "metastoreReadOnlyModeKey";
-
-    /** */
     private boolean inMemoryMode;
 
     /**
@@ -252,8 +249,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
         BaselineTopology blt = (BaselineTopology) metastorage.read(METASTORE_CURR_BLT_KEY);
 
-        Boolean readOnly = (Boolean)metastorage.read(METASTORE_READ_ONLY_MODE_KEY);
-
         if (blt != null) {
             if (log.isInfoEnabled())
                 U.log(log, "Restoring history for BaselineTopology[id=" + blt.id() + "]");
@@ -261,14 +256,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             bltHist.restoreHistory(metastorage, blt.id());
         }
 
-        onStateRestored(blt, readOnly != null && readOnly);
+        onStateRestored(blt);
     }
 
     /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
         this.metastorage = metastorage;
-
-        writeReadOnlyMode(globalState.readOnly());
 
         if (compatibilityMode) {
             if (log.isInfoEnabled())
@@ -295,25 +288,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             U.log(log,
                 String.format("Branching history of current BaselineTopology is reset to the value %d", newBranchingHash));
-        }
-    }
-
-    /**
-     * Save to metastore new read only mode.
-     *
-     * @param readOnly Read only mode.
-     * @throws IgniteCheckedException If write failed.
-     */
-    private void writeReadOnlyMode(boolean readOnly) throws IgniteCheckedException {
-        if(CU.isPersistenceEnabled(ctx.config()) && !ctx.config().isClientMode()) {
-            sharedCtx.database().checkpointReadLock();
-
-            try {
-                metastorage.write(METASTORE_READ_ONLY_MODE_KEY, readOnly);
-            }
-            finally {
-                sharedCtx.database().checkpointReadUnlock();
-            }
         }
     }
 
@@ -362,7 +336,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         // Start first node as inactive if persistence is enabled.
         boolean activeOnStart = inMemoryMode && ctx.config().isActiveOnStart();
 
-        globalState = DiscoveryDataClusterState.createState(activeOnStart, false, 0, null);
+        globalState = DiscoveryDataClusterState.createState(activeOnStart, false, null);
 
         ctx.event().addLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
@@ -484,13 +458,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     ctx.cache().context().readOnlyMode(globalState.readOnly());
 
                     log.info("Read-only mode was changed! Was enabled: " + prev + ", now enabled: " + globalState.readOnly());
-
-                    try {
-                        writeReadOnlyMode(globalState.readOnly());
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Update read-only mode flag failed!", e);
-                    }
                 }
             }
 
@@ -529,7 +496,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 log,
                 "Received " + prettyStr(msg.activate()) + " request with BaselineTopology" +
                     (msg.baselineTopology() == null ? ": null" : "[id=" + msg.baselineTopology().id() + "]") +
-                    "readOnly=" + msg.readOnly()
+                    " readOnly=" + msg.readOnly()
             );
 
         if (msg.baselineTopology() != null)
@@ -665,7 +632,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         return DiscoveryDataClusterState.createState(
             stateMsg.activate() || stateMsg.forceChangeBaselineTopology(),
             stateMsg.readOnly(),
-            stateMsg.readOnlyVersion(),
             stateMsg.baselineTopology()
         );
     }
@@ -898,7 +864,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean isAutoAdjust
     ) {
         if (inMemoryMode)
-            return changeGlobalState0(activate, readOnly,null, false, isAutoAdjust);
+            return changeGlobalState0(activate, readOnly, null, false, isAutoAdjust);
 
         BaselineTopology newBlt = (compatibilityMode && !forceChangeBaselineTopology) ? null :
             calculateNewBaselineTopology(activate, baselineNodes, forceChangeBaselineTopology);
@@ -1465,11 +1431,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** */
-    private void onStateRestored(BaselineTopology blt, boolean readOnly) {
+    private void onStateRestored(BaselineTopology blt) {
         DiscoveryDataClusterState state = globalState;
 
         if (!state.active() && !state.transition() && state.baselineTopology() == null) {
-            DiscoveryDataClusterState newState = DiscoveryDataClusterState.createState(false, readOnly, blt);
+            DiscoveryDataClusterState newState = DiscoveryDataClusterState.createState(false, false, blt);
 
             globalState = newState;
         }

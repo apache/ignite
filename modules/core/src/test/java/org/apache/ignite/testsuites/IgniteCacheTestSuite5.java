@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.CacheRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeSelfTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTest;
-import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.ClusterStatePartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.ClusterStateReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.ConcurrentCacheStartTest;
@@ -93,7 +92,6 @@ public class IgniteCacheTestSuite5 {
         GridTestUtils.addTestIfNeeded(suite, ClusterStatePartitionedSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ClusterStateReplicatedSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ClusterReadOnlyModeTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, ClusterReadOnlyModeWithPersistenceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ClusterReadOnlyModeSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCachePartitionLossPolicySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheGroupsPartitionLossPolicySelfTest.class, ignoredTests);
