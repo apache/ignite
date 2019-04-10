@@ -138,6 +138,7 @@ import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
 
 import static java.lang.Boolean.TRUE;
+import static java.lang.String.format;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
@@ -847,7 +848,7 @@ public class CommandHandler {
         usageCache(LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
         usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
-            op(or(g(EXCLUDE_CACHES, CACHES), g(CACHE_FILTER, or(CacheFilterEnum.values())), CACHES)));
+            op(EXCLUDE_CACHES, CACHES), op(CACHE_FILTER, or(CacheFilterEnum.values())), op(CACHES));
         usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or(NODE_ID, NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, CACHES);
@@ -1658,7 +1659,11 @@ public class CommandHandler {
                 return "Show the keys that are point of contention for multiple transactions.";
 
             case IDLE_VERIFY:
-                return "Verify counters and hash sums of primary and backup partitions for the specified caches on an idle cluster and print out the differences, if any.";
+                return "Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. " +
+                    "Cache filtering options configure the set of caches that will be processed by " + IDLE_VERIFY + " command. " +
+                    "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
+                    "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently filtered by cache name " +
+                    "regexps, by cache type and after all by exclude regexps.";
 
             case VALIDATE_INDEXES:
                 return "Validate indexes on an idle cluster and print out the keys that are missing in the indexes.";
@@ -1954,7 +1959,7 @@ public class CommandHandler {
                     case CMD_PASSWORD:
                         pwd = nextArg("Expected password");
 
-                        log(String.format(pwdArgWarnFmt, CMD_PASSWORD, CMD_PASSWORD));
+                        log(format(pwdArgWarnFmt, CMD_PASSWORD, CMD_PASSWORD));
 
                         break;
 
@@ -1981,7 +1986,7 @@ public class CommandHandler {
                     case CMD_KEYSTORE_PASSWORD:
                         sslKeyStorePassword = nextArg("Expected SSL key store password").toCharArray();
 
-                        log(String.format(pwdArgWarnFmt, CMD_KEYSTORE_PASSWORD, CMD_KEYSTORE_PASSWORD));
+                        log(format(pwdArgWarnFmt, CMD_KEYSTORE_PASSWORD, CMD_KEYSTORE_PASSWORD));
 
                         break;
 
@@ -1998,7 +2003,7 @@ public class CommandHandler {
                     case CMD_TRUSTSTORE_PASSWORD:
                         sslTrustStorePassword = nextArg("Expected SSL trust store password").toCharArray();
 
-                        log(String.format(pwdArgWarnFmt, CMD_TRUSTSTORE_PASSWORD, CMD_TRUSTSTORE_PASSWORD));
+                        log(format(pwdArgWarnFmt, CMD_TRUSTSTORE_PASSWORD, CMD_TRUSTSTORE_PASSWORD));
 
                         break;
 
@@ -2115,19 +2120,15 @@ public class CommandHandler {
                 break;
 
             case IDLE_VERIFY:
-                int idleVerifyArgsCnt = 3;
+                int idleVerifyArgsCnt = 5;
 
                 while (hasNextSubArg() && idleVerifyArgsCnt-- > 0) {
                     String nextArg = nextArg("");
 
                     IdleVerifyCommandArg arg = CommandArgUtils.of(nextArg, IdleVerifyCommandArg.class);
 
-                    if (arg == null) {
-                        if (cacheArgs.excludeCaches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
-                            throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
-
+                    if (arg == null)
                         parseCacheNames(nextArg, cacheArgs);
-                    }
                     else {
                         switch (arg) {
                             case DUMP:
@@ -2146,9 +2147,6 @@ public class CommandHandler {
                                 break;
 
                             case CACHE_FILTER:
-                                if (cacheArgs.caches() != null || cacheArgs.excludeCaches() != null)
-                                    throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
-
                                 String filter = nextArg("The cache filter should be specified. The following " +
                                     "values can be used: " + Arrays.toString(CacheFilterEnum.values()) + '.');
 
@@ -2157,9 +2155,6 @@ public class CommandHandler {
                                 break;
 
                             case EXCLUDE_CACHES:
-                                if (cacheArgs.caches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
-                                    throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
-
                                 parseExcludeCacheNames(nextArg("Specify caches, which will be excluded."),
                                     cacheArgs);
 
@@ -2356,6 +2351,13 @@ public class CommandHandler {
         for (String cacheName : cacheNamesArr) {
             if (F.isEmpty(cacheName))
                 throw new IllegalArgumentException("Non-empty cache names expected.");
+
+            try {
+                Pattern.compile(cacheName);
+            }
+            catch (PatternSyntaxException e) {
+                throw new RuntimeException(format("Invalid cache name regexp '%s': %s", cacheName, e.getMessage()));
+            }
 
             cacheNamesSet.add(cacheName.trim());
         }
