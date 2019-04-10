@@ -78,7 +78,7 @@ namespace Apache.Ignite.Examples.Datagrid
                             Fields = new[]
                             {
                                 new QueryField(NameField, typeof(string)),
-                                new QueryField(CompanyIdField, typeof(int))
+                                new QueryField(CompanyIdField, typeof(int)),
                             },
                             Indexes = new[]
                             {
@@ -117,9 +117,6 @@ namespace Apache.Ignite.Examples.Datagrid
                 // Run SQL query with join example.
                 SqlJoinQueryExample(cache);
 
-                // Run SQL fields query example.
-                SqlFieldsQueryExample(cache);
-
                 // Run full text query example.
                 FullTextQueryExample(cache);
 
@@ -153,18 +150,18 @@ namespace Apache.Ignite.Examples.Datagrid
         }
 
         /// <summary>
-        /// Queries persons that have a specific name using SQL.
+        /// Queries names for all persons.
         /// </summary>
         /// <param name="cache">Cache.</param>
         private static void SqlQueryExample(ICache<int, IBinaryObject> cache)
         {
-            var qry = cache.Query(new SqlQuery(PersonType, "name like 'James%'"));
+            var qry = cache.Query(new SqlFieldsQuery("select name from Person order by name"));
 
             Console.WriteLine();
-            Console.WriteLine(">>> Persons named James:");
+            Console.WriteLine(">>> All person names:");
 
-            foreach (var entry in qry)
-                Console.WriteLine(">>>    " + entry.Value);
+            foreach (var row in qry)
+                Console.WriteLine(">>>     " + row[0]);
         }
 
         /// <summary>
@@ -175,9 +172,9 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             const string orgName = "Apache";
 
-            var qry = cache.Query(new SqlQuery(PersonType,
-                "from Person, Company " +
-                "where Person.CompanyId = Company.Id and Company.Name = ?", orgName)
+            var qry = cache.Query(new SqlFieldsQuery(
+                "select pers.Name from Person as pers, Company as comp where pers.CompanyId = comp.Id and comp.Name = ?",
+                orgName)
             {
                 EnableDistributedJoins = true,
                 Timeout = new TimeSpan(0, 1, 0)
@@ -187,22 +184,7 @@ namespace Apache.Ignite.Examples.Datagrid
             Console.WriteLine(">>> Persons working for " + orgName + ":");
 
             foreach (var entry in qry)
-                Console.WriteLine(">>>     " + entry.Value);
-        }
-
-        /// <summary>
-        /// Queries names for all persons.
-        /// </summary>
-        /// <param name="cache">Cache.</param>
-        private static void SqlFieldsQueryExample(ICache<int, IBinaryObject> cache)
-        {
-            var qry = cache.Query(new SqlFieldsQuery("select name from Person order by name"));
-
-            Console.WriteLine();
-            Console.WriteLine(">>> All person names:");
-
-            foreach (var row in qry)
-                Console.WriteLine(">>>     " + row[0]);
+                Console.WriteLine(">>>     " + entry[0]);
         }
 
         /// <summary>

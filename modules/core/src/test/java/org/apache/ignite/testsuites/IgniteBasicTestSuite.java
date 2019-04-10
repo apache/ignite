@@ -43,6 +43,7 @@ import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.processors.DeadLockOnNodeLeftExchangeTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
@@ -65,7 +66,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionInteg
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureSerializationTest;
-import org.apache.ignite.internal.processors.cluster.BaselineConfigurationMXBeanTest;
+import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanTest;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationInMemoryTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
@@ -219,7 +220,7 @@ import org.junit.runners.Suite;
     DistributedMetaStorageTest.class,
     DistributedMetaStorageHistoryCacheTest.class,
     DistributedConfigurationInMemoryTest.class,
-    BaselineConfigurationMXBeanTest.class,
+    BaselineAutoAdjustMXBeanTest.class,
 
     ConsistentIdImplicitlyExplicitlyTest.class,
 
@@ -228,6 +229,8 @@ import org.junit.runners.Suite;
         VariationsIteratorTest.class,
         NotStringSystemPropertyTest.class,
         ConfigVariationsTestSuiteBuilderTest.class,
+
+    DeadLockOnNodeLeftExchangeTest.class,
 })
 public class IgniteBasicTestSuite {
 }
