@@ -39,7 +39,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class JdbcThinBestEffortAffinityTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /** */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?bestEffortAffinityEnabled=true";
 
     /** Nodes count. */
     private static final int NODES_CNT = 3;
@@ -129,7 +129,7 @@ public class JdbcThinBestEffortAffinityTransactionsSelfTest extends JdbcThinAbst
      * @throws SQLException if failed.
      */
     private static Connection prepareConnection(boolean autoCommit, NestedTxMode nestedTxMode) throws SQLException {
-        Connection res = DriverManager.getConnection(URL + "?nestedTransactionsMode=" + nestedTxMode.name());
+        Connection res = DriverManager.getConnection(URL + "&nestedTransactionsMode=" + nestedTxMode.name());
 
         res.setAutoCommit(autoCommit);
 
