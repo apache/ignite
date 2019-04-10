@@ -335,8 +335,8 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getCurrentPmeTime() {
-        return node.metrics().getCurrentPmeTime();
+    @Override public long getCurrentPmeDuration() {
+        return node.metrics().getCurrentPmeDuration();
     }
 
     /** {@inheritDoc} */

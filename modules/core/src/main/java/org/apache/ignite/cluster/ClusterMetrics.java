@@ -696,9 +696,9 @@ public interface ClusterMetrics {
     public int getTotalNodes();
 
     /**
-     * Gets execution time for current partition map exchange.
+     * Gets execution duration for current partition map exchange in milliseconds.
      *
-     * @return Gets execution time for current partition map exchange. {@code 0} if there is no running PME.
+     * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} if there is no running PME.
      */
-    public long getCurrentPmeTime();
+    public long getCurrentPmeDuration();
 }
