@@ -67,7 +67,7 @@ public class CacheConfigurationEnrichment implements Serializable {
             return is.readObject();
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to deserialize field " + fieldName);
+            throw new IgniteException("Failed to deserialize field " + fieldName, e);
         }
     }
 
