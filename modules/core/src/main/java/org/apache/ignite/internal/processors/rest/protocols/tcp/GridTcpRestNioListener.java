@@ -401,6 +401,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 restChangeReq.readOnly(req.readOnly());
                 restChangeReq.command(req.readOnly() ? CLUSTER_READ_ONLY_ENABLE : CLUSTER_READ_ONLY_DISABLE);
             }
+
+            restReq = restChangeReq;
         }
 
         if (restReq != null) {
