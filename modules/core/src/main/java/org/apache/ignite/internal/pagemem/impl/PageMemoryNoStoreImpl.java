@@ -102,7 +102,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      * Need a 8-byte pointer for linked list, 8 bytes for internal needs (flags),
      * 4 bytes cache ID, 8 bytes timestamp.
      */
-    public static final int PAGE_OVERHEAD = LOCK_OFFSET + OffheapReadWriteLock.LOCK_SIZE;
+    public static final int PAGE_OVERHEAD = LOCK_OFFSET + OffheapReadWriteLock.LOCK_SIZE + 8;
 
     /** Number of bits required to store segment index. */
     private static final int SEG_BITS = 4;
@@ -197,7 +197,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         this.dataRegionCfg = dataRegionCfg;
         this.ctx = sharedCtx;
 
-        sysPageSize = pageSize + PAGE_OVERHEAD;
+        sysPageSize = pageSize;
 
         assert sysPageSize % 8 == 0 : sysPageSize;
 
@@ -719,6 +719,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         /** Base address for all pages. */
         private long pagesBase;
 
+        /** Base address for all headers. */
+        private long headerBase;
+
         /** */
         private int pagesInPrevSegments;
 
@@ -749,16 +752,33 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             lastAllocatedIdxPtr = base;
 
-            base += 8;
+            base += sysPageSize;
 
-            // Align by 8 bytes.
-            pagesBase = (base + 7) & ~0x7;
+            pagesBase = base;
+
+            assert pagesBase % sysPageSize == 0;
 
             GridUnsafe.putLong(lastAllocatedIdxPtr, 0);
 
             long limit = region.address() + region.size();
 
-            maxPages = (int)((limit - pagesBase) / sysPageSize);
+            assert limit % sysPageSize == 0;
+
+            long delta = limit - pagesBase;
+
+            assert delta % sysPageSize == 0;
+
+            maxPages = (int)(delta / (sysPageSize + PAGE_OVERHEAD));
+
+            headerBase = pagesBase + (sysPageSize * maxPages);
+
+            assert headerBase % sysPageSize == 0;
+        }
+
+        private long header(long abs) {
+            long headerIdx = (abs - pagesBase) / sysPageSize;
+
+            return headerBase + (PAGE_OVERHEAD * headerIdx);
         }
 
         /**
@@ -846,7 +866,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
                     GridUnsafe.putLong(absPtr, PAGE_MARKER);
 
-                    rwLock.init(absPtr + LOCK_OFFSET, tag);
+                    rwLock.init(header(absPtr) + LOCK_OFFSET, tag);
 
                     allocatedPages.incrementAndGet();
 

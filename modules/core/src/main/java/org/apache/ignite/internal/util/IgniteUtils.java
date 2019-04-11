@@ -11337,4 +11337,13 @@ public abstract class IgniteUtils {
     public static boolean isFlagSet(int flags, int flag) {
         return (flags & flag) == flag;
     }
+
+    /**
+     * System page size.
+     *
+     * @return System page size.
+     */
+    public static int sysPageSize(){
+        return 4096;
+    }
 }
