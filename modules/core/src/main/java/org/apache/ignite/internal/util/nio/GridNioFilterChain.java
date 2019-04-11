@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util.nio;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.lang.IgniteInClosure;
 
@@ -234,11 +233,6 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      */
     @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
         return tail.onResumeReads(ses);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onChannelClose(IgniteSocketChannel channel) throws IgniteCheckedException {
-        tail.onChannelClose(channel);
     }
 
     /**

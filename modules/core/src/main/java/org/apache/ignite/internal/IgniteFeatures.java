@@ -45,8 +45,11 @@ public enum IgniteFeatures {
     /** Support of different rebalance size for nodes.  */
     DIFFERENT_REBALANCE_POOL_SIZE(4),
 
+    /** The node can communicate with other via socket channel. */
+    CHANNEL_COMMUNICATION(5),
+
     /** */
-    CACHE_PARTITION_FILE_REBALANCE(5);
+    CACHE_PARTITION_FILE_REBALANCE(6);
     /**
      * Unique feature identifier.
      */

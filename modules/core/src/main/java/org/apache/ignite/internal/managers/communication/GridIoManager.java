@@ -77,7 +77,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -95,9 +94,11 @@ import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.Channel;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.channel.IgniteSocketChannel;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -141,6 +142,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
 
+    /** Channel listeners by topic. */
+    private final ConcurrentMap<Object, ConcurrentLinkedQueue<GridIoChannelListener>> channelLsnrMap =
+        new ConcurrentHashMap<>();
+
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap<>();
 
@@ -152,13 +157,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** Disconnect listeners. */
     private final Collection<GridDisconnectListener> disconnectLsnrs = new ConcurrentLinkedQueue<>();
-
-    /** Channel listeners. */
-    private final Collection<GridIoChannelListener> channelLsnrs = new ConcurrentLinkedQueue<>();
-
-    /** Channel listeners by topic. */
-    private final ConcurrentMap<Object, ConcurrentLinkedQueue<GridIoChannelListener>> channelLsnrMap =
-        new ConcurrentHashMap<>();
 
     /** Pool processor. */
     private final PoolProcessor pools;
@@ -281,9 +279,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     lsnr.onNodeDisconnected(nodeId);
             }
 
-            @Override public void onChannelConfigure(IgniteSocketChannel ch, Serializable msg) {
+            @Override public void onChannelConfigure(Channel ch, Serializable msg) {
                 try {
-                    onChannelConfigure0(ch, (GridIoMessage)msg);
+                    if (msg instanceof GridIoMessage)
+                        onChannelConfigure0((IgniteSocketChannel)ch, (GridIoMessage)msg);
                 }
                 catch (ClassCastException ignored) {
                     U.error(log, "Unknown type of channel configuration message received (will ignore): " +
@@ -291,8 +290,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
             }
 
-            @Override public void onChannelCreated(UUID nodeId, IgniteSocketChannel ch) {
-                onChannelCreated0(nodeId, ch);
+            @Override public void onChannelCreated(UUID nodeId, Channel ch) {
+                onChannelCreated0(nodeId, (IgniteSocketChannel)ch);
             }
         });
 
@@ -931,15 +930,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             log.debug(stopInfo());
     }
 
-    /** */
+    /**
+     * @param nodeId The remote node id.
+     * @param ch The channel to notify listeners with.
+     */
     private void onChannelCreated0(UUID nodeId, IgniteSocketChannel ch) {
         assert ch != null;
-
-        for (GridIoChannelListener lsnr : channelLsnrs)
-            lsnr.onChannelCreated(nodeId, ch);
-
-        if (ch.topic() == null)
-            return;
+        assert ch.topic() != null;
 
         try {
             final ConcurrentLinkedQueue<GridIoChannelListener> lsnrQueue = channelLsnrMap.get(ch.topic());
@@ -964,16 +961,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     }
 
-    /** */
+    /**
+     * @param ch The channel to configure to.
+     * @param msg The configuration message.
+     */
     private void onChannelConfigure0(IgniteSocketChannel ch, GridIoMessage msg) {
         assert ch != null;
+        assert msg != null;
 
-        if (msg == null)
-            return;
-
-        Lock busyLock0 = busyLock.readLock();
-
-        busyLock0.lock();
+        busyLock.readLock().lock();
 
         try {
             if (stopping || !started)
@@ -990,27 +986,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             ch.topic(topic);
             ch.policy(msg.policy());
-
-            // Invoke configure request in the current listener thread.
-            // Only system listeners can handle configuration requests.
-
-            synchronized (sysLsnrsMux) {
-                for (int i = 0; i < sysLsnrs.length; i++) {
-                    GridMessageListener lsrn = sysLsnrs[i];
-
-                    if (lsrn instanceof GridConfigureMessageListener) {
-                        GridConfigureMessageListener rqLsnr = (GridConfigureMessageListener)lsrn;
-
-                        rqLsnr.onChannelConfigure(ch, msg.message());
-                    }
-                }
-            }
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to process message (will ignore): " + msg, e);
         }
         finally {
-            busyLock0.unlock();
+            busyLock.readLock().unlock();
         }
     }
 
@@ -1697,7 +1678,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param node Destination node.
      * @param topic Topic to send the message to.
      * @param topicOrd GridTopic enumeration ordinal.
-     * @param msg {@link Message} to configure channel with.
      * @param plc Thread policy to execute on.
      * @return Established {@link IgniteSocketChannel} to use.
      * @throws IgniteCheckedException If fails.
@@ -1706,20 +1686,20 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ClusterNode node,
         Object topic,
         int topicOrd,
-        @Nullable Message msg,
         byte plc
     ) throws IgniteCheckedException {
         assert node != null;
         assert topic != null;
-        assert topicOrd >= 0 || !(topic instanceof GridTopic);
+        assert (topicOrd >= 0 && topic instanceof GridTopic) ||
+            (topicOrd < 0 && !(topic instanceof GridTopic));
 
-        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, false, 0, false);
+        GridIoMessage cfgMsg = new GridIoMessage(plc, topic, topicOrd, null, false, 0, false);
 
         if (topicOrd < 0)
-            ioMsg.topicBytes(U.marshal(marsh, topic));
+            cfgMsg.topicBytes(U.marshal(marsh, topic));
 
         try {
-            return getSpi().channel(node, ioMsg);
+            return (IgniteSocketChannel)getSpi().channel(node, cfgMsg);
         }
         catch (IgniteSpiException e) {
             if (e.getCause() instanceof ClusterTopologyCheckedException)
@@ -1729,49 +1709,21 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 throw new ClusterTopologyCheckedException("Failed to create channel, node left: " + node.id(), e);
 
             throw new IgniteCheckedException("Failed to create channel (node may have left the grid or " +
-                "TCP connection cannot be established due to firewall issues) " +
+                "TCP connection cannot be established due to unknown issues) " +
                 "[node=" + node + ", topic=" + topic + ']', e);
         }
     }
 
     /**
-     * @param node Destination node.
-     * @param topic Topic to send the message to.
-     * @param plc Thread policy to execute on.
-     * @return Established {@link IgniteSocketChannel} to use.
-     * @throws IgniteCheckedException If fails.
-     */
-    public IgniteSocketChannel channelToCustomTopic(
-        ClusterNode node,
-        Object topic,
-        byte plc
-    ) throws IgniteCheckedException {
-        return channel(node, topic, -1, null, plc);
-    }
-
-    /**
      * @param nodeId Destination node.
      * @param topic Topic to send the message to.
      * @param plc Thread policy to execute on.
      * @return Established {@link IgniteSocketChannel} to use.
      * @throws IgniteCheckedException If fails.
      */
-    public IgniteSocketChannel channelToCustomTopic(UUID nodeId, Object topic, byte plc) throws IgniteCheckedException {
-        return channelToCustomTopic(nodeId, topic, null, plc);
-    }
-
-    /**
-     * @param nodeId Destination node.
-     * @param topic Topic to send the message to.
-     * @param msg {@link Message} to configure channel with.
-     * @param plc Thread policy to execute on.
-     * @return Established {@link IgniteSocketChannel} to use.
-     * @throws IgniteCheckedException If fails.
-     */
-    public IgniteSocketChannel channelToCustomTopic(
+    public IgniteSocketChannel channelToTopic(
         UUID nodeId,
         Object topic,
-        Message msg,
         byte plc
     ) throws IgniteCheckedException {
         ClusterNode node = ctx.discovery().node(nodeId);
@@ -1779,7 +1731,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (node == null)
             throw new ClusterTopologyCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
 
-        return channel(node, topic, -1, msg, plc);
+        return topic instanceof GridTopic ?
+            channel(node, topic, ((Enum<GridTopic>)topic).ordinal(), plc) :
+            channel(node, topic, -1, plc);
     }
 
     /**
@@ -2222,26 +2176,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * @param lsnr Listener to add.
-     */
-    public void addChannelListener(GridIoChannelListener lsnr) {
-        channelLsnrs.add(lsnr);
-    }
-
-    /**
-     * @param lsnr Listener to add.
-     */
-    public void removeChannelListener(GridIoChannelListener lsnr) {
-        channelLsnrs.remove(lsnr);
-    }
-
-    /**
      * @param topic Topic to add new listen to.
      * @param lsnr Listener to add to specified topic.
      */
     public void addChannelListener(Object topic, GridIoChannelListener lsnr) {
-        assert topic != null;
         assert lsnr != null;
+        assert topic != null;
 
         synchronized (channelLsnrMap) {
             ConcurrentLinkedQueue<GridIoChannelListener> lsnrQueue = channelLsnrMap.get(topic);
@@ -2257,7 +2197,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to remove listener from.
      * @param lsnr The listener instance to remove, or {@code null} to remove all listneres of specified topic.
      */
-    public void removeChannelListener(Object topic, @Nullable GridIoChannelListener lsnr) {
+    public void removeChannelListener(Object topic, GridIoChannelListener lsnr) {
+        assert topic != null;
+
         synchronized (channelLsnrMap) {
             if (lsnr == null)
                 channelLsnrMap.remove(topic);

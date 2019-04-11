@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util.nio;
 import java.util.EventListener;
 import java.util.UUID;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
+import org.apache.ignite.spi.communication.tcp.channel.IgniteSocketChannel;
 import org.jetbrains.annotations.Nullable;
 
 /**

@@ -42,10 +42,10 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.communication.tcp.channel.IgniteSocketChannel;
 
 import static org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePreloadSharedManager.rebalanceThreadTopic;
 
@@ -180,7 +180,7 @@ public class PartitionUploadManager {
             }
 
             // Need to start new partition upload routine.
-            ch = cctx.gridIO().channelToCustomTopic(nodeId, rebalanceThreadTopic(), null, plc);
+            ch = cctx.gridIO().channelToTopic(nodeId, rebalanceThreadTopic(), plc);
 
             backupMgr.backup(uploadFut.rebalanceId,
                 uploadFut.getAssigns(),

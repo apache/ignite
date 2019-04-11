@@ -15,21 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.communication;
-
-import java.util.EventListener;
-import java.util.UUID;
-import org.apache.ignite.spi.communication.tcp.channel.IgniteSocketChannel;
+package org.apache.ignite.spi.communication;
 
 /**
- * Listener for connections established from remote nodes.
+ *
  */
-public interface GridIoChannelListener extends EventListener {
+public interface ChannelConfig {
     /**
-     * The creation event of {@link IgniteSocketChannel} from remote connection.
-     *
-     * @param nodeId The remote node id.
-     * @param channel Local created channel endpoint.
+     * Gets the channel's mode.
      */
-    public void onChannelCreated(UUID nodeId, IgniteSocketChannel channel);
+    public boolean blocking();
+
+    /**
+     * @param blocking The channel's mode to set.
+     * @return The config instance.
+     */
+    public ChannelConfig blocking(boolean blocking);
+
+    /**
+     * Gets the timeout option option.
+     */
+    public int timeout();
+
+    /**
+     * @param millis The timeout in milliseconds.
+     * @return The config instance.
+     */
+    public ChannelConfig timeout(int millis);
 }

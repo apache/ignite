@@ -38,10 +38,10 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileTransfer
 import org.apache.ignite.internal.processors.cache.persistence.file.meta.PartitionFileMetaInfo;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.communication.tcp.channel.IgniteSocketChannel;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePreloadSharedManager.staleFuture;

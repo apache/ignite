@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -203,11 +202,4 @@ public interface GridCachePreloader {
      * Resume preloader.
      */
     public void resume();
-
-    /**
-     * @param channel Ignite NIO channel to handle.
-     */
-    public default void handleChannelCreated(IgniteSocketChannel channel) {
-        // No-op.
-    }
 }

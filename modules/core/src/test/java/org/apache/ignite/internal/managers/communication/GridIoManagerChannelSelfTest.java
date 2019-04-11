@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp;
+package org.apache.ignite.internal.managers.communication;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -24,13 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.managers.communication.GridIoChannelListener;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.spi.communication.tcp.channel.IgniteSocketChannel;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -40,37 +34,11 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
 /**
  *
  */
-public class TcpCommunicationSpiChannelSelfTest extends GridCommonAbstractTest {
-    /** Default IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** The number of test nodes. */
-    private static final int NODES_CNT = 2;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setCommunicationSpi(new TcpCommunicationSpi());
-        cfg.setDiscoverySpi(discoSpi);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+public class GridIoManagerChannelSelfTest extends GridCommonAbstractTest {
+    /** */
     @Test
-    public void testChannelCreationOnDemandToTopic() throws Exception {
-        startGrids(NODES_CNT);
+    public void testCreateChannelToCustomRemoteTopic() throws Exception {
+        startGrids(2);
 
         final IgniteSocketChannel[] nioCh = new IgniteSocketChannel[1];
         final CountDownLatch waitChLatch = new CountDownLatch(1);
@@ -88,11 +56,11 @@ public class TcpCommunicationSpiChannelSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        GridIoManager ioMgr = grid(0).context().io();
-
-        WritableByteChannel writableCh = ioMgr.channelToTopic(grid(1).localNode().id(),
-            topic,
-            PUBLIC_POOL)
+        WritableByteChannel writableCh = grid(0).context()
+            .io()
+            .channelToTopic(grid(1).localNode().id(),
+                topic,
+                PUBLIC_POOL)
             .channel();
 
         // Wait for the channel connection established.
@@ -132,6 +100,7 @@ public class TcpCommunicationSpiChannelSelfTest extends GridCommonAbstractTest {
 
         // Check established channel.
         assertEquals(pingNum, readBuf.getInt());
-    }
 
+        stopAllGrids();
+    }
 }

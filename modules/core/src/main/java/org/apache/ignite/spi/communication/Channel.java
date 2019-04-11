@@ -15,18 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.communication;
+package org.apache.ignite.spi.communication;
 
-import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
-import org.jetbrains.annotations.Nullable;
+import java.util.UUID;
 
-/** */
-public interface GridConfigureMessageListener extends GridMessageListener {
+/**
+ * A hub to a direct communication between ignite components which is capable of I/O operations such as read, write.
+ */
+public interface Channel extends AutoCloseable {
     /**
-     * @param ch Channel to configure.
-     * @param msg Configuration message.
+     * @return The remote node id the channel refers to.
      */
-    public default void onChannelConfigure(IgniteSocketChannel ch, @Nullable Object msg) {
-        // No-op.
-    }
+    public UUID nodeId();
+
+    /**
+     * @return Connection sequence to remote node.
+     */
+    public int id();
+
+    /**
+     * @return The channel's configuration.
+     */
+    public ChannelConfig config();
+
+    /**
+     * @return <tt>true</tt> if the channel is configured and ready to use.
+     */
+    public boolean active();
 }

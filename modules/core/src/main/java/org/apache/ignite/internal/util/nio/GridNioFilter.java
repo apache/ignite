@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
@@ -256,22 +255,4 @@ public interface GridNioFilter {
      * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
     public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException;
-
-    /**
-     * Invoked then a close method called on {@link IgniteSocketChannel} object..
-     *
-     * @param channel IgniteSocketChannel to close.
-     * @throws IgniteCheckedException If fails.
-     */
-    public default void onChannelClose(IgniteSocketChannel channel) throws IgniteCheckedException {
-        proceedChannelClose(channel);
-    }
-
-    /**
-     * Forwards channel close to the next logical filter in filter chain.
-     *
-     * @param channel Session instance.
-     * @throws IgniteCheckedException If fails.
-     */
-    public void proceedChannelClose(IgniteSocketChannel channel) throws IgniteCheckedException;
 }

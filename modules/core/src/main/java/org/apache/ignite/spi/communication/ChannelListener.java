@@ -15,21 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.communication;
+package org.apache.ignite.spi.communication;
 
 import java.util.EventListener;
-import java.util.UUID;
-import org.apache.ignite.spi.communication.tcp.channel.IgniteSocketChannel;
 
 /**
- * Listener for connections established from remote nodes.
+ * Listener for the channel events.
  */
-public interface GridIoChannelListener extends EventListener {
+public interface ChannelListener extends EventListener {
     /**
-     * The creation event of {@link IgniteSocketChannel} from remote connection.
-     *
-     * @param nodeId The remote node id.
-     * @param channel Local created channel endpoint.
+     * @param channel The channel source of close event.
      */
-    public void onChannelCreated(UUID nodeId, IgniteSocketChannel channel);
+    public void onChannelClose(Channel channel);
 }

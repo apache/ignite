@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
+import org.apache.ignite.spi.communication.tcp.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;

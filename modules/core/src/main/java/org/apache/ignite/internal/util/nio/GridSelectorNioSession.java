@@ -34,10 +34,4 @@ public interface GridSelectorNioSession extends GridNioSession {
      * @param key Selection key.
      */
     public void key(SelectionKey key);
-
-
-    /**
-     * @param fut Future.
-     */
-    public void offerStateChange(GridNioServer.SessionChangeRequest fut);
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
@@ -165,13 +164,6 @@ public abstract class GridNioFilterAdapter implements GridNioFilter {
     /** {@inheritDoc} */
     @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
         return proceedResumeReads(ses);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void proceedChannelClose(IgniteSocketChannel channel) throws IgniteCheckedException {
-        checkNext();
-
-        nextFilter.onChannelClose(channel);
     }
 
     /**
