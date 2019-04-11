@@ -26,7 +26,7 @@ public class FirstConsideredPredicate extends BinaryPredicate {
 
     /** {@inheritDoc} */
     @Override public boolean apply(BinaryObject bo) {
-        System.out.println("FirstConsideredPredicate on " + ignite.configuration().getIgniteInstanceName());
+        log.info("FirstConsideredPredicate on " + ignite.configuration().getIgniteInstanceName());
 
         return bo.hasField("isDeleted");
     }

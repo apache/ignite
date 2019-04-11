@@ -26,7 +26,7 @@ public class SecondConsideredPredicate extends BinaryPredicate {
 
     /** {@inheritDoc} */
     @Override public boolean apply(BinaryObject bo) {
-        System.out.println("SecondConsideredPredicate on " + ignite.configuration().getIgniteInstanceName());
+        log.info("SecondConsideredPredicate on " + ignite.configuration().getIgniteInstanceName());
 
         return !bo.hasField("isDeleted");
     }

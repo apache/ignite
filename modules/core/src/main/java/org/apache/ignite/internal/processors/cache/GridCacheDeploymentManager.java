@@ -838,15 +838,15 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         /**
          * @param name Name of resource.
-         * @param t Grid cache deployment.
+         * @param deploymentInfo Grid cached deployment info.
          * @return Class if can to load resource with the <code>name</code> or {@code null} otherwise.
          */
-        @Nullable private Class<?> tryToloadClassFromCacheDep(String name, CachedDeploymentInfo<K, V> t) {
-            UUID sndId = t.senderId();
-            IgniteUuid ldrId = t.loaderId();
-            String userVer = t.userVersion();
-            DeploymentMode mode = t.mode();
-            Map<UUID, IgniteUuid> participants = t.participants();
+        @Nullable private Class<?> tryToloadClassFromCacheDep(String name, CachedDeploymentInfo<K, V> deploymentInfo) {
+            UUID sndId = deploymentInfo.senderId();
+            IgniteUuid ldrId = deploymentInfo.loaderId();
+            String userVer = deploymentInfo.userVersion();
+            DeploymentMode mode = deploymentInfo.mode();
+            Map<UUID, IgniteUuid> participants = deploymentInfo.participants();
 
             GridDeployment d = cctx.gridDeploy().getGlobalDeployment(
                 mode,

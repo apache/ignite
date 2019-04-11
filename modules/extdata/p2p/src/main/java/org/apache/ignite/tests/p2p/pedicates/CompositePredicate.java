@@ -32,7 +32,7 @@ public class CompositePredicate<K> extends BinaryPredicate<K> implements Seriali
 
     /** {@inheritDoc} */
     @Override public boolean apply(BinaryObject bo) {
-        System.out.println("CompositePredicate on " + ignite.configuration().getIgniteInstanceName());
+        log.info("CompositePredicate on " + ignite.configuration().getIgniteInstanceName());
 
         for (BinaryPredicate predicate : predicates) {
             predicate.ignite = ignite;
