@@ -451,14 +451,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             ctx.cache().onStateChangeFinish(msg);
 
-            if(msg.clusterActive()) {
-                boolean prev = ctx.cache().context().readOnlyMode();
+            boolean prev = ctx.cache().context().readOnlyMode();
 
-                if(prev != globalState.readOnly()) {
-                    ctx.cache().context().readOnlyMode(globalState.readOnly());
+            if (prev != globalState.readOnly()) {
+                ctx.cache().context().readOnlyMode(globalState.readOnly());
 
-                    log.info("Read-only mode was changed! Was enabled: " + prev + ", now enabled: " + globalState.readOnly());
-                }
+                log.info("Read-only mode was changed! Was enabled: " + prev + ", now enabled: " + globalState.readOnly());
             }
 
             TransitionOnJoinWaitFuture joinFut = this.joinFut;
@@ -843,7 +841,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
-        boolean readOnly = globalState.readOnly();
+        boolean readOnly = activate && globalState.readOnly();
 
         return changeGlobalState(activate, readOnly, baselineNodes, forceChangeBaselineTopology, isAutoAdjust);
     }

@@ -158,15 +158,6 @@ public class ClusterReadOnlyModeTestUtils {
     }
 
     /**
-     * @param readOnly If {@code true} then data streamer must fail, else succeed.
-     * @param cacheNames Checked cache names.
-     */
-    public static void assertCachesAndDataStreamerReadOnlyMode(boolean readOnly, Collection<String> cacheNames) {
-        assertCachesReadOnlyMode(readOnly, cacheNames);
-        assertDataStreamerReadOnlyMode(readOnly, cacheNames);
-    }
-
-    /**
      * @param cacheMode Cache mode.
      * @param atomicityMode Atomicity mode.
      * @param grpName Cache group name.
@@ -182,6 +173,7 @@ public class ClusterReadOnlyModeTestUtils {
             .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)));
     }
 
+    /** */
     private ClusterReadOnlyModeTestUtils() {
     }
 }

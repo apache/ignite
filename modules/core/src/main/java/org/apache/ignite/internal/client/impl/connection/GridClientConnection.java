@@ -317,11 +317,37 @@ public abstract class GridClientConnection {
             throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
+     * Activate cluster in read-only mode.
+     *
+     * @param destNodeId Destination node id.
+     */
+    public abstract GridClientFuture<?> activateReadOnly(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
      * Get current grid state.
      *
      * @param destNodeId Destination node id.
      */
     public abstract GridClientFuture<Boolean> currentState(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Get current read-only mode status. If future contains {@code True} - read-only mode enabled, if {@code False} -
+     * read-only mode disabled.
+     *
+     * @param destNodeId Destination node id.
+     */
+    public abstract GridClientFuture<Boolean> readOnlyState(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Change read-only mode. Cluster must be activated.
+     *
+     * @param readOnly Read-only mode enabled flag.
+     * @param destNodeId Destination node id.
+     */
+    public abstract GridClientFuture<?> changeReadOnlyState(boolean readOnly, UUID destNodeId)
         throws GridClientClosedException, GridClientConnectionResetException;
 
     /**

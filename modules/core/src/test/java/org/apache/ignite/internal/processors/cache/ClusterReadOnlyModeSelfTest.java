@@ -27,7 +27,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertCachesAndDataStreamerReadOnlyMode;
+import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertCachesReadOnlyMode;
+import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertDataStreamerReadOnlyMode;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.cacheConfigurations;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.cacheNames;
 
@@ -69,6 +70,7 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
+    /** */
     @Test
     public void testChangeReadOnlyModeOnInactiveClusterFails() throws Exception {
         startGrid(0);
@@ -85,6 +87,43 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
         );
     }
 
+    /** */
+    @Test
+    public void testClusterForgetReadOnlyStateAfterDeactivation() throws Exception {
+        IgniteEx grid = startGrid(0);
+
+        grid.cluster().activeReadOnly();
+
+        checkClusterInReadOnlyMode(true, grid);
+
+        grid.cluster().active(false);
+
+        assertFalse("Grid should forget previous read-only mode after reboot!", grid.cluster().readOnly());
+
+        grid.cluster().active(true);
+
+        checkClusterInReadOnlyMode(false, grid);
+    }
+
+    /** */
+    @Test
+    public void testClusterForgetReadOnlyStateOnRestart() throws Exception {
+        IgniteEx grid = startGrid(0);
+
+        grid(0).cluster().activeReadOnly();
+
+        checkClusterInReadOnlyMode(true, grid);
+
+        stopGrid(0);
+        grid = startGrid(0);
+
+        assertTrue("Grid should be active!", grid.cluster().active());
+        assertFalse("Grid should forget previous read-only mode after reboot!", grid.cluster().readOnly());
+
+        checkClusterInReadOnlyMode(false, grid);
+    }
+
+    /** */
     @Test
     public void testReadOnlyFromClient() throws Exception {
         startGrids(SERVER_NODES_COUNT);
@@ -98,31 +137,31 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
 
         assertTrue("Should be client!", client.configuration().isClientMode());
 
-        assertCachesAndDataStreamerReadOnlyMode(false, cacheNames());
+        checkClusterInReadOnlyMode(false, client);
 
         client.cluster().readOnly(true);
 
-        assertTrue(client.cluster().readOnly());
-
-        for (int i = 0; i < SERVER_NODES_COUNT; i++)
-            assertEquals(client.cluster().readOnly(), grid(i).cluster().readOnly());
-
-        assertCachesAndDataStreamerReadOnlyMode(true, cacheNames());
+        checkClusterInReadOnlyMode(true, client);
 
         client.cluster().readOnly(false);
 
-        assertFalse(client.cluster().readOnly());
-
-        for (int i = 0; i < SERVER_NODES_COUNT; i++)
-            assertEquals(client.cluster().readOnly(), grid(i).cluster().readOnly());
-
-        assertCachesAndDataStreamerReadOnlyMode(false, cacheNames());
+        checkClusterInReadOnlyMode(false, client);
     }
 
+    /** */
     @Test
     public void testActivateReadOnly() throws Exception {
         startGrids(SERVER_NODES_COUNT).cluster().activeReadOnly();
 
-        assertCachesAndDataStreamerReadOnlyMode(true, cacheNames());
+        checkClusterInReadOnlyMode(true, grid(0));
+    }
+
+    /** */
+    private void checkClusterInReadOnlyMode(boolean readOnly, IgniteEx node) {
+        assertEquals("Unexpected read-only mode", readOnly, node.cluster().readOnly());
+
+        assertCachesReadOnlyMode(readOnly, cacheNames());
+
+        assertDataStreamerReadOnlyMode(readOnly, cacheNames());
     }
 }
