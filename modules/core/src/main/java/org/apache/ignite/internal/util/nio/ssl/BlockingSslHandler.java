@@ -335,12 +335,65 @@ public class BlockingSslHandler {
 
         SSLEngineResult res = unwrap0();
 
+        res = postHandshakeIfNeded(res);
+
         // prepare to be written again
         inNetBuf.compact();
 
         checkStatus(res);
 
         renegotiateIfNeeded(res);
+    }
+
+    /**
+     * Does post-handshake logic if nedded.
+     *
+     * @param res Response.
+     */
+    private SSLEngineResult postHandshakeIfNeded(SSLEngineResult res) throws SSLException, IgniteCheckedException {
+        if (res.getHandshakeStatus() == FINISHED && res.getStatus() == OK && inNetBuf.hasRemaining()) {
+            outNetBuf.clear();
+
+            res = sslEngine.wrap(handshakeBuf, outNetBuf);
+
+            while (res.getStatus() == BUFFER_OVERFLOW) {
+                outNetBuf = expandBuffer(outNetBuf, outNetBuf.capacity() * 2);
+
+                outNetBuf.flip();
+
+                outNetBuf.clear();
+
+                res = sslEngine.wrap(handshakeBuf, outNetBuf);
+            }
+
+            outNetBuf.flip();
+
+            writeNetBuffer();
+
+            handshakeStatus = res.getHandshakeStatus();
+
+            if (log.isDebugEnabled())
+                log.debug("Wrapped post-handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
+                    handshakeStatus + ']');
+        }
+
+        while (res.getHandshakeStatus() == FINISHED && res.getStatus() == OK) {
+            inNetBuf.clear();
+
+            readFromNet();
+
+            inNetBuf.flip();
+
+            res = unwrap0();
+
+            handshakeStatus = res.getHandshakeStatus();
+
+            if (log.isDebugEnabled())
+                log.debug("Unrapped post-handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
+                    handshakeStatus + ']');
+        }
+
+        return res;
     }
 
     /**
