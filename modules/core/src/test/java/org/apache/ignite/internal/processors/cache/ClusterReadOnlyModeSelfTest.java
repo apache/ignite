@@ -89,6 +89,23 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testReadOnlyActivationOnActiveClusterFails() throws Exception {
+        startGrid(0).cluster().active(true);
+
+        GridTestUtils.assertThrows(
+            log,
+            () -> {
+                grid(0).cluster().activeReadOnly();
+
+                return null;
+            },
+            IgniteException.class,
+            "Cluster already active!"
+        );
+    }
+
+    /** */
+    @Test
     public void testClusterForgetReadOnlyStateAfterDeactivation() throws Exception {
         IgniteEx grid = startGrid(0);
 

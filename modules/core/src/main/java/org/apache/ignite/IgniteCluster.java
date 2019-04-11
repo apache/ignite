@@ -461,7 +461,8 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     /**
      * Changes Ignite grid state to active with enabled read-only mode.
      *
-     * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     * @throws IgniteException If there is an already started transaction or lock in the same thread or cluster already
+     * active.
      */
     public void activeReadOnly() throws IgniteException;
 

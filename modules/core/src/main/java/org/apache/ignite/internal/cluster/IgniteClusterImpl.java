@@ -320,6 +320,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void activeReadOnly() throws IgniteException {
+        if(ctx.state().publicApiActiveState(false))
+            throw new IgniteException("Cluster already active!");
+
         guard();
 
         try {
