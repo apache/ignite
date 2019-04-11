@@ -92,6 +92,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /** */
     private boolean depEnabled;
 
+    /** Class loader id for local thread. */
     private ThreadLocal<IgniteUuid> localLdrId = new ThreadLocal<>();
 
     /** {@inheritDoc} */

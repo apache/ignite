@@ -24,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
- *
+ * P2P test.
  */
 @GridCommonTest(group = "P2P")
 public class GridP2PComputeWithNestedEntryProcessorTest extends GridCommonAbstractTest {
