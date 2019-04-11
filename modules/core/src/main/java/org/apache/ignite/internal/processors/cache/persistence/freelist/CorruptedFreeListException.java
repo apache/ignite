@@ -15,28 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedLockSelfTest;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.CorruptedPersistenceException;
+import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Exception to distinguish {@link AbstractFreeList} broken invariants.
  */
-public class GridCachePartitionedNearDisabledLockSelfTest extends GridCachePartitionedLockSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration ccfg = super.cacheConfiguration();
+public class CorruptedFreeListException extends IgniteCheckedException implements CorruptedPersistenceException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-        assertNotNull(ccfg.getNearConfiguration());
-
-        ccfg.setNearConfiguration(null);
-
-        return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isPartitioned() {
-        return false;
+    /**
+     * @param msg Message.
+     * @param cause Cause.
+     */
+    public CorruptedFreeListException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 }

@@ -14,29 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.verify;
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
-
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedLockSelfTest;
+import org.apache.ignite.IgniteException;
 
 /**
- *
+ * Runtime exception that can be thrown in {@link VerifyBackupPartitionsTaskV2} when no caches matching given
+ * filter options can be found.
  */
-public class GridCachePartitionedNearDisabledLockSelfTest extends GridCachePartitionedLockSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration ccfg = super.cacheConfiguration();
-
-        assertNotNull(ccfg.getNearConfiguration());
-
-        ccfg.setNearConfiguration(null);
-
-        return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isPartitioned() {
-        return false;
-    }
+public class NoMatchingCachesException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
 }

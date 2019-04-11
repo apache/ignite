@@ -15,28 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
-
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedLockSelfTest;
+package org.apache.ignite.transactions;
 
 /**
- *
+ *  Exception thrown whenever transaction spans over MVCC and non-MVCC caches.
  */
-public class GridCachePartitionedNearDisabledLockSelfTest extends GridCachePartitionedLockSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration ccfg = super.cacheConfiguration();
-
-        assertNotNull(ccfg.getNearConfiguration());
-
-        ccfg.setNearConfiguration(null);
-
-        return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isPartitioned() {
-        return false;
+public class TransactionMixedModeException extends TransactionException {
+    /** */
+    private static final long serialVersionUID = 0L;
+    /**
+     * Creates new exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public TransactionMixedModeException(String msg) {
+        super(msg);
     }
 }

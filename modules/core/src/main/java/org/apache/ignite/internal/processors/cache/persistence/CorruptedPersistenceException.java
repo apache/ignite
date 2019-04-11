@@ -15,28 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
-
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedLockSelfTest;
+package org.apache.ignite.internal.processors.cache.persistence;
 
 /**
- *
+ * Marker interface to distinguish exceptions that were caused by broken persistence datastructures invariants.
  */
-public class GridCachePartitionedNearDisabledLockSelfTest extends GridCachePartitionedLockSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration ccfg = super.cacheConfiguration();
-
-        assertNotNull(ccfg.getNearConfiguration());
-
-        ccfg.setNearConfiguration(null);
-
-        return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isPartitioned() {
-        return false;
-    }
+public interface CorruptedPersistenceException {
 }
