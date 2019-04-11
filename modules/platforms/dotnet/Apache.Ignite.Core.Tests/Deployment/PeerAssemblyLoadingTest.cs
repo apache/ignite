@@ -224,11 +224,11 @@ namespace Apache.Ignite.Core.Tests.Deployment
         [Test]
         public void TestMissingAssemblyResolutionWithEnabledPeerLoadingFlag()
         {
-            //we need to simulate two nodes that will be interacted with each other
+            // We need to simulate two nodes that will be interacted with each other.
             Ignition.Start(GetConfig());
             var ignite = Ignition.Start(GetConfig());
 
-            // create separate thread in order to avoid program block due to the endless loop
+            // Create separate thread in order to avoid program block due to the endless loop.
             var workerThread = new Thread(() =>
             {
                 PeerAssemblyResolver.LoadAssemblyAndGetType("Unavailable.Assembly, unavailable, Ver=1",
@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
             bool isAssemblyResolved = workerThread.Join(TimeSpan.FromSeconds(10));
             if (!isAssemblyResolved)
             {
-                //Ignite instances should be disposed in TearDown method
+                // Ignite instances should be disposed in TearDown method.
                 workerThread.Abort();
             }
 

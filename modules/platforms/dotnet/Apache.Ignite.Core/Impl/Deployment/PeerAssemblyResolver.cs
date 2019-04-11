@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
         }
 
         /// <summary>
-        /// Special class that indicates that there is no need in remote assembly request
+        /// Special class that indicates that there is no need in remote assembly request.
         /// </summary>
         private sealed class RemoteAssemblyLoadingBlock : IDisposable
         {
@@ -244,8 +244,8 @@ namespace Apache.Ignite.Core.Impl.Deployment
         }
 
         /// <summary>
-        /// Disable remove assembly loading, default functionality will be used instead
-        /// This is useful to prevent cycled resolution, for sample consider <see cref="GetAssemblyFunc" />
+        /// Disable remote assembly loading, default functionality will be used instead.
+        /// This is useful to prevent cycled resolution, for sample consider <see cref="GetAssemblyFunc" />.
         /// </summary>
         /// <returns></returns>
         public static IDisposable Disable()
