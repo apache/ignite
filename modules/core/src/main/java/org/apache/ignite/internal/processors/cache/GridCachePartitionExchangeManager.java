@@ -2004,8 +2004,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (curTime - tx.startTime() > timeout) {
                         found = true;
 
+                        if (warnings.canAddMessage())
+                            warnings.add(">>> Transaction [startTime=" + formatTime(tx.startTime()) +
+                                ", curTime=" + formatTime(curTime) + ", tx=" + tx + ']');
+                        else
+                            warnings.incTotal();
+
                         if (ltrDumpLimiter.allowAction(tx))
-                            dumpLongRunningTransaction(tx, curTime, warnings);
+                            dumpLongRunningTransaction(tx);
                     }
                 }
 
@@ -2080,17 +2086,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * to near node to get the stack trace of transaction owner thread.
      *
      * @param tx Transaction.
-     * @param curTime Current time.
-     * @param warnings Warnings Group.
      */
-    private void dumpLongRunningTransaction(IgniteInternalTx tx, long curTime, WarningsGroup warnings) {
-        if (warnings.canAddMessage()) {
-            warnings.add(">>> Transaction [startTime=" + formatTime(tx.startTime()) +
-                ", curTime=" + formatTime(curTime) + ", tx=" + tx + ']');
-        }
-        else
-            warnings.incTotal();
-
+    private void dumpLongRunningTransaction(IgniteInternalTx tx) {
         if (cctx.tm().txOwnerDumpRequestsAllowed() && tx.local() && tx.state() == TransactionState.ACTIVE) {
             Collection<UUID> masterNodeIds = tx.masterNodeIds();
 
@@ -2112,19 +2109,28 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 try {
                                     traceDump = strIgniteFut.get();
-                                } catch (Exception e) {
+                                }
+                                catch (Exception e) {
                                     U.warn(
                                         diagnosticLog,
                                         "Could not get thread dump from transaction owner near node: " + e.getMessage()
                                     );
                                 }
 
-                                if (traceDump != null)
-                                    U.warn(diagnosticLog, traceDump);
+                                if (traceDump != null) {
+                                    U.warn(
+                                        diagnosticLog,
+                                        String.format(
+                                            "Dumping the near node thread that started transaction. Transaction id (xid): %s\n%s",
+                                            tx.xid().toString(),
+                                            traceDump
+                                        )
+                                    );
+                                }
                             }
                         });
                 } catch (Exception e) {
-                    U.warn(diagnosticLog, "Could not receive dump from transaction owner near node: " + e.getMessage());
+                    U.warn(diagnosticLog, "Could not send dump request to transaction owner near node: " + e.getMessage());
                 }
             }
         }

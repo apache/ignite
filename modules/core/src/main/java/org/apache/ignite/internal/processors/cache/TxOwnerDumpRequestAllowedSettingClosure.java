@@ -44,7 +44,7 @@ public class TxOwnerDumpRequestAllowedSettingClosure implements IgniteRunnable {
         this.allowed = allowed;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void run() {
         ((IgniteEx)ignite)
             .context()
