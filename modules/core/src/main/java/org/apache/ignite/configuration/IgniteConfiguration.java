@@ -530,6 +530,9 @@ public class IgniteConfiguration {
     /** SQL schemas to be created on node start. */
     private String[] sqlSchemas;
 
+    /** Plugin providers. */
+    private PluginProvider[] plugins;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -622,6 +625,7 @@ public class IgniteConfiguration {
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         platformCfg = cfg.getPlatformConfiguration();
         pluginCfgs = cfg.getPluginConfigurations();
+        plugins = cfg.getPlugins();
         pubPoolSize = cfg.getPublicThreadPoolSize();
         qryPoolSize = cfg.getQueryThreadPoolSize();
         rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
@@ -3194,6 +3198,27 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setSqlSchemas(String... sqlSchemas) {
         this.sqlSchemas = sqlSchemas;
+
+        return this;
+    }
+
+    /**
+     * Gets plugin providers.
+     *
+     * @return Plugin providers.
+     */
+    public PluginProvider[] getPlugins() {
+        return plugins;
+    }
+
+    /**
+     * Sets plugin providers.
+     *
+     * @param plugins Plugin providers.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setPlugins(PluginProvider... plugins) {
+        this.plugins = plugins;
 
         return this;
     }
