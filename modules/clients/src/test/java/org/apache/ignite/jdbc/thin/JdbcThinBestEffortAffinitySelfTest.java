@@ -85,8 +85,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setIndexedTypes(
-            Integer.class, Person.class,
-            Integer.class, Test.class
+            Integer.class, Person.class
         );
 
         cfg.setCacheConfiguration(cache);
