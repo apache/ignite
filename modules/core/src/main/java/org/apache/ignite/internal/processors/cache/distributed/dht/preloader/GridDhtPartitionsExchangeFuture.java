@@ -544,7 +544,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return Start time.
+     * @return Start time in nanoseconds.
      */
     public long getStartTime() {
         return startTime;
