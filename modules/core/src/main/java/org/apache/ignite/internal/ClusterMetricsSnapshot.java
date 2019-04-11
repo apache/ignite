@@ -1208,9 +1208,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
 
     /**
-     * Sets execution time for current partition map exchange.
+     * Sets execution duration for current partition map exchange.
      *
-     * @param currentPmeDuration Execution time for current partition map exchange.
+     * @param currentPmeDuration Execution duration for current partition map exchange.
      */
     public void setCurrentPmeDuration(long currentPmeDuration) {
         this.currentPmeDuration = currentPmeDuration;
