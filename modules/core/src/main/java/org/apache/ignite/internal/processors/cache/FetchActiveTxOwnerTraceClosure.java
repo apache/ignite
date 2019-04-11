@@ -69,7 +69,8 @@ public class FetchActiveTxOwnerTraceClosure implements IgniteCallable<String> {
 
         try {
             threadInfo = threadMXBean.getThreadInfo(txOwnerThreadId, Integer.MAX_VALUE);
-        } catch (SecurityException | IllegalArgumentException e) {
+        }
+        catch (SecurityException | IllegalArgumentException e) {
             threadInfo = null;
         }
 

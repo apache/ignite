@@ -2004,14 +2004,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (curTime - tx.startTime() > timeout) {
                         found = true;
 
-                        if (warnings.canAddMessage())
+                        if (warnings.canAddMessage()) {
                             warnings.add(">>> Transaction [startTime=" + formatTime(tx.startTime()) +
                                 ", curTime=" + formatTime(curTime) + ", tx=" + tx + ']');
-                        else
-                            warnings.incTotal();
 
-                        if (ltrDumpLimiter.allowAction(tx))
-                            dumpLongRunningTransaction(tx);
+                            if (ltrDumpLimiter.allowAction(tx))
+                                dumpLongRunningTransaction(tx);
+                        } else
+                            warnings.incTotal();
                     }
                 }
 
@@ -2121,15 +2121,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     U.warn(
                                         diagnosticLog,
                                         String.format(
-                                            "Dumping the near node thread that started transaction. Transaction id (xid): %s\n%s",
-                                            tx.xid().toString(),
+                                            "Dumping the near node thread that started transaction [xidVer=%s]\n%s",
+                                            tx.xidVersion().toString(),
                                             traceDump
                                         )
                                     );
                                 }
                             }
                         });
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     U.warn(diagnosticLog, "Could not send dump request to transaction owner near node: " + e.getMessage());
                 }
             }
