@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -115,7 +114,6 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
      *
      * @throws Exception if grids start failed.
      */
-    @Test
     public void testLrt() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -128,7 +126,6 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
      *
      * @throws Exception if grids start failed.
      */
-    @Test
     public void testLrtChangeSetting() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -156,7 +153,7 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
     private void imitateLongTransaction(boolean shouldRcvThreadDumpReq) throws Exception {
         final int val = 0;
 
-        final IgniteEx client = startGrid("client");
+        final IgniteEx client = (IgniteEx)startGrid("client");
 
         assertTrue(client.configuration().isClientMode());
 

@@ -56,7 +56,7 @@ public class IgniteCacheTestSuite9 extends TestSuite {
 
         suite.addTestSuite(TxDataConsistencyOnCommitFailureTest.class);
 
-        GridTestUtils.addTestIfNeeded(suite, GridCacheLongRunningTransactionDiagnosticsTest.class, ignoredTests);
+        suite.addTestSuite(GridCacheLongRunningTransactionDiagnosticsTest.class);
 
         return suite;
     }
