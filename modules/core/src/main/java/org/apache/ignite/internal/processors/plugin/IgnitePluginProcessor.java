@@ -37,6 +37,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.Extension;
 import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.IgnitePluginInfo;
+import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -57,22 +59,29 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     private final Map<PluginProvider, GridPluginContext> pluginCtxMap = new IdentityHashMap<>();
 
     /** */
+    private final Map<String, PluginConfiguration> pluginConfigurations = new LinkedHashMap<>();
+
+    /** */
     private volatile Map<Class<?>, Object[]> extensions;
 
     /**
      *
      * @param ctx Kernal context.
      * @param cfg Ignite configuration.
-     * @param providers Plugin providers.
+     * @param pluginInfos Plugins information.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public IgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg, List<PluginProvider> providers)
+    public IgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg, List<IgnitePluginInfo> pluginInfos)
         throws IgniteCheckedException {
         super(ctx);
 
         ExtensionRegistryImpl registry = new ExtensionRegistryImpl();
 
-        for (PluginProvider provider : providers) {
+        for (IgnitePluginInfo pluginInfo : pluginInfos) {
+            PluginProvider provider = pluginInfo.getPluginProvider();
+
+            PluginConfiguration pluginConfiguration = pluginInfo.getPluginConfiguration();
+
             GridPluginContext pluginCtx = new GridPluginContext(ctx, cfg);
 
             if (F.isEmpty(provider.name()))
@@ -84,6 +93,9 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
             plugins.put(provider.name(), provider);
 
             pluginCtxMap.put(provider, pluginCtx);
+
+            if (pluginConfiguration != null)
+                pluginConfigurations.put(provider.name(), pluginConfiguration);
 
             provider.initExtensions(pluginCtx, registry);
 
@@ -117,6 +129,14 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      */
     public Collection<PluginProvider> allProviders() {
         return plugins.values();
+    }
+
+    /**
+     * @param name Plugin name.
+     * @return Plugin configuration.
+     */
+    @Nullable public <T extends PluginConfiguration> T pluginConfiguration(String name) {
+        return (T)pluginConfigurations.get(name);
     }
 
     /**

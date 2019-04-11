@@ -54,6 +54,7 @@ import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginConfiguration;
+import org.apache.ignite.plugin.IgnitePluginInfo;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.plugin.segmentation.SegmentationResolver;
@@ -530,6 +531,9 @@ public class IgniteConfiguration {
     /** SQL schemas to be created on node start. */
     private String[] sqlSchemas;
 
+    /** Plugins information. */
+    private IgnitePluginInfo[] pluginInfos;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -622,6 +626,7 @@ public class IgniteConfiguration {
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         platformCfg = cfg.getPlatformConfiguration();
         pluginCfgs = cfg.getPluginConfigurations();
+        pluginInfos = cfg.getPluginInfos();
         pubPoolSize = cfg.getPublicThreadPoolSize();
         qryPoolSize = cfg.getQueryThreadPoolSize();
         rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
@@ -3194,6 +3199,27 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setSqlSchemas(String... sqlSchemas) {
         this.sqlSchemas = sqlSchemas;
+
+        return this;
+    }
+
+    /**
+     * Gets plugins information.
+     *
+     * @return Plugins information.
+     */
+    public IgnitePluginInfo[] getPluginInfos() {
+        return pluginInfos;
+    }
+
+    /**
+     * Sets plugins information needed for their creation and usage.
+     *
+     * @param pluginInfos Plugins information needed for their creation and usage.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setPluginInfos(IgnitePluginInfo... pluginInfos) {
+        this.pluginInfos = pluginInfos;
 
         return this;
     }
