@@ -347,13 +347,35 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testState() throws Exception {
         Ignite ignite = startGrids(1);
 
+        injectTestSystemOut();
+
         assertFalse(ignite.cluster().active());
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
+        assertTrue(testOut.toString().contains("Cluster is inactive"));
+
+        testOut.reset();
+
         ignite.cluster().active(true);
 
+        assertTrue(ignite.cluster().active());
+
         assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        assertTrue(testOut.toString().contains("Cluster is active"));
+
+        testOut.reset();
+
+        ignite.cluster().active(false);
+        ignite.cluster().activeReadOnly();
+
+        assertTrue(ignite.cluster().active());
+        assertTrue(ignite.cluster().readOnly());
+
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        assertTrue(testOut.toString().contains("Cluster is active in read-only mode"));
     }
 
     /**

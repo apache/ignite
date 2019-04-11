@@ -607,6 +607,27 @@ public class CommandHandler {
     }
 
     /**
+     * Activate cluster in read-only mode.
+     *
+     * @param client Client.
+     * @throws GridClientException If failed to activate cluster in read-only mode.
+     */
+    private void activateReadOnly(GridClient client) throws Throwable {
+        try {
+            GridClientClusterState state = client.state();
+
+            state.activeReadOnly();
+
+            log("Cluster activated in read-only mode.");
+        }
+        catch (Throwable e) {
+            log("Failed to activate cluster in read-only mode.");
+
+            throw e;
+        }
+    }
+
+    /**
      * Deactivate cluster.
      *
      * @param client Client.
@@ -637,10 +658,38 @@ public class CommandHandler {
         try {
             GridClientClusterState state = client.state();
 
-            log("Cluster is " + (state.active() ? "active" : "inactive"));
+            if(state.active()) {
+                boolean readOnly = state.readOnly();
+
+                log("Cluster is active" + (readOnly ? " in read-only mode" : ""));
+            }
+            else
+                log("Cluster is inactive");
         }
         catch (Throwable e) {
             log("Failed to get cluster state.");
+
+            throw e;
+        }
+    }
+
+    /**
+     * Change cluster read-only mode.
+     *
+     * @param client Client.
+     * @param readOnly New cluster read-only mode.
+     * @throws Throwable If failed to print state.
+     */
+    private void changeClusterReadOnlyMode(GridClient client, boolean readOnly) throws Throwable {
+        try {
+            GridClientClusterState state = client.state();
+
+            state.readOnly(readOnly);
+
+            log("Cluster read-only mode " + (readOnly ? "enabled" : "disabled"));
+        }
+        catch (Throwable e) {
+            log("Failed to " + (readOnly ? "enable" : "disable") + " read-only mode");
 
             throw e;
         }
