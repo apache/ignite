@@ -46,6 +46,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestDelayingCommunicationSpi;
+import org.apache.ignite.internal.TestDelayingTcpDiscoverySpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -56,6 +57,9 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -124,6 +128,19 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
                     (msg instanceof GridDhtPartitionsFullMessage || msg instanceof GridDhtPartitionsAbstractMessage);
             }
 
+        });
+
+        cfg.setDiscoverySpi(new TestDelayingTcpDiscoverySpi() {
+            /** {@inheritDoc} */
+            @Override protected boolean delayMessage(TcpDiscoveryAbstractMessage msg) {
+                return delayPartExchange.get() &&
+                    (msg instanceof TcpDiscoveryNodeFailedMessage || msg instanceof TcpDiscoveryNodeLeftMessage);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected int delayMillis() {
+                return 250;
+            }
         });
 
         cfg.setClientMode(client);
@@ -992,7 +1009,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
             delayPartExchange.set(false);
 
-            Thread.sleep(5_000L);
+            Thread.sleep(10_000L);
 
             for (Map<Integer, Semaphore> map : lostMap) {
                 for (Map.Entry<Integer, Semaphore> entry : map.entrySet())
