@@ -26,7 +26,8 @@ namespace ignite
             namespace affinity
             {
                 AffinityManager::AffinityManager() :
-                    cacheAffinity(new CacheAffinityMap)
+                    cacheAffinity(new CacheAffinityMap),
+                    updateCounter(0)
                 {
                     // No-op.
                 }
@@ -36,9 +37,7 @@ namespace ignite
                     if (topologyVersion >= ver)
                         return;
 
-                    SP_CacheAffinityMap empty(new CacheAffinityMap);
-
-                    SetNewAffinity(ver, empty);
+                    ResetAffinity(ver);
                 }
 
                 void AffinityManager::UpdateAffinity(const std::vector<AffinityAwarenessGroup>& groups,
@@ -47,25 +46,31 @@ namespace ignite
                     if (topologyVersion > ver)
                         return;
 
-                    SP_CacheAffinityMap oldAffinityPtr = GetAffinity();
+                    bool processed = false;
 
-                    SP_CacheAffinityMap newAffinityPtr(new CacheAffinityMap(*oldAffinityPtr.Get()));
-
-                    CacheAffinityMap& newAffinity = *newAffinityPtr.Get();
-
-                    std::vector<AffinityAwarenessGroup>::const_iterator group;
-                    for (group = groups.begin(); group != groups.end(); ++group)
+                    while (!processed)
                     {
-                        SP_AffinityAssignment newMapping(new AffinityAssignment(group->GetNodePartitions()));
+                        uint64_t cnt;
+                        SP_CacheAffinityMap oldAffinityPtr = GetAffinity(cnt);
 
-                        const std::vector<CacheAffinityConfigs>& caches = group->GetCaches();
+                        SP_CacheAffinityMap newAffinityPtr(new CacheAffinityMap(*oldAffinityPtr.Get()));
 
-                        std::vector<CacheAffinityConfigs>::const_iterator cache;
-                        for (cache = caches.begin(); cache != caches.end(); ++cache)
-                            newAffinity[cache->GetCacheId()].Swap(newMapping);
+                        CacheAffinityMap& newAffinity = *newAffinityPtr.Get();
+
+                        std::vector<AffinityAwarenessGroup>::const_iterator group;
+                        for (group = groups.begin(); group != groups.end(); ++group)
+                        {
+                            SP_AffinityAssignment newMapping(new AffinityAssignment(group->GetNodePartitions()));
+
+                            const std::vector<CacheAffinityConfigs>& caches = group->GetCaches();
+
+                            std::vector<CacheAffinityConfigs>::const_iterator cache;
+                            for (cache = caches.begin(); cache != caches.end(); ++cache)
+                                newAffinity[cache->GetCacheId()].Swap(newMapping);
+                        }
+
+                        processed = UpdateAffinity(ver, cnt, newAffinityPtr);
                     }
-
-                    SetNewAffinity(ver, newAffinityPtr);
                 }
 
                 SP_AffinityAssignment AffinityManager::GetAffinityAssignment(int32_t cacheId) const
@@ -82,7 +87,7 @@ namespace ignite
                     return it->second;
                 }
 
-                void AffinityManager::SetNewAffinity(const AffinityTopologyVersion& ver, SP_CacheAffinityMap& affinity)
+                void AffinityManager::ResetAffinity(const AffinityTopologyVersion& ver)
                 {
                     common::concurrent::RwExclusiveLockGuard lock(affinityRwl);
 
@@ -91,7 +96,31 @@ namespace ignite
 
                     topologyVersion = ver;
 
+                    SP_CacheAffinityMap empty(new CacheAffinityMap);
+
+                    cacheAffinity.Swap(empty);
+
+                    ++updateCounter;
+                }
+
+                bool AffinityManager::UpdateAffinity(const AffinityTopologyVersion& ver, uint64_t cnt,
+                    SP_CacheAffinityMap& affinity)
+                {
+                    common::concurrent::RwExclusiveLockGuard lock(affinityRwl);
+
+                    if (topologyVersion > ver)
+                        return true;
+
+                    if (updateCounter != cnt)
+                        return false;
+
+                    topologyVersion = ver;
+
                     cacheAffinity.Swap(affinity);
+
+                    ++updateCounter;
+
+                    return true;
                 }
 
                 AffinityManager::SP_CacheAffinityMap AffinityManager::GetAffinity() const
@@ -99,6 +128,19 @@ namespace ignite
                     common::concurrent::RwSharedLockGuard lock(affinityRwl);
 
                     SP_CacheAffinityMap ptr(cacheAffinity);
+
+                    lock.Reset();
+
+                    return ptr;
+                }
+
+                AffinityManager::SP_CacheAffinityMap AffinityManager::GetAffinity(uint64_t& cnt) const
+                {
+                    common::concurrent::RwSharedLockGuard lock(affinityRwl);
+
+                    SP_CacheAffinityMap ptr(cacheAffinity);
+
+                    cnt = updateCounter;
 
                     lock.Reset();
 

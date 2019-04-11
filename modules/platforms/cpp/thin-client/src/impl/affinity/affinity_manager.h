@@ -76,12 +76,22 @@ namespace ignite
                     typedef common::concurrent::SharedPointer<CacheAffinityMap> SP_CacheAffinityMap;
 
                     /**
+                     * Resets affinity mapping.
+                     *
+                     * @param ver Version.
+                     */
+                    void ResetAffinity(const AffinityTopologyVersion& ver);
+
+                    /**
                      * Set affinity mapping.
                      *
                      * @param ver Version.
+                     * @param cnt Update counter.
                      * @param affinity Affinity mapping.
+                     * @return @c true if successful, and @c false, if affinity map was updated concurrently and must be
+                     *    re-built.
                      */
-                    void SetNewAffinity(const AffinityTopologyVersion& ver, SP_CacheAffinityMap& affinity);
+                    bool UpdateAffinity(const AffinityTopologyVersion& ver, uint64_t cnt, SP_CacheAffinityMap& affinity);
 
                     /**
                      * Get affinity mapping.
@@ -89,6 +99,14 @@ namespace ignite
                      * @return Affinity mapping.
                      */
                     SP_CacheAffinityMap GetAffinity() const;
+
+                    /**
+                     * Get affinity mapping.
+                     *
+                     * @param cnt Counter value.
+                     * @return Affinity mapping.
+                     */
+                    SP_CacheAffinityMap GetAffinity(uint64_t& cnt) const;
 
                     /** Current affinity topology version. */
                     AffinityTopologyVersion topologyVersion;
@@ -98,6 +116,9 @@ namespace ignite
 
                     /** Cache affinity mapping read-write lock. */
                     mutable common::concurrent::ReadWriteLock affinityRwl;
+
+                    /** Update counter to detect concurrent updates. */
+                    mutable uint64_t updateCounter;
                 };
             }
         }
