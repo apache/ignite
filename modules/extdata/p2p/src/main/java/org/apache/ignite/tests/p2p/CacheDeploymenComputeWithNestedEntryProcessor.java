@@ -49,7 +49,8 @@ public class CacheDeploymenComputeWithNestedEntryProcessor implements IgniteCall
     }
 
     /**
-     * @param param Parameter.
+     * @param cacheName Cache name.
+     * @param key Key.
      */
     public CacheDeploymenComputeWithNestedEntryProcessor(String cacheName, int key) {
         this.key = key;
