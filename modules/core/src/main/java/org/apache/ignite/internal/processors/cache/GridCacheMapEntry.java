@@ -5717,15 +5717,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 return;
             }
 
-            if (oldRow != null && ver.compareTo(oldRow.version()) <= 0) {
-                if (ver.compareTo(oldRow.version()) < 0)
-                    log.error("ERR: Detected out of order update [oldRow=" + oldRow + ", newVer=" + ver + ']', new Exception());
-
-                treeOp = IgniteTree.OperationType.NOOP;
-
-                return;
-            }
-
             if (val != null) {
                 newRow = entry.cctx.offheap().dataStore(entry.localPartition()).createRow(
                     entry.cctx,

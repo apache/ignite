@@ -1173,7 +1173,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     GridDhtPartitionTopology top = grp.topology();
 
                     if (top != null)
-                        cctx.affinity().checkRebalanceState(top, grp.groupId());
+                        cctx.affinity().checkRebalanceState(top, grp.groupId(), null);
                 }
             }
 
@@ -1438,8 +1438,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 null,
                 grps);
 
-        if (log.isTraceEnabled())
-            log.trace("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
+        if (log.isInfoEnabled())
+            log.info("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
 
         try {
             cctx.io().sendNoRetry(node, m, SYSTEM_POOL);
@@ -1782,8 +1782,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         try {
             if (msg.exchangeId() == null) {
-                if (log.isTraceEnabled())
-                    log.trace("Received local partition update [nodeId=" + node.id() + ", parts=" +
+                if (log.isInfoEnabled())
+                    log.info("Received local partition update [nodeId=" + node.id() + ", parts=" +
                         msg + ']');
 
                 boolean updated = false;
@@ -1807,13 +1807,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (top != null) {
                         updated |= top.update(null, entry.getValue(), false);
 
-                        cctx.affinity().checkRebalanceState(top, grpId);
+                        cctx.affinity().checkRebalanceState(top, grpId, msg);
                     }
                 }
 
                 if (updated) {
-                    if (log.isDebugEnabled())
-                        log.debug("Partitions have been scheduled to resend [reason=Single update from " + node.id() + "]");
+                    if (log.isInfoEnabled())
+                        log.info("Partitions have been scheduled to resend [reason=Single update from " + node.id() + "]");
 
                     scheduleResendPartitions();
                 }
@@ -1832,7 +1832,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         U.warn(log, "Client node tries to connect but its exchange " +
                             "info is cleaned up from exchange history. " +
                             "Consider increasing 'IGNITE_EXCHANGE_HISTORY_SIZE' property " +
-                            "or start clients in  smaller batches. " +
+                            "or start clients in smaller batches. " +
                             "Current settings and versions: " +
                             "[IGNITE_EXCHANGE_HISTORY_SIZE=" + EXCHANGE_HISTORY_SIZE + ", " +
                             "initVer=" + initVer + ", " +

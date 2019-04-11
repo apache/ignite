@@ -5330,9 +5330,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         assert pageStore != null : "Persistent cache should have initialize page store manager.";
 
         for (int p = 0; p < grp.affinity().partitions(); p++) {
-            if (grp.topology().localPartition(p) != null) {
-                GridDhtLocalPartition part = grp.topology().localPartition(p);
+            GridDhtLocalPartition part = grp.topology().localPartition(p);
 
+            if (part != null) {
                 log.info("Partition [grp=" + grp.cacheOrGroupName()
                     + ", id=" + p
                     + ", state=" + part.state()
@@ -5362,17 +5362,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 try {
                     PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
-                    GridDhtPartitionState partitionState = fromOrdinal(io.getPartitionState(pageAddr));
+                    GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageAddr));
 
-                    String state = partitionState != null ? partitionState.toString() : "N/A";
+                    String state = partState != null ? partState.toString() : "N/A";
 
-                    long updateCounter = io.getUpdateCounter(pageAddr);
+                    long updateCntr = io.getUpdateCounter(pageAddr);
                     long size = io.getSize(pageAddr);
+
+                    // TODO FIXME print gaps.
 
                     log.info("Partition [grp=" + grp.cacheOrGroupName()
                             + ", id=" + p
                             + ", state=" + state
-                            + ", counter=" + updateCounter
+                            + ", counter=" + updateCntr
                             + ", size=" + size + "]");
                 }
                 finally {

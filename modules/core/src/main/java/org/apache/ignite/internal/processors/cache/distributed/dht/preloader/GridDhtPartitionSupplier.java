@@ -548,8 +548,12 @@ class GridDhtPartitionSupplier {
         T3<UUID, Integer, AffinityTopologyVersion> contextId
     ) throws IgniteCheckedException {
         try {
-            if (log.isDebugEnabled())
-                log.debug("Send next supply message [" + supplyRoutineInfo(topicId, demander.id(), demandMsg) + "]");
+            if (log.isInfoEnabled()) {
+                log.info("Send next supply message [" + supplyRoutineInfo(topicId, demander.id(), demandMsg) +
+                    ", missed=" + supplyMsg.missed() +
+                    ", last=" + supplyMsg.last() +
+                    ", infos=" + supplyMsg.infos() + ']');
+            }
 
             grp.shared().io().sendOrderedMessage(demander, demandMsg.topic(), supplyMsg, grp.ioPolicy(), demandMsg.timeout());
 

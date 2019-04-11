@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccLeafIO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.logger.NullLogger;
+import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
@@ -57,6 +58,7 @@ public class WalReader {
     private static final String WAL_TIME_FROM_MILLIS = "walTimeFromMillis";
     private static final String WAL_TIME_TO_MILLIS = "walTimeToMillis";
     private static final String RECORD_CONTAINS_TEXT = "recordContainsText";
+    private static final String OUTPUT_PATH = "output";
 
     public static void main(String[] args) throws Exception {
         final Options options = new Options();
@@ -81,6 +83,8 @@ public class WalReader {
             "The end time interval for the last modification of files in milliseconds.");
         options.addOption(RECORD_CONTAINS_TEXT, true,
             "Filter by substring in the WAL record.");
+        options.addOption(OUTPUT_PATH, true,
+            "Optional path to output.");
 
         final CommandLine cmd = new DefaultParser().parse(options, args);
 
@@ -97,6 +101,8 @@ public class WalReader {
 
         final File[] walFiles;
         final File[] walArchiveFiles;
+
+        final @Nullable File output;
 
         try {
 
@@ -157,7 +163,19 @@ public class WalReader {
                 }
             }
 
-            System.setOut(new PrintStream(new File("C:\\work\\logs\\d_1.txt")));
+            output = cmd.hasOption(OUTPUT_PATH) ? new File(cmd.getOptionValue(OUTPUT_PATH)) : null;
+
+            if (output != null) {
+                output.createNewFile();
+
+                if (!output.canWrite()) {
+                    System.err.println("Cannot write to " + output.getAbsolutePath());
+
+                    System.exit(1);
+                }
+
+                System.setOut(new PrintStream(output));
+            }
 
             System.out.println("Program arguments:");
             System.out.printf("\t%s = %d%n", PAGE_SIZE, pageSize);
@@ -288,7 +306,8 @@ public class WalReader {
             DataRecord dRec = (DataRecord)record;
 
             for (DataEntry entry : dRec.writeEntries())
-                System.out.println("DataEntry: op=" + entry.op() + ", grpId=" + entry.cacheId() + ", partId=" + entry.partitionId() + ", key=" + entry.key().value(null, false) + ", cntr=" + entry.partitionCounter());
+                System.out.println("DataEntry: op=" + entry.op() + ", grpId=" + entry.cacheId() +
+                    ", partId=" + entry.partitionId() + ", key=" + entry.key().value(null, false) + ", cntr=" + entry.partitionCounter() + ", ver=" + entry.writeVersion());
 //            try {
 //                String recordStr = record.toString();
 //
