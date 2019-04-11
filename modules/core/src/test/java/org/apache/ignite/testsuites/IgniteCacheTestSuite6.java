@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.authentication.AuthenticationOnNotA
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNPEOnStartTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheLongRunningTransactionDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.PartitionedTransactionalOptimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.PartitionedTransactionalPessimisticCacheGetsDistributionTest;
@@ -102,6 +103,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(PartitionsExchangeCoordinatorFailoverTest.class);
 
         suite.addTestSuite(TxOptimisticSerializableTest.class);
+
+        suite.addTestSuite(GridCacheLongRunningTransactionDiagnosticsTest.class);
 
         return suite;
     }

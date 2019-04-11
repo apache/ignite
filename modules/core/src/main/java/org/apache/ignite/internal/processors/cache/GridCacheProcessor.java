@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheExistsException;
@@ -4589,6 +4590,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.grid().context().discovery().sendCustomEvent(msg);
 
         fut.get();
+    }
+
+    /**
+     * Sets if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread. Also broadcasts this setting on other server nodes in cluster.
+     *
+     * @param allowed whether allowed
+     */
+    public void setTxOwnerDumpRequestsAllowed(boolean allowed) {
+        IgniteCompute compute = ctx.grid().compute(ctx.grid().cluster().forServers());
+
+        compute.broadcast(new TxOwnerDumpRequestAllowedSettingClosure(allowed));
     }
 
     /**
