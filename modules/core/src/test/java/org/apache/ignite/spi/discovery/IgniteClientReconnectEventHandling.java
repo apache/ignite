@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp;
+package org.apache.ignite.spi.discovery;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +25,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -51,10 +52,11 @@ public class IgniteClientReconnectEventHandling extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+        DiscoverySpi discoSpi = cfg.getDiscoverySpi();
 
-        // For test speed optimization.
-        discoSpi.setReconnectDelay(RECONNECT_DALAY);
+        // For optimization test duration.
+        if (discoSpi instanceof TcpDiscoverySpi)
+            ((TcpDiscoverySpi)discoSpi).setReconnectDelay(RECONNECT_DALAY);
 
         if (igniteInstanceName.contains("client")) {
             cfg.setClientMode(true);
@@ -124,12 +126,9 @@ public class IgniteClientReconnectEventHandling extends GridCommonAbstractTest {
         // Continue processing events from the previous cluster.
         latch.countDown();
 
-        // Wait for GridDiscoveryManager will process notify EVT_CLIENT_NODE_RECONNECTED.
-        // For grid components its mean that client already reconnected to topology (they will be notified by
-        // the onLocalJoin method).
-        assertTrue(waitForCondition(() -> !client.context().clientDisconnected(), 10_000));
-
         client.cluster().clientReconnectFuture().get();
+
+        assertTrue(!client.context().clientDisconnected());
 
         assertTrue("Failed to wait for client reconnect event.", reconnect.await(10, SECONDS));
 

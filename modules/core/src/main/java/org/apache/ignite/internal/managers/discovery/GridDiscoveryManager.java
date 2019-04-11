@@ -317,7 +317,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * Otherwise, we can continue process events from the previous cluster topology when the client already connected to
      * a new topology.
      */
-    private volatile GridFutureAdapter disconnectEvtFut = new GridFutureAdapter();
+    private volatile GridFutureAdapter disconnectEvtFut;
 
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
@@ -891,7 +891,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         disconnectEvtFut.get();
                     }
                     catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
+                        throw new IgniteException("Failed to wait for handling disconnect event.", e);
                     }
                 }
             }
