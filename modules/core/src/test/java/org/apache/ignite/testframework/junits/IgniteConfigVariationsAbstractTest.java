@@ -40,28 +40,12 @@ import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runners.model.Statement;
+import org.junit.Before;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
  */
 public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstractTest {
-    /** Manages test execution and reporting. */
-    private final TestRule rulePrivate = (base, description) -> new Statement() {
-        @Override public void evaluate() {
-            assert getName() != null : "getName returned null";
-
-            testsCfg = testsCfgInjected;
-        }
-    };
-
-    /** Manages first and last test execution. */
-    @Rule public RuleChain runRule
-        = RuleChain.outerRule(rulePrivate).around(super.nameAndRunRulesChain);
-
     /** */
     protected static final int SERVER_NODE_IDX = 0;
 
@@ -106,6 +90,14 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @Override protected boolean isSafeTopology() {
         return false;
+    }
+
+    /** Check test name and initialize configs. */
+    @Before
+    public void checkInit(){
+        assert getName() != null : "getName returned null";
+
+        testsCfg = testsCfgInjected;
     }
 
     /** {@inheritDoc} */
