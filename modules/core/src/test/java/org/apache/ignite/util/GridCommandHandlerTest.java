@@ -269,6 +269,46 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--activate"));
 
         assertTrue(ignite.cluster().active());
+        assertFalse(ignite.cluster().readOnly());
+    }
+
+    /**
+     * Test activation in read-only mode works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testActivateReadOnly() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        assertFalse(ignite.cluster().active());
+
+        assertEquals(EXIT_CODE_OK, execute("--activate", "--read-only"));
+
+        assertTrue(ignite.cluster().active());
+        assertTrue(ignite.cluster().readOnly());
+    }
+
+    /**
+     * Test enabling/disabling read-only mode works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadOnlyEnableDisable() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        ignite.cluster().active(true);
+
+        assertFalse(ignite.cluster().readOnly());
+
+        assertEquals(EXIT_CODE_OK, execute("--read-only", "--enable"));
+
+        assertTrue(ignite.cluster().readOnly());
+
+        assertEquals(EXIT_CODE_OK, execute("--read-only", "--disable"));
+
+        assertFalse(ignite.cluster().readOnly());
     }
 
     /**

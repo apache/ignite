@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
+import org.apache.ignite.internal.commandline.state.ChangeClusterStateArguments;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 
 /**
@@ -48,6 +49,9 @@ public class Arguments {
      * Arguments for baseline command.
      */
     private BaselineArguments baselineArgs;
+
+    /** Activate arguments. */
+    private ChangeClusterStateArguments changeClusterStateArgs;
 
     /** Transaction arguments. */
     private final VisorTxTaskArg txArg;
@@ -126,7 +130,7 @@ public class Arguments {
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd,
         BaselineArguments baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
-        Long pingTimeout, Long pingInterval, boolean autoConfirmation,
+        Long pingTimeout, Long pingInterval, boolean autoConfirmation, ChangeClusterStateArguments changeClusterStateArgs,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
         String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType
@@ -149,6 +153,8 @@ public class Arguments {
         this.pingInterval = pingInterval;
 
         this.autoConfirmation = autoConfirmation;
+
+        this.changeClusterStateArgs = changeClusterStateArgs;
 
         this.sslProtocol = sslProtocol;
         this.sslCipherSuites = sslCipherSuites;
@@ -270,6 +276,13 @@ public class Arguments {
      */
     public boolean autoConfirmation() {
         return autoConfirmation;
+    }
+
+    /**
+     * @return Activation arguments.
+     */
+    public ChangeClusterStateArguments changeClusterStateArguments() {
+        return changeClusterStateArgs;
     }
 
     /**

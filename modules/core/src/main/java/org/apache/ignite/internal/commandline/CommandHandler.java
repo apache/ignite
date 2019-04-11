@@ -71,6 +71,9 @@ import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributi
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTask;
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskArg;
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskResult;
+import org.apache.ignite.internal.commandline.state.ChangeClusterStateArguments;
+import org.apache.ignite.internal.commandline.state.ActivateCommandArg;
+import org.apache.ignite.internal.commandline.state.ReadOnlyCommandArg;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -145,6 +148,7 @@ import static org.apache.ignite.internal.commandline.Command.ACTIVATE;
 import static org.apache.ignite.internal.commandline.Command.BASELINE;
 import static org.apache.ignite.internal.commandline.Command.CACHE;
 import static org.apache.ignite.internal.commandline.Command.DEACTIVATE;
+import static org.apache.ignite.internal.commandline.Command.READ_ONLY;
 import static org.apache.ignite.internal.commandline.Command.STATE;
 import static org.apache.ignite.internal.commandline.Command.TX;
 import static org.apache.ignite.internal.commandline.Command.WAL;
@@ -589,39 +593,44 @@ public class CommandHandler {
      * Activate cluster.
      *
      * @param client Client.
+     * @param args Cluster state change arguments.
      * @throws GridClientException If failed to activate.
      */
-    private void activate(GridClient client) throws Throwable {
+    private void activate(GridClient client, ChangeClusterStateArguments args) throws Throwable {
         try {
             GridClientClusterState state = client.state();
 
-            state.active(true);
+            if(args.readOnly())
+                state.activeReadOnly();
+            else
+                state.active(true);
 
-            log("Cluster activated");
+            log("Cluster activated" + (args.readOnly() ? " in read-only mode" : ""));
         }
         catch (Throwable e) {
-            log("Failed to activate cluster.");
+            log("Failed to activate cluster" + (args.readOnly() ? " in read-only mode" : ""));
 
             throw e;
         }
     }
 
     /**
-     * Activate cluster in read-only mode.
+     * Enable/disable cluster read-only mode.
      *
      * @param client Client.
-     * @throws GridClientException If failed to activate cluster in read-only mode.
+     * @param args Cluster state change arguments.
+     * @throws GridClientException If failed to activate.
      */
-    private void activateReadOnly(GridClient client) throws Throwable {
+    private void readOnly(GridClient client, ChangeClusterStateArguments args) throws Throwable {
         try {
             GridClientClusterState state = client.state();
 
-            state.activeReadOnly();
+            state.readOnly(args.readOnly());
 
-            log("Cluster activated in read-only mode.");
+            log("Cluster read-only mode " + (args.readOnly() ? "enabled" : "disabled"));
         }
         catch (Throwable e) {
-            log("Failed to activate cluster in read-only mode.");
+            log("Failed to " + (args.readOnly() ? "enable" : "disable") + " cluster read-only mode");
 
             throw e;
         }
@@ -1903,6 +1912,8 @@ public class CommandHandler {
 
         char sslTrustStorePassword[] = null;
 
+        ChangeClusterStateArguments changeClusterStateArgs = null;
+
         final String pwdArgWarnFmt = "Warning: %s is insecure. " +
             "Whenever possible, use interactive prompt for password (just discard %s option).";
 
@@ -1914,9 +1925,44 @@ public class CommandHandler {
             if (cmd != null) {
                 switch (cmd) {
                     case ACTIVATE:
+                        commands.add(cmd);
+
+                        changeClusterStateArgs = new ChangeClusterStateArguments();
+
+                        int argsCnt = 1;
+
+                        while (hasNextArg() && argsCnt-- > 0) {
+                            String strArg = nextArg("");
+
+                            ActivateCommandArg arg = CommandArgUtils.of(strArg, ActivateCommandArg.class);
+
+                            if (arg == ActivateCommandArg.READ_ONLY)
+                                changeClusterStateArgs.readOnly(true);
+                            else
+                                log("WARN Unknown argument: " + strArg);
+                        }
+
+                        break;
+
                     case DEACTIVATE:
                     case STATE:
                         commands.add(cmd);
+
+                        break;
+
+                    case READ_ONLY:
+                        commands.add(cmd);
+
+                        String strArg = nextArg("Enable/disable read-only mode flag expected!");
+
+                        ReadOnlyCommandArg arg = CommandArgUtils.of(strArg, ReadOnlyCommandArg.class);
+
+                        if(arg == null)
+                            throw new IllegalArgumentException("Unknown argument: " + strArg);
+
+                        changeClusterStateArgs = new ChangeClusterStateArguments();
+
+                        changeClusterStateArgs.readOnly(arg == ReadOnlyCommandArg.ENABLE);
 
                         break;
 
@@ -2081,7 +2127,7 @@ public class CommandHandler {
             baselineArgs,
             txArgs, cacheArgs,
             walAct, walArgs,
-            pingTimeout, pingInterval, autoConfirmation,
+            pingTimeout, pingInterval, autoConfirmation, changeClusterStateArgs,
             sslProtocol, sslCipherSuites,
             sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
             sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
@@ -2756,8 +2802,9 @@ public class CommandHandler {
 
         log("This utility can do the following commands:");
 
-        usage(i("Activate cluster:"), ACTIVATE);
+        usage(i("Activate cluster:"), ACTIVATE, op(ActivateCommandArg.READ_ONLY));
         usage(i("Deactivate cluster:"), DEACTIVATE, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Enable/disable read-only mode on cluster:"), READ_ONLY, or(ReadOnlyCommandArg.ENABLE, ReadOnlyCommandArg.DISABLE), op(CMD_AUTO_CONFIRMATION));
         usage(i("Print current cluster state:"), STATE);
         usage(i("Print cluster baseline topology:"), BASELINE);
         usage(i("Add nodes into baseline topology:"), BASELINE, BaselineCommand.ADD.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
@@ -2906,12 +2953,17 @@ public class CommandHandler {
                 try (GridClient client = GridClientFactory.start(clientCfg)) {
                     switch (args.command()) {
                         case ACTIVATE:
-                            activate(client);
+                            activate(client, args.changeClusterStateArguments());
 
                             break;
 
                         case DEACTIVATE:
                             deactivate(client);
+
+                            break;
+
+                        case READ_ONLY:
+                            readOnly(client, args.changeClusterStateArguments());
 
                             break;
 

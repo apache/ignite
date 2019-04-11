@@ -40,7 +40,10 @@ public enum Command {
     CACHE("--cache"),
 
     /** */
-    WAL("--wal");
+    WAL("--wal"),
+
+    /** */
+    READ_ONLY("--read-only");
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final Command[] VALUES = Command.values();
@@ -76,7 +79,7 @@ public enum Command {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() { 
-        return text; 
+    @Override public String toString() {
+        return text;
     }
 }
