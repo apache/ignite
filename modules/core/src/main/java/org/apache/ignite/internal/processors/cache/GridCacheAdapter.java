@@ -3782,8 +3782,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         for (Object key : keys)
             A.notNull(key, "key");
 
+/*
         if (!ctx.store().configured())
             return new GridFinishedFuture<>();
+*/
 
         //TODO IGNITE-7954
         MvccUtils.verifyMvccOperationSupport(ctx, "Load");

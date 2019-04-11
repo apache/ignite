@@ -4175,7 +4175,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     @Test
     public void testEvictExpired() throws Exception {
-        final IgniteCache<String, Integer> cache = jcache();
+        final IgniteCache<String, Integer> cache = jcache(1);
 
         final String key = primaryKeysForCache(cache, 1).get(0);
 

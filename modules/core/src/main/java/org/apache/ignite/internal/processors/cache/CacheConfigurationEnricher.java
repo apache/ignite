@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.lang.reflect.Field;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.SerializeSeparately;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,6 +61,7 @@ public class CacheConfigurationEnricher {
                 }
 
             // Enrich near cache configuration as well.
+/*
             if (enrichment.nearCacheConfigurationEnrichment() != null
                 && ccfg.getNearConfiguration() != null
                 && ccfg.getCacheMode() != CacheMode.REPLICATED
@@ -80,6 +79,7 @@ public class CacheConfigurationEnricher {
 
                 enrichedCp.setNearConfiguration(nearEnrichedCp);
             }
+*/
         }
         catch (Exception e) {
             throw new IgniteException("Failed to enrich cache configuration [cacheName=" + ccfg.getName() + "]", e);

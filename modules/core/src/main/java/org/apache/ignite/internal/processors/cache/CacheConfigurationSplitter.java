@@ -92,6 +92,7 @@ public class CacheConfigurationSplitter {
 
             CacheConfigurationEnrichment enrichment = buildEnrichment(CacheConfiguration.class, cfgCopy, DEFAULT_CACHE_CONFIG);
 
+/*
             if (ccfg.getNearConfiguration() != null) {
                 NearCacheConfiguration nearCfgCopy = new NearCacheConfiguration(ccfg.getNearConfiguration());
 
@@ -102,6 +103,7 @@ public class CacheConfigurationSplitter {
 
                 cfgCopy.setNearConfiguration(nearCfgCopy);
             }
+*/
 
             return new T2<>(cfgCopy, enrichment);
         }
