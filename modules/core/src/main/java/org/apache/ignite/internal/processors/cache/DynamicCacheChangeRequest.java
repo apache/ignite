@@ -149,7 +149,7 @@ public class DynamicCacheChangeRequest implements Serializable {
 
         // Backward compatibility.
         if (spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS)) {
-            CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+            CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
 
             T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(cfg);
 

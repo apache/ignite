@@ -22,12 +22,29 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.SerializeSeparately;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 public class CacheConfigurationEnricher {
+    /** Marshaller. */
+    private final Marshaller marshaller;
+
+    /** Class loader. */
+    private final ClassLoader clsLdr;
+
+    /**
+     * @param marshaller Marshaller.
+     * @param clsLdr Class loader.
+     */
+    public CacheConfigurationEnricher(Marshaller marshaller, ClassLoader clsLdr) {
+        this.marshaller = marshaller;
+        this.clsLdr = clsLdr;
+    }
+
     /**
      * Enriches cache configuration fields with deserialized values from given @{code enrichment}.
      *
@@ -37,7 +54,7 @@ public class CacheConfigurationEnricher {
      *
      * @return Enriched cache configuration.
      */
-    public static CacheConfiguration<?, ?> enrich(
+    public CacheConfiguration<?, ?> enrich(
         CacheConfiguration<?, ?> ccfg,
         @Nullable CacheConfigurationEnrichment enrichment,
         boolean affinityNode
@@ -55,7 +72,8 @@ public class CacheConfigurationEnricher {
 
                     field.setAccessible(true);
 
-                    Object enrichedVal = enrichment.getFieldValue(field.getName());
+                    Object enrichedVal = deserialize(
+                        field.getName(), enrichment.getFieldSerializedValue(field.getName()));
 
                     field.set(enrichedCp, enrichedVal);
                 }
@@ -72,7 +90,7 @@ public class CacheConfigurationEnricher {
                     if (field.getDeclaredAnnotation(SerializeSeparately.class) != null) {
                         field.setAccessible(true);
 
-                        Object enrichedVal = enrichment.nearCacheConfigurationEnrichment().getFieldValue(field.getName());
+                        Object enrichedVal = enrichment.nearCacheConfigurationEnrichment().deserialize(field.getName());
 
                         field.set(nearEnrichedCp, enrichedVal);
                     }
@@ -92,11 +110,23 @@ public class CacheConfigurationEnricher {
      * @see #enrich(CacheConfiguration, CacheConfigurationEnrichment, boolean).
      * Does the same thing but without skipping any fields.
      */
-    public static CacheConfiguration<?, ?> enrichFully(
+    public CacheConfiguration<?, ?> enrichFully(
         CacheConfiguration<?, ?> ccfg,
         CacheConfigurationEnrichment enrichment
     ) {
         return enrich(ccfg, enrichment, true);
+    }
+
+    /**
+     * @param fieldName Field name.
+     */
+    private Object deserialize(String fieldName, byte[] serializedVal) {
+        try {
+            return U.unmarshal(marshaller, serializedVal, clsLdr);
+        }
+        catch (Exception e) {
+            throw new IgniteException("Failed to deserialize field " + fieldName, e);
+        }
     }
 
     /**

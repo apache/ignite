@@ -398,7 +398,7 @@ public class DynamicCacheDescriptor {
         res.sql(sql());
 
         if (isConfigurationEnriched()) {
-            CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+            CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
 
             T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(this);
 

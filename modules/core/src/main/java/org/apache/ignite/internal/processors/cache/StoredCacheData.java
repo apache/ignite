@@ -146,7 +146,7 @@ public class StoredCacheData implements Serializable {
      */
     public StoredCacheData withSplittedCacheConfig() {
         if (cacheConfigurationEnrichment == null) {
-            CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+            CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
 
             T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(ccfg);
 

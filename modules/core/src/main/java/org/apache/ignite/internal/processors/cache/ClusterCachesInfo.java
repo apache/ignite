@@ -1147,7 +1147,7 @@ class ClusterCachesInfo {
     private CacheNodeCommonDiscoveryData collectCommonDiscoveryData(boolean splitCacheConfigurations) {
         Map<Integer, CacheGroupData> cacheGrps = new HashMap<>();
 
-        CacheConfigurationSplitter cfgSplitter = new CacheConfigurationSplitter(splitCacheConfigurations);
+        CacheConfigurationSplitter cfgSplitter = new CacheConfigurationSplitterImpl(splitCacheConfigurations);
 
         for (CacheGroupDescriptor grpDesc : registeredCacheGrps.values()) {
             T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = cfgSplitter.split(grpDesc);

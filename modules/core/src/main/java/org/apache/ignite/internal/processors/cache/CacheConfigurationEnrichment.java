@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.ByteArrayInputStream;
-import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.Map;
-import org.apache.ignite.IgniteException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -58,17 +55,8 @@ public class CacheConfigurationEnrichment implements Serializable {
     /**
      * @param fieldName Field name.
      */
-    public Object getFieldValue(String fieldName) {
-        byte[] serializedVal = enrichFields.get(fieldName);
-
-        ByteArrayInputStream bis = new ByteArrayInputStream(serializedVal);
-
-        try (ObjectInputStream is = new ObjectInputStream(bis)) {
-            return is.readObject();
-        }
-        catch (Exception e) {
-            throw new IgniteException("Failed to deserialize field " + fieldName, e);
-        }
+    public byte[] getFieldSerializedValue(String fieldName) {
+        return enrichFields.get(fieldName);
     }
 
     /**

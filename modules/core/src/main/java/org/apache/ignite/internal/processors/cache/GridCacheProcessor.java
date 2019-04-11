@@ -298,6 +298,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Node's local cache configurations (both from static configuration and from persistent caches). */
     private CacheJoinNodeDiscoveryData localConfigs;
 
+    private CacheConfigurationSplitter splitter;
+
+    private CacheConfigurationEnricher enricher;
+
     /**
      * @param ctx Kernal context.
      */
@@ -876,7 +880,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheData.sql(sql);
 
-        CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+        CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
 
         T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(cfg);
 
@@ -956,7 +960,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (storedCacheData.hasOldCacheConfigurationFormat()) {
                         storedCacheData = new StoredCacheData(storedCacheData);
 
-                        CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+                        CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
 
                         T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(storedCacheData.config());
 
@@ -5577,7 +5581,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     // Backward compatibility.
                     if (spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS)) {
-                        CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+                        CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
 
                         T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(desc);
 
@@ -5599,7 +5603,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 // Backward compatibility.
                 if (spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS)) {
-                    CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+                    CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
 
                     T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(cfg);
 
@@ -5643,7 +5647,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             // Backward compatibility.
             if (spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS)) {
-                CacheConfigurationSplitter splitter = new CacheConfigurationSplitter(true);
+                CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
 
                 T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(ccfg);
 
