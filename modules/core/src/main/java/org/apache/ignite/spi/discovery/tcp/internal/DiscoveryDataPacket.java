@@ -39,6 +39,8 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * and allows convenient way of converting it to and from {@link DiscoveryDataBag} objects.
  */
 public class DiscoveryDataPacket implements Serializable {
+    /** Local file header signature(read as a little-endian number). */
+    private static int ZIP_HEADER_SIGNATURE = 0x04034b50;
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -286,7 +288,7 @@ public class DiscoveryDataPacket implements Serializable {
 
         for (Map.Entry<Integer, byte[]> binEntry : src.entrySet()) {
             try {
-                Serializable compData = isCompressionEnabled ?
+                Serializable compData = isZipped(binEntry.getValue()) ?
                     U.unmarshalZip(marsh, binEntry.getValue(), clsLdr) :
                     U.unmarshal(marsh, binEntry.getValue(), clsLdr);
                 res.put(binEntry.getKey(), compData);
@@ -305,6 +307,27 @@ public class DiscoveryDataPacket implements Serializable {
         }
 
         return res;
+    }
+
+    /**
+     * @param value Value to check.
+     * @return {@code true} if value is zipped.
+     */
+    private boolean isZipped(byte[] value) {
+        return value != null && value.length > 3 && makeInt(value) == ZIP_HEADER_SIGNATURE;
+    }
+
+    /**
+     * Make int from little-endian byte order.
+     *
+     * @param b Source of int. It take only first 4 bytes.
+     * @return Made int.
+     */
+    static private int makeInt(byte[] b) {
+        return (((b[3]       ) << 24) |
+            ((b[2] & 0xff) << 16) |
+            ((b[1] & 0xff) <<  8) |
+            ((b[0] & 0xff)      ));
     }
 
     /**
