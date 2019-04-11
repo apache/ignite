@@ -226,12 +226,12 @@ export default class Clusters {
         };
     }
 
-    requiresProprietaryDrivers(dataSrc) {
-        return ['Oracle', 'DB2', 'SQLServer'].includes(get(dataSrc, 'dialect'));
+    jdbcDriverURL(dataSrc) {
+        return this.JDBC_LINKS[get(dataSrc, 'dialect')];
     }
 
-    JDBCDriverURL(dataSrc) {
-        return this.JDBC_LINKS[get(dataSrc, 'dialect')];
+    requiresProprietaryDrivers(dataSrc) {
+        return !!this.jdbcDriverURL(dataSrc);
     }
 
     dataRegion = {
