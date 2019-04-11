@@ -18,12 +18,24 @@
  *
  */
 
-package org.apache.ignite.internal.commandline;
+package org.apache.ignite.internal.commandline.cache.argument;
 
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.argument.CommandArg;
 
-public interface Command {
-    String confirmationPrompt(Arguments args);
+public enum FindAndRemoveGarbageArg implements CommandArg {
+    DELETE("--delete");
 
-    Object execute(Arguments args, GridClientConfiguration clientCfg, CommandLogger logger) throws Exception;
+    private final String name;
+
+    FindAndRemoveGarbageArg(String name) {
+        this.name = name;
+    }
+
+    @Override public String argName() {
+        return name;
+    }
+
+    @Override public String toString() {
+        return name;
+    }
 }

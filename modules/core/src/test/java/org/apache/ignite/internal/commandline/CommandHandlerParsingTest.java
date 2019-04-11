@@ -19,25 +19,24 @@ package org.apache.ignite.internal.commandline;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
-import static org.apache.ignite.internal.commandline.Command.CACHE;
-import static org.apache.ignite.internal.commandline.Command.WAL;
-import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
-import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
-import static org.apache.ignite.internal.commandline.CommandHandler.WAL_DELETE;
-import static org.apache.ignite.internal.commandline.CommandHandler.WAL_PRINT;
-import static org.apache.ignite.internal.commandline.cache.CacheCommand.VALIDATE_INDEXES;
+import static org.apache.ignite.internal.commandline.Commands.CACHE;
+import static org.apache.ignite.internal.commandline.Commands.WAL;
+import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
+import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
+import static org.apache.ignite.internal.commandline.WalCommands.WAL_DELETE;
+import static org.apache.ignite.internal.commandline.WalCommands.WAL_PRINT;
+import static org.apache.ignite.internal.commandline.cache.CacheCommandList.VALIDATE_INDEXES;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
 import static org.junit.Assert.assertArrayEquals;
@@ -50,43 +49,27 @@ import static org.junit.Assert.fail;
  * Tests Command Handler parsing arguments.
  */
 public class CommandHandlerParsingTest {
-    /** */
-    @Before
-    public void setUp() throws Exception {
-        System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
-    }
-
-    /** */
-    @After
-    public void tearDown() throws Exception {
-        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
-    }
-
     /**
      * validate_indexes command arguments parsing and validation
      */
     @Test
     public void testValidateIndexArguments() {
-        CommandHandler hnd = new CommandHandler();
-
         //happy case for all parameters
         try {
             int expectedCheckFirst = 10;
             int expectedCheckThrough = 11;
             UUID nodeId = UUID.randomUUID();
 
-            CacheArguments args = hnd.parseAndValidate(
-                Arrays.asList(
-                    CACHE.text(),
-                    VALIDATE_INDEXES.text(),
-                    "cache1, cache2",
-                    nodeId.toString(),
-                    CHECK_FIRST.toString(),
-                    Integer.toString(expectedCheckFirst),
-                    CHECK_THROUGH.toString(),
-                    Integer.toString(expectedCheckThrough)
-                )
-            ).cacheArgs();
+            CacheArguments args = getArgs(Arrays.asList(
+                CACHE.text(),
+                VALIDATE_INDEXES.text(),
+                "cache1, cache2",
+                nodeId.toString(),
+                CHECK_FIRST.toString(),
+                Integer.toString(expectedCheckFirst),
+                CHECK_THROUGH.toString(),
+                Integer.toString(expectedCheckThrough)
+            )).cacheArgs();
 
             assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId());
             assertEquals("checkFirst parameter unexpected value", expectedCheckFirst, args.checkFirst());
@@ -100,7 +83,7 @@ public class CommandHandlerParsingTest {
             int expectedParam = 11;
             UUID nodeId = UUID.randomUUID();
 
-            CacheArguments args = hnd.parseAndValidate(
+            CacheArguments args = getArgs(
                 Arrays.asList(
                     CACHE.text(),
                     VALIDATE_INDEXES.text(),
@@ -120,7 +103,7 @@ public class CommandHandlerParsingTest {
         }
 
         try {
-            hnd.parseAndValidate(
+            getArgs(
                 Arrays.asList(
                     CACHE.text(),
                     VALIDATE_INDEXES.text(),
@@ -136,13 +119,18 @@ public class CommandHandlerParsingTest {
         }
 
         try {
-            hnd.parseAndValidate(Arrays.asList(CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString()));
+            getArgs(Arrays.asList(CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString()));
 
             fail("Expected exception hasn't been thrown");
         }
         catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
+    }
+
+    private Arguments getArgs(List<String> args) {
+        return new CommandArgParser(Collections.emptySet(), true, new CommandLogger()).
+            parseAndValidate(new CommandArgIterator(args.iterator()));
     }
 
     /**
@@ -152,10 +140,8 @@ public class CommandHandlerParsingTest {
     public void testExperimentalCommandIsDisabled() {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
-        CommandHandler hnd = new CommandHandler();
-
         try {
-            hnd.parseAndValidate(Arrays.asList(WAL.text(), WAL_PRINT));
+            getArgs(Arrays.asList(WAL.text(), WAL_PRINT));
         }
         catch (Throwable e) {
             e.printStackTrace();
@@ -164,7 +150,7 @@ public class CommandHandlerParsingTest {
         }
 
         try {
-            hnd.parseAndValidate(Arrays.asList(WAL.text(), WAL_DELETE));
+            getArgs(Arrays.asList(WAL.text(), WAL_DELETE));
         }
         catch (Throwable e) {
             e.printStackTrace();
@@ -178,15 +164,13 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAndValidateSSLArguments() {
-        CommandHandler hnd = new CommandHandler();
+        for (Commands cmd : Commands.values()) {
 
-        for (Command cmd : Command.values()) {
-
-            if (cmd == Command.CACHE || cmd == Command.WAL)
+            if (cmd == Commands.CACHE || cmd == Commands.WAL)
                 continue; // --cache subcommand requires its own specific arguments.
 
             try {
-                hnd.parseAndValidate(asList("--truststore"));
+                getArgs(asList("--truststore"));
 
                 fail("expected exception: Expected truststore");
             }
@@ -194,7 +178,7 @@ public class CommandHandlerParsingTest {
                 e.printStackTrace();
             }
 
-            Arguments args = hnd.parseAndValidate(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
+            Arguments args = getArgs(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
                 "--truststore", "testTruststore", "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
                 "--ssl-key-algorithm", "testSSLKeyAlgorithm", "--ssl-protocol", "testSSLProtocol", cmd.text()));
 
@@ -217,14 +201,12 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAndValidateUserAndPassword() {
-        CommandHandler hnd = new CommandHandler();
-
-        for (Command cmd : Command.values()) {
-            if (cmd == Command.CACHE || cmd == Command.WAL)
+        for (Commands cmd : Commands.values()) {
+            if (cmd == Commands.CACHE || cmd == Commands.WAL)
                 continue; // --cache subcommand requires its own specific arguments.
 
             try {
-                hnd.parseAndValidate(asList("--user"));
+                getArgs(asList("--user"));
 
                 fail("expected exception: Expected user name");
             }
@@ -233,7 +215,7 @@ public class CommandHandlerParsingTest {
             }
 
             try {
-                hnd.parseAndValidate(asList("--password"));
+                getArgs(asList("--password"));
 
                 fail("expected exception: Expected password");
             }
@@ -241,7 +223,7 @@ public class CommandHandlerParsingTest {
                 e.printStackTrace();
             }
 
-            Arguments args = hnd.parseAndValidate(asList("--user", "testUser", "--password", "testPass", cmd.text()));
+            Arguments args = getArgs(asList("--user", "testUser", "--password", "testPass", cmd.text()));
 
             assertEquals("testUser", args.getUserName());
             assertEquals("testPass", args.getPassword());
@@ -254,9 +236,7 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAndValidateWalActions() {
-        CommandHandler hnd = new CommandHandler();
-
-        Arguments args = hnd.parseAndValidate(Arrays.asList(WAL.text(), WAL_PRINT));
+        Arguments args = getArgs(Arrays.asList(WAL.text(), WAL_PRINT));
 
         assertEquals(WAL, args.command());
 
@@ -264,14 +244,14 @@ public class CommandHandlerParsingTest {
 
         String nodes = UUID.randomUUID().toString() + "," + UUID.randomUUID().toString();
 
-        args = hnd.parseAndValidate(Arrays.asList(WAL.text(), WAL_DELETE, nodes));
+        args = getArgs(Arrays.asList(WAL.text(), WAL_DELETE, nodes));
 
         assertEquals(WAL_DELETE, args.walAction());
 
         assertEquals(nodes, args.walArguments());
 
         try {
-            hnd.parseAndValidate(Collections.singletonList(WAL.text()));
+            getArgs(Collections.singletonList(WAL.text()));
 
             fail("expected exception: invalid arguments for --wal command");
         }
@@ -280,7 +260,7 @@ public class CommandHandlerParsingTest {
         }
 
         try {
-            hnd.parseAndValidate(Arrays.asList(WAL.text(), UUID.randomUUID().toString()));
+            getArgs(Arrays.asList(WAL.text(), UUID.randomUUID().toString()));
 
             fail("expected exception: invalid arguments for --wal command");
         }
@@ -294,15 +274,13 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAutoConfirmationFlag() {
-        CommandHandler hnd = new CommandHandler();
-
-        for (Command cmd : Command.values()) {
-            if (cmd != Command.DEACTIVATE
-                && cmd != Command.BASELINE
-                && cmd != Command.TX)
+        for (Commands cmd : Commands.values()) {
+            if (cmd != Commands.DEACTIVATE
+                && cmd != Commands.BASELINE
+                && cmd != Commands.TX)
                 continue;
 
-            Arguments args = hnd.parseAndValidate(asList(cmd.text()));
+            Arguments args = getArgs(asList(cmd.text()));
 
             assertEquals(cmd, args.command());
             assertEquals(DFLT_HOST, args.host());
@@ -311,7 +289,7 @@ public class CommandHandlerParsingTest {
 
             switch (cmd) {
                 case DEACTIVATE: {
-                    args = hnd.parseAndValidate(asList(cmd.text(), "--yes"));
+                    args = getArgs(asList(cmd.text(), "--yes"));
 
                     assertEquals(cmd, args.command());
                     assertEquals(DFLT_HOST, args.host());
@@ -322,7 +300,7 @@ public class CommandHandlerParsingTest {
                 }
                 case BASELINE: {
                     for (String baselineAct : asList("add", "remove", "set")) {
-                        args = hnd.parseAndValidate(asList(cmd.text(), baselineAct, "c_id1,c_id2", "--yes"));
+                        args = getArgs(asList(cmd.text(), baselineAct, "c_id1,c_id2", "--yes"));
 
                         assertEquals(cmd, args.command());
                         assertEquals(DFLT_HOST, args.host());
@@ -335,7 +313,7 @@ public class CommandHandlerParsingTest {
                     break;
                 }
                 case TX: {
-                    args = hnd.parseAndValidate(asList(cmd.text(), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
+                    args = getArgs(asList(cmd.text(), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
 
                     assertEquals(cmd, args.command());
                     assertEquals(DFLT_HOST, args.host());
@@ -356,19 +334,17 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testConnectionSettings() {
-        CommandHandler hnd = new CommandHandler();
-
-        for (Command cmd : Command.values()) {
-            if (cmd == Command.CACHE || cmd == Command.WAL)
+        for (Commands cmd : Commands.values()) {
+            if (cmd == Commands.CACHE || cmd == Commands.WAL)
                 continue; // --cache subcommand requires its own specific arguments.
 
-            Arguments args = hnd.parseAndValidate(asList(cmd.text()));
+            Arguments args = getArgs(asList(cmd.text()));
 
             assertEquals(cmd, args.command());
             assertEquals(DFLT_HOST, args.host());
             assertEquals(DFLT_PORT, args.port());
 
-            args = hnd.parseAndValidate(asList("--port", "12345", "--host", "test-host", "--ping-interval", "5000",
+            args = getArgs(asList("--port", "12345", "--host", "test-host", "--ping-interval", "5000",
                 "--ping-timeout", "40000", cmd.text()));
 
             assertEquals(cmd, args.command());
@@ -378,7 +354,7 @@ public class CommandHandlerParsingTest {
             assertEquals(40000, args.pingTimeout());
 
             try {
-                hnd.parseAndValidate(asList("--port", "wrong-port", cmd.text()));
+                getArgs(asList("--port", "wrong-port", cmd.text()));
 
                 fail("expected exception: Invalid value for port:");
             }
@@ -387,7 +363,7 @@ public class CommandHandlerParsingTest {
             }
 
             try {
-                hnd.parseAndValidate(asList("--ping-interval", "-10", cmd.text()));
+                getArgs(asList("--ping-interval", "-10", cmd.text()));
 
                 fail("expected exception: Ping interval must be specified");
             }
@@ -396,7 +372,7 @@ public class CommandHandlerParsingTest {
             }
 
             try {
-                hnd.parseAndValidate(asList("--ping-timeout", "-20", cmd.text()));
+                getArgs(asList("--ping-timeout", "-20", cmd.text()));
 
                 fail("expected exception: Ping timeout must be specified");
             }
@@ -411,13 +387,12 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testTransactionArguments() {
-        CommandHandler hnd = new CommandHandler();
         Arguments args;
 
-        args = hnd.parseAndValidate(asList("--tx"));
+        getArgs(asList("--tx"));
 
         try {
-            hnd.parseAndValidate(asList("--tx", "minDuration"));
+            getArgs(asList("--tx", "minDuration"));
 
             fail("Expected exception");
         }
@@ -425,7 +400,7 @@ public class CommandHandlerParsingTest {
         }
 
         try {
-            hnd.parseAndValidate(asList("--tx", "minDuration", "-1"));
+            getArgs(asList("--tx", "minDuration", "-1"));
 
             fail("Expected exception");
         }
@@ -433,7 +408,7 @@ public class CommandHandlerParsingTest {
         }
 
         try {
-            hnd.parseAndValidate(asList("--tx", "minSize"));
+            getArgs(asList("--tx", "minSize"));
 
             fail("Expected exception");
         }
@@ -441,7 +416,7 @@ public class CommandHandlerParsingTest {
         }
 
         try {
-            hnd.parseAndValidate(asList("--tx", "minSize", "-1"));
+            getArgs(asList("--tx", "minSize", "-1"));
 
             fail("Expected exception");
         }
@@ -449,7 +424,7 @@ public class CommandHandlerParsingTest {
         }
 
         try {
-            hnd.parseAndValidate(asList("--tx", "label"));
+            getArgs(asList("--tx", "label"));
 
             fail("Expected exception");
         }
@@ -457,7 +432,7 @@ public class CommandHandlerParsingTest {
         }
 
         try {
-            hnd.parseAndValidate(asList("--tx", "label", "tx123["));
+            getArgs(asList("--tx", "label", "tx123["));
 
             fail("Expected exception");
         }
@@ -465,14 +440,14 @@ public class CommandHandlerParsingTest {
         }
 
         try {
-            hnd.parseAndValidate(asList("--tx", "servers", "nodes", "1,2,3"));
+            getArgs(asList("--tx", "servers", "nodes", "1,2,3"));
 
             fail("Expected exception");
         }
         catch (IllegalArgumentException ignored) {
         }
 
-        args = hnd.parseAndValidate(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE",
+        args = getArgs(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE",
             "--servers"));
 
         VisorTxTaskArg arg = args.transactionArguments();
@@ -483,7 +458,7 @@ public class CommandHandlerParsingTest {
         assertEquals(VisorTxSortOrder.SIZE, arg.getSortOrder());
         assertEquals(VisorTxProjection.SERVER, arg.getProjection());
 
-        args = hnd.parseAndValidate(asList("--tx", "--min-duration", "130", "--min-size", "1", "--limit", "60", "--order", "DURATION",
+        args = getArgs(asList("--tx", "--min-duration", "130", "--min-size", "1", "--limit", "60", "--order", "DURATION",
             "--clients"));
 
         arg = args.transactionArguments();
@@ -494,7 +469,7 @@ public class CommandHandlerParsingTest {
         assertEquals(VisorTxSortOrder.DURATION, arg.getSortOrder());
         assertEquals(VisorTxProjection.CLIENT, arg.getProjection());
 
-        args = hnd.parseAndValidate(asList("--tx", "--nodes", "1,2,3"));
+        args = getArgs(asList("--tx", "--nodes", "1,2,3"));
 
         arg = args.transactionArguments();
 

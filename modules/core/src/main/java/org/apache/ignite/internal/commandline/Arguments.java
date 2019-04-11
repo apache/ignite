@@ -27,7 +27,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
  */
 public class Arguments {
     /** Command. */
-    private Command cmd;
+    private Commands cmd;
 
     /** Host. */
     private String host;
@@ -124,7 +124,7 @@ public class Arguments {
      * @param sslTrustStorePassword Truststore Password.
      * @param sslTrustStoreType Truststore Type.
      */
-    public Arguments(Command cmd, String host, String port, String user, String pwd,
+    public Arguments(Commands cmd, String host, String port, String user, String pwd,
         BaselineArguments baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
         Long pingTimeout, Long pingInterval, boolean autoConfirmation,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
@@ -166,7 +166,7 @@ public class Arguments {
     /**
      * @return command
      */
-    public Command command() {
+    public Commands command() {
         return cmd;
     }
 

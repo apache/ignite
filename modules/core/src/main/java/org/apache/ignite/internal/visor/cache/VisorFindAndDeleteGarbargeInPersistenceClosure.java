@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.util.lang.GridIterator;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -112,7 +113,7 @@ public class VisorFindAndDeleteGarbargeInPersistenceClosure implements IgniteCal
 
         Set<String> missingCacheGroups = new HashSet<>();
 
-        if (grpNames != null) {
+        if (!F.isEmpty(grpNames)) {
             for (String grpName : grpNames) {
                 CacheGroupContext groupContext = ignite.context().cache().cacheGroup(CU.cacheId(grpName));
 

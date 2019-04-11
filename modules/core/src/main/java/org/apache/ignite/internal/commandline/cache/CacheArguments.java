@@ -28,10 +28,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheArguments {
     /** Command. */
-    private CacheCommand cmd;
+    private CacheCommandList cmd;
 
     /** Caches. */
     private Set<String> caches;
+
+    /** Caches. */
+    private Set<String> groups;
 
     /** Exclude caches or groups. */
     private Set<String> excludeCaches;
@@ -81,6 +84,9 @@ public class CacheArguments {
     /** Check CRC sum on idle verify. */
     private boolean idleCheckCrc;
 
+    /** Delete garbage flag. */
+    private boolean delete;
+
     /**
      * @return Gets filter of caches, which will by checked.
      */
@@ -108,7 +114,7 @@ public class CacheArguments {
     /**
      * @return Command.
      */
-    public CacheCommand command() {
+    public CacheCommandList command() {
         return cmd;
     }
 
@@ -129,7 +135,7 @@ public class CacheArguments {
     /**
      * @param cmd New command.
      */
-    public void command(CacheCommand cmd) {
+    public void command(CacheCommandList cmd) {
         this.cmd = cmd;
     }
 
@@ -326,10 +332,18 @@ public class CacheArguments {
     }
 
     public Set<String> groups() {
-        return null;
+        return groups;
+    }
+
+    public void groups(Set<String> groups) {
+        this.groups = groups;
     }
 
     public boolean delete() {
-        return false;
+        return delete;
+    }
+
+    public void delete(boolean delete) {
+        this.delete = delete;
     }
 }

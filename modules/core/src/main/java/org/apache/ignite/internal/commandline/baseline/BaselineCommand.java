@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.baseline;
 
+import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -26,32 +27,32 @@ public enum BaselineCommand {
     /**
      * Add nodes to baseline.
      */
-    ADD("add"),
+    ADD("add", VisorBaselineOperation.ADD),
 
     /**
      * Remove nodes from baseline.
      */
-    REMOVE("remove"),
+    REMOVE("remove", VisorBaselineOperation.REMOVE),
 
     /**
      * Collect information about baseline.
      */
-    COLLECT("collect"),
+    COLLECT("collect", VisorBaselineOperation.COLLECT),
 
     /**
      * Set new baseline.
      */
-    SET("set"),
+    SET("set", VisorBaselineOperation.SET),
 
     /**
      * Check current topology version.
      */
-    VERSION("version"),
+    VERSION("version", VisorBaselineOperation.VERSION),
 
     /**
      * Baseline auto-adjust configuration.
      */
-    AUTO_ADJUST("auto_adjust");
+    AUTO_ADJUST("auto_adjust", VisorBaselineOperation.AUTOADJUST);
 
     /** Enumerated values. */
     private static final BaselineCommand[] VALS = values();
@@ -59,11 +60,16 @@ public enum BaselineCommand {
     /** Name. */
     private final String name;
 
+    /** Corresponding visor baseline operation. */
+    private final VisorBaselineOperation visorBaselineOperation;
+
     /**
      * @param name Name.
+     * @param operation
      */
-    BaselineCommand(String name) {
+    BaselineCommand(String name, VisorBaselineOperation operation) {
         this.name = name;
+        visorBaselineOperation = operation;
     }
 
     /**
@@ -84,6 +90,10 @@ public enum BaselineCommand {
      */
     public String text() {
         return name;
+    }
+
+    public VisorBaselineOperation visorBaselineOperation() {
+        return visorBaselineOperation;
     }
 
     /**

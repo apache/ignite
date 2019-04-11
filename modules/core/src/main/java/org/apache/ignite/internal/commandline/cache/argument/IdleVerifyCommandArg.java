@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.commandline.cache.argument;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.commandline.cache.CacheCommandList;
 
 /**
- * {@link CacheCommand#IDLE_VERIFY} command arguments.
+ * {@link CacheCommandList#IDLE_VERIFY} command arguments.
  */
 public enum IdleVerifyCommandArg implements CommandArg {
     /** Dump. */
