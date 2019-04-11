@@ -53,20 +53,6 @@ namespace Apache.Ignite.Core.Common
         /// <param name="major">Major version number.</param>
         /// <param name="minor">Minor version number.</param>
         /// <param name="maintenance">Maintenance version number.</param>
-        /// <param name="revTs">Revision date.</param>
-        /// <param name="revHash">Revision hash.</param>
-        public IgniteProductVersion(byte major, byte minor, byte maintenance, DateTime revTs, byte[] revHash)
-            : this(major, minor, maintenance, "", revTs, revHash)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="major">Major version number.</param>
-        /// <param name="minor">Minor version number.</param>
-        /// <param name="maintenance">Maintenance version number.</param>
         /// <param name="stage">Stage of development.</param>
         /// <param name="releaseDate">Revision date.</param>
         /// <param name="revHash">Revision hash.</param>
@@ -89,7 +75,7 @@ namespace Apache.Ignite.Core.Common
         /// Constructor.
         /// </summary>
         /// <param name="reader"><see cref="IBinaryRawReader"/></param>
-        public IgniteProductVersion(IBinaryRawReader reader)
+        internal IgniteProductVersion(IBinaryRawReader reader)
         {
             IgniteArgumentCheck.NotNull(reader, "reader");
 
