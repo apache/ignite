@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStrea
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.platform.messaging.PlatformMessageFilterImpl;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Timestamp;
@@ -210,6 +211,8 @@ public class PlatformContextImpl implements PlatformContext {
             w.writeBoolean(node.isDaemon());
             w.writeBoolean(node.isClient());
             w.writeObjectDetached(node.consistentId());
+            PlatformUtils.writeNodeVersion(w, node.version());
+
             writeClusterMetrics(w, node.metrics());
 
             out.synchronize();
