@@ -269,7 +269,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      * @throws Exception If failed.
      */
     @org.junit.Test
-    public void testQueryWithNullPartitionResponseBasedOnNondeNode() throws Exception {
+    public void testQueryWithNullPartitionResponseBasedOnNoneNode() throws Exception {
         verifyPartitionResultIsNull("select * from Person where _key = 1 and _key = 2", 0);
     }
 
@@ -547,6 +547,48 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
 
         checkNodesUsage(null, "select * from Person where _key = 3", 1, 1,
             false);
+    }
+
+    /**
+     * Check that
+     *
+     * @throws Exception If failed.
+     */
+    @org.junit.Test
+    public void test1() throws Exception {
+        // Reset query history.
+        for (int i = 0; i < NODES_CNT; i++) {
+            ((IgniteH2Indexing)grid(i).context().query().getIndexing())
+                .runningQueryManager().resetQueryHistoryMetrics();
+        }
+
+        stmt.setFetchSize(1);
+
+        ResultSet rs = stmt.executeQuery("select * from Person where _key = 1");
+//        ResultSet rs = stmt.executeQuery("select 1 union all select 1 union all select 1 union all select 1 union all select 1;");
+//
+//        while (rs.next());
+
+        // Check query history metrics in order to verify that not more than expected nodes were used.
+        int nonEmptyMetricsCntr = 0;
+        int qryExecutionsCntr = 0;
+        for (int i = 0; i < NODES_CNT; i++) {
+            Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)grid(i).context().query().getIndexing())
+                .runningQueryManager().queryHistoryMetrics().values();
+
+            if (!metrics.isEmpty()) {
+                nonEmptyMetricsCntr++;
+                qryExecutionsCntr += new ArrayList<>(metrics).get(0).executions();
+            }
+        }
+
+        assertTrue("Unexpected amount of used nodes: expected [0 < nodesCnt <= " + 1 +
+                "], got [" +  nonEmptyMetricsCntr + "]",
+            nonEmptyMetricsCntr > 0 && nonEmptyMetricsCntr <= 1);
+
+//        assertEquals("Executions count doesn't match expeted value: expected [" +
+//                NODES_CNT * QUERY_EXECUTION_MULTIPLIER + "], got [" + qryExecutionsCntr + "]",
+//            NODES_CNT * QUERY_EXECUTION_MULTIPLIER, qryExecutionsCntr);
     }
 
     /**
