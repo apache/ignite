@@ -958,8 +958,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
 
         if (cacheProc.transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null) {
-            return new GridFinishedFuture<>(new IgniteCheckedException("Failed to " + prettyStr(activate) +
-                " cluster with readOnly=" + readOnly + " (must invoke the method outside of an active transaction)."));
+            return new GridFinishedFuture<>(
+                new IgniteCheckedException("Failed to " + prettyStr(activate) + " cluster" +
+                    prettyReadOnlyModeStr(readOnly, activate) +
+                    " (must invoke the method outside of an active transaction).")
+            );
         }
 
         DiscoveryDataClusterState curState = globalState;
@@ -989,9 +992,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (startedFut == null) {
             if (fut.activate != activate && fut.readOnly != readOnly) {
                 return new GridFinishedFuture<>(
-                    new IgniteCheckedException("Failed to " + prettyStr(activate) + " with readOnly=" + readOnly +
+                    new IgniteCheckedException(
+                        "Failed to " + prettyStr(activate) + prettyReadOnlyModeStr(readOnly, activate) +
                         ", because another state change operation is currently in progress: " +
-                        prettyStr(fut.activate) + " with readOnly=" + fut.readOnly)
+                        prettyStr(fut.activate) + prettyReadOnlyModeStr(fut.readOnly, fut.activate)
+                    )
                 );
             }
             else
@@ -1037,8 +1042,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             ctx.discovery().sendCustomEvent(msg);
 
             if (ctx.isStopping()) {
-                String errMsg = "Failed to execute " + prettyStr(activate) + " request with readOnly=" + readOnly +
-                    ", node is stopping.";
+                String errMsg = "Failed to execute " + prettyStr(activate) + " request" +
+                    prettyReadOnlyModeStr(readOnly, activate) + ", node is stopping.";
 
                 startedFut.onDone(new IgniteCheckedException(errMsg));
             }
@@ -1182,7 +1187,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
         if (log.isInfoEnabled()) {
-            log.info("Sending " + prettyStr(activate) + " request with readOnly=" + readOnly +
+            log.info("Sending " + prettyStr(activate) + " request" + prettyReadOnlyModeStr(readOnly, activate) +
                 " from node [id=" + ctx.localNodeId() +
                 ", topVer=" + topVer +
                 ", client=" + ctx.clientNode() +
@@ -1269,8 +1274,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         GridChangeGlobalStateFuture fut = changeStateFuture(req.initiatorNodeId(), req.requestId());
 
         if (fut != null) {
+            boolean activate = req.activate();
+
             IgniteCheckedException e = new IgniteCheckedException(
-                "Failed to " + prettyStr(req.activate()) + " cluster with readOnly=" + req.readOnly(),
+                "Failed to " + prettyStr(activate) + " cluster" + prettyReadOnlyModeStr(req.readOnly(), activate),
                 null,
                 false
             );
@@ -1536,6 +1543,15 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      */
     private static String prettyStr(boolean activate) {
         return activate ? "activate" : "deactivate";
+    }
+
+    /**
+     * @param readOnly Read only.
+     * @param activate Activate.
+     * @return Read-only flag string.
+     */
+    private static String prettyReadOnlyModeStr(boolean readOnly, boolean activate) {
+        return activate ? " with readOnly=" + readOnly : "";
     }
 
     /** {@inheritDoc} */
