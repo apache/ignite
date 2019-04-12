@@ -52,7 +52,6 @@ public class Step_1_Read_and_Learn {
 
                 final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 5, 6).labeled(1);
 
-
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                 DecisionTreeNode mdl = trainer.fit(

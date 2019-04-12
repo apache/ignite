@@ -36,7 +36,7 @@ public class BinarizationPreprocessorTest {
             {1, 8, 16},
         };
 
-        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<>();
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<>(0, 1, 2);
 
         BinarizationPreprocessor<Integer, double[]> preprocessor = new BinarizationPreprocessor<>(
             7,

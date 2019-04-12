@@ -17,19 +17,14 @@
 
 package org.apache.ignite.ml.preprocessing.normalization;
 
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.binarization.BinarizationPreprocessor;
-import org.junit.Test;
-
-import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Tests for {@link BinarizationPreprocessor}.
  */
 public class NormalizationPreprocessorTest {
     /** Tests {@code apply()} method. */
-    @Test
+   /* @Test
     public void testApply() {
         double[][] data = new double[][]{
             {1, 2, 1},
@@ -50,5 +45,5 @@ public class NormalizationPreprocessorTest {
 
        for (int i = 0; i < data.length; i++)
            assertArrayEquals(postProcessedData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-2);
-    }
+    }*/
 }

@@ -17,18 +17,12 @@
 
 package org.apache.ignite.ml.preprocessing.imputing;
 
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.junit.Test;
-
-import static org.junit.Assert.assertArrayEquals;
-
 /**
  * Tests for {@link ImputerPreprocessor}.
  */
 public class ImputerPreprocessorTest {
     /** Tests {@code apply()} method. */
-    @Test
+    /*@Test
     public void testApply() {
         double[][] data = new double[][]{
             {Double.NaN, 20, 3},
@@ -49,5 +43,5 @@ public class ImputerPreprocessorTest {
 
        for (int i = 0; i < data.length; i++)
            assertArrayEquals(postProcessedData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
-    }
+    }*/
 }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.examples.ml.inference.spark.modelparser;
 
+import java.io.FileNotFoundException;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -24,14 +26,11 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.examples.ml.tutorial.TitanicUtils;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.sparkmodelparser.SparkModelParser;
 import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
-
-import javax.cache.Cache;
-import java.io.FileNotFoundException;
 
 /**
  * Run KMeans model loaded from snappy.parquet file.
@@ -51,20 +50,11 @@ public class KMeansFromSparkExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Object[]> dataCache = null;
+            IgniteCache<Integer, Vector> dataCache = null;
             try {
                 dataCache = TitanicUtils.readPassengers(ignite);
 
-                IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
-                    double[] data = new double[] {(double)v[0], (double)v[5], (double)v[6], (double)v[4]};
-                    data[0] = Double.isNaN(data[0]) ? 0 : data[0];
-                    data[1] = Double.isNaN(data[1]) ? 0 : data[1];
-                    data[2] = Double.isNaN(data[2]) ? 0 : data[2];
-                    data[3] = Double.isNaN(data[3]) ? 0 : data[3];
-                    return VectorUtils.of(data);
-                };
-
-                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
+                final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 5, 6, 4).labeled(1);
 
                 KMeansModel mdl = (KMeansModel)SparkModelParser.parse(
                     SPARK_MDL_PATH,
@@ -76,8 +66,8 @@ public class KMeansFromSparkExample {
                 System.out.println(">>> | Predicted cluster\t| Is survived\t|");
                 System.out.println(">>> ------------------------------------");
 
-                try (QueryCursor<Cache.Entry<Integer, Object[]>> observations = dataCache.query(new ScanQuery<>())) {
-                    for (Cache.Entry<Integer, Object[]> observation : observations) {
+                try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
+                    for (Cache.Entry<Integer,Vector> observation : observations) {
                         Vector inputs = featureExtractor.apply(observation.getKey(), observation.getValue());
                         double isSurvived = lbExtractor.apply(observation.getKey(), observation.getValue());
                         double clusterId = mdl.predict(inputs);
