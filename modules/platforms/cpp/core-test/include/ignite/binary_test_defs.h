@@ -27,14 +27,14 @@ namespace ignite_test
 {
     namespace core
     {
-        namespace binary 
+        namespace binary
         {
             class BinaryDummy
             {
                 // No-op.
             };
 
-            class BinaryInner 
+            class BinaryInner
             {
             public:
                 BinaryInner();
@@ -76,12 +76,12 @@ namespace ignite_test
                 BinaryFields(int32_t val1, int32_t val2, int32_t rawVal1, int32_t rawVal2) :
                     val1(val1), val2(val2), rawVal1(rawVal1), rawVal2(rawVal2)
                 {
-                    // No-op.   
+                    // No-op.
                 }
 
                 friend bool operator==(const BinaryFields& one, const BinaryFields& two)
                 {
-                    return one.val1 == two.val1 && one.val2 == two.val2 && 
+                    return one.val1 == two.val1 && one.val2 == two.val2 &&
                         one.rawVal1 == two.rawVal1 &&one.rawVal2 == two.rawVal2;
                 }
             };
@@ -159,12 +159,22 @@ namespace ignite
             }
         };
 
-        template<> 
-        struct BinaryType<gt::BinaryInner> : BinaryTypeDefaultAll<gt::BinaryInner>
+        template<>
+        struct BinaryType<gt::BinaryInner> : BinaryTypeDefaultHashing<gt::BinaryInner>
         {
             static void GetTypeName(std::string& dst)
             {
                 dst = "BinaryInner";
+            }
+
+            static bool IsNull(const gt::BinaryInner& obj)
+            {
+                return obj.GetValue() == 0;
+            }
+
+            static void GetNull(gt::BinaryInner& dst)
+            {
+                dst = gt::BinaryInner(0);
             }
 
             static void Write(BinaryWriter& writer, const gt::BinaryInner& obj)
@@ -181,17 +191,27 @@ namespace ignite
         };
 
         template<>
-        struct BinaryType<gt::BinaryOuter> : BinaryTypeDefaultAll<gt::BinaryOuter>
+        struct BinaryType<gt::BinaryOuter> : BinaryTypeDefaultHashing<gt::BinaryOuter>
         {
             static void GetTypeName(std::string& dst)
             {
                 dst = "BinaryOuter";
             }
 
+            static bool IsNull(const gt::BinaryOuter& obj)
+            {
+                return obj.GetValue() == 0 && obj.GetInner().GetValue();
+            }
+
+            static void GetNull(gt::BinaryOuter& dst)
+            {
+                dst = gt::BinaryOuter(0, 0);
+            }
+
             static void Write(BinaryWriter& writer, const gt::BinaryOuter& obj)
             {
                 writer.WriteObject("inner", obj.GetInner());
-                writer.WriteInt32("val", obj.GetValue());                
+                writer.WriteInt32("val", obj.GetValue());
             }
 
             static void Read(BinaryReader& reader, gt::BinaryOuter& dst)
@@ -204,11 +224,21 @@ namespace ignite
         };
 
         template<>
-        struct BinaryType<gt::BinaryFields> : BinaryTypeDefaultAll<gt::BinaryFields>
+        struct BinaryType<gt::BinaryFields> : BinaryTypeDefaultHashing<gt::BinaryFields>
         {
             static void GetTypeName(std::string& dst)
             {
                 dst = "BinaryFields";
+            }
+
+            static bool IsNull(const gt::BinaryFields& obj)
+            {
+                return false;
+            }
+
+            static void GetNull(gt::BinaryFields&)
+            {
+                throw std::runtime_error("Must not be called.");
             }
 
             static void Write(BinaryWriter& writer, const gt::BinaryFields& obj)
@@ -237,11 +267,21 @@ namespace ignite
         };
 
         template<>
-        struct BinaryType<gt::PureRaw> : BinaryTypeDefaultAll<gt::PureRaw>
+        struct BinaryType<gt::PureRaw> : BinaryTypeDefaultHashing<gt::PureRaw>
         {
             static void GetTypeName(std::string& dst)
             {
                 dst = "PureRaw";
+            }
+
+            static bool IsNull(const gt::PureRaw& obj)
+            {
+                return false;
+            }
+
+            static void GetNull(gt::PureRaw&)
+            {
+                throw std::runtime_error("Must not be called.");
             }
 
             static void Write(BinaryWriter& writer, const gt::PureRaw& obj)
