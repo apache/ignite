@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.atomic.LongAdder;
@@ -27,6 +28,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -37,18 +39,22 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -352,6 +358,100 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
 
             assertCountersSame(PARTITION_ID, true);
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL);
+            System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+        }
+    }
+
+    /**
+     * Test scenario when deferred removal queue is cleared during rebalance leading to inconsistencies.
+     */
+    @Test
+    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates2() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL, "1000");
+        System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
+
+        try {
+            backups = 2;
+
+            Ignite crd = startGridsMultiThreaded(SERVER_NODES);
+
+            int[] primaryParts = crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(crd.cluster().localNode());
+
+            IgniteCache<Object, Object> cache = crd.cache(DEFAULT_CACHE_NAME);
+
+            List<Integer> p1Keys = partitionKeys(cache, primaryParts[0], 2, 0);
+            List<Integer> p2Keys = partitionKeys(cache, primaryParts[1], 2, 0);
+
+            cache.put(p1Keys.get(0), 0); // Will be historically rebalanced.
+            cache.put(p1Keys.get(1), 1);
+
+            forceCheckpoint();
+
+            Ignite backup = backupNode(p1Keys.get(0), DEFAULT_CACHE_NAME);
+
+            assertSame(backup, backupNode(p2Keys.get(0), DEFAULT_CACHE_NAME));
+
+            stopGrid(true, backup.name());
+
+            cache.remove(p1Keys.get(1));
+            cache.put(p2Keys.get(1), 1); // Will be fully rebalanced.
+
+            TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(crd);
+
+            // Prevent rebalance completion.
+            spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    String name = (String)node.attributes().get(ATTR_IGNITE_INSTANCE_NAME);
+
+                    if (name.equals(backup.name()) && msg instanceof GridDhtPartitionSupplyMessage) {
+                        GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
+
+                        Map<Integer, CacheEntryInfoCollection> infos =  U.field(msg0, "infos");
+
+                        return infos.keySet().contains(primaryParts[0]); // Delay historical rebalance.
+                    }
+
+                    return false;
+                }
+            });
+//
+//            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+//                @Override public void run() {
+//                    try {
+//                        spi.waitForBlocked();
+//                    }
+//                    catch (InterruptedException e) {
+//                        fail(X.getFullStackTrace(e));
+//                    }
+//
+//                    prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(0));
+//
+//                    doSleep(2000);
+//
+//                    prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(1)); // Ensure queue cleanup is triggered.
+//
+//                    spi.stopBlock();
+//                }
+//            });
+//
+            startGrid(backup.name());
+
+            doSleep(6000); // TODO fixme
+
+            spi.stopBlock();
+
+            // While message is delayed topology version shouldn't change to ideal.
+
+            awaitPartitionMapExchange();
+
+//            printPartitionState(DEFAULT_CACHE_NAME, 0);
+//
+//            fut.get();
+//
+            assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
         }
         finally {
             System.clearProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL);
