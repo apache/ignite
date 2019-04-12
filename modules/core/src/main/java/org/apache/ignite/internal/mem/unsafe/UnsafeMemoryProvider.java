@@ -17,16 +17,22 @@
 
 package org.apache.ignite.internal.mem.unsafe;
 
+import com.sun.jna.NativeLong;
+import com.sun.jna.Pointer;
+import com.sun.jna.ptr.PointerByReference;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.UnsafeChunk;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OFF_HEAP_MEM_ADVICE;
 
 /**
  * Memory provider implementation based on unsafe memory access.
@@ -97,10 +103,44 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
         long chunkSize = sizes[regions.size()];
 
+        boolean advice = IgniteSystemProperties.getBoolean(IGNITE_OFF_HEAP_MEM_ADVICE, false);
+
         long ptr;
 
+        PointerByReference refToPtr = new PointerByReference();
+
         try {
-            ptr = GridUnsafe.allocateMemory(chunkSize);
+            int pageSize = GridUnsafe.getpagesize();
+
+            if (pageSize < 0)
+                pageSize = GridUnsafe.pageSize();
+
+            if (pageSize < 0){
+                U.warn(log,"Can not get native page size, use 4k as default.");
+
+                pageSize = 4096;
+            }
+
+            int ptrRes = GridUnsafe.posix_memalign(refToPtr, new NativeLong(pageSize), new NativeLong(chunkSize));
+
+            if (ptrRes != 0) {
+                U.error(log, "Failed to allocate next memory chunk: "
+                    + U.readableSize(chunkSize, true)
+                    + ", res:" + ptrRes);
+
+                return null;
+            }
+
+            ptr = Pointer.nativeValue(refToPtr.getValue());
+
+            if (advice) {
+                int adviceRes = GridUnsafe.posix_madvise(ptr, chunkSize, GridUnsafe.POSIX_MADV_RANDOM);
+
+                if (adviceRes < 0)
+                    U.error(log, "Failed to advice memory chunk: "
+                        + U.readableSize(chunkSize, true)
+                        + ", res:" + adviceRes);
+            }
         }
         catch (IllegalArgumentException e) {
             String msg = "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true) +
