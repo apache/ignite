@@ -43,7 +43,13 @@ public enum IgniteFeatures {
     DATA_PACKET_COMPRESSION(3),
 
     /** Support of different rebalance size for nodes.  */
-    DIFFERENT_REBALANCE_POOL_SIZE(4);
+    DIFFERENT_REBALANCE_POOL_SIZE(4),
+
+    /**
+     * Support of providing thread dump of thread that started transaction. Used for dumping
+     * long running transactions.
+     */
+    TRANSACTION_OWNER_THREAD_DUMP_PROVIDING(5);
 
     /**
      * Unique feature identifier.
