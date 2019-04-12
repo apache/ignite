@@ -32,6 +32,7 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.Command.CACHE;
+import static org.apache.ignite.internal.commandline.Command.READ_ONLY;
 import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
@@ -181,8 +182,7 @@ public class CommandHandlerParsingTest {
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
-
-            if (cmd == Command.CACHE || cmd == Command.WAL)
+            if (commandHaveRequeredArguments(cmd))
                 continue; // --cache subcommand requires its own specific arguments.
 
             try {
@@ -220,7 +220,7 @@ public class CommandHandlerParsingTest {
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
-            if (cmd == Command.CACHE || cmd == Command.WAL)
+            if (commandHaveRequeredArguments(cmd))
                 continue; // --cache subcommand requires its own specific arguments.
 
             try {
@@ -297,57 +297,66 @@ public class CommandHandlerParsingTest {
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
-            if (cmd != Command.DEACTIVATE
-                && cmd != Command.BASELINE
-                && cmd != Command.TX)
+            if (!cmd.confirmationRequired())
                 continue;
 
-            Arguments args = hnd.parseAndValidate(asList(cmd.text()));
+            Arguments args;
+            if(cmd == READ_ONLY)
+                args = hnd.parseAndValidate(asList(cmd.text(), "--disable"));
+            else
+                args = hnd.parseAndValidate(asList(cmd.text()));
 
-            assertEquals(cmd, args.command());
-            assertEquals(DFLT_HOST, args.host());
-            assertEquals(DFLT_PORT, args.port());
-            assertEquals(false, args.autoConfirmation());
+            checkCommonParametersCorrectlyParsed(cmd, args, false);
 
             switch (cmd) {
-                case DEACTIVATE: {
+                case DEACTIVATE:
                     args = hnd.parseAndValidate(asList(cmd.text(), "--yes"));
 
-                    assertEquals(cmd, args.command());
-                    assertEquals(DFLT_HOST, args.host());
-                    assertEquals(DFLT_PORT, args.port());
-                    assertEquals(true, args.autoConfirmation());
+                    checkCommonParametersCorrectlyParsed(cmd, args, true);
 
                     break;
-                }
-                case BASELINE: {
+
+                case BASELINE:
                     for (String baselineAct : asList("add", "remove", "set")) {
                         args = hnd.parseAndValidate(asList(cmd.text(), baselineAct, "c_id1,c_id2", "--yes"));
 
-                        assertEquals(cmd, args.command());
-                        assertEquals(DFLT_HOST, args.host());
-                        assertEquals(DFLT_PORT, args.port());
+                        checkCommonParametersCorrectlyParsed(cmd, args, true);
+
                         assertEquals(baselineAct, args.baselineArguments().getCmd().text());
                         assertEquals(Arrays.asList("c_id1","c_id2"), args.baselineArguments().getConsistentIds());
-                        assertEquals(true, args.autoConfirmation());
                     }
 
                     break;
-                }
-                case TX: {
+
+                case TX:
                     args = hnd.parseAndValidate(asList(cmd.text(), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
 
-                    assertEquals(cmd, args.command());
-                    assertEquals(DFLT_HOST, args.host());
-                    assertEquals(DFLT_PORT, args.port());
-                    assertEquals(true, args.autoConfirmation());
+                    checkCommonParametersCorrectlyParsed(cmd, args, true);
 
                     assertEquals("xid1", args.transactionArguments().getXid());
                     assertEquals(10_000, args.transactionArguments().getMinDuration().longValue());
                     assertEquals(VisorTxOperation.KILL, args.transactionArguments().getOperation());
-                }
+
+                    break;
+
+                case READ_ONLY:
+                    args = hnd.parseAndValidate(asList(cmd.text(), "--enable", "--yes"));
+
+                    checkCommonParametersCorrectlyParsed(cmd, args, true);
+
+                    assertTrue(args.changeClusterStateArguments().readOnly());
+
+                    break;
             }
         }
+    }
+
+    /** */
+    private void checkCommonParametersCorrectlyParsed(Command cmd, Arguments args, boolean autoConfirm) {
+        assertEquals(cmd, args.command());
+        assertEquals(DFLT_HOST, args.host());
+        assertEquals(DFLT_PORT, args.port());
+        assertEquals(autoConfirm, args.autoConfirmation());
     }
 
     /**
@@ -359,7 +368,7 @@ public class CommandHandlerParsingTest {
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
-            if (cmd == Command.CACHE || cmd == Command.WAL)
+            if (commandHaveRequeredArguments(cmd))
                 continue; // --cache subcommand requires its own specific arguments.
 
             Arguments args = hnd.parseAndValidate(asList(cmd.text()));
@@ -500,5 +509,9 @@ public class CommandHandlerParsingTest {
 
         assertNull(arg.getProjection());
         assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
+    }
+
+    private boolean commandHaveRequeredArguments(Command cmd) {
+        return cmd == Command.CACHE || cmd == Command.WAL || cmd == Command.READ_ONLY;
     }
 }

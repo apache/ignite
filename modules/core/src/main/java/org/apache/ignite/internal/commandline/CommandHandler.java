@@ -1622,7 +1622,7 @@ public class CommandHandler {
      * @param desc Command description.
      * @param args Arguments.
      */
-    private void usage(String desc, Command cmd, String... args) {
+    private void usage(String desc, Command cmd, Object... args) {
         log(desc);
         log(i(j(" ", UTILITY_NAME, cmd, j(" ", args)), 2));
         nl();
@@ -2005,6 +2005,7 @@ public class CommandHandler {
                             throw new IllegalArgumentException("Unexpected action " + walAct + " for " + WAL.text());
 
                         break;
+
                     default:
                         throw new IllegalArgumentException("Unexpected command: " + str);
                 }
@@ -2802,9 +2803,11 @@ public class CommandHandler {
 
         log("This utility can do the following commands:");
 
-        usage(i("Activate cluster:"), ACTIVATE, op(ActivateCommandArg.READ_ONLY));
+        usage(i("Activate cluster:"), ACTIVATE);
+        usage(i("Activate cluster in read-only mode:"), ACTIVATE, ActivateCommandArg.READ_ONLY);
         usage(i("Deactivate cluster:"), DEACTIVATE, op(CMD_AUTO_CONFIRMATION));
-        usage(i("Enable/disable read-only mode on cluster:"), READ_ONLY, or(ReadOnlyCommandArg.ENABLE, ReadOnlyCommandArg.DISABLE), op(CMD_AUTO_CONFIRMATION));
+        usage(i("Enable read-only mode on active cluster:"), READ_ONLY, ReadOnlyCommandArg.ENABLE, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Disable read-only mode on active cluster:"), READ_ONLY, ReadOnlyCommandArg.DISABLE, op(CMD_AUTO_CONFIRMATION));
         usage(i("Print current cluster state:"), STATE);
         usage(i("Print cluster baseline topology:"), BASELINE);
         usage(i("Add nodes into baseline topology:"), BASELINE, BaselineCommand.ADD.text(), constistIds, op(CMD_AUTO_CONFIRMATION));

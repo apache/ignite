@@ -22,28 +22,28 @@ package org.apache.ignite.internal.commandline;
  */
 public enum Command {
     /** */
-    ACTIVATE("--activate"),
+    ACTIVATE("--activate", false),
 
     /** */
-    DEACTIVATE("--deactivate"),
+    DEACTIVATE("--deactivate", true),
 
     /** */
-    STATE("--state"),
+    STATE("--state", false),
 
     /** */
-    BASELINE("--baseline"),
+    BASELINE("--baseline", true),
 
     /** */
-    TX("--tx"),
+    TX("--tx", true),
 
     /** */
-    CACHE("--cache"),
+    CACHE("--cache", false),
 
     /** */
-    WAL("--wal"),
+    WAL("--wal", false),
 
     /** */
-    READ_ONLY("--read-only");
+    READ_ONLY("--read-only", true);
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final Command[] VALUES = Command.values();
@@ -51,11 +51,16 @@ public enum Command {
     /** */
     private final String text;
 
+    /** */
+    private final boolean confirmationRequired;
+
     /**
      * @param text Text.
+     * @param confirmationRequired Operation confirmation required flag.
      */
-    Command(String text) {
+    Command(String text, boolean confirmationRequired) {
         this.text = text;
+        this.confirmationRequired = confirmationRequired;
     }
 
     /**
@@ -76,6 +81,13 @@ public enum Command {
      */
     public String text() {
         return text;
+    }
+
+    /**
+     * @return Operation confirmation required flag.
+     */
+    public boolean confirmationRequired() {
+        return confirmationRequired;
     }
 
     /** {@inheritDoc} */
