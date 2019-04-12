@@ -147,6 +147,7 @@ import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfT
 import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineBinObjFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCachelessQueriesSelfTest;
+import org.apache.ignite.internal.processors.query.IgniteCancelLazyDistributedJoinQueryTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDefaultValueTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDistributedJoinSelfTest;
@@ -431,6 +432,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(LocalQueryLazyTest.class);
 
         suite.addTestSuite(LongRunningQueryTest.class);
+
+        suite.addTestSuite(IgniteCancelLazyDistributedJoinQueryTest.class);
 
         return suite;
     }
