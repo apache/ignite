@@ -420,6 +420,7 @@ public interface GridDhtPartitionTopology {
     /**
      * Calculates nodes and partitions which have non-actual state and must be rebalanced.
      * State of all current owners that aren't contained in the given {@code ownersByUpdCounters} will be reset to MOVING.
+     * Called on coordinator during assignment of partition states.
      *
      * @param ownersByUpdCounters Map (partition, set of node IDs that have most actual state about partition
      *                            (update counter is maximal) and should hold OWNING state for such partition).

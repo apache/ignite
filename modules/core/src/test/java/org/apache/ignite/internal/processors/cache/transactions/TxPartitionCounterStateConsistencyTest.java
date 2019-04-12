@@ -39,8 +39,11 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCachePreloader;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -417,40 +420,24 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
                     return false;
                 }
             });
-//
-//            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
-//                @Override public void run() {
-//                    try {
-//                        spi.waitForBlocked();
-//                    }
-//                    catch (InterruptedException e) {
-//                        fail(X.getFullStackTrace(e));
-//                    }
-//
-//                    prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(0));
-//
-//                    doSleep(2000);
-//
-//                    prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(1)); // Ensure queue cleanup is triggered.
-//
-//                    spi.stopBlock();
-//                }
-//            });
-//
-            startGrid(backup.name());
 
-            doSleep(6000); // TODO fixme
+            IgniteEx backup2 = startGrid(backup.name());
+
+            GridTestUtils.waitForCondition(() -> {
+                GridCachePreloader preloader =
+                    backup2.context().cache().internalCache(DEFAULT_CACHE_NAME).context().preloader();
+
+                GridDhtPartitionDemander.RebalanceFuture rebalanceFut =
+                    (GridDhtPartitionDemander.RebalanceFuture)preloader.rebalanceFuture();
+
+                return rebalanceFut.topologyVersion().equals(new AffinityTopologyVersion(5, 1));
+            }, 30_000);
 
             spi.stopBlock();
 
             // While message is delayed topology version shouldn't change to ideal.
-
             awaitPartitionMapExchange();
 
-//            printPartitionState(DEFAULT_CACHE_NAME, 0);
-//
-//            fut.get();
-//
             assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
         }
         finally {

@@ -255,8 +255,8 @@ class GridDhtPartitionSupplier {
             long maxBatchesCnt = grp.config().getRebalanceBatchesPrefetchCount();
 
             if (sctx == null) {
-                if (log.isInfoEnabled())
-                    log.info("Starting supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) +
+                if (log.isDebugEnabled())
+                    log.debug("Starting supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) +
                         ", fullPartitions=" + S.compact(demandMsg.partitions().fullSet()) +
                         ", histPartitions=" + S.compact(demandMsg.partitions().historicalSet()) + "]");
             }
@@ -548,12 +548,8 @@ class GridDhtPartitionSupplier {
         T3<UUID, Integer, AffinityTopologyVersion> contextId
     ) throws IgniteCheckedException {
         try {
-            if (log.isInfoEnabled()) {
-                log.info("Send next supply message [" + supplyRoutineInfo(topicId, demander.id(), demandMsg) +
-                    ", missed=" + supplyMsg.missed() +
-                    ", last=" + supplyMsg.last() +
-                    ", infos=" + supplyMsg.infos() + ']');
-            }
+            if (log.isDebugEnabled())
+                log.debug("Send next supply message [" + supplyRoutineInfo(topicId, demander.id(), demandMsg) + "]");
 
             grp.shared().io().sendOrderedMessage(demander, demandMsg.topic(), supplyMsg, grp.ioPolicy(), demandMsg.timeout());
 

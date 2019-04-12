@@ -759,7 +759,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (partitionLocalNode(p, topVer)) {
                             // Prepare partition to rebalance if it's not happened on full map update phase.
                             if (locPart == null || locPart.state() == RENTING || locPart.state() == EVICTED)
-                                locPart = rebalancePartition(p, false);
+                                locPart = rebalancePartition(p, true);
 
                             GridDhtPartitionState state = locPart.state();
 
@@ -1580,9 +1580,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             }
                         }
                         else if (state == MOVING) {
-                            boolean haveHistory = !partsToReload.contains(p);
+                            GridDhtLocalPartition locPart = locParts.get(p);
 
-                            rebalancePartition(p, haveHistory);
+                            boolean wasMoving = locPart != null && locPart.state() == MOVING;
+
+                            rebalancePartition(p, partsToReload.contains(p) || wasMoving);
 
                             changed = true;
                         }
@@ -2219,10 +2221,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         continue;
 
                     if (!newOwners.contains(ctx.localNodeId())) {
-                        rebalancePartition(part, haveHistory.contains(part));
+                        boolean wasMoving = locPart.state() == MOVING;
 
-                        result.computeIfAbsent(ctx.localNodeId(), n -> new HashSet<>());
-                        result.get(ctx.localNodeId()).add(part);
+                        rebalancePartition(part, !haveHistory.contains(part) || wasMoving);
+
+                        result.computeIfAbsent(ctx.localNodeId(), n -> new HashSet<>()).add(part);
                     }
                 }
 
@@ -2248,8 +2251,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             if (partMap.nodeId().equals(ctx.localNodeId()))
                                 updateSeq.setIfGreater(partMap.updateSequence());
 
-                            result.computeIfAbsent(remoteNodeId, n -> new HashSet<>());
-                            result.get(remoteNodeId).add(part);
+                            result.computeIfAbsent(remoteNodeId, n -> new HashSet<>()).add(part);
                         }
                     }
                 }
@@ -2292,10 +2294,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * Prevents ongoing renting if required.
      *
      * @param p Partition id.
-     * @param haveHistory If {@code true} there is WAL history to rebalance partition,
-     *                    in other case partition will be cleared for full rebalance.
+     * @param clear If {@code true} partition have to be cleared before rebalance.
+     *              Required in case of full state transfer to handle removals on supplier.
      */
-    private GridDhtLocalPartition rebalancePartition(int p, boolean haveHistory) {
+    private GridDhtLocalPartition rebalancePartition(int p, boolean clear) {
         GridDhtLocalPartition part = getOrCreatePartition(p);
 
         // Prevent renting.
@@ -2314,7 +2316,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (part.state() != MOVING)
             part.moving();
 
-        if (!haveHistory)
+        if (clear)
             part.clearAsync();
 
         assert part.state() == MOVING : part;

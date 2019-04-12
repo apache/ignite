@@ -3463,9 +3463,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             GridDhtPartitionsFullMessage msg = createPartitionsMessage(true,
                 minVer.compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0);
 
-            // Lost partition detection should be done after message is prepared or in case of IGNORE policy
+            // Lost partition detection should be done after full message is prepared otherwise in case of IGNORE policy
             // lost partitions will be moved to OWNING state and after what send to other nodes resulting in
-            // wrong lost state calculation.
+            // wrong lost state calculation (another possibility to consider - calculate lost state only on coordinator).
             if (firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT && exchCtx.events().hasServerLeft())
                 detectLostPartitions(resTopVer);
 

@@ -70,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -677,13 +676,6 @@ public class GridDhtPartitionDemander {
             return;
         }
 
-        if (log.isInfoEnabled()) {
-            log.info("Received supply message [" + demandRoutineInfo(topicId, nodeId, supplyMsg) +
-                ", missed=" + supplyMsg.missed() +
-                ", last=" + supplyMsg.last() +
-                ", infos=" + supplyMsg.infos() + ']');
-        }
-
         // Topology already changed (for the future that supply message based on).
         if (topologyChanged(fut) || !fut.isActual(supplyMsg.rebalanceId())) {
             if (log.isDebugEnabled())
@@ -691,6 +683,9 @@ public class GridDhtPartitionDemander {
 
             return;
         }
+
+        if (log.isDebugEnabled())
+            log.debug("Received supply message [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]");
 
         // Check whether there were error during supply message unmarshalling process.
         if (supplyMsg.classError() != null) {
