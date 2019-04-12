@@ -346,7 +346,7 @@ public class BlockingSslHandler {
     }
 
     /**
-     * Does post-handshake logic if nedded.
+     * Does post-handshake logic described <a href="https://tools.ietf.org/html/rfc8446#section-4.6">here</a> if nedded.
      *
      * @param res Response.
      */
