@@ -43,7 +43,10 @@ public enum IgniteFeatures {
     DATA_PACKET_COMPRESSION(3),
 
     /** Support of different rebalance size for nodes.  */
-    DIFFERENT_REBALANCE_POOL_SIZE(4);
+    DIFFERENT_REBALANCE_POOL_SIZE(4),
+
+    /** Support of cluster read-only mode. */
+    CLUSTER_READ_ONLY_MODE(6);
 
     /**
      * Unique feature identifier.

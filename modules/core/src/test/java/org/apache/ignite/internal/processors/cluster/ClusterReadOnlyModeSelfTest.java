@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cluster;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;

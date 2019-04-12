@@ -40,6 +40,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -777,6 +778,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             compatibilityMode = true;
 
+            ctx.cache().context().readOnlyMode(globalState.readOnly());
+
             return;
         }
 
@@ -794,6 +797,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 for (BaselineTopologyHistoryItem item : stateDiscoData.recentHistory.history())
                     bltHist.bufferHistoryItemForStore(item);
             }
+
+            ctx.cache().context().readOnlyMode(globalState.readOnly());
         }
     }
 
@@ -1064,6 +1069,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     ) {
         if (node.isClient() || node.isDaemon())
             return null;
+
+        if (globalState.readOnly() && !IgniteFeatures.nodeSupports(node, IgniteFeatures.CLUSTER_READ_ONLY_MODE)) {
+            String msg = "Node not supporting cluster read-only mode is not allowed to join the cluster with enabled" +
+                " read-only mode";
+
+            return new IgniteNodeValidationResult(node.id(), msg, msg);
+        }
 
         if (discoData.joiningNodeData() == null) {
             if (globalState.baselineTopology() != null) {

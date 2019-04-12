@@ -69,6 +69,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteFeatures.CLUSTER_READ_ONLY_MODE;
+import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
@@ -320,8 +322,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void activeReadOnly() throws IgniteException {
-        if(ctx.state().publicApiActiveState(false))
+        if (ctx.state().publicApiActiveState(false))
             throw new IgniteException("Cluster already active!");
+
+        checkReadOnlyModeSupports();
 
         guard();
 
@@ -350,6 +354,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void readOnly(boolean readOnly) throws IgniteException {
+        checkReadOnlyModeSupports();
+
         guard();
 
         try {
@@ -361,6 +367,12 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         finally {
             unguard();
         }
+    }
+
+    /** */
+    private void checkReadOnlyModeSupports() {
+        if (!allNodesSupports(ctx.discovery().discoCache().serverNodes(), CLUSTER_READ_ONLY_MODE))
+            throw new IgniteException("Not all nodes in cluster supports cluster read-only mode!");
     }
 
     /** */
