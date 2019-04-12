@@ -120,7 +120,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private static final int IDX_MASK = ~(-1 << IDX_BITS);
 
     /** Page size. */
-    private int sysPageSize;
+    private int pageSize;
 
     /** */
     private final IgniteLogger log;
@@ -197,11 +197,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         this.dataRegionCfg = dataRegionCfg;
         this.ctx = sharedCtx;
 
-        sysPageSize = pageSize;
+        this.pageSize = pageSize;
 
-        assert sysPageSize % 8 == 0 : sysPageSize;
+        assert this.pageSize % 8 == 0 : this.pageSize;
 
-        totalPages = (int)(dataRegionCfg.getMaxSize() / sysPageSize);
+        totalPages = (int)(dataRegionCfg.getMaxSize() / pageSize);
 
         rwLock = new OffheapReadWriteLock(lockConcLvl);
     }
@@ -276,10 +276,12 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         long relPtr = borrowFreePage();
         long absPtr = 0;
 
+        Segment segX = null;
+
         if (relPtr != INVALID_REL_PTR) {
             int pageIdx = PageIdUtils.pageIndex(relPtr);
 
-            Segment seg = segment(pageIdx);
+            Segment seg = segX = segment(pageIdx);
 
             absPtr = seg.absolute(pageIdx);
         }
@@ -287,7 +289,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         // No segments contained a free page.
         if (relPtr == INVALID_REL_PTR) {
             Segment[] seg0 = segments;
-            Segment allocSeg = seg0[seg0.length - 1];
+            Segment allocSeg = segX = seg0[seg0.length - 1];
 
             while (allocSeg != null) {
                 relPtr = allocSeg.allocateFreePage(flags);
@@ -298,7 +300,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                     break;
                 }
                 else
-                    allocSeg = addSegment(seg0);
+                    allocSeg = segX = addSegment(seg0);
             }
         }
 
@@ -327,8 +329,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         writePageId(absPtr, pageId);
 
+        // Cleanup page header.
+        //GridUnsafe.setMemory(segX.header(absPtr), PAGE_OVERHEAD, (byte)0);
+
         // TODO pass an argument to decide whether the page should be cleaned.
-        GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD, (byte)0);
+        GridUnsafe.setMemory(absPtr, pageSize, (byte)0);
 
         return pageId;
     }
@@ -344,12 +349,12 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public int pageSize() {
-        return sysPageSize - PAGE_OVERHEAD;
+        return pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public int systemPageSize() {
-        return sysPageSize;
+        return pageSize + PAGE_OVERHEAD;
     }
 
     /** {@inheritDoc} */
@@ -417,7 +422,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      * @param pageId Page ID to write.
      */
     private void writePageId(long absPtr, long pageId) {
-        GridUnsafe.putLong(absPtr + PAGE_ID_OFFSET, pageId);
+        Segment seg = segment(PageIdUtils.pageIndex(pageId));
+
+        GridUnsafe.putLong(seg.header(absPtr) + PAGE_ID_OFFSET, pageId);
     }
 
     /**
@@ -469,7 +476,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         long absPtr = seg.acquirePage(pageIdx);
 
-        statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
+        statHolder.trackLogicalRead(absPtr);
 
         return absPtr;
     }
@@ -489,8 +496,10 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     @Override public long readLock(int cacheId, long pageId, long page) {
         assert !stopped;
 
-        if (rwLock.readLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
-            return page + PAGE_OVERHEAD;
+        Segment seg = segment(PageIdUtils.pageIndex(pageId));
+
+        if (rwLock.readLock(seg.header(page) + LOCK_OFFSET, PageIdUtils.tag(pageId)))
+            return page;
 
         return 0L;
     }
@@ -499,8 +508,10 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     @Override public long readLockForce(int cacheId, long pageId, long page) {
         assert !stopped;
 
-        if (rwLock.readLock(page + LOCK_OFFSET, -1))
-            return page + PAGE_OVERHEAD;
+        Segment seg = segment(PageIdUtils.pageIndex(pageId));
+
+        if (rwLock.readLock(seg.header(page) + LOCK_OFFSET, -1))
+            return page;
 
         return 0L;
     }
@@ -509,15 +520,19 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     @Override public void readUnlock(int cacheId, long pageId, long page) {
         assert !stopped;
 
-        rwLock.readUnlock(page + LOCK_OFFSET);
+        Segment seg = segment(PageIdUtils.pageIndex(pageId));
+
+        rwLock.readUnlock(seg.header(page) + LOCK_OFFSET);
     }
 
     /** {@inheritDoc} */
     @Override public long writeLock(int cacheId, long pageId, long page) {
         assert !stopped;
 
-        if (rwLock.writeLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
-            return page + PAGE_OVERHEAD;
+        Segment seg = segment(PageIdUtils.pageIndex(pageId));
+
+        if (rwLock.writeLock(seg.header(page) + LOCK_OFFSET, PageIdUtils.tag(pageId)))
+            return page;
 
         return 0L;
     }
@@ -526,8 +541,10 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     @Override public long tryWriteLock(int cacheId, long pageId, long page) {
         assert !stopped;
 
-        if (rwLock.tryWriteLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
-            return page + PAGE_OVERHEAD;
+        Segment seg = segment(PageIdUtils.pageIndex(pageId));
+
+        if (rwLock.tryWriteLock(seg.header(page)  + LOCK_OFFSET, PageIdUtils.tag(pageId)))
+            return page;
 
         return 0L;
     }
@@ -542,14 +559,16 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     ) {
         assert !stopped;
 
-        long actualId = PageIO.getPageId(page + PAGE_OVERHEAD);
+        Segment seg = segment(PageIdUtils.pageIndex(pageId));
 
-        rwLock.writeUnlock(page + LOCK_OFFSET, PageIdUtils.tag(actualId));
+        long actualId = PageIO.getPageId(page);
+
+        rwLock.writeUnlock(seg.header(page) + LOCK_OFFSET, PageIdUtils.tag(actualId));
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDirty(int cacheId, long pageId, long page) {
-        // always false for page no store.
+        // Always false for page no store.
         return false;
     }
 
@@ -752,31 +771,31 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             lastAllocatedIdxPtr = base;
 
-            base += sysPageSize;
+            base += pageSize;
 
             pagesBase = base;
 
-            assert pagesBase % sysPageSize == 0;
+            assert pagesBase % pageSize == 0;
 
             GridUnsafe.putLong(lastAllocatedIdxPtr, 0);
 
-            long limit = region.address() + region.size();
+            long limit = (region.address() + region.size()) - pageSize;
 
-            assert limit % sysPageSize == 0;
+            assert limit % pageSize == 0;
 
             long delta = limit - pagesBase;
 
-            assert delta % sysPageSize == 0;
+            assert delta % pageSize == 0;
 
-            maxPages = (int)(delta / (sysPageSize + PAGE_OVERHEAD));
+            maxPages = (int)(delta / (pageSize + PAGE_OVERHEAD));
 
-            headerBase = pagesBase + (sysPageSize * maxPages);
+            headerBase = pagesBase + (pageSize * maxPages);
 
-            assert headerBase % sysPageSize == 0;
+            assert headerBase % pageSize == 0;
         }
 
         private long header(long abs) {
-            long headerIdx = (abs - pagesBase) / sysPageSize;
+            long headerIdx = (abs - pagesBase) / pageSize;
 
             return headerBase + (PAGE_OVERHEAD * headerIdx);
         }
@@ -809,7 +828,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         private long absolute(int pageIdx) {
             pageIdx &= IDX_MASK;
 
-            long off = ((long)pageIdx) * sysPageSize;
+            long off = ((long)pageIdx) * pageSize;
 
             return pagesBase + off;
         }
@@ -850,11 +869,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 long lastIdx = GridUnsafe.getLongVolatile(null, lastAllocatedIdxPtr);
 
                 // Check if we have enough space to allocate a page.
-                if (pagesBase + (lastIdx + 1) * sysPageSize > limit)
+                if (pagesBase + (lastIdx + 1) * pageSize > limit)
                     return INVALID_REL_PTR;
 
                 if (GridUnsafe.compareAndSwapLong(null, lastAllocatedIdxPtr, lastIdx, lastIdx + 1)) {
-                    long absPtr = pagesBase + lastIdx * sysPageSize;
+                    long absPtr = pagesBase + lastIdx * pageSize;
 
                     assert lastIdx <= PageIdUtils.MAX_PAGE_NUM : lastIdx;
 
