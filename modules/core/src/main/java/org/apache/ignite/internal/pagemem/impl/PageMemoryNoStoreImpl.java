@@ -144,10 +144,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private final AtomicInteger allocatedPages = new AtomicInteger();
 
     /** */
-    private AtomicInteger selector = new AtomicInteger();
-
-    /** */
-    private OffheapReadWriteLock rwLock;
+    private final OffheapReadWriteLock rwLock;
 
     /** Concurrency lvl. */
     private final int lockConcLvl = IgniteSystemProperties.getInteger(
@@ -201,7 +198,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         assert this.pageSize % 8 == 0 : this.pageSize;
 
-        totalPages = (int)(dataRegionCfg.getMaxSize() / pageSize);
+        totalPages = (int)(dataRegionCfg.getMaxSize() / (pageSize + PAGE_OVERHEAD));
 
         rwLock = new OffheapReadWriteLock(lockConcLvl);
     }
@@ -357,23 +354,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** {@inheritDoc} */
     @Override public int realPageSize(int grpId) {
         return pageSize();
-    }
-
-    /**
-     * @return Next index.
-     */
-    private int nextRoundRobinIndex() {
-        while (true) {
-            int idx = selector.get();
-
-            int nextIdx = idx + 1;
-
-            if (nextIdx >= segments.length)
-                nextIdx = 0;
-
-            if (selector.compareAndSet(idx, nextIdx))
-                return nextIdx;
-        }
     }
 
     /** {@inheritDoc} */
