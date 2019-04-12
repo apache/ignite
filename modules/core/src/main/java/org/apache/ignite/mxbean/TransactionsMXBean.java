@@ -96,4 +96,36 @@ public interface TransactionsMXBean {
         "Transaction timeout on partition map exchange in milliseconds."
     )
     public void setTxTimeoutOnPartitionMapExchange(long timeout);
+
+    /**
+     * Shows if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread.
+     *
+     * @return <code>true</code> if allowed, <code>false</code> otherwise.
+     */
+    @MXBeanDescription(
+        "Shows if dump requests from local node to near node are allowed, " +
+        "when long running transaction  is found. If allowed, the compute request to near " +
+        "node will be made to get thread dump of transaction owner thread."
+    )
+    public boolean getTxOwnerDumpRequestsAllowed();
+
+    /**
+     * Sets if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread.
+     *
+     * @param allowed whether to allow
+     */
+    @MXBeanDescription(
+        "Shows if dump requests from local node to near node are allowed, " +
+        "when long running transaction  is found. If allowed, the compute request to near " +
+        "node will be made to get thread dump of transaction owner thread."
+    )
+    @MXBeanParametersNames("allowed")
+    @MXBeanParametersDescriptions(
+        "whether to allow"
+    )
+    public void setTxOwnerDumpRequestsAllowed(boolean allowed);
 }
