@@ -329,9 +329,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         writePageId(absPtr, pageId);
 
-        // Cleanup page header.
-        //GridUnsafe.setMemory(segX.header(absPtr), PAGE_OVERHEAD, (byte)0);
-
         // TODO pass an argument to decide whether the page should be cleaned.
         GridUnsafe.setMemory(absPtr, pageSize, (byte)0);
 
@@ -884,6 +881,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                     writePageId(absPtr, pageIdx);
 
                     GridUnsafe.putLong(absPtr, PAGE_MARKER);
+
+                    // Cleanup page header.
+                    GridUnsafe.setMemory(header(absPtr), PAGE_OVERHEAD, (byte)0);
 
                     rwLock.init(header(absPtr) + LOCK_OFFSET, tag);
 
