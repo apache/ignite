@@ -17,7 +17,8 @@
 
 package org.apache.ignite.ml.selection.cv;
 
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
 import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
@@ -38,15 +39,17 @@ public class CrossValidationTest {
     /** */
     @Test
     public void testScoreWithGoodDataset() {
-        Map<Integer, Double> data = new HashMap<>();
+        Map<Integer, double[]> data = new HashMap<>();
 
         for (int i = 0; i < 1000; i++)
-            data.put(i, i > 500 ? 1.0 : 0.0);
+            data.put(i, new double[] { i, i > 500 ? 1.0 : 0.0});
 
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
 
-        CrossValidation<DecisionTreeNode, Double, Integer, Double> scoreCalculator =
+        CrossValidation<DecisionTreeNode, Double, Integer, double[]> scoreCalculator =
             new CrossValidation<>();
+
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
         int folds = 4;
 
@@ -55,8 +58,7 @@ public class CrossValidationTest {
             new Accuracy<>(),
             data,
             1,
-            (k, v) -> VectorUtils.of(k),
-            (k, v) -> v,
+            vectorizer,
             folds
         ));
 
@@ -66,8 +68,7 @@ public class CrossValidationTest {
             data,
             (e1, e2) -> true,
             1,
-            (k, v) -> VectorUtils.of(k),
-            (k, v) -> v,
+            vectorizer,
             folds
         ));
     }
@@ -75,14 +76,16 @@ public class CrossValidationTest {
     /** */
     @Test
     public void testScoreWithGoodDatasetAndBinaryMetrics() {
-        Map<Integer, Double> data = new HashMap<>();
+        Map<Integer, double[]> data = new HashMap<>();
 
         for (int i = 0; i < 1000; i++)
-            data.put(i, i > 500 ? 1.0 : 0.0);
+            data.put(i, new double[] { i, i > 500 ? 1.0 : 0.0});
+
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
 
-        CrossValidation<DecisionTreeNode, Double, Integer, Double> scoreCalculator =
+        CrossValidation<DecisionTreeNode, Double, Integer, double[]> scoreCalculator =
             new CrossValidation<>();
 
         int folds = 4;
@@ -95,8 +98,7 @@ public class CrossValidationTest {
             metrics,
             data,
             1,
-            (k, v) -> VectorUtils.of(k),
-            (k, v) -> v,
+            vectorizer,
             folds
         ));
 
@@ -106,8 +108,7 @@ public class CrossValidationTest {
             data,
             (e1, e2) -> true,
             1,
-            (k, v) -> VectorUtils.of(k),
-            (k, v) -> v,
+            vectorizer,
             folds
         ));
     }
@@ -115,14 +116,16 @@ public class CrossValidationTest {
     /** */
     @Test
     public void testScoreWithBadDataset() {
-        Map<Integer, Double> data = new HashMap<>();
+        Map<Integer, double[]> data = new HashMap<>();
 
         for (int i = 0; i < 1000; i++)
-            data.put(i, i % 2 == 0 ? 1.0 : 0.0);
+            data.put(i, new double[] { i, i % 2 == 0 ? 1.0 : 0.0});
+
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
 
-        CrossValidation<DecisionTreeNode, Double, Integer, Double> scoreCalculator =
+        CrossValidation<DecisionTreeNode, Double, Integer, double[]> scoreCalculator =
             new CrossValidation<>();
 
         int folds = 4;
@@ -132,8 +135,7 @@ public class CrossValidationTest {
             new Accuracy<>(),
             data,
             1,
-            (k, v) -> VectorUtils.of(k),
-            (k, v) -> v,
+            vectorizer,
             folds
         );
 

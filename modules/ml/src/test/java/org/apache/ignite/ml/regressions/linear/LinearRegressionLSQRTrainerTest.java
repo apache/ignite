@@ -138,7 +138,7 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
 
         LinearRegressionModel updatedOnEmptyDS = trainer.update(
             originalMdl,
-            new HashMap<Integer, double[]>(),
+            new HashMap<>(),
             parts,
             vectorizer
         );

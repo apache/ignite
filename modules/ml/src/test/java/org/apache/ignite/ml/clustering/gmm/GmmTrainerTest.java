@@ -20,13 +20,8 @@ package org.apache.ignite.ml.clustering.gmm;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -77,7 +72,7 @@ public class GmmTrainerTest extends TrainerTest {
         try {
             trainer.fit(
                 new LocalDatasetBuilder<>(new HashMap<>(), parts),
-                FeatureLabelExtractorWrapper.wrap((k, v) -> new DenseVector(2), (k, v) -> 1.0)
+                new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
             );
         }
         catch (RuntimeException e) {
@@ -99,13 +94,7 @@ public class GmmTrainerTest extends TrainerTest {
 
         model = trainer.updateModel(model,
             new LocalDatasetBuilder<>(new HashMap<>(), parts),
-            new FeatureLabelExtractorWrapper<>(new FeatureLabelExtractor<Double, Vector, Double>() {
-                private static final long serialVersionUID = -7245682432641745217L;
-
-                @Override public LabeledVector<Double> extract(Double aDouble, Vector vector) {
-                    return new LabeledVector<>(new DenseVector(2), 1.0);
-                }
-            })
+            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Assert.assertEquals(2, model.countOfComponents());
