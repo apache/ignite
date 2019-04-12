@@ -156,44 +156,44 @@ public class JdbcThinBestEffortAffinityTransactionsSelfTest extends JdbcThinAbst
         stmt.execute("COMMIT");
     }
 
-//    /**
-//     * Check that dml queries(updates) goes to the same node within transaction.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    @org.junit.Test
-//    public void testUpdateQueries() throws Exception {
-//        stmt.execute("BEGIN");
-//        checkNodesUsage("update Person set firstName = 'TestFirstName' where _key = 1", 1,
-//            true);
-//        stmt.execute("COMMIT");
-//
-//        stmt.execute("BEGIN");
-//        checkNodesUsage("update Person set firstName = 'TestFirstName' where _key = 1 or _key = 2",
-//            2, true);
-//        stmt.execute("COMMIT");
-//
-//        stmt.execute("BEGIN");
-//        checkNodesUsage("update Person set firstName = 'TestFirstName' where _key in (1, 2)",
-//            2, true);
-//        stmt.execute("COMMIT");
-//    }
-//
-//    /**
-//     * Check that dml queries(delete) goes to the same node within transaction.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    @org.junit.Test
-//    public void testDeleteQueries() throws Exception {
-//        stmt.execute("BEGIN");
-//        checkNodesUsage("delete from Person where _key = 1000 or _key = 2000", 0, true);
-//        stmt.execute("COMMIT");
-//
-//        stmt.execute("BEGIN");
-//        checkNodesUsage("delete from Person where _key in (1000, 2000)", 0, true);
-//        stmt.execute("COMMIT");
-//    }
+    /**
+     * Check that dml queries(updates) goes to the same node within transaction.
+     *
+     * @throws Exception If failed.
+     */
+    @org.junit.Test
+    public void testUpdateQueries() throws Exception {
+        stmt.execute("BEGIN");
+        checkNodesUsage("update Person set firstName = 'TestFirstName' where _key = 1", 1,
+            true);
+        stmt.execute("COMMIT");
+
+        stmt.execute("BEGIN");
+        checkNodesUsage("update Person set firstName = 'TestFirstName' where _key = 1 or _key = 2",
+            2, true);
+        stmt.execute("COMMIT");
+
+        stmt.execute("BEGIN");
+        checkNodesUsage("update Person set firstName = 'TestFirstName' where _key in (1, 2)",
+            2, true);
+        stmt.execute("COMMIT");
+    }
+
+    /**
+     * Check that dml queries(delete) goes to the same node within transaction.
+     *
+     * @throws Exception If failed.
+     */
+    @org.junit.Test
+    public void testDeleteQueries() throws Exception {
+        stmt.execute("BEGIN");
+        checkNodesUsage("delete from Person where _key = 1000 or _key = 2000", 0, true);
+        stmt.execute("COMMIT");
+
+        stmt.execute("BEGIN");
+        checkNodesUsage("delete from Person where _key in (1000, 2000)", 0, true);
+        stmt.execute("COMMIT");
+    }
 
 
     /**
