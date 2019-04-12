@@ -28,7 +28,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         private static readonly string[] MissingProperties =
         {
             // IGNITE-7127
-            "TotalJobsExecutionTime"
+            "TotalJobsExecutionTime",
+            "CurrentPmeDuration"
         };
 
         /// <summary>
