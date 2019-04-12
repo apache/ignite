@@ -96,6 +96,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     @Before
     public void checkInit(){
         assert getName() != null : "getName returned null";
+        assert testsCfg != null : "~~!   " + testsCfg.description();
+        assert testsCfgInjected != null : "~~!   " + testsCfgInjected.description();
 
         testsCfg = testsCfgInjected;
     }
