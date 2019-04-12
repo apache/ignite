@@ -4556,7 +4556,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
-    @Test
+    @Test(timeout = 10050000)
     public void testLocalEvict() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -4586,7 +4586,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key1))
-                assertEquals((Integer)1, peek(jcache(i), key1));
+                assertEquals("node name = " + grid(i).name(), (Integer)1, peek(jcache(i), key1));
 
             if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key2))
                 assertEquals((Integer)2, peek(jcache(i), key2));

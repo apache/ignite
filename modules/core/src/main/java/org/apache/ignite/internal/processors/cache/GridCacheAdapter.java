@@ -3796,7 +3796,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        if (replaceExisting) {
+        return runLoadKeysCallable(keys, plc, keepBinary, replaceExisting);
+
+/*        if (replaceExisting) {
             if (ctx.store().isLocal())
                 return runLoadKeysCallable(keys, plc, keepBinary, true);
             else {
@@ -3810,7 +3812,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         }
         else
-            return runLoadKeysCallable(keys, plc, keepBinary, false);
+            return runLoadKeysCallable(keys, plc, keepBinary, false);*/
     }
 
     /**
@@ -3850,17 +3852,24 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             Collection<KeyCacheObject> keys0 = ctx.cacheKeysView(keys);
 
-            ctx.store().loadAll(null, keys0, new CIX2<KeyCacheObject, Object>() {
-                @Override public void applyx(KeyCacheObject key, Object val) {
-                    col.add(new DataStreamerEntry(key, ctx.toCacheObject(val)));
+            try {
+                ctx.store().loadAll(null, keys0, new CIX2<KeyCacheObject, Object>() {
+                    @Override public void applyx(KeyCacheObject key, Object val) {
+                        col.add(new DataStreamerEntry(key, ctx.toCacheObject(val)));
 
-                    if (col.size() == ldr.perNodeBufferSize()) {
-                        ldr.addDataInternal(col, false);
+                        if (col.size() == ldr.perNodeBufferSize()) {
+                            ldr.addDataInternal(col, false);
 
-                        col.clear();
+                            col.clear();
+                        }
                     }
-                }
-            });
+                });
+            }
+            catch (Exception e) {
+                log.error("Failed to load all", e);
+
+                throw e;
+            }
 
             if (!col.isEmpty())
                 ldr.addData(col);
