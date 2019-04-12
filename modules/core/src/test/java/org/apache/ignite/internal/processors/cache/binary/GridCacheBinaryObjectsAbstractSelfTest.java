@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
 import org.apache.ignite.internal.util.typedef.P2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -309,6 +310,31 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             assertEquals(i, (int)po.field("val"));
 
             assertTrue(kpc.replace(i, po, testObj));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReplaceWhenEmptyValue() throws Exception {
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
+
+        BinaryObjectBuilder bldr = grid(0).binary().builder("TestObjCls");
+
+        bldr.setField("val", -42);
+
+        BinaryObject testObj = bldr.build();
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            assertNull(kpc.get(i));
+
+            try {
+                assertFalse(kpc.replace(i, testObj, testObj));
+            } catch (Exception ex) {
+                if (X.hasCause(ex, ClassNotFoundException.class))
+                    fail("Java class for cache object cant be found. Cache key: " + i + " msg: " + ex.getMessage());
+            }
         }
     }
 
