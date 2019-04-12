@@ -185,25 +185,27 @@ public class IgniteCacheUpdateDecimalSqlQuerySelfTest extends GridCommonAbstract
 
 
     @Test
-    public void testDeleteDecimalByValue() {
+    public void testDeleteDecimalInlineIndex() {
         execute("CREATE TABLE TEST_TABLE (" +
             "ID DECIMAL(19, 1)," +
             "VALUE DECIMAL(19,1)," +
-            "PRIMARY KEY (ID)) with \"template=partitioned, wrap_key=true, key_type=" + DecWrapper.class.getName() + "\"");
+            "PRIMARY KEY (ID)) with \"template=partitioned, wrap_value=false, wrap_key=true, key_type=" + DecWrapper.class.getName() + "\"");
 
         Object one = 1.0d;
 
         IgniteCache<Object, Object> tab = grid(0).cache("SQL_PUBLIC_TEST_TABLE");
+
         tab.clear();
-        tab.put(new BigDecimal("1"), new BigDecimal("42"));
-        tab.put(new BigDecimal("2"), new BigDecimal("77"));
+
+        tab.put(new DecWrapper("1"), new BigDecimal("42"));
+        tab.put(new DecWrapper("2"), new BigDecimal("77"));
 
         List<List<?>> actual = execute("SELECT\n" +
             "ID,\n" +
             "VALUE\n" +
             "FROM PUBLIC.TEST_TABLE\n" +
-            "WHERE (ID >= ?1 and ID <= ?1)", new BigDecimal("1.00000"));
-//            "WHERE (ID = ?1)", new BigDecimal("1.0"));
+//            "WHERE (ID >= ?1 and ID <= ?1)", new BigDecimal("1.00000"));
+            "WHERE id = ?", new BigDecimal("1.0000"));
         List<List<?>> expRows = Collections.singletonList(asList(new BigDecimal(1), new BigDecimal(42)));
 
         assertEqualsCollections("Argument of class " + one.getClass().getSimpleName() + " is converted incorrectly",
@@ -294,5 +296,13 @@ public class IgniteCacheUpdateDecimalSqlQuerySelfTest extends GridCommonAbstract
 
     public static class DecWrapper{
         public BigDecimal id;
+
+        public DecWrapper(String idStr) {
+            id = new BigDecimal(idStr);
+        }
+
+        public DecWrapper() {
+
+        }
     }
 }
