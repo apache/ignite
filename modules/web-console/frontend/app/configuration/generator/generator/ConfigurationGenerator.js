@@ -2816,7 +2816,7 @@ export default class IgniteConfigurationGenerator {
                 bean = new Bean('org.apache.ignite.hadoop.util.ChainedUserNameMapper', 'mameMapper', mapper.Chained);
 
                 bean.arrayProperty('mappers', 'mappers',
-                    _.map(_.get(mapper, 'Chained.mappers'), IgniteConfigurationGenerator._userNameMapperBean),
+                    _.filter(_.map(_.get(mapper, 'Chained.mappers'), IgniteConfigurationGenerator._userNameMapperBean), (m) => m),
                     'org.apache.ignite.hadoop.util.UserNameMapper');
 
                 break;
@@ -2872,7 +2872,7 @@ export default class IgniteConfigurationGenerator {
                     break;
 
                 case 'Custom':
-                    if (_get(secondFs, 'Custom.className'))
+                    if (_.get(secondFs, 'Custom.className'))
                         factoryBean = new Bean(secondFs.Custom.className, 'fac', null);
 
                     break;
