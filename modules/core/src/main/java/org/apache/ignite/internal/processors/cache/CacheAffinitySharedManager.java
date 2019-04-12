@@ -2180,31 +2180,31 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (cctx.localNode().isClient() && cctx.cache().cacheGroup(desc.groupId()) == null)
                     return;
 
-                CacheGroupHolder cache = getOrCreateGroupHolder(evts.topologyVersion(), desc);
+                CacheGroupHolder grpHolder = getOrCreateGroupHolder(evts.topologyVersion(), desc);
 
-                boolean latePrimary = cache.rebalanceEnabled;
+                boolean latePrimary = grpHolder.rebalanceEnabled;
 
                 boolean grpAdded = evts.nodeJoined(desc.receivedFrom());
 
                 initAffinityOnNodeJoin(evts,
                     grpAdded,
-                    cache.affinity(),
+                    grpHolder.affinity(),
                     crd ? waitRebalanceInfo : null,
                     latePrimary,
                     affCache);
 
                 if (crd && grpAdded) {
-                    AffinityAssignment aff = cache.aff.cachedAffinity(cache.aff.lastVersion());
+                    AffinityAssignment aff = grpHolder.aff.cachedAffinity(grpHolder.aff.lastVersion());
 
                     assert evts.topologyVersion().equals(aff.topologyVersion()) : "Unexpected version [" +
-                        "grp=" + cache.aff.cacheOrGroupName() +
+                        "grp=" + grpHolder.aff.cacheOrGroupName() +
                         ", evts=" + evts.topologyVersion() +
-                        ", aff=" + cache.aff.lastVersion() + ']';
+                        ", aff=" + grpHolder.aff.lastVersion() + ']';
 
                     Map<UUID, GridDhtPartitionMap> map = affinityFullMap(aff);
 
                     for (GridDhtPartitionMap map0 : map.values())
-                        cache.topology(fut.context().events().discoveryCache()).update(fut.exchangeId(), map0, true);
+                        grpHolder.topology(fut.context().events().discoveryCache()).update(fut.exchangeId(), map0, true);
                 }
 
                 cctx.exchange().exchangerUpdateHeartbeat();
