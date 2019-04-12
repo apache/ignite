@@ -298,8 +298,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Node's local cache configurations (both from static configuration and from persistent caches). */
     private CacheJoinNodeDiscoveryData localConfigs;
 
+    /** Cache configuration splitter. */
     private CacheConfigurationSplitter splitter;
 
+    /** Cache configuration enricher. */
     private CacheConfigurationEnricher enricher;
 
     /**
@@ -314,6 +316,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         internalCaches = new HashSet<>();
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+        splitter = new CacheConfigurationSplitterImpl(marsh);
+        enricher = new CacheConfigurationEnricher(marsh, U.resolveClassLoader(ctx.config()));
     }
 
     /**
@@ -880,9 +884,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheData.sql(sql);
 
-        CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
-
-        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(cfg);
+        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter().split(cfg);
 
         cacheData.config(splitCfg.get1());
         cacheData.cacheConfigurationEnrichment(splitCfg.get2());
@@ -960,9 +962,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (storedCacheData.hasOldCacheConfigurationFormat()) {
                         storedCacheData = new StoredCacheData(storedCacheData);
 
-                        CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
-
-                        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(storedCacheData.config());
+                        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter().split(storedCacheData.config());
 
                         storedCacheData.config(splitCfg.get1());
                         storedCacheData.cacheConfigurationEnrichment(splitCfg.get2());
@@ -2369,7 +2369,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 */
 
-        desc.enrich(desc.cacheConfiguration().getCacheMode() == LOCAL || isLocalAffinity(desc.cacheConfiguration()));
+        desc = enricher().enrich(desc,
+            desc.cacheConfiguration().getCacheMode() == LOCAL || isLocalAffinity(desc.cacheConfiguration()));
 
         //reqNearCfg = desc.cacheConfiguration().getNearConfiguration();
 
@@ -2533,7 +2534,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (sharedCtx.pageStore() != null && affNode)
             initializationProtector.protect(
                 desc.groupDescriptor().groupId(),
-                () -> sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), desc.toStoredData())
+                () -> sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), desc.toStoredData(splitter))
             );
     }
 
@@ -2672,7 +2673,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheDescriptor desc
     ) throws IgniteCheckedException {
         // Only affinity node caches are able to start cache in recovery mode.
-        desc.enrich(true);
+        desc = enricher().enrich(desc, true);
 
         CacheConfiguration cfg = desc.cacheConfiguration();
 
@@ -2814,7 +2815,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion exchTopVer,
         boolean recoveryMode
     ) throws IgniteCheckedException {
-        desc.enrich(affNode);
+        desc = enricher().enrich(desc, affNode);
 
         CacheConfiguration cfg = new CacheConfiguration(desc.config());
 
@@ -3772,7 +3773,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return null;
 
         // It's safe to enrich cache configuration here because we requested this cache from current node.
-        CacheConfiguration enrichedTemplate = CacheConfigurationEnricher.enrichFully(
+        CacheConfiguration enrichedTemplate = enricher().enrichFully(
             cfgTemplate.cacheConfiguration(), cfgTemplate.cacheConfigurationEnrichment());
 
         enrichedTemplate = cloneCheckSerializable(enrichedTemplate);
@@ -4313,7 +4314,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (sharedCtx.pageStore() != null && !sharedCtx.kernalContext().clientNode() &&
             isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration()))
-            sharedCtx.pageStore().storeCacheData(desc.toStoredData(), true);
+            sharedCtx.pageStore().storeCacheData(desc.toStoredData(splitter), true);
     }
 
     /**
@@ -5577,19 +5578,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     req.deploymentId(desc.deploymentId());
 
-                    IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+                    T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = backwardCompatibleSplitter().split(desc);
 
-                    // Backward compatibility.
-                    if (spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS)) {
-                        CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
-
-                        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(desc);
-
-                        req.startCacheConfiguration(splitCfg.get1());
-                        req.cacheConfigurationEnrichment(splitCfg.get2());
-                    }
-                    else
-                        req.startCacheConfiguration(descCfg);
+                    req.startCacheConfiguration(splitCfg.get1());
+                    req.cacheConfigurationEnrichment(splitCfg.get2());
 
                     req.schema(desc.schema());
                 }
@@ -5599,21 +5591,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 req.deploymentId(IgniteUuid.randomUuid());
 
-                IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+                T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = backwardCompatibleSplitter().split(cfg);
 
-                // Backward compatibility.
-                if (spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS)) {
-                    CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
+                req.startCacheConfiguration(splitCfg.get1());
+                req.cacheConfigurationEnrichment(splitCfg.get2());
 
-                    T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(cfg);
-
-                    req.startCacheConfiguration(splitCfg.get1());
-                    req.cacheConfigurationEnrichment(splitCfg.get2());
-
-                    cfg = splitCfg.get1();
-                }
-                else
-                    req.startCacheConfiguration(cfg);
+                cfg = splitCfg.get1();
 
                 CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
@@ -5643,19 +5626,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             req.deploymentId(desc.deploymentId());
 
-            IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+            T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = backwardCompatibleSplitter().split(ccfg);
 
-            // Backward compatibility.
-            if (spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS)) {
-                CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
-
-                T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(ccfg);
-
-                req.startCacheConfiguration(splitCfg.get1());
-                req.cacheConfigurationEnrichment(splitCfg.get2());
-            }
-            else
-                req.startCacheConfiguration(ccfg);
+            req.startCacheConfiguration(splitCfg.get1());
+            req.cacheConfigurationEnrichment(splitCfg.get2());
 
             req.schema(desc.schema());
         }
@@ -5798,6 +5772,43 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public void setTmpStorage(MetaStorage.TmpStorage tmpStorage) {
         this.tmpStorage = tmpStorage;
+    }
+
+    /**
+     * @param oldFormat Old format.
+     */
+    public CacheConfigurationSplitter splitter(boolean oldFormat) {
+        // Requesting splitter with old format support is rare operation.
+        // It's acceptable to allocate it every time by request.
+        return oldFormat ? new CacheConfigurationSplitterOldFormat(enricher) : splitter;
+    }
+
+    /**
+     * @return By default it returns splitter without old format configuration support.
+     */
+    public CacheConfigurationSplitter splitter() {
+        return splitter(false);
+    }
+
+    /**
+     * If not all nodes in cluster support splitted cache configurations it returns old format splitter.
+     * In other case it returns default splitter.
+     *
+     * @return Cache configuration splitter with or without old format support depending on cluster state.
+     */
+    public CacheConfigurationSplitter backwardCompatibleSplitter() {
+        IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+
+        boolean oldFormat = !spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS);
+
+        return splitter(oldFormat);
+    }
+
+    /**
+     * @return Cache configuration enricher.
+     */
+    public CacheConfigurationEnricher enricher() {
+        return enricher;
     }
 
     /**

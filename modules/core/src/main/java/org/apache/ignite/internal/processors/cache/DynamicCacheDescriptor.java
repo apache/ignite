@@ -232,6 +232,13 @@ public class DynamicCacheDescriptor {
     }
 
     /**
+     * @param cacheCfg Cache config.
+     */
+    public void cacheConfiguration(CacheConfiguration cacheCfg) {
+        this.cacheCfg = cacheCfg;
+    }
+
+    /**
      * Creates and caches cache object context if needed.
      *
      * @param proc Object processor.
@@ -389,7 +396,7 @@ public class DynamicCacheDescriptor {
      * from page store. Essentially, this method takes from {@link DynamicCacheDescriptor} all that's needed to start
      * cache correctly, leaving out everything else.
      */
-    public StoredCacheData toStoredData() {
+    public StoredCacheData toStoredData(CacheConfigurationSplitter splitter) {
         assert schema != null;
 
         StoredCacheData res = new StoredCacheData(cacheConfiguration());
@@ -398,8 +405,6 @@ public class DynamicCacheDescriptor {
         res.sql(sql());
 
         if (isConfigurationEnriched()) {
-            CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
-
             T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(this);
 
             res.config(splitCfg.get1());
@@ -423,20 +428,10 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * Enriches stored cache config with enrichment.
-     *
-     * @param affinityNode {@code True} If local node is affinity node for that cache.
+     * @param cacheCfgEnriched Cache config enriched.
      */
-    public void enrich(boolean affinityNode) {
-        if (CU.isUtilityCache(cacheName()))
-            return;
-
-        if (isConfigurationEnriched())
-            return;
-
-        cacheCfg = CacheConfigurationEnricher.enrich(cacheCfg, cacheCfgEnrichment, affinityNode);
-
-        cacheCfgEnriched = true;
+    public void configurationEnriched(boolean cacheCfgEnriched) {
+        this.cacheCfgEnriched = cacheCfgEnriched;
     }
 
     /** {@inheritDoc} */

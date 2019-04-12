@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -77,7 +76,7 @@ public class CacheGroupDescriptor {
     private final CacheConfigurationEnrichment cacheCfgEnrichment;
 
     /** Is configuration enriched. */
-    private volatile boolean isConfigurationEnriched;
+    private volatile boolean cacheCfgEnriched;
 
     /**
      * @param cacheCfg Cache configuration.
@@ -266,6 +265,13 @@ public class CacheGroupDescriptor {
     }
 
     /**
+     * @param cacheCfg Cache config.
+     */
+    public void config(CacheConfiguration cacheCfg) {
+        this.cacheCfg = cacheCfg;
+    }
+
+    /**
      * @return Group caches.
      */
     public Map<String, Integer> caches() {
@@ -329,22 +335,14 @@ public class CacheGroupDescriptor {
      * @return {@code True} if cache configuration is already enriched.
      */
     public boolean isConfigurationEnriched() {
-        return cacheCfgEnrichment == null || isConfigurationEnriched;
+        return cacheCfgEnrichment == null || cacheCfgEnriched;
     }
 
     /**
-     * @param affinityNode Affinity node.
+     * @param cacheCfgEnriched Is configuration enriched.
      */
-    public void enrich(boolean affinityNode) {
-        if (CU.isUtilityCache(cacheOrGroupName()))
-            return;
-
-        if (isConfigurationEnriched())
-            return;
-
-        cacheCfg = CacheConfigurationEnricher.enrich(cacheCfg, cacheCfgEnrichment, affinityNode);
-
-        isConfigurationEnriched = true;
+    public void configurationEnriched(boolean cacheCfgEnriched) {
+        this.cacheCfgEnriched = cacheCfgEnriched;
     }
 
     /** {@inheritDoc} */

@@ -22,8 +22,6 @@ import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -145,19 +143,10 @@ public class DynamicCacheChangeRequest implements Serializable {
 
         req.template(true);
 
-        IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
+        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = ctx.cache().backwardCompatibleSplitter().split(cfg);
 
-        // Backward compatibility.
-        if (spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS)) {
-            CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
-
-            T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(cfg);
-
-            req.startCacheConfiguration(splitCfg.get1());
-            req.cacheConfigurationEnrichment(splitCfg.get2());
-        }
-        else
-            req.startCacheConfiguration(cfg);
+        req.startCacheConfiguration(splitCfg.get1());
+        req.cacheConfigurationEnrichment(splitCfg.get2());
 
         req.schema(new QuerySchema(cfg.getQueryEntities()));
         req.deploymentId(IgniteUuid.randomUuid());

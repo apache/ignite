@@ -1134,20 +1134,17 @@ class ClusterCachesInfo {
         if (ctx.isDaemon())
             return;
 
-        if (!dataBag.commonDataCollectedFor(CACHE_PROC.ordinal())) {
-            IgniteDiscoverySpi spi = (IgniteDiscoverySpi) ctx.discovery().getInjectedDiscoverySpi();
-
-            dataBag.addGridCommonData(CACHE_PROC.ordinal(), collectCommonDiscoveryData(spi.allNodesSupport(IgniteFeatures.SPLITTED_CACHE_CONFIGURATIONS)));
-        }
+        if (!dataBag.commonDataCollectedFor(CACHE_PROC.ordinal()))
+            dataBag.addGridCommonData(CACHE_PROC.ordinal(), collectCommonDiscoveryData());
     }
 
     /**
      * @return Information about started caches.
      */
-    private CacheNodeCommonDiscoveryData collectCommonDiscoveryData(boolean splitCacheConfigurations) {
+    private CacheNodeCommonDiscoveryData collectCommonDiscoveryData() {
         Map<Integer, CacheGroupData> cacheGrps = new HashMap<>();
 
-        CacheConfigurationSplitter cfgSplitter = new CacheConfigurationSplitterImpl(splitCacheConfigurations);
+        CacheConfigurationSplitter cfgSplitter = ctx.cache().backwardCompatibleSplitter();
 
         for (CacheGroupDescriptor grpDesc : registeredCacheGrps.values()) {
             T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = cfgSplitter.split(grpDesc);

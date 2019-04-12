@@ -144,15 +144,14 @@ public class StoredCacheData implements Serializable {
     /**
      *
      */
-    public StoredCacheData withSplittedCacheConfig() {
-        if (cacheConfigurationEnrichment == null) {
-            CacheConfigurationSplitter splitter = new CacheConfigurationSplitterImpl(true);
+    public StoredCacheData withSplittedCacheConfig(CacheConfigurationSplitter splitter) {
+        if (cacheConfigurationEnrichment != null)
+            return this;
 
-            T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(ccfg);
+        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(ccfg);
 
-            ccfg = splitCfg.get1();
-            cacheConfigurationEnrichment = splitCfg.get2();
-        }
+        ccfg = splitCfg.get1();
+        cacheConfigurationEnrichment = splitCfg.get2();
 
         return this;
     }
@@ -160,12 +159,13 @@ public class StoredCacheData implements Serializable {
     /**
      *
      */
-    public StoredCacheData withOldCacheConfig() {
-        if (cacheConfigurationEnrichment != null) {
-            ccfg = CacheConfigurationEnricher.enrichFully(ccfg, cacheConfigurationEnrichment);
+    public StoredCacheData withOldCacheConfig(CacheConfigurationEnricher enricher) {
+        if (cacheConfigurationEnrichment == null)
+            return this;
 
-            cacheConfigurationEnrichment = null;
-        }
+        ccfg = enricher.enrichFully(ccfg, cacheConfigurationEnrichment);
+
+        cacheConfigurationEnrichment = null;
 
         return this;
     }

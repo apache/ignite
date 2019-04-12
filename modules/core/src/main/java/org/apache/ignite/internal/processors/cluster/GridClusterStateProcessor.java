@@ -938,8 +938,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                     storedCfgs = storedCfgs.stream()
                         .map(storedCacheData -> splittedCacheCfgs
-                            ? storedCacheData.withSplittedCacheConfig()
-                            : storedCacheData.withOldCacheConfig()
+                            ? storedCacheData.withSplittedCacheConfig(ctx.cache().splitter())
+                            : storedCacheData.withOldCacheConfig(ctx.cache().enricher())
                         )
                         .collect(Collectors.toList());
                 }

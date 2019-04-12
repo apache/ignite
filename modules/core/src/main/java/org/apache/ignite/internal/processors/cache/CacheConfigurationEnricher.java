@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.SerializeSeparately;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
@@ -43,6 +44,50 @@ public class CacheConfigurationEnricher {
     public CacheConfigurationEnricher(Marshaller marshaller, ClassLoader clsLdr) {
         this.marshaller = marshaller;
         this.clsLdr = clsLdr;
+    }
+
+    /**
+     * Enriches descriptor cache configuration with stored enrichment.
+     *
+     * @param desc Description.
+     * @param affinityNode Affinity node.
+     */
+    public DynamicCacheDescriptor enrich(DynamicCacheDescriptor desc, boolean affinityNode) {
+        if (CU.isUtilityCache(desc.cacheName()))
+            return desc;
+
+        if (desc.isConfigurationEnriched())
+            return desc;
+
+        CacheConfiguration<?, ?> enrichedCfg = enrich(desc.cacheConfiguration(), desc.cacheConfigurationEnrichment(), affinityNode);
+
+        desc.cacheConfiguration(enrichedCfg);
+
+        desc.configurationEnriched(true);
+
+        return desc;
+    }
+
+    /**
+     * Enriches descriptor cache configuration with stored enrichment.
+     *
+     * @param desc Description.
+     * @param affinityNode Affinity node.
+     */
+    public CacheGroupDescriptor enrich(CacheGroupDescriptor desc, boolean affinityNode) {
+        if (CU.isUtilityCache(desc.cacheOrGroupName()))
+            return desc;
+
+        if (desc.isConfigurationEnriched())
+            return desc;
+
+        CacheConfiguration<?, ?> enrichedCfg = enrich(desc.config(), desc.cacheConfigurationEnrichment(), affinityNode);
+
+        desc.config(enrichedCfg);
+
+        desc.configurationEnriched(true);
+
+        return desc;
     }
 
     /**
