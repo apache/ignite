@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Predicate;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
+import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
@@ -36,6 +40,7 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.WalCommands.WAL_DELETE;
 import static org.apache.ignite.internal.commandline.WalCommands.WAL_PRINT;
+import static org.apache.ignite.internal.commandline.cache.CacheCommandList.FIND_AND_DELETE_GARBAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheCommandList.VALIDATE_INDEXES;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
@@ -128,9 +133,109 @@ public class CommandHandlerParsingTest {
         }
     }
 
-    private Arguments getArgs(List<String> args) {
-        return new CommandArgParser(Collections.emptySet(), true, new CommandLogger()).
-            parseAndValidate(new CommandArgIterator(args.iterator()));
+    /**
+     *
+     */
+    @Test
+    public void testFindAndDeleteGarbage() {
+        String nodeId = UUID.randomUUID().toString();
+        String delete = FindAndDeleteGarbageArg.DELETE.toString();
+        String groups = "group1,grpoup2,group3";
+
+        List<List<String>> lists = generateArgumentList(
+            FIND_AND_DELETE_GARBAGE.text(),
+            new T2<>(nodeId, false),
+            new T2<>(delete, false),
+            new T2<>(groups, false)
+        );
+
+        for (List<String> list : lists) {
+            CacheArguments args = getArgs(list).cacheArgs();
+
+            if (list.contains(nodeId)) {
+                assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId().toString());
+            }
+            else {
+                assertNull(args.nodeId());
+            }
+
+            assertEquals(list.contains(delete), args.delete());
+
+            if (list.contains(groups)) {
+                assertEquals(3, args.groups().size());
+            }
+            else {
+                assertNull(args.groups());
+            }
+        }
+    }
+
+    private List<List<String>> generateArgumentList(String subcommand, T2<String, Boolean>...optional) {
+        List<List<T2<String, Boolean>>> lists = generateAllCombinations(Arrays.asList(optional), (x) -> x.get2());
+
+        ArrayList<List<String>> res = new ArrayList<>();
+
+        ArrayList<String> empty = new ArrayList<>();
+
+        empty.add(CACHE.text());
+        empty.add(subcommand);
+
+        res.add(empty);
+
+        for (List<T2<String, Boolean>> list : lists) {
+            ArrayList<String> arg = new ArrayList<>(empty);
+
+            list.forEach(x -> arg.add(x.get1()));
+
+            res.add(arg);
+        }
+
+        return res;
+    }
+
+    private <T> List<List<T>> generateAllCombinations(List<T> source, Predicate<T> stopFunc) {
+        List<List<T>> res = new ArrayList<>();
+
+        for (int i = 0; i < source.size(); i++) {
+            List<T> sourceCopy = new ArrayList<>(source);
+
+            T removed = sourceCopy.remove(i);
+
+            generateAllCombinations(Collections.singletonList(removed), sourceCopy, stopFunc, res);
+        }
+
+        return res;
+    }
+
+
+    private <T> void generateAllCombinations(List<T> res, List<T> source, Predicate<T> stopFunc, List<List<T>> acc) {
+        acc.add(res);
+
+        if (stopFunc != null && stopFunc.test(res.get(res.size() - 1))) {
+            return;
+        }
+
+        if (source.size() == 1) {
+            ArrayList<T> list = new ArrayList<>(res);
+
+            list.add(source.get(0));
+
+            acc.add(list);
+
+            return;
+        }
+
+        for (int i = 0; i < source.size(); i++) {
+            ArrayList<T> res0 = new ArrayList<>(res);
+
+            List<T> sourceCopy = new ArrayList<>(source);
+
+            T removed = sourceCopy.remove(i);
+
+            res0.add(removed);
+
+            generateAllCombinations(res0, sourceCopy, stopFunc, acc);
+        }
     }
 
     /**
@@ -178,7 +283,7 @@ public class CommandHandlerParsingTest {
                 e.printStackTrace();
             }
 
-            Arguments args = getArgs(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
+            ConnectionAndSslParameters args = getArgs(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
                 "--truststore", "testTruststore", "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
                 "--ssl-key-algorithm", "testSSLKeyAlgorithm", "--ssl-protocol", "testSSLProtocol", cmd.text()));
 
@@ -223,7 +328,7 @@ public class CommandHandlerParsingTest {
                 e.printStackTrace();
             }
 
-            Arguments args = getArgs(asList("--user", "testUser", "--password", "testPass", cmd.text()));
+            ConnectionAndSslParameters args = getArgs(asList("--user", "testUser", "--password", "testPass", cmd.text()));
 
             assertEquals("testUser", args.getUserName());
             assertEquals("testPass", args.getPassword());
@@ -236,7 +341,7 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAndValidateWalActions() {
-        Arguments args = getArgs(Arrays.asList(WAL.text(), WAL_PRINT));
+        ConnectionAndSslParameters args = getArgs(Arrays.asList(WAL.text(), WAL_PRINT));
 
         assertEquals(WAL, args.command());
 
@@ -280,7 +385,7 @@ public class CommandHandlerParsingTest {
                 && cmd != Commands.TX)
                 continue;
 
-            Arguments args = getArgs(asList(cmd.text()));
+            ConnectionAndSslParameters args = getArgs(asList(cmd.text()));
 
             assertEquals(cmd, args.command());
             assertEquals(DFLT_HOST, args.host());
@@ -338,7 +443,7 @@ public class CommandHandlerParsingTest {
             if (cmd == Commands.CACHE || cmd == Commands.WAL)
                 continue; // --cache subcommand requires its own specific arguments.
 
-            Arguments args = getArgs(asList(cmd.text()));
+            ConnectionAndSslParameters args = getArgs(asList(cmd.text()));
 
             assertEquals(cmd, args.command());
             assertEquals(DFLT_HOST, args.host());
@@ -387,7 +492,7 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testTransactionArguments() {
-        Arguments args;
+        ConnectionAndSslParameters args;
 
         getArgs(asList("--tx"));
 
@@ -475,5 +580,11 @@ public class CommandHandlerParsingTest {
 
         assertNull(arg.getProjection());
         assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
+    }
+
+
+    private ConnectionAndSslParameters getArgs(List<String> args) {
+        return new CommandArgParser(Collections.emptySet(), true, new CommandLogger()).
+            parseAndValidate(new CommandArgIterator(args.iterator(), set));
     }
 }

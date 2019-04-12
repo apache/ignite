@@ -20,11 +20,14 @@
 
 package org.apache.ignite.internal.commandline.cache;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.client.GridClient;
@@ -32,11 +35,17 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientNode;
-import org.apache.ignite.internal.commandline.Arguments;
 import org.apache.ignite.internal.commandline.Command;
+import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandLogger;
-import org.apache.ignite.internal.commandline.cache.argument.FindAndRemoveGarbageArg;
+import org.apache.ignite.internal.commandline.OutputFormat;
+import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
+import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
@@ -70,8 +79,11 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
+import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.apache.ignite.lang.IgniteProductVersion;
 
+import static org.apache.ignite.internal.commandline.CommandHandler.NULL;
+import static org.apache.ignite.internal.commandline.CommandHandler.ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME_WITH_COMMON_OPTIONS;
 import static org.apache.ignite.internal.commandline.CommandLogger.g;
 import static org.apache.ignite.internal.commandline.CommandLogger.j;
@@ -79,12 +91,13 @@ import static org.apache.ignite.internal.commandline.CommandLogger.op;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.Commands.CACHE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
+import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.cache.CacheCommandList.CONTENTION;
 import static org.apache.ignite.internal.commandline.cache.CacheCommandList.DISTRIBUTION;
-import static org.apache.ignite.internal.commandline.cache.CacheCommandList.FIND_AND_REMOVE_GARBAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheCommandList.FIND_AND_DELETE_GARBAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheCommandList.IDLE_VERIFY;
 import static org.apache.ignite.internal.commandline.cache.CacheCommandList.LIST;
 import static org.apache.ignite.internal.commandline.cache.CacheCommandList.RESET_LOST_PARTITIONS;
@@ -101,9 +114,12 @@ import static org.apache.ignite.internal.commandline.cache.argument.ListCommandA
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.SEQUENCE;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
 import static org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder.DELIM;
 
-public class CacheCommands implements Command {
+public class CacheCommands implements Command<CacheArguments> {
     /** */
     private static final String NODE_ID = "nodeId";
 
@@ -118,21 +134,19 @@ public class CacheCommands implements Command {
     /** Find and delete garbarge task name. */
     private static final String FIND_AND_DELETE_GARBARGE_TASK = "org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTask";
 
-    @Override public String confirmationPrompt(Arguments args) {
+    @Override public String confirmationPrompt(CacheArguments args) {
         return null;
     }
 
     /**
      * Executes --cache subcommand.
-     * @param arguments Cache args.
+     * @param cacheArgs Cache args.
      * @param clientCfg Client configuration.
      */
 
     @Override
-    public Object execute(Arguments arguments, GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    public Object execute(CacheArguments cacheArgs, GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         this.logger = logger;
-
-        CacheArguments cacheArgs = arguments.cacheArgs();
 
         if (cacheArgs.command() == CacheCommandList.HELP) {
             printCacheHelp();
@@ -152,7 +166,7 @@ public class CacheCommands implements Command {
 
                     break;
 
-                case FIND_AND_REMOVE_GARBAGE:
+                case FIND_AND_DELETE_GARBAGE:
                     findAndDeleteGarbage(client, cacheArgs, clientCfg);
 
                     break;
@@ -520,7 +534,7 @@ public class CacheCommands implements Command {
         usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or(NODE_ID, CommandHandler.NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, CACHES);
-        usageCache(FIND_AND_REMOVE_GARBAGE, op(GROUPS), OP_NODE_ID, op(FindAndRemoveGarbageArg.DELETE));
+        usageCache(FIND_AND_DELETE_GARBAGE, op(GROUPS), OP_NODE_ID, op(FindAndDeleteGarbageArg.DELETE));
 
         logger.nl();
     }
@@ -627,8 +641,271 @@ public class CacheCommands implements Command {
 
                 break;
         }
+
         return map;
     }
 
+    /**
+     * Parses and validates cache arguments.
+     *
+     * @return --cache subcommand arguments in case validation is successful.
+     * @param argIter Argument iterator.
+     */
+    @Override public CacheArguments init(CommandArgIterator argIter) {
+        if (!argIter.hasNextSubArg()) {
+            throw new IllegalArgumentException("Arguments are expected for --cache subcommand, " +
+                "run --cache help for more info.");
+        }
 
+        CacheArguments cacheArgs = new CacheArguments();
+
+        String str = argIter.nextArg("").toLowerCase();
+
+        CacheCommandList cmd = CacheCommandList.of(str);
+
+        if (cmd == null)
+            cmd = CacheCommandList.HELP;
+
+        cacheArgs.command(cmd);
+
+        switch (cmd) {
+            case HELP:
+                break;
+
+            case IDLE_VERIFY:
+                int idleVerifyArgsCnt = 3;
+
+                while (argIter.hasNextSubArg() && idleVerifyArgsCnt-- > 0) {
+                    String nextArg = argIter.nextArg("");
+
+                    IdleVerifyCommandArg arg = CommandArgUtils.of(nextArg, IdleVerifyCommandArg.class);
+
+                    if (arg == null) {
+                        if (cacheArgs.excludeCaches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
+                            throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
+
+                        cacheArgs.caches(argIter.nextStringSet(nextArg));
+                    }
+                    else {
+                        switch (arg) {
+                            case DUMP:
+                                cacheArgs.dump(true);
+
+                                break;
+
+                            case SKIP_ZEROS:
+                                cacheArgs.skipZeros(true);
+
+                                break;
+
+                            case CHECK_CRC:
+                                cacheArgs.idleCheckCrc(true);
+
+                                break;
+
+                            case CACHE_FILTER:
+                                if (cacheArgs.caches() != null || cacheArgs.excludeCaches() != null)
+                                    throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
+
+                                String filter = argIter.nextArg("The cache filter should be specified. The following " +
+                                    "values can be used: " + Arrays.toString(CacheFilterEnum.values()) + '.');
+
+                                cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter.toUpperCase()));
+
+                                break;
+
+                            case EXCLUDE_CACHES:
+                                if (cacheArgs.caches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
+                                    throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
+
+                                cacheArgs.excludeCaches(argIter.nextStringSet("caches, which will be excluded."));
+
+                                break;
+                        }
+                    }
+                }
+                break;
+
+            case CONTENTION:
+                cacheArgs.minQueueSize(Integer.parseInt(argIter.nextArg("Min queue size expected")));
+
+                if (argIter.hasNextSubArg())
+                    cacheArgs.nodeId(UUID.fromString(argIter.nextArg("")));
+
+                if (argIter.hasNextSubArg())
+                    cacheArgs.maxPrint(Integer.parseInt(argIter.nextArg("")));
+                else
+                    cacheArgs.maxPrint(10);
+
+                break;
+
+            case VALIDATE_INDEXES: {
+                int argsCnt = 0;
+
+                while (argIter.hasNextSubArg() && argsCnt++ < 4) {
+                    String nextArg = argIter.nextArg("");
+
+                    ValidateIndexesCommandArg arg = CommandArgUtils.of(nextArg, ValidateIndexesCommandArg.class);
+
+                    if (arg == CHECK_FIRST || arg == CHECK_THROUGH) {
+                        if (!argIter.hasNextSubArg())
+                            throw new IllegalArgumentException("Numeric value for '" + nextArg + "' parameter expected.");
+
+                        int numVal;
+
+                        String numStr = argIter.nextArg("");
+
+                        try {
+                            numVal = Integer.parseInt(numStr);
+                        }
+                        catch (IllegalArgumentException e) {
+                            throw new IllegalArgumentException(
+                                "Not numeric value was passed for '" + nextArg + "' parameter: " + numStr
+                            );
+                        }
+
+                        if (numVal <= 0)
+                            throw new IllegalArgumentException("Value for '" + nextArg + "' property should be positive.");
+
+                        if (arg == CHECK_FIRST)
+                            cacheArgs.checkFirst(numVal);
+                        else
+                            cacheArgs.checkThrough(numVal);
+
+                        continue;
+                    }
+
+                    try {
+                        cacheArgs.nodeId(UUID.fromString(nextArg));
+
+                        continue;
+                    }
+                    catch (IllegalArgumentException ignored) {
+                        //No-op.
+                    }
+
+                    cacheArgs.caches(argIter.nextStringSet(nextArg));
+                }
+
+                break;
+            }
+
+            case FIND_AND_DELETE_GARBAGE: {
+                int argsCnt = 0;
+
+                while (argIter.hasNextSubArg() && argsCnt++ < 3) {
+                    String nextArg = argIter.nextArg("");
+
+                    FindAndDeleteGarbageArg arg = CommandArgUtils.of(nextArg, FindAndDeleteGarbageArg.class);
+
+                    if (arg == FindAndDeleteGarbageArg.DELETE) {
+                        cacheArgs.delete(true);
+
+                        continue;
+                    }
+
+                    try {
+                        cacheArgs.nodeId(UUID.fromString(nextArg));
+
+                        continue;
+                    }
+                    catch (IllegalArgumentException ignored) {
+                        //No-op.
+                    }
+
+                    cacheArgs.groups(argIter.nextStringSet(nextArg));
+                }
+
+                break;
+            }
+
+            case DISTRIBUTION:
+                String nodeIdStr = argIter.nextArg("Node id expected or null");
+                if (!NULL.equals(nodeIdStr))
+                    cacheArgs.nodeId(UUID.fromString(nodeIdStr));
+
+                while (argIter.hasNextSubArg()) {
+                    String nextArg = argIter.nextArg("");
+
+                    DistributionCommandArg arg = CommandArgUtils.of(nextArg, DistributionCommandArg.class);
+
+                    if (arg == USER_ATTRIBUTES) {
+                        nextArg = argIter.nextArg("User attributes are expected to be separated by commas");
+
+                        Set<String> userAttrs = new HashSet<>();
+
+                        for (String userAttribute : nextArg.split(","))
+                            userAttrs.add(userAttribute.trim());
+
+                        cacheArgs.setUserAttributes(userAttrs);
+
+                        nextArg = (argIter.hasNextSubArg()) ? argIter.nextArg("") : null;
+
+                    }
+
+                    if (nextArg != null)
+                        cacheArgs.caches(argIter.nextStringSet(nextArg));
+                }
+
+                break;
+
+            case RESET_LOST_PARTITIONS:
+                cacheArgs.caches(argIter.nextStringSet(argIter.nextArg("Cache name expected")));
+
+                break;
+
+            case LIST:
+                cacheArgs.regex(argIter.nextArg("Regex is expected"));
+
+                VisorViewCacheCmd cacheCmd = CACHES;
+
+                OutputFormat outputFormat = SINGLE_LINE;
+
+                while (argIter.hasNextSubArg()) {
+                    String nextArg = argIter.nextArg("").toLowerCase();
+
+                    ListCommandArg arg = CommandArgUtils.of(nextArg, ListCommandArg.class);
+                    if (arg != null) {
+                        switch (arg) {
+                            case GROUP:
+                                cacheCmd = GROUPS;
+
+                                break;
+
+                            case SEQUENCE:
+                                cacheCmd = SEQ;
+
+                                break;
+
+                            case OUTPUT_FORMAT:
+                                String tmp2 = argIter.nextArg("output format must be defined!").toLowerCase();
+
+                                outputFormat = OutputFormat.fromConsoleName(tmp2);
+
+                                break;
+
+                            case CONFIG:
+                                cacheArgs.fullConfig(true);
+
+                                break;
+                        }
+                    }
+                    else
+                        cacheArgs.nodeId(UUID.fromString(nextArg));
+                }
+
+                cacheArgs.cacheCommand(cacheCmd);
+                cacheArgs.outputFormat(outputFormat);
+
+                break;
+
+            default:
+                throw new IllegalArgumentException("Unknown --cache subcommand " + cmd);
+        }
+
+        if (argIter.hasNextSubArg())
+            throw new IllegalArgumentException("Unexpected argument of --cache subcommand: " + argIter.peekNextArg());
+
+        return cacheArgs;
+    }
 }

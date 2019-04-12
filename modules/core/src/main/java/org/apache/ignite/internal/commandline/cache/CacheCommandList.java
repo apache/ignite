@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commandline.cache;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.FindAndRemoveGarbageArg;
+import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
@@ -71,7 +71,7 @@ public enum CacheCommandList {
     /**
      * Find and remove garbage.
      */
-    FIND_AND_REMOVE_GARBAGE("find_garbage", FindAndRemoveGarbageArg.class,
+    FIND_AND_DELETE_GARBAGE("find_garbage", FindAndDeleteGarbageArg.class,
         "Find and optionally delete garbage from shared cache groups which could be left after cache destroy.");
 
 

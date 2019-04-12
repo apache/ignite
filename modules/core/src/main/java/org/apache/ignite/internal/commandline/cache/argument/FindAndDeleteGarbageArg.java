@@ -22,12 +22,12 @@ package org.apache.ignite.internal.commandline.cache.argument;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 
-public enum FindAndRemoveGarbageArg implements CommandArg {
+public enum FindAndDeleteGarbageArg implements CommandArg {
     DELETE("--delete");
 
     private final String name;
 
-    FindAndRemoveGarbageArg(String name) {
+    FindAndDeleteGarbageArg(String name) {
         this.name = name;
     }
 

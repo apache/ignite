@@ -26,6 +26,7 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
@@ -33,9 +34,11 @@ import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskOperation;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
 
+import static org.apache.ignite.internal.commandline.CommandArgIterator.isCommandOrOption;
+import static org.apache.ignite.internal.commandline.Commands.WAL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 
-public class WalCommands implements Command {
+public class WalCommands implements Command<T2<String, String>> {
     /** */
     static final String WAL_PRINT = "print";
 
@@ -49,21 +52,21 @@ public class WalCommands implements Command {
      * Execute WAL command.
      *
      * @param clientCfg Client configuration.
-     * @throws Throwable If failed to execute wal action.
+     * @throws Exception If failed to execute wal action.
      */
-    @Override public Object execute(Arguments arguments, GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(T2<String, String> arguments, GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         this.logger = logger;
 
         try (GridClient client = GridClientFactory.start(clientCfg)) {
-            switch (arguments.walAction()) {
+            switch (arguments.get1()) {
                 case WAL_DELETE:
-                    deleteUnusedWalSegments(client, arguments.walArguments(), clientCfg);
+                    deleteUnusedWalSegments(client, arguments.get2(), clientCfg);
 
                     break;
 
                 case WAL_PRINT:
                 default:
-                    printUnusedWalSegments(client, arguments.walArguments(), clientCfg);
+                    printUnusedWalSegments(client, arguments.get2(), clientCfg);
 
                     break;
             }
@@ -72,12 +75,27 @@ public class WalCommands implements Command {
         return null;
     }
 
-    @Override public String confirmationPrompt(Arguments args) {
-        if (WAL_DELETE.equals(args.walAction()))
+    @Override public String confirmationPrompt(T2<String, String> args) {
+        if (WAL_DELETE.equals(args.get1()))
             return "Warning: the command will delete unused WAL segments.";
 
         return null;
+    }
 
+    @Override public T2<String, String> init(CommandArgIterator argIter) {
+        String str = argIter.nextArg("Expected arguments for " + WAL.text());
+
+        String walAct = str.toLowerCase();
+
+        if (WAL_PRINT.equals(walAct) || WAL_DELETE.equals(walAct)) {
+            String walArgs = (str = argIter.peekNextArg()) != null && !isCommandOrOption(str)
+                ? argIter.nextArg("Unexpected argument for " + WAL.text() + ": " + walAct)
+                : "";
+
+            return new T2<>(walAct, walArgs);
+        }
+        else
+            throw new IllegalArgumentException("Unexpected action " + walAct + " for " + WAL.text());
 
     }
 

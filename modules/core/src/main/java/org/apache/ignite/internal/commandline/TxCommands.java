@@ -17,28 +17,35 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
+import org.apache.ignite.internal.visor.tx.VisorTxProjection;
+import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 
-public class TxCommands implements Command {
+public class TxCommands implements Command<VisorTxTaskArg> {
     /**
      * Dump transactions information.
-     * @param args Arguments.
+     * @param arg Arguments.
      * @param clientCfg Client configuration.
      */
     @Override
-    public Object execute(Arguments args, GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
-        VisorTxTaskArg arg = args.transactionArguments();
+    public Object execute(VisorTxTaskArg arg, GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
 
         try (GridClient client = GridClientFactory.start(clientCfg)) {
             Map<ClusterNode, VisorTxTaskResult> res = executeTask(client, VisorTxTask.class, arg, clientCfg);
@@ -77,11 +84,132 @@ public class TxCommands implements Command {
         }
     }
 
-    @Override public String confirmationPrompt(Arguments args) {
-        if (args.transactionArguments().getOperation() == VisorTxOperation.KILL)
+    @Override public String confirmationPrompt(VisorTxTaskArg args) {
+        if (args.getOperation() == VisorTxOperation.KILL)
             return "Warning: the command will kill some transactions.";
 
-        return  null;
+        return null;
+    }
 
+    /**
+     * @param argIter Argument iterator.
+     * @return Transaction arguments.
+     */
+    @Override public VisorTxTaskArg init(CommandArgIterator argIter) {
+        VisorTxProjection proj = null;
+
+        Integer limit = null;
+
+        VisorTxSortOrder sortOrder = null;
+
+        Long duration = null;
+
+        Integer size = null;
+
+        String lbRegex = null;
+
+        List<String> consistentIds = null;
+
+        VisorTxOperation op = VisorTxOperation.LIST;
+
+        String xid = null;
+
+        while (true) {
+            String str = argIter.peekNextArg();
+
+            if (str == null)
+                break;
+
+            TxCommandArg arg = CommandArgUtils.of(str, TxCommandArg.class);
+
+            if (arg == null)
+                break;
+
+            switch (arg) {
+                case TX_LIMIT:
+                    argIter.nextArg("");
+
+                    limit = (int)argIter.nextLongArg(TxCommandArg.TX_LIMIT.toString());
+
+                    break;
+
+                case TX_ORDER:
+                    argIter.nextArg("");
+
+                    sortOrder = VisorTxSortOrder.valueOf(argIter.nextArg(TxCommandArg.TX_ORDER.toString()).toUpperCase());
+
+                    break;
+
+                case TX_SERVERS:
+                    argIter.nextArg("");
+
+                    proj = VisorTxProjection.SERVER;
+                    break;
+
+                case TX_CLIENTS:
+                    argIter.nextArg("");
+
+                    proj = VisorTxProjection.CLIENT;
+                    break;
+
+                case TX_NODES:
+                    argIter.nextArg("");
+
+                    Set<String> ids = argIter.nextStringSet(TxCommandArg.TX_NODES.toString());
+
+                    if (ids.isEmpty()) {
+                        throw new IllegalArgumentException("Consistent id list is empty.");
+                    }
+
+                    consistentIds = new ArrayList<>(ids);
+                    break;
+
+                case TX_DURATION:
+                    argIter.nextArg("");
+
+                    duration = argIter.nextLongArg(TxCommandArg.TX_DURATION.toString()) * 1000L;
+                    break;
+
+                case TX_SIZE:
+                    argIter.nextArg("");
+
+                    size = (int)argIter.nextLongArg(TxCommandArg.TX_SIZE.toString());
+                    break;
+
+                case TX_LABEL:
+                    argIter.nextArg("");
+
+                    lbRegex = argIter.nextArg(TxCommandArg.TX_LABEL.toString());
+
+                    try {
+                        Pattern.compile(lbRegex);
+                    }
+                    catch (PatternSyntaxException ignored) {
+                        throw new IllegalArgumentException("Illegal regex syntax");
+                    }
+
+                    break;
+
+                case TX_XID:
+                    argIter.nextArg("");
+
+                    xid = argIter.nextArg(TxCommandArg.TX_XID.toString());
+                    break;
+
+                case TX_KILL:
+                    argIter.nextArg("");
+
+                    op = VisorTxOperation.KILL;
+                    break;
+
+                default:
+                    throw new AssertionError();
+            }
+        }
+
+        if (proj != null && consistentIds != null)
+            throw new IllegalArgumentException("Projection can't be used together with list of consistent ids.");
+
+        return new VisorTxTaskArg(op, limit, duration, size, null, proj, consistentIds, xid, lbRegex, sortOrder);
     }
 }

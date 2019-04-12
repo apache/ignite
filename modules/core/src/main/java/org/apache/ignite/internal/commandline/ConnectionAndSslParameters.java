@@ -18,17 +18,11 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
-import org.apache.ignite.internal.commandline.cache.CacheArguments;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 
 /**
  * Bean with all parsed and validated arguments.
  */
-public class Arguments {
-    /** Command. */
-    private Commands cmd;
-
+public class ConnectionAndSslParameters {
     /** Host. */
     private String host;
 
@@ -43,29 +37,6 @@ public class Arguments {
 
     /** Force option is used for auto confirmation. */
     private boolean autoConfirmation;
-
-    /**
-     * Arguments for baseline command.
-     */
-    private BaselineArguments baselineArgs;
-
-    /** Transaction arguments. */
-    private final VisorTxTaskArg txArg;
-
-    /**
-     * Arguments for --cache subcommand.
-     */
-    private CacheArguments cacheArgs;
-
-    /**
-     * Action for WAL command.
-     */
-    private String walAct;
-
-    /**
-     * Arguments for WAL command.
-     */
-    private String walArgs;
 
     /** Ping timeout for grid client. See {@link GridClientConfiguration#getPingTimeout()}. */
     private long pingTimeout;
@@ -101,16 +72,10 @@ public class Arguments {
     private char[] sslTrustStorePassword;
 
     /**
-     * @param cmd Command.
      * @param host Host.
      * @param port Port.
      * @param user User.
      * @param pwd Password.
-     * @param baselineArgs Baseline args.
-     * @param txArg TX arg.
-     * @param cacheArgs --cache subcommand arguments.
-     * @param walAct WAL action.
-     * @param walArgs WAL args.
      * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#getPingTimeout()}.
      * @param pingInterval Ping interval. See {@link GridClientConfiguration#getPingInterval()}.
      * @param autoConfirmation Auto confirmation flag.
@@ -124,26 +89,16 @@ public class Arguments {
      * @param sslTrustStorePassword Truststore Password.
      * @param sslTrustStoreType Truststore Type.
      */
-    public Arguments(Commands cmd, String host, String port, String user, String pwd,
-        BaselineArguments baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
+    public ConnectionAndSslParameters(String host, String port, String user, String pwd,
         Long pingTimeout, Long pingInterval, boolean autoConfirmation,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
         String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType
     ) {
-        this.cmd = cmd;
         this.host = host;
         this.port = port;
         this.user = user;
         this.pwd = pwd;
-
-        this.baselineArgs = baselineArgs;
-
-        this.txArg = txArg;
-        this.cacheArgs = cacheArgs;
-
-        this.walAct = walAct;
-        this.walArgs = walArgs;
 
         this.pingTimeout = pingTimeout;
         this.pingInterval = pingInterval;
@@ -161,13 +116,6 @@ public class Arguments {
         this.sslTrustStorePath = sslTrustStorePath;
         this.sslTrustStoreType = sslTrustStoreType;
         this.sslTrustStorePassword = sslTrustStorePassword;
-    }
-
-    /**
-     * @return command
-     */
-    public Commands command() {
-        return cmd;
     }
 
     /**
@@ -210,41 +158,6 @@ public class Arguments {
      */
     public void setPassword(String pwd) {
         this.pwd = pwd;
-    }
-
-    /**
-     * @return Baseline arguments.
-     */
-    public BaselineArguments baselineArguments() {
-        return baselineArgs;
-    }
-
-    /**
-     * @return Transaction arguments.
-     */
-    public VisorTxTaskArg transactionArguments() {
-        return txArg;
-    }
-
-    /**
-     * @return Arguments for --cache subcommand.
-     */
-    public CacheArguments cacheArgs() {
-        return cacheArgs;
-    }
-
-    /**
-     * @return WAL action.
-     */
-    public String walAction() {
-        return walAct;
-    }
-
-    /**
-     * @return WAL arguments.
-     */
-    public String walArguments() {
-        return walArgs;
     }
 
     /**

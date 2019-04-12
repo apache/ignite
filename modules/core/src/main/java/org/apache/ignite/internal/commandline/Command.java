@@ -22,8 +22,10 @@ package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
-public interface Command {
-    String confirmationPrompt(Arguments args);
+public interface Command<T> {
+    String confirmationPrompt();
 
-    Object execute(Arguments args, GridClientConfiguration clientCfg, CommandLogger logger) throws Exception;
+    Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception;
+
+    void init(CommandArgIterator argIterator);
 }

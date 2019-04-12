@@ -21,9 +21,12 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.commandline.baseline.AutoAdjustCommandArg;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineAutoAdjustSettings;
@@ -35,11 +38,12 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
+import static org.apache.ignite.internal.commandline.baseline.BaselineCommand.of;
 
-public class BaselineCommand implements Command {
+public class BaselineCommand implements Command<BaselineArguments> {
 
-    @Override public String confirmationPrompt(Arguments args) {
-        if (org.apache.ignite.internal.commandline.baseline.BaselineCommand.COLLECT != args.baselineArguments().getCmd())
+    @Override public String confirmationPrompt(BaselineArguments args) {
+        if (org.apache.ignite.internal.commandline.baseline.BaselineCommand.COLLECT != args.getCmd())
             return "Warning: the command will perform changes in baseline.";
 
         return null;
@@ -49,13 +53,11 @@ public class BaselineCommand implements Command {
     /**
      * Change baseline.
      *
-     * @param args Arguments.
+     * @param baselineArgs Arguments.
      * @param clientCfg Client configuration.
      * @throws Exception If failed to execute baseline action.
      */
-    @Override public Object execute(Arguments args, GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
-        BaselineArguments baselineArgs = args.baselineArguments();
-
+    @Override public Object execute(BaselineArguments baselineArgs, GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         try (GridClient client = GridClientFactory.start(clientCfg)){
             VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, toVisorArguments(baselineArgs), clientCfg);
 
@@ -168,4 +170,52 @@ public class BaselineCommand implements Command {
         }
     }
 
+    @Override public BaselineArguments init(CommandArgIterator argIter) {
+        if (!argIter.hasNextSubArg())
+            return new BaselineArguments.Builder(org.apache.ignite.internal.commandline.baseline.BaselineCommand.COLLECT).build();
+
+        org.apache.ignite.internal.commandline.baseline.BaselineCommand cmd = of(argIter.nextArg("Expected baseline action"));
+
+        if (cmd == null)
+            throw new IllegalArgumentException("Expected correct baseline action");
+
+        BaselineArguments.Builder baselineArgs = new BaselineArguments.Builder(cmd);
+
+        switch (cmd) {
+            case ADD:
+            case REMOVE:
+            case SET:
+                Set<String> ids = argIter.nextStringSet("list of consistent ids");
+
+                if (ids.isEmpty())
+
+                return baselineArgs
+                    .withConsistentIds(new ArrayList<>(ids))
+                    .build();
+            case VERSION:
+                return baselineArgs
+                    .withTopVer(argIter.nextLongArg("topology version"))
+                    .build();
+            case AUTO_ADJUST:
+                do {
+                    AutoAdjustCommandArg autoAdjustArg = CommandArgUtils.of(
+                        argIter.nextArg("Expected one of auto-adjust arguments"), AutoAdjustCommandArg.class
+                    );
+
+                    if (autoAdjustArg == null)
+                        throw new IllegalArgumentException("Expected one of auto-adjust arguments");
+
+                    if (autoAdjustArg == AutoAdjustCommandArg.ENABLE || autoAdjustArg == AutoAdjustCommandArg.DISABLE)
+                        baselineArgs.withEnable(autoAdjustArg == AutoAdjustCommandArg.ENABLE);
+
+                    if (autoAdjustArg == AutoAdjustCommandArg.TIMEOUT)
+                        baselineArgs.withSoftBaselineTimeout(argIter.nextLongArg("soft timeout"));
+                }
+                while (argIter.hasNextSubArg());
+
+                return baselineArgs.build();
+        }
+
+        return baselineArgs.build();
+    }
 }

@@ -245,10 +245,13 @@ public class CommandHandler {
 
             Commands command = Commands.of(arg);
 
-            Arguments args = new CommandArgParser(AUX_COMMANDS, enableExperimental, logger).
-                parseAndValidate(new CommandArgIterator(rawArgs.iterator()));
+            command.command().init(new CommandArgIterator(rawArgs.iterator(), AUX_COMMANDS));
 
-            if (!args.autoConfirmation() && !confirm(args)) {
+            ConnectionAndSslParameters args = new CommandArgParser(logger).
+                parseAndValidate(new CommandArgIterator(rawArgs.iterator(), AUX_COMMANDS));
+
+
+            if (!args.autoConfirmation() && !confirm(command.command().confirmationPrompt())) {
                 logger.log("Operation cancelled.");
 
                 return EXIT_CODE_OK;
@@ -264,7 +267,7 @@ public class CommandHandler {
                 GridClientConfiguration clientCfg = getClientConfiguration(args);
 
                 try {
-                    lastOperationRes = command.command().execute(args, clientCfg, logger);
+                    lastOperationRes = command.command().execute(clientCfg, logger);
                 }
                 catch (Throwable e) {
                     if (tryConnectMaxCount > 0 && isAuthError(e)) {
@@ -315,7 +318,7 @@ public class CommandHandler {
         }
     }
 
-    @NotNull private GridClientConfiguration getClientConfiguration(Arguments args) throws IgniteCheckedException {
+    @NotNull private GridClientConfiguration getClientConfiguration(ConnectionAndSslParameters args) throws IgniteCheckedException {
         GridClientConfiguration clientCfg = new GridClientConfiguration();
 
         clientCfg.setPingInterval(args.pingInterval());
@@ -334,7 +337,7 @@ public class CommandHandler {
     }
 
     @NotNull private SecurityCredentialsProvider getSecurityCredentialsProvider(
-        Arguments args,
+        ConnectionAndSslParameters args,
         GridClientConfiguration clientCfg
     ) throws IgniteCheckedException {
         SecurityCredentialsProvider securityCredential = clientCfg.getSecurityCredentialsProvider();
@@ -350,7 +353,7 @@ public class CommandHandler {
         return securityCredential;
     }
 
-    @NotNull private GridSslBasicContextFactory createSslSupportFactory(Arguments args) {
+    @NotNull private GridSslBasicContextFactory createSslSupportFactory(ConnectionAndSslParameters args) {
         GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
         List<String> sslProtocols = split(args.sslProtocol(), ",");
@@ -415,26 +418,15 @@ public class CommandHandler {
     /**
      * Requests interactive user confirmation if forthcoming operation is dangerous.
      *
-     * @param args Arguments.
      * @return {@code true} if operation confirmed (or not needed), {@code false} otherwise.
      */
-    private boolean confirm(Arguments args) {
-        String prompt = confirmationPrompt(args);
-
-        if (prompt == null)
+    private <T> boolean confirm(String str) {
+        if (str == null)
             return true;
 
+        String prompt = str + "\nPress '" + CONFIRM_MSG + "' to continue . . . ";
+
         return CONFIRM_MSG.equalsIgnoreCase(readLine(prompt));
-    }
-
-    /**
-     * @param args Arguments.
-     * @return Prompt text if confirmation needed, otherwise {@code null}.
-     */
-    private String confirmationPrompt(Arguments args) {
-        String str = args.command().command().confirmationPrompt(args);
-
-        return str == null ? null : str + "\nPress '" + CONFIRM_MSG + "' to continue . . . ";
     }
 
     /**
