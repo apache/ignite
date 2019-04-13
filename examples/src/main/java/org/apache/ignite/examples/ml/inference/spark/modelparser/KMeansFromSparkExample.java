@@ -31,6 +31,7 @@ import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.sparkmodelparser.SparkModelParser;
 import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Run KMeans model loaded from snappy.parquet file.
@@ -68,8 +69,9 @@ public class KMeansFromSparkExample {
 
                 try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
                     for (Cache.Entry<Integer,Vector> observation : observations) {
-                        Vector inputs = featureExtractor.apply(observation.getKey(), observation.getValue());
-                        double isSurvived = lbExtractor.apply(observation.getKey(), observation.getValue());
+                        LabeledVector<Double> lv = vectorizer.apply(observation.getKey(), observation.getValue());
+                        Vector inputs = lv.features();
+                        double isSurvived = lv.label();
                         double clusterId = mdl.predict(inputs);
 
                         System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", clusterId, isSurvived);

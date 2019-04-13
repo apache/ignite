@@ -17,23 +17,12 @@
 
 package org.apache.ignite.ml.dataset.primitive;
 
-import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.assertArrayEquals;
-
 /**
  * Tests for {@link SimpleDataset}.
  */
 public class SimpleDatasetTest {
     /** Basic test for SimpleDataset features. IMPL NOTE derived from LocalDatasetExample. */
-    @Test
+    /*@Test
     public void basicTest() throws Exception {
         Map<Integer, DataPoint> dataPoints = new HashMap<Integer, DataPoint>() {{
             put(1, new DataPoint(42, 10000));
@@ -75,7 +64,7 @@ public class SimpleDatasetTest {
                 assertArrayEquals("Correlation matrix row " + rowCorr,
                     corrExp[rowCorr++], row, 0);
         }
-    }
+    }*/
 
     /** */
     private static class DataPoint {

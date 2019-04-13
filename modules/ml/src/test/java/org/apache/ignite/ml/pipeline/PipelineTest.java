@@ -17,20 +17,7 @@
 
 package org.apache.ignite.ml.pipeline;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.nn.UpdatesStrategy;
-import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
-import org.junit.Test;
 
 /**
  * Tests for {@link Pipeline}.
@@ -39,7 +26,7 @@ public class PipelineTest extends TrainerTest {
     /**
      * Test trainer on classification model y = x.
      */
-    @Test
+/*    @Test
     public void testTrainWithTheLinearlySeparableCase() {
         Map<Integer, Double[]> cacheMock = new HashMap<>();
 
@@ -73,12 +60,12 @@ public class PipelineTest extends TrainerTest {
 
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
-    }
+    }*/
 
     /**
      * Test the missed final state.
      */
-    @Test(expected = IllegalStateException.class)
+/*    @Test(expected = IllegalStateException.class)
     public void testTrainWithMissedFinalStage() {
         Map<Integer, Double[]> cacheMock = new HashMap<>();
 
@@ -103,5 +90,5 @@ public class PipelineTest extends TrainerTest {
 
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
-    }
+    }*/
 }
