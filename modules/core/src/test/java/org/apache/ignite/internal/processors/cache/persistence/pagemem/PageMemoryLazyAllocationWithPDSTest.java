@@ -122,11 +122,15 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
 
         awaitPartitionMapExchange();
 
-        GridTestUtils.assertThrowsWithCause(() -> {
+        try {
             srv.createCache(new CacheConfiguration<>()
                 .setName("cache-in-huge-region")
                 .setDataRegionName(LAZY_REGION));
-        }, IgniteCheckedException.class);
+
+            fail("Create cache shouldn't succeed.");
+        } catch (Exception e) {
+            //ignore.
+        }
     }
 
     /** */
@@ -147,11 +151,15 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
 
         awaitPartitionMapExchange();
 
-        GridTestUtils.assertThrowsWithCause(() -> {
+        try {
             clnt.createCache(new CacheConfiguration<>()
                 .setName("cache-in-huge-region")
                 .setDataRegionName(LAZY_REGION));
-        }, IgniteCheckedException.class);
+
+            fail("Create cache shouldn't succeed.");
+        } catch (Exception e) {
+            //ignore.
+        }
     }
 
     @NotNull private IgniteConfiguration cfgWithHugeRegion(String name) throws Exception {
