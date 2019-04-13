@@ -77,6 +77,46 @@ public class TitanicUtils {
     }
 
     /**
+     * Read passengers data from csv file.
+     *
+     * @param ignite The ignite.
+     * @return The filled cache.
+     * @throws FileNotFoundException If data file is not found.
+     */
+    public static IgniteCache<Integer, Vector> readPassengersWithoutNulls(Ignite ignite)
+        throws FileNotFoundException {
+        IgniteCache<Integer, Vector> cache = getCache(ignite);
+        Scanner scanner = new Scanner(IgniteUtils.resolveIgnitePath("examples/src/main/resources/datasets/titanic_without_nulls.csv"));
+
+        int cnt = 0;
+        while (scanner.hasNextLine()) {
+            String row = scanner.nextLine();
+            if(cnt == 0) {
+                cnt++;
+                continue;
+            }
+            String[] cells = row.split(";");
+            Serializable[] data = new Serializable[cells.length];
+            NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
+
+            for (int i = 0; i < cells.length; i++)
+                try{
+                    data[i] = "".equals(cells[i]) ? Double.NaN : Double.valueOf(cells[i]);
+                } catch (java.lang.NumberFormatException e) {
+
+                    try {
+                        data[i] = format.parse(cells[i]).doubleValue();
+                    }
+                    catch (ParseException e1) {
+                        data[i] = cells[i];
+                    }
+                }
+            cache.put(cnt++, new DenseVector(data));
+        }
+        return cache;
+    }
+
+    /**
      * Fills cache with data and returns it.
      *
      * @param ignite Ignite instance.

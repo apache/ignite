@@ -40,7 +40,7 @@ import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
  * @param <C> Type of "coordinate" - index of feature value in upstream object.
  * @param <L> Type of label for resulting vectors.
  */
-public abstract class Vectorizer<K, V, C extends Serializable, L> implements FeatureLabelExtractor<K, V, L>, Serializable {
+public abstract class Vectorizer<K, V, C extends Serializable, L> implements FeatureLabelExtractor<K, V, L> {
     /** Label coordinate shortcut. */
     private LabelCoordinate lbCoordinateShortcut = null;
 
@@ -73,15 +73,15 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
                 .collect(Collectors.toList());
         }
 
-        int vectorLength = useAllValues ? allCoords.size() : extractionCoordinates.size();
-        A.ensure(vectorLength >= 0, "vectorLength >= 0");
+        int vectorLen = useAllValues ? allCoords.size() : extractionCoordinates.size();
+        A.ensure(vectorLen >= 0, "vectorLength >= 0");
 
         List<C> coordinatesForExtraction = useAllValues ? allCoords : extractionCoordinates;
-        Vector vector = createVector(vectorLength);
+        Vector vector = createVector(vectorLen);
         for (int i = 0; i < coordinatesForExtraction.size(); i++) {
-            Double feature = feature(coordinatesForExtraction.get(i), key, value);
+            Serializable feature = feature(coordinatesForExtraction.get(i), key, value);
             if (feature != null)
-                vector.set(i, feature);
+                vector.setRaw(i, feature);
         }
         return new LabeledVector<>(vector, lbl);
     }
@@ -205,7 +205,7 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
      * @param value Value.
      * @return feature value.
      */
-    protected abstract Double feature(C coord, K key, V value);
+    protected abstract Serializable feature(C coord, K key, V value);
 
     /**
      * Extract label value by given coordinate.

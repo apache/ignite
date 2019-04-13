@@ -77,7 +77,6 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
                 final Vectorizer<Integer, Vector, Integer, Double> vectorizer
                     = new DummyVectorizer<Integer>(0, 3, 4, 5, 6, 8, 10).labeled(1);
 
-
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
                     .split(0.75);
 

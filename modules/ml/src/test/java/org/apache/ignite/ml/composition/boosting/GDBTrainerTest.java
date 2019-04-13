@@ -27,7 +27,7 @@ import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueCo
 import org.apache.ignite.ml.composition.boosting.convergence.simple.ConvergenceCheckerStubFactory;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -64,7 +64,7 @@ public class GDBTrainerTest extends TrainerTest {
 
         IgniteModel<Vector, Double> mdl = trainer.fit(
             learningSample, 1,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         double mse = 0.0;
@@ -89,7 +89,7 @@ public class GDBTrainerTest extends TrainerTest {
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
 
         trainer = trainer.withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.1));
-        assertTrue(trainer.fit(learningSample, 1, new ArraysVectorizer<Integer>().labeled(1)).getModels().size() < 2000);
+        assertTrue(trainer.fit(learningSample, 1, new DoubleArrayVectorizer<Integer>().labeled(1)).getModels().size() < 2000);
     }
 
     /** */
@@ -97,7 +97,7 @@ public class GDBTrainerTest extends TrainerTest {
     public void testFitClassifier() {
         testClassifier((trainer, learningSample) -> trainer.fit(
             learningSample, 1,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ));
     }
 
@@ -106,7 +106,7 @@ public class GDBTrainerTest extends TrainerTest {
     public void testFitClassifierWithLearningStrategy() {
         testClassifier((trainer, learningSample) -> trainer.fit(
             new LocalDatasetBuilder<>(learningSample, 1),
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ));
     }
 

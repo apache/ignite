@@ -72,7 +72,7 @@ public class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
         double[] res = new double[tmp.size()];
 
         for (int i = 0; i < res.length; i++) {
-            Object tmpObj = tmp.get(i);
+            Object tmpObj = tmp.getRaw(i);
             if (handledIndices.contains(i)) {
                 if (tmpObj.equals(Double.NaN) && encodingValues[i].containsKey(KEY_FOR_NULL_VALUES))
                     res[i] = encodingValues[i].get(KEY_FOR_NULL_VALUES);

@@ -70,7 +70,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
-                    LabeledVector row = basePreprocessor.apply(entity.getKey(), entity.getValue());
+                    LabeledVector<Double> row = basePreprocessor.apply(entity.getKey(), entity.getValue());
                     categoryFrequencies = calculateFrequencies(row, categoryFrequencies);
                 }
                 return new EncoderPartitionData()

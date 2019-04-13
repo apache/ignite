@@ -17,15 +17,12 @@
 
 package org.apache.ignite.ml.selection.scoring.cursor;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -62,7 +59,7 @@ public class CacheBasedLabelPairCursorTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000; i++)
             data.put(i, new double[] { i, i});
 
-        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
 
         LabelPairCursor<Integer> cursor = new CacheBasedLabelPairCursor<>(

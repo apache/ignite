@@ -54,7 +54,7 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
  * <p>
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
-public class Step_10_Scaling_With_Stacking {
+public class Step_9_Scaling_With_Stacking {
     /** Run example. */
     public static void main(String[] args) {
         System.out.println();

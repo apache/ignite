@@ -98,6 +98,17 @@ public class DatasetRow<V extends Vector> implements Serializable, Externalizabl
     }
 
     /**
+     * Gets the value at specified index.
+     *
+     * @param idx DatasetRow index.
+     * @return DatasetRow value.
+     * @throws IndexException Throw if index is out of bounds.
+     */
+    public Serializable getRaw(int idx) {
+        return vector.getRaw(idx);
+    }
+
+    /**
      * Sets value.
      *
      * @param idx Dataset row index to set value at.

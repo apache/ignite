@@ -28,7 +28,7 @@ import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredicti
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
@@ -110,7 +110,7 @@ public class BaggingTest extends TrainerTest {
         BaggedModel mdl = baggedTrainer.fit(
             cacheMock,
             parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
 
         Vector weights = ((LogisticRegressionModel)((AdaptableDatasetModel)((ModelsParallelComposition)((AdaptableDatasetModel)mdl
@@ -140,7 +140,7 @@ public class BaggingTest extends TrainerTest {
             2,
             2,
             new MeanValuePredictionsAggregator())
-            .fit(cacheMock, parts, new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
+            .fit(cacheMock, parts, new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
 
         Double res = mdl.predict(null);
 
