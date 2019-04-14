@@ -2260,6 +2260,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     UUID nodeId = entry.getKey();
                     Set<Integer> rebalancedParts = entry.getValue();
 
+                    // Add to wait groups to ensure late assignment switch after all partitions are rebalanced.
+                    for (Integer part : rebalancedParts)
+                        ctx.cache().context().affinity().addToWaitGroup(groupId(), part, nodeId, topologyVersionFuture().initialVersion());
+
                     if (!rebalancedParts.isEmpty()) {
                         Set<Integer> historical = rebalancedParts.stream()
                             .filter(haveHistory::contains)

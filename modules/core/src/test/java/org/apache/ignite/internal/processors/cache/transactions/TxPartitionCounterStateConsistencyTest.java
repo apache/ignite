@@ -423,15 +423,15 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             IgniteEx backup2 = startGrid(backup.name());
 
-            GridTestUtils.waitForCondition(() -> {
-                GridCachePreloader preloader =
-                    backup2.context().cache().internalCache(DEFAULT_CACHE_NAME).context().preloader();
-
-                GridDhtPartitionDemander.RebalanceFuture rebalanceFut =
-                    (GridDhtPartitionDemander.RebalanceFuture)preloader.rebalanceFuture();
-
-                return rebalanceFut.topologyVersion().equals(new AffinityTopologyVersion(5, 1));
-            }, 30_000);
+//            assertTrue("Failed to wait for ideal affinity", GridTestUtils.waitForCondition(() -> {
+//                GridCachePreloader preloader =
+//                    backup2.context().cache().internalCache(DEFAULT_CACHE_NAME).context().preloader();
+//
+//                GridDhtPartitionDemander.RebalanceFuture rebalanceFut =
+//                    (GridDhtPartitionDemander.RebalanceFuture)preloader.rebalanceFuture();
+//
+//                return rebalanceFut.topologyVersion().equals(new AffinityTopologyVersion(5, 1));
+//            }, 30_000));
 
             spi.stopBlock();
 

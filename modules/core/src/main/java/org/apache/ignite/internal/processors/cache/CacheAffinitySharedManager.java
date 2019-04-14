@@ -363,6 +363,21 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param grpId Group id.
+     * @param part Part.
+     * @param node Node.
+     * @param topVer Topology version.
+     */
+    public void addToWaitGroup(int grpId, int part, UUID node, AffinityTopologyVersion topVer) {
+        synchronized (mux) {
+            if (waitInfo == null)
+                waitInfo = new WaitRebalanceInfo(topVer);
+
+            waitInfo.add(grpId, part, node, null);
+        }
+    }
+
+    /**
      * @param waitInfo Cache rebalance information.
      * @return Message.
      */
@@ -2921,14 +2936,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param waitNode Node rebalancing data.
          * @param assignment New assignment.
          */
-        void add(Integer grpId, Integer part, UUID waitNode, List<ClusterNode> assignment) {
-            assert !F.isEmpty(assignment) : assignment;
+        void add(Integer grpId, Integer part, UUID waitNode, @Nullable List<ClusterNode> assignment) {
+            //assert !F.isEmpty(assignment) : assignment;
 
             deploymentIds.putIfAbsent(grpId, cachesRegistry.group(grpId).deploymentId());
 
             waitGrps.computeIfAbsent(grpId, k -> new HashMap<>()).put(part, waitNode);
 
-            assignments.computeIfAbsent(grpId, k -> new HashMap<>()).put(part, assignment);
+            if (assignment != null)
+                assignments.computeIfAbsent(grpId, k -> new HashMap<>()).put(part, assignment);
         }
 
         /** {@inheritDoc} */
