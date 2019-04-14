@@ -62,15 +62,15 @@ public class CacheBasedLabelPairCursorTest extends GridCommonAbstractTest {
         Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
 
-        LabelPairCursor<Integer> cursor = new CacheBasedLabelPairCursor<>(
+        LabelPairCursor<Double> cursor = new CacheBasedLabelPairCursor<>(
             data,
             (k, v) -> v[1] % 2 == 0,
             vectorizer,
-            vec -> (int)vec.get(0)
+            vec -> vec.get(0)
         );
 
         int cnt = 0;
-        for (LabelPair<Integer> e : cursor) {
+        for (LabelPair<Double> e : cursor) {
             assertEquals(e.getPrediction(), e.getTruth());
             cnt++;
         }

@@ -73,9 +73,9 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
             try {
                 IgniteCache<Integer, Vector> dataCache = TitanicUtils.readPassengers(ignite);
 
-                // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
+                // Extracts "pclass", "sibsp", "parch", "age", "fare".
                 final Vectorizer<Integer, Vector, Integer, Double> vectorizer
-                    = new DummyVectorizer<Integer>(0, 3, 4, 5, 6, 8, 10).labeled(1);
+                    = new DummyVectorizer<Integer>(0, 4, 5, 6, 8).labeled(1);
 
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
                     .split(0.75);

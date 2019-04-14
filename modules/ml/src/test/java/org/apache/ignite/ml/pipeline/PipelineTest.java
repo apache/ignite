@@ -17,7 +17,18 @@
 
 package org.apache.ignite.ml.pipeline;
 
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
+import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
+import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
+import org.junit.Test;
 
 /**
  * Tests for {@link Pipeline}.
@@ -26,69 +37,49 @@ public class PipelineTest extends TrainerTest {
     /**
      * Test trainer on classification model y = x.
      */
-/*    @Test
+    @Test
     public void testTrainWithTheLinearlySeparableCase() {
-        Map<Integer, Double[]> cacheMock = new HashMap<>();
+        Map<Integer, Vector> cacheMock = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++) {
-            double[] row = twoLinearlySeparableClasses[i];
-            Double[] convertedRow = new Double[row.length];
-            for (int j = 0; j < row.length; j++)
-                convertedRow[j] = row[j];
-            cacheMock.put(i, convertedRow);
-        }
+        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
+            cacheMock.put(i, VectorUtils.of(twoLinearlySeparableClasses[i]));
 
-        LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
-            .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG))
-            .withMaxIterations(100000)
-            .withLocIterations(100)
-            .withBatchSize(10)
-            .withSeed(123L);
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+            .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-        PipelineMdl<Integer, Double[]> mdl = new Pipeline<Integer, Double[], Vector>()
-            .addFeatureExtractor((k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)))
-            .addLabelExtractor((k, v) -> v[0])
-            .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Object[]>())
-            .addPreprocessingTrainer(new NormalizationTrainer<Integer, Object[]>()
+        PipelineMdl<Integer, Vector> mdl = new Pipeline<Integer, Vector, Integer, Double>()
+            .addVectorizer(vectorizer)
+            .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Vector>())
+            .addPreprocessingTrainer(new NormalizationTrainer<Integer, Vector>()
                 .withP(1))
-            .addTrainer(trainer)
-            .fit(
-                cacheMock,
-                parts
-            );
+            .addTrainer(new SVMLinearClassificationTrainer())
+            .fit(cacheMock, parts);
 
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
-    }*/
+    }
 
     /**
      * Test the missed final state.
      */
-/*    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalStateException.class)
     public void testTrainWithMissedFinalStage() {
-        Map<Integer, Double[]> cacheMock = new HashMap<>();
+        Map<Integer, Vector> cacheMock = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++) {
-            double[] row = twoLinearlySeparableClasses[i];
-            Double[] convertedRow = new Double[row.length];
-            for (int j = 0; j < row.length; j++)
-                convertedRow[j] = row[j];
-            cacheMock.put(i, convertedRow);
-        }
+        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
+            cacheMock.put(i, VectorUtils.of(twoLinearlySeparableClasses[i]));
 
-        PipelineMdl<Integer, Double[]> mdl = new Pipeline<Integer, Double[], Vector>()
-            .addFeatureExtractor((k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)))
-            .addLabelExtractor((k, v) -> v[0])
-            .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Object[]>())
-            .addPreprocessingTrainer(new NormalizationTrainer<Integer, Object[]>()
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+            .labeled(Vectorizer.LabelCoordinate.FIRST);
+
+        PipelineMdl<Integer, Vector> mdl = new Pipeline<Integer, Vector, Integer, Double>()
+            .addVectorizer(vectorizer)
+            .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Vector>())
+            .addPreprocessingTrainer(new NormalizationTrainer<Integer, Vector>()
                 .withP(1))
-            .fit(
-                cacheMock,
-                parts
-            );
+            .fit(cacheMock, parts);
 
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
-    }*/
+    }
 }

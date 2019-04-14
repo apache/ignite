@@ -31,7 +31,7 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
  */
 public abstract class EncoderPreprocessor<K, V> implements Preprocessor<K, V> {
     /** */
-    protected static final String KEY_FOR_NULL_VALUES = "";
+    public static final String KEY_FOR_NULL_VALUES = "";
 
     /** Filling values. */
     protected final Map<String, Integer>[] encodingValues;

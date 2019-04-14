@@ -40,15 +40,15 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends S
     private static final long serialVersionUID = 756800193212149975L;
 
     /** Function that extracts features from an {@code upstream} data. */
-    private final Preprocessor<K, V> featureExtractor;
+    private final Preprocessor<K, V> preprocessor;
 
     /**
      * Construct a new instance of partition {@code data} builder that makes {@link SimpleDatasetData}.
      *
-     * @param featureExtractor Function that extracts features from an {@code upstream} data.
+     * @param preprocessor Function that extracts features from an {@code upstream} data.
      */
-    public SimpleDatasetDataBuilder(Preprocessor<K, V> featureExtractor) {
-        this.featureExtractor = featureExtractor;
+    public SimpleDatasetDataBuilder(Preprocessor<K, V> preprocessor) {
+        this.preprocessor = preprocessor;
     }
 
     /** {@inheritDoc} */
@@ -62,7 +62,7 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends S
         int ptr = 0;
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
-            Vector row = featureExtractor.apply(entry.getKey(), entry.getValue()).features();
+            Vector row = preprocessor.apply(entry.getKey(), entry.getValue()).features();
 
             if (cols < 0) {
                 cols = row.size();

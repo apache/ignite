@@ -41,7 +41,7 @@ public class CrossValidationTest {
         Map<Integer, double[]> data = new HashMap<>();
 
         for (int i = 0; i < 1000; i++)
-            data.put(i, new double[] { i, i > 500 ? 1.0 : 0.0});
+            data.put(i, new double[] {i > 500 ? 1.0 : 0.0, i});
 
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
 
@@ -78,7 +78,7 @@ public class CrossValidationTest {
         Map<Integer, double[]> data = new HashMap<>();
 
         for (int i = 0; i < 1000; i++)
-            data.put(i, new double[] { i, i > 500 ? 1.0 : 0.0});
+            data.put(i, new double[] {i > 500 ? 1.0 : 0.0, i});
 
         Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 

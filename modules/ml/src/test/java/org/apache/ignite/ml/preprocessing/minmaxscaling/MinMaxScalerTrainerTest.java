@@ -17,14 +17,26 @@
 
 package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.junit.Test;
+
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Tests for {@link MinMaxScalerTrainer}.
  */
 public class MinMaxScalerTrainerTest extends TrainerTest {
     /** Tests {@code fit()} method. */
-    /*@Test
+    @Test
     public void testFit() {
         Map<Integer, Vector> data = new HashMap<>();
         data.put(1, VectorUtils.of(2, 4, 1));
@@ -34,15 +46,17 @@ public class MinMaxScalerTrainerTest extends TrainerTest {
 
         DatasetBuilder<Integer, Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
+        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2);
+
         MinMaxScalerTrainer<Integer, Vector> standardizationTrainer = new MinMaxScalerTrainer<>();
 
         MinMaxScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
             TestUtils.testEnvBuilder(),
             datasetBuilder,
-            (k, v) -> v
+            vectorizer
         );
 
         assertArrayEquals(new double[] {0, 4, 1}, preprocessor.getMin(), 1e-8);
         assertArrayEquals(new double[] {4, 22, 300}, preprocessor.getMax(), 1e-8);
-    }*/
+    }
 }

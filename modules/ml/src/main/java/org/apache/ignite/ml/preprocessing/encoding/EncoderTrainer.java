@@ -179,7 +179,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
                 Object featureVal = row.features().getRaw(i);
 
                 if (featureVal.equals(Double.NaN)) {
-                    strVal = "";
+                    strVal = EncoderPreprocessor.KEY_FOR_NULL_VALUES;
                     row.features().setRaw(i, strVal);
                 } else if (featureVal instanceof String)
                     strVal = (String) featureVal;
