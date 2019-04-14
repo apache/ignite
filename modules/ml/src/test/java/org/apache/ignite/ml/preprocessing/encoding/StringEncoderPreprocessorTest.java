@@ -17,22 +17,34 @@
 
 package org.apache.ignite.ml.preprocessing.encoding;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.HashSet;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
+import org.junit.Test;
+
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Tests for {@link StringEncoderPreprocessor}.
  */
 public class StringEncoderPreprocessorTest {
     /** Tests {@code apply()} method. */
-   /* @Test
+    @Test
     public void testApply() {
-        String[][] data = new String[][]{
-            {"1", "Moscow", "A"},
-            {"2", "Moscow", "B"},
-            {"2", "Moscow", "B"},
+        Vector[] data = new Vector[]{
+            new DenseVector(new Serializable[] {"1", "Moscow", "A"}),
+            new DenseVector(new Serializable[] {"2", "Moscow", "B"}),
+            new DenseVector(new Serializable[] {"2", "Moscow", "B"}),
         };
 
-        StringEncoderPreprocessor<Integer, String[]> preprocessor = new StringEncoderPreprocessor<Integer, String[]>(
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2);
+
+        StringEncoderPreprocessor<Integer, Vector> preprocessor = new StringEncoderPreprocessor<Integer, Vector>(
             new HashMap[]{new HashMap() {
                 {
                     put("1", 1);
@@ -48,7 +60,7 @@ public class StringEncoderPreprocessorTest {
                     put("B", 0);
                 }
             }},
-            (k, v) -> v,
+            vectorizer,
             new HashSet() {
                 {
                     add(0);
@@ -65,5 +77,5 @@ public class StringEncoderPreprocessorTest {
 
         for (int i = 0; i < data.length; i++)
             assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
-    }*/
+    }
 }

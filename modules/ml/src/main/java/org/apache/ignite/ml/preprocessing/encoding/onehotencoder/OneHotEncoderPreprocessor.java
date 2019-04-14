@@ -78,7 +78,7 @@ public class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
         int resIdx = 0;
 
         for (int i = 0; i < tmp.size(); i++) {
-            Object tmpObj = tmp.get(i);
+            Object tmpObj = tmp.getRaw(i);
 
             if (handledIndices.contains(i)) {
                 categorialFeatureCntr++;
