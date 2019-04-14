@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
@@ -26,10 +24,14 @@ import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesSumsHolder;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
 
 /** Tests for {@link CompoundNaiveBayesModel} */
 public class CompoundNaiveBayesModelTest {
+
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
@@ -39,6 +41,7 @@ public class CompoundNaiveBayesModelTest {
     /** The second label*/
     private static final double LABEL_2 = 2.;
 
+    /** */
     private static final Map<Integer, double[]> data = new HashMap<>();
 
     static {

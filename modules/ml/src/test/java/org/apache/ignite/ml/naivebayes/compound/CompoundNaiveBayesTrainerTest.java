@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.junit.Before;
+import org.junit.Test;
 
 /** Test for {@link CompoundNaiveBayesTrainer} */
 public class CompoundNaiveBayesTrainerTest extends TrainerTest {
@@ -44,6 +45,11 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
     @Before
     public void createTrainer() {
         trainer = new CompoundNaiveBayesTrainer();
+    }
+
+    @Test /** */
+    public void test(){
+//        trainer.
     }
 
 }

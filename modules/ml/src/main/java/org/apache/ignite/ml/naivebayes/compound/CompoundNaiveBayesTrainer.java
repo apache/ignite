@@ -20,8 +20,6 @@ package org.apache.ignite.ml.naivebayes.compound;
 import java.util.function.Predicate;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
@@ -36,9 +34,9 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
     private double[] clsProbabilities;
     /** Labels. */
     private double[] labels;
-    GaussianNaiveBayesTrainer gaussianNaiveBayesTrainer;
+    private GaussianNaiveBayesTrainer gaussianNaiveBayesTrainer;
     private Predicate<Integer> gaussianSkipFeature;
-    DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer;
+    private DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer;
     private Predicate<Integer> discreteSkipFeature;
 
     @Override public <K, V> CompoundNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
@@ -48,7 +46,8 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
 
     /** {@inheritDoc} */
     @Override public boolean isUpdateable(CompoundNaiveBayesModel mdl) {
-        return false;
+        return gaussianNaiveBayesTrainer.isUpdateable(mdl.getGaussianModel())
+                && discreteNaiveBayesTrainer.isUpdateable(mdl.getDiscreteModel());
     }
 
     /** {@inheritDoc} */
@@ -56,15 +55,14 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
         return (CompoundNaiveBayesTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 
-    /** {@inheritDoc} */
-    @Override protected <K, V> CompoundNaiveBayesModel updateModel(CompoundNaiveBayesModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
-        return super.updateModel(mdl, datasetBuilder, featureExtractor, lbExtractor);
-    }
-
     @Override protected <K, V> CompoundNaiveBayesModel updateModel(CompoundNaiveBayesModel mdl,
         DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
+
+        if (mdl != null) {
+            gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor);
+            discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor);
+        }
+
         gaussianNaiveBayesTrainer.setSkipFeature(gaussianSkipFeature);
         GaussianNaiveBayesModel gaussianNaiveBayesModel = gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor);
         discreteNaiveBayesTrainer.setSkipFeature(discreteSkipFeature);
