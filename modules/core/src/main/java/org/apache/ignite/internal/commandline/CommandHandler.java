@@ -594,22 +594,18 @@ public class CommandHandler {
      * Activate cluster.
      *
      * @param client Client.
-     * @param args Cluster state change arguments.
      * @throws GridClientException If failed to activate.
      */
-    private void activate(GridClient client, ChangeClusterStateArguments args) throws Throwable {
+    private void activate(GridClient client) throws Throwable {
         try {
             GridClientClusterState state = client.state();
 
-            if(args.readOnly())
-                state.activeReadOnly();
-            else
-                state.active(true);
+            state.active(true);
 
-            log("Cluster activated" + (args.readOnly() ? " in read-only mode" : ""));
+            log("Cluster activated");
         }
         catch (Throwable e) {
-            log("Failed to activate cluster" + (args.readOnly() ? " in read-only mode" : ""));
+            log("Failed to activate cluster.");
 
             throw e;
         }
@@ -2958,7 +2954,7 @@ public class CommandHandler {
                 try (GridClient client = GridClientFactory.start(clientCfg)) {
                     switch (args.command()) {
                         case ACTIVATE:
-                            activate(client, args.changeClusterStateArguments());
+                            activate(client);
 
                             break;
 
