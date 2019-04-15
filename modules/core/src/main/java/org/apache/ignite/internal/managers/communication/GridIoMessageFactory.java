@@ -1144,6 +1144,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case 172:
+                msg = new GridIoSecurityAwareMessage();
+
+                break;
+
             // [-3..119] [124..129] [-23..-28] [-36..-55] - this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL

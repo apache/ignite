@@ -19,12 +19,9 @@ package org.apache.ignite.internal.processors.security;
 
 import java.util.Collection;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.GridProcessor;
-import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -39,23 +36,15 @@ import static org.apache.ignite.internal.processors.security.IgniteSecurityProce
 /**
  * No operation Ignite Security Processor.
  */
-public class NoOpIgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
-    /** */
-    private static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's ignite security processor class " +
-        "is not equal to remote node's ignite security processor class " +
-        "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
-
+public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements IgniteSecurity {
     /** No operation security context. */
     private final OperationSecurityContext opSecCtx = new OperationSecurityContext(this, null);
-
-    /** Grid kernal context. */
-    private final GridKernalContext ctx;
 
     /**
      * @param ctx Grid kernal context.
      */
     public NoOpIgniteSecurityProcessor(GridKernalContext ctx) {
-        this.ctx = ctx;
+        super(ctx);
     }
 
     /** {@inheritDoc} */
@@ -114,51 +103,6 @@ public class NoOpIgniteSecurityProcessor implements IgniteSecurity, GridProcesso
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void printMemoryStats() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         return validateSecProcClass(node);
     }
@@ -167,21 +111,6 @@ public class NoOpIgniteSecurityProcessor implements IgniteSecurity, GridProcesso
     @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node,
         DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
         return validateSecProcClass(node);
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) {
-        return null;
     }
 
     /**

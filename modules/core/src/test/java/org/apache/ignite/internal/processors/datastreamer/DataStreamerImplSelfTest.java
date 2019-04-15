@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -604,7 +603,6 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             -1);
 
                         msg = new GridIoMessage(
-                            GridTestUtils.getFieldValue(ioMsg, "secSubjId"),
                             GridTestUtils.<Byte>getFieldValue(ioMsg, "plc"),
                             GridTestUtils.getFieldValue(ioMsg, "topic"),
                             GridTestUtils.<Integer>getFieldValue(ioMsg, "topicOrd"),

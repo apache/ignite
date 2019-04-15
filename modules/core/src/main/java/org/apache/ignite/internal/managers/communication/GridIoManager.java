@@ -98,6 +98,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -1044,7 +1045,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     assert obj != null;
 
-                    invokeListener(msg.policy(), lsnr, nodeId, obj, msg.secSubjId());
+                    invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg));
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1187,7 +1188,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         assert obj != null;
 
-        invokeListener(msg.policy(), lsnr, nodeId, obj, msg.secSubjId());
+        invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg));
     }
 
     /**
@@ -1623,16 +1624,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert !async || msg instanceof GridIoUserMessage : msg; // Async execution was added only for IgniteMessaging.
         assert topicOrd >= 0 || !(topic instanceof GridTopic) : msg;
 
-        UUID secSubjId  = null;
-
-        if(ctx.security().enabled()) {
-            UUID curSecSubjId = ctx.security().securityContext().subject().id();
-
-            if (!locNodeId.equals(curSecSubjId))
-                secSubjId = curSecSubjId;
-        }
-
-        GridIoMessage ioMsg = new GridIoMessage(secSubjId, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+        GridIoMessage ioMsg = createGridIoMessage(topic, topicOrd, msg, plc, ordered, timeout, skipOnTimeout);
 
         if (locNodeId.equals(node.id())) {
             assert plc != P2P_POOL;
@@ -1675,6 +1667,29 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     ", msg=" + msg + ", policy=" + plc + ']', e);
             }
         }
+    }
+
+    /** */
+    private @NotNull GridIoMessage createGridIoMessage(
+        Object topic,
+        int topicOrd,
+        Message msg,
+        byte plc,
+        boolean ordered,
+        long timeout,
+        boolean skipOnTimeout) {
+        if (ctx.security().enabled()) {
+            UUID secSubjId = null;
+
+            UUID curSecSubjId = ctx.security().securityContext().subject().id();
+
+            if (!locNodeId.equals(curSecSubjId))
+                secSubjId = curSecSubjId;
+
+            return new GridIoSecurityAwareMessage(secSubjId, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+        }
+
+        return new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
     }
 
     /**
@@ -2777,7 +2792,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             for (GridTuple3<GridIoMessage, Long, IgniteRunnable> t = msgs.poll(); t != null; t = msgs.poll()) {
                 try {
-                    invokeListener(plc, lsnr, nodeId, t.get1().message(), t.get1().secSubjId());
+                    invokeListener(plc, lsnr, nodeId, t.get1().message(), secSubjId(t.get1()));
                 }
                 finally {
                     if (t.get3() != null)
@@ -3172,5 +3187,18 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             return latencyLimit / (1000 * (resLatency.length - 1));
         }
+    }
+
+    /**
+     * @return Security subject id.
+     */
+    private UUID secSubjId(GridIoMessage msg){
+        if(ctx.security().enabled()) {
+            assert msg instanceof GridIoSecurityAwareMessage;
+
+            return ((GridIoSecurityAwareMessage) msg).secSubjId();
+        }
+
+        return null;
     }
 }
