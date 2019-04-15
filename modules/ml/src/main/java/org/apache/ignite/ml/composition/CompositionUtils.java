@@ -112,20 +112,4 @@ public class CompositionUtils {
     public static <K, V, L> IgniteBiFunction<K, V, L> asLabelExtractor(FeatureLabelExtractor<K, V, L> extractor) {
         return (k, v) -> extractor.extract(k, v).label();
     }
-
-    /**
-     * Label extractor feature extractor from given mapping {@code (key, value) -> LabeledVector}.
-     *
-     * @param featureExtractor Features extractor.
-     * @param lbExtractor Label extractor.
-     * @param <K> Type of keys.
-     * @param <V> Type of values.
-     * @param <L> Type of labels.
-     * @return Label extractor created from given mapping {@code (key, value) -> LabeledVector}.
-     */
-  /*  public static <K, V, L> FeatureLabelExtractor<K, V, L> asFeatureLabelExtractor(
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor) {
-        return (k, v) -> new LabeledVector<>(featureExtractor.apply(k, v), lbExtractor.apply(k, v));
-    }*/
 }
