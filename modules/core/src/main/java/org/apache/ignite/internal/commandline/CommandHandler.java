@@ -72,7 +72,6 @@ import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheR
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskArg;
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskResult;
 import org.apache.ignite.internal.commandline.state.ChangeClusterStateArguments;
-import org.apache.ignite.internal.commandline.state.ActivateCommandArg;
 import org.apache.ignite.internal.commandline.state.ReadOnlyCommandArg;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
@@ -1926,25 +1925,6 @@ public class CommandHandler {
             if (cmd != null) {
                 switch (cmd) {
                     case ACTIVATE:
-                        commands.add(cmd);
-
-                        changeClusterStateArgs = new ChangeClusterStateArguments();
-
-                        int argsCnt = 1;
-
-                        while (hasNextArg() && argsCnt-- > 0) {
-                            String strArg = nextArg("");
-
-                            ActivateCommandArg arg = CommandArgUtils.of(strArg, ActivateCommandArg.class);
-
-                            if (arg == ActivateCommandArg.READ_ONLY)
-                                changeClusterStateArgs.readOnly(true);
-                            else
-                                log("WARN Unknown argument: " + strArg);
-                        }
-
-                        break;
-
                     case DEACTIVATE:
                     case STATE:
                         commands.add(cmd);
@@ -2802,7 +2782,6 @@ public class CommandHandler {
         log("This utility can do the following commands:");
 
         usage(i("Activate cluster:"), ACTIVATE);
-        usage(i("Activate cluster in read-only mode:"), ACTIVATE, ActivateCommandArg.READ_ONLY);
         usage(i("Deactivate cluster:"), DEACTIVATE, op(CMD_AUTO_CONFIRMATION));
         usage(i("Enable read-only mode on active cluster:"), READ_ONLY, ReadOnlyCommandArg.ENABLE, op(CMD_AUTO_CONFIRMATION));
         usage(i("Disable read-only mode on active cluster:"), READ_ONLY, ReadOnlyCommandArg.DISABLE, op(CMD_AUTO_CONFIRMATION));
