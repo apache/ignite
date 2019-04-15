@@ -100,7 +100,7 @@ public class GridTestKey implements Externalizable {
         if (this == o)
             return true;
 
-        if (!(o instanceof GridTestKey))
+        if (o == null || GridTestKey.class != o.getClass())
             return false;
 
         GridTestKey key = (GridTestKey)o;

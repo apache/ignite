@@ -1677,7 +1677,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         if (this == another)
             return true;
 
-        if (!(another instanceof GatewayProtectedCacheProxy))
+        if (another == null || GatewayProtectedCacheProxy.class != another.getClass())
             return false;
 
         GatewayProtectedCacheProxy anotherProxy = (GatewayProtectedCacheProxy) another;

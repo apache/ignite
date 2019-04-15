@@ -641,7 +641,7 @@ public class GridCacheMvccCandidate implements Externalizable,
         if (o == this)
             return true;
 
-        if (!(o instanceof GridCacheMvccCandidate))
+        if (o == null || GridCacheMvccCandidate.class != o.getClass())
             return false;
 
         GridCacheMvccCandidate other = (GridCacheMvccCandidate)o;

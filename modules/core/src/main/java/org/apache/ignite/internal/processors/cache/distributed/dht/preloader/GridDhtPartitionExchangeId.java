@@ -214,7 +214,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
         if (o == this)
             return true;
 
-        if (!(o instanceof GridDhtPartitionExchangeId))
+        if (o == null || GridDhtPartitionExchangeId.class != o.getClass())
             return false;
 
         GridDhtPartitionExchangeId id = (GridDhtPartitionExchangeId)o;

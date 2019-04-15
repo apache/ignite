@@ -1050,7 +1050,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             if (this == o)
                 return true;
 
-            if (!(o instanceof MappingKey))
+            if (o == null || MappingKey.class != o.getClass())
                 return false;
 
             MappingKey that = (MappingKey) o;

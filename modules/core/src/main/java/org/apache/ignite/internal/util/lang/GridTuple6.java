@@ -293,7 +293,7 @@ public class GridTuple6<V1, V2, V3, V4, V5, V6> implements Iterable<Object>, Ext
         if (this == o)
             return true;
 
-        if (!(o instanceof GridTuple6))
+        if (o == null || GridTuple6.class != o.getClass())
             return false;
 
         GridTuple6<?, ?, ?, ?, ?, ?> t = (GridTuple6<?, ?, ?, ?, ?, ?>)o;

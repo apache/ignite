@@ -151,7 +151,7 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
             if (this == obj)
                 return true;
 
-            if (!(obj instanceof MyStringKey))
+            if (obj == null || MyStringKey.class != obj.getClass())
                 return false;
 
             MyStringKey key = (MyStringKey)obj;

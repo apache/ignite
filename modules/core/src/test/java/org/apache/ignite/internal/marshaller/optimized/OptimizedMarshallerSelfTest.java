@@ -189,7 +189,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
             if (this == o)
                 return true;
 
-            if (!(o instanceof TestObject2))
+            if (o == null || TestObject2.class != o.getClass())
                 return false;
 
             return i == ((TestObject2)o).i;
