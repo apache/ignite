@@ -249,7 +249,7 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
             if (this == o)
                 return true;
 
-            if (!(o instanceof V1))
+            if (o == null || V1.class != o.getClass())
                 return false;
 
             V1 v = (V1)o;
@@ -288,12 +288,12 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
             if (this == o)
                 return true;
 
-            if (!(o instanceof V1))
+            if (o == null || V2.class != o.getClass())
                 return false;
 
-            V1 v = (V1)o;
+            V2 v = (V2)o;
 
-            return v.val == value() && v.other == other();
+            return v.value() == value() && v.other() == other();
         }
 
         /** {@inheritDoc} */

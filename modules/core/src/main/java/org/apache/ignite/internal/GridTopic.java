@@ -276,7 +276,7 @@ public enum GridTopic {
             if (this == obj)
                 return true;
 
-            if (!(obj instanceof T1))
+            if (obj == null || T1.class != obj.getClass())
                 return false;
 
             T1 that = (T1)obj;
@@ -346,7 +346,7 @@ public enum GridTopic {
             if (this == obj)
                 return true;
 
-            if (!(obj instanceof T2))
+            if (obj == null || T2.class != obj.getClass())
                 return false;
 
             T2 that = (T2)obj;
@@ -413,7 +413,7 @@ public enum GridTopic {
             if (this == obj)
                 return true;
 
-            if (!(obj instanceof T3))
+            if (obj == null || T3.class != obj.getClass())
                 return false;
 
             T3 that = (T3)obj;
@@ -488,7 +488,7 @@ public enum GridTopic {
             if (this == obj)
                 return true;
 
-            if (!(obj instanceof T4))
+            if (obj == null || T4.class != obj.getClass())
                 return false;
 
             T4 that = (T4)obj;
@@ -567,7 +567,7 @@ public enum GridTopic {
             if (this == obj)
                 return true;
 
-            if (!(obj instanceof T5))
+            if (obj == null || T5.class != obj.getClass())
                 return false;
 
             T5 that = (T5)obj;
@@ -641,7 +641,7 @@ public enum GridTopic {
             if (this == obj)
                 return true;
 
-            if (!(obj instanceof T6))
+            if (obj == null || T6.class != obj.getClass())
                 return false;
 
             T6 that = (T6)obj;
@@ -723,7 +723,7 @@ public enum GridTopic {
             if (this == obj)
                 return true;
 
-            if (!(obj instanceof T7))
+            if (obj == null || T7.class != obj.getClass())
                 return false;
 
             T7 that = (T7)obj;
@@ -800,7 +800,7 @@ public enum GridTopic {
             if (this == obj)
                 return true;
 
-            if (!(obj instanceof T8))
+            if (obj == null || T8.class != obj.getClass())
                 return false;
 
             T8 that = (T8)obj;

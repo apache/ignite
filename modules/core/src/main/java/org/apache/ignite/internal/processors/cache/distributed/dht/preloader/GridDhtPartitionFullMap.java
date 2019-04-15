@@ -202,7 +202,7 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap> 
         if (this == o)
             return true;
 
-        if (!(o instanceof GridDhtPartitionFullMap))
+        if (o == null || GridDhtPartitionFullMap.class != o.getClass())
             return false;
 
         GridDhtPartitionFullMap other = (GridDhtPartitionFullMap)o;
