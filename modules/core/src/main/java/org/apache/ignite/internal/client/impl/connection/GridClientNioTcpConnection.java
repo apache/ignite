@@ -817,13 +817,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientFuture<?> activateReadOnly(UUID destNodeId)
-        throws GridClientClosedException, GridClientConnectionResetException {
-
-        return makeRequest(GridClientReadOnlyModeRequest.activateReadOnly(), destNodeId);
-    }
-
-    /** {@inheritDoc} */
     @Override public GridClientFuture<?> changeReadOnlyState(
         boolean readOnly,
         UUID destNodeId

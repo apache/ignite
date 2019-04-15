@@ -28,19 +28,11 @@ public class  GridClientReadOnlyModeRequest extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Active. */
-    private boolean active;
-
     /** Request current state. */
     private boolean reqCurrentState;
 
     /** Read only. */
     private boolean readOnly;
-
-    /** */
-    public boolean isActive() {
-        return active;
-    }
 
     /** */
     public boolean isReqCurrentState() {
@@ -50,18 +42,6 @@ public class  GridClientReadOnlyModeRequest extends GridClientAbstractMessage {
     /** */
     public boolean readOnly() {
         return readOnly;
-    }
-
-    /**
-     * @return Activate in read-only mode request.
-     */
-    public static GridClientReadOnlyModeRequest activateReadOnly() {
-        GridClientReadOnlyModeRequest msg = new GridClientReadOnlyModeRequest();
-
-        msg.readOnly = true;
-        msg.active = true;
-
-        return msg;
     }
 
     /**
@@ -101,7 +81,6 @@ public class  GridClientReadOnlyModeRequest extends GridClientAbstractMessage {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        out.writeBoolean(active);
         out.writeBoolean(reqCurrentState);
         out.writeBoolean(readOnly);
     }
@@ -110,7 +89,6 @@ public class  GridClientReadOnlyModeRequest extends GridClientAbstractMessage {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        active = in.readBoolean();
         reqCurrentState = in.readBoolean();
         readOnly = in.readBoolean();
     }

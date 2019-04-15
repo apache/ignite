@@ -317,14 +317,6 @@ public abstract class GridClientConnection {
             throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
-     * Activate cluster in read-only mode.
-     *
-     * @param destNodeId Destination node id.
-     */
-    public abstract GridClientFuture<?> activateReadOnly(UUID destNodeId)
-        throws GridClientClosedException, GridClientConnectionResetException;
-
-    /**
      * Get current grid state.
      *
      * @param destNodeId Destination node id.
