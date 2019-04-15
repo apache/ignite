@@ -35,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_ALL;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isSystemCache;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter.OperationType.WRITE;
 
 /**
@@ -94,7 +95,7 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
 
         PartitionLossPolicy lossPlc = grp.config().getPartitionLossPolicy();
 
-        if (cctx.shared().readOnlyMode() && opType == WRITE)
+        if (cctx.shared().readOnlyMode() && opType == WRITE && !isSystemCache(cctx.name()))
             return new IgniteCheckedException("Failed to perform cache operation (cluster is in read only mode)");
 
         if (grp.needsRecovery() && !recovery) {

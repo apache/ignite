@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.service.GridServiceAssignmentsKey;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -85,6 +86,21 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
             IgniteException.class,
             "Cluster not active!"
         );
+    }
+
+    /** */
+    @Test
+    public void testIgniteUtilityCacheAvaliableForUpdatesOnReadOnlyCluster() throws Exception {
+        IgniteEx grid = startGrid(0);
+
+        grid.cluster().active(true);
+        grid.cluster().readOnly(true);
+
+        checkClusterInReadOnlyMode(true, grid);
+
+        grid.utilityCache().put(new GridServiceAssignmentsKey("test"), "test");
+
+        assertEquals("test", grid.utilityCache().get(new GridServiceAssignmentsKey("test")));
     }
 
     /** */
