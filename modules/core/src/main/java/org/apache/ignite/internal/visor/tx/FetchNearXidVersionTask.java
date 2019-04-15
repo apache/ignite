@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 @GridInternal
 public class FetchNearXidVersionTask
     extends VisorMultiNodeTask<TxVerboseId, GridCacheVersion, GridCacheVersion> {
-    /** Version since --tx info is supported. */
+    /** Version since --tx --info is supported. */
     public static final IgniteProductVersion TX_INFO_SINCE_VER = IgniteProductVersion.fromString("2.5.8");
 
     /** */

@@ -145,7 +145,6 @@ import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.transactions.TransactionState;
-import org.jetbrains.annotations.NotNull;
 
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
@@ -1419,7 +1418,7 @@ public class CommandHandler {
      *
      * @param node Node.
      */
-    private static @NotNull String nodeDescription(ClusterNode node) {
+    private static String nodeDescription(ClusterNode node) {
         return node.getClass().getSimpleName() + " [id=" + node.id() +
             ", addrs=" + node.addresses() +
             ", order=" + node.order() +
@@ -1594,6 +1593,7 @@ public class CommandHandler {
      * @param verboseInfo Verbose info.
      */
     private void printTransactionMapping(String indent, VisorTxInfo info, TxVerboseInfo verboseInfo) {
+        log(indent + "XID version (UUID): " + info.getXid());
         log(indent + "State: " + info.getState());
 
         if (verboseInfo.txMappingType() == TxMappingType.REMOTE) {
@@ -2690,6 +2690,7 @@ public class CommandHandler {
                     nextArg("");
 
                     limit = (int)nextLongArg(TX_LIMIT);
+
                     break;
 
                 case TX_ORDER:
@@ -2703,30 +2704,35 @@ public class CommandHandler {
                     nextArg("");
 
                     proj = VisorTxProjection.SERVER;
+
                     break;
 
                 case TX_CLIENTS:
                     nextArg("");
 
                     proj = VisorTxProjection.CLIENT;
+
                     break;
 
                 case TX_NODES:
                     nextArg("");
 
                     consistentIds = getConsistentIds(nextArg(TX_NODES));
+
                     break;
 
                 case TX_DURATION:
                     nextArg("");
 
                     duration = nextLongArg(TX_DURATION) * 1000L;
+
                     break;
 
                 case TX_SIZE:
                     nextArg("");
 
                     size = (int)nextLongArg(TX_SIZE);
+
                     break;
 
                 case TX_LABEL:
@@ -2747,12 +2753,14 @@ public class CommandHandler {
                     nextArg("");
 
                     xid = nextArg(TX_XID);
+
                     break;
 
                 case TX_KILL:
                     nextArg("");
 
                     op = VisorTxOperation.KILL;
+
                     break;
 
                 case TX_INFO:
@@ -2761,6 +2769,7 @@ public class CommandHandler {
                     op = VisorTxOperation.INFO;
 
                     txVerboseId = TxVerboseId.fromString(nextArg(TX_INFO));
+
                     break;
 
                 default:
@@ -2997,6 +3006,8 @@ public class CommandHandler {
         usage(i("Set baseline topology based on version:"), BASELINE, BaselineCommand.VERSION.text() + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
         usage(i("Set baseline autoadjustment settings:"), BASELINE, BaselineCommand.AUTO_ADJUST.text(), "disable|enable timeout <timeoutValue>", op(CMD_AUTO_CONFIRMATION));
         usage(i("List or kill transactions:"), TX, getTxOptions());
+        usage(i("Print detailed information (topology and key lock ownership) about specific transaction:"),
+            TX, TX_INFO, or("<GridCacheVersion [topVer=..., order=..., nodeOrder=...]>", "<UUID>"));
 
         if (enableExperimental) {
             usage(i("Print absolute paths of unused archived wal segments on each node:"), WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");

@@ -87,8 +87,10 @@ public class TxVerboseInfo extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
         nearXidVer = (GridCacheVersion)in.readObject();
         locNodeId = U.readUuid(in);
         locNodeConsistentId = in.readObject();

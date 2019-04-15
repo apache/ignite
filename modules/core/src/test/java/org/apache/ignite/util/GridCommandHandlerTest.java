@@ -2592,8 +2592,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @param unlockLatch Unlock latch.
      * @param commitMustFail If true, commit of transaction that hangs on unlockLatch must fail.
      */
-    private IgniteInternalFuture<?> startTransactions(CountDownLatch lockLatch,
-        CountDownLatch unlockLatch, boolean commitMustFail) throws Exception {
+    private IgniteInternalFuture<?> startTransactions(
+        CountDownLatch lockLatch,
+        CountDownLatch unlockLatch,
+        boolean commitMustFail
+    ) throws Exception {
         IgniteEx client = grid("client");
 
         AtomicInteger idx = new AtomicInteger();

@@ -345,14 +345,10 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                 Object completed = completedVersions.get(arg.txInfoArgument().gridCacheVersion());
 
                 if (completed != null) {
-                    if (Boolean.TRUE.equals(completed)) {
-                        infos.add(new VisorTxInfo(arg.txInfoArgument().gridCacheVersion().asGridUuid(), 0L, 0L, null,
-                            null, 0L, null, null, COMMITTED, 0, null, null, null, null));
-                    }
-                    else if (Boolean.FALSE.equals(completed)) {
-                        infos.add(new VisorTxInfo(arg.txInfoArgument().gridCacheVersion().asGridUuid(), 0L, 0L, null,
-                            null, 0L, null, null, ROLLED_BACK, 0, null, null, null, null));
-                    }
+                    if (Boolean.TRUE.equals(completed))
+                        infos.add(new VisorTxInfo(arg.txInfoArgument().gridCacheVersion().asGridUuid(), COMMITTED));
+                    else if (Boolean.FALSE.equals(completed))
+                        infos.add(new VisorTxInfo(arg.txInfoArgument().gridCacheVersion().asGridUuid(), ROLLED_BACK));
                 }
             }
 

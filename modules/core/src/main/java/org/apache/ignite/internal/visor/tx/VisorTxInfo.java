@@ -131,6 +131,17 @@ public class VisorTxInfo extends VisorDataTransferObject {
         txVerboseInfo = info;
     }
 
+    /**
+     * Constructor for historical mode.
+     * Used to encapsulate information about tx commit/rollback from completed versions history map.
+     *
+     * @param xid Xid.
+     * @param state State.
+     */
+    public VisorTxInfo(IgniteUuid xid, TransactionState state) {
+        this(xid, 0L, 0L, null, null, 0L, null, null, state, 0, null, null, null, null);
+    }
+
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
         return V4;
@@ -233,8 +244,10 @@ public class VisorTxInfo extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
         xid = U.readGridUuid(in);
         duration = in.readLong();
         isolation = TransactionIsolation.fromOrdinal(in.readByte());
