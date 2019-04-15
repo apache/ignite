@@ -92,7 +92,8 @@ namespace Apache.Ignite.Core.Impl
             DisableWal = 27,
             EnableWal = 28,
             IsWalEnabled = 29,
-            SetTxTimeoutOnPartitionMapExchange = 30
+            SetTxTimeoutOnPartitionMapExchange = 30,
+            GetNodeVersion = 31
         }
 
         /** */
@@ -234,6 +235,12 @@ namespace Apache.Ignite.Core.Impl
         public ICompute GetCompute()
         {
             return _prj.ForServers().GetCompute();
+        }
+
+        /** <inheritdoc /> */
+        public IgniteProductVersion GetVersion()
+        {
+            return Target.OutStream((int) Op.GetNodeVersion, r => new IgniteProductVersion(r));
         }
 
         /** <inheritdoc /> */
@@ -421,7 +428,6 @@ namespace Apache.Ignite.Core.Impl
         public ICache<TK, TV> GetCache<TK, TV>(string name)
         {
             IgniteArgumentCheck.NotNull(name, "name");
-
 
             return GetCache<TK, TV>(DoOutOpObject((int) Op.GetCache, w => w.WriteString(name)));
         }

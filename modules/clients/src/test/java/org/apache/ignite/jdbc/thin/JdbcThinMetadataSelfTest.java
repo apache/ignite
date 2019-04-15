@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Assert;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static java.sql.Types.DATE;
@@ -862,23 +863,101 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testParametersMetadata() throws Exception {
+        // Perform checks few times due to query/plan caching.
+        for (int i = 0; i < 3; i++) {
+            // No parameters statement.
+            try(Connection conn = DriverManager.getConnection(URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement noParams = conn.prepareStatement("select * from Person;");
+                ParameterMetaData params = noParams.getParameterMetaData();
+
+                assertEquals("Parameters should be empty.", 0, params.getParameterCount());
+            }
+
+            // Selects.
+            try (Connection conn = DriverManager.getConnection(URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement selectStmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
+
+                ParameterMetaData meta = selectStmt.getParameterMetaData();
+
+                assertNotNull(meta);
+
+                assertEquals(2, meta.getParameterCount());
+
+                assertEquals(Types.VARCHAR, meta.getParameterType(1));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
+
+                assertEquals(Types.INTEGER, meta.getParameterType(2));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+            }
+
+            // Updates.
+            try (Connection conn = DriverManager.getConnection(URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement updateStmt = conn.prepareStatement("update Person p set orgId = 42 where p.name > ? and p.orgId > ?");
+
+                ParameterMetaData meta = updateStmt.getParameterMetaData();
+
+                assertNotNull(meta);
+
+                assertEquals(2, meta.getParameterCount());
+
+                assertEquals(Types.VARCHAR, meta.getParameterType(1));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
+
+                assertEquals(Types.INTEGER, meta.getParameterType(2));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+            }
+
+            // Multistatement
+            try (Connection conn = DriverManager.getConnection(URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement updateStmt = conn.prepareStatement(
+                    "update Person p set orgId = 42 where p.name > ? and p.orgId > ?;" +
+                        "select orgId from Person p where p.name > ? and p.orgId > ?");
+
+                ParameterMetaData meta = updateStmt.getParameterMetaData();
+
+                assertNotNull(meta);
+
+                assertEquals(4, meta.getParameterCount());
+
+                assertEquals(Types.VARCHAR, meta.getParameterType(1));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
+
+                assertEquals(Types.INTEGER, meta.getParameterType(2));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+
+                assertEquals(Types.VARCHAR, meta.getParameterType(3));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(3));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(3));
+
+                assertEquals(Types.INTEGER, meta.getParameterType(4));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(4));
+            }
+        }
+    }
+
+    /**
+     * Check that parameters metadata throws correct exception on non-parsable statement.
+     */
+    @Test
+    public void testParametersMetadataNegative() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema("\"pers\"");
 
-            PreparedStatement stmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
+            PreparedStatement notCorrect = conn.prepareStatement("select * from NotExistingTable;");
 
-            ParameterMetaData meta = stmt.getParameterMetaData();
-
-            assert meta != null;
-
-            assert meta.getParameterCount() == 2;
-
-            assert meta.getParameterType(1) == Types.VARCHAR;
-            assert meta.isNullable(1) == ParameterMetaData.parameterNullableUnknown;
-            assert meta.getPrecision(1) == Integer.MAX_VALUE;
-
-            assert meta.getParameterType(2) == Types.INTEGER;
-            assert meta.isNullable(2) == ParameterMetaData.parameterNullableUnknown;
+            GridTestUtils.assertThrows(log(), notCorrect::getParameterMetaData, SQLException.class,
+                "Table \"NOTEXISTINGTABLE\" not found");
         }
     }
 
@@ -890,7 +969,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("IGNITE", "PUBLIC", "pers",
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("SYS", "PUBLIC", "pers",
                 "org", "dep", "PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
 
             Set<String> schemas = new HashSet<>();
