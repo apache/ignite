@@ -2062,18 +2062,21 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         DiscoveryDataBag dataBag;
 
         if (dataPacket.joiningNodeId().equals(locNode.id()))
-            dataBag = dataPacket.unmarshalGridData(marshaller(),
-                clsLdr,
-                locNode.clientRouterNodeId() != null,
-                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
-                log);
-        else
-            dataBag = dataPacket.unmarshalJoiningNodeData(marshaller(),
-                clsLdr,
-                locNode.clientRouterNodeId() != null,
-                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
-                log);
+            dataBag = dataPacket.unmarshalGridData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
+        else {
+            dataBag = dataPacket.unmarshalJoiningNodeData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
 
+            //Marshal unzipped joining node data if it was zipped but not whole cluster supports that.
+            //It can be happened due to several nodes, including node without compression support, are trying to join cluster concurrently.
+            if (!allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION) && dataPacket.isJoiningDataZipped())
+                dataPacket.marshalJoiningNodeData(
+                    dataBag,
+                    marshaller(),
+                    false,
+                    ignite.configuration().getNetworkCompressionLevel(),
+                    log
+                );
+        }
 
         exchange.onExchange(dataBag);
     }
