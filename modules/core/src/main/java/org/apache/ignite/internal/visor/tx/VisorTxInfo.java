@@ -88,6 +88,9 @@ public class VisorTxInfo extends VisorDataTransferObject {
     /** */
     private AffinityTopologyVersion topVer;
 
+    /** Tx verbose info. */
+    private TxVerboseInfo txVerboseInfo;
+
     /**
      * Default constructor.
      */
@@ -106,10 +109,12 @@ public class VisorTxInfo extends VisorDataTransferObject {
      * @param primaryNodes Primary nodes.
      * @param state State.
      * @param size Size.
+     * @param info Verbose TX info.
      */
     public VisorTxInfo(IgniteUuid xid, long startTime, long duration, TransactionIsolation isolation,
         TransactionConcurrency concurrency, long timeout, String lb, Collection<UUID> primaryNodes,
-        TransactionState state, int size, IgniteUuid nearXid, Collection<UUID> masterNodeIds, AffinityTopologyVersion topVer) {
+        TransactionState state, int size, IgniteUuid nearXid, Collection<UUID> masterNodeIds,
+        AffinityTopologyVersion topVer, TxVerboseInfo info) {
         this.xid = xid;
         this.startTime = startTime;
         this.duration = duration;
@@ -123,11 +128,12 @@ public class VisorTxInfo extends VisorDataTransferObject {
         this.nearXid = nearXid;
         this.masterNodeIds = masterNodeIds;
         this.topVer = topVer;
+        txVerboseInfo = info;
     }
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V3;
+        return V4;
     }
 
     /** */
@@ -191,13 +197,20 @@ public class VisorTxInfo extends VisorDataTransferObject {
     }
 
     /** */
-    @Nullable public IgniteUuid getNearXid() {
+    public @Nullable IgniteUuid getNearXid() {
         return nearXid;
     }
 
     /** */
-    @Nullable public Collection<UUID> getMasterNodeIds() {
+    public @Nullable Collection<UUID> getMasterNodeIds() {
         return masterNodeIds;
+    }
+
+    /**
+     * @return Tx verbose info.
+     */
+    public TxVerboseInfo getTxVerboseInfo() {
+        return txVerboseInfo;
     }
 
     /** {@inheritDoc} */
@@ -216,10 +229,12 @@ public class VisorTxInfo extends VisorDataTransferObject {
         out.writeLong(startTime);
         out.writeLong(topVer == null ? -1 : topVer.topologyVersion());
         out.writeInt(topVer == null ? -1 : topVer.minorTopologyVersion());
+        out.writeObject(txVerboseInfo);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer,
+        ObjectInput in) throws IOException, ClassNotFoundException {
         xid = U.readGridUuid(in);
         duration = in.readLong();
         isolation = TransactionIsolation.fromOrdinal(in.readByte());
@@ -241,6 +256,8 @@ public class VisorTxInfo extends VisorDataTransferObject {
             if (topVer != -1)
                 this.topVer = new AffinityTopologyVersion(topVer, minorTopVer);
         }
+        if (protoVer >= V4)
+            txVerboseInfo = (TxVerboseInfo)in.readObject();
     }
 
     /**

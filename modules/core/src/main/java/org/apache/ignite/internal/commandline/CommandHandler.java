@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -77,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -103,6 +105,12 @@ import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskOperation;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
 import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
+import org.apache.ignite.internal.visor.tx.FetchNearXidVersionTask;
+import org.apache.ignite.internal.visor.tx.TxKeyLockType;
+import org.apache.ignite.internal.visor.tx.TxMappingType;
+import org.apache.ignite.internal.visor.tx.TxVerboseId;
+import org.apache.ignite.internal.visor.tx.TxVerboseInfo;
+import org.apache.ignite.internal.visor.tx.TxVerboseKey;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
@@ -136,6 +144,8 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.NotNull;
 
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
@@ -344,6 +354,9 @@ public class CommandHandler {
 
     /** */
     private static final String TX_KILL = "--kill";
+
+    /** */
+    private static final String TX_INFO = "--info";
 
     /** Utility name. */
     private static final String UTILITY_NAME = "control.sh";
@@ -1362,6 +1375,12 @@ public class CommandHandler {
      */
     private void transactions(GridClient client, VisorTxTaskArg arg) throws GridClientException {
         try {
+            if (arg.getOperation() == VisorTxOperation.INFO) {
+                transactionInfo(client, arg);
+
+                return;
+            }
+
             Map<ClusterNode, VisorTxTaskResult> res = executeTask(client, VisorTxTask.class, arg);
 
             lastOperationRes = res;
@@ -1379,13 +1398,7 @@ public class CommandHandler {
 
                 ClusterNode key = entry.getKey();
 
-                log(key.getClass().getSimpleName() + " [id=" + key.id() +
-                    ", addrs=" + key.addresses() +
-                    ", order=" + key.order() +
-                    ", ver=" + key.version() +
-                    ", isClient=" + key.isClient() +
-                    ", consistentId=" + key.consistentId() +
-                    "]");
+                log(nodeDescription(key));
 
                 for (VisorTxInfo info : entry.getValue().getInfos())
                     log(info.toUserString());
@@ -1395,6 +1408,255 @@ public class CommandHandler {
             log("Failed to perform operation.");
 
             throw e;
+        }
+    }
+
+    /**
+     * Provides text descrition of a cluster node.
+     *
+     * @param node Node.
+     */
+    private static @NotNull String nodeDescription(ClusterNode node) {
+        return node.getClass().getSimpleName() + " [id=" + node.id() +
+            ", addrs=" + node.addresses() +
+            ", order=" + node.order() +
+            ", ver=" + node.version() +
+            ", isClient=" + node.isClient() +
+            ", consistentId=" + node.consistentId() +
+            "]";
+    }
+
+    /**
+     * Executes --tx --info command.
+     *
+     * @param client Client.
+     * @param arg Argument.
+     */
+    private void transactionInfo(GridClient client, VisorTxTaskArg arg) throws GridClientException {
+        IgniteProductVersion ver = FetchNearXidVersionTask.TX_INFO_SINCE_VER;
+
+        validateProductVersion(client, ver);
+
+        GridCacheVersion nearXidVer = executeTask(client, FetchNearXidVersionTask.class, arg.txInfoArgument());
+
+        boolean histMode = false;
+
+        if (nearXidVer != null) {
+            log("Resolved transaction near XID version: " + nearXidVer);
+
+            arg.txInfoArgument(new TxVerboseId(null, nearXidVer));
+        }
+        else {
+            log("Active transactions not found.");
+
+            if (arg.txInfoArgument().gridCacheVersion() != null) {
+                log("Will try to peek history to find out whether transaction was committed / rolled back.");
+
+                histMode = true;
+            }
+            else {
+                log("You can specify transaction in GridCacheVersion format in order to peek history " +
+                    "to find out whether transaction was committed / rolled back.");
+
+                return;
+            }
+        }
+
+        Map<ClusterNode, VisorTxTaskResult> res = executeTask(client, VisorTxTask.class, arg);
+
+        lastOperationRes = res;
+
+        if (histMode)
+            printTxInfoHistoricalResult(res);
+        else
+            printTxInfoResult(res);
+
+
+    }
+
+    /**
+     * Prints result of --tx --info command to output.
+     *
+     * @param res Response.
+     */
+    private void printTxInfoResult(Map<ClusterNode, VisorTxTaskResult> res) {
+        String lb = null;
+
+        Map<Integer, String> usedCaches = new HashMap<>();
+        Map<Integer, String> usedCacheGroups = new HashMap<>();
+        VisorTxInfo firstInfo = null;
+        TxVerboseInfo firstVerboseInfo = null;
+        Set<TransactionState> states = new HashSet<>();
+
+        for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+            for (VisorTxInfo info : entry.getValue().getInfos()) {
+                assert info.getTxVerboseInfo() != null;
+
+                if (lb == null)
+                    lb = info.getLabel();
+
+                if (firstInfo == null) {
+                    firstInfo = info;
+                    firstVerboseInfo = info.getTxVerboseInfo();
+                }
+
+                usedCaches.putAll(info.getTxVerboseInfo().usedCaches());
+                usedCacheGroups.putAll(info.getTxVerboseInfo().usedCacheGroups());
+                states.add(info.getState());
+            }
+        }
+
+        String ident = "";
+
+        nl();
+        log(ident + "Transaction detailed info:");
+
+        printTransactionDetailedInfo(res, usedCaches, usedCacheGroups, firstInfo, firstVerboseInfo, states, ident + "    ");
+    }
+
+    /**
+     * Prints detailed info about transaction to output.
+     *
+     * @param res Response.
+     * @param usedCaches Used caches.
+     * @param usedCacheGroups Used cache groups.
+     * @param firstInfo First info.
+     * @param firstVerboseInfo First verbose info.
+     * @param states States.
+     * @param ident Ident.
+     */
+    private void printTransactionDetailedInfo(Map<ClusterNode, VisorTxTaskResult> res, Map<Integer, String> usedCaches,
+        Map<Integer, String> usedCacheGroups, VisorTxInfo firstInfo, TxVerboseInfo firstVerboseInfo,
+        Set<TransactionState> states, String ident) {
+        log(ident + "Near XID version: " + firstVerboseInfo.nearXidVersion());
+        log(ident + "Near XID version (UUID): " + firstInfo.getNearXid());
+        log(ident + "Isolation: " + firstInfo.getIsolation());
+        log(ident + "Concurrency: " + firstInfo.getConcurrency());
+        log(ident + "Timeout: " + firstInfo.getTimeout());
+        log(ident + "Initiator node: " + firstVerboseInfo.nearNodeId());
+        log(ident + "Initiator node (consistent ID): " + firstVerboseInfo.nearNodeConsistentId());
+        log(ident + "Label: " + firstInfo.getLabel());
+        log(ident + "Topology version: " + firstInfo.getTopologyVersion());
+        log(ident + "Used caches (ID to name): " + usedCaches);
+        log(ident + "Used cache groups (ID to name): " + usedCacheGroups);
+        log(ident + "States across the cluster: " + states);
+        log(ident + "Transaction topology: ");
+
+        printTransactionTopology(res, ident + "    ");
+    }
+
+    /**
+     * Prints transaction topology to output.
+     *
+     * @param res Response.
+     * @param ident Ident.
+     */
+    private void printTransactionTopology(Map<ClusterNode, VisorTxTaskResult> res, String ident) {
+        for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+            log(ident + nodeDescription(entry.getKey()) + ':');
+
+            printTransactionMappings(ident + "    ", entry);
+        }
+    }
+
+    /**
+     * Prints transaction mappings for specific cluster node to output.
+     *
+     * @param ident Ident.
+     * @param entry Entry.
+     */
+    private void printTransactionMappings(String ident, Map.Entry<ClusterNode, VisorTxTaskResult> entry) {
+        for (VisorTxInfo info : entry.getValue().getInfos()) {
+            TxVerboseInfo verboseInfo = info.getTxVerboseInfo();
+
+            if (verboseInfo != null) {
+                log(ident + "Mapping [type=" + verboseInfo.txMappingType() + "]:");
+
+                printTransactionMapping(ident + "    ", info, verboseInfo);
+            }
+            else {
+                log(ident + "Mapping [type=HISTORICAL]:");
+
+                log(ident + "    State: " + info.getState());
+            }
+        }
+    }
+
+    /**
+     * Prints specific transaction mapping to output.
+     *
+     * @param ident Ident.
+     * @param info Info.
+     * @param verboseInfo Verbose info.
+     */
+    private void printTransactionMapping(String ident, VisorTxInfo info, TxVerboseInfo verboseInfo) {
+        log(ident + "State: " + info.getState());
+
+        if (verboseInfo.txMappingType() == TxMappingType.REMOTE) {
+            log(ident + "Primary node: " + verboseInfo.dhtNodeId());
+            log(ident + "Primary node (consistent ID): " + verboseInfo.dhtNodeConsistentId());
+        }
+
+        if (!F.isEmpty(verboseInfo.localTxKeys())) {
+            log(ident + "Mapped keys:");
+
+            printTransactionKeys(ident + "    ", verboseInfo);
+        }
+    }
+
+    /**
+     * Prints keys of specific transaction mapping to output.
+     *
+     * @param ident Ident.
+     * @param verboseInfo Verbose info.
+     */
+    private void printTransactionKeys(String ident, TxVerboseInfo verboseInfo) {
+        for (TxVerboseKey txVerboseKey : verboseInfo.localTxKeys()) {
+            log(ident + (txVerboseKey.read() ? "Read" : "Write") +
+                " [lock=" + txVerboseKey.lockType() + "]: " + txVerboseKey.txKey());
+
+            if (txVerboseKey.lockType() == TxKeyLockType.AWAITS_LOCK)
+                log(ident + "    Lock owner XID: " + txVerboseKey.ownerVersion());
+        }
+    }
+
+    /**
+     * Prints results of --tx --info to output in case requested transaction is not active.
+     *
+     * @param res Response.
+     */
+    private void printTxInfoHistoricalResult(Map<ClusterNode, VisorTxTaskResult> res) {
+        if (F.isEmpty(res))
+            log("Transaction was not found in history across the cluster.");
+        else {
+            log("Transaction was found in completed versions history of the following nodes:");
+
+            for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+                log("    " + nodeDescription(entry.getKey()) + ':');
+                log("        State: " + entry.getValue().getInfos().get(0).getState());
+            }
+        }
+    }
+
+    /**
+     * Checks that all connectable cluster nodes have specific (or greater) product version.
+     *
+     * @param client Client.
+     * @param ver Version.
+     */
+    private static void validateProductVersion(GridClient client, IgniteProductVersion ver) throws GridClientException {
+        Collection<GridClientNode> nodes = client.compute().nodes(GridClientNode::connectable);
+
+        for (GridClientNode node : nodes) {
+            String nodeVerStr = node.attribute(IgniteNodeAttributes.ATTR_BUILD_VER);
+
+            IgniteProductVersion nodeVer = IgniteProductVersion.fromString(nodeVerStr);
+
+            if (nodeVer.compareTo(ver) < 0) {
+                throw new IllegalStateException("Command is supported since version " + ver +
+                    ", but there is cluster node with older version " +
+                    "[node=" + node.nodeId() + ", nodeVersion=" + nodeVer + ']');
+            }
         }
     }
 
@@ -2411,6 +2673,8 @@ public class CommandHandler {
 
         boolean end = false;
 
+        TxVerboseId txVerboseId = null;
+
         do {
             String str = peekNextArg();
 
@@ -2487,6 +2751,14 @@ public class CommandHandler {
                     op = VisorTxOperation.KILL;
                     break;
 
+                case TX_INFO:
+                    nextArg("");
+
+                    op = VisorTxOperation.INFO;
+
+                    txVerboseId = TxVerboseId.fromString(nextArg(TX_INFO));
+                    break;
+
                 default:
                     end = true;
             }
@@ -2496,7 +2768,8 @@ public class CommandHandler {
         if (proj != null && consistentIds != null)
             throw new IllegalArgumentException("Projection can't be used together with list of consistent ids.");
 
-        return new VisorTxTaskArg(op, limit, duration, size, null, proj, consistentIds, xid, lbRegex, sortOrder);
+        return new VisorTxTaskArg(
+            op, limit, duration, size, null, proj, consistentIds, xid, lbRegex, sortOrder, txVerboseId);
     }
 
     /**
@@ -2691,6 +2964,7 @@ public class CommandHandler {
         list.add(op(TX_LIMIT, "NUMBER"));
         list.add(op(TX_ORDER, or(VisorTxSortOrder.values())));
         list.add(op(TX_KILL));
+        list.add(op(TX_INFO));
         list.add(op(CMD_AUTO_CONFIRMATION));
 
         return list.toArray(new String[list.size()]);

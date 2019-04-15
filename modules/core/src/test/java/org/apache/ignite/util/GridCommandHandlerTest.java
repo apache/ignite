@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
@@ -733,7 +734,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         CountDownLatch lockLatch = new CountDownLatch(1);
         CountDownLatch unlockLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch);
+        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch, true);
 
         U.awaitQuiet(lockLatch);
 
@@ -869,6 +870,113 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         checkFutures();
+    }
+
+    /**
+     * Smoke test for --tx --info command.
+     */
+    @Test
+    public void testTransactionInfo() throws Exception {
+        Ignite ignite = startGridsMultiThreaded(5);
+
+        ignite.cluster().active(true);
+
+        Ignite client = startGrid("client");
+
+        client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL).setBackups(2).setWriteSynchronizationMode(FULL_SYNC));
+
+        for (Ignite ig : G.allGrids())
+            assertNotNull(ig.cache(DEFAULT_CACHE_NAME));
+
+        CountDownLatch lockLatch = new CountDownLatch(1);
+        CountDownLatch unlockLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch, false);
+
+        U.awaitQuiet(lockLatch);
+
+        doSleep(3000); // Should be more than enough for all transactions to appear in contexts.
+
+        Set<GridCacheVersion> nearXids = new HashSet<>();
+
+        for (int i = 0; i < 5; i++) {
+            IgniteEx grid = grid(i);
+
+            IgniteTxManager tm = grid.context().cache().context().tm();
+
+            for (IgniteInternalTx tx : tm.activeTransactions())
+                nearXids.add(tx.nearXidVersion());
+        }
+
+        injectTestSystemOut();
+
+        for (GridCacheVersion nearXid : nearXids)
+            assertEquals(EXIT_CODE_OK, execute("--tx", "--info", nearXid.toString()));
+
+        String out = testOut.toString();
+
+        for (GridCacheVersion nearXid : nearXids)
+            assertTrue(out.contains(nearXid.toString()));
+
+        unlockLatch.countDown();
+
+        fut.get();
+    }
+
+    /**
+     * Smoke test for historical mode of --tx --info command.
+     */
+    @Test
+    public void testTransactionHistoryInfo() throws Exception {
+        Ignite ignite = startGridsMultiThreaded(2);
+
+        ignite.cluster().active(true);
+
+        Ignite client = startGrid("client");
+
+        client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL).setBackups(2).setWriteSynchronizationMode(FULL_SYNC));
+
+        for (Ignite ig : G.allGrids())
+            assertNotNull(ig.cache(DEFAULT_CACHE_NAME));
+
+        CountDownLatch lockLatch = new CountDownLatch(1);
+        CountDownLatch unlockLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch, false);
+
+        U.awaitQuiet(lockLatch);
+
+        doSleep(3000); // Should be more than enough for all transactions to appear in contexts.
+
+        Set<GridCacheVersion> nearXids = new HashSet<>();
+
+        for (int i = 0; i < 2; i++) {
+            IgniteEx grid = grid(i);
+
+            IgniteTxManager tm = grid.context().cache().context().tm();
+
+            for (IgniteInternalTx tx : tm.activeTransactions())
+                nearXids.add(tx.nearXidVersion());
+        }
+
+        unlockLatch.countDown();
+
+        fut.get();
+
+        doSleep(3000); // Should be more than enough for all transactions to disappear from contexts after finish.
+
+        injectTestSystemOut();
+
+        for (GridCacheVersion nearXid : nearXids)
+            assertEquals(EXIT_CODE_OK, execute("--tx", "--info", nearXid.toString()));
+
+        String out = testOut.toString();
+
+        assertTrue(out.contains("Transaction was found in completed versions history of the following nodes:"));
+        assertTrue(out.contains("COMMITTED"));
+        assertTrue(out.contains("ROLLED_BACK"));
     }
 
     /**
@@ -2482,9 +2590,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @param lockLatch Lock latch.
      * @param unlockLatch Unlock latch.
+     * @param commitMustFail If true, commit of transaction that hangs on unlockLatch must fail.
      */
     private IgniteInternalFuture<?> startTransactions(CountDownLatch lockLatch,
-        CountDownLatch unlockLatch) throws Exception {
+        CountDownLatch unlockLatch, boolean commitMustFail) throws Exception {
         IgniteEx client = grid("client");
 
         AtomicInteger idx = new AtomicInteger();
@@ -2504,11 +2613,14 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                             tx.commit();
 
-                            fail("Commit must fail");
+                            if (commitMustFail)
+                                fail("Commit must fail");
                         }
                         catch (Exception e) {
-                            // No-op.
-                            assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                            if (commitMustFail)
+                                assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                            else
+                                throw e;
                         }
 
                         break;
