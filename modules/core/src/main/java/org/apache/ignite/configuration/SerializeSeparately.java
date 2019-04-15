@@ -26,7 +26,7 @@ import java.lang.annotation.Target;
  * This annotation is needed to mark fields of {@link CacheConfiguration} to serialize them separately
  * during sending over network or storing to disk.
  *
- * Such fields are serialized lazily only during cache start process.
+ * Such fields are deserialized only during cache start process.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
