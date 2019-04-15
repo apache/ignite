@@ -44,6 +44,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
+import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -113,9 +114,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void test() throws Exception {
         Ignite srvAllowed = startGrid("srv_allowed", permissions(TASK_EXECUTE, TASK_CANCEL));
@@ -132,10 +131,10 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
 
         srvAllowed.cluster().active(true);
 
-        for (TestRunnable r : runnables(srvAllowed, clntAllowed))
+        for (Runnable r : runnables(srvAllowed, clntAllowed))
             allowedRun(r);
 
-        for (TestRunnable r : runnables(srvForbidden, clntForbidden))
+        for (Runnable r : runnables(srvForbidden, clntForbidden))
             assertForbidden(r);
 
         for (Supplier<FutureAdapter> s : suppliers(srvAllowed, clntAllowed))
@@ -148,8 +147,8 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /**
      * @param nodes Array of nodes.
      */
-    private Collection<TestRunnable> runnables(Ignite... nodes) {
-        Function<Ignite, TestRunnable[]> f = (node) -> new TestRunnable[] {
+    private Collection<RunnableX> runnables(Ignite... nodes) {
+        Function<Ignite, RunnableX[]> f = (node) -> new RunnableX[] {
             () -> node.compute().execute(TEST_COMPUTE_TASK, 0),
             () -> node.compute().executeAsync(TEST_COMPUTE_TASK, 0).get(),
             () -> node.compute().broadcast(TEST_CALLABLE),
@@ -165,7 +164,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
             () -> node.executorService().invokeAny(singletonList(TEST_CALLABLE))
         };
 
-        List<TestRunnable> res = new ArrayList<>();
+        List<RunnableX> res = new ArrayList<>();
 
         for (Ignite node : nodes)
             res.addAll(Arrays.asList(f.apply(node)));
@@ -173,9 +172,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
         return res;
     }
 
-    /**
-     *
-     */
+    /** */
     private List<Supplier<FutureAdapter>> suppliers(Ignite... nodes) {
         List<Supplier<FutureAdapter>> res = new ArrayList<>();
 
@@ -206,7 +203,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /**
      * @param r TestRunnable.
      */
-    private void allowedRun(TestRunnable r) {
+    private void allowedRun(Runnable r) {
         IS_EXECUTED.set(false);
 
         try {
@@ -253,9 +250,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private static class FutureAdapter {
         /** Ignite future. */
         private final IgniteFuture igniteFut;
@@ -283,9 +278,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
             igniteFut = null;
         }
 
-        /**
-         *
-         */
+        /** */
         public void cancel() {
             if (igniteFut != null)
                 igniteFut.cancel();
@@ -293,16 +286,12 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
                 fut.cancel(true);
         }
 
-        /**
-         *
-         */
+        /** */
         public Object get() throws ExecutionException, InterruptedException {
             return igniteFut != null ? igniteFut.get() : fut.get();
         }
 
-        /**
-         *
-         */
+        /** */
         public boolean isCancelled() {
             return igniteFut != null ? igniteFut.isCancelled() : fut.isCancelled();
         }

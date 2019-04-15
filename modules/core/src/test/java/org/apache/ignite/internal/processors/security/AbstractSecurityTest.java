@@ -26,10 +26,8 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
 
 /**
  * Common class for security tests.
@@ -111,11 +109,8 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      * @param prmSet Security permission set.
      * @param isClient Is client.
      */
-    protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet,
-        boolean isClient) throws Exception {
-        return startGrid(
-            getConfiguration(login, secPluginCfg(login, "", prmSet))
-                .setClientMode(isClient)
+    protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet, boolean isClient) throws Exception {
+        return startGrid(getConfiguration(login, secPluginCfg(login, "", prmSet)).setClientMode(isClient)
         );
     }
 
@@ -135,9 +130,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      */
     protected IgniteEx startGrid(String login, String pwd, SecurityPermissionSet prmSet,
         boolean isClient) throws Exception {
-        return startGrid(
-            getConfiguration(login, secPluginCfg(login, pwd, prmSet))
-                .setClientMode(isClient)
+        return startGrid(getConfiguration(login, secPluginCfg(login, pwd, prmSet)).setClientMode(isClient)
         );
     }
 
@@ -159,10 +152,9 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      * @param prmSet Security permission set.
      * @param isClient If true then client mode.
      */
-    protected IgniteEx startGrid(String instanceName, String login, String pwd,
-        SecurityPermissionSet prmSet, boolean isClient) throws Exception {
-        return startGrid(getConfiguration(instanceName, secPluginCfg(login, pwd, prmSet))
-            .setClientMode(isClient));
+    protected IgniteEx startGrid(String instanceName, String login, String pwd, SecurityPermissionSet prmSet,
+        boolean isClient) throws Exception {
+        return startGrid(getConfiguration(instanceName, secPluginCfg(login, pwd, prmSet)).setClientMode(isClient));
     }
 
     /**
@@ -184,62 +176,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      *
      * @param r Runnable.
      */
-    protected void assertForbidden(TestRunnable r) {
-        assertForbidden(r, SecurityException.class);
-    }
-
-    /**
-     * @param r Runnable.
-     * @param types Array of expected exception types.
-     */
-    protected void assertForbidden(TestRunnable r, Class... types) {
-        try {
-            r.run();
-
-            fail("Test should throw one of the following exceptions " + Arrays.toString(types));
-        }
-        catch (Throwable e) {
-            assertThat(cause(e, types), notNullValue());
-        }
-    }
-
-    /**
-     * Gets first cause if passed in {@code 'Throwable'} has one of given classes in {@code 'cause'} hierarchy.
-     * <p>
-     * Note that this method follows includes {@link Throwable#getSuppressed()} into check.
-     *
-     * @param t Throwable to check (if {@code null}, {@code null} is returned).
-     * @param types Array of cause classes to get cause (if {@code null}, {@code null} is returned).
-     * @return First causing exception of passed in class, {@code null} otherwise.
-     */
-    private Throwable cause(Throwable t, Class... types) {
-        for (Throwable th = t; th != null; th = th.getCause()) {
-            for (Class cls : types) {
-                if (cls.isAssignableFrom(th.getClass()))
-                    return th;
-
-                for (Throwable n : th.getSuppressed()) {
-                    Throwable found = cause(n, cls);
-
-                    if (found != null)
-                        return found;
-                }
-            }
-
-            if (th.getCause() == th)
-                break;
-        }
-
-        return null;
-    }
-
-    /**
-     *
-     */
-    public interface TestRunnable {
-        /**
-         *
-         */
-        void run() throws Exception;
+    protected void assertForbidden(Runnable r) {
+        GridTestUtils.assertThrowsWithCause(r, SecurityException.class);
     }
 }

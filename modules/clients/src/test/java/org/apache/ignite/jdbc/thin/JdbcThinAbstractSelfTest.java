@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -95,16 +96,6 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             }, SQLException.class, "Result set is closed");
-    }
-
-    /**
-     * Runnable that can throw an exception.
-     */
-    interface RunnableX {
-        /**
-         * @throws Exception On error.
-         */
-        void run() throws Exception;
     }
 
     /**
