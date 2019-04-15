@@ -370,6 +370,9 @@ public class CommandHandler {
     /** Indent for help output. */
     private static final String INDENT = "  ";
 
+    /** Double indent. */
+    private static final String DOUBLE_INDENT = INDENT + INDENT;
+
     /** */
     private static final String NULL = "null";
 
@@ -1506,12 +1509,13 @@ public class CommandHandler {
             }
         }
 
-        String ident = "";
+        String indent = "";
 
         nl();
-        log(ident + "Transaction detailed info:");
+        log(indent + "Transaction detailed info:");
 
-        printTransactionDetailedInfo(res, usedCaches, usedCacheGroups, firstInfo, firstVerboseInfo, states, ident + "    ");
+        printTransactionDetailedInfo(
+            res, usedCaches, usedCacheGroups, firstInfo, firstVerboseInfo, states, indent + DOUBLE_INDENT);
     }
 
     /**
@@ -1523,61 +1527,61 @@ public class CommandHandler {
      * @param firstInfo First info.
      * @param firstVerboseInfo First verbose info.
      * @param states States.
-     * @param ident Ident.
+     * @param indent Indent.
      */
     private void printTransactionDetailedInfo(Map<ClusterNode, VisorTxTaskResult> res, Map<Integer, String> usedCaches,
         Map<Integer, String> usedCacheGroups, VisorTxInfo firstInfo, TxVerboseInfo firstVerboseInfo,
-        Set<TransactionState> states, String ident) {
-        log(ident + "Near XID version: " + firstVerboseInfo.nearXidVersion());
-        log(ident + "Near XID version (UUID): " + firstInfo.getNearXid());
-        log(ident + "Isolation: " + firstInfo.getIsolation());
-        log(ident + "Concurrency: " + firstInfo.getConcurrency());
-        log(ident + "Timeout: " + firstInfo.getTimeout());
-        log(ident + "Initiator node: " + firstVerboseInfo.nearNodeId());
-        log(ident + "Initiator node (consistent ID): " + firstVerboseInfo.nearNodeConsistentId());
-        log(ident + "Label: " + firstInfo.getLabel());
-        log(ident + "Topology version: " + firstInfo.getTopologyVersion());
-        log(ident + "Used caches (ID to name): " + usedCaches);
-        log(ident + "Used cache groups (ID to name): " + usedCacheGroups);
-        log(ident + "States across the cluster: " + states);
-        log(ident + "Transaction topology: ");
+        Set<TransactionState> states, String indent) {
+        log(indent + "Near XID version: " + firstVerboseInfo.nearXidVersion());
+        log(indent + "Near XID version (UUID): " + firstInfo.getNearXid());
+        log(indent + "Isolation: " + firstInfo.getIsolation());
+        log(indent + "Concurrency: " + firstInfo.getConcurrency());
+        log(indent + "Timeout: " + firstInfo.getTimeout());
+        log(indent + "Initiator node: " + firstVerboseInfo.nearNodeId());
+        log(indent + "Initiator node (consistent ID): " + firstVerboseInfo.nearNodeConsistentId());
+        log(indent + "Label: " + firstInfo.getLabel());
+        log(indent + "Topology version: " + firstInfo.getTopologyVersion());
+        log(indent + "Used caches (ID to name): " + usedCaches);
+        log(indent + "Used cache groups (ID to name): " + usedCacheGroups);
+        log(indent + "States across the cluster: " + states);
+        log(indent + "Transaction topology: ");
 
-        printTransactionTopology(res, ident + "    ");
+        printTransactionTopology(res, indent + DOUBLE_INDENT);
     }
 
     /**
      * Prints transaction topology to output.
      *
      * @param res Response.
-     * @param ident Ident.
+     * @param indent Indent.
      */
-    private void printTransactionTopology(Map<ClusterNode, VisorTxTaskResult> res, String ident) {
+    private void printTransactionTopology(Map<ClusterNode, VisorTxTaskResult> res, String indent) {
         for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
-            log(ident + nodeDescription(entry.getKey()) + ':');
+            log(indent + nodeDescription(entry.getKey()) + ':');
 
-            printTransactionMappings(ident + "    ", entry);
+            printTransactionMappings(indent + DOUBLE_INDENT, entry);
         }
     }
 
     /**
      * Prints transaction mappings for specific cluster node to output.
      *
-     * @param ident Ident.
+     * @param indent Indent.
      * @param entry Entry.
      */
-    private void printTransactionMappings(String ident, Map.Entry<ClusterNode, VisorTxTaskResult> entry) {
+    private void printTransactionMappings(String indent, Map.Entry<ClusterNode, VisorTxTaskResult> entry) {
         for (VisorTxInfo info : entry.getValue().getInfos()) {
             TxVerboseInfo verboseInfo = info.getTxVerboseInfo();
 
             if (verboseInfo != null) {
-                log(ident + "Mapping [type=" + verboseInfo.txMappingType() + "]:");
+                log(indent + "Mapping [type=" + verboseInfo.txMappingType() + "]:");
 
-                printTransactionMapping(ident + "    ", info, verboseInfo);
+                printTransactionMapping(indent + DOUBLE_INDENT, info, verboseInfo);
             }
             else {
-                log(ident + "Mapping [type=HISTORICAL]:");
+                log(indent + "Mapping [type=HISTORICAL]:");
 
-                log(ident + "    State: " + info.getState());
+                log(indent + DOUBLE_INDENT + "State: " + info.getState());
             }
         }
     }
@@ -1585,38 +1589,38 @@ public class CommandHandler {
     /**
      * Prints specific transaction mapping to output.
      *
-     * @param ident Ident.
+     * @param indent Indent.
      * @param info Info.
      * @param verboseInfo Verbose info.
      */
-    private void printTransactionMapping(String ident, VisorTxInfo info, TxVerboseInfo verboseInfo) {
-        log(ident + "State: " + info.getState());
+    private void printTransactionMapping(String indent, VisorTxInfo info, TxVerboseInfo verboseInfo) {
+        log(indent + "State: " + info.getState());
 
         if (verboseInfo.txMappingType() == TxMappingType.REMOTE) {
-            log(ident + "Primary node: " + verboseInfo.dhtNodeId());
-            log(ident + "Primary node (consistent ID): " + verboseInfo.dhtNodeConsistentId());
+            log(indent + "Primary node: " + verboseInfo.dhtNodeId());
+            log(indent + "Primary node (consistent ID): " + verboseInfo.dhtNodeConsistentId());
         }
 
         if (!F.isEmpty(verboseInfo.localTxKeys())) {
-            log(ident + "Mapped keys:");
+            log(indent + "Mapped keys:");
 
-            printTransactionKeys(ident + "    ", verboseInfo);
+            printTransactionKeys(indent + DOUBLE_INDENT, verboseInfo);
         }
     }
 
     /**
      * Prints keys of specific transaction mapping to output.
      *
-     * @param ident Ident.
+     * @param indent Indent.
      * @param verboseInfo Verbose info.
      */
-    private void printTransactionKeys(String ident, TxVerboseInfo verboseInfo) {
+    private void printTransactionKeys(String indent, TxVerboseInfo verboseInfo) {
         for (TxVerboseKey txVerboseKey : verboseInfo.localTxKeys()) {
-            log(ident + (txVerboseKey.read() ? "Read" : "Write") +
+            log(indent + (txVerboseKey.read() ? "Read" : "Write") +
                 " [lock=" + txVerboseKey.lockType() + "]: " + txVerboseKey.txKey());
 
             if (txVerboseKey.lockType() == TxKeyLockType.AWAITS_LOCK)
-                log(ident + "    Lock owner XID: " + txVerboseKey.ownerVersion());
+                log(indent + DOUBLE_INDENT + "Lock owner XID: " + txVerboseKey.ownerVersion());
         }
     }
 
@@ -1632,8 +1636,8 @@ public class CommandHandler {
             log("Transaction was found in completed versions history of the following nodes:");
 
             for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
-                log("    " + nodeDescription(entry.getKey()) + ':');
-                log("        State: " + entry.getValue().getInfos().get(0).getState());
+                log(DOUBLE_INDENT + nodeDescription(entry.getKey()) + ':');
+                log(DOUBLE_INDENT + DOUBLE_INDENT + "State: " + entry.getValue().getInfos().get(0).getState());
             }
         }
     }
