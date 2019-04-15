@@ -280,7 +280,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             Segment seg = segX = segment(pageIdx);
 
-            absPtr = seg.absolute(pageIdx);
+            absPtr = seg.absolutePage(pageIdx);
         }
 
         // No segments contained a free page.
@@ -292,7 +292,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 relPtr = allocSeg.allocateFreePage(flags);
 
                 if (relPtr != INVALID_REL_PTR) {
-                    absPtr = allocSeg.absolute(PageIdUtils.pageIndex(relPtr));
+                    absPtr = allocSeg.absolutePage(PageIdUtils.pageIndex(relPtr));
 
                     break;
                 }
@@ -324,7 +324,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         // Assign page ID according to flags and partition ID.
         long pageId = PageIdUtils.pageId(partId, flags, (int)relPtr);
 
-        writePageId(absPtr, pageId);
+        writePageId(segX.header(absPtr), pageId);
 
         // TODO pass an argument to decide whether the page should be cleaned.
         GridUnsafe.setMemory(absPtr, pageSize, (byte)0);
@@ -393,15 +393,13 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /**
-     * Writes page ID to the page at the given absolute position.
+     * Writes page ID to the page at the given absolutePage position.
      *
-     * @param absPtr Absolute memory pointer to the page header.
+     * @param headerAbsPtr Absolute memory pointer to the page header.
      * @param pageId Page ID to write.
      */
-    private void writePageId(long absPtr, long pageId) {
-        Segment seg = segment(PageIdUtils.pageIndex(pageId));
-
-        GridUnsafe.putLong(seg.header(absPtr) + PAGE_ID_OFFSET, pageId);
+    private void writePageId(long headerAbsPtr, long pageId) {
+        GridUnsafe.putLong(headerAbsPtr+ PAGE_ID_OFFSET, pageId);
     }
 
     /**
@@ -598,10 +596,10 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         Segment seg = segment(pageIdx);
 
-        long absPtr = seg.absolute(pageIdx);
+        long headerAbsPtr = seg.absoluteHeader(pageIdx);
 
         // Second, write clean relative pointer instead of page ID.
-        writePageId(absPtr, relPtr);
+        writePageId(headerAbsPtr, relPtr);
 
         // Third, link the free page.
         while (true) {
@@ -609,7 +607,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             long freePageRelPtr = freePageRelPtrMasked & RELATIVE_PTR_MASK;
 
-            GridUnsafe.putLong(absPtr, freePageRelPtr);
+            GridUnsafe.putLong(headerAbsPtr, freePageRelPtr);
 
             if (freePageListHead.compareAndSet(freePageRelPtrMasked, relPtr)) {
                 allocatedPages.decrementAndGet();
@@ -635,7 +633,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
                 Segment seg = segment(pageIdx);
 
-                long freePageAbsPtr = seg.absolute(pageIdx);
+                long freePageAbsPtr = seg.absoluteHeader(pageIdx);
                 long nextFreePageRelPtr = GridUnsafe.getLong(freePageAbsPtr) & ADDRESS_MASK;
                 long cnt = ((freePageRelPtrMasked & COUNTER_MASK) + COUNTER_INC) & COUNTER_MASK;
 
@@ -779,10 +777,10 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         /**
          * @param pageIdx Page index.
-         * @return Page absolute pointer.
+         * @return Page absolutePage pointer.
          */
         private long acquirePage(int pageIdx) {
-            long absPtr = absolute(pageIdx);
+            long absPtr = absolutePage(pageIdx);
 
             assert absPtr % 8 == 0 : absPtr;
 
@@ -802,12 +800,24 @@ public class PageMemoryNoStoreImpl implements PageMemory {
          * @param pageIdx Page index.
          * @return Absolute pointer.
          */
-        private long absolute(int pageIdx) {
+        private long absolutePage(int pageIdx) {
             pageIdx &= IDX_MASK;
 
             long off = ((long)pageIdx) * pageSize;
 
             return pagesBase + off;
+        }
+
+        /**
+         * @param pageIdx Page index.
+         * @return Absolute pointer.
+         */
+        private long absoluteHeader(int pageIdx) {
+            pageIdx &= IDX_MASK;
+
+            long off = ((long)pageIdx) * PAGE_OVERHEAD;
+
+            return headerBase + off;
         }
 
         /**
@@ -858,14 +868,13 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
                     assert pageIdx != INVALID_REL_PTR;
 
-                    writePageId(absPtr, pageIdx);
+                    long headerAbsPtr = header(absPtr);
 
-                    GridUnsafe.putLong(absPtr, PAGE_MARKER);
+                    writePageId(headerAbsPtr, pageIdx);
 
-                    // Cleanup page header.
-                    GridUnsafe.setMemory(header(absPtr), PAGE_OVERHEAD, (byte)0);
+                    GridUnsafe.putLong(headerAbsPtr, PAGE_MARKER);
 
-                    rwLock.init(header(absPtr) + LOCK_OFFSET, tag);
+                    rwLock.init(headerAbsPtr + LOCK_OFFSET, tag);
 
                     allocatedPages.incrementAndGet();
 
