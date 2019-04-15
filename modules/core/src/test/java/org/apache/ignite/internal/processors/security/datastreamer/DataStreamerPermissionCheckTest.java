@@ -47,7 +47,7 @@ public class DataStreamerPermissionCheckTest extends AbstractCacheOperationPermi
     }
 
     /** Client mode. */
-    @Parameter(0)
+    @Parameter()
     public boolean clientMode;
 
     /** */

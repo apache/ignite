@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.security.compute.closure;
 
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -84,34 +83,28 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
             () -> compute(localIgnite(), nodesToCheck()).broadcast((IgniteRunnable) createRunner()),
             () -> compute(localIgnite(), nodesToCheck()).broadcastAsync((IgniteRunnable) createRunner()).get(),
             () -> {
-                for (UUID id : nodesToCheck()) {
+                for (UUID id : nodesToCheck())
                     compute(localIgnite(), id).call(createRunner());
-                }
             },
             () -> {
-                for (UUID id : nodesToCheck()) {
+                for (UUID id : nodesToCheck())
                     compute(localIgnite(), id).callAsync(createRunner()).get();
-                }
             },
             () -> {
-                for (UUID id : nodesToCheck()) {
+                for (UUID id : nodesToCheck())
                     compute(localIgnite(), id).run(createRunner());
-                }
             },
             () -> {
-                for (UUID id : nodesToCheck()) {
+                for (UUID id : nodesToCheck())
                     compute(localIgnite(), id).runAsync(createRunner()).get();
-                }
             },
             () -> {
-                for (UUID id : nodesToCheck()) {
+                for (UUID id : nodesToCheck())
                     compute(localIgnite(), id).apply(createRunner(), new Object());
-                }
             },
             () -> {
-                for (UUID id : nodesToCheck()) {
+                for (UUID id : nodesToCheck())
                     compute(localIgnite(), id).applyAsync(createRunner(), new Object()).get();
-                }
             }
         ).map(RegisterExecAndForward::new);
     }

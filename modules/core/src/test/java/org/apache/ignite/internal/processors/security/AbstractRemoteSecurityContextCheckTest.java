@@ -34,15 +34,12 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.plugin.security.SecurityException;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
@@ -296,10 +293,12 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         }
     }
 
+    /** */
     protected RegisterExecAndForward createRunner(String srvName) {
         return new RegisterExecAndForward<>(srvName, endpoints());
     }
 
+    /** */
     protected RegisterExecAndForward createRunner() {
         return new RegisterExecAndForward<>(endpoints());
     }

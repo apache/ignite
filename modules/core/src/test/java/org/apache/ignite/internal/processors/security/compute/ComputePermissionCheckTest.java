@@ -249,22 +249,27 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
             this.igniteFut = igniteFut;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean cancel(boolean mayInterruptIfRunning) {
             return igniteFut.cancel();
         }
 
+        /** {@inheritDoc} */
         @Override public boolean isCancelled() {
             return igniteFut.isCancelled();
         }
 
+        /** {@inheritDoc} */
         @Override public boolean isDone() {
             return igniteFut.isDone();
         }
 
+        /** {@inheritDoc} */
         @Override public T get() throws InterruptedException, ExecutionException {
             return igniteFut.get();
         }
 
+        /** {@inheritDoc} */
         @Override public T get(long timeout,
             @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
             return igniteFut.get(timeout, unit);

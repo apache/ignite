@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -94,7 +93,7 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
             register();
 
             localIgnite().<Integer, Integer>cache(CACHE_NAME).loadCache(
-                new RegisterExecAndForward<Integer, Integer>(SRV_CHECK, endpoints())
+                new RegisterExecAndForward<>(SRV_CHECK, endpoints())
             );
         };
 

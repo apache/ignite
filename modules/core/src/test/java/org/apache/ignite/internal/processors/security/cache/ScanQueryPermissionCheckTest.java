@@ -44,7 +44,7 @@ public class ScanQueryPermissionCheckTest extends AbstractCacheOperationPermissi
     }
 
     /** Client mode. */
-    @Parameter(0)
+    @Parameter()
     public boolean clientMode;
 
     /** */

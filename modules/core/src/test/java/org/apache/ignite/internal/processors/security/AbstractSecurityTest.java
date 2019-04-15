@@ -108,7 +108,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Method {@link TestRunnable#run()} should throw {@link SecurityException}.
+     * Method {@link Runnable#run()} should throw {@link SecurityException}.
      *
      * @param r Runnable.
      */
