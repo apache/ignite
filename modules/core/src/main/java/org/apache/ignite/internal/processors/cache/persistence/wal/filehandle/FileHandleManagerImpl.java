@@ -77,9 +77,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
     /** */
     private final RecordSerializer serializer;
     /** Current handle supplier. */
-    private final Supplier<FileWriteHandle> currentHandleSupplier;
+    private final Supplier<FileWriteHandle> currHandleSupplier;
     /** WAL buffer size. */
-    private final int walBufferSize;
+    private final int walBufSize;
     /** WAL segment size in bytes. . This is maximum value, actual segments may be shorter. */
     private final long maxWalSegmentSize;
     /** Fsync delay. */
@@ -91,9 +91,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
      * @param mmap Mmap.
      * @param lastWALPtr Last WAL pointer.
      * @param serializer Serializer.
-     * @param currentHandleSupplier Current handle supplier.
+     * @param currHandleSupplier Current handle supplier.
      * @param mode WAL mode.
-     * @param walBufferSize WAL buffer size.
+     * @param walBufSize WAL buffer size.
      * @param maxWalSegmentSize Max WAL segment size.
      * @param fsyncDelay Fsync delay.
      */
@@ -103,9 +103,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
         boolean mmap,
         Supplier<WALPointer> lastWALPtr,
         RecordSerializer serializer,
-        Supplier<FileWriteHandle> currentHandleSupplier,
+        Supplier<FileWriteHandle> currHandleSupplier,
         WALMode mode,
-        int walBufferSize,
+        int walBufSize,
         long maxWalSegmentSize,
         long fsyncDelay) {
         this.cctx = cctx;
@@ -115,8 +115,8 @@ public class FileHandleManagerImpl implements FileHandleManager {
         this.mmap = mmap;
         this.lastWALPtr = lastWALPtr;
         this.serializer = serializer;
-        this.currentHandleSupplier = currentHandleSupplier;
-        this.walBufferSize = walBufferSize;
+        this.currHandleSupplier = currHandleSupplier;
+        this.walBufSize = walBufSize;
         this.maxWalSegmentSize = maxWalSegmentSize;
         this.fsyncDelay = fsyncDelay;
         walWriter = new WALWriter(log);
@@ -152,7 +152,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
             rbuf = new SegmentedRingByteBuffer(buf, metrics);
         }
         else
-            rbuf = new SegmentedRingByteBuffer(walBufferSize, maxWalSegmentSize, DIRECT, metrics);
+            rbuf = new SegmentedRingByteBuffer(walBufSize, maxWalSegmentSize, DIRECT, metrics);
 
         rbuf.init(position);
 
@@ -192,7 +192,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
      * @return Current handle.
      */
     private FileWriteHandleImpl currentHandle() {
-        return (FileWriteHandleImpl)currentHandleSupplier.get();
+        return (FileWriteHandleImpl)currHandleSupplier.get();
     }
 
     /** {@inheritDoc} */
@@ -351,7 +351,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
                     updateHeartbeat();
 
-                    List<SegmentedRingByteBuffer.ReadSegment> segs = currentHandle().buf.poll(pos);
+                    FileWriteHandleImpl hnd = currentHandle();
+
+                    List<SegmentedRingByteBuffer.ReadSegment> segs = hnd.buf.poll(pos);
 
                     if (segs == null) {
                         unparkWaiters(pos);
@@ -359,13 +361,15 @@ public class FileHandleManagerImpl implements FileHandleManager {
                         continue;
                     }
 
+                    long written = 0;
+
                     for (int i = 0; i < segs.size(); i++) {
                         SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
 
                         updateHeartbeat();
 
                         try {
-                            writeBuffer(seg.position(), seg.buffer());
+                            written += writeBuffer(seg.position(), seg.buffer());
                         }
                         catch (Throwable e) {
                             log.error("Exception in WAL writer thread:", e);
@@ -373,9 +377,17 @@ public class FileHandleManagerImpl implements FileHandleManager {
                             err = e;
                         }
                         finally {
+                            if (err != null && i == segs.size() - 1 && written > 0) {
+                                hnd.written += written;
+
+                                metrics.onWalBytesWritten((int)written);
+
+                                assert hnd.written == hnd.fileIO.position();
+                            }
+
                             seg.release();
 
-                            long p = pos <= UNCONDITIONAL_FLUSH || err != null ? Long.MAX_VALUE : currentHandle().written;
+                            long p = pos <= UNCONDITIONAL_FLUSH || err != null ? Long.MAX_VALUE : hnd.written;
 
                             unparkWaiters(p);
                         }
@@ -501,10 +513,11 @@ public class FileHandleManagerImpl implements FileHandleManager {
          * @param pos Position in file to start write from. May be checked against actual position to wait previous
          * writes to complete.
          * @param buf Buffer to write to file.
+         * @return Amount of written bytes.
          * @throws StorageException If failed.
          * @throws IgniteCheckedException If failed.
          */
-        private void writeBuffer(long pos, ByteBuffer buf) throws StorageException, IgniteCheckedException {
+        private long writeBuffer(long pos, ByteBuffer buf) throws StorageException, IgniteCheckedException {
             FileWriteHandleImpl hdl = currentHandle();
 
             assert hdl.fileIO != null : "Writing to a closed segment.";
@@ -542,14 +555,12 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
             assert size > 0 : size;
 
+            long written;
+
             try {
                 assert hdl.written == hdl.fileIO.position();
 
-                hdl.written += hdl.fileIO.writeFully(buf);
-
-                metrics.onWalBytesWritten(size);
-
-                assert hdl.written == hdl.fileIO.position();
+                written = hdl.fileIO.writeFully(buf);
             }
             catch (IOException e) {
                 StorageException se = new StorageException("Failed to write buffer.", e);
@@ -558,6 +569,8 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
                 throw se;
             }
+
+            return written;
         }
 
         /**
