@@ -89,73 +89,6 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testActivationOnReadOnlyActivatedClusterShouldBeIgnored() throws Exception {
-        IgniteEx grid = startGrid(0);
-
-        grid.cluster().activeReadOnly();
-
-        checkClusterInReadOnlyMode(true, grid);
-
-        grid.cluster().active(true);
-
-        checkClusterInReadOnlyMode(true, grid);
-    }
-
-    /** */
-    @Test
-    public void testReadOnlyActivationOnActiveClusterFails() throws Exception {
-        startGrid(0).cluster().active(true);
-
-        GridTestUtils.assertThrows(
-            log,
-            () -> {
-                grid(0).cluster().activeReadOnly();
-
-                return null;
-            },
-            IgniteException.class,
-            "Cluster already active!"
-        );
-    }
-
-    /** */
-    @Test
-    public void testClusterForgetReadOnlyStateAfterDeactivation() throws Exception {
-        IgniteEx grid = startGrid(0);
-
-        grid.cluster().activeReadOnly();
-
-        checkClusterInReadOnlyMode(true, grid);
-
-        grid.cluster().active(false);
-
-        assertFalse("Grid should forget previous read-only mode after reboot!", grid.cluster().readOnly());
-
-        grid.cluster().active(true);
-
-        checkClusterInReadOnlyMode(false, grid);
-    }
-
-    /** */
-    @Test
-    public void testClusterForgetReadOnlyStateOnRestart() throws Exception {
-        IgniteEx grid = startGrid(0);
-
-        grid(0).cluster().activeReadOnly();
-
-        checkClusterInReadOnlyMode(true, grid);
-
-        stopGrid(0);
-        grid = startGrid(0);
-
-        assertTrue("Grid should be active!", grid.cluster().active());
-        assertFalse("Grid should forget previous read-only mode after reboot!", grid.cluster().readOnly());
-
-        checkClusterInReadOnlyMode(false, grid);
-    }
-
-    /** */
-    @Test
     public void testReadOnlyFromClient() throws Exception {
         startGrids(SERVER_NODES_COUNT);
         startGrid("client");
@@ -177,14 +110,6 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
         client.cluster().readOnly(false);
 
         checkClusterInReadOnlyMode(false, client);
-    }
-
-    /** */
-    @Test
-    public void testActivateReadOnly() throws Exception {
-        startGrids(SERVER_NODES_COUNT).cluster().activeReadOnly();
-
-        checkClusterInReadOnlyMode(true, grid(0));
     }
 
     /** */

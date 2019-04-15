@@ -21,9 +21,6 @@ package org.apache.ignite.internal.processors.rest.request;
  *
  */
 public class GridRestReadOnlyChangeModeRequest extends GridRestRequest {
-    /** Active. */
-    private boolean active;
-
     /** Request current state. */
     private boolean reqCurrentMode;
 
@@ -38,16 +35,6 @@ public class GridRestReadOnlyChangeModeRequest extends GridRestRequest {
     /** */
     public boolean isReqCurrentMode() {
         return reqCurrentMode;
-    }
-
-    /** */
-    public void active() {
-        active = true;
-    }
-
-    /** */
-    public boolean isActive() {
-        return active;
     }
 
     /** */

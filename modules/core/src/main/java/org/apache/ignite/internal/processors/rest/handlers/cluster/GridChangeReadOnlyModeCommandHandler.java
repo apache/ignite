@@ -31,14 +31,13 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_READ_ONLY_MODE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_READ_ONLY_ACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_READ_ONLY_DISABLE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_READ_ONLY_ENABLE;
 
 public class GridChangeReadOnlyModeCommandHandler extends GridRestCommandHandlerAdapter {
     /** Commands. */
     private static final Collection<GridRestCommand> COMMANDS =
-        U.sealList(CLUSTER_CURRENT_READ_ONLY_MODE, CLUSTER_READ_ONLY_ACTIVATE, CLUSTER_READ_ONLY_DISABLE, CLUSTER_READ_ONLY_ENABLE);
+        U.sealList(CLUSTER_CURRENT_READ_ONLY_MODE, CLUSTER_READ_ONLY_DISABLE, CLUSTER_READ_ONLY_ENABLE);
 
     /**
      * @param ctx Context.
@@ -64,13 +63,6 @@ public class GridChangeReadOnlyModeCommandHandler extends GridRestCommandHandler
             switch (req.command()) {
                 case CLUSTER_CURRENT_READ_ONLY_MODE:
                     res.setResponse(ctx.grid().cluster().readOnly());
-
-                    break;
-
-                case CLUSTER_READ_ONLY_ACTIVATE:
-                    ctx.grid().cluster().activeReadOnly();
-
-                    res.setResponse("Cluster activated in read-only mode.");
 
                     break;
 

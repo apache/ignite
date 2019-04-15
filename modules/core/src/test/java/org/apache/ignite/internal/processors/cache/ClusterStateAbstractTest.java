@@ -220,19 +220,6 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      */
     @Test
     public void testActivationFromClient() throws Exception {
-        testActivationFromClient(false);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadOnlyActivationFromClient() throws Exception {
-        testActivationFromClient(true);
-    }
-
-    /** */
-    private void testActivationFromClient(boolean readOnly) throws Exception {
         forbidden.add(GridDhtPartitionSupplyMessage.class);
         forbidden.add(GridDhtPartitionDemandMessage.class);
 
@@ -250,28 +237,23 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
         forbidden.clear();
 
-        if(readOnly)
-            cl.cluster().activeReadOnly();
-        else
-            cl.cluster().active(true);
+        cl.cluster().active(true);
 
         awaitPartitionMapExchange();
 
-        if (!readOnly) {
-            IgniteCache<Object, Object> cache = cl.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = cl.cache(CACHE_NAME);
+
+        for (int k = 0; k < ENTRY_CNT; k++)
+            cache.put(k, k);
+
+        for (int g = 0; g < GRID_CNT + 1; g++) {
+            // Tests that state changes are propagated to existing and new nodes.
+            assertTrue(grid(g).cluster().active());
+
+            IgniteCache<Object, Object> cache0 = grid(g).cache(CACHE_NAME);
 
             for (int k = 0; k < ENTRY_CNT; k++)
-                cache.put(k, k);
-
-            for (int g = 0; g < GRID_CNT + 1; g++) {
-                // Tests that state changes are propagated to existing and new nodes.
-                assertTrue(grid(g).cluster().active());
-
-                IgniteCache<Object, Object> cache0 = grid(g).cache(CACHE_NAME);
-
-                for (int k = 0; k < ENTRY_CNT; k++)
-                    assertEquals(k, cache0.get(k));
-            }
+                assertEquals(k,  cache0.get(k));
         }
 
         cl.cluster().active(false);

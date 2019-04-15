@@ -415,11 +415,6 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public void activeReadOnly() throws IgniteException {
-        cluster.activeReadOnly();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean readOnly() {
         return cluster.readOnly();
     }

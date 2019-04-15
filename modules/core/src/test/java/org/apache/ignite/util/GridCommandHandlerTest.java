@@ -408,10 +408,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         testOut.reset();
 
-        ignite.cluster().active(false);
-        ignite.cluster().activeReadOnly();
+        ignite.cluster().readOnly(true);
 
-        assertTrue(ignite.cluster().active());
         assertTrue(ignite.cluster().readOnly());
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
