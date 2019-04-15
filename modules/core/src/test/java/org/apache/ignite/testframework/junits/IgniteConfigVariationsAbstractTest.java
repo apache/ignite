@@ -92,19 +92,17 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         return false;
     }
 
-    /** Check test name and initialize configs. */
+    /** Check test name is not null. */
     @Before
-    public void checkInit(){
+    public void checkTestName(){
         assert getName() != null : "getName returned null";
-        assert testsCfg != null : "~~!   " + testsCfg.description();
-        assert testsCfgInjected != null : "~~!   " + testsCfgInjected.description();
-
-        testsCfg = testsCfgInjected;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        assert testsCfg != null;
+        assert testsCfgInjected != null;
+
+        testsCfg = testsCfgInjected;
 
         if (Ignition.allGrids().size() != testsCfg.gridCount()) {
             info("All nodes will be stopped, new " + testsCfg.gridCount() + " nodes will be started.");
