@@ -453,7 +453,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         statHolder.trackLogicalRead(absPtr);
 
-        return absPtr;
+        return seg.header(absPtr);
     }
 
     /** {@inheritDoc} */
