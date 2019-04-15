@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing;
+package org.apache.ignite.ml.preprocessing.developer;
 
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
@@ -25,6 +26,8 @@ import org.apache.ignite.ml.structures.LabeledVector;
  *
  * Feature values greater than the threshold are binarized to 1.0;
  * values equal to or less than the threshold are binarized to 0.0.
+ *
+ * NOTE: This is a part of Developer API for internal needs.
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.

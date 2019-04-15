@@ -26,8 +26,8 @@ import org.apache.ignite.ml.math.isolve.lsqr.LSQRResult;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.apache.ignite.ml.preprocessing.PatchedPreprocessor;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 

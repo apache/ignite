@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.DatasetMapping;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -75,11 +76,10 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
         IgniteBiFunction<Integer, ? super IgniteModel<I, O>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>> datasetMapping,
         IgniteBiPredicate<Integer, IgniteModel<I, O>> shouldStop,
         IgniteFunction<O, I> out2In) {
-        return null;
-            /*new SameTrainersSequentialComposition<>(CompositionUtils.unsafeCoerce(tr),
+        return new SameTrainersSequentialComposition<>(CompositionUtils.unsafeCoerce(tr),
             datasetMapping,
             shouldStop,
-            out2In);*/
+            out2In);
     }
 
     /** {@inheritDoc} */
@@ -89,7 +89,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
         IgniteModel<I, O1> mdl1 = tr1.fit(datasetBuilder, preprocessor);
         IgniteFunction<LabeledVector<L>, LabeledVector<L>> mapping = datasetMapping.apply(0, mdl1);
 
-        IgniteModel<O1, O2> mdl2 = null; //tr2.fit(datasetBuilder, preprocessor.map(mapping));
+        IgniteModel<O1, O2> mdl2 = tr2.fit(datasetBuilder, preprocessor.map(mapping));
 
         return new ModelsSequentialComposition<>(mdl1, mdl2);
     }
@@ -104,8 +104,8 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     public TrainersSequentialComposition(DatasetTrainer<? extends IgniteModel<I, O1>, L> tr1,
         DatasetTrainer<? extends IgniteModel<O1, O2>, L> tr2,
         IgniteFunction<? super IgniteModel<I, O1>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>> datasetMapping) {
-        //this.tr1 = CompositionUtils.unsafeCoerce(tr1);
-        //this.tr2 = CompositionUtils.unsafeCoerce(tr2);
+        this.tr1 = CompositionUtils.unsafeCoerce(tr1);
+        this.tr2 = CompositionUtils.unsafeCoerce(tr2);
         this.datasetMapping = (i, mdl) -> datasetMapping.apply(mdl);
     }
 
@@ -118,8 +118,8 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     public TrainersSequentialComposition(DatasetTrainer<? extends IgniteModel<I, O1>, L> tr1,
         DatasetTrainer<? extends IgniteModel<O1, O2>, L> tr2,
         IgniteBiFunction<Integer, ? super IgniteModel<I, O1>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>> datasetMapping) {
-        //this.tr1 = CompositionUtils.unsafeCoerce(tr1);
-       // this.tr2 = CompositionUtils.unsafeCoerce(tr2);
+        this.tr1 = CompositionUtils.unsafeCoerce(tr1);
+        this.tr2 = CompositionUtils.unsafeCoerce(tr2);
         this.datasetMapping = datasetMapping;
     }
 
@@ -148,8 +148,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
         IgniteModel<I, O1> firstUpdated = tr1.update(mdl.firstModel(), datasetBuilder, preprocessor);
         IgniteFunction<LabeledVector<L>, LabeledVector<L>> mapping = datasetMapping.apply(0, firstUpdated);
 
-        IgniteModel<O1, O2> secondUpdated = tr2.update(mdl.secondModel(), datasetBuilder, null
-            //preprocessor.map(mapping)
+        IgniteModel<O1, O2> secondUpdated = tr2.update(mdl.secondModel(), datasetBuilder, preprocessor.map(mapping)
         );
 
         return new ModelsSequentialComposition<>(firstUpdated, secondUpdated);
@@ -220,8 +219,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
             List<IgniteModel<I, O>> mdls = new ArrayList<>();
 
             while (!shouldStop.apply(i, currMdl)) {
-                currMdl = tr.fit(datasetBuilder, null
-                    //preprocessor.map(mapping)
+                currMdl = tr.fit(datasetBuilder, preprocessor.map(mapping)
                 );
                 mdls.add(currMdl);
                 if (shouldStop.apply(i, currMdl))
@@ -242,7 +240,6 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
      * @return Trainer coerced to {@code DatasetTrainer<IgniteModel<I, O>, L>}.
      */
     public DatasetTrainer<IgniteModel<I, O2>, L> unsafeSimplyTyped() {
-        return null;
-            //CompositionUtils.unsafeCoerce(this);
+        return CompositionUtils.unsafeCoerce(this);
     }
 }

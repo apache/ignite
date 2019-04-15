@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -173,18 +172,6 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
     }
 
     /**
-     * Map vectorizer answer. This method should be called after creating basic vectorizer.
-     * NOTE: function "func" should be on ignite servers.
-     *
-     * @param func mapper.
-     * @param <L1> Type of new label.
-     * @return mapped vectorizer.
-     */
-    public <L1> Vectorizer<K, V, C, L1> map(IgniteFunction<LabeledVector<L>, LabeledVector<L1>> func) {
-        return new MappedVectorizer<>(this, func);
-    }
-
-    /**
      * Shotrcuts for coordinates in feature vector.
      */
     public enum LabelCoordinate {
@@ -241,37 +228,6 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
      */
     protected Vector createVector(int size) {
         return new DenseVector(size);
-    }
-
-    /**
-     * @param <K> Type of key.
-     * @param <V> Type of value.
-     * @param <C> Type of coordinates.
-     * @param <L0> Type of original label.
-     * @param <L1> Type of mapped label.
-     */
-    private static class MappedVectorizer<K, V, C extends Serializable, L0, L1> extends VectorizerAdapter<K, V, C, L1> {
-        /** Original vectorizer. */
-        protected final Vectorizer<K, V, C, L0> original;
-
-        /** Vectors mapping. */
-        private final IgniteFunction<LabeledVector<L0>, LabeledVector<L1>> mapping;
-
-        /**
-         * Creates an instance of MappedVectorizer.
-         */
-        public MappedVectorizer(Vectorizer<K, V, C, L0> original,
-            IgniteFunction<LabeledVector<L0>, LabeledVector<L1>> andThen) {
-
-            this.original = original;
-            this.mapping = andThen;
-        }
-
-        /** {@inheritDoc} */
-        @Override public LabeledVector<L1> apply(K key, V value) {
-            LabeledVector<L0> origVec = original.apply(key, value);
-            return mapping.apply(origVec);
-        }
     }
 
     /**

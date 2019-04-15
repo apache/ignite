@@ -29,8 +29,8 @@ import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetD
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.preprocessing.PatchedPreprocessor;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.junit.Test;
 

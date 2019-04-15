@@ -89,19 +89,4 @@ public class VectorizerTest {
         assertArrayEquals(res.features().asArray(), new double[] {1., 99.}, 0.);
         assertEquals(0., res.label(), 0.);
     }
-
-    /** */
-    @Test
-    public void vectorizerCanBeMapped() {
-        double[] features = new double[]{0., 1., 2.};
-        Vectorizer<Integer, double[], Integer, double[]> vectorizer = new DoubleArrayVectorizer<Integer>()
-            .labeled(Vectorizer.LabelCoordinate.FIRST)
-            .map(v -> v.features().labeled(new double[] {v.label()}));
-
-
-        LabeledVector<double[]> res = vectorizer.apply(1, features);
-        assertEquals(res.features().size(), 2);
-        assertArrayEquals(res.features().asArray(), new double[] {1., 2.}, 0.);
-        assertArrayEquals(new double[] {0.}, res.label(), 0.);
-    }
 }
