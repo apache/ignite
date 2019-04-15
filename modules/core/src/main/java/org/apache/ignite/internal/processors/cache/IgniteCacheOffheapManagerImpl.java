@@ -1687,6 +1687,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 }
 
                 case NOOP:
+                case IN_PLACE:
                     break;
 
                 default:

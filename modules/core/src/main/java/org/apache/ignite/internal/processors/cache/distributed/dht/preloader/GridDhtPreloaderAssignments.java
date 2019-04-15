@@ -81,7 +81,6 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtPreloaderAssignments.class, this, "exchId", exchangeId,
-            "super", super.toString());
+        return S.toString(GridDhtPreloaderAssignments.class, this, "super", super.toString());
     }
 }

@@ -141,6 +141,9 @@ public interface IgniteTree<L, T> {
         REMOVE,
 
         /** */
-        PUT
+        PUT,
+
+        /** */
+        IN_PLACE
     }
 }

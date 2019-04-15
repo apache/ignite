@@ -3775,6 +3775,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     break;
 
                 case NOOP:
+                case IN_PLACE:
                     return;
 
                 default:

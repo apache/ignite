@@ -305,7 +305,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      * Test scenario when deferred removal queue is cleared during rebalance leading to inconsistencies.
      */
     @Test
-    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates() throws Exception {
+    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_RemoveQueueCleared() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL, "1000");
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
@@ -369,10 +369,10 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     }
 
     /**
-     * Test scenario when deferred removal queue is cleared during rebalance leading to inconsistencies.
+     * Test scenario when moving partition is not cleared on specific scenario.
      */
     @Test
-    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates2() throws Exception {
+    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_MovingPartitionNotCleared() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL, "1000");
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
@@ -436,6 +436,88 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             spi.stopBlock();
 
             // While message is delayed topology version shouldn't change to ideal.
+            awaitPartitionMapExchange();
+
+            assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL);
+            System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+        }
+    }
+
+    /**
+     * Test scenario when moving partition is not cleared on specific scenario.
+     */
+    @Test
+    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_CheckpointDuringRebalance() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL, "1000");
+        System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
+
+        try {
+            backups = 2;
+
+            Ignite crd = startGridsMultiThreaded(SERVER_NODES);
+
+            int[] primaryParts = crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(crd.cluster().localNode());
+
+            IgniteCache<Object, Object> cache = crd.cache(DEFAULT_CACHE_NAME);
+
+            List<Integer> p1Keys = partitionKeys(cache, primaryParts[0], 2, 0);
+            List<Integer> p2Keys = partitionKeys(cache, primaryParts[1], 2, 0);
+
+            cache.put(p1Keys.get(0), 0); // Will be historically rebalanced.
+            cache.put(p1Keys.get(1), 1);
+
+            forceCheckpoint();
+
+            Ignite backup = backupNode(p1Keys.get(0), DEFAULT_CACHE_NAME);
+
+            final String backupName = backup.name();
+
+            assertSame(backup, backupNode(p2Keys.get(0), DEFAULT_CACHE_NAME));
+
+            stopGrid(true, backup.name());
+
+            cache.put(p1Keys.get(1), 2);
+            cache.put(p2Keys.get(1), 1); // Will be fully rebalanced.
+
+            TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(crd);
+
+            // Prevent rebalance completion.
+            spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    String name = (String)node.attributes().get(ATTR_IGNITE_INSTANCE_NAME);
+
+                    if (name.equals(backupName) && msg instanceof GridDhtPartitionSupplyMessage) {
+                        GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
+
+                        Map<Integer, CacheEntryInfoCollection> infos =  U.field(msg0, "infos");
+
+                        return infos.keySet().contains(primaryParts[0]); // Delay historical rebalance.
+                    }
+
+                    return false;
+                }
+            });
+
+            backup = startGrid(backupName);
+
+            spi.waitForBlocked();
+
+            forceCheckpoint(backup);
+
+            spi.stopBlock();
+
+            // While message is delayed topology version shouldn't change to ideal.
+            awaitPartitionMapExchange();
+
+            assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
+
+            stopGrid(true, backupName);
+
+            backup = startGrid(backupName);
+
             awaitPartitionMapExchange();
 
             assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
