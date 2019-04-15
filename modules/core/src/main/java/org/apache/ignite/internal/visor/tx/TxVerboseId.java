@@ -110,8 +110,10 @@ public class TxVerboseId extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
         uuid = U.readGridUuid(in);
         gridCacheVer = (GridCacheVersion)in.readObject();
     }

@@ -189,8 +189,10 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
         op = VisorTxOperation.fromOrdinal(in.readByte());
         limit = fixNull(in.readInt());
         minDuration = fixNull(in.readLong());

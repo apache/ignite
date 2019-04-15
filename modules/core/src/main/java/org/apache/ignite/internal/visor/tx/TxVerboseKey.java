@@ -102,7 +102,9 @@ public class TxVerboseKey extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
     ) throws IOException, ClassNotFoundException {
         txKey = U.readString(in);
         lockType = TxKeyLockType.fromOrdinal(in.readByte());
