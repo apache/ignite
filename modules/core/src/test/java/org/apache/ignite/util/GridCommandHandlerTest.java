@@ -1554,8 +1554,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String outputStr = testOut.toString();
 
-        assertTrue(outputStr.contains("idle_verify failed on 1 node."));
-        assertTrue(outputStr.contains("idle_verify check has finished, no conflicts have been found."));
+        assertTrue(outputStr, outputStr.contains("idle_verify failed on 1 node."));
+        assertTrue(outputStr, outputStr.contains("idle_verify check has finished, no conflicts have been found."));
     }
 
     /** */
