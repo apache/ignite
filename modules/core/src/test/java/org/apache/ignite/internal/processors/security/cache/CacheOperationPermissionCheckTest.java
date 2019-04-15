@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
+import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -38,17 +39,13 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
  */
 @RunWith(JUnit4.class)
 public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
-    /**
-     * @throws Exception If fail.
-     */
+    /** */
     @Test
     public void testServerNode() throws Exception {
         testCrudCachePermissions(false);
     }
 
-    /**
-     * @throws Exception If fail.
-     */
+    /** */
     @Test
     public void testClientNode() throws Exception {
         testCrudCachePermissions(true);
@@ -60,11 +57,11 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
      */
     private void testCrudCachePermissions(boolean isClient) throws Exception {
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
-            builder()
+            SecurityPermissionSetBuilder.create()
                 .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT, CACHE_REMOVE)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), isClient);
 
-        for (Consumer<IgniteCache<String, String>> c : consumers()) {
+        for (Consumer<IgniteCache<String, String>> c : operations()) {
             c.accept(node.cache(CACHE_NAME));
 
             assertForbidden(() -> c.accept(node.cache(FORBIDDEN_CACHE)));
@@ -72,9 +69,9 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
     }
 
     /**
-     * @return Collection of consumers to invoke a cache operation.
+     * @return Collection of operations to invoke a cache operation.
      */
-    private List<Consumer<IgniteCache<String, String>>> consumers() {
+    private List<Consumer<IgniteCache<String, String>>> operations() {
         return Arrays.asList(
             c -> c.put("key", "value"),
             c -> c.putAll(singletonMap("key", "value")),

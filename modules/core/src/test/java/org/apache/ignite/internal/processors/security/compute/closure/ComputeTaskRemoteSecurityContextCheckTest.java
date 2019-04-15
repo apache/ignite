@@ -37,6 +37,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.Ignition.localIgnite;
+
 /**
  * Testing operation security context when the compute task is executed on remote nodes.
  * <p>
@@ -49,21 +51,21 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(SRV_INITIATOR, allowAllPermissionSet());
+        startGridAllowAll(SRV_INITIATOR);
 
-        startClient(CLNT_INITIATOR, allowAllPermissionSet());
+        startClientAllowAll(CLNT_INITIATOR);
 
-        startGrid(SRV_RUN, allowAllPermissionSet());
+        startGridAllowAll(SRV_RUN);
 
-        startClient(CLNT_RUN, allowAllPermissionSet());
+        startClientAllowAll(CLNT_RUN);
 
-        startGrid(SRV_CHECK, allowAllPermissionSet());
+        startGridAllowAll(SRV_CHECK);
 
-        startClient(CLNT_CHECK, allowAllPermissionSet());
+        startClientAllowAll(CLNT_CHECK);
 
-        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+        startGridAllowAll(SRV_ENDPOINT);
 
-        startClient(CLNT_ENDPOINT, allowAllPermissionSet());
+        startClientAllowAll(CLNT_ENDPOINT);
 
         G.allGrids().get(0).cluster().active(true);
     }
@@ -79,31 +81,29 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
             .expect(CLNT_ENDPOINT, 4);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void test() {
-        runAndCheck(grid(SRV_INITIATOR), checkCases());
-        runAndCheck(grid(CLNT_INITIATOR), checkCases());
+        runAndCheck(grid(SRV_INITIATOR), operations());
+        runAndCheck(grid(CLNT_INITIATOR), operations());
     }
 
     /**
      * @return Stream of check cases.
      */
-    private Stream<IgniteRunnable> checkCases() {
+    private Stream<IgniteRunnable> operations() {
         return Stream.of(
             () -> {
                 register();
 
-                Ignition.localIgnite().compute().execute(
+                localIgnite().compute().execute(
                     new ComputeTaskClosure(nodesToCheck(), endpoints()), 0
                 );
             },
             () -> {
                 register();
 
-                Ignition.localIgnite().compute().executeAsync(
+                localIgnite().compute().executeAsync(
                     new ComputeTaskClosure(nodesToCheck(), endpoints()), 0
                 ).get();
             }

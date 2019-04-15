@@ -25,9 +25,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
@@ -35,34 +38,26 @@ import static java.util.Collections.singletonMap;
 /**
  * Test cache permissions for Data Streamer.
  */
-@RunWith(JUnit4.class)
+@RunWith(Parameterized.class)
 public class DataStreamerPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
-    /**
-     * @throws Exception If fail.
-     */
-    @Test
-    public void testServerNode() throws Exception {
-        testDataStreamer(false);
+    /** Parameters. */
+    @Parameters(name = "clientMode={0}")
+    public static Iterable<Boolean[]> data() {
+        return Arrays.asList(new Boolean[] {true}, new Boolean[] {false});
     }
 
-    /**
-     * @throws Exception If fail.
-     */
-    @Test
-    public void testClientNode() throws Exception {
-        testDataStreamer(true);
-    }
+    /** Client mode. */
+    @Parameter(0)
+    public boolean clientMode;
 
-    /**
-     * @param isClient True if is client mode.
-     * @throws Exception If fail.
-     */
-    private void testDataStreamer(boolean isClient) throws Exception {
-        Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
-            builder()
+    /** */
+    @Test
+    public void testDataStreamer() throws Exception {
+        Ignite node = startGrid(loginPrefix(clientMode) + "_test_node",
+            SecurityPermissionSetBuilder.create()
                 .appendCachePermissions(CACHE_NAME, SecurityPermission.CACHE_PUT)
                 .appendCachePermissions(FORBIDDEN_CACHE, SecurityPermission.CACHE_READ)
-                .build(), isClient);
+                .build(), clientMode);
 
         List<Consumer<IgniteDataStreamer<String, Integer>>> operations = Arrays.asList(
             s -> s.addData("k", 1),

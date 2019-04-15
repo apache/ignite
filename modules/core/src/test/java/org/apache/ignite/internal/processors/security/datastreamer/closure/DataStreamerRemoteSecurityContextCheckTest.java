@@ -43,17 +43,17 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(SRV_INITIATOR, allowAllPermissionSet());
+        startGridAllowAll(SRV_INITIATOR);
 
-        startClient(CLNT_INITIATOR, allowAllPermissionSet());
+        startClientAllowAll(CLNT_INITIATOR);
 
-        startGrid(SRV_RUN, allowAllPermissionSet());
+        startGridAllowAll(SRV_RUN);
 
-        startGrid(SRV_CHECK, allowAllPermissionSet());
+        startGridAllowAll(SRV_CHECK);
 
-        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+        startGridAllowAll(SRV_ENDPOINT);
 
-        startClient(CLNT_ENDPOINT, allowAllPermissionSet());
+        startClientAllowAll(CLNT_ENDPOINT);
 
         G.allGrids().get(0).cluster().active(true);
     }
@@ -67,24 +67,21 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
             .expect(CLNT_ENDPOINT, 1);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testDataStreamer() {
-        IgniteRunnable checkCase = () -> {
+        IgniteRunnable op = () -> {
             register();
 
             try (IgniteDataStreamer<Integer, Integer> strm = Ignition.localIgnite().dataStreamer(CACHE_NAME)) {
-                strm.receiver(StreamVisitor
-                    .from(new ExecRegisterAndForwardAdapter<>(endpoints())));
+                strm.receiver(StreamVisitor.from(new ExecRegisterAndForwardAdapter<>(endpoints())));
 
                 strm.addData(prmKey(grid(SRV_CHECK)), 100);
             }
         };
 
-        runAndCheck(grid(SRV_INITIATOR), checkCase);
-        runAndCheck(grid(CLNT_INITIATOR), checkCase);
+        runAndCheck(grid(SRV_INITIATOR), op);
+        runAndCheck(grid(CLNT_INITIATOR), op);
     }
 
     /** {@inheritDoc} */

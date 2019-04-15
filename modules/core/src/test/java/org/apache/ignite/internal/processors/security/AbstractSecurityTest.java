@@ -25,9 +25,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
  * Common class for security tests.
@@ -87,21 +88,14 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
             Arrays.asList(clientData));
     }
 
-    /**
-     * @param login Login.
-     * @param prmSet Security permission set.
-     */
-    protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet) throws Exception {
-        return startGrid(login, "", prmSet, false);
+    /** */
+    protected IgniteEx startGridAllowAll(String login) throws Exception {
+        return startGrid(login, ALLOW_ALL, false);
     }
 
-    /**
-     * @param login Login.
-     * @param pwd Password.
-     * @param prmSet Security permission set.
-     */
-    protected IgniteEx startGrid(String login, String pwd, SecurityPermissionSet prmSet) throws Exception {
-        return startGrid(login, pwd, prmSet, false);
+    /** */
+    protected IgniteEx startClientAllowAll(String login) throws Exception {
+        return startGrid(login, ALLOW_ALL, true);
     }
 
     /**
@@ -110,65 +104,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      * @param isClient Is client.
      */
     protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet, boolean isClient) throws Exception {
-        return startGrid(getConfiguration(login, secPluginCfg(login, "", prmSet)).setClientMode(isClient)
-        );
-    }
-
-    /**
-     * @param login Login.
-     * @param prmSet Security permission set.
-     */
-    protected IgniteEx startClient(String login, SecurityPermissionSet prmSet) throws Exception {
-        return startGrid(login, prmSet, true);
-    }
-
-    /**
-     * @param login Login.
-     * @param pwd Password.
-     * @param prmSet Security permission set.
-     * @param isClient Is client.
-     */
-    protected IgniteEx startGrid(String login, String pwd, SecurityPermissionSet prmSet,
-        boolean isClient) throws Exception {
-        return startGrid(getConfiguration(login, secPluginCfg(login, pwd, prmSet)).setClientMode(isClient)
-        );
-    }
-
-    /**
-     * @param instanceName Instance name.
-     * @param login Login.
-     * @param pwd Password.
-     * @param prmSet Security permission set.
-     */
-    protected IgniteEx startGrid(String instanceName, String login, String pwd,
-        SecurityPermissionSet prmSet) throws Exception {
-        return startGrid(getConfiguration(instanceName, secPluginCfg(login, pwd, prmSet)));
-    }
-
-    /**
-     * @param instanceName Instance name.
-     * @param login Login.
-     * @param pwd Password.
-     * @param prmSet Security permission set.
-     * @param isClient If true then client mode.
-     */
-    protected IgniteEx startGrid(String instanceName, String login, String pwd, SecurityPermissionSet prmSet,
-        boolean isClient) throws Exception {
-        return startGrid(getConfiguration(instanceName, secPluginCfg(login, pwd, prmSet)).setClientMode(isClient));
-    }
-
-    /**
-     * Getting security permission set builder.
-     */
-    protected SecurityPermissionSetBuilder builder() {
-        return SecurityPermissionSetBuilder.create().defaultAllowAll(true);
-    }
-
-    /**
-     * Getting allow all security permission set.
-     */
-    protected SecurityPermissionSet allowAllPermissionSet() {
-        return builder().build();
+        return startGrid(getConfiguration(login, secPluginCfg(login, "", prmSet)).setClientMode(isClient));
     }
 
     /**

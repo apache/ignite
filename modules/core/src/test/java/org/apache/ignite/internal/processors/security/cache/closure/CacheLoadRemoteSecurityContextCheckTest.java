@@ -34,6 +34,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.Ignition.localIgnite;
+
 /**
  * Testing operation security context when the filter of Load cache is executed on remote node.
  * <p>
@@ -47,17 +49,17 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(SRV_INITIATOR, allowAllPermissionSet());
+        startGridAllowAll(SRV_INITIATOR);
 
-        startClient(CLNT_INITIATOR, allowAllPermissionSet());
+        startClientAllowAll(CLNT_INITIATOR);
 
-        startGrid(SRV_RUN, allowAllPermissionSet());
+        startGridAllowAll(SRV_RUN);
 
-        startGrid(SRV_CHECK, allowAllPermissionSet());
+        startGridAllowAll(SRV_CHECK);
 
-        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+        startGridAllowAll(SRV_ENDPOINT);
 
-        startClient(CLNT_ENDPOINT, allowAllPermissionSet());
+        startClientAllowAll(CLNT_ENDPOINT);
 
         G.allGrids().get(0).cluster().active(true);
     }
@@ -85,22 +87,19 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
             .expect(CLNT_ENDPOINT, 1);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void test() {
-        IgniteRunnable checkCase = () -> {
+        IgniteRunnable operation = () -> {
             register();
 
-            Ignition.localIgnite()
-                .<Integer, Integer>cache(CACHE_NAME).loadCache(
+            localIgnite().<Integer, Integer>cache(CACHE_NAME).loadCache(
                 new RegisterExecAndForward<Integer, Integer>(SRV_CHECK, endpoints())
             );
         };
 
-        runAndCheck(grid(SRV_INITIATOR), checkCase);
-        runAndCheck(grid(CLNT_INITIATOR), checkCase);
+        runAndCheck(grid(SRV_INITIATOR), operation);
+        runAndCheck(grid(CLNT_INITIATOR), operation);
     }
 
     /** {@inheritDoc} */

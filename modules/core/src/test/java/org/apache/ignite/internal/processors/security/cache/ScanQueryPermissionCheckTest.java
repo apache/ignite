@@ -17,58 +17,52 @@
 
 package org.apache.ignite.internal.processors.security.cache;
 
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 
 /**
  * Test cache permission for invoking of Scan Query.
  */
-@RunWith(JUnit4.class)
+@RunWith(Parameterized.class)
 public class ScanQueryPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
-    /**
-     * @throws Exception If fail.
-     */
-    @Test
-    public void testServerNode() throws Exception {
-        testScanQuery(false);
+    /** Parameters. */
+    @Parameters(name = "clientMode={0}")
+    public static Iterable<Boolean[]> data() {
+        return Arrays.asList(new Boolean[] {true}, new Boolean[] {false});
     }
 
-    /**
-     * @throws Exception If fail.
-     */
-    @Test
-    public void testClientNode() throws Exception {
-        testScanQuery(true);
-    }
+    /** Client mode. */
+    @Parameter(0)
+    public boolean clientMode;
 
-    /**
-     * @param isClient True if is client mode.
-     * @throws Exception If failed.
-     */
-    private void testScanQuery(boolean isClient) throws Exception {
+    /** */
+    @Test
+    public void testScanQuery() throws Exception {
         putTestData();
 
-        Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
-            builder()
+        Ignite node = startGrid(loginPrefix(clientMode) + "_test_node",
+            SecurityPermissionSetBuilder.create()
                 .appendCachePermissions(CACHE_NAME, CACHE_READ)
-                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), isClient);
+                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), clientMode);
 
         assertFalse(node.cache(CACHE_NAME).query(new ScanQuery<String, Integer>()).getAll().isEmpty());
 
         assertForbidden(() -> node.cache(FORBIDDEN_CACHE).query(new ScanQuery<String, Integer>()).getAll());
     }
 
-    /**
-     *
-     */
+    /** */
     private void putTestData() {
         Ignite ignite = G.allGrids().stream().findFirst().get();
 

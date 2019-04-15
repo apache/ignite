@@ -23,7 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.testframework.GridTestUtils.IgniteRunnableX;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -41,21 +41,21 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(SRV_INITIATOR, allowAllPermissionSet());
+        startGridAllowAll(SRV_INITIATOR);
 
-        startClient(CLNT_INITIATOR, allowAllPermissionSet());
+        startClientAllowAll(CLNT_INITIATOR);
 
-        startGrid(SRV_RUN, allowAllPermissionSet());
+        startGridAllowAll(SRV_RUN);
 
-        startClient(CLNT_RUN, allowAllPermissionSet());
+        startClientAllowAll(CLNT_RUN);
 
-        startGrid(SRV_CHECK, allowAllPermissionSet());
+        startGridAllowAll(SRV_CHECK);
 
-        startClient(CLNT_CHECK, allowAllPermissionSet());
+        startClientAllowAll(CLNT_CHECK);
 
-        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+        startGridAllowAll(SRV_ENDPOINT);
 
-        startClient(CLNT_ENDPOINT, allowAllPermissionSet());
+        startClientAllowAll(CLNT_ENDPOINT);
 
         G.allGrids().get(0).cluster().active(true);
     }
@@ -71,12 +71,10 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
             .expect(CLNT_ENDPOINT, 4);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void test() {
-        IgniteRunnable checkCase = () -> {
+        IgniteRunnableX operation = () -> {
             register();
 
             Ignite loc = Ignition.localIgnite();
@@ -84,17 +82,11 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
             for (UUID nodeId : nodesToCheck()) {
                 ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
 
-                try {
-                    svc.submit((Runnable) new RegisterExecAndForward<>(endpoints())).get();
-                }
-                catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                svc.submit((Runnable) createRunner()).get();
             }
         };
 
-
-        runAndCheck(grid(SRV_INITIATOR), checkCase);
-        runAndCheck(grid(CLNT_INITIATOR), checkCase);
+        runAndCheck(grid(SRV_INITIATOR), operation);
+        runAndCheck(grid(CLNT_INITIATOR), operation);
     }
 }

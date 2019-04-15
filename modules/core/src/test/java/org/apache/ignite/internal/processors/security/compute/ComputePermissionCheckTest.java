@@ -17,19 +17,19 @@
 
 package org.apache.ignite.internal.processors.security.compute;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -44,17 +44,18 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
+import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonList;
+import static java.util.function.Function.identity;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 /**
  * Task execute permission tests.
@@ -75,38 +76,41 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
 
     /** Test callable. */
     private static final IgniteCallable<Object> TEST_CALLABLE = () -> {
-        IS_EXECUTED.set(true);
+        waitForCancel();
 
-        syncForCancel();
+        IS_EXECUTED.set(true);
 
         return null;
     };
 
     /** Test runnable. */
     private static final IgniteRunnable TEST_RUNNABLE = () -> {
-        IS_EXECUTED.set(true);
+        waitForCancel();
 
-        syncForCancel();
+        IS_EXECUTED.set(true);
     };
 
     /** Test closure. */
     private static final IgniteClosure<Object, Object> TEST_CLOSURE = a -> {
-        IS_EXECUTED.set(true);
+        waitForCancel();
 
-        syncForCancel();
+        IS_EXECUTED.set(true);
 
         return null;
     };
 
-    /** Synchronization for tests TASK_CANCEL. */
-    private static void syncForCancel() {
+    /** Waits for InterruptedException on RNT_LOCK. */
+    private static void waitForCancel() {
         boolean isLocked = false;
 
         try {
             isLocked = RNT_LOCK.tryLock(RNT_LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
+
+            if (!isLocked)
+                throw new IgniteException("tryLock should succeed or interrupted");
         }
         catch (InterruptedException e) {
-            throw new IgniteException(e);
+            // This is expected.
         }
         finally {
             if (isLocked)
@@ -117,82 +121,67 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /** */
     @Test
     public void test() throws Exception {
-        Ignite srvAllowed = startGrid("srv_allowed", permissions(TASK_EXECUTE, TASK_CANCEL));
+        Ignite srvAllowed = startGrid("srv_allowed", permissions(TASK_EXECUTE, TASK_CANCEL), false);
 
-        Ignite srvForbidden = startGrid("srv_forbidden", permissions(EMPTY_PERMS));
+        Ignite srvForbidden = startGrid("srv_forbidden", permissions(EMPTY_PERMS), false);
 
-        Ignite srvForbiddenCancel = startGrid("srv_forbidden_cnl", permissions(TASK_EXECUTE));
+        Ignite srvForbiddenCancel = startGrid("srv_forbidden_cnl", permissions(TASK_EXECUTE), false);
 
-        Ignite clntAllowed = startClient("clnt_allowed", permissions(TASK_EXECUTE, TASK_CANCEL));
+        Ignite clntAllowed = startGrid("clnt_allowed", permissions(TASK_EXECUTE, TASK_CANCEL), true);
 
-        Ignite clntForbidden = startClient("clnt_forbidden", permissions(EMPTY_PERMS));
+        Ignite clntForbidden = startGrid("clnt_forbidden", permissions(EMPTY_PERMS), true);
 
-        Ignite clntForbiddenCancel = startClient("clnt_forbidden_cnl", permissions(TASK_EXECUTE));
+        Ignite clntForbiddenCancel = startGrid("clnt_forbidden_cnl", permissions(TASK_EXECUTE), true);
 
         srvAllowed.cluster().active(true);
 
-        for (Runnable r : runnables(srvAllowed, clntAllowed))
-            allowedRun(r);
+        operations(srvAllowed, clntAllowed).forEach(this::allowedRun);
 
-        for (Runnable r : runnables(srvForbidden, clntForbidden))
-            assertForbidden(r);
+        operations(srvForbidden, clntForbidden).forEach(this::assertForbidden);
 
-        for (Supplier<FutureAdapter> s : suppliers(srvAllowed, clntAllowed))
-            allowedCancel(s);
+        asyncOperations(srvAllowed, clntAllowed).forEach(this::allowedCancel);
 
-        for (Supplier<FutureAdapter> s : suppliers(srvForbiddenCancel, clntForbiddenCancel))
-            forbiddenCancel(s);
+        asyncOperations(srvForbiddenCancel, clntForbiddenCancel).forEach(this::forbiddenCancel);
     }
 
     /**
      * @param nodes Array of nodes.
      */
-    private Collection<RunnableX> runnables(Ignite... nodes) {
-        Function<Ignite, RunnableX[]> f = (node) -> new RunnableX[] {
+    private Stream<RunnableX> operations(Ignite... nodes) {
+        Function<Ignite, Stream<RunnableX>> nodeOps = (node) -> Stream.of(
             () -> node.compute().execute(TEST_COMPUTE_TASK, 0),
-            () -> node.compute().executeAsync(TEST_COMPUTE_TASK, 0).get(),
             () -> node.compute().broadcast(TEST_CALLABLE),
-            () -> node.compute().broadcastAsync(TEST_CALLABLE).get(),
             () -> node.compute().call(TEST_CALLABLE),
-            () -> node.compute().callAsync(TEST_CALLABLE).get(),
             () -> node.compute().run(TEST_RUNNABLE),
-            () -> node.compute().runAsync(TEST_RUNNABLE).get(),
             () -> node.compute().apply(TEST_CLOSURE, new Object()),
-            () -> node.compute().applyAsync(TEST_CLOSURE, new Object()).get(),
-            () -> node.executorService().submit(TEST_CALLABLE).get(),
             () -> node.executorService().invokeAll(singletonList(TEST_CALLABLE)),
             () -> node.executorService().invokeAny(singletonList(TEST_CALLABLE))
-        };
+        );
 
-        List<RunnableX> res = new ArrayList<>();
+        Stream<RunnableX> operations = Arrays.stream(nodes).map(nodeOps).flatMap(identity());
 
-        for (Ignite node : nodes)
-            res.addAll(Arrays.asList(f.apply(node)));
-
-        return res;
+        return Stream.concat(operations, asyncOperations(nodes).map(s -> () -> s.get().get()));
     }
 
     /** */
-    private List<Supplier<FutureAdapter>> suppliers(Ignite... nodes) {
-        List<Supplier<FutureAdapter>> res = new ArrayList<>();
+    private Stream<Supplier<Future>> asyncOperations(Ignite... nodes) {
+        Function<Ignite, Stream<Supplier<Future>>> nodeOps = (node) -> Stream.of(
+            () -> new FutureAdapter(node.compute().executeAsync(TEST_COMPUTE_TASK, 0)),
+            () -> new FutureAdapter(node.compute().broadcastAsync(TEST_CALLABLE)),
+            () -> new FutureAdapter(node.compute().callAsync(TEST_CALLABLE)),
+            () -> new FutureAdapter(node.compute().runAsync(TEST_RUNNABLE)),
+            () -> new FutureAdapter(node.compute().applyAsync(TEST_CLOSURE, new Object())),
+            () -> node.executorService().submit(TEST_CALLABLE)
+        );
 
-        for (Ignite node : nodes) {
-            res.add(() -> new FutureAdapter(node.compute().broadcastAsync(TEST_CALLABLE)));
-            res.add(() -> new FutureAdapter(node.compute().callAsync(TEST_CALLABLE)));
-            res.add(() -> new FutureAdapter(node.compute().runAsync(TEST_RUNNABLE)));
-            res.add(() -> new FutureAdapter(node.compute().applyAsync(TEST_CLOSURE, new Object())));
-            res.add(() -> new FutureAdapter(node.compute().executeAsync(TEST_COMPUTE_TASK, 0)));
-            res.add(() -> new FutureAdapter(node.executorService().submit(TEST_CALLABLE)));
-        }
-
-        return res;
+        return Arrays.stream(nodes).map(nodeOps).flatMap(identity());
     }
 
     /**
      * @param perms Permissions.
      */
     private SecurityPermissionSet permissions(SecurityPermission... perms) {
-        return builder()
+        return SecurityPermissionSetBuilder.create()
             .appendTaskPermissions(TEST_COMPUTE_TASK.getClass().getName(), perms)
             .appendTaskPermissions(TEST_CALLABLE.getClass().getName(), perms)
             .appendTaskPermissions(TEST_RUNNABLE.getClass().getName(), perms)
@@ -219,13 +208,13 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /**
      * @param s Supplier.
      */
-    private void forbiddenCancel(Supplier<FutureAdapter> s) {
+    private void forbiddenCancel(Supplier<Future> s) {
         RNT_LOCK.lock();
 
         try {
-            FutureAdapter f = s.get();
+            Future f = s.get();
 
-            assertForbidden(f::cancel);
+            assertForbidden(() -> f.cancel(true));
         }
         finally {
             RNT_LOCK.unlock();
@@ -235,15 +224,15 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /**
      * @param s Supplier.
      */
-    private void allowedCancel(Supplier<FutureAdapter> s) {
+    private void allowedCancel(Supplier<Future> s) {
         RNT_LOCK.lock();
 
         try {
-            FutureAdapter f = s.get();
+            Future f = s.get();
 
-            f.cancel();
+            f.cancel(true);
 
-            assertThat(f.isCancelled(), is(true));
+            assertTrue(f.isCancelled());
         }
         finally {
             RNT_LOCK.unlock();
@@ -251,49 +240,34 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     }
 
     /** */
-    private static class FutureAdapter {
+    private static class FutureAdapter<T> implements Future<T> {
         /** Ignite future. */
-        private final IgniteFuture igniteFut;
+        private final IgniteFuture<T> igniteFut;
 
-        /** Future. */
-        private final Future fut;
-
-        /**
-         * @param igniteFut Ignite future.
-         */
-        public FutureAdapter(IgniteFuture igniteFut) {
-            assert igniteFut != null;
-
+        /** */
+        public FutureAdapter(IgniteFuture<T> igniteFut) {
             this.igniteFut = igniteFut;
-            fut = null;
         }
 
-        /**
-         * @param fut Future.
-         */
-        public FutureAdapter(Future fut) {
-            assert fut != null;
-
-            this.fut = fut;
-            igniteFut = null;
+        @Override public boolean cancel(boolean mayInterruptIfRunning) {
+            return igniteFut.cancel();
         }
 
-        /** */
-        public void cancel() {
-            if (igniteFut != null)
-                igniteFut.cancel();
-            else
-                fut.cancel(true);
+        @Override public boolean isCancelled() {
+            return igniteFut.isCancelled();
         }
 
-        /** */
-        public Object get() throws ExecutionException, InterruptedException {
-            return igniteFut != null ? igniteFut.get() : fut.get();
+        @Override public boolean isDone() {
+            return igniteFut.isDone();
         }
 
-        /** */
-        public boolean isCancelled() {
-            return igniteFut != null ? igniteFut.isCancelled() : fut.isCancelled();
+        @Override public T get() throws InterruptedException, ExecutionException {
+            return igniteFut.get();
+        }
+
+        @Override public T get(long timeout,
+            @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            return igniteFut.get(timeout, unit);
         }
     }
 
@@ -313,7 +287,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
                     }
 
                     @Override public Object execute() {
-                        syncForCancel();
+                        waitForCancel();
 
                         return null;
                     }

@@ -30,6 +30,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.Ignition.localIgnite;
+
 /**
  * Testing operation security context when the filter of ScanQuery is executed on remote node.
  * <p>
@@ -43,19 +45,19 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(SRV_INITIATOR, allowAllPermissionSet());
+        startGridAllowAll(SRV_INITIATOR);
 
-        startClient(CLNT_INITIATOR, allowAllPermissionSet());
+        startClientAllowAll(CLNT_INITIATOR);
 
-        startGrid(SRV_RUN, allowAllPermissionSet());
+        startGridAllowAll(SRV_RUN);
 
-        startClient(CLNT_RUN, allowAllPermissionSet());
+        startClientAllowAll(CLNT_RUN);
 
-        startGrid(SRV_CHECK, allowAllPermissionSet());
+        startGridAllowAll(SRV_CHECK);
 
-        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+        startGridAllowAll(SRV_ENDPOINT);
 
-        startClient(CLNT_ENDPOINT, allowAllPermissionSet());
+        startClientAllowAll(CLNT_ENDPOINT);
 
         G.allGrids().get(0).cluster().active(true);
     }
@@ -70,9 +72,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
             .expect(CLNT_ENDPOINT, 2);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void test() throws Exception {
         grid(SRV_INITIATOR).cache(CACHE_NAME)
@@ -80,8 +80,8 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
         awaitPartitionMapExchange();
 
-        runAndCheck(grid(SRV_INITIATOR), checkCases());
-        runAndCheck(grid(CLNT_INITIATOR), checkCases());
+        runAndCheck(grid(SRV_INITIATOR), operations());
+        runAndCheck(grid(CLNT_INITIATOR), operations());
     }
 
     /** {@inheritDoc} */
@@ -92,23 +92,19 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     /**
      * Stream of runnables to call query methods.
      */
-    private Stream<IgniteRunnable> checkCases() {
+    private Stream<IgniteRunnable> operations() {
         return Stream.of(
             () -> {
                 register();
 
-                Ignition.localIgnite().cache(CACHE_NAME).query(
-                    new ScanQuery<>(
-                        new RegisterExecAndForward<>(SRV_CHECK, endpoints())
-                    )
-                ).getAll();
+                localIgnite().cache(CACHE_NAME).query(new ScanQuery<>(createRunner(SRV_CHECK))).getAll();
             },
             () -> {
                 register();
 
-                Ignition.localIgnite().cache(CACHE_NAME).query(
+                localIgnite().cache(CACHE_NAME).query(
                     new ScanQuery<>((k, v) -> true),
-                    new RegisterExecAndForward<>(SRV_CHECK, endpoints())
+                    createRunner(SRV_CHECK)
                 ).getAll();
             }
         );

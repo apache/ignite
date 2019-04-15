@@ -121,30 +121,21 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
      * @return Collection of feature call nodes ids.
      */
     protected Collection<UUID> nodesToRun() {
-        return Arrays.asList(
-            nodeId(SRV_RUN),
-            nodeId(CLNT_RUN)
-        );
+        return Arrays.asList(nodeId(SRV_RUN), nodeId(CLNT_RUN));
     }
 
     /**
      * @return Collection of feature transit nodes ids.
      */
     protected Collection<UUID> nodesToCheck() {
-        return Arrays.asList(
-            nodeId(SRV_CHECK),
-            nodeId(CLNT_CHECK)
-        );
+        return Arrays.asList(nodeId(SRV_CHECK), nodeId(CLNT_CHECK));
     }
 
     /**
      * @return Collection of endpont nodes ids.
      */
     protected Collection<UUID> endpoints() {
-        return Arrays.asList(
-            nodeId(SRV_ENDPOINT),
-            nodeId(CLNT_ENDPOINT)
-        );
+        return Arrays.asList(nodeId(SRV_ENDPOINT), nodeId(CLNT_ENDPOINT));
     }
 
     /**
@@ -156,43 +147,32 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     }
 
     /**
-     * Assert that the passed throwable contains a cause exception with given type.
-     *
-     * @param throwable Throwable.
-     */
-    protected void assertCauseSecurityException(Throwable throwable) {
-        assertThat(X.cause(throwable, SecurityException.class), notNullValue());
-    }
-
-    /**
      * Setups expected behavior to passed verifier.
      */
     protected abstract void setupVerifier(Verifier verifier);
 
     /**
      * @param initiator Node that initiates an execution.
-     * @param runnable Check case.
+     * @param op Operation.
      */
-    protected void runAndCheck(IgniteEx initiator, IgniteRunnable runnable) {
-        runAndCheck(initiator, Stream.of(runnable));
+    protected void runAndCheck(IgniteEx initiator, IgniteRunnable op) {
+        runAndCheck(initiator, Stream.of(op));
     }
 
     /**
      * Sets up VERIFIER, performs the runnable and checks the result.
      *
      * @param initiator Node that initiates an execution.
-     * @param runnables Stream of check cases.
+     * @param ops Operations.
      */
-    protected void runAndCheck(IgniteEx initiator, Stream<IgniteRunnable> runnables) {
-        runnables.forEach(
-            r -> {
-                setupVerifier(VERIFIER.start(secSubjectId(initiator)));
+    protected void runAndCheck(IgniteEx initiator, Stream<IgniteRunnable> ops) {
+        ops.forEach(r -> {
+            setupVerifier(VERIFIER.start(secSubjectId(initiator)));
 
-                compute(initiator, nodesToRun()).broadcast(r);
+            compute(initiator, nodesToRun()).broadcast(r);
 
-                VERIFIER.checkResult();
-            }
-        );
+            VERIFIER.checkResult();
+        });
     }
 
     /**
@@ -314,6 +294,14 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         @Override public void apply(K k, V v) {
             instance.run();
         }
+    }
+
+    protected RegisterExecAndForward createRunner(String srvName) {
+        return new RegisterExecAndForward<>(srvName, endpoints());
+    }
+
+    protected RegisterExecAndForward createRunner() {
+        return new RegisterExecAndForward<>(endpoints());
     }
 
     /** */

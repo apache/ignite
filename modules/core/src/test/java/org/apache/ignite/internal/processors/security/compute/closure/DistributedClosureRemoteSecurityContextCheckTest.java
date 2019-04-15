@@ -25,6 +25,8 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 
+import static org.apache.ignite.Ignition.localIgnite;
+
 /**
  * Testing operation security context when the compute closure is executed on remote nodes.
  * <p>
@@ -37,21 +39,21 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(SRV_INITIATOR, allowAllPermissionSet());
+        startGridAllowAll(SRV_INITIATOR);
 
-        startClient(CLNT_INITIATOR, allowAllPermissionSet());
+        startClientAllowAll(CLNT_INITIATOR);
 
-        startGrid(SRV_RUN, allowAllPermissionSet());
+        startGridAllowAll(SRV_RUN);
 
-        startClient(CLNT_RUN, allowAllPermissionSet());
+        startClientAllowAll(CLNT_RUN);
 
-        startGrid(SRV_CHECK, allowAllPermissionSet());
+        startGridAllowAll(SRV_CHECK);
 
-        startClient(CLNT_CHECK, allowAllPermissionSet());
+        startClientAllowAll(CLNT_CHECK);
 
-        startGrid(SRV_ENDPOINT, allowAllPermissionSet());
+        startGridAllowAll(SRV_ENDPOINT);
 
-        startClient(CLNT_ENDPOINT, allowAllPermissionSet());
+        startClientAllowAll(CLNT_ENDPOINT);
 
         G.allGrids().get(0).cluster().active(true);
     }
@@ -67,60 +69,48 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
             .expect(CLNT_ENDPOINT, 4);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void test() {
-        runAndCheck(grid(SRV_INITIATOR), checkCases());
-        runAndCheck(grid(CLNT_INITIATOR), checkCases());
+        runAndCheck(grid(SRV_INITIATOR), operations());
+        runAndCheck(grid(CLNT_INITIATOR), operations());
     }
 
     /**
      * @return Stream of check cases.
      */
-    private Stream<IgniteRunnable> checkCases() {
+    private Stream<IgniteRunnable> operations() {
         return Stream.<IgniteRunnable>of(
-            () -> compute(Ignition.localIgnite(), nodesToCheck())
-                .broadcast((IgniteRunnable)new RegisterExecAndForward<>(endpoints())),
-
-            () -> compute(Ignition.localIgnite(), nodesToCheck())
-                .broadcastAsync((IgniteRunnable)new RegisterExecAndForward<>(endpoints()))
-                .get(),
+            () -> compute(localIgnite(), nodesToCheck()).broadcast((IgniteRunnable) createRunner()),
+            () -> compute(localIgnite(), nodesToCheck()).broadcastAsync((IgniteRunnable) createRunner()).get(),
             () -> {
                 for (UUID id : nodesToCheck()) {
-                    compute(Ignition.localIgnite(), id)
-                        .call(new RegisterExecAndForward<>(endpoints()));
+                    compute(localIgnite(), id).call(createRunner());
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
-                    compute(Ignition.localIgnite(), id)
-                        .callAsync(new RegisterExecAndForward<>(endpoints())).get();
+                    compute(localIgnite(), id).callAsync(createRunner()).get();
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
-                    compute(Ignition.localIgnite(), id)
-                        .run(new RegisterExecAndForward<>(endpoints()));
+                    compute(localIgnite(), id).run(createRunner());
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
-                    compute(Ignition.localIgnite(), id)
-                        .runAsync(new RegisterExecAndForward<>(endpoints())).get();
+                    compute(localIgnite(), id).runAsync(createRunner()).get();
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
-                    compute(Ignition.localIgnite(), id)
-                        .apply(new RegisterExecAndForward<>(endpoints()), new Object());
+                    compute(localIgnite(), id).apply(createRunner(), new Object());
                 }
             },
             () -> {
                 for (UUID id : nodesToCheck()) {
-                    compute(Ignition.localIgnite(), id)
-                        .applyAsync(new RegisterExecAndForward<>(endpoints()), new Object()).get();
+                    compute(localIgnite(), id).applyAsync(createRunner(), new Object()).get();
                 }
             }
         ).map(RegisterExecAndForward::new);
