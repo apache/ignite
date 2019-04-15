@@ -32,6 +32,7 @@ import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.jetbrains.annotations.NotNull;
 
@@ -331,15 +332,10 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     public <L1> DatasetTrainer<M, L1> withConvertedLabels(IgniteFunction<L1, L> new2Old) {
         DatasetTrainer<M, L> old = this;
         return new DatasetTrainer<M, L1>() {
-            private <K, V> Vectorizer<K, V, ?, L> getNewExtractor(
-                Vectorizer<K, V, ?, L1> extractor) {
-                return new Vectorizer.VectorizerAdapter<K, V, Integer, L>() {
-                    /** {@inheritDoc} */
-                    @Override public LabeledVector<L> apply(K k, V v) {
-                        return new LabeledVector<>(extractor.extractFeatures(k, v),
-                            new2Old.apply(extractor.extractLabel(k, v)));
-                    }
-                };
+            private <K, V> Preprocessor<K, V> getNewExtractor(
+                Preprocessor<K, V> extractor) {
+                IgniteFunction<LabeledVector<L1>, LabeledVector<L>> func = lv -> new LabeledVector<>(lv.features(), new2Old.apply(lv.label()));
+                return new PatchedPreprocessor<K, V, L1, L>(func, extractor);
             }
 
             /** {@inheritDoc} */
@@ -349,22 +345,18 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
             }
 
             /** {@inheritDoc} */
-            protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
-                                           Vectorizer<K, V, ?, L1> extractor) {
-                return old.updateModel(mdl, datasetBuilder, getNewExtractor(extractor));
+            @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                Preprocessor<K, V> preprocessor) {
+                return old.updateModel(mdl, datasetBuilder, getNewExtractor(preprocessor));
             }
 
             @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
-                return null;
+                return old.fit(datasetBuilder, getNewExtractor(preprocessor));
             }
 
             /** {@inheritDoc} */
             @Override public boolean isUpdateable(M mdl) {
                 return old.isUpdateable(mdl);
-            }
-
-            @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
-                return null;
             }
         };
     }
