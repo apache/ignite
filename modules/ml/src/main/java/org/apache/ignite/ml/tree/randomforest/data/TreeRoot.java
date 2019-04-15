@@ -17,11 +17,12 @@
 
 package org.apache.ignite.ml.tree.randomforest.data;
 
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Tree root class.
@@ -63,7 +64,7 @@ public class TreeRoot implements IgniteModel<Vector, Double> {
     }
 
     /**
-     * @return all leafs in tree.
+     * @return All leafs in tree.
      */
     public List<TreeNode> getLeafs() {
         List<TreeNode> res = new ArrayList<>();

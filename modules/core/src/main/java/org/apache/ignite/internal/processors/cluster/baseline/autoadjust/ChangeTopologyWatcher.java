@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cluster.baseline.autoadjust;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -32,14 +31,13 @@ import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeMan
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.lang.IgniteInClosure;
 
+import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustData.NULL_BASELINE_DATA;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 
 /**
  * Watcher of topology changes. It initiate to set new baseline after some timeout.
  */
 public class ChangeTopologyWatcher implements GridLocalEventListener {
-    /** Task represented NULL value is using when normal task can not be created. */
-    private static final BaselineAutoAdjustData NULL_BASELINE_DATA = new BaselineAutoAdjustData(null, -1);
     /** */
     private final IgniteLogger log;
     /** */
@@ -64,7 +62,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
     public ChangeTopologyWatcher(GridKernalContext ctx) {
         this.log = ctx.log(ChangeTopologyWatcher.class);
         this.cluster = ctx.cluster().get();
-        this.baselineConfiguration = cluster.baselineConfiguration();
+        this.baselineConfiguration = ctx.state().baselineConfiguration();
         this.exchangeManager = ctx.cache().context().exchange();
         this.stateProcessor = ctx.state();
         this.baselineAutoAdjustScheduler = new BaselineAutoAdjustScheduler(ctx.timeout(), new BaselineAutoAdjustExecutor(
@@ -72,7 +70,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
             cluster,
             ctx.getSystemExecutorService(),
             this::isBaselineAutoAdjustEnabled
-        ));
+        ), ctx.log(BaselineAutoAdjustScheduler.class));
         this.discoveryMgr = ctx.discovery();
     }
 
@@ -92,7 +90,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
             return;
 
         synchronized (this) {
-            lastBaselineData = lastBaselineData.next(evt, discoEvt.topologyVersion());
+            lastBaselineData = lastBaselineData.next(discoEvt.topologyVersion());
 
             if (isLocalNodeCoordinator(discoveryMgr)) {
                 exchangeManager.affinityReadyFuture(new AffinityTopologyVersion(discoEvt.topologyVersion()))
@@ -108,7 +106,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
 
                         long timeout = baselineConfiguration.getBaselineAutoAdjustTimeout();
 
-                        log.warning("Baseline will be changed in '" + timeout + "' ms");
+                        log.warning("Baseline auto-adjust will be executed in '" + timeout + "' ms");
 
                         baselineAutoAdjustScheduler.schedule(lastBaselineData, timeout);
                     });
@@ -122,5 +120,22 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
      */
     private boolean isBaselineAutoAdjustEnabled() {
         return stateProcessor.clusterState().active() && baselineConfiguration.isBaselineAutoAdjustEnabled();
+    }
+
+    /**
+     * @return Statistic of baseline auto-adjust.
+     */
+    public BaselineAutoAdjustStatus getStatus() {
+        synchronized (this) {
+            if (lastBaselineData.isAdjusted())
+                return BaselineAutoAdjustStatus.notScheduled();
+
+            long timeToLastTask = baselineAutoAdjustScheduler.lastScheduledTaskTime();
+
+            if (timeToLastTask <= 0)
+                return BaselineAutoAdjustStatus.inProgress();
+
+            return BaselineAutoAdjustStatus.scheduled(timeToLastTask);
+        }
     }
 }

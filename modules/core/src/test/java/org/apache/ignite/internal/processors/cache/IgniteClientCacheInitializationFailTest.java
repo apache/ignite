@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -41,10 +39,13 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
@@ -238,7 +239,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
                 if (NEAR_ATOMIC_CACHE_NAME.equals(cacheName) || NEAR_TX_CACHE_NAME.equals(cacheName) ||
                     NEAR_MVCC_TX_CACHE_NAME.equals(cacheName)) {
                     CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<Integer, String>(cacheName)
-                        .setNearConfiguration(new NearCacheConfiguration<Integer, String>());
+                        .setNearConfiguration(new NearCacheConfiguration<Integer, String>()).setSqlSchema("test");
 
                     if (NEAR_TX_CACHE_NAME.equals(cacheName))
                         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -364,6 +365,14 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             return false;
         }
 
+        @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, SqlFieldsQuery sql) {
+            return null;
+        }
+
+        @Override public List<GridQueryFieldMetadata> resultMetaData(String schemaName, SqlFieldsQuery sql) {
+            return null;
+        }
+
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
             CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
@@ -381,6 +390,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public void markAsRebuildNeeded(GridCacheContext cctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts) {
             return null;
         }
@@ -388,11 +402,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
             // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
-            return null;
         }
 
         /** {@inheritDoc} */
@@ -416,8 +425,14 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void checkStatementStreamable(PreparedStatement nativeStmt) {
+        @Override public Set<String> schemasNames() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery sql) {
             // No-op.
+            return true;
         }
 
         /** {@inheritDoc} */
@@ -436,6 +451,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
                 throw new IgniteCheckedException("Test query exception " + ctx.name() + " " + new Random().nextInt());
 
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void registerMxBeans(IgniteMBeansManager mbMgr) {
+            // No-op.
         }
     }
 }

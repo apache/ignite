@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -356,6 +358,31 @@ public class H2Utils {
         }
 
         return meta;
+    }
+
+    /**
+     * Converts h2 parameters metadata to Ignite one.
+     *
+     * @param h2ParamsMeta parameters metadata returned by h2.
+     * @return Descriptions of the parameters.
+     */
+    public static List<JdbcParameterMeta> parametersMeta(ParameterMetaData h2ParamsMeta) throws IgniteCheckedException {
+        try {
+            int paramsSize = h2ParamsMeta.getParameterCount();
+
+            if (paramsSize == 0)
+                return Collections.emptyList();
+
+            ArrayList<JdbcParameterMeta> params = new ArrayList<>(paramsSize);
+
+            for (int i = 1; i <= paramsSize; i++)
+                params.add(new JdbcParameterMeta(h2ParamsMeta, i));
+
+            return params;
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException("Failed to get parameters metadata", e);
+        }
     }
 
     /**
@@ -833,16 +860,12 @@ public class H2Utils {
      *
      * @param idx Indexing.
      * @param cacheIds Cache IDs.
-     * @param mvccEnabled MVCC enabled flag.
-     * @param forUpdate For update flag.
      * @param tbls Tables.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public static void checkQuery(
         IgniteH2Indexing idx,
         List<Integer> cacheIds,
-        boolean mvccEnabled,
-        boolean forUpdate,
         Collection<QueryTable> tbls
     ) {
         GridCacheSharedContext sharedCtx = idx.kernalContext().cache().context();
@@ -866,17 +889,6 @@ public class H2Utils {
                 throw new IllegalStateException("Using indexes with different parallelism levels in same query is " +
                     "forbidden.");
             }
-        }
-
-        // Check FOR UPDATE invariants: only one table, MVCC is there.
-        if (forUpdate) {
-            if (cacheIds.size() != 1)
-                throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
-                    "that involve single transactional cache.");
-
-            if (!mvccEnabled)
-                throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
-                    "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
         // Check for joins between system views and normal tables.

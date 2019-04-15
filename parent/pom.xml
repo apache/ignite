@@ -42,7 +42,6 @@
         <doxygen.exec>doxygen</doxygen.exec>
         <docfx.exec>docfx</docfx.exec>
         <git.exec>git</git.exec>
-        <javadoc.opts>-Xdoclint:none</javadoc.opts>
         <update.notifier.enabled.by.default>true</update.notifier.enabled.by.default>
 
         <!-- Dependency versions -->
@@ -135,6 +134,12 @@
         <zkclient.version>0.5</zkclient.version>
         <zookeeper.version>3.4.13</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
+
+        <!-- Plugin versions -->
+        <maven.javadoc.plugin.version>2.10.1</maven.javadoc.plugin.version>
+
+        <!-- Maven plugins versions -->
+        <maven.javadoc.plugin.version>3.0.0</maven.javadoc.plugin.version>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
@@ -309,7 +314,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.10.1</version>
+                    <version>${maven.javadoc.plugin.version}</version>
                     <configuration>
                         <taglets>
                             <taglet>
@@ -329,7 +334,7 @@
                         <use>true</use>
                         <author>false</author>
                         <version>false</version>
-                        <additionalparam>${javadoc.opts}</additionalparam>
+                        <doclint>none</doclint>
                         <links>
                             <link>http://hadoop.apache.org/docs/current/api/</link>
                         </links>
@@ -787,11 +792,6 @@
                             <goal>jar</goal>
                         </goals>
                         <phase>package</phase>
-                        <configuration>
-                            <stylesheetfile>
-                                ${project.basedir}/${project.parent.relativePath}/../assembly/docfiles/javadoc.css
-                            </stylesheetfile>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -806,7 +806,7 @@
                     <plugin>
                         <groupId>org.apache.rat</groupId>
                         <artifactId>apache-rat-plugin</artifactId>
-                        <version>0.11</version>
+                        <version>0.12</version>
                         <configuration>
                             <addDefaultLicenseMatchers>false</addDefaultLicenseMatchers>
                             <licenses>
@@ -1246,7 +1246,7 @@
                                             <pluginExecutionFilter>
                                                 <groupId>org.codehaus.mojo</groupId>
                                                 <artifactId>flatten-maven-plugin</artifactId>
-                                                <versionRange>[1.0.0-beta-3,)</versionRange>
+                                                <versionRange>1.0.1</versionRange>
                                                 <goals>
                                                     <goal>flatten</goal>
                                                 </goals>

@@ -56,6 +56,9 @@ import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.commandline.baseline.AutoAdjustCommandArg;
+import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
+import org.apache.ignite.internal.commandline.baseline.BaselineCommand;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
@@ -134,6 +137,8 @@ import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
 
+import static java.lang.Boolean.TRUE;
+import static java.lang.String.format;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
@@ -146,6 +151,7 @@ import static org.apache.ignite.internal.commandline.Command.TX;
 import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
+import static org.apache.ignite.internal.commandline.baseline.BaselineCommand.of;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.CONTENTION;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.DISTRIBUTION;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
@@ -165,12 +171,6 @@ import static org.apache.ignite.internal.commandline.cache.argument.ListCommandA
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.SEQUENCE;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.AUTOADJUST;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.SET;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.VERSION;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
@@ -278,30 +278,6 @@ public class CommandHandler {
 
     /** */
     public static final String CONFIRM_MSG = "y";
-
-    /** */
-    private static final String BASELINE_ADD = "add";
-
-    /** */
-    private static final String BASELINE_REMOVE = "remove";
-
-    /** */
-    private static final String BASELINE_COLLECT = "collect";
-
-    /** */
-    private static final String BASELINE_SET = "set";
-
-    /** */
-    private static final String BASELINE_SET_VERSION = "version";
-
-    /** */
-    private static final String BASELINE_AUTO_ADJUST = "autoadjust";
-
-    /** */
-    private static final String BASELINE_AUTO_ADJUST_ENABLE = "enable";
-
-    /** */
-    private static final String BASELINE_AUTO_ADJUST_DISABLE = "disable";
 
     /** */
     static final String WAL_PRINT = "print";
@@ -571,7 +547,7 @@ public class CommandHandler {
                 break;
 
             case BASELINE:
-                if (!BASELINE_COLLECT.equals(args.baselineAction()))
+                if (BaselineCommand.COLLECT != args.baselineArguments().getCmd())
                     str = "Warning: the command will perform changes in baseline.";
 
                 break;
@@ -694,8 +670,7 @@ public class CommandHandler {
             .flatMap(node -> Stream.concat(
                 node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
                 node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
-            )
-            .map(addr -> new IgniteBiTuple<>(node, addr + ":" + node.tcpPort())));
+            ).map(addr -> new IgniteBiTuple<>(node, addr + ":" + node.tcpPort())));
     }
 
     /**
@@ -713,7 +688,7 @@ public class CommandHandler {
                         node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
                         node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
                     )
-                    .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList())
+                        .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList())
                 )
             );
     }
@@ -873,7 +848,7 @@ public class CommandHandler {
         usageCache(LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
         usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
-            op(or(g(EXCLUDE_CACHES, CACHES), g(CACHE_FILTER, or(CacheFilterEnum.values())), CACHES)));
+            op(EXCLUDE_CACHES, CACHES), op(CACHE_FILTER, or(CacheFilterEnum.values())), op(CACHES));
         usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or(NODE_ID, NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, CACHES);
@@ -1214,7 +1189,7 @@ public class CommandHandler {
         IdleVerifyResultV2 res = executeTask(
             client,
             VisorIdleVerifyTaskV2.class,
-            new VisorIdleVerifyTaskArg(cacheArgs.caches(),cacheArgs.excludeCaches(), cacheArgs.idleCheckCrc())
+            new VisorIdleVerifyTaskArg(cacheArgs.caches(), cacheArgs.excludeCaches(), cacheArgs.idleCheckCrc())
         );
 
         res.print(System.out::print);
@@ -1224,86 +1199,59 @@ public class CommandHandler {
      * Change baseline.
      *
      * @param client Client.
-     * @param baselineAct Baseline action to execute.  @throws GridClientException If failed to execute baseline
-     * action.
      * @param baselineArgs Baseline action arguments.
      * @throws Throwable If failed to execute baseline action.
      */
-    private void baseline(GridClient client, String baselineAct, String baselineArgs) throws Throwable {
-        switch (baselineAct) {
-            case BASELINE_ADD:
-                baselineAdd(client, baselineArgs);
-                break;
+    private void baseline(GridClient client, BaselineArguments baselineArgs) throws Throwable {
+        try {
+            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, toVisorArguments(baselineArgs));
 
-            case BASELINE_REMOVE:
-                baselineRemove(client, baselineArgs);
-                break;
+            baselinePrint0(res);
+        }
+        catch (Throwable e) {
+            log("Failed to execute baseline command='" + baselineArgs.getCmd().text() + "'", e);
 
-            case BASELINE_SET:
-                baselineSet(client, baselineArgs);
-                break;
-
-            case BASELINE_SET_VERSION:
-                baselineVersion(client, baselineArgs);
-                break;
-
-            case BASELINE_AUTO_ADJUST:
-                baselineAutoAdjust(client, baselineArgs);
-                break;
-
-            case BASELINE_COLLECT:
-                baselinePrint(client);
-                break;
+            throw e;
         }
     }
 
     /**
      * Prepare task argument.
      *
-     * @param op Operation.
-     * @param s Argument from command line.
+     * @param args Argument from command line.
      * @return Task argument.
      */
-    private VisorBaselineTaskArg arg(VisorBaselineOperation op, String s) {
-        switch (op) {
+    private VisorBaselineTaskArg toVisorArguments(BaselineArguments args) {
+        VisorBaselineAutoAdjustSettings settings = args.getCmd() == BaselineCommand.AUTO_ADJUST
+            ? new VisorBaselineAutoAdjustSettings(args.getEnableAutoAdjust(), args.getSoftBaselineTimeout())
+            : null;
+
+        return new VisorBaselineTaskArg(toVisorOperation(args.getCmd()), args.getTopVer(), args.getConsistentIds(), settings);
+    }
+
+    /**
+     * Convert {@link BaselineCommand} to {@link VisorBaselineOperation}.
+     *
+     * @param baselineCommand Baseline command for convertion.
+     * @return {@link VisorBaselineOperation}.
+     */
+    private VisorBaselineOperation toVisorOperation(BaselineCommand baselineCommand) {
+        switch (baselineCommand) {
             case ADD:
+                return VisorBaselineOperation.ADD;
+            case AUTO_ADJUST:
+                return VisorBaselineOperation.AUTOADJUST;
             case REMOVE:
+                return VisorBaselineOperation.REMOVE;
             case SET:
-                List<String> consistentIds = getConsistentIds(s);
-
-                return new VisorBaselineTaskArg(op, -1, consistentIds, null);
-
+                return VisorBaselineOperation.SET;
             case VERSION:
-                try {
-                    long topVer = Long.parseLong(s);
-
-                    return new VisorBaselineTaskArg(op, topVer, null, null);
-                }
-                catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Invalid topology version: " + s, e);
-                }
-
-            case AUTOADJUST:
-                if (BASELINE_AUTO_ADJUST_DISABLE.equals(s)) {
-                    VisorBaselineAutoAdjustSettings settings = new VisorBaselineAutoAdjustSettings(false, -1);
-
-                    return new VisorBaselineTaskArg(op, -1, null, settings);
-                }
-                else {
-                    String[] argsArr = s.split(" ");
-
-                    assert argsArr.length == 2;
-
-                    VisorBaselineAutoAdjustSettings settings = new VisorBaselineAutoAdjustSettings(
-                        true,
-                        Long.parseLong(argsArr[1])
-                    );
-
-                    return new VisorBaselineTaskArg(op, -1, null, settings);
-                }
-            default:
-                return new VisorBaselineTaskArg(op, -1, null, new VisorBaselineAutoAdjustSettings(false, -1));
+                return VisorBaselineOperation.VERSION;
+            case COLLECT:
+                return VisorBaselineOperation.COLLECT;
         }
+
+        return null;
     }
 
     /**
@@ -1333,9 +1281,18 @@ public class CommandHandler {
         VisorBaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
 
         if (autoAdjustSettings != null) {
-            log("Baseline auto adjustment " + (autoAdjustSettings.isEnabled() ? "enabled" : "disabled") +
-                ": softTimeout=" + autoAdjustSettings.getSoftTimeout()
+            log("Baseline auto adjustment " + (TRUE.equals(autoAdjustSettings.getEnabled()) ? "enabled" : "disabled")
+                + ": softTimeout=" + autoAdjustSettings.getSoftTimeout()
             );
+        }
+
+        if (autoAdjustSettings.enabled) {
+            if (res.isBaselineAdjustInProgress())
+                log("Baseline auto-adjust is in progress");
+            else if (res.getRemainingTimeToBaselineAdjust() < 0)
+                log("Baseline auto-adjust are not scheduled");
+            else
+                log("Baseline auto-adjust will happen in '" + res.getRemainingTimeToBaselineAdjust() + "' ms");
         }
 
         nl();
@@ -1394,115 +1351,6 @@ public class CommandHandler {
 
                 log("Number of other nodes: " + others.size());
             }
-        }
-    }
-
-    /**
-     * Print current baseline.
-     *
-     * @param client Client.
-     */
-    private void baselinePrint(GridClient client) throws GridClientException {
-        VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(COLLECT, ""));
-
-        baselinePrint0(res);
-    }
-
-    /**
-     * Add nodes to baseline.
-     *
-     * @param client Client.
-     * @param baselineArgs Baseline action arguments.
-     * @throws Throwable If failed to add nodes to baseline.
-     */
-    private void baselineAdd(GridClient client, String baselineArgs) throws Throwable {
-        try {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(ADD, baselineArgs));
-
-            baselinePrint0(res);
-        }
-        catch (Throwable e) {
-            log("Failed to add nodes to baseline.");
-
-            throw e;
-        }
-    }
-
-    /**
-     * Remove nodes from baseline.
-     *
-     * @param client Client.
-     * @param consistentIds Consistent IDs.
-     * @throws Throwable If failed to remove nodes from baseline.
-     */
-    private void baselineRemove(GridClient client, String consistentIds) throws Throwable {
-        try {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(REMOVE, consistentIds));
-
-            baselinePrint0(res);
-        }
-        catch (Throwable e) {
-            log("Failed to remove nodes from baseline.");
-
-            throw e;
-        }
-    }
-
-    /**
-     * Set baseline.
-     *
-     * @param client Client.
-     * @param consistentIds Consistent IDs.
-     * @throws Throwable If failed to set baseline.
-     */
-    private void baselineSet(GridClient client, String consistentIds) throws Throwable {
-        try {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(SET, consistentIds));
-
-            baselinePrint0(res);
-        }
-        catch (Throwable e) {
-            log("Failed to set baseline.");
-
-            throw e;
-        }
-    }
-
-    /**
-     * Set baseline by topology version.
-     *
-     * @param client Client.
-     * @param arg Argument from command line.
-     */
-    private void baselineVersion(GridClient client, String arg) throws GridClientException {
-        try {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(VERSION, arg));
-
-            baselinePrint0(res);
-        }
-        catch (Throwable e) {
-            log("Failed to set baseline with specified topology version.");
-
-            throw e;
-        }
-    }
-
-    /**
-     * Set baseline autoadjustment settings.
-     *
-     * @param client Client.
-     * @param args Argument from command line. Either {@code disable} or {@code enable <softTimeout>}.
-     */
-    private void baselineAutoAdjust(GridClient client, String args) throws GridClientException {
-        try {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(AUTOADJUST, args));
-
-            baselinePrint0(res);
-        }
-        catch (Throwable e) {
-            log("Failed to update baseline autoadjustment settings.");
-
-            throw e;
         }
     }
 
@@ -1811,7 +1659,11 @@ public class CommandHandler {
                 return "Show the keys that are point of contention for multiple transactions.";
 
             case IDLE_VERIFY:
-                return "Verify counters and hash sums of primary and backup partitions for the specified caches on an idle cluster and print out the differences, if any.";
+                return "Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. " +
+                    "Cache filtering options configure the set of caches that will be processed by " + IDLE_VERIFY + " command. " +
+                    "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
+                    "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently filtered by cache name " +
+                    "regexps, by cache type and after all by exclude regexps.";
 
             case VALIDATE_INDEXES:
                 return "Validate indexes on an idle cluster and print out the keys that are missing in the indexes.";
@@ -1969,10 +1821,6 @@ public class CommandHandler {
 
         String pwd = null;
 
-        String baselineAct = "";
-
-        String baselineArgs = "";
-
         Long pingInterval = DFLT_PING_INTERVAL;
 
         Long pingTimeout = DFLT_PING_TIMEOUT;
@@ -1984,6 +1832,8 @@ public class CommandHandler {
         boolean autoConfirmation = false;
 
         CacheArguments cacheArgs = null;
+
+        BaselineArguments baselineArgs = null;
 
         List<Command> commands = new ArrayList<>();
 
@@ -2036,51 +1886,7 @@ public class CommandHandler {
                     case BASELINE:
                         commands.add(BASELINE);
 
-                        baselineAct = BASELINE_COLLECT; //default baseline action
-
-                        str = peekNextArg();
-
-                        if (str != null) {
-                            switch (str.toLowerCase()) {
-                                case BASELINE_ADD:
-                                case BASELINE_REMOVE:
-                                case BASELINE_SET:
-                                case BASELINE_SET_VERSION:
-                                    baselineAct = nextArg("Expected baseline action");
-
-                                    baselineArgs = nextArg("Expected baseline arguments");
-
-                                    break;
-
-                                case BASELINE_AUTO_ADJUST:
-                                    baselineAct = nextArg("Expected baseline action");
-
-                                    String enableDisable = nextArg("Expected argument for baseline autoadjust (enable|disable)")
-                                        .toLowerCase();
-
-                                    if (BASELINE_AUTO_ADJUST_DISABLE.equals(enableDisable))
-                                        baselineArgs = enableDisable.toLowerCase();
-                                    else {
-                                        if (!BASELINE_AUTO_ADJUST_ENABLE.equals(enableDisable)) {
-                                            String msg = "Argument after \"--baseline autoadjust\" must be" +
-                                                " either \"enable\" or \"disable\"";
-
-                                            throw new IllegalArgumentException(msg);
-                                        }
-
-                                        long softTimeout = nextLongArg("Expected soft timeout" +
-                                            " argument for baseline autoadjust");
-
-                                        if (softTimeout < 0)
-                                            throw new IllegalArgumentException("Soft timeout value for baseline" +
-                                                " autoadjustment can't be negative");
-
-                                        baselineArgs = enableDisable + " " + softTimeout;
-                                    }
-
-                                    break;
-                            }
-                        }
+                        baselineArgs = parseAndValidateBaselineArgs();
 
                         break;
 
@@ -2153,7 +1959,7 @@ public class CommandHandler {
                     case CMD_PASSWORD:
                         pwd = nextArg("Expected password");
 
-                        log(String.format(pwdArgWarnFmt, CMD_PASSWORD, CMD_PASSWORD));
+                        log(format(pwdArgWarnFmt, CMD_PASSWORD, CMD_PASSWORD));
 
                         break;
 
@@ -2180,7 +1986,7 @@ public class CommandHandler {
                     case CMD_KEYSTORE_PASSWORD:
                         sslKeyStorePassword = nextArg("Expected SSL key store password").toCharArray();
 
-                        log(String.format(pwdArgWarnFmt, CMD_KEYSTORE_PASSWORD, CMD_KEYSTORE_PASSWORD));
+                        log(format(pwdArgWarnFmt, CMD_KEYSTORE_PASSWORD, CMD_KEYSTORE_PASSWORD));
 
                         break;
 
@@ -2197,7 +2003,7 @@ public class CommandHandler {
                     case CMD_TRUSTSTORE_PASSWORD:
                         sslTrustStorePassword = nextArg("Expected SSL trust store password").toCharArray();
 
-                        log(String.format(pwdArgWarnFmt, CMD_TRUSTSTORE_PASSWORD, CMD_TRUSTSTORE_PASSWORD));
+                        log(format(pwdArgWarnFmt, CMD_TRUSTSTORE_PASSWORD, CMD_TRUSTSTORE_PASSWORD));
 
                         break;
 
@@ -2228,7 +2034,7 @@ public class CommandHandler {
         Command cmd = commands.get(0);
 
         return new Arguments(cmd, host, port, user, pwd,
-            baselineAct, baselineArgs,
+            baselineArgs,
             txArgs, cacheArgs,
             walAct, walArgs,
             pingTimeout, pingInterval, autoConfirmation,
@@ -2238,12 +2044,62 @@ public class CommandHandler {
     }
 
     /**
+     * Parses and validates baseline arguments.
+     *
+     * @return --baseline subcommand arguments in case validation is successful.
+     */
+    private BaselineArguments parseAndValidateBaselineArgs() {
+        if (!hasNextSubArg())
+            return new BaselineArguments.Builder(BaselineCommand.COLLECT).build();
+
+        BaselineCommand cmd = of(nextArg("Expected baseline action"));
+
+        if (cmd == null)
+            throw new IllegalArgumentException("Expected correct baseline action");
+
+        BaselineArguments.Builder baselineArgs = new BaselineArguments.Builder(cmd);
+
+        switch (cmd) {
+            case ADD:
+            case REMOVE:
+            case SET:
+                return baselineArgs
+                    .withConsistentIds(getConsistentIds(nextArg("Expected list of consistent ids")))
+                    .build();
+            case VERSION:
+                return baselineArgs
+                    .withTopVer(nextLongArg("topology version"))
+                    .build();
+            case AUTO_ADJUST:
+                do {
+                    AutoAdjustCommandArg autoAdjustArg = CommandArgUtils.of(
+                        nextArg("Expected one of auto-adjust arguments"), AutoAdjustCommandArg.class
+                    );
+
+                    if (autoAdjustArg == null)
+                        throw new IllegalArgumentException("Expected one of auto-adjust arguments");
+
+                    if (autoAdjustArg == AutoAdjustCommandArg.ENABLE || autoAdjustArg == AutoAdjustCommandArg.DISABLE)
+                        baselineArgs.withEnable(autoAdjustArg == AutoAdjustCommandArg.ENABLE);
+
+                    if (autoAdjustArg == AutoAdjustCommandArg.TIMEOUT)
+                        baselineArgs.withSoftBaselineTimeout(nextLongArg("soft timeout"));
+                }
+                while (hasNextSubArg());
+
+                return baselineArgs.build();
+        }
+
+        return baselineArgs.build();
+    }
+
+    /**
      * Parses and validates cache arguments.
      *
      * @return --cache subcommand arguments in case validation is successful.
      */
     private CacheArguments parseAndValidateCacheArgs() {
-        if (!hasNextCacheArg()) {
+        if (!hasNextSubArg()) {
             throw new IllegalArgumentException("Arguments are expected for --cache subcommand, " +
                 "run --cache help for more info.");
         }
@@ -2264,19 +2120,15 @@ public class CommandHandler {
                 break;
 
             case IDLE_VERIFY:
-                int idleVerifyArgsCnt = 3;
+                int idleVerifyArgsCnt = 5;
 
-                while (hasNextCacheArg() && idleVerifyArgsCnt-- > 0) {
+                while (hasNextSubArg() && idleVerifyArgsCnt-- > 0) {
                     String nextArg = nextArg("");
 
                     IdleVerifyCommandArg arg = CommandArgUtils.of(nextArg, IdleVerifyCommandArg.class);
 
-                    if(arg == null) {
-                        if (cacheArgs.excludeCaches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
-                            throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
-
+                    if (arg == null)
                         parseCacheNames(nextArg, cacheArgs);
-                    }
                     else {
                         switch (arg) {
                             case DUMP:
@@ -2295,9 +2147,6 @@ public class CommandHandler {
                                 break;
 
                             case CACHE_FILTER:
-                                if (cacheArgs.caches() != null || cacheArgs.excludeCaches() != null)
-                                    throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
-
                                 String filter = nextArg("The cache filter should be specified. The following " +
                                     "values can be used: " + Arrays.toString(CacheFilterEnum.values()) + '.');
 
@@ -2306,9 +2155,6 @@ public class CommandHandler {
                                 break;
 
                             case EXCLUDE_CACHES:
-                                if (cacheArgs.caches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
-                                    throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
-
                                 parseExcludeCacheNames(nextArg("Specify caches, which will be excluded."),
                                     cacheArgs);
 
@@ -2321,10 +2167,10 @@ public class CommandHandler {
             case CONTENTION:
                 cacheArgs.minQueueSize(Integer.parseInt(nextArg("Min queue size expected")));
 
-                if (hasNextCacheArg())
+                if (hasNextSubArg())
                     cacheArgs.nodeId(UUID.fromString(nextArg("")));
 
-                if (hasNextCacheArg())
+                if (hasNextSubArg())
                     cacheArgs.maxPrint(Integer.parseInt(nextArg("")));
                 else
                     cacheArgs.maxPrint(10);
@@ -2334,13 +2180,13 @@ public class CommandHandler {
             case VALIDATE_INDEXES:
                 int argsCnt = 0;
 
-                while (hasNextCacheArg() && argsCnt++ < 4) {
+                while (hasNextSubArg() && argsCnt++ < 4) {
                     String nextArg = nextArg("");
 
                     ValidateIndexesCommandArg arg = CommandArgUtils.of(nextArg, ValidateIndexesCommandArg.class);
 
-                    if(arg == CHECK_FIRST || arg == CHECK_THROUGH) {
-                        if (!hasNextCacheArg())
+                    if (arg == CHECK_FIRST || arg == CHECK_THROUGH) {
+                        if (!hasNextSubArg())
                             throw new IllegalArgumentException("Numeric value for '" + nextArg + "' parameter expected.");
 
                         int numVal;
@@ -2386,7 +2232,7 @@ public class CommandHandler {
                 if (!NULL.equals(nodeIdStr))
                     cacheArgs.nodeId(UUID.fromString(nodeIdStr));
 
-                while (hasNextCacheArg()) {
+                while (hasNextSubArg()) {
                     String nextArg = nextArg("");
 
                     DistributionCommandArg arg = CommandArgUtils.of(nextArg, DistributionCommandArg.class);
@@ -2401,7 +2247,7 @@ public class CommandHandler {
 
                         cacheArgs.setUserAttributes(userAttrs);
 
-                        nextArg = (hasNextCacheArg()) ? nextArg("") : null;
+                        nextArg = (hasNextSubArg()) ? nextArg("") : null;
 
                     }
 
@@ -2423,7 +2269,7 @@ public class CommandHandler {
 
                 OutputFormat outputFormat = SINGLE_LINE;
 
-                while (hasNextCacheArg()) {
+                while (hasNextSubArg()) {
                     String nextArg = nextArg("").toLowerCase();
 
                     ListCommandArg arg = CommandArgUtils.of(nextArg, ListCommandArg.class);
@@ -2465,16 +2311,16 @@ public class CommandHandler {
                 throw new IllegalArgumentException("Unknown --cache subcommand " + cmd);
         }
 
-        if (hasNextCacheArg())
+        if (hasNextSubArg())
             throw new IllegalArgumentException("Unexpected argument of --cache subcommand: " + peekNextArg());
 
         return cacheArgs;
     }
 
     /**
-     * @return <code>true</code> if there's next argument for --cache subcommand.
+     * @return <code>true</code> if there's next argument for subcommand.
      */
-    private boolean hasNextCacheArg() {
+    private boolean hasNextSubArg() {
         return hasNextArg() && Command.of(peekNextArg()) == null && !AUX_COMMANDS.contains(peekNextArg());
     }
 
@@ -2505,6 +2351,13 @@ public class CommandHandler {
         for (String cacheName : cacheNamesArr) {
             if (F.isEmpty(cacheName))
                 throw new IllegalArgumentException("Non-empty cache names expected.");
+
+            try {
+                Pattern.compile(cacheName);
+            }
+            catch (PatternSyntaxException e) {
+                throw new RuntimeException(format("Invalid cache name regexp '%s': %s", cacheName, e.getMessage()));
+            }
 
             cacheNamesSet.add(cacheName.trim());
         }
@@ -2860,11 +2713,11 @@ public class CommandHandler {
         usage(i("Deactivate cluster:"), DEACTIVATE, op(CMD_AUTO_CONFIRMATION));
         usage(i("Print current cluster state:"), STATE);
         usage(i("Print cluster baseline topology:"), BASELINE);
-        usage(i("Add nodes into baseline topology:"), BASELINE, BASELINE_ADD, constistIds, op(CMD_AUTO_CONFIRMATION));
-        usage(i("Remove nodes from baseline topology:"), BASELINE, BASELINE_REMOVE, constistIds, op(CMD_AUTO_CONFIRMATION));
-        usage(i("Set baseline topology:"), BASELINE, BASELINE_SET, constistIds, op(CMD_AUTO_CONFIRMATION));
-        usage(i("Set baseline topology based on version:"), BASELINE, BASELINE_SET_VERSION + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
-        usage(i("Set baseline autoadjustment settings:"), BASELINE, BASELINE_AUTO_ADJUST, "disable|(enable <softTimeout>)", op(CMD_AUTO_CONFIRMATION));
+        usage(i("Add nodes into baseline topology:"), BASELINE, BaselineCommand.ADD.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Remove nodes from baseline topology:"), BASELINE, BaselineCommand.REMOVE.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Set baseline topology:"), BASELINE, BaselineCommand.SET.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Set baseline topology based on version:"), BASELINE, BaselineCommand.VERSION.text() + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
+        usage(i("Set baseline autoadjustment settings:"), BASELINE, BaselineCommand.AUTO_ADJUST.text(), "disable|enable timeout <timeoutValue>", op(CMD_AUTO_CONFIRMATION));
         usage(i("List or kill transactions:"), TX, getTxOptions());
 
         if (enableExperimental) {
@@ -3021,7 +2874,7 @@ public class CommandHandler {
                             break;
 
                         case BASELINE:
-                            baseline(client, args.baselineAction(), args.baselineArguments());
+                            baseline(client, args.baselineArguments());
 
                             break;
 

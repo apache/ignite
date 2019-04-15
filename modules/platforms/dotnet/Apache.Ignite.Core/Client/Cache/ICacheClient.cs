@@ -154,6 +154,8 @@ namespace Apache.Ignite.Core.Client.Cache
         /// </summary>
         /// <param name="sqlQuery">SQL query.</param>
         /// <returns>Query cursor.</returns>
+        [Obsolete("Use SqlFieldsQuery instead. For strongly-typed queries use Apache.Ignite.Linq. " +
+                  "SqlQuery is a limited subset of SqlFieldsQuery.")]
         IQueryCursor<ICacheEntry<TK, TV>> Query(SqlQuery sqlQuery);
 
         /// <summary>
