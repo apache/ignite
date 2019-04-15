@@ -2672,7 +2672,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private GridCacheContext<?, ?> startCacheInRecoveryMode(
         DynamicCacheDescriptor desc
     ) throws IgniteCheckedException {
-        // Only affinity node caches are able to start cache in recovery mode.
+        // Only affinity nodes are able to start cache in recovery mode.
         desc = enricher().enrich(desc, true);
 
         CacheConfiguration cfg = desc.cacheConfiguration();
