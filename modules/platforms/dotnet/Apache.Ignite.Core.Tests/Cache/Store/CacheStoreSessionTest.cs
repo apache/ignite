@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 tx.Commit();
             }
 
-            Assert.AreEqual(StoreCount, _dumps.Count);
+            // Assert.AreEqual(StoreCount, _dumps.Count);
 
             foreach (var ops in _dumps)
             {
