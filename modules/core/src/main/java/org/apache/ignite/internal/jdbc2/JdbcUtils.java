@@ -300,7 +300,7 @@ public class JdbcUtils {
         row.add(CATALOG_NAME);
         row.add(tblMeta.schemaName());
         row.add(tblMeta.tableName());
-        row.add("TABLE");
+        row.add(tblMeta.tableType());
         row.add(null);
         row.add(null);
         row.add(null);

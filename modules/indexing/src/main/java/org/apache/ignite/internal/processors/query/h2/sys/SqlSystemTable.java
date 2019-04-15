@@ -60,7 +60,7 @@ public class SqlSystemTable extends TableBase {
 
         this.view = view;
 
-        this.setColumns(view.getColumns());
+        setColumns(view.getColumns());
 
         scanIdx = new SqlSystemIndex(this);
 
@@ -159,7 +159,7 @@ public class SqlSystemTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public TableType getTableType() {
-        return TableType.SYSTEM_TABLE;
+        return TableType.VIEW;
     }
 
     /** {@inheritDoc} */

@@ -63,6 +63,10 @@ import static org.apache.ignite.internal.jdbc2.JdbcUtils.tableRow;
 public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** Driver name. */
     public static final String DRIVER_NAME = "Apache Ignite Thin JDBC Driver";
+    /** Name of TABLE type. */
+    public static final String TYPE_TABLE = "TABLE";
+    /** Name of VIEW type. */
+    public static final String TYPE_VIEW = "VIEW";
 
     /** Connection. */
     private final JdbcThinConnection conn;
@@ -733,7 +737,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             tblTypeMatch = true;
         else {
             for (String type : tblTypes) {
-                if ("TABLE".equals(type)) {
+                if (TYPE_TABLE.equals(type) || TYPE_VIEW.equals(type)) {
                     tblTypeMatch = true;
 
                     break;
@@ -744,7 +748,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         if (!isValidCatalog(catalog) || !tblTypeMatch)
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
-        JdbcMetaTablesResult res = conn.sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tblNamePtrn));
+        JdbcMetaTablesResult res = conn.sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tblNamePtrn, tblTypes));
 
         List<List<Object>> rows = new LinkedList<>();
 
@@ -769,7 +773,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     @Override public ResultSet getTableTypes() throws SQLException {
-        return new JdbcThinResultSet(Collections.singletonList(Collections.<Object>singletonList("TABLE")),
+        return new JdbcThinResultSet(Collections.singletonList(Arrays.asList(TYPE_TABLE, TYPE_VIEW)),
             Arrays.asList(new JdbcColumnMeta(null, null, "TABLE_TYPE", String.class)));
     }
 
@@ -806,7 +810,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         );
 
         if (!isValidCatalog(catalog))
-            return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
+            return new JdbcThinResultSet(Collections.emptyList(), meta);
 
         JdbcMetaColumnsResult res = conn.sendRequest(new JdbcMetaColumnsRequest(schemaPtrn, tblNamePtrn, colNamePtrn));
 

@@ -46,6 +46,8 @@ import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinDatabaseMetadata.TYPE_TABLE;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinDatabaseMetadata.TYPE_VIEW;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.CATALOG_NAME;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.columnRow;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.indexRows;
@@ -715,10 +717,10 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
         List<List<?>> rows = Collections.emptyList();
 
-        boolean areTypesValid = tblTypes == null || Arrays.asList(tblTypes).contains("TABLE");
+        boolean areTypesValid = tblTypes == null || Arrays.asList(tblTypes).contains(TYPE_TABLE);
 
         if (isValidCatalog(catalog) && areTypesValid) {
-            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(schemaPtrn, tblNamePtrn);
+            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(schemaPtrn, tblNamePtrn, tblTypes);
 
             rows = new ArrayList<>(tabMetas.size());
 
@@ -762,7 +764,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.singletonList("TABLE_TYPE"),
             Collections.singletonList(String.class.getName()),
-            Collections.<List<?>>singletonList(Collections.singletonList("TABLE")),
+            Collections.singletonList(Arrays.asList(TYPE_TABLE, TYPE_VIEW)),
             true);
     }
 

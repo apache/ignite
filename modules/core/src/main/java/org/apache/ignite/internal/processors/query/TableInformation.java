@@ -13,46 +13,35 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.internal.processors.odbc.jdbc;
+package org.apache.ignite.internal.processors.query;
 
 import java.util.Objects;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
-
 /**
- * JDBC table metadata.
+ * Information about table.
  */
-public class JdbcTableMeta implements JdbcRawBinarylizable {
+public class TableInformation {
     /** Schema name. */
-    private String schemaName;
+    private final String schemaName;
 
     /** Table name. */
-    private String tblName;
+    private final String tblName;
 
     /** Table type. */
-    private String tblType;
+    private final String tblType;
 
-    /**
-     * Default constructor is used for deserialization.
-     */
-    JdbcTableMeta() {
-        // No-op.
-    }
 
     /**
      * @param schemaName Schema name.
      * @param tblName Table name.
      * @param tblType Table type.
      */
-    JdbcTableMeta(String schemaName, String tblName, String tblType) {
+    public TableInformation(String schemaName, String tblName, String tblType) {
         this.schemaName = schemaName;
         this.tblName = tblName;
         this.tblType = tblType;
@@ -80,26 +69,6 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        writer.writeString(schemaName);
-        writer.writeString(tblName);
-
-        if (ver.compareTo(VER_2_8_0) >= 0)
-            writer.writeString(tblType);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        schemaName = reader.readString();
-        tblName = reader.readString();
-
-        if (ver.compareTo(VER_2_8_0) >= 0)
-            tblType = reader.readString();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -107,9 +76,9 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        JdbcTableMeta meta = (JdbcTableMeta)o;
+        TableInformation tblInfo = (TableInformation)o;
 
-        return F.eq(schemaName, meta.schemaName) && F.eq(tblName, meta.tblName);
+        return F.eq(schemaName, tblInfo.schemaName) && F.eq(tblName, tblInfo.tblName);
     }
 
     /** {@inheritDoc} */
@@ -119,6 +88,7 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcTableMeta.class, this);
+        return S.toString(TableInformation.class, this);
     }
+
 }

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -77,12 +79,14 @@ import org.apache.ignite.internal.processors.cache.query.RegisteredQueryCursor;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.query.ColumnInformation;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
@@ -92,6 +96,7 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
+import org.apache.ignite.internal.processors.query.TableInformation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
@@ -153,8 +158,11 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
+import org.h2.table.TableType;
 import org.h2.util.JdbcUtils;
+import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.FALSE;
@@ -166,6 +174,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.request
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
+import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.session;
@@ -1724,6 +1733,84 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public Set<String> schemasNames(){
         return schemaMgr.schemaNames();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<TableInformation> tablesInformation(String schemaNamePtrn, String tblNamePtrn,
+        String[] tblTypes) {
+        Set<String> types = F.isEmpty(tblTypes) ? Collections.emptySet() : new HashSet<>(Arrays.asList(tblTypes));
+
+        Collection<TableInformation> infos = new ArrayList<>();
+
+        if (F.isEmpty(tblTypes) || types.contains(TableType.TABLE.name())) {
+            schemaMgr.dataTables().stream()
+                .filter(t -> matches(t.getSchema().getName(), schemaNamePtrn))
+                .filter(t -> matches(t.getName(), tblNamePtrn))
+                .map(t -> new TableInformation(t.getSchema().getName(), t.getName(), TableType.TABLE.name()))
+                .forEach(infos::add);
+        }
+
+        if ((F.isEmpty(tblTypes) || types.contains(TableType.VIEW.name()))
+            && matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
+            schemaMgr.systemViews().stream()
+                .filter(t -> matches(t.getTableName(), tblNamePtrn))
+                .map(v -> new TableInformation(QueryUtils.SCHEMA_SYS, v.getTableName(), TableType.VIEW.name()))
+                .forEach(infos::add);
+        }
+
+        return infos;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn,
+        String colNamePtrn) {
+        Collection<ColumnInformation> infos = new ArrayList<>();
+
+        //Gather information about tables
+        schemaMgr.dataTables().stream()
+            .filter(t -> matches(t.getSchema().getName(), schemaNamePtrn))
+            .filter(t -> matches(t.getName(), tblNamePtrn))
+            .flatMap(
+                tbl ->
+                    Stream.of(tbl.getColumns())
+                        .filter(Column::getVisible)
+                        .map(c -> {
+                            GridQueryProperty prop = tbl.rowDescriptor().type().property(c.getName());
+
+                            return new ColumnInformation(
+                                c.getColumnId(),
+                                tbl.getSchema().getName(),
+                                tbl.getName(),
+                                c.getName(),
+                                prop.type(),
+                                !prop.notNull(),
+                                prop.defaultValue(),
+                                prop.precision(),
+                                prop.scale());
+                        })
+            ).forEach(infos::add);
+
+        // Gather information about system views.
+        if (matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
+            schemaMgr.systemViews().stream()
+                .filter(v -> matches(v.getTableName(), tblNamePtrn))
+                .flatMap(
+                    view ->
+                        Stream.of(view.getColumns())
+                            .map(c -> new ColumnInformation(
+                                c.getColumnId(),
+                                QueryUtils.SCHEMA_SYS,
+                                view.getTableName(),
+                                c.getName(),
+                                IgniteUtils.classForName(DataType.getTypeClassName(c.getType()), Object.class),
+                                c.isNullable(),
+                                null,
+                                (int)c.getPrecision(),
+                                c.getScale()))
+                ).forEach(infos::add);
+        }
+
+        return infos;
     }
 
     /** {@inheritDoc} */

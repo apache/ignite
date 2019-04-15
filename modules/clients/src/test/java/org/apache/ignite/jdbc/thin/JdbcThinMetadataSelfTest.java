@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
@@ -47,7 +48,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static java.sql.Types.DATE;
@@ -278,12 +281,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetAllTables() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            DatabaseMetaData meta = conn.getMetaData();
-
-            ResultSet rs = meta.getTables(null, null, null, null);
-
-            Set<String> expectedTbls = new HashSet<>(Arrays.asList(
+        testGetTables(
+            new String[] {"TABLE"},
+            new HashSet<>(Arrays.asList(
                 "org.ORGANIZATION",
                 "pers.PERSON",
                 "dep.DEPARTMENT",
@@ -291,11 +291,46 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.Quoted",
                 "PUBLIC.TEST_DECIMAL_COLUMN",
                 "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION",
-                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META"));
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META"))
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetAllView() throws Exception {
+        testGetTables(
+            new String[] {"VIEW"},
+            new HashSet<>(Arrays.asList(
+                "IGNITE.LOCAL_SQL_QUERY_HISTORY",
+                "IGNITE.NODES",
+                "IGNITE.SCHEMAS",
+                "IGNITE.CACHE_GROUPS",
+                "IGNITE.NODE_METRICS",
+                "IGNITE.BASELINE_NODES",
+                "IGNITE.INDEXES",
+                "IGNITE.LOCAL_CACHE_GROUPS_IO",
+                "IGNITE.LOCAL_SQL_RUNNING_QUERIES",
+                "IGNITE.NODE_ATTRIBUTES",
+                "IGNITE.CACHES",
+                "IGNITE.TABLES"
+            ))
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void testGetTables(String[] tblTypes, Set<String> expectedTbls) throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs = meta.getTables(null, null, null, tblTypes);
 
             Set<String> actualTbls = new HashSet<>(expectedTbls.size());
 
-            while(rs.next()) {
+            while (rs.next()) {
                 actualTbls.add(rs.getString("TABLE_SCHEM") + '.'
                     + rs.getString("TABLE_NAME"));
             }
@@ -334,7 +369,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             while (rs.next()) {
                 String name = rs.getString("COLUMN_NAME");
 
-                assert names.remove(name);
+                assert names.remove(name) : "Unuxpected column name " + name;
 
                 if ("NAME".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == VARCHAR;
@@ -428,47 +463,247 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             ResultSet rs = meta.getColumns(null, null, null, null);
 
-            Set<String> expectedCols = new HashSet<>(Arrays.asList(
-                "org.ORGANIZATION.ID.null",
-                "org.ORGANIZATION.NAME.null.42",
-                "pers.PERSON.ORGID.null",
-                "pers.PERSON.AGE.null",
-                "pers.PERSON.NAME.null",
-                "dep.DEPARTMENT.ID.null",
-                "dep.DEPARTMENT.NAME.null.43",
-                "PUBLIC.TEST.ID.null",
-                "PUBLIC.TEST.NAME.'default name'.50",
-                "PUBLIC.TEST.VAL.null.50",
-                "PUBLIC.TEST.AGE.21",
+            List<String> expectedCols = Arrays.asList(
                 "PUBLIC.Quoted.Id.null",
                 "PUBLIC.Quoted.Name.null.50",
+                "PUBLIC.TEST.ID.null",
+                "PUBLIC.TEST.NAME.'default name'.50",
+                "PUBLIC.TEST.AGE.21",
+                "PUBLIC.TEST.VAL.null.50",
                 "PUBLIC.TEST_DECIMAL_COLUMN.ID.null",
                 "PUBLIC.TEST_DECIMAL_COLUMN.DEC_COL.null.8.3",
                 "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID.null",
                 "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.DEC_COL.null.8",
                 "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.ID.null",
                 "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.DEC_COL.null.8",
-                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.DATE_COL.null"
-            ));
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.DATE_COL.null",
+                "dep.DEPARTMENT.ID.null",
+                "dep.DEPARTMENT.NAME.null.43",
+                "org.ORGANIZATION.ID.null",
+                "org.ORGANIZATION.NAME.null.42",
+                "pers.PERSON.NAME.null",
+                "pers.PERSON.AGE.null",
+                "pers.PERSON.ORGID.null"
+            );
 
-            Set<String> actualCols = new HashSet<>(expectedCols.size());
+            List<String> actualUserCols = new ArrayList<>(expectedCols.size());
+
+            List<String> actualSystemCols = new ArrayList<>();
 
             while(rs.next()) {
                 int precision = rs.getInt("COLUMN_SIZE");
 
                 int scale = rs.getInt("DECIMAL_DIGITS");
 
-                actualCols.add(rs.getString("TABLE_SCHEM") + '.'
+                String schemaName = rs.getString("TABLE_SCHEM");
+
+                String colDefinition = schemaName + '.'
                     + rs.getString("TABLE_NAME") + "."
                     + rs.getString("COLUMN_NAME") + "."
                     + rs.getString("COLUMN_DEF")
                     + (precision == 0 ? "" : ("." + precision))
-                    + (scale == 0 ? "" : ("." + scale))
-                );
+                    + (scale == 0 ? "" : ("." + scale));
+
+                if (!schemaName.equals(QueryUtils.SCHEMA_SYS))
+                    actualUserCols.add(colDefinition);
+                else
+                    actualSystemCols.add(colDefinition);
             }
 
-            assert expectedCols.equals(actualCols) : "expectedCols=" + expectedCols +
-                ", actualCols" + actualCols;
+            Assert.assertEquals(expectedCols, actualUserCols);
+
+            expectedCols = Arrays.asList(
+                "IGNITE.BASELINE_NODES.CONSISTENT_ID.null.2147483647",
+                "IGNITE.BASELINE_NODES.ONLINE.null.1",
+                "IGNITE.CACHES.CACHE_GROUP_ID.null.10",
+                "IGNITE.CACHES.CACHE_GROUP_NAME.null.2147483647",
+                "IGNITE.CACHES.CACHE_ID.null.10",
+                "IGNITE.CACHES.CACHE_NAME.null.2147483647",
+                "IGNITE.CACHES.CACHE_TYPE.null.2147483647",
+                "IGNITE.CACHES.CACHE_MODE.null.2147483647",
+                "IGNITE.CACHES.ATOMICITY_MODE.null.2147483647",
+                "IGNITE.CACHES.IS_ONHEAP_CACHE_ENABLED.null.1",
+                "IGNITE.CACHES.IS_COPY_ON_READ.null.1",
+                "IGNITE.CACHES.IS_LOAD_PREVIOUS_VALUE.null.1",
+                "IGNITE.CACHES.IS_READ_FROM_BACKUP.null.1",
+                "IGNITE.CACHES.PARTITION_LOSS_POLICY.null.2147483647",
+                "IGNITE.CACHES.NODE_FILTER.null.2147483647",
+                "IGNITE.CACHES.TOPOLOGY_VALIDATOR.null.2147483647",
+                "IGNITE.CACHES.IS_EAGER_TTL.null.1",
+                "IGNITE.CACHES.WRITE_SYNCHRONIZATION_MODE.null.2147483647",
+                "IGNITE.CACHES.IS_INVALIDATE.null.1",
+                "IGNITE.CACHES.IS_EVENTS_DISABLED.null.1",
+                "IGNITE.CACHES.IS_STATISTICS_ENABLED.null.1",
+                "IGNITE.CACHES.IS_MANAGEMENT_ENABLED.null.1",
+                "IGNITE.CACHES.BACKUPS.null.10",
+                "IGNITE.CACHES.AFFINITY.null.2147483647",
+                "IGNITE.CACHES.AFFINITY_MAPPER.null.2147483647",
+                "IGNITE.CACHES.REBALANCE_MODE.null.2147483647",
+                "IGNITE.CACHES.REBALANCE_BATCH_SIZE.null.10",
+                "IGNITE.CACHES.REBALANCE_TIMEOUT.null.19",
+                "IGNITE.CACHES.REBALANCE_DELAY.null.19",
+                "IGNITE.CACHES.REBALANCE_THROTTLE.null.19",
+                "IGNITE.CACHES.REBALANCE_BATCHES_PREFETCH_COUNT.null.19",
+                "IGNITE.CACHES.REBALANCE_ORDER.null.10",
+                "IGNITE.CACHES.EVICTION_FILTER.null.2147483647",
+                "IGNITE.CACHES.EVICTION_POLICY_FACTORY.null.2147483647",
+                "IGNITE.CACHES.IS_NEAR_CACHE_ENABLED.null.1",
+                "IGNITE.CACHES.NEAR_CACHE_EVICTION_POLICY_FACTORY.null.2147483647",
+                "IGNITE.CACHES.NEAR_CACHE_START_SIZE.null.10",
+                "IGNITE.CACHES.DEFAULT_LOCK_TIMEOUT.null.19",
+                "IGNITE.CACHES.CACHE_INTERCEPTOR.null.2147483647",
+                "IGNITE.CACHES.CACHE_STORE_FACTORY.null.2147483647",
+                "IGNITE.CACHES.IS_STORE_KEEP_BINARY.null.1",
+                "IGNITE.CACHES.IS_READ_THROUGH.null.1",
+                "IGNITE.CACHES.IS_WRITE_THROUGH.null.1",
+                "IGNITE.CACHES.IS_WRITE_BEHIND_ENABLED.null.1",
+                "IGNITE.CACHES.WRITE_BEHIND_COALESCING.null.1",
+                "IGNITE.CACHES.WRITE_BEHIND_FLUSH_SIZE.null.10",
+                "IGNITE.CACHES.WRITE_BEHIND_FLUSH_FREQUENCY.null.19",
+                "IGNITE.CACHES.WRITE_BEHIND_FLUSH_THREAD_COUNT.null.10",
+                "IGNITE.CACHES.WRITE_BEHIND_FLUSH_BATCH_SIZE.null.10",
+                "IGNITE.CACHES.MAX_CONCURRENT_ASYNC_OPERATIONS.null.10",
+                "IGNITE.CACHES.CACHE_LOADER_FACTORY.null.2147483647",
+                "IGNITE.CACHES.CACHE_WRITER_FACTORY.null.2147483647",
+                "IGNITE.CACHES.EXPIRY_POLICY_FACTORY.null.2147483647",
+                "IGNITE.CACHES.IS_SQL_ESCAPE_ALL.null.1",
+                "IGNITE.CACHES.SQL_SCHEMA.null.2147483647",
+                "IGNITE.CACHES.SQL_INDEX_MAX_INLINE_SIZE.null.10",
+                "IGNITE.CACHES.IS_SQL_ONHEAP_CACHE_ENABLED.null.1",
+                "IGNITE.CACHES.SQL_ONHEAP_CACHE_MAX_SIZE.null.10",
+                "IGNITE.CACHES.QUERY_DETAILS_METRICS_SIZE.null.10",
+                "IGNITE.CACHES.QUERY_PARALLELISM.null.10",
+                "IGNITE.CACHES.MAX_QUERY_ITERATORS_COUNT.null.10",
+                "IGNITE.CACHES.DATA_REGION_NAME.null.2147483647",
+                "IGNITE.CACHE_GROUPS.CACHE_GROUP_ID.null.10",
+                "IGNITE.CACHE_GROUPS.CACHE_GROUP_NAME.null.2147483647",
+                "IGNITE.CACHE_GROUPS.IS_SHARED.null.1",
+                "IGNITE.CACHE_GROUPS.CACHE_COUNT.null.10",
+                "IGNITE.CACHE_GROUPS.CACHE_MODE.null.2147483647",
+                "IGNITE.CACHE_GROUPS.ATOMICITY_MODE.null.2147483647",
+                "IGNITE.CACHE_GROUPS.AFFINITY.null.2147483647",
+                "IGNITE.CACHE_GROUPS.PARTITIONS_COUNT.null.10",
+                "IGNITE.CACHE_GROUPS.NODE_FILTER.null.2147483647",
+                "IGNITE.CACHE_GROUPS.DATA_REGION_NAME.null.2147483647",
+                "IGNITE.CACHE_GROUPS.TOPOLOGY_VALIDATOR.null.2147483647",
+                "IGNITE.CACHE_GROUPS.PARTITION_LOSS_POLICY.null.2147483647",
+                "IGNITE.CACHE_GROUPS.REBALANCE_MODE.null.2147483647",
+                "IGNITE.CACHE_GROUPS.REBALANCE_DELAY.null.19",
+                "IGNITE.CACHE_GROUPS.REBALANCE_ORDER.null.10",
+                "IGNITE.CACHE_GROUPS.BACKUPS.null.10",
+                "IGNITE.INDEXES.CACHE_GROUP_ID.null.10",
+                "IGNITE.INDEXES.CACHE_GROUP_NAME.null.2147483647",
+                "IGNITE.INDEXES.CACHE_ID.null.10",
+                "IGNITE.INDEXES.CACHE_NAME.null.2147483647",
+                "IGNITE.INDEXES.SCHEMA_NAME.null.2147483647",
+                "IGNITE.INDEXES.TABLE_NAME.null.2147483647",
+                "IGNITE.INDEXES.INDEX_NAME.null.2147483647",
+                "IGNITE.INDEXES.INDEX_TYPE.null.2147483647",
+                "IGNITE.INDEXES.COLUMNS.null.2147483647",
+                "IGNITE.INDEXES.IS_PK.null.1",
+                "IGNITE.INDEXES.IS_UNIQUE.null.1",
+                "IGNITE.INDEXES.INLINE_SIZE.null.10",
+                "IGNITE.LOCAL_CACHE_GROUPS_IO.CACHE_GROUP_ID.null.10",
+                "IGNITE.LOCAL_CACHE_GROUPS_IO.CACHE_GROUP_NAME.null.2147483647",
+                "IGNITE.LOCAL_CACHE_GROUPS_IO.PHYSICAL_READS.null.19",
+                "IGNITE.LOCAL_CACHE_GROUPS_IO.LOGICAL_READS.null.19",
+                "IGNITE.LOCAL_SQL_QUERY_HISTORY.SCHEMA_NAME.null.2147483647",
+                "IGNITE.LOCAL_SQL_QUERY_HISTORY.SQL.null.2147483647",
+                "IGNITE.LOCAL_SQL_QUERY_HISTORY.LOCAL.null.1",
+                "IGNITE.LOCAL_SQL_QUERY_HISTORY.EXECUTIONS.null.19",
+                "IGNITE.LOCAL_SQL_QUERY_HISTORY.FAILURES.null.19",
+                "IGNITE.LOCAL_SQL_QUERY_HISTORY.DURATION_MIN.null.19",
+                "IGNITE.LOCAL_SQL_QUERY_HISTORY.DURATION_MAX.null.19",
+                "IGNITE.LOCAL_SQL_QUERY_HISTORY.LAST_START_TIME.null.26.6",
+                "IGNITE.LOCAL_SQL_RUNNING_QUERIES.QUERY_ID.null.2147483647",
+                "IGNITE.LOCAL_SQL_RUNNING_QUERIES.SQL.null.2147483647",
+                "IGNITE.LOCAL_SQL_RUNNING_QUERIES.SCHEMA_NAME.null.2147483647",
+                "IGNITE.LOCAL_SQL_RUNNING_QUERIES.LOCAL.null.1",
+                "IGNITE.LOCAL_SQL_RUNNING_QUERIES.START_TIME.null.26.6",
+                "IGNITE.LOCAL_SQL_RUNNING_QUERIES.DURATION.null.19",
+                "IGNITE.NODES.NODE_ID.null.2147483647",
+                "IGNITE.NODES.CONSISTENT_ID.null.2147483647",
+                "IGNITE.NODES.VERSION.null.2147483647",
+                "IGNITE.NODES.IS_CLIENT.null.1",
+                "IGNITE.NODES.IS_DAEMON.null.1",
+                "IGNITE.NODES.NODE_ORDER.null.10",
+                "IGNITE.NODES.ADDRESSES.null.2147483647",
+                "IGNITE.NODES.HOSTNAMES.null.2147483647",
+                "IGNITE.NODE_ATTRIBUTES.NODE_ID.null.2147483647",
+                "IGNITE.NODE_ATTRIBUTES.NAME.null.2147483647",
+                "IGNITE.NODE_ATTRIBUTES.VALUE.null.2147483647",
+                "IGNITE.NODE_METRICS.NODE_ID.null.2147483647",
+                "IGNITE.NODE_METRICS.LAST_UPDATE_TIME.null.26.6",
+                "IGNITE.NODE_METRICS.MAX_ACTIVE_JOBS.null.10",
+                "IGNITE.NODE_METRICS.CUR_ACTIVE_JOBS.null.10",
+                "IGNITE.NODE_METRICS.AVG_ACTIVE_JOBS.null.7",
+                "IGNITE.NODE_METRICS.MAX_WAITING_JOBS.null.10",
+                "IGNITE.NODE_METRICS.CUR_WAITING_JOBS.null.10",
+                "IGNITE.NODE_METRICS.AVG_WAITING_JOBS.null.7",
+                "IGNITE.NODE_METRICS.MAX_REJECTED_JOBS.null.10",
+                "IGNITE.NODE_METRICS.CUR_REJECTED_JOBS.null.10",
+                "IGNITE.NODE_METRICS.AVG_REJECTED_JOBS.null.7",
+                "IGNITE.NODE_METRICS.TOTAL_REJECTED_JOBS.null.10",
+                "IGNITE.NODE_METRICS.MAX_CANCELED_JOBS.null.10",
+                "IGNITE.NODE_METRICS.CUR_CANCELED_JOBS.null.10",
+                "IGNITE.NODE_METRICS.AVG_CANCELED_JOBS.null.7",
+                "IGNITE.NODE_METRICS.TOTAL_CANCELED_JOBS.null.10",
+                "IGNITE.NODE_METRICS.MAX_JOBS_WAIT_TIME.null.19",
+                "IGNITE.NODE_METRICS.CUR_JOBS_WAIT_TIME.null.19",
+                "IGNITE.NODE_METRICS.AVG_JOBS_WAIT_TIME.null.19",
+                "IGNITE.NODE_METRICS.MAX_JOBS_EXECUTE_TIME.null.19",
+                "IGNITE.NODE_METRICS.CUR_JOBS_EXECUTE_TIME.null.19",
+                "IGNITE.NODE_METRICS.AVG_JOBS_EXECUTE_TIME.null.19",
+                "IGNITE.NODE_METRICS.TOTAL_JOBS_EXECUTE_TIME.null.19",
+                "IGNITE.NODE_METRICS.TOTAL_EXECUTED_JOBS.null.10",
+                "IGNITE.NODE_METRICS.TOTAL_EXECUTED_TASKS.null.10",
+                "IGNITE.NODE_METRICS.TOTAL_BUSY_TIME.null.19",
+                "IGNITE.NODE_METRICS.TOTAL_IDLE_TIME.null.19",
+                "IGNITE.NODE_METRICS.CUR_IDLE_TIME.null.19",
+                "IGNITE.NODE_METRICS.BUSY_TIME_PERCENTAGE.null.7",
+                "IGNITE.NODE_METRICS.IDLE_TIME_PERCENTAGE.null.7",
+                "IGNITE.NODE_METRICS.TOTAL_CPU.null.10",
+                "IGNITE.NODE_METRICS.CUR_CPU_LOAD.null.17",
+                "IGNITE.NODE_METRICS.AVG_CPU_LOAD.null.17",
+                "IGNITE.NODE_METRICS.CUR_GC_CPU_LOAD.null.17",
+                "IGNITE.NODE_METRICS.HEAP_MEMORY_INIT.null.19",
+                "IGNITE.NODE_METRICS.HEAP_MEMORY_USED.null.19",
+                "IGNITE.NODE_METRICS.HEAP_MEMORY_COMMITED.null.19",
+                "IGNITE.NODE_METRICS.HEAP_MEMORY_MAX.null.19",
+                "IGNITE.NODE_METRICS.HEAP_MEMORY_TOTAL.null.19",
+                "IGNITE.NODE_METRICS.NONHEAP_MEMORY_INIT.null.19",
+                "IGNITE.NODE_METRICS.NONHEAP_MEMORY_USED.null.19",
+                "IGNITE.NODE_METRICS.NONHEAP_MEMORY_COMMITED.null.19",
+                "IGNITE.NODE_METRICS.NONHEAP_MEMORY_MAX.null.19",
+                "IGNITE.NODE_METRICS.NONHEAP_MEMORY_TOTAL.null.19",
+                "IGNITE.NODE_METRICS.UPTIME.null.19",
+                "IGNITE.NODE_METRICS.JVM_START_TIME.null.26.6",
+                "IGNITE.NODE_METRICS.NODE_START_TIME.null.26.6",
+                "IGNITE.NODE_METRICS.LAST_DATA_VERSION.null.19",
+                "IGNITE.NODE_METRICS.CUR_THREAD_COUNT.null.10",
+                "IGNITE.NODE_METRICS.MAX_THREAD_COUNT.null.10",
+                "IGNITE.NODE_METRICS.TOTAL_THREAD_COUNT.null.19",
+                "IGNITE.NODE_METRICS.CUR_DAEMON_THREAD_COUNT.null.10",
+                "IGNITE.NODE_METRICS.SENT_MESSAGES_COUNT.null.10",
+                "IGNITE.NODE_METRICS.SENT_BYTES_COUNT.null.19",
+                "IGNITE.NODE_METRICS.RECEIVED_MESSAGES_COUNT.null.10",
+                "IGNITE.NODE_METRICS.RECEIVED_BYTES_COUNT.null.19",
+                "IGNITE.NODE_METRICS.OUTBOUND_MESSAGES_QUEUE.null.10",
+                "IGNITE.SCHEMAS.SCHEMA_NAME.null.2147483647",
+                "IGNITE.TABLES.CACHE_GROUP_ID.null.10",
+                "IGNITE.TABLES.CACHE_GROUP_NAME.null.2147483647",
+                "IGNITE.TABLES.CACHE_ID.null.10",
+                "IGNITE.TABLES.CACHE_NAME.null.2147483647",
+                "IGNITE.TABLES.SCHEMA_NAME.null.2147483647",
+                "IGNITE.TABLES.TABLE_NAME.null.2147483647",
+                "IGNITE.TABLES.AFFINITY_KEY_COLUMN.null.2147483647",
+                "IGNITE.TABLES.KEY_ALIAS.null.2147483647",
+                "IGNITE.TABLES.VALUE_ALIAS.null.2147483647",
+                "IGNITE.TABLES.KEY_TYPE_NAME.null.2147483647",
+                "IGNITE.TABLES.VALUE_TYPE_NAME.null.2147483647"
+            );
+            Assert.assertEquals(expectedCols, actualSystemCols);
+
         }
     }
 
