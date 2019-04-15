@@ -583,7 +583,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             assert !exchFut.context().mergeExchanges();
 
                             affVer = exchFut.initialVersion();
-                            affAssignment = grp.affinity().idealAssignment();
+                            affAssignment = grp.affinity().idealAssignmentRaw();
                         }
 
                         initPartitions(affVer, affAssignment, exchFut, updateSeq);
@@ -2897,11 +2897,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (affNodes.isEmpty())
                     continue;
 
-                Set<ClusterNode> owners = U.newHashSet(affNodes.size());
-
                 for (ClusterNode node : affNodes) {
-                    if (hasState(i, node.id(), OWNING))
-                        owners.add(node);
+                    if (!hasState(i, node.id(), OWNING))
+                        return;
                 }
 
                 if (!grp.isReplicated()) {
@@ -2912,15 +2910,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             if (hasState(i, nodeId, OWNING)) {
                                 ClusterNode node = ctx.discovery().node(nodeId);
 
-                                if (node != null)
-                                    owners.add(node);
+                                if (node != null && !affNodes.contains(node))
+                                    return;
                             }
                         }
                     }
                 }
-
-                if (affNodes.size() != owners.size() || !owners.containsAll(affNodes))
-                    return;
             }
 
             rebalancedTopVer = readyTopVer;

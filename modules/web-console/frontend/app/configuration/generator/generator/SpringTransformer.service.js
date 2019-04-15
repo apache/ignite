@@ -17,6 +17,8 @@
 
 import _ from 'lodash';
 
+import { Bean } from './Beans';
+
 import AbstractTransformer from './AbstractTransformer';
 import StringBuilder from './StringBuilder';
 import VersionService from 'app/services/Version.service';
@@ -87,8 +89,13 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
         sb.endBlock('</bean>');
     }
 
-    static _toObject(clsName, items) {
-        return _.map(_.isArray(items) ? items : [items], (item) => {
+    static _toObject(clsName, val) {
+        const items = _.isArray(val) ? val : [val];
+
+        if (clsName === 'EVENTS')
+            return ['<list>', ..._.map(items, (item) => `    <util:constant static-field="${item.class}.${item.label}"/>`), '</list>'];
+
+        return _.map(items, (item) => {
             switch (clsName) {
                 case 'PROPERTY':
                 case 'PROPERTY_CHAR':
@@ -100,6 +107,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
                     return `${item}`;
                 case 'java.lang.String':
                 case 'PATH':
+                case 'PATH_ARRAY':
                     return this.escapeXml(item);
                 default:
                     return item;
@@ -137,8 +145,8 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
             const key = entry[map.keyField];
             const val = entry[map.valField];
 
-            const isKeyBean = this._isBean(map.keyClsName);
-            const isValBean = this._isBean(map.valClsName);
+            const isKeyBean = key instanceof Bean || this._isBean(map.keyClsName);
+            const isValBean = val instanceof Bean || this._isBean(map.valClsName);
 
 
             if (isKeyBean || isValBean) {
@@ -151,12 +159,16 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
                     sb.append(this._toObject(map.keyClsName, key));
                 sb.endBlock('</key>');
 
-                sb.startBlock('<value>');
+                if (!_.isArray(val))
+                    sb.startBlock('<value>');
+
                 if (isValBean)
                     this.appendBean(sb, val);
                 else
-                    sb.append(this._toObject(map.valClsName, val));
-                sb.endBlock('</value>');
+                    sb.append(this._toObject(map.valClsNameShow || map.valClsName, val));
+
+                if (!_.isArray(val))
+                    sb.endBlock('</value>');
 
                 sb.endBlock('</entry>');
             }
@@ -209,6 +221,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
 
                     break;
                 case 'ARRAY':
+                case 'PATH_ARRAY':
                 case 'COLLECTION':
                     this._setCollection(sb, prop);
 

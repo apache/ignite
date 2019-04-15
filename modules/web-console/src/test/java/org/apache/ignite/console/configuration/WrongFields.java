@@ -34,7 +34,7 @@ public class WrongFields {
     private final Set<String> rmvFields;
 
     /**
-     * @param fields Missinig fields.
+     * @param fields Missing fields.
      * @param deprecatedFields Deprecated fields.
      * @param rmvFields Removed fields.
      */

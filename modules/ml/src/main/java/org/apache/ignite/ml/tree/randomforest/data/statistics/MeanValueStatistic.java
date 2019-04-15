@@ -44,7 +44,7 @@ public class MeanValueStatistic implements Serializable {
     }
 
     /**
-     * @return mean value.
+     * @return Mean value.
      */
     public double mean() {
         return sumOfValues / cntOfValues;

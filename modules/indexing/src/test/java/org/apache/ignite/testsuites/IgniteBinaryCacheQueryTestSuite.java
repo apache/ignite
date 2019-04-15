@@ -199,12 +199,14 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
+import org.apache.ignite.internal.processors.query.SqlIncompatibleDataTypeExceptionTest;
 import org.apache.ignite.internal.processors.query.SqlNestedQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelfTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistorySelfTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
+import org.apache.ignite.internal.processors.query.h2.GridIndexFullRebuildTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildSelfTest;
 import org.apache.ignite.internal.processors.query.h2.H2ResultSetIteratorNullifyOnEndSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
@@ -217,6 +219,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryDistributedJoinsTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.ParameterTypeInferenceTest;
+import org.apache.ignite.internal.processors.query.h2.sql.SqlUnsupportedSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.AndOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.BetweenOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.DmlSelectPartitionPruningSelfTest;
@@ -296,6 +299,7 @@ import org.junit.runners.Suite;
     GridQueryParsingTest.class,
     IgniteCacheSqlQueryErrorSelfTest.class,
     IgniteCacheSqlDmlErrorSelfTest.class,
+    SqlUnsupportedSelfTest.class,
 
     // Config.
     IgniteCacheDuplicateEntityConfigurationSelfTest.class,
@@ -491,6 +495,7 @@ import org.junit.runners.Suite;
     SqlSystemViewsSelfTest.class,
 
     GridIndexRebuildSelfTest.class,
+    GridIndexFullRebuildTest.class,
 
     SqlTransactionCommandsWithMvccDisabledSelfTest.class,
 
@@ -550,6 +555,8 @@ import org.junit.runners.Suite;
     //Query history.
     SqlQueryHistorySelfTest.class,
     SqlQueryHistoryFromClientSelfTest.class,
+
+    SqlIncompatibleDataTypeExceptionTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }

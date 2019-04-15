@@ -17,16 +17,17 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.basic.BootstrappedVectorsHistogram;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.basic.CountersHistogram;
+
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Class contains implementation of splitting point finding algorithm based on MSE metric (see
@@ -150,7 +151,7 @@ public class MSEHistogram extends ImpurityHistogram implements ImpurityComputer<
      * @param cnt Counter value.
      * @param ys plus of Ys.
      * @param y2s plus of Y^2 s.
-     * @return impurity value.
+     * @return Impurity value.
      */
     private double impurity(double cnt, double ys, double y2s) {
         return y2s - 2.0 * ys / cnt * ys + Math.pow(ys / cnt, 2) * cnt;

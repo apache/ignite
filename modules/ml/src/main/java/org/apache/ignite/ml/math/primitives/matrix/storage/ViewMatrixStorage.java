@@ -140,18 +140,8 @@ public class ViewMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return dlg.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return dlg.isDense();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return dlg.isRandomAccess();
     }
 
     /** {@inheritDoc} */

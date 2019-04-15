@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -552,9 +553,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     update(val, read.expireTime(), 0, read.version(), false);
 
-                    long delta = checkExpire && read.expireTime() > 0 ? read.expireTime() - U.currentTimeMillis() : 0;
-
-                    if (delta >= 0)
+                    if (!(checkExpire && read.expireTime() > 0) || (read.expireTime() > U.currentTimeMillis()))
                         return read;
                     else {
                         if (onExpired(this.val, null)) {
@@ -1737,8 +1736,31 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                         if (mvcc == null || mvcc.isEmpty(tx.xidVersion()))
                             clearReaders();
-                        else
-                            clearReader(tx.originatingNodeId());
+                        else {
+                            // Optimize memory usage - do not allocate additional array.
+                            List<GridCacheMvccCandidate> locs = mvcc.localCandidatesNoCopy(false);
+
+                            GridCacheVersion txVer = tx.xidVersion();
+
+                            UUID originatingNodeId = tx.originatingNodeId();
+
+                            boolean hasOriginatingNodeId = false;
+
+                            for (GridCacheMvccCandidate c : locs) {
+                                if (c.reentry() || Objects.equals(c.version(), txVer))
+                                    continue;
+
+                                if (Objects.equals(c.otherNodeId(), originatingNodeId)) {
+                                    hasOriginatingNodeId = true;
+
+                                    break;
+                                }
+                            }
+
+                            // Remove reader only if there are no other active transactions from it.
+                            if (!hasOriginatingNodeId)
+                                clearReader(originatingNodeId);
+                        }
                     }
                 }
             }
@@ -3980,7 +4002,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long expireTime = expireTimeExtras();
 
-            if (!(expireTime > 0 && expireTime < U.currentTimeMillis()))
+            if (!(expireTime > 0 && expireTime <= U.currentTimeMillis()))
                 return false;
 
             CacheObject expiredVal = this.val;
@@ -5760,7 +5782,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private CacheDataRow checkRowExpired(CacheDataRow row) throws IgniteCheckedException {
             assert row != null;
 
-            if (!(row.expireTime() > 0 && row.expireTime() < U.currentTimeMillis()))
+            if (!(row.expireTime() > 0 && row.expireTime() <= U.currentTimeMillis()))
                 return row;
 
             GridCacheContext cctx = entry.context();
@@ -6131,7 +6153,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private boolean checkRowExpired(CacheDataRow row) throws IgniteCheckedException {
             assert row != null;
 
-            if (!(row.expireTime() > 0 && row.expireTime() < U.currentTimeMillis()))
+            if (!(row.expireTime() > 0 && row.expireTime() <= U.currentTimeMillis()))
                 return false;
 
             GridCacheContext cctx = entry.context();
