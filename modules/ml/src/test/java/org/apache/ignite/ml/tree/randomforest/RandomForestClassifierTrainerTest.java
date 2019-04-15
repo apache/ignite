@@ -26,6 +26,7 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -67,7 +68,7 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
     }
 
     /** */
-/*    @Test
+    @Test
     public void testUpdate() {
         int sampleSize = 1000;
         Map<Integer, LabeledVector<Double>> sample = new HashMap<>();
@@ -90,10 +91,10 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
 
         ModelsComposition originalMdl = trainer.fit(sample, parts, new LabeledDummyVectorizer<>());
         ModelsComposition updatedOnSameDS = trainer.update(originalMdl, sample, parts, new LabeledDummyVectorizer<>());
-        ModelsComposition updatedOnEmptyDS = trainer.update(originalMdl, new HashMap<double[], Double>(), parts, FeatureLabelExtractorWrapper.wrap((k, v) -> VectorUtils.of(k), (k, v) -> v));
+        ModelsComposition updatedOnEmptyDS = trainer.update(originalMdl, new HashMap<Integer, LabeledVector<Double>>(), parts, new LabeledDummyVectorizer<>());
 
         Vector v = VectorUtils.of(5, 0.5, 0.05, 0.005);
         assertEquals(originalMdl.predict(v), updatedOnSameDS.predict(v), 0.01);
         assertEquals(originalMdl.predict(v), updatedOnEmptyDS.predict(v), 0.01);
-    }*/
+    }
 }

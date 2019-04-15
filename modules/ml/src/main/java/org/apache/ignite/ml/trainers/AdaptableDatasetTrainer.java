@@ -95,13 +95,12 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     /** {@inheritDoc} */
     @Override public <K, V> AdaptableDatasetModel<I, O, IW, OW, M> fit(DatasetBuilder<K, V> datasetBuilder,
                                                                        Preprocessor<K, V> extractor) {
-        /*M fit = wrapped.
+        M fit = wrapped.
             withEnvironmentBuilder(envBuilder)
             .fit(datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
                 extractor.map(afterExtractor));
 
-        return new AdaptableDatasetModel<>(before, fit, after);*/
-        return null;
+        return new AdaptableDatasetModel<>(before, fit, after);
     }
 
     /** {@inheritDoc} */
@@ -113,14 +112,13 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     @Override protected <K, V> AdaptableDatasetModel<I, O, IW, OW, M> updateModel(
         AdaptableDatasetModel<I, O, IW, OW, M> mdl, DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> extractor) {
-       /* M updated = wrapped.withEnvironmentBuilder(envBuilder)
+       M updated = wrapped.withEnvironmentBuilder(envBuilder)
             .updateModel(
                 mdl.innerModel(),
                 datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
                 extractor.map(afterExtractor));
 
-        return mdl.withInnerModel(updated);*/
-        return null;
+        return mdl.withInnerModel(updated);
     }
 
     /**
@@ -168,20 +166,18 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
         return of(new DatasetTrainer<M, L>() {
             /** {@inheritDoc} */
             @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
-                /*return wrapped.fit(datasetBuilder, extractor.map(lv -> new LabeledVector<>(
+                return wrapped.fit(datasetBuilder, extractor.map(lv -> new LabeledVector<>(
                     mapping.mapFeatures(lv.features()),
-                    mapping.mapLabels(lv.label())
-                )));*/
-                return null;
+                    mapping.mapLabels((L)lv.label())
+                )));
             }
 
             /** {@inheritDoc} */
             @Override public <K, V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> vectorizer) {
-                /*return wrapped.update(mdl, datasetBuilder, vectorizer.map(lv -> new LabeledVector<>(
+                return wrapped.update(mdl, datasetBuilder, vectorizer.map(lv -> new LabeledVector<>(
                     mapping.mapFeatures(lv.features()),
-                    mapping.mapLabels(lv.label())
-                )));*/
-                return null;
+                    mapping.mapLabels((L)lv.label())
+                )));
             }
 
 
