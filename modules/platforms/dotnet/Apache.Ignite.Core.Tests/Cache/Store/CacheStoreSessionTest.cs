@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// </summary>
         protected virtual int StoreCount
         {
-            get { return 2; }
+            get { return 1; }
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             foreach (var ops in _dumps)
             {
-                Assert.AreEqual(2 + StoreCount, ops.Count);
+                Assert.AreEqual(1 + StoreCount, ops.Count);
                 Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Write
                                                    && Cache1 == op.CacheName && 1 == op.Key && 1 == op.Value));
                 Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Write
