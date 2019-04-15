@@ -807,7 +807,7 @@ class ClusterCachesInfo {
                 false,
                 req.deploymentId(),
                 req.schema(),
-                null
+                req.cacheConfigurationEnrichment()
             );
 
             DynamicCacheDescriptor old = registeredTemplates().put(ccfg.getName(), templateDesc);
