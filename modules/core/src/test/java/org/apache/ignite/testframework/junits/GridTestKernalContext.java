@@ -33,6 +33,7 @@ import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -46,7 +47,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         this(log, new IgniteConfiguration());
 
         try {
-            add(new IgnitePluginProcessor(this, config(), Collections.emptyList()));
+            add(new IgnitePluginProcessor(this, config(), Collections.<PluginProvider>emptyList()));
         }
         catch (IgniteCheckedException e) {
             throw new IllegalStateException("Must not fail for empty plugins list.", e);

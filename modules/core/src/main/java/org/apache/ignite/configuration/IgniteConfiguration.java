@@ -54,7 +54,6 @@ import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginConfiguration;
-import org.apache.ignite.plugin.IgnitePluginInfo;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.plugin.segmentation.SegmentationResolver;
@@ -531,8 +530,8 @@ public class IgniteConfiguration {
     /** SQL schemas to be created on node start. */
     private String[] sqlSchemas;
 
-    /** Plugins information. */
-    private IgnitePluginInfo[] pluginInfos;
+    /** Plugin providers. */
+    private PluginProvider[] plugins;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -626,7 +625,7 @@ public class IgniteConfiguration {
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         platformCfg = cfg.getPlatformConfiguration();
         pluginCfgs = cfg.getPluginConfigurations();
-        pluginInfos = cfg.getPluginInfos();
+        plugins = cfg.getPlugins();
         pubPoolSize = cfg.getPublicThreadPoolSize();
         qryPoolSize = cfg.getQueryThreadPoolSize();
         rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
@@ -3204,22 +3203,22 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets plugins information.
+     * Gets plugin providers.
      *
-     * @return Plugins information.
+     * @return Plugin providers.
      */
-    public IgnitePluginInfo[] getPluginInfos() {
-        return pluginInfos;
+    public PluginProvider[] getPlugins() {
+        return plugins;
     }
 
     /**
-     * Sets plugins information needed for their creation and usage.
+     * Sets plugin providers.
      *
-     * @param pluginInfos Plugins information needed for their creation and usage.
+     * @param plugins Plugin providers.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setPluginInfos(IgnitePluginInfo... pluginInfos) {
-        this.pluginInfos = pluginInfos;
+    public IgniteConfiguration setPlugins(PluginProvider... plugins) {
+        this.plugins = plugins;
 
         return this;
     }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import javax.management.JMException;
 import java.io.Externalizable;
@@ -205,7 +204,6 @@ import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.plugin.IgnitePlugin;
-import org.apache.ignite.plugin.IgnitePluginInfo;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
@@ -887,10 +885,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Ack configuration.
         ackSpis();
 
-        List<IgnitePluginInfo> plugins = cfg.getPluginInfos().length != 0 ? Arrays.asList(cfg.getPluginInfos()) :
-            U.allPluginProviders().stream()
-                .map(IgnitePluginInfo::new)
-                .collect(Collectors.toList());
+        List<PluginProvider> plugins = cfg.getPlugins().length == 0 ?
+            U.allPluginProviders() : Arrays.asList(cfg.getPlugins());
 
         // Spin out SPIs & managers.
         try {
@@ -914,9 +910,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 qryExecSvc,
                 schemaExecSvc,
                 customExecSvcs,
-                plugins.stream()
-                    .map(IgnitePluginInfo::getPluginProvider)
-                    .collect(Collectors.toList()),
+                plugins,
                 MarshallerUtils.classNameFilter(this.getClass().getClassLoader()),
                 workerRegistry,
                 hnd,

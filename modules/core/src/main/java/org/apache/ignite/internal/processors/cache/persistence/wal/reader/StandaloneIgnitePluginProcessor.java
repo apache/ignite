@@ -33,6 +33,6 @@ class StandaloneIgnitePluginProcessor extends IgnitePluginProcessor {
      * @param cfg Ignite configuration.
      */
     StandaloneIgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg) throws IgniteCheckedException {
-        super(ctx, cfg, Collections.emptyList());
+        super(ctx, cfg, Collections.<PluginProvider>emptyList());
     }
 }
