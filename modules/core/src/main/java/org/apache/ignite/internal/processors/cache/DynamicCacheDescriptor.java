@@ -416,19 +416,22 @@ public class DynamicCacheDescriptor {
         return res;
     }
 
+    /**
+     * @return Cache configuration enrichment.
+     */
     public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
         return cacheCfgEnrichment;
     }
 
     /**
-     *
+     * @return {@code True} if configuration is already enriched.
      */
     public boolean isConfigurationEnriched() {
         return cacheCfgEnrichment == null || cacheCfgEnriched;
     }
 
     /**
-     * @param cacheCfgEnriched Cache config enriched.
+     * @param cacheCfgEnriched Flag indicates that configuration is enriched.
      */
     public void configurationEnriched(boolean cacheCfgEnriched) {
         this.cacheCfgEnriched = cacheCfgEnriched;

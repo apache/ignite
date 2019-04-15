@@ -53,24 +53,12 @@ public class CacheConfigurationSplitterImpl implements CacheConfigurationSplitte
      */
     @Override public T2<CacheConfiguration, CacheConfigurationEnrichment> split(CacheConfiguration ccfg) {
         try {
-            CacheConfiguration cfgCopy = new CacheConfiguration(ccfg);
+            CacheConfiguration cfgCp = new CacheConfiguration(ccfg);
 
-            CacheConfigurationEnrichment enrichment = buildEnrichment(CacheConfiguration.class, cfgCopy, DEFAULT_CACHE_CONFIG);
+            CacheConfigurationEnrichment enrichment = buildEnrichment(
+                CacheConfiguration.class, cfgCp, DEFAULT_CACHE_CONFIG);
 
-/*
-            if (ccfg.getNearConfiguration() != null) {
-                NearCacheConfiguration nearCfgCopy = new NearCacheConfiguration(ccfg.getNearConfiguration());
-
-                CacheConfigurationEnrichment nearEnrichment = buildEnrichment(
-                        NearCacheConfiguration.class, nearCfgCopy, DEFAULT_NEAR_CACHE_CONFIG);
-
-                enrichment.nearCacheConfigurationEnrichment(nearEnrichment);
-
-                cfgCopy.setNearConfiguration(nearCfgCopy);
-            }
-*/
-
-            return new T2<>(cfgCopy, enrichment);
+            return new T2<>(cfgCp, enrichment);
         }
         catch (Exception e) {
             throw new IgniteException("Failed to split cache configuration", e);
@@ -81,39 +69,39 @@ public class CacheConfigurationSplitterImpl implements CacheConfigurationSplitte
      * Builds {@link CacheConfigurationEnrichment} from given config.
      * It extracts all field values to enrichment object replacing values of that fields with default.
      *
-     * @param configClass Configuration class.
-     * @param config Configuration to build enrichment from.
-     * @param defaultConfig Default configuration to replace enriched values with default.
+     * @param cfgCls Configuration class.
+     * @param cfg Configuration to build enrichment from.
+     * @param dfltCfg Default configuration to replace enriched values with default.
      * @param <T> Configuration class.
      * @return Enrichment object for given config.
      * @throws IllegalAccessException If failed.
      */
     private <T> CacheConfigurationEnrichment buildEnrichment(
-        Class<T> configClass,
-        T config,
-        T defaultConfig
+        Class<T> cfgCls,
+        T cfg,
+        T dfltCfg
     ) throws IllegalAccessException {
         Map<String, byte[]> enrichment = new HashMap<>();
-        Map<String, String> fieldClassNames = new HashMap<>();
+        Map<String, String> fieldClsNames = new HashMap<>();
 
-        for (Field field : configClass.getDeclaredFields()) {
+        for (Field field : cfgCls.getDeclaredFields()) {
             if (field.getDeclaredAnnotation(SerializeSeparately.class) != null) {
                 field.setAccessible(true);
 
-                Object val = field.get(config);
+                Object val = field.get(cfg);
 
                 byte[] serializedVal = serialize(field.getName(), val);
 
                 enrichment.put(field.getName(), serializedVal);
 
-                fieldClassNames.put(field.getName(), val != null ? val.getClass().getName() : null);
+                fieldClsNames.put(field.getName(), val != null ? val.getClass().getName() : null);
 
                 // Replace field in original configuration with default value.
-                field.set(config, field.get(defaultConfig));
+                field.set(cfg, field.get(dfltCfg));
             }
         }
 
-        return new CacheConfigurationEnrichment(enrichment, fieldClassNames);
+        return new CacheConfigurationEnrichment(enrichment, fieldClsNames);
     }
 
     /**

@@ -59,7 +59,8 @@ public class CacheConfigurationEnricher {
         if (desc.isConfigurationEnriched())
             return desc;
 
-        CacheConfiguration<?, ?> enrichedCfg = enrich(desc.cacheConfiguration(), desc.cacheConfigurationEnrichment(), affinityNode);
+        CacheConfiguration<?, ?> enrichedCfg = enrich(
+            desc.cacheConfiguration(), desc.cacheConfigurationEnrichment(), affinityNode);
 
         desc.cacheConfiguration(enrichedCfg);
 
@@ -81,7 +82,8 @@ public class CacheConfigurationEnricher {
         if (desc.isConfigurationEnriched())
             return desc;
 
-        CacheConfiguration<?, ?> enrichedCfg = enrich(desc.config(), desc.cacheConfigurationEnrichment(), affinityNode);
+        CacheConfiguration<?, ?> enrichedCfg = enrich(
+            desc.config(), desc.cacheConfigurationEnrichment(), affinityNode);
 
         desc.config(enrichedCfg);
 
@@ -122,27 +124,6 @@ public class CacheConfigurationEnricher {
 
                     field.set(enrichedCp, enrichedVal);
                 }
-
-            // Enrich near cache configuration as well.
-/*
-            if (enrichment.nearCacheConfigurationEnrichment() != null
-                && ccfg.getNearConfiguration() != null
-                && ccfg.getCacheMode() != CacheMode.REPLICATED
-                ) {
-                NearCacheConfiguration nearEnrichedCp = new NearCacheConfiguration(ccfg.getNearConfiguration());
-
-                for (Field field : NearCacheConfiguration.class.getDeclaredFields())
-                    if (field.getDeclaredAnnotation(SerializeSeparately.class) != null) {
-                        field.setAccessible(true);
-
-                        Object enrichedVal = enrichment.nearCacheConfigurationEnrichment().deserialize(field.getName());
-
-                        field.set(nearEnrichedCp, enrichedVal);
-                    }
-
-                enrichedCp.setNearConfiguration(nearEnrichedCp);
-            }
-*/
         }
         catch (Exception e) {
             throw new IgniteException("Failed to enrich cache configuration [cacheName=" + ccfg.getName() + "]", e);
