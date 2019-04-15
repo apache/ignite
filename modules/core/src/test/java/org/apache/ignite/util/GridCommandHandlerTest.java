@@ -1142,7 +1142,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
 
-        assertTrue(testOut.toString().contains("Node not found for consistent ID: bltTest2"));
+        assertTrue(testOut.toString(), testOut.toString().contains("Node not found for consistent ID:"));
+        assertTrue(testOut.toString(), testOut.toString().contains("bltTest"));
+        assertFalse(testOut.toString(), testOut.toString().contains("bltTest1"));
     }
 
     /**

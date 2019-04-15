@@ -22,20 +22,14 @@ import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 
-public class StateCommand implements Command<Void> {
-
-    @Override public String confirmationPrompt(Void args) {
-        return null;
-    }
-
+public class StateCommand extends Command<Void> {
     /**
      * Print cluster state.
      *
      * @param clientCfg Client configuration.
      * @throws Exception If failed to print state.
      */
-    @Override public Object execute(Void args, GridClientConfiguration clientCfg,
-        CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         try (GridClient client = GridClientFactory.start(clientCfg)){
             GridClientClusterState state = client.state();
 
@@ -47,10 +41,6 @@ public class StateCommand implements Command<Void> {
             throw e;
         }
 
-        return null;
-    }
-
-    @Override public Void init(CommandArgIterator argIterator) {
         return null;
     }
 }

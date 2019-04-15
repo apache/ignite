@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
@@ -116,6 +117,11 @@ public class CommandArgIterator {
      */
     public Set<String> nextStringSet(String argName) {
         String string = nextArg("Expected " + argName);
+
+        return parseStringSet(string);
+    }
+
+    @NotNull public Set<String> parseStringSet(String string) {
         Set<String> namesSet = new HashSet<>();
 
         for (String name : string.split(",")) {
@@ -124,7 +130,6 @@ public class CommandArgIterator {
 
             namesSet.add(name.trim());
         }
-
         return namesSet;
     }
 

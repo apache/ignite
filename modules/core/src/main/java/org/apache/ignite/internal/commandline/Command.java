@@ -22,10 +22,33 @@ package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
-public interface Command<T> {
-    String confirmationPrompt();
+public abstract class Command<T> {
+    protected ConnectionAndSslParameters common;
 
-    Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception;
+    public abstract Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception;
 
-    void init(CommandArgIterator argIterator);
+    protected String confirmationPrompt0() {
+        return null;
+    }
+
+    public void parseArguments(CommandArgIterator argIterator) {
+        //Empty block.
+    }
+
+    public void commonArguments(ConnectionAndSslParameters commonArguments) {
+        this.common = commonArguments;
+    }
+
+
+    public ConnectionAndSslParameters commonArguments() {
+        return common;
+    }
+
+    public final String confirmationPrompt() {
+        return common.autoConfirmation()? null: confirmationPrompt0();
+    }
+
+    public T arg() {
+        return null;
+    }
 }

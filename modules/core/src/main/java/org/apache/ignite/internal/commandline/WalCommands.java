@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.commandline.CommandArgIterator.isComman
 import static org.apache.ignite.internal.commandline.Commands.WAL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 
-public class WalCommands implements Command<T2<String, String>> {
+public class WalCommands extends Command<T2<String, String>> {
     /** */
     static final String WAL_PRINT = "print";
 
@@ -48,25 +48,28 @@ public class WalCommands implements Command<T2<String, String>> {
 
     private CommandLogger logger;
 
+    private String walAct;
+    private String walArgs;
+
     /**
      * Execute WAL command.
      *
      * @param clientCfg Client configuration.
      * @throws Exception If failed to execute wal action.
      */
-    @Override public Object execute(T2<String, String> arguments, GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         this.logger = logger;
 
         try (GridClient client = GridClientFactory.start(clientCfg)) {
-            switch (arguments.get1()) {
+            switch (walAct) {
                 case WAL_DELETE:
-                    deleteUnusedWalSegments(client, arguments.get2(), clientCfg);
+                    deleteUnusedWalSegments(client, walArgs, clientCfg);
 
                     break;
 
                 case WAL_PRINT:
                 default:
-                    printUnusedWalSegments(client, arguments.get2(), clientCfg);
+                    printUnusedWalSegments(client, walArgs, clientCfg);
 
                     break;
             }
@@ -75,14 +78,14 @@ public class WalCommands implements Command<T2<String, String>> {
         return null;
     }
 
-    @Override public String confirmationPrompt(T2<String, String> args) {
-        if (WAL_DELETE.equals(args.get1()))
+    @Override public String confirmationPrompt0() {
+        if (WAL_DELETE.equals(walAct))
             return "Warning: the command will delete unused WAL segments.";
 
         return null;
     }
 
-    @Override public T2<String, String> init(CommandArgIterator argIter) {
+    @Override public void parseArguments(CommandArgIterator argIter) {
         String str = argIter.nextArg("Expected arguments for " + WAL.text());
 
         String walAct = str.toLowerCase();
@@ -92,11 +95,15 @@ public class WalCommands implements Command<T2<String, String>> {
                 ? argIter.nextArg("Unexpected argument for " + WAL.text() + ": " + walAct)
                 : "";
 
-            return new T2<>(walAct, walArgs);
+            this.walAct = walAct;
+            this.walArgs = walArgs;
         }
         else
             throw new IllegalArgumentException("Unexpected action " + walAct + " for " + WAL.text());
+    }
 
+    @Override public T2<String, String> arg() {
+        return new T2<>(walAct, walArgs);
     }
 
     /**

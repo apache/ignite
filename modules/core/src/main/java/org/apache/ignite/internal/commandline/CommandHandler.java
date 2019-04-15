@@ -21,10 +21,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -36,7 +34,7 @@ import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
-import org.apache.ignite.internal.commandline.baseline.BaselineCommand;
+import org.apache.ignite.internal.commandline.baseline.BaselineSubcommands;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
@@ -49,6 +47,8 @@ import org.jetbrains.annotations.NotNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.commandline.CommandArgParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.CommandArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.CommandLogger.j;
 import static org.apache.ignite.internal.commandline.CommandLogger.op;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
@@ -72,94 +72,14 @@ import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
  * Class that execute several commands passed via command line.
  */
 public class CommandHandler {
-    /** */
-    static final String CMD_HELP = "--help";
-
-    /** */
-    static final String CMD_HOST = "--host";
-
-    /** */
-    static final String CMD_PORT = "--port";
-
-    /** */
-    static final String CMD_PASSWORD = "--password";
-
-    /** */
-    static final String CMD_USER = "--user";
-
-    /** Option is used for auto confirmation. */
-    static final String CMD_AUTO_CONFIRMATION = "--yes";
-
-    /** */
-    static final String CMD_PING_INTERVAL = "--ping-interval";
-
-    /** */
-    static final String CMD_PING_TIMEOUT = "--ping-timeout";
-
     /** One cache filter option should used message. */
     public static final String ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG = "Should use only one of option: " +
         EXCLUDE_CACHES + ", " + CACHE_FILTER + " or pass caches explicitly";
 
-    // SSL configuration section
-
-    /** */
-    static final String CMD_SSL_PROTOCOL = "--ssl-protocol";
-
-    /** */
-    static final String CMD_SSL_KEY_ALGORITHM = "--ssl-key-algorithm";
-
-    /** */
-    static final String CMD_SSL_CIPHER_SUITES = "--ssl-cipher-suites";
-
-    /** */
-    static final String CMD_KEYSTORE = "--keystore";
-
-    /** */
-    static final String CMD_KEYSTORE_PASSWORD = "--keystore-password";
-
-    /** */
-    static final String CMD_KEYSTORE_TYPE = "--keystore-type";
-
-    /** */
-    static final String CMD_TRUSTSTORE = "--truststore";
-
-    /** */
-    static final String CMD_TRUSTSTORE_PASSWORD = "--truststore-password";
-
-    /** */
-    static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
-
-    /** List of optional auxiliary commands. */
-    private static final Set<String> AUX_COMMANDS = new HashSet<>();
-
     private final CommandLogger logger = new CommandLogger();
 
-    static {
-        AUX_COMMANDS.add(CMD_HELP);
-
-        AUX_COMMANDS.add(CMD_HOST);
-        AUX_COMMANDS.add(CMD_PORT);
-
-        AUX_COMMANDS.add(CMD_PASSWORD);
-        AUX_COMMANDS.add(CMD_USER);
-
-        AUX_COMMANDS.add(CMD_AUTO_CONFIRMATION);
-
-        AUX_COMMANDS.add(CMD_PING_INTERVAL);
-        AUX_COMMANDS.add(CMD_PING_TIMEOUT);
-
-        AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
-        AUX_COMMANDS.add(CMD_SSL_KEY_ALGORITHM);
-        AUX_COMMANDS.add(CMD_SSL_CIPHER_SUITES);
-
-        AUX_COMMANDS.add(CMD_KEYSTORE);
-        AUX_COMMANDS.add(CMD_KEYSTORE_PASSWORD);
-        AUX_COMMANDS.add(CMD_KEYSTORE_TYPE);
-
-        AUX_COMMANDS.add(CMD_TRUSTSTORE);
-        AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
-        AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
-    }
+    /** */
+    static final String CMD_HELP = "--help";
 
     /** */
     public static final String CONFIRM_MSG = "y";
@@ -192,25 +112,20 @@ public class CommandHandler {
     private static final Scanner IN = new Scanner(System.in);
 
     /** Utility name. */
-    private static final String UTILITY_NAME = "control.sh";
-
-    /** Common options. */
-    private static final String COMMON_OPTIONS = j(" ", getCommonOptions());
-
-    /** Utility name with common options. */
-    public static final String UTILITY_NAME_WITH_COMMON_OPTIONS = j(" ", UTILITY_NAME, COMMON_OPTIONS);
+    public static final String UTILITY_NAME = "control.sh";
 
     /** */
     public static final String NULL = "null";
-
-    /** */
-    private Object lastOperationRes;
 
     /** Check if experimental commands are enabled. Default {@code false}. */
     private final boolean enableExperimental = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
 
     /** Console instance. Public access needs for tests. */
     public GridConsole console = GridConsoleAdapter.getInstance();
+
+    /** */
+    private Object lastOperationRes;
+
 
     /**
      * @param args Arguments to parse and apply.
@@ -241,17 +156,9 @@ public class CommandHandler {
                 return EXIT_CODE_OK;
             }
 
-            String arg = rawArgs.get(0).trim();
+            Command command = new CommandArgParser(logger).parseAndValidate(rawArgs.iterator());
 
-            Commands command = Commands.of(arg);
-
-            command.command().init(new CommandArgIterator(rawArgs.iterator(), AUX_COMMANDS));
-
-            ConnectionAndSslParameters args = new CommandArgParser(logger).
-                parseAndValidate(new CommandArgIterator(rawArgs.iterator(), AUX_COMMANDS));
-
-
-            if (!args.autoConfirmation() && !confirm(command.command().confirmationPrompt())) {
+            if (!confirm(command.confirmationPrompt())) {
                 logger.log("Operation cancelled.");
 
                 return EXIT_CODE_OK;
@@ -261,22 +168,25 @@ public class CommandHandler {
 
             int tryConnectMaxCount = 3;
 
+            ConnectionAndSslParameters args = command.commonArguments();
+
+            GridClientConfiguration clientCfg = getClientConfiguration(args);
+
             while (tryConnectAgain) {
                 tryConnectAgain = false;
 
-                GridClientConfiguration clientCfg = getClientConfiguration(args);
-
                 try {
-                    lastOperationRes = command.command().execute(clientCfg, logger);
+                    lastOperationRes = command.execute(clientCfg, logger);
                 }
                 catch (Throwable e) {
                     if (tryConnectMaxCount > 0 && isAuthError(e)) {
                         logger.log("Authentication error, try connection again.");
 
-                        if (F.isEmpty(args.getUserName()))
-                            args.setUserName(requestDataFromConsole("user: "));
+                        String user = clientCfg.getSecurityCredentialsProvider() == null ?
+                            requestDataFromConsole("user: ") :
+                            (String)clientCfg.getSecurityCredentialsProvider().credentials().getLogin();
 
-                        args.setPassword(new String(requestPasswordFromConsole("password: ")));
+                        clientCfg = getClientConfiguration(user, new String(requestPasswordFromConsole("password: ")),  args);
 
                         tryConnectAgain = true;
 
@@ -318,7 +228,17 @@ public class CommandHandler {
         }
     }
 
-    @NotNull private GridClientConfiguration getClientConfiguration(ConnectionAndSslParameters args) throws IgniteCheckedException {
+    @NotNull private GridClientConfiguration getClientConfiguration(
+        ConnectionAndSslParameters args
+    ) throws IgniteCheckedException {
+        return getClientConfiguration(args.getUserName(), args.getPassword(), args);
+    }
+
+    @NotNull private GridClientConfiguration getClientConfiguration(
+        String userName,
+        String password,
+        ConnectionAndSslParameters args
+    ) throws IgniteCheckedException {
         GridClientConfiguration clientCfg = new GridClientConfiguration();
 
         clientCfg.setPingInterval(args.pingInterval());
@@ -327,8 +247,8 @@ public class CommandHandler {
 
         clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
 
-        if (!F.isEmpty(args.getUserName()))
-            clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(args, clientCfg));
+        if (!F.isEmpty(userName))
+            clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(userName, password, clientCfg));
 
         if (!F.isEmpty(args.sslKeyStorePath()))
             clientCfg.setSslContextFactory(createSslSupportFactory(args));
@@ -337,18 +257,18 @@ public class CommandHandler {
     }
 
     @NotNull private SecurityCredentialsProvider getSecurityCredentialsProvider(
-        ConnectionAndSslParameters args,
+        String userName,
+        String password,
         GridClientConfiguration clientCfg
     ) throws IgniteCheckedException {
         SecurityCredentialsProvider securityCredential = clientCfg.getSecurityCredentialsProvider();
 
         if (securityCredential == null)
-            securityCredential = new SecurityCredentialsBasicProvider(
-                new SecurityCredentials(args.getUserName(), args.getPassword()));
+            return new SecurityCredentialsBasicProvider(new SecurityCredentials(userName, password));
 
         final SecurityCredentials credential = securityCredential.credentials();
-        credential.setLogin(args.getUserName());
-        credential.setPassword(args.getPassword());
+        credential.setLogin(userName);
+        credential.setPassword(password);
 
         return securityCredential;
     }
@@ -504,7 +424,7 @@ public class CommandHandler {
         logger.log("Control.sh is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:");
         logger.nl();
 
-        logger.logWithIndent(j(" ", UTILITY_NAME_WITH_COMMON_OPTIONS, op("command"), "<command_parameters>"));
+        logger.logWithIndent(j(" ", j(" ", UTILITY_NAME, j(" ", getCommonOptions())), op("command"), "<command_parameters>"));
         logger.nl();
         logger.nl();
 
@@ -514,11 +434,11 @@ public class CommandHandler {
         usage("Deactivate cluster:", DEACTIVATE, op(CMD_AUTO_CONFIRMATION));
         usage("Print current cluster state:", STATE);
         usage("Print cluster baseline topology:", BASELINE);
-        usage("Add nodes into baseline topology:", BASELINE, BaselineCommand.ADD.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
-        usage("Remove nodes from baseline topology:", BASELINE, BaselineCommand.REMOVE.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
-        usage("Set baseline topology:", BASELINE, BaselineCommand.SET.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
-        usage("Set baseline topology based on version:", BASELINE, BaselineCommand.VERSION.text() + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
-        usage("Set baseline autoadjustment settings:", BASELINE, BaselineCommand.AUTO_ADJUST.text(), "disable|enable timeout <timeoutValue>", op(CMD_AUTO_CONFIRMATION));
+        usage("Add nodes into baseline topology:", BASELINE, BaselineSubcommands.ADD.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage("Remove nodes from baseline topology:", BASELINE, BaselineSubcommands.REMOVE.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage("Set baseline topology:", BASELINE, BaselineSubcommands.SET.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage("Set baseline topology based on version:", BASELINE, BaselineSubcommands.VERSION.text() + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
+        usage("Set baseline autoadjustment settings:", BASELINE, BaselineSubcommands.AUTO_ADJUST.text(), "disable|enable timeout <timeoutValue>", op(CMD_AUTO_CONFIRMATION));
         usage("List or kill transactions:", TX, getTxOptions());
 
         if (enableExperimental) {
@@ -565,34 +485,6 @@ public class CommandHandler {
         logger.logWithIndent(desc);
         logger.logWithIndent(j(" ", UTILITY_NAME, cmd, j(" ", args)), 2);
         logger.nl();
-    }
-
-    /**
-     * Creates list of common utility options.
-     *
-     * @return Array of common utility options.
-     */
-    private static String[] getCommonOptions() {
-        List<String> list = new ArrayList<>(32);
-
-        list.add(op(CMD_HOST, "HOST_OR_IP"));
-        list.add(op(CMD_PORT, "PORT"));
-        list.add(op(CMD_USER, "USER"));
-        list.add(op(CMD_PASSWORD, "PASSWORD"));
-        list.add(op(CMD_PING_INTERVAL, "PING_INTERVAL"));
-        list.add(op(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
-
-        list.add(op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]"));
-        list.add(op(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]"));
-        list.add(op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
-        list.add(op(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"));
-        list.add(op(CMD_KEYSTORE, "KEYSTORE_PATH"));
-        list.add(op(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"));
-        list.add(op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
-        list.add(op(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
-        list.add(op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
-
-        return list.toArray(new String[0]);
     }
 
     /**

@@ -19,27 +19,15 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import org.apache.ignite.ssl.SslContextFactory;
 
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_TIMEOUT;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_HOST;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_KEYSTORE;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_KEYSTORE_PASSWORD;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_KEYSTORE_TYPE;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_PASSWORD;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_PING_INTERVAL;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_PING_TIMEOUT;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_PORT;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_SSL_CIPHER_SUITES;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_SSL_KEY_ALGORITHM;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_SSL_PROTOCOL;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_TRUSTSTORE;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_TRUSTSTORE_PASSWORD;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_TRUSTSTORE_TYPE;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_USER;
+import static org.apache.ignite.internal.commandline.CommandLogger.op;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
@@ -47,18 +35,123 @@ import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 public class CommandArgParser {
     private final CommandLogger logger;
 
+    /** */
+    static final String CMD_HOST = "--host";
+
+    /** */
+    static final String CMD_PORT = "--port";
+
+    /** */
+    static final String CMD_PASSWORD = "--password";
+
+    /** */
+    static final String CMD_USER = "--user";
+
+    /** Option is used for auto confirmation. */
+    static final String CMD_AUTO_CONFIRMATION = "--yes";
+
+    /** */
+    static final String CMD_PING_INTERVAL = "--ping-interval";
+
+    /** */
+    static final String CMD_PING_TIMEOUT = "--ping-timeout";
+
+    // SSL configuration section
+
+    /** */
+    static final String CMD_SSL_PROTOCOL = "--ssl-protocol";
+
+    /** */
+    static final String CMD_SSL_KEY_ALGORITHM = "--ssl-key-algorithm";
+
+    /** */
+    static final String CMD_SSL_CIPHER_SUITES = "--ssl-cipher-suites";
+
+    /** */
+    static final String CMD_KEYSTORE = "--keystore";
+
+    /** */
+    static final String CMD_KEYSTORE_PASSWORD = "--keystore-password";
+
+    /** */
+    static final String CMD_KEYSTORE_TYPE = "--keystore-type";
+
+    /** */
+    static final String CMD_TRUSTSTORE = "--truststore";
+
+    /** */
+    static final String CMD_TRUSTSTORE_PASSWORD = "--truststore-password";
+
+    /** */
+    static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
+
+    /** List of optional auxiliary commands. */
+    private static final Set<String> AUX_COMMANDS = new HashSet<>();
+
+    static {
+        AUX_COMMANDS.add(CMD_HOST);
+        AUX_COMMANDS.add(CMD_PORT);
+
+        AUX_COMMANDS.add(CMD_PASSWORD);
+        AUX_COMMANDS.add(CMD_USER);
+
+        AUX_COMMANDS.add(CMD_AUTO_CONFIRMATION);
+
+        AUX_COMMANDS.add(CMD_PING_INTERVAL);
+        AUX_COMMANDS.add(CMD_PING_TIMEOUT);
+
+        AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
+        AUX_COMMANDS.add(CMD_SSL_KEY_ALGORITHM);
+        AUX_COMMANDS.add(CMD_SSL_CIPHER_SUITES);
+
+        AUX_COMMANDS.add(CMD_KEYSTORE);
+        AUX_COMMANDS.add(CMD_KEYSTORE_PASSWORD);
+        AUX_COMMANDS.add(CMD_KEYSTORE_TYPE);
+
+        AUX_COMMANDS.add(CMD_TRUSTSTORE);
+        AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
+        AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
+    }
+
     public CommandArgParser(CommandLogger logger) {
         this.logger = logger;
     }
 
     /**
+     * Creates list of common utility options.
+     *
+     * @return Array of common utility options.
+     */
+    public static String[] getCommonOptions() {
+        List<String> list = new ArrayList<>(32);
+
+        list.add(op(CMD_HOST, "HOST_OR_IP"));
+        list.add(op(CMD_PORT, "PORT"));
+        list.add(op(CMD_USER, "USER"));
+        list.add(op(CMD_PASSWORD, "PASSWORD"));
+        list.add(op(CMD_PING_INTERVAL, "PING_INTERVAL"));
+        list.add(op(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
+        list.add(op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]"));
+        list.add(op(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]"));
+        list.add(op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
+        list.add(op(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"));
+        list.add(op(CMD_KEYSTORE, "KEYSTORE_PATH"));
+        list.add(op(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"));
+        list.add(op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
+        list.add(op(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
+        list.add(op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+
+        return list.toArray(new String[0]);
+    }
+
+    /**
      * Parses and validates arguments.
      *
-     * @param argIter Iterator of arguments.
+     * @param rawArgIter Iterator of arguments.
      * @return Arguments bean.
      * @throws IllegalArgumentException In case arguments aren't valid.
      */
-    ConnectionAndSslParameters parseAndValidate(CommandArgIterator argIter) {
+    Command parseAndValidate(Iterator<String> rawArgIter) {
         String host = DFLT_HOST;
 
         String port = DFLT_PORT;
@@ -72,8 +165,6 @@ public class CommandArgParser {
         Long pingTimeout = DFLT_PING_TIMEOUT;
 
         boolean autoConfirmation = false;
-
-        List<Commands> commands = new ArrayList<>();
 
         String sslProtocol = DFLT_SSL_PROTOCOL;
 
@@ -93,123 +184,146 @@ public class CommandArgParser {
 
         char sslTrustStorePassword[] = null;
 
-        final String pwdArgWarnFmt = "Warning: %s is insecure. " +
-            "Whenever possible, use interactive prompt for password (just discard %s option).";
+        CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS);
+
+        Commands command = null;
 
         while (argIter.hasNextArg()) {
             String str = argIter.nextArg("").toLowerCase();
 
-            switch (str) {
-                case CMD_HOST:
-                    host = argIter.nextArg("Expected host name");
+            Commands cmd = Commands.of(str);
 
-                    break;
+            if (cmd != null) {
+                if (command != null)
+                    throw new IllegalArgumentException("Only one action can be specified, but found at least two:" +
+                        cmd.toString() + ", " + command.toString());
 
-                case CMD_PORT:
-                    port = argIter.nextArg("Expected port number");
+                cmd.command().parseArguments(argIter);
 
-                    try {
-                        int p = Integer.parseInt(port);
+                command = cmd;
+            }
+            else {
 
-                        if (p <= 0 || p > 65535)
+                switch (str) {
+                    case CMD_HOST:
+                        host = argIter.nextArg("Expected host name");
+
+                        break;
+
+                    case CMD_PORT:
+                        port = argIter.nextArg("Expected port number");
+
+                        try {
+                            int p = Integer.parseInt(port);
+
+                            if (p <= 0 || p > 65535)
+                                throw new IllegalArgumentException("Invalid value for port: " + port);
+                        }
+                        catch (NumberFormatException ignored) {
                             throw new IllegalArgumentException("Invalid value for port: " + port);
-                    }
-                    catch (NumberFormatException ignored) {
-                        throw new IllegalArgumentException("Invalid value for port: " + port);
-                    }
+                        }
 
-                    break;
+                        break;
 
-                case CMD_PING_INTERVAL:
-                    pingInterval = argIter.nextLongArg("ping interval");
+                    case CMD_PING_INTERVAL:
+                        pingInterval = argIter.nextLongArg("ping interval");
 
-                    break;
+                        break;
 
-                case CMD_PING_TIMEOUT:
-                    pingTimeout = argIter.nextLongArg("ping timeout");
+                    case CMD_PING_TIMEOUT:
+                        pingTimeout = argIter.nextLongArg("ping timeout");
 
-                    break;
+                        break;
 
-                case CMD_USER:
-                    user = argIter.nextArg("Expected user name");
+                    case CMD_USER:
+                        user = argIter.nextArg("Expected user name");
 
-                    break;
+                        break;
 
-                case CMD_PASSWORD:
-                    pwd = argIter.nextArg("Expected password");
+                    case CMD_PASSWORD:
+                        pwd = argIter.nextArg("Expected password");
 
-                    logger.log(String.format(pwdArgWarnFmt, CMD_PASSWORD, CMD_PASSWORD));
+                        logger.log(securityWarningMessage(CMD_PASSWORD));
 
-                    break;
+                        break;
 
-                case CMD_SSL_PROTOCOL:
-                    sslProtocol = argIter.nextArg("Expected SSL protocol");
+                    case CMD_SSL_PROTOCOL:
+                        sslProtocol = argIter.nextArg("Expected SSL protocol");
 
-                    break;
+                        break;
 
-                case CMD_SSL_CIPHER_SUITES:
-                    sslCipherSuites = argIter.nextArg("Expected SSL cipher suites");
+                    case CMD_SSL_CIPHER_SUITES:
+                        sslCipherSuites = argIter.nextArg("Expected SSL cipher suites");
 
-                    break;
+                        break;
 
-                case CMD_SSL_KEY_ALGORITHM:
-                    sslKeyAlgorithm = argIter.nextArg("Expected SSL key algorithm");
+                    case CMD_SSL_KEY_ALGORITHM:
+                        sslKeyAlgorithm = argIter.nextArg("Expected SSL key algorithm");
 
-                    break;
+                        break;
 
-                case CMD_KEYSTORE:
-                    sslKeyStorePath = argIter.nextArg("Expected SSL key store path");
+                    case CMD_KEYSTORE:
+                        sslKeyStorePath = argIter.nextArg("Expected SSL key store path");
 
-                    break;
+                        break;
 
-                case CMD_KEYSTORE_PASSWORD:
-                    sslKeyStorePassword = argIter.nextArg("Expected SSL key store password").toCharArray();
+                    case CMD_KEYSTORE_PASSWORD:
+                        sslKeyStorePassword = argIter.nextArg("Expected SSL key store password").toCharArray();
 
-                    logger.log(String.format(pwdArgWarnFmt, CMD_KEYSTORE_PASSWORD, CMD_KEYSTORE_PASSWORD));
+                        logger.log(securityWarningMessage(CMD_KEYSTORE_PASSWORD));
 
-                    break;
+                        break;
 
-                case CMD_KEYSTORE_TYPE:
-                    sslKeyStoreType = argIter.nextArg("Expected SSL key store type");
+                    case CMD_KEYSTORE_TYPE:
+                        sslKeyStoreType = argIter.nextArg("Expected SSL key store type");
 
-                    break;
+                        break;
 
-                case CMD_TRUSTSTORE:
-                    sslTrustStorePath = argIter.nextArg("Expected SSL trust store path");
+                    case CMD_TRUSTSTORE:
+                        sslTrustStorePath = argIter.nextArg("Expected SSL trust store path");
 
-                    break;
+                        break;
 
-                case CMD_TRUSTSTORE_PASSWORD:
-                    sslTrustStorePassword = argIter.nextArg("Expected SSL trust store password").toCharArray();
+                    case CMD_TRUSTSTORE_PASSWORD:
+                        sslTrustStorePassword = argIter.nextArg("Expected SSL trust store password").toCharArray();
 
-                    logger.log(String.format(pwdArgWarnFmt, CMD_TRUSTSTORE_PASSWORD, CMD_TRUSTSTORE_PASSWORD));
+                        logger.log(securityWarningMessage(CMD_TRUSTSTORE_PASSWORD));
 
-                    break;
+                        break;
 
-                case CMD_TRUSTSTORE_TYPE:
-                    sslTrustStoreType = argIter.nextArg("Expected SSL trust store type");
+                    case CMD_TRUSTSTORE_TYPE:
+                        sslTrustStoreType = argIter.nextArg("Expected SSL trust store type");
 
-                    break;
+                        break;
 
-                case CMD_AUTO_CONFIRMATION:
-                    autoConfirmation = true;
+                    case CMD_AUTO_CONFIRMATION:
+                        autoConfirmation = true;
 
-                    break;
+                        break;
+
+                    default:
+                        throw new IllegalArgumentException("Unexpected argument: " + str);
+                }
             }
         }
 
-        int sz = commands.size();
-
-        if (sz < 1)
+        if (command == null)
             throw new IllegalArgumentException("No action was specified");
 
-        if (sz > 1)
-            throw new IllegalArgumentException("Only one action can be specified, but found: " + sz);
+        command.command().commonArguments(
+            new ConnectionAndSslParameters(host, port, user, pwd,
+                pingTimeout, pingInterval, autoConfirmation,
+                sslProtocol, sslCipherSuites,
+                sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
+                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType));
 
-        return new ConnectionAndSslParameters(host, port, user, pwd,
-            pingTimeout, pingInterval, autoConfirmation,
-            sslProtocol, sslCipherSuites,
-            sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
-            sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
+        return command.command();
+    }
+
+    private String securityWarningMessage(String password) {
+        final String pwdArgWarnFmt = "Warning: %s is insecure. " +
+            "Whenever possible, use interactive prompt for password (just discard %s option).";
+
+        return String.format(pwdArgWarnFmt, password, password);
     }
 }

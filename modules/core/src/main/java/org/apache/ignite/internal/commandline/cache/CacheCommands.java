@@ -1,21 +1,18 @@
 /*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *  * Licensed to the Apache Software Foundation (ASF) under one or more
- *  * contributor license agreements.  See the NOTICE file distributed with
- *  * this work for additional information regarding copyright ownership.
- *  * The ASF licenses this file to You under the Apache License, Version 2.0
- *  * (the "License"); you may not use this file except in compliance with
- *  * the License.  You may obtain a copy of the License at
- *  *
- *  *      http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.internal.commandline.cache;
@@ -82,9 +79,9 @@ import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.apache.ignite.lang.IgniteProductVersion;
 
+import static org.apache.ignite.internal.commandline.CommandArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.CommandHandler.NULL;
 import static org.apache.ignite.internal.commandline.CommandHandler.ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG;
-import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME_WITH_COMMON_OPTIONS;
 import static org.apache.ignite.internal.commandline.CommandLogger.g;
 import static org.apache.ignite.internal.commandline.CommandLogger.j;
 import static org.apache.ignite.internal.commandline.CommandLogger.op;
@@ -119,7 +116,7 @@ import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
 import static org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder.DELIM;
 
-public class CacheCommands implements Command<CacheArguments> {
+public class CacheCommands extends Command<CacheArguments> {
     /** */
     private static final String NODE_ID = "nodeId";
 
@@ -134,18 +131,15 @@ public class CacheCommands implements Command<CacheArguments> {
     /** Find and delete garbarge task name. */
     private static final String FIND_AND_DELETE_GARBARGE_TASK = "org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTask";
 
-    @Override public String confirmationPrompt(CacheArguments args) {
-        return null;
-    }
+    private CacheArguments cacheArgs;
 
     /**
      * Executes --cache subcommand.
-     * @param cacheArgs Cache args.
+     *
      * @param clientCfg Client configuration.
      */
 
-    @Override
-    public Object execute(CacheArguments cacheArgs, GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         this.logger = logger;
 
         if (cacheArgs.command() == CacheCommandList.HELP) {
@@ -516,7 +510,7 @@ public class CacheCommands implements Command<CacheArguments> {
     private void printCacheHelp() {
         logger.logWithIndent("The '" + CACHE + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:");
         logger.nl();
-        logger.logWithIndent(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE + " [subcommand] <subcommand_parameters>");
+        logger.logWithIndent(CommandLogger.j(" ", CommandHandler.UTILITY_NAME, j(" ", getCommonOptions())) + " " + CACHE + " [subcommand] <subcommand_parameters>");
         logger.nl();
         logger.logWithIndent("The subcommands that take " + OP_NODE_ID + " as an argument ('" + LIST + "', '" + CONTENTION + "' and '" + VALIDATE_INDEXES + "') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node.");
         logger.nl();
@@ -651,10 +645,10 @@ public class CacheCommands implements Command<CacheArguments> {
      * @return --cache subcommand arguments in case validation is successful.
      * @param argIter Argument iterator.
      */
-    @Override public CacheArguments init(CommandArgIterator argIter) {
+    @Override public void parseArguments(CommandArgIterator argIter) {
         if (!argIter.hasNextSubArg()) {
             throw new IllegalArgumentException("Arguments are expected for --cache subcommand, " +
-                "run --cache help for more info.");
+                "run '--cache help' for more info.");
         }
 
         CacheArguments cacheArgs = new CacheArguments();
@@ -684,7 +678,7 @@ public class CacheCommands implements Command<CacheArguments> {
                         if (cacheArgs.excludeCaches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
                             throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
 
-                        cacheArgs.caches(argIter.nextStringSet(nextArg));
+                        cacheArgs.caches(argIter.parseStringSet(nextArg));
                     }
                     else {
                         switch (arg) {
@@ -784,7 +778,7 @@ public class CacheCommands implements Command<CacheArguments> {
                         //No-op.
                     }
 
-                    cacheArgs.caches(argIter.nextStringSet(nextArg));
+                    cacheArgs.caches(argIter.parseStringSet(nextArg));
                 }
 
                 break;
@@ -813,7 +807,7 @@ public class CacheCommands implements Command<CacheArguments> {
                         //No-op.
                     }
 
-                    cacheArgs.groups(argIter.nextStringSet(nextArg));
+                    cacheArgs.groups(argIter.parseStringSet(nextArg));
                 }
 
                 break;
@@ -844,13 +838,13 @@ public class CacheCommands implements Command<CacheArguments> {
                     }
 
                     if (nextArg != null)
-                        cacheArgs.caches(argIter.nextStringSet(nextArg));
+                        cacheArgs.caches(argIter.parseStringSet(nextArg));
                 }
 
                 break;
 
             case RESET_LOST_PARTITIONS:
-                cacheArgs.caches(argIter.nextStringSet(argIter.nextArg("Cache name expected")));
+                cacheArgs.caches(argIter.nextStringSet("Cache name"));
 
                 break;
 
@@ -906,6 +900,10 @@ public class CacheCommands implements Command<CacheArguments> {
         if (argIter.hasNextSubArg())
             throw new IllegalArgumentException("Unexpected argument of --cache subcommand: " + argIter.peekNextArg());
 
+        this.cacheArgs = cacheArgs;
+    }
+
+    @Override public CacheArguments arg() {
         return cacheArgs;
     }
 }

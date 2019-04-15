@@ -38,21 +38,27 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 
-public class TxCommands implements Command<VisorTxTaskArg> {
+public class TxCommands extends Command<VisorTxTaskArg> {
+    /** Arguments */
+    private VisorTxTaskArg args;
+
+    @Override public VisorTxTaskArg arg() {
+        return args;
+    }
+
     /**
      * Dump transactions information.
-     * @param arg Arguments.
+     *
      * @param clientCfg Client configuration.
      */
     @Override
-    public Object execute(VisorTxTaskArg arg, GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
-
+    public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         try (GridClient client = GridClientFactory.start(clientCfg)) {
-            Map<ClusterNode, VisorTxTaskResult> res = executeTask(client, VisorTxTask.class, arg, clientCfg);
+            Map<ClusterNode, VisorTxTaskResult> res = executeTask(client, VisorTxTask.class, args, clientCfg);
 
             if (res.isEmpty())
                 logger.log("Nothing found.");
-            else if (arg.getOperation() == VisorTxOperation.KILL)
+            else if (args.getOperation() == VisorTxOperation.KILL)
                 logger.log("Killed transactions:");
             else
                 logger.log("Matching transactions:");
@@ -84,7 +90,7 @@ public class TxCommands implements Command<VisorTxTaskArg> {
         }
     }
 
-    @Override public String confirmationPrompt(VisorTxTaskArg args) {
+    @Override public String confirmationPrompt0() {
         if (args.getOperation() == VisorTxOperation.KILL)
             return "Warning: the command will kill some transactions.";
 
@@ -93,9 +99,8 @@ public class TxCommands implements Command<VisorTxTaskArg> {
 
     /**
      * @param argIter Argument iterator.
-     * @return Transaction arguments.
      */
-    @Override public VisorTxTaskArg init(CommandArgIterator argIter) {
+    @Override public void parseArguments(CommandArgIterator argIter) {
         VisorTxProjection proj = null;
 
         Integer limit = null;
@@ -210,6 +215,6 @@ public class TxCommands implements Command<VisorTxTaskArg> {
         if (proj != null && consistentIds != null)
             throw new IllegalArgumentException("Projection can't be used together with list of consistent ids.");
 
-        return new VisorTxTaskArg(op, limit, duration, size, null, proj, consistentIds, xid, lbRegex, sortOrder);
+        this.args = new VisorTxTaskArg(op, limit, duration, size, null, proj, consistentIds, xid, lbRegex, sortOrder);
     }
 }

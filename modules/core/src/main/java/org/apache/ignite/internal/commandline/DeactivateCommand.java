@@ -22,8 +22,8 @@ import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 
-public class DeactivateCommand implements Command<Void> {
-    @Override public String confirmationPrompt(Void args) {
+public class DeactivateCommand extends Command<Void> {
+    @Override public String confirmationPrompt0() {
         return "Warning: the command will deactivate a cluster.";
     }
 
@@ -33,8 +33,7 @@ public class DeactivateCommand implements Command<Void> {
      * @param clientCfg Client configuration.
      * @throws Exception If failed to deactivate.
      */
-    @Override public Object execute(Void args, GridClientConfiguration clientCfg,
-        CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         try (GridClient client = GridClientFactory.start(clientCfg)){
             GridClientClusterState state = client.state();
 
@@ -48,10 +47,6 @@ public class DeactivateCommand implements Command<Void> {
             throw e;
         }
 
-        return null;
-    }
-
-    @Override public Void init(CommandArgIterator argIterator) {
         return null;
     }
 }

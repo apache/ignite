@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Set of baseline commands.
  */
-public enum BaselineCommand {
+public enum BaselineSubcommands {
     /**
      * Add nodes to baseline.
      */
@@ -55,7 +55,7 @@ public enum BaselineCommand {
     AUTO_ADJUST("auto_adjust", VisorBaselineOperation.AUTOADJUST);
 
     /** Enumerated values. */
-    private static final BaselineCommand[] VALS = values();
+    private static final BaselineSubcommands[] VALS = values();
 
     /** Name. */
     private final String name;
@@ -67,7 +67,7 @@ public enum BaselineCommand {
      * @param name Name.
      * @param operation
      */
-    BaselineCommand(String name, VisorBaselineOperation operation) {
+    BaselineSubcommands(String name, VisorBaselineOperation operation) {
         this.name = name;
         visorBaselineOperation = operation;
     }
@@ -76,8 +76,8 @@ public enum BaselineCommand {
      * @param text Command text.
      * @return Command for the text.
      */
-    public static BaselineCommand of(String text) {
-        for (BaselineCommand cmd : BaselineCommand.values()) {
+    public static BaselineSubcommands of(String text) {
+        for (BaselineSubcommands cmd : BaselineSubcommands.values()) {
             if (cmd.text().equalsIgnoreCase(text))
                 return cmd;
         }
@@ -102,7 +102,7 @@ public enum BaselineCommand {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static BaselineCommand fromOrdinal(int ord) {
+    @Nullable public static BaselineSubcommands fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 
