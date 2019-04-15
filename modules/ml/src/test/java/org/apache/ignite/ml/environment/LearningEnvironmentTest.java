@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.environment;
 
-import java.io.Serializable;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -28,7 +27,6 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.logging.ConsoleLogger;
@@ -53,7 +51,7 @@ import static org.junit.Assert.assertEquals;
 public class LearningEnvironmentTest {
     /** */
     @Test
-    public void testBasic() throws InterruptedException {
+    public void testBasic() {
         RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(
             IntStream.range(0, 0).mapToObj(
                 x -> new FeatureMeta("", 0, false)).collect(Collectors.toList())
@@ -89,8 +87,7 @@ public class LearningEnvironmentTest {
 
         DatasetTrainer<IgniteModel<Object, Vector>, Void> trainer = new DatasetTrainer<IgniteModel<Object, Vector>, Void>() {
             /** {@inheritDoc} */
-             public <K, V, C extends Serializable> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder,
-                Vectorizer<K, V, C, Void> extractor) {
+             @Override public <K, V> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
                 Dataset<EmptyContext, TestUtils.DataWrapper<Integer>> ds = datasetBuilder.build(envBuilder,
                     new EmptyContextBuilder<>(),
                     (PartitionDataBuilder<K, V, EmptyContext, TestUtils.DataWrapper<Integer>>)(env, upstreamData, upstreamDataSize, ctx) ->
@@ -104,25 +101,15 @@ public class LearningEnvironmentTest {
                 return constantModel(v);
             }
 
-            @Override public <K, V> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder,
-                Preprocessor<K, V> preprocessor) {
-                return null;
-            }
-
             /** {@inheritDoc} */
             @Override public boolean isUpdateable(IgniteModel<Object, Vector> mdl) {
                 return false;
             }
 
-            @Override protected <K, V> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
-                DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
-                return null;
-            }
 
             /** {@inheritDoc} */
-             protected <K, V, C extends Serializable> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
-                DatasetBuilder<K, V> datasetBuilder,
-                Vectorizer<K, V, C, Void> extractor) {
+             @Override protected <K, V> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
+                DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
                 return null;
             }
         };
