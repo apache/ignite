@@ -294,12 +294,12 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     }
 
     /** */
-    protected RegisterExecAndForward createRunner(String srvName) {
+    protected <K, V>RegisterExecAndForward<K, V> createRunner(String srvName) {
         return new RegisterExecAndForward<>(srvName, endpoints());
     }
 
     /** */
-    protected RegisterExecAndForward createRunner() {
+    protected <K, V>RegisterExecAndForward<K, V> createRunner() {
         return new RegisterExecAndForward<>(endpoints());
     }
 

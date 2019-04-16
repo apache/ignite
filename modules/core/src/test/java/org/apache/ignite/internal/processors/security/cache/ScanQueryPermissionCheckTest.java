@@ -52,7 +52,7 @@ public class ScanQueryPermissionCheckTest extends AbstractCacheOperationPermissi
     /** */
     @Test
     public void testScanQuery() throws Exception {
-        Ignite ignite = G.allGrids().stream().findFirst().get();
+        Ignite ignite = G.allGrids().stream().findFirst().orElseThrow(IllegalStateException::new);
 
         try (IgniteDataStreamer<String, Integer> strAllowedCache = ignite.dataStreamer(CACHE_NAME);
              IgniteDataStreamer<String, Integer> strForbiddenCache = ignite.dataStreamer(FORBIDDEN_CACHE)) {

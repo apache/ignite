@@ -205,9 +205,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         );
     }
 
-    /**
-     * @param cons Consumer.
-     */
+    /** */
     private void runOperation(String clientName, IgniteBiTuple<Consumer<IgniteClient>, String> op) {
         try (IgniteClient client = startClient(clientName)) {
             op.get1().accept(client);
