@@ -134,10 +134,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /** <inheritDoc /> */
+#pragma warning disable 618
         public IQueryCursor<ICacheEntry<TK, TV>> Query(SqlQuery sqlQuery)
         {
             return _cache.Query(sqlQuery);
         }
+#pragma warning restore 618
 
         /** <inheritDoc /> */
         public IFieldsQueryCursor Query(SqlFieldsQuery sqlFieldsQuery)

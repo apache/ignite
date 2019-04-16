@@ -48,9 +48,9 @@ const char* PERSON_TYPE = "Person";
  */
 void DoSqlQueryWithDistributedJoin()
 {
-    typedef std::vector< CacheEntry<int64_t, Person> > ResVector;
+    typedef std::vector< CacheEntry<PersonKey, Person> > ResVector;
 
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     // SQL clause query which joins on 2 types to select people for a specific organization.
     std::string joinSql(
@@ -73,7 +73,7 @@ void DoSqlQueryWithDistributedJoin()
     std::cout << "Following people are 'ApacheIgnite' employees (distributed join): " << std::endl;
 
     for (ResVector::const_iterator i = igniters.begin(); i != igniters.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+        std::cout << i->GetKey().ToString() << " : " << i->GetValue().ToString() << std::endl;
 
     std::cout << std::endl;
 
@@ -88,7 +88,7 @@ void DoSqlQueryWithDistributedJoin()
     std::cout << "Following people are 'Other' employees (distributed join): " << std::endl;
 
     for (ResVector::const_iterator i = others.begin(); i != others.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+        std::cout << i->GetKey().ToString() << " : " << i->GetValue().ToString() << std::endl;
 
     std::cout << std::endl;
 }
@@ -102,7 +102,7 @@ void DoSqlQueryWithDistributedJoin()
  */
 void DoSqlFieldsQueryWithJoin()
 {
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     // Execute query to get names of all employees.
     std::string sql(
@@ -137,7 +137,7 @@ void DoSqlFieldsQueryWithJoin()
  */
 void DoSqlFieldsQuery()
 {
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     // Execute query to get names of all employees.
     QueryFieldsCursor cursor = cache.Query(SqlFieldsQuery(
@@ -161,7 +161,7 @@ void DoSqlFieldsQuery()
  */
 void DoSqlQueryWithAggregation()
 {
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     // Calculate average of salary of all persons in ApacheIgnite.
     // Note that we also join on Organization cache as well.
@@ -194,9 +194,9 @@ void DoSqlQueryWithAggregation()
  */
 void DoTextQuery()
 {
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
-    typedef std::vector< CacheEntry<int64_t, Person> > ResVector;
+    typedef std::vector< CacheEntry<PersonKey, Person> > ResVector;
 
     //  Query for all people with "Master" in their resumes.
     ResVector masters;
@@ -210,7 +210,7 @@ void DoTextQuery()
 
     // Printing first result set.
     for (ResVector::const_iterator i = masters.begin(); i != masters.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+        std::cout << i->GetKey().ToString() << " : " << i->GetValue().ToString() << std::endl;
 
     std::cout << std::endl;
 
@@ -218,7 +218,7 @@ void DoTextQuery()
 
     // Printing second result set.
     for (ResVector::const_iterator i = bachelors.begin(); i != bachelors.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+        std::cout << i->GetKey().ToString() << " : " << i->GetValue().ToString() << std::endl;
 
     std::cout << std::endl;
 }
@@ -231,9 +231,9 @@ void DoTextQuery()
  */
 void DoSqlQueryWithJoin()
 {
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
-    typedef std::vector< CacheEntry<int64_t, Person> > ResVector;
+    typedef std::vector< CacheEntry<PersonKey, Person> > ResVector;
 
     // SQL clause query which joins on 2 types to select people for a specific organization.
     std::string sql(
@@ -252,7 +252,7 @@ void DoSqlQueryWithJoin()
     cache.Query(qry).GetAll(res);
 
     for (ResVector::const_iterator i = res.begin(); i != res.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+        std::cout << i->GetKey().ToString() << " : " << i->GetValue().ToString() << std::endl;
 
     std::cout << std::endl;
 
@@ -266,7 +266,7 @@ void DoSqlQueryWithJoin()
     cache.Query(qry).GetAll(res);
 
     for (ResVector::const_iterator i = res.begin(); i != res.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+        std::cout << i->GetKey().ToString() << " : " << i->GetValue().ToString() << std::endl;
 
     std::cout << std::endl;
 }
@@ -279,14 +279,14 @@ void DoSqlQueryWithJoin()
  */
 void DoSqlQuery()
 {
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     // SQL clause which selects salaries based on range.
     std::string sql("salary > ? and salary <= ?");
 
     SqlQuery qry(PERSON_TYPE, sql);
 
-    typedef std::vector< CacheEntry<int64_t, Person> > ResVector;
+    typedef std::vector< CacheEntry<PersonKey, Person> > ResVector;
 
     // Execute queries for salary range 0 - 1000.
     std::cout << "People with salaries between 0 and 1000 (queried with SQL query): " << std::endl;
@@ -298,7 +298,7 @@ void DoSqlQuery()
     cache.Query(qry).GetAll(res);
 
     for (ResVector::const_iterator i = res.begin(); i != res.end(); ++i)
-            std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+            std::cout << i->GetKey().ToString() << " : " << i->GetValue().ToString() << std::endl;
 
     std::cout << std::endl;
 
@@ -315,7 +315,7 @@ void DoSqlQuery()
     cache.Query(qry).GetAll(res);
 
     for (ResVector::const_iterator i = res.begin(); i != res.end(); ++i)
-        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+        std::cout << i->GetKey().ToString() << " : " << i->GetValue().ToString() << std::endl;
 
     std::cout << std::endl;
 }
@@ -325,11 +325,11 @@ void DoSqlQuery()
  */
 void DoScanQuery()
 {
-    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> cache = Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     ScanQuery scan;
 
-    typedef std::vector< CacheEntry<int64_t, Person> > ResVector;
+    typedef std::vector< CacheEntry<PersonKey, Person> > ResVector;
 
     ResVector res;
     cache.Query(scan).GetAll(res);
@@ -342,7 +342,7 @@ void DoScanQuery()
         Person person(i->GetValue());
 
         if (person.salary <= 1000)
-            std::cout << i->GetKey() << " : " << person.ToString() << std::endl;
+            std::cout << i->GetKey().ToString() << " : " << person.ToString() << std::endl;
     }
 
     std::cout << std::endl;
@@ -369,24 +369,34 @@ void Initialize()
     orgCache.Put(org1Id, org1);
     orgCache.Put(org2Id, org2);
 
-    Cache<int64_t, Person> personCache =
-        Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+    Cache<PersonKey, Person> personCache =
+        Ignition::Get().GetCache<PersonKey, Person>(PERSON_CACHE);
 
     // Clear cache before running the example.
     personCache.Clear();
 
     // People.
+
+    // Collocated by 1st organisation:
     Person p1(org1Id, "John", "Doe", "John Doe has Master Degree.", 2000);
     Person p2(org1Id, "Jane", "Doe", "Jane Doe has Bachelor Degree.", 1000);
+
+    PersonKey pKey1 (1, org1Id);
+    PersonKey pKey2 (2, org1Id);
+
+    // Collocated by second organisation:
     Person p3(org2Id, "John", "Smith", "John Smith has Bachelor Degree.", 1000);
     Person p4(org2Id, "Jane", "Smith", "Jane Smith has Master Degree.", 2000);
 
+    PersonKey pKey3 (3, org2Id);
+    PersonKey pKey4 (4, org2Id);
+
     // Note that in this example we use custom affinity key for Person objects
     // to ensure that all persons are collocated with their organizations.
-    personCache.Put(1, p1);
-    personCache.Put(2, p2);
-    personCache.Put(3, p3);
-    personCache.Put(4, p4);
+    personCache.Put(pKey1, p1);
+    personCache.Put(pKey2, p2);
+    personCache.Put(pKey3, p3);
+    personCache.Put(pKey4, p4);
 }
 
 int main()
@@ -408,7 +418,7 @@ int main()
         Cache<int64_t, Organization> orgCache = ignite.GetCache<int64_t, Organization>(ORG_CACHE);
 
         // Get person cache instance.
-        Cache<int64_t, Person> personCache = ignite.GetCache<int64_t, Person>(PERSON_CACHE);
+        Cache<PersonKey, Person> personCache = ignite.GetCache<PersonKey, Person>(PERSON_CACHE);
 
         // Populate cache.
         Initialize();

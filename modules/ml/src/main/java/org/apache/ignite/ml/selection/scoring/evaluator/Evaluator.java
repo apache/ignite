@@ -17,9 +17,13 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
+import java.io.Serializable;
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.composition.CompositionUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursor;
@@ -28,8 +32,6 @@ import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
 import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
 import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
-
-import java.util.Map;
 
 /**
  * Evaluator that computes metrics from predictions and ground truth values.
@@ -53,6 +55,30 @@ public class Evaluator {
         IgniteBiFunction<K, V, L> lbExtractor,
         Metric<L> metric) {
         return calculateMetric(dataCache, null, mdl, featureExtractor, lbExtractor, metric);
+    }
+
+    /**
+     * Computes the given metric on the given cache.
+     *
+     * @param dataCache The given cache.
+     * @param mdl The model.
+     * @param vectorizer The upstream vectorizer.
+     * @param metric The binary classification metric.
+     * @param <K> The type of cache entry key.
+     * @param <V> The type of cache entry value.
+     * @return Computed metric.
+     */
+    public static <L, K, V, C extends Serializable> double evaluate(IgniteCache<K, V> dataCache,
+        IgniteModel<Vector, L> mdl,
+        Vectorizer<K, V, C, L> vectorizer,
+        Metric<L> metric) {
+
+        return evaluate(
+            dataCache, mdl,
+            CompositionUtils.asFeatureExtractor(vectorizer),
+            CompositionUtils.asLabelExtractor(vectorizer),
+            metric
+        );
     }
 
     /**
@@ -95,6 +121,31 @@ public class Evaluator {
         IgniteBiFunction<K, V, L> lbExtractor,
         Metric<L> metric) {
         return calculateMetric(dataCache, filter, mdl, featureExtractor, lbExtractor, metric);
+    }
+
+    /**
+     * Computes the given metric on the given cache.
+     *
+     * @param dataCache The given cache.
+     * @param mdl The model.
+     * @param vectorizer The upstream vectorizer.
+     * @param metric The binary classification metric.
+     * @param <K> The type of cache entry key.
+     * @param <V> The type of cache entry value.
+     * @return Computed metric.
+     */
+    public static <L, K, V, C extends Serializable> double evaluate(IgniteCache<K, V> dataCache,
+        IgniteBiPredicate<K, V> filter,
+        IgniteModel<Vector, L> mdl,
+        Vectorizer<K, V, C, L> vectorizer,
+        Metric<L> metric) {
+
+        return evaluate(
+            dataCache, filter, mdl,
+            CompositionUtils.asFeatureExtractor(vectorizer),
+            CompositionUtils.asLabelExtractor(vectorizer),
+            metric
+        );
     }
 
     /**
@@ -159,6 +210,24 @@ public class Evaluator {
      * Computes the given metrics on the given cache.
      *
      * @param dataCache The given cache.
+     * @param mdl The model.
+     * @param vectorizer Upstream vectorizer.
+     * @param <K> The type of cache entry key.
+     * @param <V> The type of cache entry value.
+     * @return Computed metric.
+     */
+    public static <K, V, C extends Serializable> BinaryClassificationMetricValues evaluate(Map<K, V> dataCache,
+        IgniteModel<Vector, Double> mdl,
+        Vectorizer<K, V, C, Double> vectorizer) {
+        return calcMetricValues(dataCache, null, mdl,
+            CompositionUtils.asFeatureExtractor(vectorizer), CompositionUtils.asLabelExtractor(vectorizer)
+        );
+    }
+
+    /**
+     * Computes the given metrics on the given cache.
+     *
+     * @param dataCache The given cache.
      * @param filter The given filter.
      * @param mdl The model.
      * @param featureExtractor The feature extractor.
@@ -173,6 +242,28 @@ public class Evaluator {
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
         return calcMetricValues(dataCache, filter, mdl, featureExtractor, lbExtractor);
+    }
+
+    /**
+     * Computes the given metrics on the given cache.
+     *
+     * @param dataCache The given cache.
+     * @param filter The given filter.
+     * @param mdl The model.
+     * @param vectorizer Upstream vectorizer.
+     * @param <K> The type of cache entry key.
+     * @param <V> The type of cache entry value.
+     * @return Computed metric.
+     */
+    public static <K, V, C extends Serializable> BinaryClassificationMetricValues evaluate(IgniteCache<K, V> dataCache,
+        IgniteBiPredicate<K, V> filter,
+        IgniteModel<Vector, Double> mdl,
+        Vectorizer<K, V, C, Double> vectorizer) {
+        return calcMetricValues(
+            dataCache, filter,
+            mdl,
+            CompositionUtils.asFeatureExtractor(vectorizer), CompositionUtils.asLabelExtractor(vectorizer)
+        );
     }
 
     /**

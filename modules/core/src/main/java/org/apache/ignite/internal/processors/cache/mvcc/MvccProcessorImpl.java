@@ -239,6 +239,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** */
     private final CustomEventListener customLsnr;
 
+    /** State mutex. */
+    private final Object stateMux = new Object();
+
     /**
      * @param ctx Context.
      */
@@ -439,7 +442,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             // Notify all listeners waiting for a snapshot.
             onCoordinatorFailed(curCrd0.nodeId());
 
-            curCrd = MvccCoordinator.DISCONNECTED_COORDINATOR;
+            synchronized (stateMux) {
+                curCrd = MvccCoordinator.DISCONNECTED_COORDINATOR;
+            }
 
             readyVer = AffinityTopologyVersion.NONE;
         }
@@ -554,15 +559,20 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private void onCoordinatorChanged(AffinityTopologyVersion topVer, Collection<ClusterNode> nodes, boolean sndQrys) {
         MvccCoordinator newCrd = pickMvccCoordinator(nodes, topVer);
 
-        if (newCrd.disconnected()) {
+        synchronized (stateMux) {
+            if (ctx.clientDisconnected())
+                return;
+
+            if (newCrd.disconnected()) {
+                curCrd = newCrd;
+
+                return;
+            }
+
+            assert newCrd.topologyVersion().compareTo(curCrd.topologyVersion()) > 0;
+
             curCrd = newCrd;
-
-            return;
         }
-
-        assert newCrd.topologyVersion().compareTo(curCrd.topologyVersion()) > 0;
-
-        curCrd = newCrd;
 
         processActiveQueries(nodes, newCrd, sndQrys);
     }
@@ -2202,13 +2212,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                     throw e; // Cancelled.
                 }
-                catch (NodeStoppingException e) {
-                    task.onDone(e);
-
-                    return;
-                }
                 catch (Throwable e) {
                     task.onDone(e);
+
+                    if (X.hasCause(e, NodeStoppingException.class)) {
+                        // Thereis no need for further processing of vacuum tasks.
+                        return;
+                    }
 
                     if (e instanceof Error)
                         throw (Error) e;
