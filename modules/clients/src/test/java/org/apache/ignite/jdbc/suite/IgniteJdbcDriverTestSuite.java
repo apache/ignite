@@ -88,6 +88,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinStreamingOrderedSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientNoAutoCommitComplexSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinTransactionsLeaksMvccTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerNoAutoCommitComplexSelfTest;
@@ -230,6 +231,8 @@ import org.junit.runners.Suite;
     JdbcThinAuthenticateConnectionSelfTest.class,
 
     JdbcThinPreparedStatementLeakTest.class,
+
+    JdbcThinTransactionsLeaksMvccTest.class,
 })
 public class IgniteJdbcDriverTestSuite {
 }

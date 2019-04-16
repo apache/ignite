@@ -1178,6 +1178,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED = "IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED";
 
     /**
+     * Timeout to clean synchronization structure for asynchronous waiting for near tx finish
+     * responses based on per-node per-thread basis.
+     */
+    public static final String IGNITE_TX_FINISH_SYNC_CLEANUP_TIMEOUT = "IGNITE_TX_FINISH_SYNC_CLEANUP_TIMEOUT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

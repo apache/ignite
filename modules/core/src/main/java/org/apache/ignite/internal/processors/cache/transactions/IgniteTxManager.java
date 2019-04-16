@@ -161,6 +161,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             DFLT_LONG_OPERATIONS_DUMP_TIMEOUT
     );
 
+    /** Timeout to clean GridCacheTxFinishSync#threadMap. */
+    private static final long TX_FINISH_SYNC_CLEANUP_TIMEOUT = IgniteSystemProperties.getLong(
+        IgniteSystemProperties.IGNITE_TX_FINISH_SYNC_CLEANUP_TIMEOUT, 5000);
+
     /** Committing transactions. */
     private final ThreadLocal<IgniteInternalTx> threadCtx = new ThreadLocal<>();
 
@@ -309,6 +313,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         cctx.gridIO().addMessageListener(TOPIC_TX, new DeadlockDetectionListener());
 
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
+
+        cctx.kernalContext().timeout().schedule(txFinishSync::cleanup,
+            TX_FINISH_SYNC_CLEANUP_TIMEOUT, TX_FINISH_SYNC_CLEANUP_TIMEOUT);
     }
 
     /**

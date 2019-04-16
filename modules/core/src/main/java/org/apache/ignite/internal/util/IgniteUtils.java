@@ -11337,4 +11337,22 @@ public abstract class IgniteUtils {
     public static boolean isFlagSet(int flags, int flag) {
         return (flags & flag) == flag;
     }
+
+    /**
+     * @param threadId Thread ID.
+     * @return Thread with specified id or {@code null} if there is no such thread.
+     */
+    public static Thread getThreadById(long threadId) {
+        for (ThreadGroup grp = Thread.currentThread().getThreadGroup(); grp != null; grp = grp.getParent()) {
+            Thread[] listOfThreads = new Thread[grp.activeCount() * 2];
+
+            grp.enumerate(listOfThreads);
+
+            for (Thread t : listOfThreads)
+                if (t != null && t.getId() == threadId)
+                    return t;
+        }
+
+        return null;
+    }
 }

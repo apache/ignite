@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -115,6 +116,17 @@ public class GridCacheTxFinishSync<K, V> {
     public void onNodeLeft(UUID nodeId) {
         for (ThreadFinishSync threadSync : threadMap.values())
             threadSync.onNodeLeft(nodeId);
+    }
+
+    /**
+     * Cleanup threadMap.
+     */
+    public void cleanup() {
+        threadMap.entrySet().removeIf(e -> {
+            Thread t = U.getThreadById(e.getKey());
+
+            return t == null || t.getState() == Thread.State.TERMINATED;
+        });
     }
 
     /**
