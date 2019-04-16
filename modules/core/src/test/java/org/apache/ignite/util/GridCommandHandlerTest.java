@@ -110,6 +110,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionState;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -969,14 +970,34 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        for (GridCacheVersion nearXid : nearXids)
+        boolean commitMatched = false;
+        boolean rollbackMatched = false;
+
+        for (GridCacheVersion nearXid : nearXids) {
             assertEquals(EXIT_CODE_OK, execute("--tx", "--info", nearXid.toString()));
 
-        String out = testOut.toString();
+            String out = testOut.toString();
 
-        assertTrue(out.contains("Transaction was found in completed versions history of the following nodes:"));
-        assertTrue(out.contains("COMMITTED"));
-        assertTrue(out.contains("ROLLED_BACK"));
+            testOut.reset();
+
+            assertTrue(out.contains("Transaction was found in completed versions history of the following nodes:"));
+
+            if (out.contains(TransactionState.COMMITTED.name())) {
+                commitMatched = true;
+
+                assertFalse(out.contains(TransactionState.ROLLED_BACK.name()));
+            }
+
+            if (out.contains(TransactionState.ROLLED_BACK.name())) {
+                rollbackMatched = true;
+
+                assertFalse(out.contains(TransactionState.COMMITTED.name()));
+            }
+
+        }
+
+        assertTrue(commitMatched);
+        assertTrue(rollbackMatched);
     }
 
     /**
@@ -2588,14 +2609,21 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param lockLatch Lock latch.
-     * @param unlockLatch Unlock latch.
-     * @param commitMustFail If true, commit of transaction that hangs on unlockLatch must fail.
+     * Starts several long transactions in order to test --tx command.
+     * Transactions will last until unlock latch is released: first transaction will wait for unlock latch directly,
+     * some others will wait for key lock acquisition.
+     *
+     * @param lockLatch Lock latch. Will be released inside body of the first transaction.
+     * @param unlockLatch Unlock latch. Should be released externally. First transaction won't be finished until unlock
+     * latch is released.
+     * @param topChangeBeforeUnlock <code>true</code> should be passed if cluster topology is expected to change between
+     * method call and unlock latch release. Commit of the first transaction will be asserted to fail in such case.
+     * @return Future to be completed after finish of all started transactions.
      */
     private IgniteInternalFuture<?> startTransactions(
         CountDownLatch lockLatch,
         CountDownLatch unlockLatch,
-        boolean commitMustFail
+        boolean topChangeBeforeUnlock
     ) throws Exception {
         IgniteEx client = grid("client");
 
@@ -2616,11 +2644,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                             tx.commit();
 
-                            if (commitMustFail)
+                            if (topChangeBeforeUnlock)
                                 fail("Commit must fail");
                         }
                         catch (Exception e) {
-                            if (commitMustFail)
+                            if (topChangeBeforeUnlock)
                                 assertTrue(X.hasCause(e, TransactionRollbackException.class));
                             else
                                 throw e;

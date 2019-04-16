@@ -135,7 +135,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
             nodeMap.put(result.getNode().id(), result.getNode());
         }
 
-        if (taskArg.txInfoArgument() == null) {
+        if (!taskArg.verboseMode()) {
             // If not in verbose mode, remove local and remote txs for which near txs are present.
             for (VisorTxTaskResult result : mapRes.values()) {
                 List<VisorTxInfo> infos = result.getInfos();
@@ -231,8 +231,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
             }
 
             for (IgniteInternalTx locTx : transactions) {
-                if (arg.txInfoArgument() != null &&
-                    !arg.txInfoArgument().gridCacheVersion().equals(locTx.nearXidVersion()))
+                if (arg.verboseMode() && !arg.txInfoArgument().gridCacheVersion().equals(locTx.nearXidVersion()))
                     continue;
 
                 if (arg.getXid() != null && !locTx.xid().toString().equals(arg.getXid()))
@@ -324,7 +323,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                     killClo = REMOTE_KILL_CLOSURE;
                 }
 
-                TxVerboseInfo verboseInfo = arg.txInfoArgument() == null ? null : createVerboseInfo(ignite, locTx);
+                TxVerboseInfo verboseInfo = arg.verboseMode() ? createVerboseInfo(ignite, locTx) : null;
 
                 infos.add(new VisorTxInfo(locTx.xid(), locTx.startTime(), duration, locTx.isolation(),
                     locTx.concurrency(), locTx.timeout(), lb, mappings, locTx.state(), size,
@@ -339,10 +338,8 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
             }
 
             // If transaction was not found in verbose --tx --info mode, try to fetch it from history.
-            if (arg.txInfoArgument() != null && infos.isEmpty()) {
-                Map<GridCacheVersion, Object> completedVersions = U.field(tm, "completedVersHashMap");
-
-                Object completed = completedVersions.get(arg.txInfoArgument().gridCacheVersion());
+            if (arg.verboseMode() && infos.isEmpty()) {
+                Object completed = tm.peekCompletedVersionsHistory(arg.txInfoArgument().gridCacheVersion());
 
                 if (completed != null) {
                     if (Boolean.TRUE.equals(completed))

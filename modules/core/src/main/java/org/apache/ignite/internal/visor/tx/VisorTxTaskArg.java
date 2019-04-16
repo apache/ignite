@@ -162,6 +162,13 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     }
 
     /**
+     * @return <code>true</code> if {@link VisorTxTask} is being used in verbose --tx --info mode.
+     */
+    public boolean verboseMode() {
+        return txInfoArg != null;
+    }
+
+    /**
      * @param txInfoArg New near XID version of transaction to display in verbose mode.
      */
     public void txInfoArgument(@Nullable TxVerboseId txInfoArg) {

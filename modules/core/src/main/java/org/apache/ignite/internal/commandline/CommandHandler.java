@@ -1437,7 +1437,7 @@ public class CommandHandler {
     private void transactionInfo(GridClient client, VisorTxTaskArg arg) throws GridClientException {
         IgniteProductVersion ver = FetchNearXidVersionTask.TX_INFO_SINCE_VER;
 
-        validateProductVersion(client, ver);
+        validateProductVersion(client, ver, true);
 
         GridCacheVersion nearXidVer = executeTask(client, FetchNearXidVersionTask.class, arg.txInfoArgument());
 
@@ -1647,9 +1647,16 @@ public class CommandHandler {
      *
      * @param client Client.
      * @param ver Version.
+     * @param validateClientNodes Whether client nodes should be checked as well.
      */
-    private static void validateProductVersion(GridClient client, IgniteProductVersion ver) throws GridClientException {
-        Collection<GridClientNode> nodes = client.compute().nodes(GridClientNode::connectable);
+    private static void validateProductVersion(
+        GridClient client,
+        IgniteProductVersion ver,
+        boolean validateClientNodes
+    ) throws GridClientException {
+        Collection<GridClientNode> nodes = validateClientNodes ?
+            client.compute().nodes() :
+            client.compute().nodes(GridClientNode::connectable);
 
         for (GridClientNode node : nodes) {
             String nodeVerStr = node.attribute(IgniteNodeAttributes.ATTR_BUILD_VER);
@@ -3007,7 +3014,8 @@ public class CommandHandler {
         usage(i("Set baseline autoadjustment settings:"), BASELINE, BaselineCommand.AUTO_ADJUST.text(), "disable|enable timeout <timeoutValue>", op(CMD_AUTO_CONFIRMATION));
         usage(i("List or kill transactions:"), TX, getTxOptions());
         usage(i("Print detailed information (topology and key lock ownership) about specific transaction:"),
-            TX, TX_INFO, or("<GridCacheVersion [topVer=..., order=..., nodeOrder=...]>", "<UUID>"));
+            TX, TX_INFO, or("<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] " +
+                "(can be found in logs)>", "<TX identifier as UUID (can be retrieved via --tx command)>"));
 
         if (enableExperimental) {
             usage(i("Print absolute paths of unused archived wal segments on each node:"), WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
