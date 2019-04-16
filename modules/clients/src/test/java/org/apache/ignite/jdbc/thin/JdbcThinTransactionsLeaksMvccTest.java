@@ -43,8 +43,8 @@ public class JdbcThinTransactionsLeaksMvccTest extends JdbcThinAbstractSelfTest 
     /** Keys count. */
     private static final int KEYS = 10;
 
-    /** Keys count. */
-    private static final int ITERATIONS = 5_000;
+    /** Iterations count. */
+    private static final int ITERATIONS = 1_000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
