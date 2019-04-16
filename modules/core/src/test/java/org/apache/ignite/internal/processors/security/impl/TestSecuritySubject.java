@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security;
+package org.apache.ignite.internal.processors.security.impl;
 
 import java.net.InetSocketAddress;
 import java.util.UUID;

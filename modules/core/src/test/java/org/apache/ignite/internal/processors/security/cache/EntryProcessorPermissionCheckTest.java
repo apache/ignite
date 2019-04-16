@@ -64,38 +64,31 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
 
         srvNode.cluster().active(true);
 
-        Stream.of(srvNode, clientNode)
-            .forEach(
-                n -> operations(n).forEach(
-                    c -> {
-                        runOperation(verifierNode, c);
+        Stream.of(srvNode, clientNode).forEach(n ->
+            operations(n).forEach(c -> {
+                runOperation(verifierNode, c);
 
-                        runForbiddenOperation(verifierNode, c);
-                    }
-                )
-            );
+                runForbiddenOperation(verifierNode, c);
+            })
+        );
     }
 
-    /**
-     * @param c Consumer.
-     */
-    private void runOperation(Ignite node, BiConsumer<String, T2<String, Integer>> c) {
+    /** */
+    private void runOperation(Ignite verifierNode, BiConsumer<String, T2<String, Integer>> c) {
         T2<String, Integer> entry = entry();
 
         c.accept(CACHE_NAME, entry);
 
-        assertThat(node.cache(CACHE_NAME).get(entry.getKey()), is(entry.getValue()));
+        assertThat(verifierNode.cache(CACHE_NAME).get(entry.getKey()), is(entry.getValue()));
     }
 
-    /**
-     * @param c Consumer.
-     */
-    private void runForbiddenOperation(Ignite node, BiConsumer<String, T2<String, Integer>> c) {
+    /** */
+    private void runForbiddenOperation(Ignite verifierNode, BiConsumer<String, T2<String, Integer>> c) {
         T2<String, Integer> entry = entry();
 
         assertThrowsWithCause(() -> c.accept(FORBIDDEN_CACHE, entry), SecurityException.class);
 
-        assertNull(node.cache(FORBIDDEN_CACHE).get(entry.getKey()));
+        assertNull(verifierNode.cache(FORBIDDEN_CACHE).get(entry.getKey()));
     }
 
     /**
@@ -103,25 +96,17 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
      */
     private List<BiConsumer<String, T2<String, Integer>>> operations(final Ignite node) {
         return Arrays.asList(
-            (cacheName, t) -> node.cache(cacheName).invoke(
-                t.getKey(), processor(t)
-            ),
-            (cacheName, t) -> node.cache(cacheName).invokeAll(
-                singleton(t.getKey()), processor(t)
-            ),
-            (cacheName, t) -> node.cache(cacheName).invokeAsync(
-                t.getKey(), processor(t)
-            ).get(),
-            (cacheName, t) -> node.cache(cacheName).invokeAllAsync(
-                singleton(t.getKey()), processor(t)
-            ).get()
+            (cacheName, t) -> node.cache(cacheName).invoke(t.getKey(), processor(t)),
+            (cacheName, t) -> node.cache(cacheName).invokeAll(singleton(t.getKey()), processor(t)),
+            (cacheName, t) -> node.cache(cacheName).invokeAsync(t.getKey(), processor(t)).get(),
+            (cacheName, t) -> node.cache(cacheName).invokeAllAsync(singleton(t.getKey()), processor(t)).get()
         );
     }
 
     /**
      * @param t T2.
      */
-    private static CacheEntryProcessor<Object, Object, Object> processor(T2<String, Integer> t) {
+    private CacheEntryProcessor<Object, Object, Object> processor(T2<String, Integer> t) {
         return (entry, o) -> {
             entry.setValue(t.getValue());
 

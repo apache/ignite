@@ -28,7 +28,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
-import org.apache.ignite.internal.processors.security.TestSecurityPluginConfiguration;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;

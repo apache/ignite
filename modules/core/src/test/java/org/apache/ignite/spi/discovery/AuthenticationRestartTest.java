@@ -19,7 +19,7 @@ package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.security.TestSecurityPluginConfiguration;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;

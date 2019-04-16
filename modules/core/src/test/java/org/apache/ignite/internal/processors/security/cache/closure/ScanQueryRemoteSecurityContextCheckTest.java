@@ -92,12 +92,12 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     private Stream<IgniteRunnable> operations() {
         return Stream.of(
             () -> {
-                register();
+                VERIFIER.register();
 
                 localIgnite().cache(CACHE_NAME).query(new ScanQuery<>(createRunner(SRV_CHECK))).getAll();
             },
             () -> {
-                register();
+                VERIFIER.register();
 
                 localIgnite().cache(CACHE_NAME).query(
                     new ScanQuery<>((k, v) -> true),

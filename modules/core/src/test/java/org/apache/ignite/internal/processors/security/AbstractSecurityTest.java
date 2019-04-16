@@ -22,6 +22,9 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginConfiguration;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -58,17 +61,6 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
             )
             .setAuthenticationEnabled(true)
             .setPluginConfigurations(secCfg);
-    }
-
-    /**
-     * @param idx Index.
-     * @param login Login.
-     * @param pwd Password.
-     * @param prmSet Security permission set.
-     */
-    protected IgniteConfiguration getConfiguration(int idx, String login, String pwd,
-        SecurityPermissionSet prmSet) throws Exception {
-        return getConfiguration(getTestIgniteInstanceName(idx), secPluginCfg(login, pwd, prmSet));
     }
 
     /**

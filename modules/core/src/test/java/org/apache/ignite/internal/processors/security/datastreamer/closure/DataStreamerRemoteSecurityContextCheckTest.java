@@ -69,7 +69,7 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
     @Test
     public void testDataStreamer() {
         IgniteRunnable op = () -> {
-            register();
+            VERIFIER.register();
 
             try (IgniteDataStreamer<Integer, Integer> strm = Ignition.localIgnite().dataStreamer(CACHE_NAME)) {
                 strm.receiver(StreamVisitor.from(new ExecRegisterAndForwardAdapter<>(endpoints())));

@@ -73,7 +73,7 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
     @Test
     public void test() {
         IgniteRunnableX operation = () -> {
-            register();
+            VERIFIER.register();
 
             Ignite loc = Ignition.localIgnite();
 

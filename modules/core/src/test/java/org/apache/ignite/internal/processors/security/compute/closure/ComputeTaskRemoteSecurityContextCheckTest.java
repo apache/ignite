@@ -91,12 +91,12 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
     private Stream<IgniteRunnable> operations() {
         return Stream.of(
             () -> {
-                register();
+                VERIFIER.register();
 
                 localIgnite().compute().execute(new ComputeTaskClosure(nodesToCheck(), endpoints()), 0);
             },
             () -> {
-                register();
+                VERIFIER.register();
 
                 localIgnite().compute().executeAsync(new ComputeTaskClosure(nodesToCheck(), endpoints()), 0).get();
             }
@@ -142,9 +142,9 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
                         }
 
                         @Override public Object execute() {
-                            register();
+                            VERIFIER.register();
 
-                            compute(loc, endpoints).broadcast(() -> register());
+                            compute(loc, endpoints).broadcast(() -> VERIFIER.register());
 
                             return null;
                         }

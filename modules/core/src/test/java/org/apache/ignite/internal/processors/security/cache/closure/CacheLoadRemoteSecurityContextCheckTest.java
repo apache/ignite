@@ -44,6 +44,9 @@ import static org.apache.ignite.Ignition.localIgnite;
  */
 @RunWith(JUnit4.class)
 public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
+    /** Transition load cache. */
+    private static final String TRANSITION_LOAD_CACHE = "TRANSITION_LOAD_CACHE";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SRV_INITIATOR);
@@ -88,7 +91,7 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
     @Test
     public void test() {
         IgniteRunnable operation = () -> {
-            register();
+            VERIFIER.register();
 
             localIgnite().<Integer, Integer>cache(CACHE_NAME).loadCache(
                 new RegisterExecAndForward<>(SRV_CHECK, endpoints())
