@@ -48,4 +48,5 @@ public class DummyVectorizer<K> extends ExtractionUtils.ArrayLikeVectorizer<K, V
     @Override protected int sizeOf(K key, Vector value) {
         return value.size();
     }
+
 }

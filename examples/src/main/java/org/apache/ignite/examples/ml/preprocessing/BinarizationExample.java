@@ -55,10 +55,9 @@ public class BinarizationExample {
             try {
                 data = createCache(ignite);
 
-                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(1)
-                    .labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(1);
 
-                // Defines second preprocessor that normalizes features.
+                // Defines second preprocessor that binarizes features.
                 Preprocessor<Integer, Vector> preprocessor = new BinarizationTrainer<Integer, Vector>()
                     .withThreshold(40)
                     .fit(ignite, data, vectorizer);

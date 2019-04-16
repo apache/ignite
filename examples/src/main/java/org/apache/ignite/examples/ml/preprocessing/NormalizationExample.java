@@ -56,7 +56,7 @@ public class NormalizationExample {
                 data = createCache(ignite);
 
                 Vectorizer<Integer, Vector, Integer, Double> vectorizer
-                    = new DummyVectorizer<Integer>(1, 2).labeled(Vectorizer.LabelCoordinate.FIRST);
+                    = new DummyVectorizer<>(1, 2);
 
                 // Defines second preprocessor that normalizes features.
                 Preprocessor<Integer, Vector> preprocessor = new NormalizationTrainer<Integer, Vector>()

@@ -32,8 +32,12 @@ import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.dataset.primitive.DatasetWrapper;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Example that shows how to implement your own algorithm (<a href="https://en.wikipedia.org/wiki/Gradient_descent">gradient</a>
@@ -71,12 +75,17 @@ public class AlgorithmSpecificDatasetExample {
             try {
                 persons = createCache(ignite);
 
-                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(1, 2)
-                    .labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(1);
+
+
+                IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
+
+                //NOTE: This class is part of Developer API and all lambdas should be loaded on server manually.
+                Preprocessor<Integer, Vector> preprocessor = new PatchedPreprocessor<>(func, vectorizer);
                 // Creates a algorithm specific dataset to perform linear regression. Here we define the way features and
                 // labels are extracted, and partition data and context are created.
                 SimpleLabeledDatasetDataBuilder<Integer, Vector, AlgorithmSpecificPartitionContext> builder =
-                    new SimpleLabeledDatasetDataBuilder<>(vectorizer);
+                    new SimpleLabeledDatasetDataBuilder<>(preprocessor);
 
                 try (AlgorithmSpecificDataset dataset = DatasetFactory.create(
                     ignite,

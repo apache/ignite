@@ -52,8 +52,7 @@ public class CacheBasedDatasetExample {
             try {
                 persons = createCache(ignite);
 
-                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(1, 2)
-                    .labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(1, 2);
 
                 // Creates a cache based simple dataset containing features and providing standard dataset API.
                 try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(

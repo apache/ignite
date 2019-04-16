@@ -53,7 +53,7 @@ public class DecisionTreeFromSparkExample {
 
             IgniteCache<Integer, Vector> dataCache = null;
             try {
-                dataCache = TitanicUtils.readPassengers(ignite);
+                dataCache = TitanicUtils.readPassengersWithoutNulls(ignite);
 
                 final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 5, 6, 4).labeled(1);
 
