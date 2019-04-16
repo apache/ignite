@@ -120,8 +120,8 @@ public class CompoundNaiveBayesModelTest {
     @Test /** */
     public void testPredictGausAndDiscrete() {
         double[][][] probabilities = new double[][][] {
-            {{-1}, {-1}, {-1}, {.5, .5}, {.2, .3, .5}, {2. / 3., 1. / 3.}, {.4, .1, .5}, {.5, .5}},
-            {{-1}, {-1}, {-1}, {0, 1}, {1. / 7, 2. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 3. / 7, 2. / 7}, {4. / 7, 3. / 7,}}
+            {{.5, .5}, {.2, .3, .5}, {2. / 3., 1. / 3.}, {.4, .1, .5}, {.5, .5}},
+            {{0, 1}, {1. / 7, 2. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 3. / 7, 2. / 7}, {4. / 7, 3. / 7,}}
         };
         double[] classProbabilities = new double[] {.5, .5};
         double[] labels = {LABEL_1, LABEL_2};

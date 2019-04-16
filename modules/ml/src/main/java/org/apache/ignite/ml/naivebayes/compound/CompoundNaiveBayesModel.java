@@ -62,12 +62,14 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
         if (discreteModel != null) {
             for (int i = 0; i < priorProbabilities.length; i++) {
+                int index = 0;
                 for (int j = 0; j < vector.size(); j++) {
                     if (discreteSkipFeature.test(j))
                         continue;
-                    int bucketNumber = toBucketNumber(vector.get(j), discreteModel.getBucketThresholds()[j]);
-                    double probability = discreteModel.getProbabilities()[i][j][bucketNumber];
+                    int bucketNumber = toBucketNumber(vector.get(j), discreteModel.getBucketThresholds()[index]);
+                    double probability = discreteModel.getProbabilities()[i][index][bucketNumber];
                     probapilityPowers[i] += (probability > 0 ? Math.log(probability) : .0);
+                    ++index;
                 }
             }
         }
