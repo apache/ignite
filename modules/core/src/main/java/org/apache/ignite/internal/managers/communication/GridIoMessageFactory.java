@@ -1146,12 +1146,12 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 172:
+            case GridQueryKillRequest.TYPE_CODE:
                 msg = new GridQueryKillRequest();
 
                 break;
 
-            case 173:
+            case GridQueryKillResponse.TYPE_CODE:
                 msg = new GridQueryKillResponse();
 
                 break;

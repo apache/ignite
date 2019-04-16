@@ -29,6 +29,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridQueryKillRequest implements Message {
     /** */
+    public static final short TYPE_CODE = 172;
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Request id. */
@@ -156,7 +159,7 @@ public class GridQueryKillRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 172;
+        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */
