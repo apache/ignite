@@ -42,6 +42,7 @@ import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheExistsException;
@@ -67,6 +68,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -1100,11 +1102,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException if check failed.
      */
     private void checkConsistency() throws IgniteCheckedException {
-        for (ClusterNode n : ctx.discovery().remoteNodes()) {
+        Collection<ClusterNode> rmtNodes = ctx.discovery().remoteNodes();
+
+        boolean changeablePoolSize = IgniteFeatures.allNodesSupports(rmtNodes, IgniteFeatures.DIFFERENT_REBALANCE_POOL_SIZE);
+
+        for (ClusterNode n : rmtNodes) {
             if (Boolean.TRUE.equals(n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED)))
                 continue;
 
-            checkRebalanceConfiguration(n);
+            if(!changeablePoolSize)
+                checkRebalanceConfiguration(n);
 
             checkTransactionConfiguration(n);
 
@@ -1610,7 +1617,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheCompressionManager compressMgr = new CacheCompressionManager();
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
-        CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled()) ? new GridCacheEvictionManager() : new CacheOffheapEvictionManager();
+        CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled())
+            ? new GridCacheEvictionManager()
+            : new CacheOffheapEvictionManager();
         GridCacheQueryManager qryMgr = queryManager(cfg);
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
         CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
@@ -2078,7 +2087,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param node Joined node.
      * @return {@code True} if there are new caches received from joined node.
      */
-    boolean hasCachesReceivedFromJoin(ClusterNode node) {
+    public boolean hasCachesReceivedFromJoin(ClusterNode node) {
         return cachesInfo.hasCachesReceivedFromJoin(node.id());
     }
 
@@ -5692,6 +5701,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public void setTmpStorage(MetaStorage.TmpStorage tmpStorage) {
         this.tmpStorage = tmpStorage;
+    }
+
+    /**
+     * Sets if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread. Also broadcasts this setting on other server nodes in cluster.
+     *
+     * @param allowed whether allowed
+     */
+    public void setTxOwnerDumpRequestsAllowed(boolean allowed) {
+        IgniteCompute compute = ctx.grid().compute(ctx.grid().cluster().forServers());
+
+        compute.broadcast(new TxOwnerDumpRequestAllowedSettingClosure(allowed));
     }
 
     /**

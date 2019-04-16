@@ -47,10 +47,6 @@ export default class ClusterEditFormController {
         private IgniteFormUtils: ReturnType<typeof FormUtils>
     ) {}
 
-    $onDestroy() {
-        this.subscription.unsubscribe();
-    }
-
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
 
@@ -65,16 +61,46 @@ export default class ClusterEditFormController {
                 {value: null, label: 'Default'}
             ];
 
+            this.failureHandlerVariant = [
+                {value: 'RestartProcess', label: 'Restart process'},
+                {value: 'StopNodeOnHalt', label: 'Try stop with timeout'},
+                {value: 'StopNode', label: 'Stop on critical error'},
+                {value: 'Noop', label: 'Disabled'},
+                {value: 'Custom', label: 'Custom'},
+                {value: null, label: 'Default'}
+            ];
+
+            this.ignoredFailureTypes = [
+                {value: 'SEGMENTATION', label: 'SEGMENTATION'},
+                {value: 'SYSTEM_WORKER_TERMINATION', label: 'SYSTEM_WORKER_TERMINATION'},
+                {value: 'SYSTEM_WORKER_BLOCKED', label: 'SYSTEM_WORKER_BLOCKED'},
+                {value: 'CRITICAL_ERROR', label: 'CRITICAL_ERROR'},
+                {value: 'SYSTEM_CRITICAL_OPERATION_TIMEOUT', label: 'SYSTEM_CRITICAL_OPERATION_TIMEOUT'}
+            ];
+
             if (this.available('2.0.0')) {
                 this.eventStorage.push({value: null, label: 'Disabled'});
 
                 this.eventGroups = _.filter(this.IgniteEventGroups, ({value}) => value !== 'EVTS_SWAPSPACE');
+
+                _.forEach(this.eventGroups, (grp) => grp.events = _.filter(grp.events, (evt) => evt.indexOf('SWAP') < 0));
             }
             else {
                 this.eventGroups = this.IgniteEventGroups;
 
                 this.marshallerVariant.splice(0, 0, {value: 'OptimizedMarshaller', label: 'OptimizedMarshaller'});
             }
+
+            this.eventTypes = [];
+
+            _.forEach(this.eventGroups, (grp) => {
+                _.forEach(grp.events, (e) => {
+                    const newVal = {value: e, label: e};
+
+                    if (!_.find(this.eventTypes, newVal))
+                        this.eventTypes.push(newVal);
+                });
+            });
         };
 
         rebuildDropdowns();
@@ -109,6 +135,10 @@ export default class ClusterEditFormController {
             {text: 'Save', icon: 'checkmark', click: () => this.save()},
             {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
         ];
+    }
+
+    $onDestroy() {
+        this.subscription.unsubscribe();
     }
 
     $onChanges(changes) {
@@ -146,12 +176,15 @@ export default class ClusterEditFormController {
     save(download) {
         if (this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
+
         this.onSave({$event: {cluster: cloneDeep(this.clonedCluster), download}});
     }
 
     reset = () => this.clonedCluster = cloneDeep(this.cluster);
+
     confirmAndReset() {
-        return this.IgniteConfirm.confirm('Are you sure you want to undo all changes for current cluster?')
-        .then(this.reset);
+        return this.IgniteConfirm
+            .confirm('Are you sure you want to undo all changes for current cluster?')
+            .then(this.reset);
     }
 }

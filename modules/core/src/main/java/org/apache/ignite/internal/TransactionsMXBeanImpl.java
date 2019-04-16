@@ -46,7 +46,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     /**
      * @param ctx Context.
      */
-    TransactionsMXBeanImpl(GridKernalContextImpl ctx) {
+    public TransactionsMXBeanImpl(GridKernalContextImpl ctx) {
         this.ctx = ctx;
     }
 
@@ -129,6 +129,16 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
         catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean getTxOwnerDumpRequestsAllowed() {
+        return ctx.cache().context().tm().txOwnerDumpRequestsAllowed();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTxOwnerDumpRequestsAllowed(boolean allowed) {
+        ctx.cache().setTxOwnerDumpRequestsAllowed(allowed);
     }
 
     /** {@inheritDoc} */

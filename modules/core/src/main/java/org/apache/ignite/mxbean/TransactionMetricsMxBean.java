@@ -82,4 +82,36 @@ public interface TransactionMetricsMxBean extends TransactionMetrics {
      */
     @MXBeanDescription("The number of active transactions for which this node is the initiator.")
     @Override public long getOwnerTransactionsNumber();
+
+    /**
+     * The last time, when transaction was commited.
+     *
+     * @return last time, when transaction was commited.
+     */
+    @MXBeanDescription("Last commit time.")
+    @Override long commitTime();
+
+    /**
+     * The last time, when transaction was rollbacked.
+     *
+     * @return last time, when transaction was rollbacked.
+     */
+    @MXBeanDescription("Last rollback time.")
+    @Override long rollbackTime();
+
+    /**
+     * The total number of commited transactions.
+     *
+     * @return total number of commited transactions.
+     */
+    @MXBeanDescription("Number of transaction commits.")
+    @Override int txCommits();
+
+    /**
+     * Tne total number of rollbacked transactions.
+     *
+     * @return total number of rollbacked transactions.
+     */
+    @MXBeanDescription("Number of transaction rollbacks.")
+    @Override int txRollbacks();
 }

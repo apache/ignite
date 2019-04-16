@@ -17,16 +17,15 @@
 
 package org.apache.ignite.ml.dataset.feature.extractor.impl;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.ml.dataset.feature.extractor.ExtractionUtils;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Vectorizer on binary objects.
@@ -91,7 +90,7 @@ public class BinaryObjectVectorizer<K> extends ExtractionUtils.StringCoordVector
 
     /** {@inheritDoc} */
     @Override protected Vector createVector(int size) {
-        return new SparseVector(size, SparseVector.RANDOM_ACCESS_MODE);
+        return new SparseVector(size);
     }
 
     /** Feature values mapping for non-number features. */
