@@ -51,7 +51,7 @@ public abstract class TestBase {
     /**
      * The base directory.
      */
-    public static final String BASE_TEST_DIR = "./data";
+    public static final String BASE_TEST_DIR = "./target/data";
 
     /**
      * An id used to create unique file names.
@@ -61,7 +61,7 @@ public abstract class TestBase {
     /**
      * The temporary directory.
      */
-    private static final String TEMP_DIR = "./data/temp";
+    private static final String TEMP_DIR = "./target/data/temp";
 
     /**
      * The base directory to write test databases.
@@ -360,7 +360,7 @@ public abstract class TestBase {
         synchronized (TestBase.class) {
             try {
                 // lock
-                FileChannel fc = FilePath.get("error.lock").open("rw");
+                FileChannel fc = FilePath.get("target/error.lock").open("rw");
                 FileLock lock;
                 while (true) {
                     lock = fc.tryLock();
@@ -370,7 +370,7 @@ public abstract class TestBase {
                     Thread.sleep(10);
                 }
                 // append
-                FileWriter fw = new FileWriter("error.txt", true);
+                FileWriter fw = new FileWriter("target/error.txt", true);
                 if (s != null) {
                     fw.write(s);
                 }

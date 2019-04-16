@@ -244,7 +244,7 @@ public class TestScript extends TestDb {
                 outFile = outFile.substring(idx + 1);
             }
         } else {
-            outFile = "test.out.txt";
+            outFile = "target/test.out.txt";
         }
         conn = getConnection("script");
         stat = conn.createStatement();

@@ -25,8 +25,8 @@ public class GenerateHelp {
      * @param args the command line parameters
      */
     public static void main(String... args) throws Exception {
-        String in = "src/docsrc/help/help.csv";
-        String out = "src/main/org/h2/res/help.csv";
+        String in = "modules/h2/src/docsrc/help/help.csv";
+        String out = "modules/h2/src/main/java/org/h2/res/help.csv";
         Csv csv = new Csv();
         csv.setLineCommentCharacter('#');
         ResultSet rs = csv.read(in, null, null);
