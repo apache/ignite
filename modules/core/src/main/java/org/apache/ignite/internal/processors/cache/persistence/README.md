@@ -1,6 +1,6 @@
-Apache Ignite Persistence
+GridGain Persistence
 -------------------------
-See Native Persistence introduction in [Ignite Persistent Store - under the hood](https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Persistent+Store+-+under+the+hood)
+See Native Persistence introduction in [GridGain Persistent Store - under the hood](https://cwiki.apache.org/confluence/display/IGNITE/GridGain+Persistent+Store+-+under+the+hood)
 
 Contents
 --------

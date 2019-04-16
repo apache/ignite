@@ -1,4 +1,4 @@
-Apache Ignite Native Peristence Page Memory
+GridGain Native Peristence Page Memory
 -------------------------------------------
 This package contains page memory implementation for case persitence is enabled.
 
@@ -21,7 +21,7 @@ Throttling is implemented at physical level of operations, so it operates not wi
 For an introduction, please see
 [wiki PagesWriteThrottling](https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Persistent+Store+-+under+the+hood#IgnitePersistentStore-underthehood-PagesWriteThrottling)
 
-There are two types of throttling implemented in Apache Ignite:
+There are two types of throttling implemented in GridGain:
 * Checkpoint buffer overflow protection.
 
 This CP Buffer throttling is enabled by default. It is activated if CP buffer is close to being filled.

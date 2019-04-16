@@ -1,9 +1,9 @@
-Apache Ignite Processors
+GridGain Processors
 ------------------------
 
-A processor is Apache Ignite component with the lifecycle. This lifecycle is associated with Ignite Node lifecycle.
+A processor is GridGain component with the lifecycle. This lifecycle is associated with GridGain Node lifecycle.
 
-Despite Managers, Ignite processors are not associated with an SPI.
+Despite Managers, GridGain processors are not associated with an SPI.
 
 Cache Processors and Implementation
 -----------------------------------
