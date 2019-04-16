@@ -310,16 +310,16 @@ public class CommandProcessor {
             try {
                 runningQryInfo.cancel();
             } catch (Exception e){
-                sendKillResponse(msg, node, e.getMessage());
+                U.warn(log, "Cancellation of query failed: [qryId=" + qryId + "]", e);
+
+                if(!msg.asyncResponse())
+                    sendKillResponse(msg, node, e.getMessage());
 
                 return ;
             }
 
-            if (!msg.asyncResponse()) {
-                runningQryInfo.runningFuture().listen((f) -> {
-                    sendKillResponse(msg, node, f.result());
-                });
-            }
+            if (!msg.asyncResponse())
+                runningQryInfo.runningFuture().listen((f) -> sendKillResponse(msg, node, f.result()));
         }
 
     }
@@ -441,7 +441,7 @@ public class CommandProcessor {
 
             if (node != null) {
                 if (node.version().compareTo(KILL_COMMAND_SINCE_VER) < 0)
-                    throw new IgniteSQLException("Failed to cancel query: KILL QUERY operation are supported in " +
+                    throw new IgniteSQLException("Failed to cancel query: KILL QUERY operation is supported in " +
                         "versions 2.8.0 and newer");
 
                 KillQueryRun qryRun = new KillQueryRun(cmd.nodeId(), cmd.nodeQueryId(), fut);
@@ -630,7 +630,6 @@ public class CommandProcessor {
      * @param sql SQL.
      * @param cmdH2 Command.
      */
-    @SuppressWarnings({"unchecked"})
     private void runCommandH2(String sql, GridSqlStatement cmdH2) {
         IgniteInternalFuture fut = null;
 
