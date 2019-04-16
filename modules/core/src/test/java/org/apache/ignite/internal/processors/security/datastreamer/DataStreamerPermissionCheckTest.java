@@ -67,17 +67,17 @@ public class DataStreamerPermissionCheckTest extends AbstractCacheOperationPermi
             s -> s.addData((Map.Entry<String, Integer>)entry()),
             s -> s.addData(singletonList(entry())));
 
-        ops.forEach(c -> executeOperation(node, CACHE_NAME, c));
+        ops.forEach(c -> runOperation(node, CACHE_NAME, c));
 
         ops.forEach(c ->
-            assertThrowsWithCause(() -> executeOperation(node, FORBIDDEN_CACHE, c), SecurityException.class));
+            assertThrowsWithCause(() -> runOperation(node, FORBIDDEN_CACHE, c), SecurityException.class));
     }
 
     /**
      * @param node Node.
      * @param c Consumer.
      */
-    private void executeOperation(Ignite node, String cache, Consumer<IgniteDataStreamer<String, Integer>> c) {
+    private void runOperation(Ignite node, String cache, Consumer<IgniteDataStreamer<String, Integer>> c) {
         try (IgniteDataStreamer<String, Integer> s = node.dataStreamer(cache)) {
             c.accept(s);
         }

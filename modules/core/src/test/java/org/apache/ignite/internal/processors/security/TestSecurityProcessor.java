@@ -107,9 +107,6 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
         throws SecurityException {
-
-        assert securityCtx instanceof TestSecurityContext;
-
         if (!((TestSecurityContext)securityCtx).operationAllowed(name, perm))
             throw new SecurityException("Authorization failed [perm=" + perm +
                 ", name=" + name +

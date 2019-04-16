@@ -47,6 +47,11 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
     /** */
     @Test
     public void test() throws Exception {
+        IgniteEx verifierNode = startGrid("verifier_node",
+            SecurityPermissionSetBuilder.create()
+                .appendCachePermissions(CACHE_NAME, CACHE_READ)
+                .appendCachePermissions(FORBIDDEN_CACHE, CACHE_READ).build(), false);
+
         IgniteEx srvNode = startGrid("server_node",
             SecurityPermissionSetBuilder.create()
                 .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT)
@@ -63,12 +68,34 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
             .forEach(
                 n -> operations(n).forEach(
                     c -> {
-                        assertAllowed(n, c);
+                        runOperation(verifierNode, c);
 
-                        assertForbidden(n, c);
+                        runForbiddenOperation(verifierNode, c);
                     }
                 )
             );
+    }
+
+    /**
+     * @param c Consumer.
+     */
+    private void runOperation(Ignite node, BiConsumer<String, T2<String, Integer>> c) {
+        T2<String, Integer> entry = entry();
+
+        c.accept(CACHE_NAME, entry);
+
+        assertThat(node.cache(CACHE_NAME).get(entry.getKey()), is(entry.getValue()));
+    }
+
+    /**
+     * @param c Consumer.
+     */
+    private void runForbiddenOperation(Ignite node, BiConsumer<String, T2<String, Integer>> c) {
+        T2<String, Integer> entry = entry();
+
+        assertThrowsWithCause(() -> c.accept(FORBIDDEN_CACHE, entry), SecurityException.class);
+
+        assertNull(node.cache(FORBIDDEN_CACHE).get(entry.getKey()));
     }
 
     /**
@@ -100,27 +127,5 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
 
             return null;
         };
-    }
-
-    /**
-     * @param c Consumer.
-     */
-    private void assertAllowed(Ignite node, BiConsumer<String, T2<String, Integer>> c) {
-        T2<String, Integer> entry = entry();
-
-        c.accept(CACHE_NAME, entry);
-
-        assertThat(node.cache(CACHE_NAME).get(entry.getKey()), is(entry.getValue()));
-    }
-
-    /**
-     * @param c Consumer.
-     */
-    private void assertForbidden(Ignite node, BiConsumer<String, T2<String, Integer>> c) {
-        T2<String, Integer> entry = entry();
-
-        assertThrowsWithCause(() -> c.accept(FORBIDDEN_CACHE, entry), SecurityException.class);
-
-        assertNull(node.cache(CACHE_NAME).get(entry.getKey()));
     }
 }

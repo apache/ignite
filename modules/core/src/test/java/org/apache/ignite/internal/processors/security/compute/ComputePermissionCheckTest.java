@@ -137,13 +137,14 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
 
         srvAllowed.cluster().active(true);
 
-        operations(srvAllowed, clntAllowed).forEach(this::assertAllowed);
+        operations(srvAllowed, clntAllowed).forEach(this::runOperation);
 
         operations(srvForbidden, clntForbidden).forEach(op -> assertThrowsWithCause(op, SecurityException.class));
 
-        asyncOperations(srvAllowed, clntAllowed).forEach(this::assertCancelAllowed);
+        asyncOperations(srvAllowed, clntAllowed).forEach(this::runOperationCancel);
 
-        asyncOperations(srvForbiddenCancel, clntForbiddenCancel).forEach(this::assertCancelForbidden);
+        asyncOperations(srvForbiddenCancel, clntForbiddenCancel).forEach(op ->
+            assertThrowsWithCause(() -> runOperationCancel(op), SecurityException.class));
     }
 
     /**
@@ -194,7 +195,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /**
      * @param r TestRunnable.
      */
-    private void assertAllowed(Runnable r) {
+    private void runOperation(Runnable r) {
         IS_EXECUTED.set(false);
 
         r.run();
@@ -205,23 +206,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /**
      * @param s Supplier.
      */
-    private void assertCancelForbidden(Supplier<Future> s) {
-        RNT_LOCK.lock();
-
-        try {
-            Future f = s.get();
-
-            assertThrowsWithCause(() -> f.cancel(true), SecurityException.class);
-        }
-        finally {
-            RNT_LOCK.unlock();
-        }
-    }
-
-    /**
-     * @param s Supplier.
-     */
-    private void assertCancelAllowed(Supplier<Future> s) {
+    private void runOperationCancel(Supplier<Future> s) {
         RNT_LOCK.lock();
 
         try {

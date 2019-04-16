@@ -59,7 +59,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -135,7 +134,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
      * @param r Runnable.
      * @param expCode Error code.
      */
-    static void assertSqlException(RunnableX r, int expCode) {
+    static void assertSqlException(Runnable r, int expCode) {
         try {
             try {
                 r.run();

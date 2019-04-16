@@ -164,7 +164,9 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
      */
     protected void runAndCheck(IgniteEx initiator, Stream<IgniteRunnable> ops) {
         ops.forEach(r -> {
-            setupVerifier(VERIFIER.start(secSubjectId(initiator)));
+            VERIFIER.clear().expectSubjId(secSubjectId(initiator));
+
+            setupVerifier(VERIFIER);
 
             compute(initiator, nodesToRun()).broadcast(r);
 
@@ -179,28 +181,24 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /**
          * Map that contains an expected behaviour.
          */
-        private final ConcurrentHashMap<String, T2<Integer, Integer>> map = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap<String, T2<Integer, Integer>> expInvokes = new ConcurrentHashMap<>();
 
         /**
          * List of registered security subjects.
          */
-        private final List<T2<UUID, String>> list = Collections.synchronizedList(new ArrayList<>());
+        private final List<T2<UUID, String>> registeredSubjects = Collections.synchronizedList(new ArrayList<>());
 
         /**
          * Expected security subject id.
          */
         private UUID expSecSubjId;
 
-        /**
-         * Prepare for test.
-         *
-         * @param expSecSubjId Expected security subject id.
-         */
-        private Verifier start(UUID expSecSubjId) {
-            this.expSecSubjId = expSecSubjId;
+        /** */
+        private Verifier clear() {
+            registeredSubjects.clear();
+            expInvokes.clear();
 
-            list.clear();
-            map.clear();
+            expSecSubjId = null;
 
             return this;
         }
@@ -213,7 +211,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * @param num Expected number of invokes.
          */
         public Verifier expect(String nodeName, int num) {
-            map.put(nodeName, new T2<>(num, 0));
+            expInvokes.put(nodeName, new T2<>(num, 0));
 
             return this;
         }
@@ -224,12 +222,9 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * @param ignite Local node.
          */
         private void register(IgniteEx ignite) {
-            assert expSecSubjId != null;
-            assert ignite != null;
+            registeredSubjects.add(new T2<>(secSubjectId(ignite), ignite.name()));
 
-            list.add(new T2<>(secSubjectId(ignite), ignite.name()));
-
-            map.computeIfPresent(ignite.name(), (name, t2) -> {
+            expInvokes.computeIfPresent(ignite.name(), (name, t2) -> {
                 Integer val = t2.getValue();
 
                 t2.setValue(++val);
@@ -242,21 +237,23 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * Checks result of test and clears expected behavior.
          */
         private void checkResult() {
-            assert !map.isEmpty();
-
-            list.forEach(t ->
+            registeredSubjects.forEach(t ->
                 assertThat("Invalide security context on node " + t.get2(),
                     t.get1(), is(expSecSubjId))
             );
 
-            map.forEach((key, value) ->
+            expInvokes.forEach((key, value) ->
                 assertThat("Node " + key + ". Execution of register: ",
                     value.get2(), is(value.get1())));
 
-            list.clear();
-            map.clear();
+            clear();
+        }
 
-            expSecSubjId = null;
+        /** */
+        private Verifier expectSubjId(UUID expSecSubjId) {
+            this.expSecSubjId = expSecSubjId;
+
+            return this;
         }
     }
 
@@ -357,12 +354,10 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
             if (node == null || node.equals(loc.name())) {
                 register();
 
-                Ignite ignite = Ignition.localIgnite();
-
                 if (runnable != null)
                     runnable.run();
                 else {
-                    compute(ignite, endpoints)
+                    compute(loc, endpoints)
                         .broadcast(() -> register());
                 }
             }
