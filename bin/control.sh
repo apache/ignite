@@ -56,6 +56,25 @@ if [ "${DEFAULT_CONFIG:-}" == "" ]; then
 fi
 
 #
+#Adding parameters from the environment, if they are not specified
+#
+if [[ $IGNITE_SSL_CIPHER_SUITES != '' && $@ != *' --ssl-cipher-suites '* ]]; then
+        set -- "$@" "--ssl-cipher-suites $IGNITE_SSL_CIPHER_SUITES"
+fi
+
+if [[ $IGNITE_KEYSTORE != '' && $@ != *' --keystore '* ]]; then
+        set -- "$@" "--keystore $IGNITE_KEYSTORE"
+fi
+
+if [[ $IGNITE_TRUSTSTORE != '' && $@ != *' --truststore '* ]]; then
+        set -- "$@" "--truststore $IGNITE_TRUSTSTORE"
+fi
+
+if [[ $IGNITE_USER != '' && $@ != *' --user '* ]]; then
+        set -- "$@" "--user $IGNITE_USER"
+fi
+
+#
 # Set IGNITE_LIBS.
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
