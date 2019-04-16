@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.TopologyValidator;
+import org.apache.ignite.internal.cluster.СlusterReadOnlyModeCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
@@ -96,7 +97,7 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
         PartitionLossPolicy lossPlc = grp.config().getPartitionLossPolicy();
 
         if (cctx.shared().readOnlyMode() && opType == WRITE && !isSystemCache(cctx.name()))
-            return new IgniteCheckedException("Failed to perform cache operation (cluster is in read only mode)");
+            return new СlusterReadOnlyModeCheckedException("Failed to perform cache operation (cluster is in read only mode)");
 
         if (grp.needsRecovery() && !recovery) {
             if (opType == WRITE && (lossPlc == READ_ONLY_SAFE || lossPlc == READ_ONLY_ALL))
