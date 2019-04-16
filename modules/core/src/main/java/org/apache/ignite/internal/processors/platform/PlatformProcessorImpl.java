@@ -57,6 +57,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -169,16 +170,19 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     private static final int OP_SET_TX_TIMEOUT_ON_PME = 30;
 
     /** */
-    private static final int OP_IS_BASELINE_AUTO_ADJ_ENABLED = 31;
+    private static final int OP_NODE_VERSION = 31;
 
     /** */
-    private static final int OP_SET_BASELINE_AUTO_ADJ_ENABLED = 32;
+    private static final int OP_IS_BASELINE_AUTO_ADJ_ENABLED = 32;
 
     /** */
-    private static final int OP_GET_BASELINE_AUTO_ADJ_TIMEOUT = 33;
+    private static final int OP_SET_BASELINE_AUTO_ADJ_ENABLED = 33;
 
     /** */
-    private static final int OP_SET_BASELINE_AUTO_ADJ_TIMEOUT = 34;
+    private static final int OP_GET_BASELINE_AUTO_ADJ_TIMEOUT = 34;
+
+    /** */
+    private static final int OP_SET_BASELINE_AUTO_ADJ_TIMEOUT = 35;
 
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -727,6 +731,13 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                     writer.writeObjectDetached(n.consistentId());
                     PlatformUtils.writeNodeAttributes(writer, n.attributes());
                 }
+
+                return;
+            }
+
+            case OP_NODE_VERSION: {
+                IgniteProductVersion productVersion = ignite().cluster().node().version();
+                PlatformUtils.writeNodeVersion(writer, productVersion);
 
                 return;
             }

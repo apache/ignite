@@ -93,10 +93,12 @@ namespace Apache.Ignite.Core.Impl
             EnableWal = 28,
             IsWalEnabled = 29,
             SetTxTimeoutOnPartitionMapExchange = 30,
-            IsBaselineAutoAdjustmentEnabled = 31,
-            SetBaselineAutoAdjustmentEnabled = 32,
-            GetBaselineAutoAdjustTimeout = 33,
-            SetBaselineAutoAdjustTimeout = 34
+            GetNodeVersion = 31
+
+            IsBaselineAutoAdjustmentEnabled = 32,
+            SetBaselineAutoAdjustmentEnabled = 33,
+            GetBaselineAutoAdjustTimeout = 34,
+            SetBaselineAutoAdjustTimeout = 35
         }
 
         /** */
@@ -238,6 +240,12 @@ namespace Apache.Ignite.Core.Impl
         public ICompute GetCompute()
         {
             return _prj.ForServers().GetCompute();
+        }
+
+        /** <inheritdoc /> */
+        public IgniteProductVersion GetVersion()
+        {
+            return Target.OutStream((int) Op.GetNodeVersion, r => new IgniteProductVersion(r));
         }
 
         /** <inheritdoc /> */
@@ -425,7 +433,6 @@ namespace Apache.Ignite.Core.Impl
         public ICache<TK, TV> GetCache<TK, TV>(string name)
         {
             IgniteArgumentCheck.NotNull(name, "name");
-
 
             return GetCache<TK, TV>(DoOutOpObject((int) Op.GetCache, w => w.WriteString(name)));
         }
