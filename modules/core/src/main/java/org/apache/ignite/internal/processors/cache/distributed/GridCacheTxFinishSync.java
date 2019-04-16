@@ -103,8 +103,14 @@ public class GridCacheTxFinishSync<K, V> {
     public void onAckReceived(UUID nodeId, long threadId) {
         ThreadFinishSync threadSync = threadMap.get(threadId);
 
-        if (threadSync != null)
+        if (threadSync != null) {
             threadSync.onReceive(nodeId);
+
+            synchronized (threadSync) {
+                if (threadSync.nodeMap.isEmpty())
+                    threadMap.remove(threadId);
+            }
+        }
     }
 
     /**
@@ -138,29 +144,31 @@ public class GridCacheTxFinishSync<K, V> {
          * @param nodeId Node ID request being sent to.
          */
         public void onSend(UUID nodeId) {
-            TxFinishSync sync = nodeMap.get(nodeId);
+            synchronized (this) {
+                TxFinishSync sync = nodeMap.get(nodeId);
 
-            if (sync == null) {
-                sync = new TxFinishSync(nodeId, threadId);
+                if (sync == null) {
+                    sync = new TxFinishSync(nodeId, threadId);
 
-                TxFinishSync old = nodeMap.put(nodeId, sync);
+                    TxFinishSync old = nodeMap.put(nodeId, sync);
 
-                assert old == null : "Only user thread can add sync objects to the map.";
+                    assert old == null : "Only user thread can add sync objects to the map.";
 
-                // Recheck discovery only if added new sync.
-                if (cctx.discovery().node(nodeId) == null) {
-                    sync.onNodeLeft();
+                    // Recheck discovery only if added new sync.
+                    if (cctx.discovery().node(nodeId) == null) {
+                        sync.onNodeLeft();
 
-                    nodeMap.remove(nodeId);
+                        nodeMap.remove(nodeId);
+                    }
+                    else if (cctx.kernalContext().clientDisconnected()) {
+                        sync.onDisconnected(cctx.kernalContext().cluster().clientReconnectFuture());
+
+                        nodeMap.remove(nodeId);
+                    }
                 }
-                else if (cctx.kernalContext().clientDisconnected()) {
-                    sync.onDisconnected(cctx.kernalContext().cluster().clientReconnectFuture());
 
-                    nodeMap.remove(nodeId);
-                }
+                sync.onSend();
             }
-
-            sync.onSend();
         }
 
         /**
@@ -192,7 +200,7 @@ public class GridCacheTxFinishSync<K, V> {
          * @param nodeId Node ID response received from.
          */
         public void onReceive(UUID nodeId) {
-            TxFinishSync sync = nodeMap.get(nodeId);
+            TxFinishSync sync = nodeMap.remove(nodeId);
 
             if (sync != null)
                 sync.onReceive();
