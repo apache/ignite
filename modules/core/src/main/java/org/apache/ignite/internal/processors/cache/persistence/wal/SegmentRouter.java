@@ -69,7 +69,7 @@ public class SegmentRouter {
     public FileDescriptor findSegment(long segmentId) throws FileNotFoundException {
         FileDescriptor fd;
 
-        if (segmentAware.lastArchivedAbsoluteIndex() >= segmentId)
+        if (segmentAware.lastArchivedAbsoluteIndex() >= segmentId || !isArchiverEnabled())
             fd = new FileDescriptor(new File(walArchiveDir, fileName(segmentId)));
         else
             fd = new FileDescriptor(new File(walWorkDir, fileName(segmentId % dsCfg.getWalSegments())), segmentId);
@@ -86,5 +86,15 @@ public class SegmentRouter {
         }
 
         return fd;
+    }
+
+    /**
+     * Returns {@code true} if archiver is enabled.
+     */
+    private boolean isArchiverEnabled() {
+        if (walArchiveDir != null && walWorkDir != null)
+            return !walArchiveDir.equals(walWorkDir);
+
+        return !new File(dsCfg.getWalArchivePath()).equals(new File(dsCfg.getWalPath()));
     }
 }

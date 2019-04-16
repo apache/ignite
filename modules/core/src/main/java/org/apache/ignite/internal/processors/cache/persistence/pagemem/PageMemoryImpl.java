@@ -1766,10 +1766,10 @@ public class PageMemoryImpl implements PageMemoryEx {
      *
      */
     void beforeReleaseWrite(FullPageId pageId, long ptr, boolean pageWalRec) throws IgniteCheckedException {
-        boolean walIsNotDisable = walMgr != null && !walMgr.disabled(pageId.groupId());
+        boolean walIsNotDisabled = walMgr != null && !walMgr.disabled(pageId.groupId());
         boolean pageRecOrAlwaysWriteFullPage = walMgr != null && (pageWalRec || walMgr.isAlwaysWriteFullPages());
 
-        if (pageRecOrAlwaysWriteFullPage && walIsNotDisable)
+        if (pageRecOrAlwaysWriteFullPage && walIsNotDisabled)
             walMgr.log(new PageSnapshot(pageId, ptr, pageSize(), realPageSize(pageId.groupId())));
     }
 
