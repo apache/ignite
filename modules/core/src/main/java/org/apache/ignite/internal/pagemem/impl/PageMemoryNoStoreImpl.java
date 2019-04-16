@@ -534,11 +534,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     ) {
         assert !stopped;
 
-        Segment seg = segment(PageIdUtils.pageIndex(pageId));
-
         long actualId = PageIO.getPageId(page);
 
-        rwLock.writeUnlock(seg.header(page) + LOCK_OFFSET, PageIdUtils.tag(actualId));
+        rwLock.writeUnlock(page + LOCK_OFFSET, PageIdUtils.tag(actualId));
     }
 
     /** {@inheritDoc} */
