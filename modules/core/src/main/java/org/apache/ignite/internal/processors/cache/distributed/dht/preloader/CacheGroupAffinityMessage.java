@@ -169,7 +169,7 @@ public class CacheGroupAffinityMessage implements Message {
 
                 return new CacheGroupAffinityMessage(
                     assign,
-                    aff.centralizedAffinityFunction() ? aff.idealAssignment() : null,
+                    aff.centralizedAffinityFunction() ? aff.idealAssignmentRaw() : null,
                     null
                 );
             });
