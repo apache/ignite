@@ -1627,7 +1627,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             long lastAbsArchivedIdx = tup == null ? -1 : tup.get2();
 
-            if (lastAbsArchivedIdx > 0)
+            if (lastAbsArchivedIdx >= 0)
                 segmentAware.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
         }
 
