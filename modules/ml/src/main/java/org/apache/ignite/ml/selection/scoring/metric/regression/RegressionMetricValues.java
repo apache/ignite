@@ -35,18 +35,23 @@ public class RegressionMetricValues implements MetricValues {
     /** Root mean squared error. */
     private double rmse;
 
+    /** Coefficient of determination. */
+    private double r2;
+
     /**
      * Initalize an instance.
      *
      * @param totalAmount Total amount of observations.
      * @param rss         Residual sum of squares.
      * @param mae         Mean absolute error.
+     * @param r2          Coefficient of determintaion.
      */
-    public RegressionMetricValues(int totalAmount, double rss, double mae) {
+    public RegressionMetricValues(int totalAmount, double rss, double mae, double r2) {
         this.rss = rss;
         this.mse = rss / totalAmount;
         this.rmse = Math.sqrt(this.mse);
         this.mae = mae;
+        this.r2 = r2;
     }
 
     /** Returns mean absolute error. */
@@ -67,5 +72,10 @@ public class RegressionMetricValues implements MetricValues {
     /** Returns root mean squared error. */
     public double rmse() {
         return rmse;
+    }
+
+    /** Returns coefficient of determination. */
+    public double r2() {
+        return r2;
     }
 }

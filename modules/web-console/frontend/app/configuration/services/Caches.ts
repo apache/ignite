@@ -69,7 +69,8 @@ export default class Caches {
             writeBehindCoalescing: true,
             nearConfiguration: {},
             sqlFunctionClasses: [],
-            domains: []
+            domains: [],
+            eagerTtl: true
         };
     }
 
@@ -225,11 +226,11 @@ export default class Caches {
         return cache && cache.cacheMode === 'PARTITIONED';
     }
 
-    requiresProprietaryDrivers(storeFactory) {
-        return ['Oracle', 'DB2', 'SQLServer'].includes(get(storeFactory, 'dialect'));
+    jdbcDriverURL(storeFactory) {
+        return this.JDBC_LINKS[get(storeFactory, 'dialect')];
     }
 
-    JDBCDriverURL(storeFactory) {
-        return this.JDBC_LINKS[get(storeFactory, 'dialect')];
+    requiresProprietaryDrivers(storeFactory) {
+        return !!this.jdbcDriverURL(storeFactory);
     }
 }

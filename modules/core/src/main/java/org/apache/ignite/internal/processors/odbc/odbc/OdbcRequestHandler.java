@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
 import java.sql.BatchUpdateException;
-import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,6 +39,8 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.transactions.TransactionMixedModeException;
+import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -743,16 +744,16 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             String sql = OdbcEscapeUtils.parse(req.query());
             String schema = OdbcUtils.prepareSchema(req.schema());
 
-            PreparedStatement stmt = ctx.query().getIndexing().prepareNativeStatement(schema, sql);
+            SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
-            ParameterMetaData pmd = stmt.getParameterMetaData();
+            List<JdbcParameterMeta> params = ctx.query().getIndexing().parameterMetaData(schema, qry);
 
-            byte[] typeIds = new byte[pmd.getParameterCount()];
+            byte[] typeIds = new byte[params.size()];
 
-            for (int i = 1; i <= pmd.getParameterCount(); ++i) {
-                int sqlType = pmd.getParameterType(i);
+            for (int i = 0; i < params.size(); ++i) {
+                int sqlType = params.get(i).type();
 
-                typeIds[i - 1] = sqlTypeToBinary(sqlType);
+                typeIds[i] = sqlTypeToBinary(sqlType);
             }
 
             OdbcQueryGetParamsMetaResult res = new OdbcQueryGetParamsMetaResult(typeIds);
@@ -982,9 +983,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, msg);
         if (e instanceof TransactionAlreadyCompletedException)
             return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_COMPLETED, msg);
-        if (e instanceof MvccUtils.NonMvccTransactionException)
+        if (e instanceof TransactionMixedModeException)
             return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH, msg);
-        if (e instanceof MvccUtils.UnsupportedTxModeException)
+        if (e instanceof TransactionUnsupportedConcurrencyException)
             return new OdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION, msg);
         if (e instanceof TransactionDuplicateKeyException)
             return new OdbcResponse(IgniteQueryErrorCode.DUPLICATE_KEY, msg);
