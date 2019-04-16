@@ -59,6 +59,18 @@ public interface FreeList<T extends Storable> {
     public void removeDataRowByLink(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException;
 
     /**
+     * @return Number of empty data pages in free list.
+     */
+    public int emptyDataPages();
+
+    /**
+     * Calculates free space tracked by this free list.
+     *
+     * @return Free space available for use, in bytes.
+     */
+    public long freeSpace();
+
+    /**
      * @param log Logger.
      */
     public void dumpStatistics(IgniteLogger log);
