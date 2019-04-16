@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryWarmingUp;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
@@ -78,6 +79,21 @@ public final class DataRegionConfiguration implements Serializable {
     /** Default length of interval over which {@link DataRegionMetrics#getAllocationRate()} metric is calculated. */
     public static final int DFLT_RATE_TIME_INTERVAL_MILLIS = 60_000;
 
+    /**
+     * Optimal count of threads for warm up pages loading into memory.
+     * That value was obtained through testing warm up functionality on 28 cores with hyperThreading.
+     */
+    public static final int OPTIMAL_PAGE_LOAD_THREADS = 16;
+
+    /**
+     * Optimal count of threads for warm up dump files reading.
+     * That value was obtained through testing warm up functionality on 28 cores with hyperThreading.
+     */
+    public static final int OPTIMAL_DUMP_READ_THREADS = 4;
+
+    /** Default throttle accuracy. */
+    public static final double DFLT_THROTTLE_ACCURACY = 0.25;
+
     /** Data region name. */
     private String name = DFLT_DATA_REG_DEFAULT_NAME;
 
@@ -129,6 +145,29 @@ public final class DataRegionConfiguration implements Serializable {
      * Flag to enable Ignite Native Persistence.
      */
     private boolean persistenceEnabled = false;
+
+    /** Flag to enable warming up. */
+    private boolean warmingUpEnabled = false;
+
+    /** Warming up indexes only flag. */
+    private boolean warmingUpIndexesOnly = false;
+
+    /** Wait warming up on start flag. */
+    private boolean waitWarmingUpOnStart = false;
+
+    /** Warming up runtime dump delay. */
+    private long warmingUpRuntimeDumpDelay = -1;
+
+    /** Count of threads which are used for warm up dump files reading. */
+    private int dumpReadThreads = Math.min(
+        OPTIMAL_DUMP_READ_THREADS, Runtime.getRuntime().availableProcessors());
+
+    /** Count of threads which are used for warm up pages loading into memory. */
+    private int pageLoadThreads = Math.min(
+        OPTIMAL_PAGE_LOAD_THREADS, Runtime.getRuntime().availableProcessors());
+
+    /** Page memory warming up accuracy. */
+    private double pageMemoryWarmingUpAccuracy = DFLT_THROTTLE_ACCURACY;
 
     /** Temporary buffer size for checkpoints in bytes. */
     private long checkpointPageBufSize;
@@ -341,6 +380,157 @@ public final class DataRegionConfiguration implements Serializable {
      */
     public DataRegionConfiguration setPersistenceEnabled(boolean persistenceEnabled) {
         this.persistenceEnabled = persistenceEnabled;
+
+        return this;
+    }
+
+    /**
+     * If enabled, list of loaded page IDs will be saved on node stop,
+     * and on the next node start pages will be loaded in memory again.
+     *
+     * @return Warming up enabled flag.
+     */
+    public boolean isWarmingUpEnabled() {
+        return warmingUpEnabled;
+    }
+
+    /**
+     * Sets warming up enabled flag.
+     *
+     * @param warmingUpEnabled Warming up enabled flag.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setWarmingUpEnabled(boolean warmingUpEnabled) {
+        this.warmingUpEnabled = warmingUpEnabled;
+
+        return this;
+    }
+
+    /**
+     * If enabled, only index partitions will be tracked and warmed up.
+     *
+     * @return Warming up indexes only flag.
+     */
+    public boolean isWarmingUpIndexesOnly() {
+        return warmingUpIndexesOnly;
+    }
+
+    /**
+     * Sets warming up indexes only flag.
+     *
+     * @param warmingUpIndexesOnly Warming up indexes only flag.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setWarmingUpIndexesOnly(boolean warmingUpIndexesOnly) {
+        this.warmingUpIndexesOnly = warmingUpIndexesOnly;
+
+        return this;
+    }
+
+    /**
+     * If enabled, starting of page memory for this data region will wait for finishing of warming up process.
+     *
+     * @return Wait warming up on start flag.
+     */
+    public boolean isWaitWarmingUpOnStart() {
+        return waitWarmingUpOnStart;
+    }
+
+    /**
+     * Sets wait warming up on start flag.
+     *
+     * @param waitWarmingUpOnStart Wait warming up on start flag.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setWaitWarmingUpOnStart(boolean waitWarmingUpOnStart) {
+        this.waitWarmingUpOnStart = waitWarmingUpOnStart;
+
+        return this;
+    }
+
+    /**
+     * Sets warming up runtime dump delay.
+     * Value {@code -1} (default) means that runtime dumps will be disabled and {@link PageMemoryWarmingUp}
+     * implementation will dump ids of loaded pages only on node stop.
+     *
+     * @return Warming up runtime dump delay.
+     */
+    public long getWarmingUpRuntimeDumpDelay() {
+        return warmingUpRuntimeDumpDelay;
+    }
+
+    /**
+     * Sets warming up runtime dump delay.
+     *
+     * @param warmingUpRuntimeDumpDelay Warming up runtime dump delay.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setWarmingUpRuntimeDumpDelay(long warmingUpRuntimeDumpDelay) {
+        this.warmingUpRuntimeDumpDelay = warmingUpRuntimeDumpDelay;
+
+        return this;
+    }
+
+    /**
+     * Specifies count of threads which are used for warm up dump files reading.
+     *
+     * @return Count of thread which are used for warm up dump files reading.
+     */
+    public int getDumpReadThreads() {
+        return dumpReadThreads;
+    }
+
+    /**
+     * Sets count of threads which will be used for warm up dump files reading.
+     *
+     * @param dumpReadThreads Count of threads which will be used for warm up dump files reading.
+     * Must be greater than 0.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setDumpReadThreads(int dumpReadThreads) {
+        assert dumpReadThreads > 0;
+
+        this.dumpReadThreads = dumpReadThreads;
+
+        return this;
+    }
+
+    /**
+     * Specifies count of threads which are used for warm up pages loading into memory.
+     *
+     * @return Count of threads which are used for warm up pages loading into memory.
+     */
+    public int getPageLoadThreads() {
+        return pageLoadThreads;
+    }
+
+    /**
+     * Sets count of threads which will be used for warm up pages loading into memory.
+     *
+     * @param pageLoadThreads Count of threads which will be used for warm up pages loading into memory.
+     * Must be greater than 0.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setPageLoadThreads(int pageLoadThreads) {
+        assert pageLoadThreads > 0;
+
+        this.pageLoadThreads = pageLoadThreads;
+
+        return this;
+    }
+
+    /**
+     * @return Page memory warming up accuracy.
+     */
+    public double getPageMemoryWarmingUpAccuracy() {
+        return pageMemoryWarmingUpAccuracy;
+    }
+
+    /**
+     * @param pageMemoryWarmingUpAccuracy New page memory warming up accuracy.
+     */
+    public DataRegionConfiguration setPageMemoryWarmingUpAccuracy(double pageMemoryWarmingUpAccuracy) {
+        this.pageMemoryWarmingUpAccuracy = pageMemoryWarmingUpAccuracy;
 
         return this;
     }

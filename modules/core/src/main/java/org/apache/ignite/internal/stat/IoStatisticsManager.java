@@ -194,6 +194,25 @@ public class IoStatisticsManager {
 
     /**
      * @param statType Type of statistics which need to take.
+     * @return Number of physical reads since last reset statistics. Return {@link Long#MAX_VALUE} if overflowed.
+     */
+    public Long totalPhysicalReads(IoStatisticsType statType) {
+        Map<IoStatisticsHolderKey, IoStatisticsHolder> stats = statByType.get(statType);
+
+        long res = 0;
+
+        for (IoStatisticsHolder statHolder : stats.values()) {
+            if (res + statHolder.logicalReads() < 0)
+                return Long.MAX_VALUE;
+
+            res += statHolder.logicalReads();
+        }
+
+        return res;
+    }
+
+    /**
+     * @param statType Type of statistics which need to take.
      * @param name name of statistics which need to take, e.g. cache name
      * @param subName subName of statistics which need to take, e.g. index name.
      * @return Tracked logical reads by types since last reset statistics.

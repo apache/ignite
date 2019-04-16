@@ -32,6 +32,8 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageE
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.MultithreadedPageMemoryWarmingUpTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryWarmingUpTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -63,6 +65,8 @@ public class IgnitePdsTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, IgniteRebalanceOnCachesStoppingOrDestroyingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CachePageWriteLockUnlockTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheWalDisabledOnRebalancingTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PageMemoryWarmingUpTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, MultithreadedPageMemoryWarmingUpTest.class, ignoredTests);
 
         return suite;
     }
