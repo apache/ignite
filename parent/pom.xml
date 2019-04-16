@@ -948,7 +948,7 @@
                                         <exclude>modules/platforms/python/**/*.md</exclude><!--markdown can not be commented-->
                                         <exclude>modules/platforms/python/docs/Makefile</exclude><!--sphinx files: BSD license-->
                                         <exclude>modules/platforms/python/docs/conf.py</exclude><!--sphinx files: BSD license-->
-                                        <exclude>modules/platforms/python/docs/source/**/*.rst</exclude><!--sphinx-apidoc generated files-->
+                                        <exclude>modules/platforms/python/docs/**/*.rst</exclude><!--sphinx-apidoc generated files-->
                                         <exclude>modules/platforms/python/requirements/**/*.txt</exclude><!--plain text can not be commented-->
                                         <!--web console-->
                                         <exclude>**/web-console/**/.eslintrc</exclude>
