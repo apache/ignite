@@ -328,7 +328,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test the configuration of IsBaselineAutoAdjustEnabled flag
         /// </summary>
         [Test]
-        public void TestBaselineAutoAdjustEnabledDisabled()
+        public void TestBaselineTopologyAutoAdjustEnabledDisabled()
         {
             using (var ignite = Ignition.Start(GetPersistentConfiguration()))
             {
@@ -346,7 +346,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test the configuration of BaselineAutoAdjustTimeout property
         /// </summary>
         [Test]
-        public void TestBaselineAutoAdjustTimeoutWriteRead()
+        public void TestBaselineTopologyAutoAdjustTimeoutWriteRead()
         {
             const long newTimeout = 333000;
             using (var ignite = Ignition.Start(GetPersistentConfiguration()))

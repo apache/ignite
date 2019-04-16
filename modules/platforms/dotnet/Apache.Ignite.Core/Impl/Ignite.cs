@@ -93,8 +93,7 @@ namespace Apache.Ignite.Core.Impl
             EnableWal = 28,
             IsWalEnabled = 29,
             SetTxTimeoutOnPartitionMapExchange = 30,
-            GetNodeVersion = 31
-
+            GetNodeVersion = 31,
             IsBaselineAutoAdjustmentEnabled = 32,
             SetBaselineAutoAdjustmentEnabled = 33,
             GetBaselineAutoAdjustTimeout = 34,
