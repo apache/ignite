@@ -1782,6 +1782,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 tbl ->
                     Stream.of(tbl.getColumns())
                         .filter(Column::getVisible)
+                        .filter(c -> matches(c.getName(), colNamePtrn))
                         .map(c -> {
                             GridQueryProperty prop = tbl.rowDescriptor().type().property(c.getName());
 
@@ -1805,6 +1806,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 .flatMap(
                     view ->
                         Stream.of(view.getColumns())
+                            .filter(c -> matches(c.getName(), colNamePtrn))
                             .map(c -> new ColumnInformation(
                                 c.getColumnId(),
                                 QueryUtils.SCHEMA_SYS,
