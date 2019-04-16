@@ -1372,7 +1372,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         DiscoveryDataClusterState oldState = globalState;
 
-        boolean autoAdjustBaseline = inMemoryMode
+        boolean autoAdjustBaseline = CU.isInMemoryCluster(ctx.discovery().allNodes(), ctx.config())
             && oldState.active()
             && !oldState.transition()
             && cluster.isBaselineAutoAdjustEnabled()
