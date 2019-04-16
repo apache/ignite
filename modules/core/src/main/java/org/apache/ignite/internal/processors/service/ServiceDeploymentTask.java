@@ -855,4 +855,15 @@ class ServiceDeploymentTask {
             "locNodeId", (ctx != null ? ctx.localNodeId() : "unknown"),
             "crdId", crdId);
     }
+
+    /**
+     * Sync toString method to avoid ConcurrentModificationException
+     *
+     * @return same content with {@link ServiceDeploymentTask#toString()}
+     */
+    public String syncToString() {
+        synchronized (this) {
+            return toString();
+        }
+    }
 }

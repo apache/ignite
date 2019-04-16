@@ -499,8 +499,13 @@ public class ServiceDeploymentManager {
                                 return;
 
                             if (nextDumpTime <= U.currentTimeMillis()) {
-                                log.warning("Failed to wait service deployment process or timeout had been" +
-                                    " reached, timeout=" + dumpTimeout + ", task=" + task);
+                                if (log.isDebugEnabled()) {
+                                    log.warning("Failed to wait service deployment process or timeout had been" +
+                                            " reached, timeout=" + dumpTimeout + ", task=" + task.syncToString());
+                                } else {
+                                    log.warning("Failed to wait service deployment process or timeout had been" +
+                                            " reached, timeout=" + dumpTimeout + ", taskDepId=" + task.deploymentId());
+                                }
 
                                 long nextTimeout = dumpTimeout * (2 + dumpCnt++);
 
