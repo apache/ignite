@@ -17,14 +17,19 @@
 
 'use strict';
 
+const mongoose = require('mongoose');
+const mockgoose = require('mockgoose');
+
 // Fire me up!
 
 module.exports = {
     implements: 'mongoose:mock',
-    inject: ['require(mongoose)', 'require(mockgoose)']
+    inject: []
 };
 
-module.exports.factory = (mongoose, mockgoose) => {
+module.exports.factory = () => {
+    console.log(mongoose);
+
     return mockgoose(mongoose)
-            .then(() => mongoose);
+        .then(() => mongoose);
 };

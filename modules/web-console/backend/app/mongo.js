@@ -17,6 +17,7 @@
 
 'use strict';
 
+const fs = require('fs');
 const _ = require('lodash');
 const {MongodHelper} = require('mongodb-prebuilt');
 const {MongoDBDownload} = require('mongodb-download');
@@ -67,7 +68,7 @@ const upgradeAccounts = (mongo, activation) => {
             });
     }
 
-    return mongo.Account.update({activated: false}, {$unset: {activationSentAt: "", activationToken: ""}}, {multi: true}).exec();
+    return mongo.Account.updateMany({activated: false}, {$unset: {activationSentAt: '', activationToken: ''}}).exec();
 };
 
 module.exports.factory = function(settings, mongoose, schemas) {
@@ -77,12 +78,17 @@ module.exports.factory = function(settings, mongoose, schemas) {
     console.log('Trying to connect to local MongoDB...');
 
     // Connect to mongoDB database.
-    return mongoose.connect(settings.mongoUrl, {server: {poolSize: 4}})
+    return mongoose.connect(settings.mongoUrl, {useNewUrlParser: true, useCreateIndex: true})
         .then(() => defineSchema(mongoose, schemas))
-        .catch((err) => {
-            console.log('Failed to connect to local MongoDB, will try to download and start embedded MongoDB', err);
+        .catch(() => {
+            console.log(`Failed to connect to MongoDB with connection string: "${settings.mongoUrl}", will try to download and start embedded MongoDB`);
 
-            const helper = new MongodHelper(['--port', '27017', '--dbpath', `${process.cwd()}/user_data`]);
+            const dbDir = `${process.cwd()}/user_data`;
+
+            if (!fs.existsSync(dbDir))
+                fs.mkdirSync(dbDir);
+
+            const helper = new MongodHelper(['--port', '27017', '--dbpath', dbDir]);
 
             helper.mongoBin.mongoDBPrebuilt.mongoDBDownload = new MongoDBDownload({
                 downloadDir: `${process.cwd()}/libs/mongodb`,
@@ -118,7 +124,7 @@ module.exports.factory = function(settings, mongoose, schemas) {
                 .then(() => {
                     console.log('Embedded MongoDB successfully started');
 
-                    return mongoose.connect(settings.mongoUrl, {server: {poolSize: 4}})
+                    return mongoose.connect(settings.mongoUrl, {useNewUrlParser: true, useCreateIndex: true})
                         .catch((err) => {
                             console.log('Failed to connect to embedded MongoDB', err);
 
