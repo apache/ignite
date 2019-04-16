@@ -41,6 +41,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
@@ -1435,9 +1436,7 @@ public class CommandHandler {
      * @param arg Argument.
      */
     private void transactionInfo(GridClient client, VisorTxTaskArg arg) throws GridClientException {
-        IgniteProductVersion ver = FetchNearXidVersionTask.TX_INFO_SINCE_VER;
-
-        validateProductVersion(client, ver, true);
+        checkFeatureSupportedByCluster(client, IgniteFeatures.TX_INFO_COMMAND, true);
 
         GridCacheVersion nearXidVer = executeTask(client, FetchNearXidVersionTask.class, arg.txInfoArgument());
 
@@ -1643,15 +1642,15 @@ public class CommandHandler {
     }
 
     /**
-     * Checks that all connectable cluster nodes have specific (or greater) product version.
+     * Checks that all cluster nodes support specified feature.
      *
      * @param client Client.
-     * @param ver Version.
+     * @param feature Feature.
      * @param validateClientNodes Whether client nodes should be checked as well.
      */
-    private static void validateProductVersion(
+    private static void checkFeatureSupportedByCluster(
         GridClient client,
-        IgniteProductVersion ver,
+        IgniteFeatures feature,
         boolean validateClientNodes
     ) throws GridClientException {
         Collection<GridClientNode> nodes = validateClientNodes ?
@@ -1659,14 +1658,11 @@ public class CommandHandler {
             client.compute().nodes(GridClientNode::connectable);
 
         for (GridClientNode node : nodes) {
-            String nodeVerStr = node.attribute(IgniteNodeAttributes.ATTR_BUILD_VER);
+            byte[] featuresAttrBytes = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_FEATURES);
 
-            IgniteProductVersion nodeVer = IgniteProductVersion.fromString(nodeVerStr);
-
-            if (nodeVer.compareTo(ver) < 0) {
-                throw new IllegalStateException("Command is supported since version " + ver +
-                    ", but there is cluster node with older version " +
-                    "[node=" + node.nodeId() + ", nodeVersion=" + nodeVer + ']');
+            if (!IgniteFeatures.nodeSupports(featuresAttrBytes, feature)) {
+                throw new IllegalStateException("Failed to execute command: cluster contains node that " +
+                    "doesn't support feature [nodeId=" + node.nodeId() + ", feature=" + feature + ']');
             }
         }
     }

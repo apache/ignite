@@ -26,18 +26,13 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Retrieves unique transaction identifier (nearXid) from UUID/GridCacheVersion of xid/nearXid.
  */
 @GridInternal
-public class FetchNearXidVersionTask
-    extends VisorMultiNodeTask<TxVerboseId, GridCacheVersion, GridCacheVersion> {
-    /** Version since --tx --info is supported. */
-    public static final IgniteProductVersion TX_INFO_SINCE_VER = IgniteProductVersion.fromString("2.5.8");
-
+public class FetchNearXidVersionTask extends VisorMultiNodeTask<TxVerboseId, GridCacheVersion, GridCacheVersion> {
     /** */
     private static final long serialVersionUID = 0L;
 
