@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.service.GridServiceAssignmentsKey;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -86,6 +90,40 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
             IgniteException.class,
             "Cluster not active!"
         );
+    }
+
+    /** */
+    @Test
+    public void testLocksNotAvaliableOnReadOnlyCluster() throws Exception {
+        IgniteEx grid = startGrid(SERVER_NODES_COUNT);
+
+        grid.cluster().active(true);
+
+        final int key = 0;
+
+        for (CacheConfiguration cfg : grid.configuration().getCacheConfiguration()) {
+            if (cfg.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL && !CU.isSystemCache(cfg.getName()))
+                grid.cache(cfg.getName()).put(key, cfg.getName().hashCode());
+        }
+
+        grid.cluster().readOnly(true);
+
+        for (CacheConfiguration cfg : grid.configuration().getCacheConfiguration()) {
+            if (cfg.getAtomicityMode() != CacheAtomicityMode.TRANSACTIONAL || CU.isSystemCache(cfg.getName()))
+                continue;
+
+            GridTestUtils.assertThrows(
+                log,
+                () -> {
+                    grid.cache(cfg.getName()).lock(key).lock();
+
+                    return null;
+                },
+                CacheException.class,
+                "Failed to perform cache operation (cluster is in read only mode)"
+            );
+
+        }
     }
 
     /** */
