@@ -17,12 +17,15 @@
 
 package org.apache.ignite.ml.tree;
 
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collections;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
@@ -32,10 +35,6 @@ import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 import org.apache.ignite.ml.tree.impurity.util.StepFunctionCompressor;
 import org.apache.ignite.ml.tree.leaf.DecisionTreeLeafBuilder;
-
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collections;
 
 /**
  * Distributed decision tree trainer that allows to fit trees using row-partitioned dataset.
@@ -107,12 +106,12 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C extends Serializable> DecisionTreeNode fit(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
+    @Override public <K, V> DecisionTreeNode fit(DatasetBuilder<K, V> datasetBuilder,
+                                                 Preprocessor<K, V> preprocessor) {
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(extractor, usingIdx)
+            new DecisionTreeDataBuilder<>(preprocessor, usingIdx)
         )) {
             return fit(dataset);
         }
@@ -136,16 +135,16 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      *
      * @param mdl Learned model.
      * @param datasetBuilder Dataset builder.
-     * @param extractor Mapper from upstream entry to {@link LabeledVector}.
+     * @param preprocessor Mapper from upstream entry to {@link LabeledVector}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return New model based on new dataset.
      */
-    @Override protected <K, V, C extends Serializable> DecisionTreeNode updateModel(DecisionTreeNode mdl,
-        DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
+    @Override protected <K, V> DecisionTreeNode updateModel(DecisionTreeNode mdl,
+                                                            DatasetBuilder<K, V> datasetBuilder,
+                                                            Preprocessor<K, V> preprocessor) {
 
-        return fit(datasetBuilder, extractor);
+        return fit(datasetBuilder, preprocessor);
     }
 
     /** */
