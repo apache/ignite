@@ -24,7 +24,7 @@ import org.apache.ignite.ml.dataset.feature.extractor.ExtractionUtils;
  *
  * @param <K> Key type.
  */
-public class ArraysVectorizer<K> extends ExtractionUtils.ArrayLikeVectorizer<K, double[]> {
+public class DoubleArrayVectorizer<K> extends ExtractionUtils.ArrayLikeVectorizer<K, double[]> {
     /** Serial version uid. */
     private static final long serialVersionUID = -1177109334215177722L;
 
@@ -33,7 +33,7 @@ public class ArraysVectorizer<K> extends ExtractionUtils.ArrayLikeVectorizer<K, 
      *
      * @param coords Coordinates.
      */
-    public ArraysVectorizer(Integer ... coords) {
+    public DoubleArrayVectorizer(Integer ... coords) {
         super(coords);
     }
 

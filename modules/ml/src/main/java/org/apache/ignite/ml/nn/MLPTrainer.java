@@ -17,9 +17,12 @@
 
 package org.apache.ignite.ml.nn;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
@@ -33,13 +36,9 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.MultiLabelDatasetTrainer;
 import org.apache.ignite.ml.util.Utils;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 
 /**
  * Multilayer perceptron trainer based on partition based {@link Dataset}.
@@ -110,15 +109,15 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C extends Serializable> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, double[]> extractor) {
+    @Override public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
+                                                     Preprocessor<K, V> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C extends Serializable> MultilayerPerceptron updateModel(MultilayerPerceptron lastLearnedMdl,
-        DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, double[]> extractor) {
+    @Override protected <K, V> MultilayerPerceptron updateModel(MultilayerPerceptron lastLearnedMdl,
+                                                                DatasetBuilder<K, V> datasetBuilder,
+                                                                Preprocessor<K, V> extractor) {
 
         assert archSupplier != null;
         assert loss!= null;
