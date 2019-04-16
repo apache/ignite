@@ -65,12 +65,17 @@ public class HistoryAffinityAssignmentImpl implements HistoryAffinityAssignment 
     private final int igniteAffinityBackupsThreshold =
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_AFFINITY_BACKUPS_THRESHOLD, 5);
 
+    /** Partition primaries different to ideal. */
+    private final Set<Integer> partitionPrimariesDifferentToIdeal;
+
     /**
      * @param assign Assignment.
      * @param backups Backups.
      */
     public HistoryAffinityAssignmentImpl(AffinityAssignment assign, int backups) {
         topVer = assign.topologyVersion();
+
+        partitionPrimariesDifferentToIdeal = assign.partitionPrimariesDifferentToIdeal();
 
         if (iganteDisableAffinityMemotyOptimization || backups > igniteAffinityBackupsThreshold) {
             assignment = assign.assignment();
@@ -326,6 +331,11 @@ public class HistoryAffinityAssignmentImpl implements HistoryAffinityAssignment 
         }
 
         return Collections.unmodifiableSet(res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<Integer> partitionPrimariesDifferentToIdeal() {
+        return Collections.unmodifiableSet(partitionPrimariesDifferentToIdeal);
     }
 
     /** {@inheritDoc} */
