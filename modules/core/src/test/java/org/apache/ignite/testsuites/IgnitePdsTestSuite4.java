@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.Ignit
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheWalDisabledOnRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsStartWIthEmptyArchive;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsStartWIthEmptyArchiveWALFsync;
 
 /**
  *
@@ -46,6 +48,9 @@ public class IgnitePdsTestSuite4 extends TestSuite {
         suite.addTestSuite(IgnitePdsCacheWalDisabledOnRebalancingTest.class);
 
         suite.addTestSuite(IgnitePdsTaskCancelingTest.class);
+
+        suite.addTestSuite(IgnitePdsStartWIthEmptyArchive.class);
+        suite.addTestSuite(IgnitePdsStartWIthEmptyArchiveWALFsync.class);
 
         return suite;
     }
