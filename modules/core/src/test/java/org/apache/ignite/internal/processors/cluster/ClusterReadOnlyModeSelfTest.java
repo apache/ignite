@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.stream.Stream;
 import javax.cache.CacheException;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -30,6 +33,7 @@ import org.apache.ignite.internal.processors.service.GridServiceAssignmentsKey;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertCachesReadOnlyMode;
@@ -124,6 +128,92 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
             );
 
         }
+    }
+
+    /** */
+    @Test
+    public void testEnableReadOnlyModeInsideTransaction() throws Exception {
+        IgniteEx grid = startGrids(SERVER_NODES_COUNT);
+
+        grid.cluster().active(true);
+
+        CacheConfiguration cfg = Stream.of(grid.configuration().getCacheConfiguration())
+            .filter(c -> c.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
+            .filter(c -> !CU.isSystemCache(c.getName())).findAny().get();
+
+        final int key = 1;
+
+        IgniteCache<Integer, Integer> cache = grid.cache(cfg.getName());
+
+        cache.put(key, 0);
+
+        CountDownLatch startTxLatch = new CountDownLatch(1);
+        CountDownLatch clusterReadOnlyLatch = new CountDownLatch(1);
+
+        Thread t = new Thread(() -> {
+            try {
+                startTxLatch.await();
+
+                grid(1).cluster().readOnly(true);
+
+                assertTrue(grid(1).cluster().readOnly());
+
+                clusterReadOnlyLatch.countDown();
+            }
+            catch (InterruptedException e) {
+                log.error("Thread interruped", e);
+
+                fail("Thread interruped!");
+            }
+        });
+
+        t.start();
+
+        Transaction tx = grid(0).transactions().txStart();
+
+        try {
+            cache.put(key, 1);
+
+            startTxLatch.countDown();
+
+            tx.commit();
+        }
+        catch (Exception e) {
+            log.error("TX Failed!", e);
+
+            tx.rollback();
+        }
+
+        assertEquals(1, (int) cache.get(key));
+
+        t.join();
+    }
+
+    /** */
+    @Test
+    public void testEnableReadOnlyModeInsideTransactionFailed() throws Exception {
+        IgniteEx grid = startGrid(0);
+
+        grid.cluster().active(true);
+
+        GridTestUtils.assertThrows(
+            log,
+            () -> {
+                Transaction tx = grid.transactions().txStart();
+
+                try {
+                    grid.cluster().readOnly(true);
+
+                    return null;
+                }
+                finally {
+                    tx.commit();
+                }
+            },
+            IgniteException.class,
+            "Failed to activate read-only mode (must invoke the method outside of an active transaction)."
+        );
+
     }
 
     /** */

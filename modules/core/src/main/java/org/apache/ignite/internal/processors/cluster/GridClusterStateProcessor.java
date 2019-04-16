@@ -490,13 +490,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     ) {
         DiscoveryDataClusterState state = globalState;
 
-        if (log.isInfoEnabled())
-            U.log(
+        if (log.isInfoEnabled()) {
+           U.log(
                 log,
-                "Received " + prettyStr(msg.activate()) + " request with BaselineTopology" +
-                    (msg.baselineTopology() == null ? ": null" : "[id=" + msg.baselineTopology().id() + "]") +
-                    " readOnly=" + msg.readOnly()
+                "Received " + prettyStr(msg.activate(), msg.readOnly(), readOnlyChanged(state, msg.readOnly())) +
+                    " request with BaselineTopology" +
+                    (msg.baselineTopology() == null ? ": null" : "[id=" + msg.baselineTopology().id() + "]")
             );
+        }
 
         if (msg.baselineTopology() != null)
             compatibilityMode = false;
@@ -964,11 +965,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         if (cacheProc.transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null) {
             return new GridFinishedFuture<>(
-                globalState.active() != activate ?
-                    new IgniteCheckedException("Failed to " + prettyStr(activate) +
-                        " cluster (must invoke the method outside of an active transaction).") :
-                    new IgniteCheckedException("Failed to " + prettyStr(readOnly) + " read-only mode" +
-                        " (must invoke the method outside of an active transaction).")
+                new IgniteCheckedException("Failed to " +
+                    prettyStr(activate, readOnly, readOnlyChanged(globalState, readOnly)) +
+                    " (must invoke the method outside of an active transaction).")
             );
         }
 
@@ -1000,9 +999,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (fut.activate != activate && fut.readOnly != readOnly) {
                 return new GridFinishedFuture<>(
                     new IgniteCheckedException(
-                        "Failed to " + prettyStr(activate) + prettyReadOnlyModeStr(readOnly, activate) +
+                        "Failed to " + prettyStr(activate, readOnly, readOnlyChanged(globalState, readOnly)) +
                         ", because another state change operation is currently in progress: " +
-                        prettyStr(fut.activate) + prettyReadOnlyModeStr(fut.readOnly, fut.activate)
+                            prettyStr(fut.activate, fut.readOnly, readOnlyChanged(globalState, fut.readOnly))
                     )
                 );
             }
@@ -1042,17 +1041,23 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         try {
             if (log.isInfoEnabled()) {
-                U.log(log, "Sending " + prettyStr(activate) + "  request with BaselineTopology " + blt +
-                    " readOnly=" + readOnly);
+                U.log(
+                    log,
+                    "Sending " + prettyStr(activate, readOnly, readOnlyChanged(globalState, readOnly)) +
+                        " request with BaselineTopology " + blt
+                );
             }
 
             ctx.discovery().sendCustomEvent(msg);
 
             if (ctx.isStopping()) {
-                String errMsg = "Failed to execute " + prettyStr(activate) + " request" +
-                    prettyReadOnlyModeStr(readOnly, activate) + ", node is stopping.";
-
-                startedFut.onDone(new IgniteCheckedException(errMsg));
+                startedFut.onDone(
+                    new IgniteCheckedException(
+                        "Failed to execute " +
+                            prettyStr(activate, readOnly, readOnlyChanged(globalState, readOnly)) +
+                            " request , node is stopping."
+                    )
+                );
             }
         }
         catch (IgniteCheckedException e) {
@@ -1201,8 +1206,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
         if (log.isInfoEnabled()) {
-            log.info("Sending " + prettyStr(activate) + " request" + prettyReadOnlyModeStr(readOnly, activate) +
-                " from node [id=" + ctx.localNodeId() +
+            log.info("Sending " + prettyStr(activate, readOnly, readOnlyChanged(globalState, readOnly)) +
+                " request from node [id=" + ctx.localNodeId() +
                 ", topVer=" + topVer +
                 ", client=" + ctx.clientNode() +
                 ", daemon=" + ctx.isDaemon() + "]");
@@ -1288,10 +1293,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         GridChangeGlobalStateFuture fut = changeStateFuture(req.initiatorNodeId(), req.requestId());
 
         if (fut != null) {
-            boolean activate = req.activate();
-
             IgniteCheckedException e = new IgniteCheckedException(
-                "Failed to " + prettyStr(activate) + " cluster" + prettyReadOnlyModeStr(req.readOnly(), activate),
+                "Failed to " + prettyStr(req.activate(), req.readOnly(), readOnlyChanged(globalState, req.readOnly())),
                 null,
                 false
             );
@@ -1560,12 +1563,22 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /**
-     * @param readOnly Read only.
-     * @param activate Activate.
-     * @return Read-only flag string.
+     * @param activate Activate flag.
+     * @param readOnly Read-only flag.
+     * @param readOnlyChanged Read only state changed.
+     * @return Activate or read-only message string.
      */
-    private static String prettyReadOnlyModeStr(boolean readOnly, boolean activate) {
-        return activate ? " with readOnly=" + readOnly : "";
+    private static String prettyStr(boolean activate, boolean readOnly, boolean readOnlyChanged) {
+        return readOnlyChanged ? prettyStr(readOnly) + " read-only mode" : prettyStr(activate) + " cluster";
+    }
+
+    /**
+     * @param curState Current cluster state.
+     * @param newReadOnly New read-only mode value.
+     * @return {@code True} if read-only mode changed and {@code False} otherwise.
+     */
+    private boolean readOnlyChanged(DiscoveryDataClusterState curState, boolean newReadOnly) {
+        return curState.readOnly() != newReadOnly;
     }
 
     /** {@inheritDoc} */
