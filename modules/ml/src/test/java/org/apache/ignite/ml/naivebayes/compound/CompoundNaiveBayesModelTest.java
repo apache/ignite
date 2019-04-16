@@ -126,7 +126,7 @@ public class CompoundNaiveBayesModelTest {
         double[] classProbabilities = new double[] {.5, .5};
         double[] labels = {LABEL_1, LABEL_2};
 
-        double[][] thresholds = new double[][] {{-1}, {-1}, {-1}, {.5}, {.5}, {.5}, {.5}, {.5}};
+        double[][] thresholds = new double[][] { {.5}, {.5}, {.5}, {.5}, {.5}};
         DiscreteNaiveBayesModel discreteModel = new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, thresholds, null);
 
         double[][] means = new double[][] {

@@ -76,11 +76,13 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
         if (gaussianModel != null) {
             for (int i = 0; i < priorProbabilities.length; i++) {
+                int index = 0;
                 for (int j = 0; j < vector.size(); j++) {
                     if (gaussianSkipFeature.test(j))
                         continue;
-                    double parobability = gauss(vector.get(j), gaussianModel.getMeans()[i][j], gaussianModel.getVariances()[i][j]);
+                    double parobability = gauss(vector.get(j), gaussianModel.getMeans()[i][j], gaussianModel.getVariances()[i][index]);
                     probapilityPowers[i] += (parobability > 0 ? Math.log(parobability) : .0);
+                    ++index;
                 }
             }
         }
