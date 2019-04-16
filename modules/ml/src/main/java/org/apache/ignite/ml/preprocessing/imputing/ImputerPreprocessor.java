@@ -17,8 +17,9 @@
 
 package org.apache.ignite.ml.preprocessing.imputing;
 
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Preprocessing function that makes imputing.
@@ -26,7 +27,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class ImputerPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
+public class ImputerPreprocessor<K, V> implements Preprocessor<K, V> {
     /** */
     private static final long serialVersionUID = 6887800576392623469L;
 
@@ -34,7 +35,7 @@ public class ImputerPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector>
     private final Vector imputingValues;
 
     /** Base preprocessor. */
-    private final IgniteBiFunction<K, V, Vector> basePreprocessor;
+    private final Preprocessor<K, V> basePreprocessor;
 
     /**
      * Constructs a new instance of imputing preprocessor.
@@ -42,7 +43,7 @@ public class ImputerPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector>
      * @param basePreprocessor Base preprocessor.
      */
     public ImputerPreprocessor(Vector imputingValues,
-        IgniteBiFunction<K, V, Vector> basePreprocessor) {
+                               Preprocessor<K, V> basePreprocessor) {
         this.imputingValues = imputingValues;
         this.basePreprocessor = basePreprocessor;
     }
@@ -54,8 +55,8 @@ public class ImputerPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector>
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public Vector apply(K k, V v) {
-        Vector res = basePreprocessor.apply(k, v);
+    @Override public LabeledVector apply(K k, V v) {
+        LabeledVector res = basePreprocessor.apply(k, v);
 
         assert res.size() == imputingValues.size();
 

@@ -15,35 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dataset.feature.extractor.impl;
+package org.apache.ignite.tests.p2p.pedicates;
 
-import org.apache.ignite.ml.dataset.feature.extractor.ExtractionUtils;
+import org.apache.ignite.binary.BinaryObject;
 
-/**
- * Vectorizer on arrays of doubles.
- *
- * @param <K> Key type.
- */
-public class ArraysVectorizer<K> extends ExtractionUtils.ArrayLikeVectorizer<K, double[]> {
+/** */
+public class FirstConsideredPredicate extends BinaryPredicate {
     /** Serial version uid. */
-    private static final long serialVersionUID = -1177109334215177722L;
-
-    /**
-     * Creates an instance of Vectorizer.
-     *
-     * @param coords Coordinates.
-     */
-    public ArraysVectorizer(Integer ... coords) {
-        super(coords);
-    }
+    private static final long serialVersionUID = 238742455L;
 
     /** {@inheritDoc} */
-    @Override protected Double feature(Integer coord, K key, double[] value) {
-        return value[coord];
-    }
+    @Override public boolean apply(BinaryObject bo) {
+        log.info("FirstConsideredPredicate on " + ignite.configuration().getIgniteInstanceName());
 
-    /** {@inheritDoc} */
-    @Override protected int sizeOf(K key, double[] value) {
-        return value.length;
+        return bo.hasField("isDeleted");
     }
 }

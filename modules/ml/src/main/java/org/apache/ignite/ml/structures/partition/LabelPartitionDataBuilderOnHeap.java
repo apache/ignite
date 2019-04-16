@@ -17,13 +17,12 @@
 
 package org.apache.ignite.ml.structures.partition;
 
-import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.environment.LearningEnvironment;
-
 import java.io.Serializable;
 import java.util.Iterator;
+import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Partition data builder that builds {@link LabelPartitionDataOnHeap}.
@@ -32,21 +31,21 @@ import java.util.Iterator;
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable, CO extends Serializable>
+public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     implements PartitionDataBuilder<K, V, C, LabelPartitionDataOnHeap> {
     /** */
     private static final long serialVersionUID = -7820760153954269227L;
 
-    /** Upstream vectorizer. */
-    private final Vectorizer<K, V, CO, Double> vectorizer;
+    /** Upstream preprocessor. */
+    private final Preprocessor<K, V> preprocessor;
 
     /**
      * Constructs a new instance of Label partition data builder.
      *
-     * @param vectorizer Upstream vectorizer (can return vectori with zero size).
+     * @param preprocessor Upstream preprocessor (can return vectori with zero size).
      */
-    public LabelPartitionDataBuilderOnHeap(Vectorizer<K, V, CO, Double> vectorizer) {
-        this.vectorizer = vectorizer;
+    public LabelPartitionDataBuilderOnHeap(Preprocessor<K, V> preprocessor) {
+        this.preprocessor = preprocessor;
     }
 
     /** {@inheritDoc} */
@@ -61,7 +60,7 @@ public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable, CO ex
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
 
-            y[ptr] = vectorizer.apply(entry.getKey(), entry.getValue()).label();
+            y[ptr] = (double) preprocessor.apply(entry.getKey(), entry.getValue()).label();
 
             ptr++;
         }

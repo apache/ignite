@@ -48,6 +48,7 @@
                         </goals>
                         <configuration>
                             <excludeTransitive>false</excludeTransitive>
+                            <excludeArtifactIds>fastutil,h2</excludeArtifactIds>
                         </configuration>
                     </execution>
                 </executions>
@@ -67,5 +68,4 @@
             <version>0.13.0</version>
         </dependency>
     </dependencies>
-
 </project>
