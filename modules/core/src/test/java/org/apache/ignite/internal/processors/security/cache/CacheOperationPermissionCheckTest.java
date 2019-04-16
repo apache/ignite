@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,6 +34,7 @@ import static java.util.Collections.singletonMap;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Test CRUD cache permissions.
@@ -64,7 +66,7 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
         for (Consumer<IgniteCache<String, String>> c : operations()) {
             c.accept(node.cache(CACHE_NAME));
 
-            assertForbidden(() -> c.accept(node.cache(FORBIDDEN_CACHE)));
+            assertThrowsWithCause(() -> c.accept(node.cache(FORBIDDEN_CACHE)), SecurityException.class);
         }
     }
 

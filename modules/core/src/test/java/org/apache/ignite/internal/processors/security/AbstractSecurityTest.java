@@ -39,8 +39,6 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -105,14 +103,5 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      */
     protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet, boolean isClient) throws Exception {
         return startGrid(getConfiguration(login, secPluginCfg(login, "", prmSet)).setClientMode(isClient));
-    }
-
-    /**
-     * Method {@link Runnable#run()} should throw {@link SecurityException}.
-     *
-     * @param r Runnable.
-     */
-    protected void assertForbidden(Runnable r) {
-        GridTestUtils.assertThrowsWithCause(r, SecurityException.class);
     }
 }

@@ -41,8 +41,6 @@ import org.junit.runners.JUnit4;
 public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridAllowAll(SRV_INITIATOR);
 
         startClientAllowAll(CLNT_INITIATOR);

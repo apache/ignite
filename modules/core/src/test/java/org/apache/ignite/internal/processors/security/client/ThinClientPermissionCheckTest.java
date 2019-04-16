@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.security.client;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.Consumer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.Config;
@@ -32,7 +34,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.TestSecurityData;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
@@ -48,6 +49,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Security tests for thin client.
@@ -105,8 +107,6 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         IgniteEx ignite = startGrid(
             getConfiguration(
                 new TestSecurityData(CLIENT,
@@ -133,16 +133,14 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         ignite.cluster().active(true);
     }
 
-    /**
-     * @throws Exception If error occurs.
-     */
+    /** */
     @Test
     public void testCacheSinglePermOperations() throws Exception {
         for (IgniteBiTuple<Consumer<IgniteClient>, String> t : operations(CACHE))
-            executeOperation(CLIENT, t.get1());
+            runOperation(CLIENT, t);
 
         for (IgniteBiTuple<Consumer<IgniteClient>, String> t : operations(FORBIDDEN_CACHE))
-            executeForbiddenOperation(t);
+            assertThrowsWithCause(() -> runOperation(CLIENT, t), ClientAuthorizationException.class);
     }
 
     /**
@@ -154,16 +152,19 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
      */
     @Test
     public void testCacheTaskPermOperations() throws Exception {
-        executeOperation(CLIENT_CACHE_TASK_OPER, c -> c.cache(CACHE).removeAll());
-        executeOperation(CLIENT_CACHE_TASK_OPER, c -> c.cache(CACHE).clear());
+        List<IgniteBiTuple<Consumer<IgniteClient>, String>> ops = Arrays.asList(
+            t(c -> c.cache(CACHE).removeAll(), "removeAll"),
+            t(c -> c.cache(CACHE).clear(), "clear")
+        );
 
-        executeForbiddenOperation(t(c -> c.cache(CACHE).removeAll(), "removeAll"));
-        executeForbiddenOperation(t(c -> c.cache(CACHE).clear(), "clear"));
+        for (IgniteBiTuple<Consumer<IgniteClient>, String> op : ops) {
+            runOperation(CLIENT_CACHE_TASK_OPER, op);
+
+            assertThrowsWithCause(() -> runOperation(CLIENT, op), ClientAuthorizationException.class);
+        }
     }
 
-    /**
-     * @throws Exception If error occurs.
-     */
+    /** */
     @Test
     public void testSysOperation() throws Exception {
         try (IgniteClient sysPrmClnt = startClient(CLIENT_SYS_PERM)) {
@@ -176,8 +177,13 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             assertFalse(sysPrmClnt.cacheNames().contains(DYNAMIC_CACHE));
         }
 
-        executeForbiddenOperation(t(c -> c.createCache(DYNAMIC_CACHE), "createCache"));
-        executeForbiddenOperation(t(c -> c.destroyCache(CACHE), "destroyCache"));
+        List<IgniteBiTuple<Consumer<IgniteClient>, String>> ops = Arrays.asList(
+            t(c -> c.createCache(DYNAMIC_CACHE), "createCache"),
+            t(c -> c.destroyCache(CACHE), "destroyCache")
+        );
+
+        for (IgniteBiTuple<Consumer<IgniteClient>, String> op : ops)
+            assertThrowsWithCause(() -> runOperation(CLIENT, op), ClientAuthorizationException.class);
     }
 
     /**
@@ -202,24 +208,12 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     /**
      * @param cons Consumer.
      */
-    private void executeOperation(String clientName, Consumer<IgniteClient> cons) throws Exception {
+    private void runOperation(String clientName, IgniteBiTuple<Consumer<IgniteClient>, String> op) {
         try (IgniteClient client = startClient(clientName)) {
-            cons.accept(client);
-        }
-    }
-
-    /**
-     * @param t Contains consumer that executes an operation and the name of this operation.
-     */
-    private void executeForbiddenOperation(IgniteBiTuple<Consumer<IgniteClient>, String> t) {
-        try (IgniteClient client = startClient(CLIENT)) {
-            t.get1().accept(client);
-
-            fail("The operation " + t.get2() + " has to be forbidden.");
-
+            op.get1().accept(client);
         }
         catch (Exception e) {
-            assertTrue(X.hasCause(e, ClientAuthorizationException.class));
+            throw new IgniteException(op.get2(), e);
         }
     }
 

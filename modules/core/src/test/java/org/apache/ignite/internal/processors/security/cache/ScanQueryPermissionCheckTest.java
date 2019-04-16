@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,6 +32,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Test cache permission for invoking of Scan Query.
@@ -50,20 +52,6 @@ public class ScanQueryPermissionCheckTest extends AbstractCacheOperationPermissi
     /** */
     @Test
     public void testScanQuery() throws Exception {
-        putTestData();
-
-        Ignite node = startGrid(loginPrefix(clientMode) + "_test_node",
-            SecurityPermissionSetBuilder.create()
-                .appendCachePermissions(CACHE_NAME, CACHE_READ)
-                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), clientMode);
-
-        assertFalse(node.cache(CACHE_NAME).query(new ScanQuery<String, Integer>()).getAll().isEmpty());
-
-        assertForbidden(() -> node.cache(FORBIDDEN_CACHE).query(new ScanQuery<String, Integer>()).getAll());
-    }
-
-    /** */
-    private void putTestData() {
         Ignite ignite = G.allGrids().stream().findFirst().get();
 
         try (IgniteDataStreamer<String, Integer> strAllowedCache = ignite.dataStreamer(CACHE_NAME);
@@ -73,5 +61,15 @@ public class ScanQueryPermissionCheckTest extends AbstractCacheOperationPermissi
                 strForbiddenCache.addData(Integer.toString(i), i);
             }
         }
+
+        Ignite node = startGrid(loginPrefix(clientMode) + "_test_node",
+            SecurityPermissionSetBuilder.create()
+                .appendCachePermissions(CACHE_NAME, CACHE_READ)
+                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), clientMode);
+
+        assertFalse(node.cache(CACHE_NAME).query(new ScanQuery<String, Integer>()).getAll().isEmpty());
+
+        assertThrowsWithCause(() -> node.cache(FORBIDDEN_CACHE).query(new ScanQuery<String, Integer>()).getAll(),
+            SecurityException.class);
     }
 }

@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,6 +35,7 @@ import org.junit.runners.JUnit4;
 import static java.util.Collections.singleton;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
@@ -117,7 +119,7 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
     private void assertForbidden(Ignite node, BiConsumer<String, T2<String, Integer>> c) {
         T2<String, Integer> entry = entry();
 
-        assertForbidden(() -> c.accept(FORBIDDEN_CACHE, entry));
+        assertThrowsWithCause(() -> c.accept(FORBIDDEN_CACHE, entry), SecurityException.class);
 
         assertNull(node.cache(CACHE_NAME).get(entry.getKey()));
     }

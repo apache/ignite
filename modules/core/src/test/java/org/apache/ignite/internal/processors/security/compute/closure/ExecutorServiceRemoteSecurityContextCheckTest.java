@@ -39,8 +39,6 @@ import org.junit.runners.JUnit4;
 public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridAllowAll(SRV_INITIATOR);
 
         startClientAllowAll(CLNT_INITIATOR);

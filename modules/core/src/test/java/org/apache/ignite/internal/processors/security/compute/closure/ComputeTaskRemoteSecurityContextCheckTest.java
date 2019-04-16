@@ -48,8 +48,6 @@ import static org.apache.ignite.Ignition.localIgnite;
 public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridAllowAll(SRV_INITIATOR);
 
         startClientAllowAll(CLNT_INITIATOR);
@@ -95,16 +93,12 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
             () -> {
                 register();
 
-                localIgnite().compute().execute(
-                    new ComputeTaskClosure(nodesToCheck(), endpoints()), 0
-                );
+                localIgnite().compute().execute(new ComputeTaskClosure(nodesToCheck(), endpoints()), 0);
             },
             () -> {
                 register();
 
-                localIgnite().compute().executeAsync(
-                    new ComputeTaskClosure(nodesToCheck(), endpoints()), 0
-                ).get();
+                localIgnite().compute().executeAsync(new ComputeTaskClosure(nodesToCheck(), endpoints()), 0).get();
             }
         );
     }
@@ -128,9 +122,6 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
          * @param endpoints Collection of endpoint node ids.
          */
         public ComputeTaskClosure(Collection<UUID> remotes, Collection<UUID> endpoints) {
-            assert !remotes.isEmpty();
-            assert !endpoints.isEmpty();
-
             this.remotes = remotes;
             this.endpoints = endpoints;
         }
@@ -153,8 +144,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
                         @Override public Object execute() {
                             register();
 
-                            compute(loc, endpoints)
-                                .broadcast(() -> register());
+                            compute(loc, endpoints).broadcast(() -> register());
 
                             return null;
                         }

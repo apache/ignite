@@ -42,6 +42,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
@@ -56,6 +57,7 @@ import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Task execute permission tests.
@@ -135,13 +137,13 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
 
         srvAllowed.cluster().active(true);
 
-        operations(srvAllowed, clntAllowed).forEach(this::allowedRun);
+        operations(srvAllowed, clntAllowed).forEach(this::assertAllowed);
 
-        operations(srvForbidden, clntForbidden).forEach(this::assertForbidden);
+        operations(srvForbidden, clntForbidden).forEach(op -> assertThrowsWithCause(op, SecurityException.class));
 
-        asyncOperations(srvAllowed, clntAllowed).forEach(this::allowedCancel);
+        asyncOperations(srvAllowed, clntAllowed).forEach(this::assertCancelAllowed);
 
-        asyncOperations(srvForbiddenCancel, clntForbiddenCancel).forEach(this::forbiddenCancel);
+        asyncOperations(srvForbiddenCancel, clntForbiddenCancel).forEach(this::assertCancelForbidden);
     }
 
     /**
@@ -158,9 +160,9 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
             () -> node.executorService().invokeAny(singletonList(TEST_CALLABLE))
         );
 
-        Stream<RunnableX> operations = Arrays.stream(nodes).map(nodeOps).flatMap(identity());
+        Stream<RunnableX> ops = Arrays.stream(nodes).map(nodeOps).flatMap(identity());
 
-        return Stream.concat(operations, asyncOperations(nodes).map(s -> () -> s.get().get()));
+        return Stream.concat(ops, asyncOperations(nodes).map(s -> () -> s.get().get()));
     }
 
     /** */
@@ -192,15 +194,10 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /**
      * @param r TestRunnable.
      */
-    private void allowedRun(Runnable r) {
+    private void assertAllowed(Runnable r) {
         IS_EXECUTED.set(false);
 
-        try {
-            r.run();
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        r.run();
 
         assertTrue(IS_EXECUTED.get());
     }
@@ -208,13 +205,13 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /**
      * @param s Supplier.
      */
-    private void forbiddenCancel(Supplier<Future> s) {
+    private void assertCancelForbidden(Supplier<Future> s) {
         RNT_LOCK.lock();
 
         try {
             Future f = s.get();
 
-            assertForbidden(() -> f.cancel(true));
+            assertThrowsWithCause(() -> f.cancel(true), SecurityException.class);
         }
         finally {
             RNT_LOCK.unlock();
@@ -224,7 +221,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /**
      * @param s Supplier.
      */
-    private void allowedCancel(Supplier<Future> s) {
+    private void assertCancelAllowed(Supplier<Future> s) {
         RNT_LOCK.lock();
 
         try {

@@ -36,8 +36,6 @@ import static org.apache.ignite.Ignition.localIgnite;
 public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridAllowAll(SRV_INITIATOR);
 
         startClientAllowAll(CLNT_INITIATOR);

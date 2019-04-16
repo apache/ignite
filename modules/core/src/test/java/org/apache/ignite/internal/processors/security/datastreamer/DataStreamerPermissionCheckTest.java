@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
@@ -34,6 +35,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Test cache permissions for Data Streamer.
@@ -59,37 +61,25 @@ public class DataStreamerPermissionCheckTest extends AbstractCacheOperationPermi
                 .appendCachePermissions(FORBIDDEN_CACHE, SecurityPermission.CACHE_READ)
                 .build(), clientMode);
 
-        List<Consumer<IgniteDataStreamer<String, Integer>>> operations = Arrays.asList(
+        List<Consumer<IgniteDataStreamer<String, Integer>>> ops = Arrays.asList(
             s -> s.addData("k", 1),
             s -> s.addData(singletonMap("key", 2)),
             s -> s.addData((Map.Entry<String, Integer>)entry()),
             s -> s.addData(singletonList(entry())));
 
-        operations.forEach(c -> assertAllowed(node, c));
+        ops.forEach(c -> executeOperation(node, CACHE_NAME, c));
 
-        operations.forEach(c -> assertForbidden(node, c));
+        ops.forEach(c ->
+            assertThrowsWithCause(() -> executeOperation(node, FORBIDDEN_CACHE, c), SecurityException.class));
     }
 
     /**
      * @param node Node.
      * @param c Consumer.
      */
-    private void assertAllowed(Ignite node, Consumer<IgniteDataStreamer<String, Integer>> c) {
-        try (IgniteDataStreamer<String, Integer> s = node.dataStreamer(CACHE_NAME)) {
+    private void executeOperation(Ignite node, String cache, Consumer<IgniteDataStreamer<String, Integer>> c) {
+        try (IgniteDataStreamer<String, Integer> s = node.dataStreamer(cache)) {
             c.accept(s);
         }
-    }
-
-    /**
-     * @param node Node.
-     * @param c Consumer.
-     */
-    private void assertForbidden(Ignite node, Consumer<IgniteDataStreamer<String, Integer>> c) {
-        assertForbidden(() -> {
-                try (IgniteDataStreamer<String, Integer> s = node.dataStreamer(FORBIDDEN_CACHE)) {
-                    c.accept(s);
-                }
-            }
-        );
     }
 }

@@ -37,8 +37,6 @@ public abstract class AbstractCacheOperationPermissionCheckTest extends Abstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridAllowAll("server").cluster().active(true);
     }
 
