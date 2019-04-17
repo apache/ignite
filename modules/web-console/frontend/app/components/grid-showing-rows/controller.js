@@ -35,12 +35,18 @@ export default class {
             this.gridApi.core.on.rowsVisibleChanged(this.$scope, () => {
                 this.applyValues();
             });
-            this.gridApi.selection.on.rowSelectionChanged(this.$scope, () => this.updateSelectedCount());
-            this.gridApi.selection.on.rowSelectionChangedBatch(this.$scope, () => this.updateSelectedCount());
+
+            if (this.gridApi.selection) {
+                this.gridApi.selection.on.rowSelectionChanged(this.$scope, () => this.updateSelectedCount());
+                this.gridApi.selection.on.rowSelectionChangedBatch(this.$scope, () => this.updateSelectedCount());
+            }
         }
     }
 
     updateSelectedCount() {
+        if (!this.gridApi.selection)
+            return;
+
         this.selected = this.gridApi.selection.getSelectedCount();
     }
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.DataInput;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileFilter;
@@ -28,6 +29,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.sql.Time;
@@ -121,11 +123,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 
 /**
@@ -987,35 +993,132 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      *
      * @return The absolute indices of min and max archived files.
      */
-    private IgniteBiTuple<Long, Long> scanMinMaxArchiveIndices() {
-        TreeSet<Long> archiveIndices = new TreeSet<>();
+    private IgniteBiTuple<Long, Long> scanMinMaxArchiveIndices() throws IgniteCheckedException {
+        TreeMap<Long, FileDescriptor> archiveIndices = new TreeMap<>();
 
         for (File file : walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
             try {
                 long idx = Long.parseLong(file.getName().substring(0, 16));
 
-                archiveIndices.add(idx);
+                FileDescriptor desc = readFileDescriptor(file, ioFactory);
+
+                if (desc != null) {
+                    if (desc.idx() == idx)
+                        archiveIndices.put(desc.idx(), desc);
+                }
+                else
+                    log.warning("Skip file, failed read file header " + file);
             }
             catch (NumberFormatException | IndexOutOfBoundsException ignore) {
-                // No-op.
+                log.warning("Skip file " + file);
             }
         }
 
-        if (archiveIndices.isEmpty())
-            return null;
-        else {
-            Long min = archiveIndices.first();
-            Long max = archiveIndices.last();
+        if (!archiveIndices.isEmpty()) {
+            Long min = archiveIndices.navigableKeySet().first();
+            Long max = archiveIndices.navigableKeySet().last();
 
             if (max - min == archiveIndices.size() - 1)
                 return F.t(min, max); // Short path.
 
-            for (Long idx : archiveIndices.descendingSet()) {
-                if (!archiveIndices.contains(idx - 1))
+            // Try to find min and max if we have skipped range semgnets in archive. Find firs gap.
+            for (Long idx : archiveIndices.descendingKeySet()) {
+                if (!archiveIndices.keySet().contains(idx - 1))
                     return F.t(idx, max);
             }
 
-            throw new IllegalStateException("Should never happen if TreeSet is valid.");
+            throw new IllegalStateException("Should never happen if archiveIndices TreeMap is valid.");
+        }
+
+        // If WAL archive is empty, try to find last not archived segment in work directory and copy to WAL archive.
+        TreeMap<Long, FileDescriptor> workIndices = new TreeMap<>();
+
+        for (File file : walWorkDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
+            FileDescriptor desc = readFileDescriptor(file, ioFactory);
+
+            if (desc != null)
+                workIndices.put(desc.idx(), desc);
+        }
+
+        if (!workIndices.isEmpty()) {
+            FileDescriptor first = workIndices.firstEntry().getValue();
+            FileDescriptor last = workIndices.lastEntry().getValue();
+
+            if (first.idx() != last.idx()) {
+                File origFile = first.file();
+
+                String archivedSegmentName = FileDescriptor.fileName(first.idx());
+
+                File dstTmpFile = new File(walArchiveDir, FileDescriptor.fileName(first.idx()) + TMP_SUFFIX);
+
+                File dstFile = new File(walArchiveDir, archivedSegmentName);
+
+                // Copy min segment from work directory to archive.
+                try (FileChannel src = FileChannel.open(origFile.toPath(), READ);
+                     FileChannel dest = FileChannel.open(dstTmpFile.toPath(), CREATE_NEW, WRITE)
+                ) {
+                    long size = src.size();
+                    long pos = 0;
+
+                    do {
+                        long bytes = src.transferTo(pos, size, dest);
+
+                        if (bytes < 0)
+                            break;
+
+                        pos += bytes;
+                    }
+                    while (pos < size);
+
+                    Files.move(dstTmpFile.toPath(), dstFile.toPath());
+
+                    dest.force(true);
+                }
+                catch (IOException e) {
+                    throw new StorageException("Failed to archive WAL segment [" +
+                        "srcFile=" + origFile.getAbsolutePath() +
+                        ", dstFile=" + dstTmpFile.getAbsolutePath() + ']', e);
+                }
+
+                // Use copied segment as min archived segment.
+                return F.t(first.idx(), first.idx());
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param file File to read.
+     * @param ioFactory IO factory.
+     */
+    private FileDescriptor readFileDescriptor(File file, FileIOFactory ioFactory) {
+        FileDescriptor ds = new FileDescriptor(file);
+
+        try (
+            SegmentIO fileIO = ds.toIO(ioFactory);
+            ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
+        ) {
+            final DataInput in = segmentFileInputFactory.createFileInput(fileIO, buf);
+
+            // Header record must be agnostic to the serializer version.
+            final int type = in.readUnsignedByte();
+
+            if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE) {
+                if (log.isInfoEnabled())
+                    log.info("Reached logical end of the segment for file " + file);
+
+                return null;
+            }
+
+            FileWALPointer ptr = readPosition(in);
+
+            return new FileDescriptor(file, ptr.index());
+        }
+        catch (IOException e) {
+            U.warn(log, "Failed to read file header [" + file + "]. Skipping this file", e);
+
+            return null;
         }
     }
 
@@ -2336,7 +2439,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * File handle for one log segment.
      */
     @SuppressWarnings("SignalWithoutCorrespondingAwait")
-    private class FileWriteHandle extends FileHandle {
+    public class FileWriteHandle extends FileHandle {
         /** */
         private final RecordSerializer serializer;
 
