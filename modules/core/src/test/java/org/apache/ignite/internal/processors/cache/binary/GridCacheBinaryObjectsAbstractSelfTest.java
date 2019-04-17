@@ -318,6 +318,26 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     @Test
+    public void testReplaceWhenEmptyValue() throws Exception {
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
+
+        BinaryObjectBuilder bldr = grid(0).binary().builder("TestObjCls");
+
+        bldr.setField("val", -42);
+
+        BinaryObject testObj = bldr.build();
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            assertNull(kpc.get(i));
+
+            assertFalse(kpc.replace(i, testObj, testObj));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testRemove() throws Exception {
         IgniteCache<Integer, TestObject> c = jcache(0);
 
