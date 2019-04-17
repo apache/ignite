@@ -207,7 +207,7 @@ namespace ignite
         };
 
         /**
-         * Default implementations of BinaryType hashing functions.
+         * Default implementations of BinaryType hashing functions and non-null type behaviour.
          */
         template<typename T>
         struct IGNITE_IMPORT_EXPORT BinaryTypeDefaultAll :

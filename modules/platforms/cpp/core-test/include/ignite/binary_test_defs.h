@@ -82,7 +82,7 @@ namespace ignite_test
                 friend bool operator==(const BinaryFields& one, const BinaryFields& two)
                 {
                     return one.val1 == two.val1 && one.val2 == two.val2 &&
-                        one.rawVal1 == two.rawVal1 &&one.rawVal2 == two.rawVal2;
+                        one.rawVal1 == two.rawVal1 && one.rawVal2 == two.rawVal2;
                 }
             };
 
