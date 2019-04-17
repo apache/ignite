@@ -2539,6 +2539,9 @@ class ClusterCachesInfo {
      *
      */
     private static class BackedUpConcurrentHashMap<K, V> extends ConcurrentHashMap<K, V> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Backup map. */
         private final ConcurrentMap<K, V> backupMap;
 
