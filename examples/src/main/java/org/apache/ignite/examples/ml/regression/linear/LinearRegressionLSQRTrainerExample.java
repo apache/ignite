@@ -17,10 +17,10 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -30,8 +30,6 @@ import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.FileNotFoundException;
 
 /**
  * Run linear regression model based on <a href="http://web.stanford.edu/group/SOL/software/lsqr/">LSQR algorithm</a>
@@ -72,16 +70,15 @@ public class LinearRegressionLSQRTrainerExample {
                 // DatasetTrainer#fit(Ignite, IgniteCache, IgniteBiFunction, IgniteBiFunction) method call
                 // where there is a separate lambda for extracting label from (key, value) and a separate labmda for
                 // extracting features.
-                Vectorizer<Integer, Vector, Integer, Double> extractor = new DummyVectorizer<Integer>()
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
                     .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, extractor);
+                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
                 double rmse = Evaluator.evaluate(
                     dataCache,
                     mdl,
-                    CompositionUtils.asFeatureExtractor(extractor),
-                    CompositionUtils.asLabelExtractor(extractor),
+                    vectorizer,
                     new RegressionMetrics()
                 );
 

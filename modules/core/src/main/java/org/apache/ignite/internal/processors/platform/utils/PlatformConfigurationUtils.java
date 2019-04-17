@@ -110,6 +110,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_2_0;
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_3_0;
 
 /**
  * Configuration utils.
@@ -815,7 +816,7 @@ public class PlatformConfigurationUtils {
             cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
 
         if (in.readBoolean())
-            cfg.setDataStorageConfiguration(readDataStorageConfiguration(in));
+            cfg.setDataStorageConfiguration(readDataStorageConfiguration(in, ver));
 
         if (in.readBoolean())
             cfg.setSslContextFactory(readSslContextFactory(in));
@@ -1410,7 +1411,7 @@ public class PlatformConfigurationUtils {
 
         writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
 
-        writeDataStorageConfiguration(w, cfg.getDataStorageConfiguration());
+        writeDataStorageConfiguration(w, cfg.getDataStorageConfiguration(), ver);
 
         writeSslContextFactory(w, cfg.getSslContextFactory());
 
@@ -1885,9 +1886,11 @@ public class PlatformConfigurationUtils {
      * Reads the data storage configuration.
      *
      * @param in Reader.
+     * @param ver Client version.
      * @return Config.
      */
-    private static DataStorageConfiguration readDataStorageConfiguration(BinaryRawReader in) {
+    private static DataStorageConfiguration readDataStorageConfiguration(BinaryRawReader in,
+        ClientListenerProtocolVersion ver) {
         DataStorageConfiguration res = new DataStorageConfiguration()
                 .setStoragePath(in.readString())
                 .setCheckpointFrequency(in.readLong())
@@ -1926,13 +1929,13 @@ public class PlatformConfigurationUtils {
             DataRegionConfiguration[] regs = new DataRegionConfiguration[cnt];
 
             for (int i = 0; i < cnt; i++)
-                regs[i] = readDataRegionConfiguration(in);
+                regs[i] = readDataRegionConfiguration(in, ver);
 
             res.setDataRegionConfigurations(regs);
         }
 
         if (in.readBoolean())
-            res.setDefaultDataRegionConfiguration(readDataRegionConfiguration(in));
+            res.setDefaultDataRegionConfiguration(readDataRegionConfiguration(in, ver));
 
         return res;
     }
@@ -2011,8 +2014,11 @@ public class PlatformConfigurationUtils {
      * Writes the data storage configuration.
      *
      * @param w Writer.
+     * @param cfg Data storage configuration.
+     * @param ver Client version.
      */
-    private static void writeDataStorageConfiguration(BinaryRawWriter w, DataStorageConfiguration cfg) {
+    private static void writeDataStorageConfiguration(BinaryRawWriter w, DataStorageConfiguration cfg,
+        ClientListenerProtocolVersion ver) {
         assert w != null;
 
         if (cfg != null) {
@@ -2057,14 +2063,14 @@ public class PlatformConfigurationUtils {
                 w.writeInt(cfg.getDataRegionConfigurations().length);
 
                 for (DataRegionConfiguration d : cfg.getDataRegionConfigurations())
-                    writeDataRegionConfiguration(w, d);
+                    writeDataRegionConfiguration(w, d, ver);
             }
             else
                 w.writeInt(0);
 
             if (cfg.getDefaultDataRegionConfiguration() != null) {
                 w.writeBoolean(true);
-                writeDataRegionConfiguration(w, cfg.getDefaultDataRegionConfiguration());
+                writeDataRegionConfiguration(w, cfg.getDefaultDataRegionConfiguration(), ver);
             }
             else
                 w.writeBoolean(false);
@@ -2077,8 +2083,10 @@ public class PlatformConfigurationUtils {
      * Writes the data region configuration.
      *
      * @param w Writer.
+     * @param ver Client version.
      */
-    private static void writeDataRegionConfiguration(BinaryRawWriter w, DataRegionConfiguration cfg) {
+    private static void writeDataRegionConfiguration(BinaryRawWriter w, DataRegionConfiguration cfg,
+        ClientListenerProtocolVersion ver) {
         assert w != null;
         assert cfg != null;
 
@@ -2094,6 +2102,9 @@ public class PlatformConfigurationUtils {
         w.writeInt(cfg.getMetricsSubIntervalCount());
         w.writeLong(cfg.getMetricsRateTimeInterval());
         w.writeLong(cfg.getCheckpointPageBufferSize());
+
+        if (ver.compareTo(VER_1_3_0) >= 0)
+            w.writeBoolean(cfg.isLazyMemoryAllocation());
     }
 
     /**
@@ -2131,23 +2142,30 @@ public class PlatformConfigurationUtils {
      * Reads the data region configuration.
      *
      * @param r Reader.
+     * @param ver Client version.
      */
-    private static DataRegionConfiguration readDataRegionConfiguration(BinaryRawReader r) {
+    private static DataRegionConfiguration readDataRegionConfiguration(BinaryRawReader r,
+        ClientListenerProtocolVersion ver) {
         assert r != null;
 
-        return new DataRegionConfiguration()
-                .setName(r.readString())
-                .setPersistenceEnabled(r.readBoolean())
-                .setInitialSize(r.readLong())
-                .setMaxSize(r.readLong())
-                .setSwapPath(r.readString())
-                .setPageEvictionMode(DataPageEvictionMode.fromOrdinal(r.readInt()))
-                .setEvictionThreshold(r.readDouble())
-                .setEmptyPagesPoolSize(r.readInt())
-                .setMetricsEnabled(r.readBoolean())
-                .setMetricsSubIntervalCount(r.readInt())
-                .setMetricsRateTimeInterval(r.readLong())
-                .setCheckpointPageBufferSize(r.readLong());
+        DataRegionConfiguration cfg = new DataRegionConfiguration()
+            .setName(r.readString())
+            .setPersistenceEnabled(r.readBoolean())
+            .setInitialSize(r.readLong())
+            .setMaxSize(r.readLong())
+            .setSwapPath(r.readString())
+            .setPageEvictionMode(DataPageEvictionMode.fromOrdinal(r.readInt()))
+            .setEvictionThreshold(r.readDouble())
+            .setEmptyPagesPoolSize(r.readInt())
+            .setMetricsEnabled(r.readBoolean())
+            .setMetricsSubIntervalCount(r.readInt())
+            .setMetricsRateTimeInterval(r.readLong())
+            .setCheckpointPageBufferSize(r.readLong());
+
+        if (ver.compareTo(VER_1_3_0) >= 0)
+            cfg.setLazyMemoryAllocation(r.readBoolean());
+
+        return cfg;
     }
 
     /**
