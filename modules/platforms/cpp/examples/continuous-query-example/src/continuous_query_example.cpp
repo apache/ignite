@@ -124,32 +124,13 @@ namespace ignite
     namespace binary
     {
         template<>
-        struct BinaryType< RangeFilter<int32_t, std::string> >
+        struct BinaryType< RangeFilter<int32_t, std::string> > :
+            BinaryTypeDefaultAll< RangeFilter<int32_t, std::string> >
         {
-            static int32_t GetTypeId()
-            {
-                return GetBinaryStringHashCode("RangeFilter<int32_t,std::string>");
-            }
-
             static void GetTypeName(std::string& dst)
             {
                 dst = "RangeFilter<int32_t,std::string>";
 
-            }
-
-            static int32_t GetFieldId(const char* name)
-            {
-                return GetBinaryStringHashCode(name);
-            }
-
-            static bool IsNull(const RangeFilter<int32_t, std::string>&)
-            {
-                return false;
-            }
-
-            static void GetNull(RangeFilter<int32_t, std::string>& dst)
-            {
-                dst = RangeFilter<int32_t, std::string>();
             }
 
             static void Write(BinaryWriter& writer, const RangeFilter<int32_t, std::string>& obj)
