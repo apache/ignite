@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.QueryHistoryMetrics;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  * Jdbc thin transactional best effort affinity test.
@@ -56,15 +57,10 @@ public class JdbcThinBestEffortAffinityTransactionsSelfTest extends JdbcThinAbst
     /** {@inheritDoc} */
     @SuppressWarnings({"deprecation", "unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME).setNearConfiguration(null));
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        cfg.setGridLogger(log = new GridStringLogger());
-
-        return cfg;
+        return super.getConfiguration(igniteInstanceName)
+            .setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME).setNearConfiguration(null))
+            .setMarshaller(new BinaryMarshaller())
+            .setGridLogger(log = new GridStringLogger());
     }
 
     /**
@@ -72,12 +68,9 @@ public class JdbcThinBestEffortAffinityTransactionsSelfTest extends JdbcThinAbst
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(@NotNull String name) {
-        CacheConfiguration cfg = defaultCacheConfiguration();
-
-        cfg.setName(name);
-        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-
-        return cfg;
+        return defaultCacheConfiguration()
+            .setName(name)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
     }
 
     /** {@inheritDoc} */
@@ -88,8 +81,8 @@ public class JdbcThinBestEffortAffinityTransactionsSelfTest extends JdbcThinAbst
 
         try (Connection c = prepareConnection(true, NestedTxMode.ERROR)) {
             try (Statement stmt = c.createStatement()) {
-                stmt.execute("CREATE TABLE Person (id int primary key, firstName varchar, lastName varchar, age int) WITH \"cache_name=persons,wrap_value=true," +
-                    "atomicity=transactional_snapshot\"");
+                stmt.execute("CREATE TABLE Person (id int primary key, firstName varchar, lastName varchar, age int) " +
+                    "WITH \"cache_name=persons,wrap_value=true,atomicity=transactional_snapshot\"");
 
                 stmt.executeUpdate("insert into Person (id, firstName, lastName, age) values (1, 'John1', 'Dow1', 1);" +
                     "insert into Person (id, firstName, lastName, age) values (2, 'John2', 'Dow2', 2);" +
@@ -141,7 +134,7 @@ public class JdbcThinBestEffortAffinityTransactionsSelfTest extends JdbcThinAbst
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testExecuteQueries() throws Exception {
         stmt.execute("BEGIN");
         checkNodesUsage("select * from Person where _key = 1", 1, false);
@@ -161,7 +154,7 @@ public class JdbcThinBestEffortAffinityTransactionsSelfTest extends JdbcThinAbst
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testUpdateQueries() throws Exception {
         stmt.execute("BEGIN");
         checkNodesUsage("update Person set firstName = 'TestFirstName' where _key = 1", 1,
@@ -184,7 +177,7 @@ public class JdbcThinBestEffortAffinityTransactionsSelfTest extends JdbcThinAbst
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testDeleteQueries() throws Exception {
         stmt.execute("BEGIN");
         checkNodesUsage("delete from Person where _key = 1000 or _key = 2000", 0, true);
@@ -253,6 +246,7 @@ public class JdbcThinBestEffortAffinityTransactionsSelfTest extends JdbcThinAbst
         // Check query history metrics in order to verify that not more than expected nodes were used.
         int nonEmptyMetricsCntr = 0;
         int qryExecutionsCntr = 0;
+
         for (int i = 0; i < NODES_CNT; i++) {
             Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)grid(i).context().query().getIndexing())
                 .runningQueryManager().queryHistoryMetrics().values();
