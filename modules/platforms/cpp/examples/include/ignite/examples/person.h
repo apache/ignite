@@ -102,31 +102,11 @@ namespace ignite
     namespace binary
     {
         template<>
-        struct BinaryType<examples::Person>
+        struct BinaryType<examples::Person> : BinaryTypeDefaultAll<examples::Person>
         {
-            static int32_t GetTypeId()
-            {
-                return GetBinaryStringHashCode("Person");
-            }
-
             static void GetTypeName(std::string& dst)
             {
                 dst = "Person";
-            }
-
-            static int32_t GetFieldId(const char* name)
-            {
-                return GetBinaryStringHashCode(name);
-            }
-
-            static bool IsNull(const examples::Person&)
-            {
-                return false;
-            }
-
-            static void GetNull(examples::Person& dst)
-            {
-                dst = examples::Person();
             }
 
             static void Write(BinaryWriter& writer, const ignite::examples::Person& obj)
@@ -149,31 +129,11 @@ namespace ignite
         };
 
         template<>
-        struct BinaryType<examples::PersonKey>
+        struct BinaryType<examples::PersonKey> : BinaryTypeDefaultAll<examples::PersonKey>
         {
-            static int32_t GetTypeId()
-            {
-                return GetBinaryStringHashCode("PersonKey");
-            }
-
             static void GetTypeName(std::string& dst)
             {
                 dst = "PersonKey";
-            }
-
-            static int32_t GetFieldId(const char* name)
-            {
-                return GetBinaryStringHashCode(name);
-            }
-
-            static bool IsNull(const examples::PersonKey&)
-            {
-                return false;
-            }
-
-            static void GetNull(examples::PersonKey& dst)
-            {
-                dst = examples::PersonKey();
             }
 
             static void Write(BinaryWriter& writer, const ignite::examples::PersonKey& obj)
