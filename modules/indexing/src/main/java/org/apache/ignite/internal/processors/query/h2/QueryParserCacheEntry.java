@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.List;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,18 +35,26 @@ public class QueryParserCacheEntry {
     /** Command. */
     private final QueryParserResultCommand cmd;
 
+    /** Metadata for the positional query parameters ('?'). */
+    private final List<JdbcParameterMeta> paramsMeta;
+
     /**
      * Constructor.
      *
+     * @param paramsMeta metadata info about positional parameters of the query this record describes.
      * @param select SELECT.
      * @param dml DML.
      * @param cmd Command.
      */
     public QueryParserCacheEntry(
+        List<JdbcParameterMeta> paramsMeta,
         @Nullable QueryParserResultSelect select,
         @Nullable QueryParserResultDml dml,
         @Nullable QueryParserResultCommand cmd
     ) {
+        assert paramsMeta != null;
+
+        this.paramsMeta = paramsMeta;
         this.select = select;
         this.dml = dml;
         this.cmd = cmd;
@@ -69,6 +79,13 @@ public class QueryParserCacheEntry {
      */
     @Nullable public QueryParserResultCommand command() {
         return cmd;
+    }
+
+    /**
+     * @return Metadata for the positional query parameters ('?').
+     */
+    public List<JdbcParameterMeta> parametersMeta(){
+        return paramsMeta;
     }
 
     /** {@inheritDoc} */

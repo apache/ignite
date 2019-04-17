@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
-    /// Tests the <see cref="Impl.Binary.BinaryReader"/> and <see cref="Impl.Binary.BinaryWriter"/> classes.
+    /// Tests the <see cref="BinaryReader"/> and <see cref="BinaryWriter"/> classes.
     /// </summary>
     public class BinaryReaderWriterTest
     {

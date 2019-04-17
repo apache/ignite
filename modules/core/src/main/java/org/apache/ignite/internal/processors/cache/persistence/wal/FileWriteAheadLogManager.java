@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.DataInput;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileFilter;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.FileChannel;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.sql.Time;
@@ -41,7 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
@@ -126,6 +128,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
@@ -137,8 +140,10 @@ import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory.LATEST_SERIALIZER_VERSION;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 
 /**
@@ -445,21 +450,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
                 });
 
-            IgniteBiTuple<Long, Long> tup = scanMinMaxArchiveIndices();
-
             segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
 
-            segmentAware.lastTruncatedArchiveIdx(tup == null ? -1 : tup.get1() - 1);
-
-            long lastAbsArchivedIdx = tup == null ? -1 : tup.get2();
-
             if (isArchiverEnabled())
-                archiver = new FileArchiver(lastAbsArchivedIdx, log);
+                archiver = new FileArchiver(segmentAware, log);
             else
                 archiver = null;
-
-            if (lastAbsArchivedIdx > 0)
-                segmentAware.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
 
             if (dsCfg.isWalCompactionEnabled()) {
                 compressor = new FileCompressor(log);
@@ -1098,41 +1094,36 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Lists files in archive directory and returns the indices of least and last archived files.
-     * In case of holes, first segment after last "hole" is considered as minimum.
-     * Example: minimum(0, 1, 10, 11, 20, 21, 22) should be 20
-     *
-     * @return The absolute indices of min and max archived files.
+     * @param file File to read.
+     * @param ioFactory IO factory.
      */
-    private IgniteBiTuple<Long, Long> scanMinMaxArchiveIndices() {
-        TreeSet<Long> archiveIndices = new TreeSet<>();
+    private FileDescriptor readFileDescriptor(File file, FileIOFactory ioFactory) {
+        FileDescriptor ds = new FileDescriptor(file);
 
-        for (File file : walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
-            try {
-                long idx = Long.parseLong(file.getName().substring(0, 16));
+        try (
+            SegmentIO fileIO = ds.toIO(ioFactory);
+            ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
+        ) {
+            final DataInput in = segmentFileInputFactory.createFileInput(fileIO, buf);
 
-                archiveIndices.add(idx);
+            // Header record must be agnostic to the serializer version.
+            final int type = in.readUnsignedByte();
+
+            if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE) {
+                if (log.isInfoEnabled())
+                    log.info("Reached logical end of the segment for file " + file);
+
+                return null;
             }
-            catch (NumberFormatException | IndexOutOfBoundsException ignore) {
-                // No-op.
-            }
+
+            FileWALPointer ptr = readPosition(in);
+
+            return new FileDescriptor(file, ptr.index());
         }
+        catch (IOException e) {
+            U.warn(log, "Failed to read file header [" + file + "]. Skipping this file", e);
 
-        if (archiveIndices.isEmpty())
             return null;
-        else {
-            Long min = archiveIndices.first();
-            Long max = archiveIndices.last();
-
-            if (max - min == archiveIndices.size() - 1)
-                return F.t(min, max); // Short path.
-
-            for (Long idx : archiveIndices.descendingSet()) {
-                if (!archiveIndices.contains(idx - 1))
-                    return F.t(idx, max);
-            }
-
-            throw new IllegalStateException("Should never happen if TreeSet is valid.");
         }
     }
 
@@ -1476,7 +1467,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (log.isDebugEnabled())
             log.debug("Creating new file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
-        File tmp = new File(file.getParent(), file.getName() + FilePageStoreManager.TMP_SUFFIX);
+        File tmp = new File(file.getParent(), file.getName() + TMP_SUFFIX);
 
         formatFile(tmp);
 
@@ -1618,11 +1609,95 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          *
          */
-        private FileArchiver(long lastAbsArchivedIdx, IgniteLogger log) {
+        private FileArchiver(SegmentAware segmentAware, IgniteLogger log) throws IgniteCheckedException {
             super(cctx.igniteInstanceName(), "wal-file-archiver%" + cctx.igniteInstanceName(), log,
                 cctx.kernalContext().workersRegistry());
 
-            segmentAware.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
+            init(segmentAware);
+        }
+
+        /**
+         * @param segmentAware Segment aware.
+         * @throws IgniteCheckedException If initialization failed.
+         */
+        private void init(SegmentAware segmentAware) throws IgniteCheckedException {
+            IgniteBiTuple<Long, Long> tup = scanMinMaxArchiveIndices();
+
+            segmentAware.lastTruncatedArchiveIdx(tup == null ? -1 : tup.get1() - 1);
+
+            long lastAbsArchivedIdx = tup == null ? -1 : tup.get2();
+
+            if (lastAbsArchivedIdx >= 0)
+                segmentAware.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
+        }
+
+        /**
+         * Lists files in archive directory and returns the indices of least and last archived files.
+         * In case of holes, first segment after last "hole" is considered as minimum.
+         * Example: minimum(0, 1, 10, 11, 20, 21, 22) should be 20
+         *
+         * @return The absolute indices of min and max archived files.
+         */
+        private IgniteBiTuple<Long, Long> scanMinMaxArchiveIndices() throws IgniteCheckedException {
+            TreeMap<Long, FileDescriptor> archiveIndices = new TreeMap<>();
+
+            for (File file : walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
+                try {
+                    long idx = Long.parseLong(file.getName().substring(0, 16));
+
+                    FileDescriptor desc = readFileDescriptor(file, ioFactory);
+
+                    if (desc != null) {
+                        if (desc.idx() == idx)
+                            archiveIndices.put(desc.idx(), desc);
+                    }
+                    else
+                        log.warning("Skip file, failed read file header " + file);
+                }
+                catch (NumberFormatException | IndexOutOfBoundsException ignore) {
+                    log.warning("Skip file " + file);
+                }
+            }
+
+            if (!archiveIndices.isEmpty()) {
+                Long min = archiveIndices.navigableKeySet().first();
+                Long max = archiveIndices.navigableKeySet().last();
+
+                if (max - min == archiveIndices.size() - 1)
+                    return F.t(min, max); // Short path.
+
+                // Try to find min and max if we have skipped range semgnets in archive. Find firs gap.
+                for (Long idx : archiveIndices.descendingKeySet()) {
+                    if (!archiveIndices.keySet().contains(idx - 1))
+                        return F.t(idx, max);
+                }
+
+                throw new IllegalStateException("Should never happen if archiveIndices TreeMap is valid.");
+            }
+
+            // If WAL archive is empty, try to find last not archived segment in work directory and copy to WAL archive.
+            TreeMap<Long, FileDescriptor> workIndices = new TreeMap<>();
+
+            for (File file : walWorkDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
+                FileDescriptor desc = readFileDescriptor(file, ioFactory);
+
+                if (desc != null)
+                    workIndices.put(desc.idx(), desc);
+            }
+
+            if (!workIndices.isEmpty()) {
+                FileDescriptor first = workIndices.firstEntry().getValue();
+                FileDescriptor last = workIndices.lastEntry().getValue();
+
+                if (first.idx() != last.idx()) {
+                    archiveSegment(first.idx());
+
+                    // Use copied segment as min archived segment.
+                    return F.t(first.idx(), first.idx());
+                }
+            }
+
+            return null;
         }
 
         /**
@@ -1799,14 +1874,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          *
          * @param absIdx Absolute index to archive.
          */
-        private SegmentArchiveResult archiveSegment(long absIdx) throws StorageException {
+        public SegmentArchiveResult archiveSegment(long absIdx) throws StorageException {
             long segIdx = absIdx % dsCfg.getWalSegments();
 
             File origFile = new File(walWorkDir, FileDescriptor.fileName(segIdx));
 
             String name = FileDescriptor.fileName(absIdx);
 
-            File dstTmpFile = new File(walArchiveDir, name + FilePageStoreManager.TMP_SUFFIX);
+            File dstTmpFile = new File(walArchiveDir, name + TMP_SUFFIX);
 
             File dstFile = new File(walArchiveDir, name);
 
@@ -2037,7 +2112,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     deleteObsoleteRawSegments();
 
                     File tmpZip = new File(walArchiveDir, FileDescriptor.fileName(segIdx)
-                            + FilePageStoreManager.ZIP_SUFFIX + FilePageStoreManager.TMP_SUFFIX);
+                            + FilePageStoreManager.ZIP_SUFFIX + TMP_SUFFIX);
 
                     File zip = new File(walArchiveDir, FileDescriptor.fileName(segIdx) + FilePageStoreManager.ZIP_SUFFIX);
 
@@ -2225,7 +2300,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress)
                             + FilePageStoreManager.ZIP_SUFFIX);
                         File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress)
-                            + FilePageStoreManager.TMP_SUFFIX);
+                            + TMP_SUFFIX);
                         File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
 
                         try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
@@ -2696,30 +2771,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (end == null) {
                         long nextWalSegmentIdx = curWalSegmIdx + 1;
 
+                        if (!isArchiverEnabled())
+                            if (canIgnoreCrcError(nextWalSegmentIdx, nextWalSegmentIdx, e, ptr))
+                                return null;
+
                         // Check that we should not look this segment up in archive directory.
                         // Basically the same check as in "advanceSegment" method.
-                        if (archiver != null)
+                        if (isArchiverEnabled() && archiver != null)
                             if (!canReadArchiveOrReserveWork(nextWalSegmentIdx))
                                 try {
                                     long workIdx = nextWalSegmentIdx % dsCfg.getWalSegments();
 
-                                    FileDescriptor fd = new FileDescriptor(
-                                        new File(walWorkDir, FileDescriptor.fileName(workIdx)),
-                                        nextWalSegmentIdx
-                                    );
-
-                                    try {
-                                        ReadFileHandle nextHandle = initReadHandle(fd, null);
-
-                                        // "nextHandle == null" is true only if current segment is the last one in the
-                                        // whole history. Only in such case we ignore crc validation error and just stop
-                                        // as if we reached the end of the WAL.
-                                        if (nextHandle == null)
-                                            return null;
-                                    }
-                                    catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
-                                        e.addSuppressed(initReadHandleException);
-                                    }
+                                    if (canIgnoreCrcError(workIdx, nextWalSegmentIdx, e, ptr))
+                                        return null;
                                 }
                                 finally {
                                     releaseWorkSegment(nextWalSegmentIdx);
@@ -2745,6 +2809,51 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private void releaseWorkSegment(long absIdx) {
             if (archiver != null)
                 archiver.releaseWorkSegment(absIdx);
+        }
+
+        /**
+         * Check that archiver is enabled
+         */
+        private boolean isArchiverEnabled() {
+            if (walArchiveDir != null && walWorkDir != null)
+                return !walArchiveDir.equals(walWorkDir);
+
+            return !new File(dsCfg.getWalArchivePath()).equals(new File(dsCfg.getWalPath()));
+        }
+
+        /**
+         * @param workIdx Work index.
+         * @param walSegmentIdx Wal segment index.
+         * @param e Exception.
+         * @param ptr Ptr.
+         */
+        private boolean canIgnoreCrcError(
+            long workIdx,
+            long walSegmentIdx,
+            @NotNull Exception e,
+            @Nullable FileWALPointer ptr) {
+            FileDescriptor fd = new FileDescriptor(
+                new File(walWorkDir, FileDescriptor.fileName(workIdx)),
+                walSegmentIdx
+            );
+
+            try {
+                if (!fd.file().exists())
+                    return true;
+
+                ReadFileHandle nextHandle = initReadHandle(fd, ptr);
+
+                // "nextHandle == null" is true only if current segment is the last one in the
+                // whole history. Only in such case we ignore crc validation error and just stop
+                // as if we reached the end of the WAL.
+                if (nextHandle == null)
+                    return true;
+            }
+            catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
+                e.addSuppressed(initReadHandleException);
+            }
+
+            return false;
         }
 
         /** {@inheritDoc} */

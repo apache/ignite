@@ -17,10 +17,17 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
@@ -31,15 +38,10 @@ import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.DatasetRow;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-import java.util.stream.Stream;
 
 /**
  * Traner for GMM model.
@@ -101,8 +103,8 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C extends Serializable> GmmModel fit(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
+    @Override public <K, V> GmmModel fit(DatasetBuilder<K, V> datasetBuilder,
+        Preprocessor<K, V> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
 
@@ -475,8 +477,8 @@ public class GmmTrainer extends DatasetTrainer<GmmModel, Double> {
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C extends Serializable> GmmModel updateModel(GmmModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
+    @Override protected <K, V> GmmModel updateModel(GmmModel mdl, DatasetBuilder<K, V> datasetBuilder,
+        Preprocessor<K, V> extractor) {
 
         try (Dataset<EmptyContext, GmmPartitionData> dataset = datasetBuilder.build(envBuilder,
             new EmptyContextBuilder<>(),
