@@ -324,8 +324,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onKernalStop0(boolean cancel) {
-        if (cancel)
-            cleanupAsyncExecutor.cancelAsyncTasks();
+        cleanupAsyncExecutor.awaitAsyncTaskCompletion(cancel);
     }
 
     /** {@inheritDoc} */
@@ -1337,10 +1336,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /**
          * Cancels async tasks.
          */
-        public void cancelAsyncTasks() {
+        public void awaitAsyncTaskCompletion(boolean cancel) {
             for (GridWorker worker : workers) {
                 try {
-                    worker.cancel();
+                    if (cancel)
+                        worker.cancel();
 
                     worker.join();
                 }
