@@ -3831,24 +3831,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             Collection<KeyCacheObject> keys0 = ctx.cacheKeysView(keys);
 
-            try {
-                ctx.store().loadAll(null, keys0, new CIX2<KeyCacheObject, Object>() {
-                    @Override public void applyx(KeyCacheObject key, Object val) {
-                        col.add(new DataStreamerEntry(key, ctx.toCacheObject(val)));
+            ctx.store().loadAll(null, keys0, new CIX2<KeyCacheObject, Object>() {
+                @Override public void applyx(KeyCacheObject key, Object val) {
+                    col.add(new DataStreamerEntry(key, ctx.toCacheObject(val)));
 
-                        if (col.size() == ldr.perNodeBufferSize()) {
-                            ldr.addDataInternal(col, false);
+                    if (col.size() == ldr.perNodeBufferSize()) {
+                        ldr.addDataInternal(col, false);
 
-                            col.clear();
-                        }
+                        col.clear();
                     }
-                });
-            }
-            catch (Exception e) {
-                log.error("Failed to load all", e);
-
-                throw e;
-            }
+                }
+            });
 
             if (!col.isEmpty())
                 ldr.addData(col);
