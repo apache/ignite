@@ -851,19 +851,10 @@ class ServiceDeploymentTask {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServiceDeploymentTask.class, this,
-            "locNodeId", (ctx != null ? ctx.localNodeId() : "unknown"),
-            "crdId", crdId);
-    }
-
-    /**
-     * Sync toString method to avoid ConcurrentModificationException
-     *
-     * @return same content with {@link ServiceDeploymentTask#toString()}
-     */
-    public String syncToString() {
-        synchronized (this) {
-            return toString();
+        synchronized (initCrdMux) {
+            return S.toString(ServiceDeploymentTask.class, this,
+                    "locNodeId", (ctx != null ? ctx.localNodeId() : "unknown"),
+                    "crdId", crdId);
         }
     }
 }
