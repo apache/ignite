@@ -17,12 +17,11 @@
 
 package org.apache.ignite.ml.dataset.feature.extractor;
 
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
-import org.apache.ignite.ml.structures.LabeledVector;
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.stream.IntStream;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -35,7 +34,7 @@ public class VectorizerTest {
     @Test
     public void vectorizerShouldReturnAllFeaturesByDefault() {
         double[] features = {1., 2., 3.};
-        ArraysVectorizer<Integer> vectorizer = new ArraysVectorizer<Integer>();
+        DoubleArrayVectorizer<Integer> vectorizer = new DoubleArrayVectorizer<Integer>();
         LabeledVector<Double> res = vectorizer.apply(1, features);
         assertEquals(res.features().size(), 3);
         assertArrayEquals(res.features().asArray(), features, 0.);
@@ -47,7 +46,7 @@ public class VectorizerTest {
     public void vectorizerShouldSetLabelByCoordinate() {
         double[] features = {0., 1., 2.};
         for (int i = 0; i < features.length; i++) {
-            Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(i);
+            Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(i);
             LabeledVector<Double> res = vectorizer.apply(1, features);
             assertEquals(res.features().size(), 2);
 
@@ -62,14 +61,14 @@ public class VectorizerTest {
     @Test
     public void vectorizerShouldSetLabelByEnum() {
         double[] features = {0., 1., 2.};
-        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>()
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>()
             .labeled(Vectorizer.LabelCoordinate.FIRST);
         LabeledVector<Double> res = vectorizer.apply(1, features);
         assertEquals(res.features().size(), 2);
         assertArrayEquals(res.features().asArray(), new double[] {1., 2.}, 0.);
         assertEquals(0., res.label(), 0.);
 
-        vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST);
+        vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST);
         res = vectorizer.apply(1, features);
         assertEquals(res.features().size(), 2);
         assertArrayEquals(res.features().asArray(), new double[] {0., 1.}, 0.);
@@ -81,7 +80,7 @@ public class VectorizerTest {
     public void vectorizerShouldBeAbleExcludeFeatures() {
         double[] features = IntStream.range(0, 100).mapToDouble(Double::valueOf).toArray();
         Integer[] excludedIds = IntStream.range(2, 99).boxed().toArray(Integer[]::new);
-        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>()
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>()
             .exclude(excludedIds)
             .labeled(Vectorizer.LabelCoordinate.FIRST);
 
@@ -89,20 +88,5 @@ public class VectorizerTest {
         assertEquals(res.features().size(), 2);
         assertArrayEquals(res.features().asArray(), new double[] {1., 99.}, 0.);
         assertEquals(0., res.label(), 0.);
-    }
-
-    /** */
-    @Test
-    public void vectorizerCanBeMapped() {
-        double[] features = new double[]{0., 1., 2.};
-        Vectorizer<Integer, double[], Integer, double[]> vectorizer = new ArraysVectorizer<Integer>()
-            .labeled(Vectorizer.LabelCoordinate.FIRST)
-            .map(v -> v.features().labeled(new double[] {v.label()}));
-
-
-        LabeledVector<double[]> res = vectorizer.apply(1, features);
-        assertEquals(res.features().size(), 2);
-        assertArrayEquals(res.features().asArray(), new double[] {1., 2.}, 0.);
-        assertArrayEquals(new double[] {0.}, res.label(), 0.);
     }
 }
