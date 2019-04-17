@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.jdbc.JdbcErrorsAbstractSelfTest;
 import org.apache.ignite.lang.IgniteCallable;
 import org.junit.Test;
@@ -119,7 +120,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
      * message.
      */
     @Test
-    public void testExplainUpdatesUnsupported() throws Exception{
+    public void testExplainUpdatesUnsupported() throws Exception {
         checkErrorState((conn) -> {
             try (Statement statement = conn.createStatement()) {
                 statement.executeUpdate("CREATE TABLE TEST_EXPLAIN (ID LONG PRIMARY KEY, VAL LONG)");
@@ -127,5 +128,28 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                 statement.executeUpdate("EXPLAIN INSERT INTO TEST_EXPLAIN VALUES (1, 2)");
             }
         }, "0A000", "Explains of update queries are not supported.");
+    }
+
+    /** */
+    @Test
+    public void testUpdatesRejectedInReadOnlyMode() throws Exception {
+        try (Connection conn = getConnection()) {
+            try (Statement statement = conn.createStatement()) {
+                statement.executeUpdate("CREATE TABLE TEST_READ_ONLY (ID LONG PRIMARY KEY, VAL LONG)");
+            }
+        }
+
+        G.allGrids().get(0).cluster().readOnly(true);
+
+        try {
+            checkErrorState((conn) -> {
+                try (Statement statement = conn.createStatement()) {
+                    statement.executeUpdate("INSERT INTO TEST_READ_ONLY VALUES (1, 2)");
+                }
+            }, "55W08", "Failed to execute DML statement. Cluster in read-only mode");
+        }
+        finally {
+            G.allGrids().get(0).cluster().readOnly(false);
+        }
     }
 }
