@@ -49,10 +49,10 @@ namespace Apache.Ignite.Examples
             Console.WriteLine(">>> Cache query example started.");
 
             var employeeCache = ignite.GetOrCreateCache<int, Employee>(
-                new CacheConfiguration(EmployeeCacheName, typeof(Employee)));
+                new CacheConfiguration(EmployeeCacheName, new QueryEntity(typeof(Employee))));
 
             var employeeCacheColocated = ignite.GetOrCreateCache<AffinityKey, Employee>(
-                new CacheConfiguration(EmployeeCacheNameColocated, typeof(Employee)));
+                new CacheConfiguration(EmployeeCacheNameColocated, new QueryEntity(typeof(Employee))));
 
             var organizationCache = ignite.GetOrCreateCache<int, Organization>(
                 new CacheConfiguration(OrganizationCacheName, new QueryEntity(typeof(int), typeof(Organization))));
@@ -65,31 +65,46 @@ namespace Apache.Ignite.Examples
             // Run SQL query example.
             SqlQueryExample(employeeCache);
 
+            // Run SQL filter query example.
+            SqlFilterQueryExample(employeeCache);
+
             // Run SQL query with join example.
             SqlJoinQueryExample(employeeCacheColocated);
 
             // Run SQL query with distributed join example.
             SqlDistributedJoinQueryExample(employeeCache);
+        }
 
-            // Run SQL fields query example.
-            SqlFieldsQueryExample(employeeCache);
+        /// <summary>
+        /// Queries names and salaries for all employees.
+        /// </summary>
+        /// <param name="cache">Cache.</param>
+        private static void SqlQueryExample(ICache<int, Employee> cache)
+        {
+            var qry = cache.Query(new SqlFieldsQuery("select name, salary from Employee"));
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Employee names and their salaries:");
+
+            foreach (var row in qry)
+                Console.WriteLine($">>>     [Name={row[0]}, salary={row[1]}{']'}");
         }
 
         /// <summary>
         /// Queries employees that have specified salary.
         /// </summary>
         /// <param name="cache">Cache.</param>
-        private static void SqlQueryExample(ICache<int, Employee> cache)
+        private static void SqlFilterQueryExample(ICache<int, Employee> cache)
         {
             const int minSalary = 10000;
 
-            var qry = cache.Query(new SqlQuery(typeof(Employee), "salary > ?", minSalary));
+            var qry = cache.Query(new SqlFieldsQuery("select name from Employee where salary > ?", minSalary));
 
             Console.WriteLine();
-            Console.WriteLine($">>> Employees with salary > {minSalary} (SQL):");
+            Console.WriteLine($">>> Employees with salary > {minSalary}:");
 
-            foreach (var entry in qry)
-                Console.WriteLine(">>>    " + entry.Value);
+            foreach (var row in qry)
+                Console.WriteLine(">>>    " + row[0]);
         }
 
         /// <summary>
@@ -100,15 +115,15 @@ namespace Apache.Ignite.Examples
         {
             const string orgName = "Apache";
 
-            var qry = cache.Query(new SqlQuery("Employee",
-                "from Employee, \"dotnet_cache_query_organization\".Organization " +
+            var qry = cache.Query(new SqlFieldsQuery(
+                "select Employee.name from Employee, \"dotnet_cache_query_organization\".Organization " +
                 "where Employee.organizationId = Organization._key and Organization.name = ?", orgName));
 
             Console.WriteLine();
             Console.WriteLine($">>> Employees working for {orgName}:");
 
-            foreach (var entry in qry)
-                Console.WriteLine(">>>     " + entry.Value);
+            foreach (var row in qry)
+                Console.WriteLine(">>>     " + row[0]);
         }
 
         /// <summary>
@@ -119,8 +134,8 @@ namespace Apache.Ignite.Examples
         {
             const string orgName = "Apache";
 
-            var qry = cache.Query(new SqlQuery("Employee",
-                "from Employee, \"dotnet_cache_query_organization\".Organization " +
+            var qry = cache.Query(new SqlFieldsQuery(
+                "select Employee.name from Employee, \"dotnet_cache_query_organization\".Organization " +
                 "where Employee.organizationId = Organization._key and Organization.name = ?", orgName)
             {
                 EnableDistributedJoins = true
@@ -129,23 +144,8 @@ namespace Apache.Ignite.Examples
             Console.WriteLine();
             Console.WriteLine(">>> Employees working for " + orgName + " (distributed joins):");
 
-            foreach (var entry in qry)
-                Console.WriteLine(">>>     " + entry.Value);
-        }
-
-        /// <summary>
-        /// Queries names and salaries for all employees.
-        /// </summary>
-        /// <param name="cache">Cache.</param>
-        private static void SqlFieldsQueryExample(ICache<int, Employee> cache)
-        {
-            var qry = cache.Query(new SqlFieldsQuery("select name, salary from Employee"));
-
-            Console.WriteLine();
-            Console.WriteLine(">>> Employee names and their salaries:");
-
-            foreach (IList row in qry)
-                Console.WriteLine($">>>     [Name={row[0]}, salary={row[1]}{']'}");
+            foreach (var row in qry)
+                Console.WriteLine(">>>     " + row[0]);
         }
 
         /// <summary>

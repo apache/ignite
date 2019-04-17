@@ -17,24 +17,27 @@
 
 package org.apache.ignite.ml.multiclass;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * This is a common heuristic trainer for multi-class labeled models.
@@ -53,18 +56,15 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C extends Serializable> MultiClassModel<M> fit(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
+    @Override public <K, V> MultiClassModel<M> fit(DatasetBuilder<K, V> datasetBuilder,
+                                                   Preprocessor<K, V> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C extends Serializable> MultiClassModel<M> updateModel(MultiClassModel<M> newMdl,
-        DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> extractor) {
-
-        IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
-        IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
+    @Override protected <K, V> MultiClassModel<M> updateModel(MultiClassModel<M> newMdl,
+                                                              DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
 
         List<Double> classes = extractClassLabels(datasetBuilder, extractor);
 
@@ -74,20 +74,18 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
         MultiClassModel<M> multiClsMdl = new MultiClassModel<>();
 
         classes.forEach(clsLb -> {
-            IgniteBiFunction<K, V, Double> lbTransformer = (k, v) -> {
-                Double lb = lbExtractor.apply(k, v);
-
-                if (lb.equals(clsLb))
-                    return 1.0;
-                else
-                    return 0.0;
+            IgniteFunction<Double, Double> lbTransformer = lb -> {
+                return lb.equals(clsLb) ? 1.0 : 0.0;
             };
 
-            FeatureLabelExtractorWrapper<K, V, C, Double> vectorizer = FeatureLabelExtractorWrapper.wrap(featureExtractor, lbTransformer);
+            IgniteFunction<LabeledVector<Double>, LabeledVector<Double>> func = lv -> new LabeledVector<>(lv.features(), lbTransformer.apply(lv.label()));
+
+            PatchedPreprocessor<K, V, Double, Double> patchedPreprocessor = new PatchedPreprocessor<>(func, extractor);
+
             M mdl = Optional.ofNullable(newMdl)
                 .flatMap(multiClassModel -> multiClassModel.getModel(clsLb))
-                .map(learnedModel -> classifier.update(learnedModel, datasetBuilder, vectorizer))
-                .orElseGet(() -> classifier.fit(datasetBuilder, vectorizer));
+                .map(learnedModel -> classifier.update(learnedModel, datasetBuilder, patchedPreprocessor))
+                .orElseGet(() -> classifier.fit(datasetBuilder, patchedPreprocessor));
 
             multiClsMdl.add(clsLb, mdl);
         });
@@ -101,12 +99,12 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
     }
 
     /** Iterates among dataset and collects class labels. */
-    private <K, V, C extends Serializable> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> vectorizer) {
+    private <K, V> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder,
+                                                   Preprocessor<K, V> preprocessor) {
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, EmptyContext, LabelPartitionDataOnHeap> partDataBuilder =
-            new LabelPartitionDataBuilderOnHeap<>(vectorizer);
+            new LabelPartitionDataBuilderOnHeap<>(preprocessor);
 
         List<Double> res = new ArrayList<>();
 

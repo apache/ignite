@@ -51,15 +51,14 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
         NNClassificationModel mdl = trainer.fit(
             cacheMock, parts,
-            new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+            vectorizer
         ).withK(3);
 
-        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
-        double score = Evaluator.evaluate(cacheMock, mdl, featureExtractor, lbExtractor, new Accuracy<>());
+        double score = Evaluator.evaluate(cacheMock, mdl, vectorizer, new Accuracy<>());
 
         assertEquals(0.9839357429718876, score, 1e-12);
     }
@@ -80,16 +79,16 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
         TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
             .split(0.75);
 
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+
         NNClassificationModel mdl = trainer.fit(
             cacheMock,
             split.getTrainFilter(),
             parts,
-            new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+            vectorizer
         ).withK(3);
 
-        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
-        double score = Evaluator.evaluate(cacheMock, mdl, featureExtractor, lbExtractor, new Accuracy<>());
+        double score = Evaluator.evaluate(cacheMock, mdl, vectorizer, new Accuracy<>());
 
         assertEquals(0.9, score, 1);
     }

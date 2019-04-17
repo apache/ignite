@@ -1012,15 +1012,18 @@ public class CommandProcessor {
                 dfltValues.put(e.getKey(), dfltVal);
 
             if (col.getType() == Value.DECIMAL) {
-                precision.put(e.getKey(), (int)col.getPrecision());
+                if (col.getPrecision() < H2Utils.DECIMAL_DEFAULT_PRECISION)
+                    precision.put(e.getKey(), (int)col.getPrecision());
 
-                scale.put(e.getKey(), col.getScale());
+                if (col.getScale() < H2Utils.DECIMAL_DEFAULT_SCALE)
+                    scale.put(e.getKey(), col.getScale());
             }
 
             if (col.getType() == Value.STRING ||
                 col.getType() == Value.STRING_FIXED ||
                 col.getType() == Value.STRING_IGNORECASE)
-                precision.put(e.getKey(), (int)col.getPrecision());
+                if (col.getPrecision() < H2Utils.STRING_DEFAULT_PRECISION)
+                    precision.put(e.getKey(), (int)col.getPrecision());
         }
 
         if (!F.isEmpty(dfltValues))
