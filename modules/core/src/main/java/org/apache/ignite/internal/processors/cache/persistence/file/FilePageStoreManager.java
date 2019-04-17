@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
@@ -55,7 +56,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -309,7 +309,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             cleanupAsyncExecutor.async(doShutdown);
 
             U.log(log, "Cache stores cleanup started asynchronously");
-        } else
+        }
+        else
             doShutdown.run();
     }
 
@@ -321,11 +322,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         cleanupPageStoreIfMatch(p -> true, false);
     }
 
-    /**
-     * Cancels asynchronous file storage cleanup task, if any exists.
-     */
-    public void cancelCleanupTask() {
-        cleanupAsyncExecutor.cancelAsyncTasks();
+    /** {@inheritDoc} */
+    @Override public void onKernalStop0(boolean cancel) {
+        if (cancel)
+            cleanupAsyncExecutor.cancelAsyncTasks();
     }
 
     /** {@inheritDoc} */
@@ -1121,19 +1121,19 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private CacheStoreHolder getHolder(int grpId) throws IgniteCheckedException {
         try {
             return idxCacheStores.computeIfAbsent(grpId, (key) -> {
-                    CacheGroupDescriptor gDesc = cctx.cache().cacheGroupDescriptors().get(grpId);
+                CacheGroupDescriptor gDesc = cctx.cache().cacheGroupDescriptors().get(grpId);
 
-                    CacheStoreHolder holder0 = null;
+                CacheStoreHolder holder0 = null;
 
-                    if (gDesc != null && CU.isPersistentCache(gDesc.config(), cctx.gridConfig().getDataStorageConfiguration())) {
-                        try {
-                            holder0 = initForCache(gDesc, gDesc.config());
-                        } catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
+                if (gDesc != null && CU.isPersistentCache(gDesc.config(), cctx.gridConfig().getDataStorageConfiguration())) {
+                    try {
+                        holder0 = initForCache(gDesc, gDesc.config());
+                    } catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
                     }
+                }
 
-                    return holder0;
+                return holder0;
             });
         } catch (IgniteException ex) {
             if (X.hasCause(ex, IgniteCheckedException.class))
@@ -1275,6 +1275,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         private Set<GridWorker> workers = new GridConcurrentHashSet<>();
 
         /** */
+        private static final AtomicLong workerCounter = new AtomicLong(0);
+
+        /** */
         public LongOperationAsyncExecutor(String igniteInstanceName, IgniteLogger log) {
             this.igniteInstanceName = igniteInstanceName;
 
@@ -1288,8 +1291,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
          * @param runnable long operation
          */
         public void async(Runnable runnable) {
-            GridWorker worker = new GridWorker(igniteInstanceName, "asyncFileStoreCleanupTask", log) {
-                @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            String workerName = "async-file-store-cleanup-task-" + workerCounter.getAndIncrement();
+
+            GridWorker worker = new GridWorker(igniteInstanceName, workerName, log) {
+                @Override protected void body() {
                     readWriteLock.writeLock().lock();
 
                     try {
@@ -1336,6 +1341,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             for (GridWorker worker : workers) {
                 try {
                     worker.cancel();
+
+                    worker.join();
                 }
                 catch (Exception e) {
                     log.warning(format("Failed to cancel grid runnable [%s]: %s", worker.toString(), e.getMessage()));

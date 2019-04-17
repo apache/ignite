@@ -1082,9 +1082,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         );
 
         metaStorage = null;
-
-        if (cctx.pageStore() instanceof FilePageStoreManager)
-            ((FilePageStoreManager) cctx.pageStore()).cancelCleanupTask();
     }
 
     /** {@inheritDoc} */
