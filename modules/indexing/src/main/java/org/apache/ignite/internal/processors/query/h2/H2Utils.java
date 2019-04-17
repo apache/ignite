@@ -53,6 +53,21 @@ import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UP
  * H2 utility methods.
  */
 public class H2Utils {
+    /**
+     * The default precision for a char/varchar value.
+     */
+    public static final int STRING_DEFAULT_PRECISION = Integer.MAX_VALUE;
+
+    /**
+     * The default precision for a decimal value.
+     */
+    public static final int DECIMAL_DEFAULT_PRECISION = 65535;
+
+    /**
+     * The default scale for a decimal value.
+     */
+    public static final int DECIMAL_DEFAULT_SCALE = 32767;
+
     /** Spatial index class name. */
     private static final String SPATIAL_IDX_CLS =
         "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
