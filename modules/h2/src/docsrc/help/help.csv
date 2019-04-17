@@ -1,0 +1,5739 @@
+# Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+# and the EPL 1.0 (http://h2database.com/html/license.html).
+# Initial Developer: H2 Group
+
+"SECTION","TOPIC","SYNTAX","TEXT","EXAMPLE"
+
+"Commands (DML)","SELECT","
+SELECT [ TOP term [ PERCENT ] [ WITH TIES ] ]
+[ DISTINCT [ ON ( expression [,...] ) ] | ALL ]
+selectExpression [,...]
+[ FROM tableExpression [,...] ]
+[ WHERE expression ]
+[ GROUP BY expression [,...] ] [ HAVING expression ]
+[ WINDOW { { windowName AS windowSpecification } [,...] } ]
+[ QUALIFY expression ]
+[ { UNION [ ALL ] | EXCEPT | MINUS | INTERSECT } select ]
+[ ORDER BY order [,...] ]
+[ LIMIT expression [ OFFSET expression ] [ SAMPLE_SIZE rowCountInt ] ]
+[ [ OFFSET expression { ROW | ROWS } ]
+    [ FETCH { FIRST | NEXT } [ expression [ PERCENT ] ] { ROW | ROWS }
+        { ONLY | WITH TIES } ] [ SAMPLE_SIZE rowCountInt ] ]
+[ FOR UPDATE ]
+","
+Selects data from a table or multiple tables.
+
+Command is executed in the following logical order:
+
+1. Data is taken from table value expressions that are specified in the FROM clause, joins are executed.
+If FROM clause is not specified a single row is constructed.
+
+2. WHERE filters rows. Aggregate or window functions are not allowed in this clause.
+
+3. GROUP BY groups the result by the given expression(s).
+If GROUP BY clause is not specified, but non-window aggregate functions are used or HAVING is specified
+all rows are grouped together.
+
+4. Aggregate functions are evaluated, SAMPLE_SIZE limits the number of rows read.
+
+5. HAVING filters rows after grouping and evaluation of aggregate functions.
+Non-window aggregate functions are allowed in this clause.
+
+6. Window functions are evaluated.
+
+7. QUALIFY filters rows after evaluation of window functions.
+Aggregate and window functions are allowed in this clause.
+
+8. DISTINCT removes duplicates.
+If DISTINCT ON is used only the specified expressions are checked for duplicates;
+ORDER BY clause, if any, is used to determine preserved rows.
+First row is each DISTINCT ON group is preserved.
+In absence of ORDER BY preserved rows are not determined, database may choose any row from each DISTINCT ON group.
+
+9. UNION, EXCEPT (MINUS), and INTERSECT combine the result of this query with the results of another query.
+Multiple set operators (UNION, INTERSECT, MINUS, EXCEPT) are evaluated from left to right.
+For compatibility with other databases and future versions of H2 please use parentheses.
+
+10. ORDER BY sorts the result by the given column(s) or expression(s).
+
+11. Number of rows in output can be limited either with standard OFFSET / FETCH,
+with non-standard LIMIT / OFFSET, or with non-standard TOP clauses.
+Different clauses cannot be used together.
+OFFSET specifies how many rows to skip.
+Please note that queries with high offset values can be slow.
+FETCH FIRST/NEXT, LIMIT or TOP limits the number of rows returned by the query (no limit if null or smaller than zero).
+If PERCENT is specified number of rows is specified as a percent of the total number of rows
+and should be an integer value between 0 and 100 inclusive.
+WITH TIES can be used only together with ORDER BY and means that all additional rows that have the same sorting position
+as the last row will be also returned.
+
+WINDOW clause specifies window definitions for window functions and window aggregate functions.
+This clause can be used to reuse the same definition in multiple functions.
+
+If FOR UPDATE is specified, the tables or rows are locked for writing.
+This clause is not allowed in DISTINCT queries and in queries with non-window aggregates, GROUP BY, or HAVING clauses.
+When using default MVStore engine only the selected rows are locked as in an UPDATE statement.
+Rows from the right side of a left join and from the left side of a right join, including nested joins, aren't locked.
+Locking behavior for rows that were excluded from result using OFFSET / FETCH / LIMIT / TOP or QUALIFY is undefined,
+to avoid possible locking of excessive rows try to filter out unneeded rows with the WHERE criteria when possible.
+Rows are processed one by one. Committed row is read, tested with WHERE criteria, locked, read again and re-tested,
+because its value may be changed by concurrent transaction before lock acquisition.
+Note that new uncommitted rows from other transactions are not visible due to read committed isolation level
+and therefore cannot be locked.
+With PageStore engine the whole tables are locked;
+to avoid deadlocks with this engine always lock the tables in the same order in all transactions.
+","
+SELECT * FROM TEST;
+SELECT * FROM TEST ORDER BY NAME;
+SELECT ID, COUNT(*) FROM TEST GROUP BY ID;
+SELECT NAME, COUNT(*) FROM TEST GROUP BY NAME HAVING COUNT(*) > 2;
+SELECT 'ID' COL, MAX(ID) AS MAX FROM TEST UNION SELECT 'NAME', MAX(NAME) FROM TEST;
+SELECT * FROM TEST OFFSET 1000 ROWS FETCH FIRST 1000 ROWS ONLY;
+SELECT A, B FROM TEST ORDER BY A FETCH FIRST 10 ROWS WITH TIES;
+SELECT * FROM (SELECT ID, COUNT(*) FROM TEST
+    GROUP BY ID UNION SELECT NULL, COUNT(*) FROM TEST)
+    ORDER BY 1 NULLS LAST;
+SELECT DISTINCT C1, C2 FROM TEST;
+SELECT DISTINCT ON(C1) C1, C2 FROM TEST ORDER BY C1;
+"
+
+"Commands (DML)","INSERT","
+INSERT INTO tableName insertColumnsAndSource
+","
+Inserts a new row / new rows into a table.
+
+When using DIRECT, then the results from the query are directly applied in the target table without any intermediate step.
+
+When using SORTED, b-tree pages are split at the insertion point. This can improve performance and reduce disk usage.
+","
+INSERT INTO TEST VALUES(1, 'Hello')
+"
+
+"Commands (DML)","UPDATE","
+UPDATE tableName [ [ AS ] newTableAlias ] SET setClauseList
+[ WHERE expression ] [ ORDER BY order [,...] ] [ LIMIT expression ]
+","
+Updates data in a table.
+ORDER BY is supported for MySQL compatibility, but it is ignored.
+","
+UPDATE TEST SET NAME='Hi' WHERE ID=1;
+UPDATE PERSON P SET NAME=(SELECT A.NAME FROM ADDRESS A WHERE A.ID=P.ID);
+"
+
+"Commands (DML)","DELETE","
+DELETE [ TOP term ] FROM tableName [ WHERE expression ] [ LIMIT term ]
+","
+Deletes rows form a table.
+If TOP or LIMIT is specified, at most the specified number of rows are deleted (no limit if null or smaller than zero).
+","
+DELETE FROM TEST WHERE ID=2
+"
+
+"Commands (DML)","BACKUP","
+BACKUP TO fileNameString
+","
+Backs up the database files to a .zip file. Objects are not locked, but
+the backup is transactionally consistent because the transaction log is also copied.
+Admin rights are required to execute this command.
+","
+BACKUP TO 'backup.zip'
+"
+
+"Commands (DML)","CALL","
+CALL expression
+","
+Calculates a simple expression. This statement returns a result set with one row,
+except if the called function returns a result set itself.
+If the called function returns an array, then each element in this array is returned as a column.
+","
+CALL 15*25
+"
+
+"Commands (DML)","EXPLAIN","
+EXPLAIN { [ PLAN FOR ] | ANALYZE }
+{ select | insert | update | delete | merge }
+","
+Shows the execution plan for a statement.
+When using EXPLAIN ANALYZE, the statement is actually executed, and the query plan
+will include the actual row scan count for each table.
+","
+EXPLAIN SELECT * FROM TEST WHERE ID=1
+"
+
+"Commands (DML)","MERGE","
+MERGE INTO tableName [ ( columnName [,...] ) ]
+[ KEY ( columnName [,...] ) ]
+{ insertValues | select }
+","
+Updates existing rows, and insert rows that don't exist. If no key column is
+specified, the primary key columns are used to find the row. If more than one
+row per new row is affected, an exception is thrown.
+","
+MERGE INTO TEST KEY(ID) VALUES(2, 'World')
+"
+
+"Commands (DML)","MERGE USING","
+MERGE INTO targetTableName [ [AS] targetAlias]
+USING { ( select ) | sourceTableName }[ [AS] sourceAlias ]
+ON expression
+mergeWhenClause [,...]
+","
+Updates or deletes existing rows, and insert rows that don't exist.
+
+The ON clause specifies the matching column expression.
+Different rows from a source table may not match with the same target row,
+but one source row may be matched with multiple target rows.
+
+If statement doesn't need a source table a DUAL table can be substituted.
+","
+MERGE INTO TARGET_TABLE AS T USING SOURCE_TABLE AS S
+    ON T.ID = S.ID
+    WHEN MATCHED AND T.COL2 <> 'FINAL' THEN
+        UPDATE SET T.COL1 = S.COL1
+    WHEN MATCHED AND T.COL2 = 'FINAL' THEN
+        DELETE
+    WHEN NOT MATCHED THEN
+        INSERT (ID, COL1, COL2) VALUES(S.ID, S.COL1, S.COL2)
+MERGE INTO TARGET_TABLE AS T USING (SELECT * FROM SOURCE_TABLE) AS S
+    ON T.ID = S.ID
+    WHEN MATCHED AND T.COL2 <> 'FINAL' THEN
+        UPDATE SET T.COL1 = S.COL1
+    WHEN MATCHED AND T.COL2 = 'FINAL' THEN
+        DELETE
+    WHEN NOT MATCHED THEN
+        INSERT VALUES (S.ID, S.COL1, S.COL2)
+MERGE INTO TARGET_TABLE USING DUAL ON ID = 1
+    WHEN NOT MATCHED THEN INSERT VALUES (1, 'Test')
+    WHEN MATCHED THEN UPDATE SET NAME = 'Test'
+"
+
+"Commands (DML)","RUNSCRIPT","
+RUNSCRIPT FROM fileNameString scriptCompressionEncryption
+[ CHARSET charsetString ]
+","
+Runs a SQL script from a file. The script is a text file containing SQL
+statements; each statement must end with ';'. This command can be used to
+restore a database from a backup. The password must be in single quotes; it is
+case sensitive and can contain spaces.
+
+Instead of a file name, an URL may be used.
+To read a stream from the classpath, use the prefix 'classpath:'.
+See the Pluggable File System section on the Advanced page.
+
+The compression algorithm must match the one used when creating the script.
+Instead of a file, an URL may be used.
+
+Admin rights are required to execute this command.
+","
+RUNSCRIPT FROM 'backup.sql'
+RUNSCRIPT FROM 'classpath:/com/acme/test.sql'
+"
+
+"Commands (DML)","SCRIPT","
+SCRIPT { [ NODATA ] | [ SIMPLE ] [ COLUMNS ] }
+[ NOPASSWORDS ] [ NOSETTINGS ]
+[ DROP ] [ BLOCKSIZE blockSizeInt ]
+[ TO fileNameString scriptCompressionEncryption
+    [ CHARSET charsetString ] ]
+[ TABLE tableName [, ...] ]
+[ SCHEMA schemaName [, ...] ]
+","
+Creates a SQL script from the database.
+
+NODATA will not emit INSERT statements.
+SIMPLE does not use multi-row insert statements.
+COLUMNS includes column name lists into insert statements.
+If the DROP option is specified, drop statements are created for tables, views,
+and sequences. If the block size is set, CLOB and BLOB values larger than this
+size are split into separate blocks.
+BLOCKSIZE is used when writing out LOB data, and specifies the point at the
+values transition from being inserted as inline values, to be inserted using
+out-of-line commands.
+NOSETTINGS turns off dumping the database settings (the SET XXX commands)
+
+If no 'TO fileName' clause is specified, the
+script is returned as a result set. This command can be used to create a backup
+of the database. For long term storage, it is more portable than copying the
+database files.
+
+If a 'TO fileName' clause is specified, then the whole
+script (including insert statements) is written to this file, and a result set
+without the insert statements is returned.
+
+The password must be in single quotes; it is case sensitive and can contain spaces.
+
+This command locks objects while it is running.
+Admin rights are required to execute this command.
+
+When using the TABLE or SCHEMA option, only the selected table(s) / schema(s) are included.
+","
+SCRIPT NODATA
+"
+
+"Commands (DML)","SHOW","
+SHOW { SCHEMAS | TABLES [ FROM schemaName ] |
+    COLUMNS FROM tableName [ FROM schemaName ] }
+","
+Lists the schemas, tables, or the columns of a table.
+","
+SHOW TABLES
+"
+
+"Commands (DML)","Explicit table","
+TABLE [schemaName.]tableName
+[ ORDER BY order [,...] ]
+[ OFFSET expression { ROW | ROWS } ]
+[ FETCH { FIRST | NEXT } [ expression [ PERCENT ] ] { ROW | ROWS }
+    { ONLY | WITH TIES } ]
+","
+Selects data from a table.
+
+This command is an equivalent to SELECT * FROM tableName.
+See SELECT command for description of ORDER BY, OFFSET, and FETCH.
+","
+TABLE TEST;
+TABLE TEST ORDER BY ID FETCH FIRST ROW ONLY;
+"
+
+"Commands (DML)","Table value","
+VALUES rowValueExpression [,...]
+[ ORDER BY order [,...] ]
+[ OFFSET expression { ROW | ROWS } ]
+[ FETCH { FIRST | NEXT } [ expression [ PERCENT ] ] { ROW | ROWS }
+    { ONLY | WITH TIES } ]
+","
+A list of rows that can be used like a table.
+See SELECT command for description of ORDER BY, OFFSET, and FETCH.
+The column list of the resulting table is C1, C2, and so on.
+","
+VALUES (1, 'Hello'), (2, 'World');
+"
+
+"Commands (DML)","WITH","
+WITH [ RECURSIVE ] { name [( columnName [,...] )] AS ( select ) [,...] }
+{ select | insert | update | merge | delete | createTable }
+","
+Can be used to create a recursive or non-recursive query (common table expression).
+For recursive queries the first select has to be a UNION.
+One or more common table entries can be referred to by name.
+Column name declarations are now optional - the column names will be inferred from the named select queries.
+The final action in a WITH statement can be a select, insert, update, merge, delete or create table.
+","
+WITH RECURSIVE cte(n) AS (
+        SELECT 1
+    UNION ALL
+        SELECT n + 1
+        FROM cte
+        WHERE n < 100
+)
+SELECT sum(n) FROM cte;
+
+Example 2:
+WITH cte1 AS (
+        SELECT 1 AS FIRST_COLUMN
+), cte2 AS (
+        SELECT FIRST_COLUMN+1 AS FIRST_COLUMN FROM cte1
+)
+SELECT sum(FIRST_COLUMN) FROM cte2;
+"
+
+"Commands (DDL)","ALTER INDEX RENAME","
+ALTER INDEX [ IF EXISTS ] indexName RENAME TO newIndexName
+","
+Renames an index.
+This command commits an open transaction in this connection.
+","
+ALTER INDEX IDXNAME RENAME TO IDX_TEST_NAME
+"
+
+"Commands (DDL)","ALTER SCHEMA RENAME","
+ALTER SCHEMA [ IF EXISTS ] schema RENAME TO newSchemaName
+","
+Renames a schema.
+This command commits an open transaction in this connection.
+","
+ALTER SCHEMA TEST RENAME TO PRODUCTION
+"
+
+"Commands (DDL)","ALTER SEQUENCE","
+ALTER SEQUENCE [ IF EXISTS ] sequenceName
+[ RESTART WITH long ]
+[ INCREMENT BY long ]
+[ MINVALUE long | NOMINVALUE | NO MINVALUE ]
+[ MAXVALUE long | NOMAXVALUE | NO MAXVALUE ]
+[ CYCLE long | NOCYCLE | NO CYCLE ]
+[ CACHE long | NOCACHE | NO CACHE ]
+","
+Changes the parameters of a sequence.
+This command does not commit the current transaction; however the new value is used by other
+transactions immediately, and rolling back this command has no effect.
+","
+ALTER SEQUENCE SEQ_ID RESTART WITH 1000
+"
+
+"Commands (DDL)","ALTER TABLE ADD","
+ALTER TABLE [ IF EXISTS ] tableName ADD [ COLUMN ]
+{ [ IF NOT EXISTS ] columnName columnDefinition
+    | ( { columnName columnDefinition | constraint } [,...] ) }
+[ { { BEFORE | AFTER } columnName } | FIRST ]
+","
+Adds a new column to a table.
+This command commits an open transaction in this connection.
+","
+ALTER TABLE TEST ADD CREATEDATE TIMESTAMP
+"
+
+"Commands (DDL)","ALTER TABLE ADD CONSTRAINT","
+ALTER TABLE [ IF EXISTS ] tableName ADD constraint [ CHECK | NOCHECK ]
+","
+Adds a constraint to a table. If NOCHECK is specified, existing rows are not
+checked for consistency (the default is to check consistency for existing rows).
+The required indexes are automatically created if they don't exist yet.
+It is not possible to disable checking for unique constraints.
+This command commits an open transaction in this connection.
+","
+ALTER TABLE TEST ADD CONSTRAINT NAME_UNIQUE UNIQUE(NAME)
+"
+
+"Commands (DDL)","ALTER TABLE RENAME CONSTRAINT","
+ALTER TABLE [ IF EXISTS ] tableName RENAME oldConstraintName
+TO newConstraintName
+","
+Renames a constraint.
+This command commits an open transaction in this connection.
+","
+ALTER TABLE TEST RENAME CONSTRAINT FOO TO BAR
+"
+
+"Commands (DDL)","ALTER TABLE ALTER COLUMN","
+ALTER TABLE [ IF EXISTS ] tableName ALTER COLUMN columnName
+{ { columnDefinition }
+    | { RENAME TO name }
+    | { RESTART WITH long }
+    | { SELECTIVITY int }
+    | { SET DEFAULT expression }
+    | { DROP DEFAULT }
+    | { SET ON UPDATE expression }
+    | { DROP ON UPDATE }
+    | { SET NOT NULL }
+    | { DROP NOT NULL } | { SET NULL }
+    | { SET DATA TYPE dataType }
+    | { SET { VISIBLE | INVISIBLE } } }
+","
+Changes the data type of a column, rename a column,
+change the identity value, or change the selectivity.
+
+Changing the data type fails if the data can not be converted.
+
+RESTART changes the next value of an auto increment column.
+The column must already be an auto increment column.
+For RESTART, the same transactional rules as for ALTER SEQUENCE apply.
+
+SELECTIVITY sets the selectivity (1-100) for a column.
+Setting the selectivity to 0 means the default value.
+Selectivity is used by the cost based optimizer to calculate the estimated cost of an index.
+Selectivity 100 means values are unique, 10 means every distinct value appears 10 times on average.
+
+SET DEFAULT changes the default value of a column.
+
+DROP DEFAULT removes the default value of a column.
+
+SET ON UPDATE changes the value that is set on update if value for this column is not specified in update statement.
+
+DROP ON UPDATE removes the value that is set on update of a column.
+
+SET NOT NULL sets a column to not allow NULL. Rows may not contains NULL in this column.
+
+DROP NOT NULL and SET NULL set a column to allow NULL. The row may not be part of a primary key.
+
+SET DATA TYPE changes the data type of a column.
+
+SET INVISIBLE makes the column hidden, i.e. it will not appear in SELECT * results.
+SET VISIBLE has the reverse effect.
+
+This command commits an open transaction in this connection.
+","
+ALTER TABLE TEST ALTER COLUMN NAME CLOB;
+ALTER TABLE TEST ALTER COLUMN NAME RENAME TO TEXT;
+ALTER TABLE TEST ALTER COLUMN ID RESTART WITH 10000;
+ALTER TABLE TEST ALTER COLUMN NAME SELECTIVITY 100;
+ALTER TABLE TEST ALTER COLUMN NAME SET DEFAULT '';
+ALTER TABLE TEST ALTER COLUMN NAME SET NOT NULL;
+ALTER TABLE TEST ALTER COLUMN NAME SET NULL;
+ALTER TABLE TEST ALTER COLUMN NAME SET VISIBLE;
+ALTER TABLE TEST ALTER COLUMN NAME SET INVISIBLE;
+"
+
+"Commands (DDL)","ALTER TABLE DROP COLUMN","
+ALTER TABLE [ IF EXISTS ] tableName DROP COLUMN [ IF EXISTS ]
+columnName [,...] | ( columnName [,...] )
+","
+Removes column(s) from a table.
+This command commits an open transaction in this connection.
+","
+ALTER TABLE TEST DROP COLUMN NAME
+ALTER TABLE TEST DROP COLUMN NAME1, NAME2
+ALTER TABLE TEST DROP COLUMN (NAME1, NAME2)
+"
+
+"Commands (DDL)","ALTER TABLE DROP CONSTRAINT","
+ALTER TABLE [ IF EXISTS ] tableName DROP
+{ CONSTRAINT [ IF EXISTS ] constraintName | PRIMARY KEY }
+","
+Removes a constraint or a primary key from a table.
+This command commits an open transaction in this connection.
+","
+ALTER TABLE TEST DROP CONSTRAINT UNIQUE_NAME
+"
+
+"Commands (DDL)","ALTER TABLE SET","
+ALTER TABLE [ IF EXISTS ] tableName SET REFERENTIAL_INTEGRITY
+{ FALSE | TRUE } [ CHECK | NOCHECK ]
+","
+Disables or enables referential integrity checking for a table. This command can
+be used inside a transaction. Enabling referential integrity does not check
+existing data, except if CHECK is specified. Use SET REFERENTIAL_INTEGRITY to
+disable it for all tables; the global flag and the flag for each table are
+independent.
+
+This command commits an open transaction in this connection.
+","
+ALTER TABLE TEST SET REFERENTIAL_INTEGRITY FALSE
+"
+
+"Commands (DDL)","ALTER TABLE RENAME","
+ALTER TABLE [ IF EXISTS ] tableName RENAME TO newName
+","
+Renames a table.
+This command commits an open transaction in this connection.
+","
+ALTER TABLE TEST RENAME TO MY_DATA
+"
+
+"Commands (DDL)","ALTER USER ADMIN","
+ALTER USER userName ADMIN { TRUE | FALSE }
+","
+Switches the admin flag of a user on or off.
+
+Only unquoted or uppercase user names are allowed.
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+ALTER USER TOM ADMIN TRUE
+"
+
+"Commands (DDL)","ALTER USER RENAME","
+ALTER USER userName RENAME TO newUserName
+","
+Renames a user.
+After renaming a user, the password becomes invalid and needs to be changed as well.
+
+Only unquoted or uppercase user names are allowed.
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+ALTER USER TOM RENAME TO THOMAS
+"
+
+"Commands (DDL)","ALTER USER SET PASSWORD","
+ALTER USER userName SET { PASSWORD string | SALT bytes HASH bytes }
+","
+Changes the password of a user.
+Only unquoted or uppercase user names are allowed.
+The password must be enclosed in single quotes. It is case sensitive
+and can contain spaces. The salt and hash values are hex strings.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+ALTER USER SA SET PASSWORD 'rioyxlgt'
+"
+
+"Commands (DDL)","ALTER VIEW RECOMPILE","
+ALTER VIEW [ IF EXISTS ] viewName RECOMPILE
+","
+Recompiles a view after the underlying tables have been changed or created.
+This command is used for views created using CREATE FORCE VIEW.
+This command commits an open transaction in this connection.
+","
+ALTER VIEW ADDRESS_VIEW RECOMPILE
+"
+
+"Commands (DDL)","ALTER VIEW RENAME","
+ALTER VIEW [ IF EXISTS ] viewName RENAME TO newName
+","
+Renames a view.
+This command commits an open transaction in this connection.
+","
+ALTER VIEW TEST RENAME TO MY_VIEW
+"
+
+"Commands (DDL)","ANALYZE","
+ANALYZE [ TABLE tableName ] [ SAMPLE_SIZE rowCountInt ]
+","
+Updates the selectivity statistics of tables.
+If no table name is given, all tables are analyzed.
+The selectivity is used by the
+cost based optimizer to select the best index for a given query. If no sample
+size is set, up to 10000 rows per table are read. The value 0 means all rows are
+read. The selectivity can be set manually using ALTER TABLE ALTER COLUMN
+SELECTIVITY. Manual values are overwritten by this statement. The selectivity is
+available in the INFORMATION_SCHEMA.COLUMNS table.
+
+This command commits an open transaction in this connection.
+","
+ANALYZE SAMPLE_SIZE 1000
+"
+
+"Commands (DDL)","COMMENT","
+COMMENT ON
+{ { COLUMN [ schemaName. ] tableName.columnName }
+    | { { TABLE | VIEW | CONSTANT | CONSTRAINT | ALIAS | INDEX | ROLE
+    | SCHEMA | SEQUENCE | TRIGGER | USER | DOMAIN } [ schemaName. ] objectName } }
+IS expression
+","
+Sets the comment of a database object. Use NULL to remove the comment.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+COMMENT ON TABLE TEST IS 'Table used for testing'
+"
+
+"Commands (DDL)","CREATE AGGREGATE","
+CREATE AGGREGATE [ IF NOT EXISTS ] newAggregateName FOR className
+","
+Creates a new user-defined aggregate function. The method name must be the full
+qualified class name. The class must implement the interface
+""org.h2.api.Aggregate"" or ""org.h2.api.AggregateFunction"".
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+CREATE AGGREGATE SIMPLE_MEDIAN FOR ""com.acme.db.Median""
+"
+
+"Commands (DDL)","CREATE ALIAS","
+CREATE ALIAS [ IF NOT EXISTS ] newFunctionAliasName [ DETERMINISTIC ]
+[ NOBUFFER ] { FOR classAndMethodName | AS sourceCodeString }
+","
+Creates a new function alias. If this is a ResultSet returning function,
+by default the return value is cached in a local temporary file.
+
+NOBUFFER - disables caching of ResultSet return value to temporary file.
+
+DETERMINISTIC - Deterministic functions must always return the same value for the same parameters.
+
+The method name must be the full qualified class and method name,
+and may optionally include the parameter classes as in
+""java.lang.Integer.parseInt(java.lang.String, int)"". The class and the method
+must both be public, and the method must be static. The class must be available
+in the classpath of the database engine (when using the server mode,
+it must be in the classpath of the server).
+
+When defining a function alias with source code, the Sun ""javac"" is compiler
+is used if the file ""tools.jar"" is in the classpath. If not, ""javac"" is run as a separate process.
+Only the source code is stored in the database; the class is compiled each time
+the database is re-opened. Source code is usually passed
+as dollar quoted text to avoid escaping problems. If import statements are used,
+then the tag @CODE must be added before the method.
+
+If the method throws an SQLException, it is directly re-thrown to the calling application;
+all other exceptions are first converted to a SQLException.
+
+If the first parameter of the Java function is a ""java.sql.Connection"", then a
+connection to the database is provided. This connection must not be closed.
+If the class contains multiple methods with the given name but different
+parameter count, all methods are mapped.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+
+If you have the Groovy jar in your classpath, it is also possible to write methods using Groovy.
+","
+CREATE ALIAS MY_SQRT FOR ""java.lang.Math.sqrt"";
+CREATE ALIAS GET_SYSTEM_PROPERTY FOR ""java.lang.System.getProperty"";
+CALL GET_SYSTEM_PROPERTY('java.class.path');
+CALL GET_SYSTEM_PROPERTY('com.acme.test', 'true');
+CREATE ALIAS REVERSE AS $$ String reverse(String s) { return new StringBuilder(s).reverse().toString(); } $$;
+CALL REVERSE('Test');
+CREATE ALIAS tr AS $$@groovy.transform.CompileStatic
+    static String tr(String str, String sourceSet, String replacementSet){
+        return str.tr(sourceSet, replacementSet);
+    }
+$$
+"
+
+"Commands (DDL)","CREATE CONSTANT","
+CREATE CONSTANT [ IF NOT EXISTS ] newConstantName VALUE expression
+","
+Creates a new constant.
+This command commits an open transaction in this connection.
+","
+CREATE CONSTANT ONE VALUE 1
+"
+
+"Commands (DDL)","CREATE DOMAIN","
+CREATE DOMAIN [ IF NOT EXISTS ] newDomainName AS dataType
+[ DEFAULT expression ] [ [ NOT ] NULL ] [ SELECTIVITY selectivity ]
+[ CHECK condition ]
+","
+Creates a new data type (domain). The check condition must evaluate to true or
+to NULL (to prevent NULL, use ""NOT NULL""). In the condition, the term VALUE refers
+to the value being tested.
+
+Domains are usable within the whole database. They can not be created in a specific schema.
+
+This command commits an open transaction in this connection.
+","
+CREATE DOMAIN EMAIL AS VARCHAR(255) CHECK (POSITION('@', VALUE) > 1)
+"
+
+"Commands (DDL)","CREATE INDEX","
+CREATE
+{ [ UNIQUE ] [ HASH | SPATIAL] INDEX [ [ IF NOT EXISTS ] newIndexName ]
+    | PRIMARY KEY [ HASH ] }
+ON tableName ( indexColumn [,...] )
+","
+Creates a new index.
+This command commits an open transaction in this connection.
+
+Hash indexes are meant for in-memory databases and memory tables (CREATE MEMORY TABLE) when PageStore engine is used.
+For other tables, or if the index contains multiple columns, the HASH keyword is ignored.
+Hash indexes can only test for equality, do not support range queries (similar to a hash table), use more memory,
+but can perform lookups faster.
+Non-unique keys are supported.
+
+Spatial indexes are supported only on Geometry columns.
+","
+CREATE INDEX IDXNAME ON TEST(NAME)
+"
+
+"Commands (DDL)","CREATE LINKED TABLE","
+CREATE [ FORCE ] [ [ GLOBAL | LOCAL ] TEMPORARY ]
+LINKED TABLE [ IF NOT EXISTS ]
+name ( driverString, urlString, userString, passwordString,
+[ originalSchemaString, ] originalTableString ) [ EMIT UPDATES | READONLY ]
+","
+Creates a table link to an external table. The driver name may be empty if the
+driver is already loaded. If the schema name is not set, only one table with
+that name may exist in the target database.
+
+FORCE - Create the LINKED TABLE even if the remote database/table does not exist.
+
+EMIT UPDATES - Usually, for update statements, the old rows are deleted first and then the new
+rows are inserted. It is possible to emit update statements (except on
+rollback), however in this case multi-row unique key updates may not always
+work. Linked tables to the same database share one connection.
+
+READONLY - is set, the remote table may not be updated. This is enforced by H2.
+
+If the connection to the source database is lost, the connection is re-opened
+(this is a workaround for MySQL that disconnects after 8 hours of inactivity by default).
+
+If a query is used instead of the original table name, the table is read only.
+Queries must be enclosed in parenthesis: ""(SELECT * FROM ORDERS)"".
+
+To use JNDI to get the connection, the driver class must be a
+javax.naming.Context (for example ""javax.naming.InitialContext""), and the URL must
+be the resource name (for example ""java:comp/env/jdbc/Test"").
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+CREATE LINKED TABLE LINK('org.h2.Driver', 'jdbc:h2:test2',
+    'sa', 'sa', 'TEST');
+CREATE LINKED TABLE LINK('', 'jdbc:h2:test2', 'sa', 'sa',
+    '(SELECT * FROM TEST WHERE ID>0)');
+CREATE LINKED TABLE LINK('javax.naming.InitialContext',
+    'java:comp/env/jdbc/Test', NULL, NULL,
+    '(SELECT * FROM TEST WHERE ID>0)');
+"
+
+"Commands (DDL)","CREATE ROLE","
+CREATE ROLE [ IF NOT EXISTS ] newRoleName
+","
+Creates a new role.
+This command commits an open transaction in this connection.
+","
+CREATE ROLE READONLY
+"
+
+"Commands (DDL)","CREATE SCHEMA","
+CREATE SCHEMA [ IF NOT EXISTS ] name
+[ AUTHORIZATION ownerUserName ]
+[ WITH tableEngineParamName [,...] ]
+","
+Creates a new schema. If no owner is specified, the current user is used. The
+user that executes the command must have admin rights, as well as the owner.
+Specifying the owner currently has no effect.
+Optional table engine parameters are used when CREATE TABLE command
+is run on this schema without having its engine params set.
+
+This command commits an open transaction in this connection.
+","
+CREATE SCHEMA TEST_SCHEMA AUTHORIZATION SA
+"
+
+"Commands (DDL)","CREATE SEQUENCE","
+CREATE SEQUENCE [ IF NOT EXISTS ] newSequenceName
+sequenceOptions
+","
+Creates a new sequence.
+The data type of a sequence is BIGINT.
+Used values are never re-used, even when the transaction is rolled back.
+
+The cache is the number of pre-allocated numbers.
+If the system crashes without closing the database, at most this many numbers are lost.
+The default cache size is 32.
+To disable caching, use the cache size 1 or lower.
+
+This command commits an open transaction in this connection.
+","
+CREATE SEQUENCE SEQ_ID
+"
+
+"Commands (DDL)","CREATE TABLE","
+CREATE [ CACHED | MEMORY ] [ TEMP | [ GLOBAL | LOCAL ] TEMPORARY ]
+TABLE [ IF NOT EXISTS ] name
+[ ( { columnName [columnDefinition] | constraint } [,...] ) ]
+[ ENGINE tableEngineName ]
+[ WITH tableEngineParamName [,...] ]
+[ NOT PERSISTENT ] [ TRANSACTIONAL ]
+[ AS select [ WITH [ NO ] DATA ] ]","
+Creates a new table.
+
+Cached tables (the default for regular tables) are persistent,
+and the number of rows is not limited by the main memory.
+Memory tables (the default for temporary tables) are persistent,
+but the index data is kept in main memory,
+that means memory tables should not get too large.
+
+Temporary tables are deleted when closing or opening a database.
+Temporary tables can be global (accessible by all connections)
+or local (only accessible by the current connection).
+The default for temporary tables is global.
+Indexes of temporary tables are kept fully in main memory,
+unless the temporary table is created using CREATE CACHED TABLE.
+
+The ENGINE option is only required when custom table implementations are used.
+The table engine class must implement the interface ""org.h2.api.TableEngine"".
+Any table engine parameters are passed down in the tableEngineParams field of the CreateTableData object.
+
+Either ENGINE, or WITH (table engine params), or both may be specified. If ENGINE is not specified
+in CREATE TABLE, then the engine specified by DEFAULT_TABLE_ENGINE option of database params is used.
+
+Tables with the NOT PERSISTENT modifier are kept fully in memory, and all
+rows are lost when the database is closed.
+
+The column definitions are optional if a query is specified.
+In that case the column list of the query is used.
+If the query is specified its results are inserted into created table unless WITH NO DATA is specified.
+
+This command commits an open transaction, except when using
+TRANSACTIONAL (only supported for temporary tables).
+","
+CREATE TABLE TEST(ID INT PRIMARY KEY, NAME VARCHAR(255))
+"
+
+"Commands (DDL)","CREATE TRIGGER","
+CREATE TRIGGER [ IF NOT EXISTS ] newTriggerName
+{ BEFORE | AFTER | INSTEAD OF }
+{ INSERT | UPDATE | DELETE | SELECT | ROLLBACK }
+[,...] ON tableName [ FOR EACH ROW ]
+[ QUEUE int ] [ NOWAIT ]
+{ CALL triggeredClassName | AS sourceCodeString }
+","
+Creates a new trigger.
+The trigger class must be public and implement ""org.h2.api.Trigger"".
+Inner classes are not supported.
+The class must be available in the classpath of the database engine
+(when using the server mode, it must be in the classpath of the server).
+
+The sourceCodeString must define a single method with no parameters that returns ""org.h2.api.Trigger"".
+See CREATE ALIAS for requirements regarding the compilation.
+Alternatively, javax.script.ScriptEngineManager can be used to create an instance of ""org.h2.api.Trigger"".
+Currently javascript (included in every JRE) and ruby (with JRuby) are supported.
+In that case the source must begin respectively with ""//javascript"" or ""#ruby"".
+
+BEFORE triggers are called after data conversion is made, default values are set,
+null and length constraint checks have been made;
+but before other constraints have been checked.
+If there are multiple triggers, the order in which they are called is undefined.
+
+ROLLBACK can be specified in combination with INSERT, UPDATE, and DELETE.
+Only row based AFTER trigger can be called on ROLLBACK.
+Exceptions that occur within such triggers are ignored.
+As the operations that occur within a trigger are part of the transaction,
+ROLLBACK triggers are only required if an operation communicates outside of the database.
+
+INSTEAD OF triggers are implicitly row based and behave like BEFORE triggers.
+Only the first such trigger is called. Such triggers on views are supported.
+They can be used to make views updatable.
+
+A BEFORE SELECT trigger is fired just before the database engine tries to read from the table.
+The trigger can be used to update a table on demand.
+The trigger is called with both 'old' and 'new' set to null.
+
+The MERGE statement will call both INSERT and UPDATE triggers.
+Not supported are SELECT triggers with the option FOR EACH ROW,
+and AFTER SELECT triggers.
+
+Committing or rolling back a transaction within a trigger is not allowed, except for SELECT triggers.
+
+By default a trigger is called once for each statement, without the old and new rows.
+FOR EACH ROW triggers are called once for each inserted, updated, or deleted row.
+
+QUEUE is implemented for syntax compatibility with HSQL and has no effect.
+
+The trigger need to be created in the same schema as the table.
+The schema name does not need to be specified when creating the trigger.
+
+This command commits an open transaction in this connection.
+","
+CREATE TRIGGER TRIG_INS BEFORE INSERT ON TEST FOR EACH ROW CALL ""MyTrigger"";
+CREATE TRIGGER TRIG_SRC BEFORE INSERT ON TEST AS $$org.h2.api.Trigger create() { return new MyTrigger(""constructorParam""); } $$;
+CREATE TRIGGER TRIG_JS BEFORE INSERT ON TEST AS $$//javascript\nreturn new Packages.MyTrigger(""constructorParam""); $$;
+CREATE TRIGGER TRIG_RUBY BEFORE INSERT ON TEST AS $$#ruby\nJava::MyPackage::MyTrigger.new(""constructorParam"") $$;
+"
+"Commands (DDL)","CREATE USER","
+CREATE USER [ IF NOT EXISTS ] newUserName
+{ PASSWORD string | SALT bytes HASH bytes } [ ADMIN ]
+","
+Creates a new user. For compatibility, only unquoted or uppercase user names are allowed.
+The password must be in single quotes. It is case sensitive and can contain spaces.
+The salt and hash values are hex strings.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+CREATE USER GUEST PASSWORD 'abc'
+"
+
+"Commands (DDL)","CREATE VIEW","
+CREATE [ OR REPLACE ] [ FORCE ] VIEW [ IF NOT EXISTS ] newViewName
+[ ( columnName [,...] ) ] AS select
+","
+Creates a new view. If the force option is used, then the view is created even
+if the underlying table(s) don't exist.
+
+If the OR REPLACE clause is used an existing view will be replaced, and any
+dependent views will not need to be recreated. If dependent views will become
+invalid as a result of the change an error will be generated, but this error
+can be ignored if the FORCE clause is also used.
+
+Views are not updatable except when using 'instead of' triggers.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+CREATE VIEW TEST_VIEW AS SELECT * FROM TEST WHERE ID < 100
+"
+
+"Commands (DDL)","DROP AGGREGATE","
+DROP AGGREGATE [ IF EXISTS ] aggregateName
+","
+Drops an existing user-defined aggregate function.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+DROP AGGREGATE SIMPLE_MEDIAN
+"
+
+"Commands (DDL)","DROP ALIAS","
+DROP ALIAS [ IF EXISTS ] existingFunctionAliasName
+","
+Drops an existing function alias.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+DROP ALIAS MY_SQRT
+"
+
+"Commands (DDL)","DROP ALL OBJECTS","
+DROP ALL OBJECTS [ DELETE FILES ]
+","
+Drops all existing views, tables, sequences, schemas, function aliases, roles,
+user-defined aggregate functions, domains, and users (except the current user).
+If DELETE FILES is specified, the database files will be removed when the last
+user disconnects from the database. Warning: this command can not be rolled
+back.
+
+Admin rights are required to execute this command.
+","
+DROP ALL OBJECTS
+"
+
+"Commands (DDL)","DROP CONSTANT","
+DROP CONSTANT [ IF EXISTS ] constantName
+","
+Drops a constant.
+This command commits an open transaction in this connection.
+","
+DROP CONSTANT ONE
+"
+
+"Commands (DDL)","DROP DOMAIN","
+DROP DOMAIN [ IF EXISTS ] domainName [ RESTRICT | CASCADE ]
+","
+Drops a data type (domain).
+The command will fail if it is referenced by a column (the default).
+Column descriptors are replaced with original definition of specified domain if the CASCADE clause is used.
+This command commits an open transaction in this connection.
+","
+DROP DOMAIN EMAIL
+"
+
+"Commands (DDL)","DROP INDEX","
+DROP INDEX [ IF EXISTS ] indexName
+","
+Drops an index.
+This command commits an open transaction in this connection.
+","
+DROP INDEX IF EXISTS IDXNAME
+"
+
+"Commands (DDL)","DROP ROLE","
+DROP ROLE [ IF EXISTS ] roleName
+","
+Drops a role.
+This command commits an open transaction in this connection.
+","
+DROP ROLE READONLY
+"
+
+"Commands (DDL)","DROP SCHEMA","
+DROP SCHEMA [ IF EXISTS ] schemaName [ RESTRICT | CASCADE ]
+","
+Drops a schema.
+The command will fail if objects in this schema exist and the RESTRICT clause is used (the default).
+All objects in this schema are dropped as well if the CASCADE clause is used.
+This command commits an open transaction in this connection.
+","
+DROP SCHEMA TEST_SCHEMA
+"
+
+"Commands (DDL)","DROP SEQUENCE","
+DROP SEQUENCE [ IF EXISTS ] sequenceName
+","
+Drops a sequence.
+This command commits an open transaction in this connection.
+","
+DROP SEQUENCE SEQ_ID
+"
+
+"Commands (DDL)","DROP TABLE","
+DROP TABLE [ IF EXISTS ] tableName [,...] [ RESTRICT | CASCADE ]
+","
+Drops an existing table, or a list of tables.
+The command will fail if dependent objects exist and the RESTRICT clause is used (the default).
+All dependent views and constraints are dropped as well if the CASCADE clause is used.
+This command commits an open transaction in this connection.
+","
+DROP TABLE TEST
+"
+
+"Commands (DDL)","DROP TRIGGER","
+DROP TRIGGER [ IF EXISTS ] triggerName
+","
+Drops an existing trigger.
+This command commits an open transaction in this connection.
+","
+DROP TRIGGER TRIG_INS
+"
+
+"Commands (DDL)","DROP USER","
+DROP USER [ IF EXISTS ] userName
+","
+Drops a user. The current user cannot be dropped.
+For compatibility, only unquoted or uppercase user names are allowed.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+DROP USER TOM
+"
+
+"Commands (DDL)","DROP VIEW","
+DROP VIEW [ IF EXISTS ] viewName [ RESTRICT | CASCADE ]
+","
+Drops an existing view.
+All dependent views are dropped as well if the CASCADE clause is used (the default).
+The command will fail if dependent views exist and the RESTRICT clause is used.
+This command commits an open transaction in this connection.
+","
+DROP VIEW TEST_VIEW
+"
+
+"Commands (DDL)","TRUNCATE TABLE","
+TRUNCATE TABLE tableName [ [ CONTINUE | RESTART ] IDENTITY ]
+","
+Removes all rows from a table.
+Unlike DELETE FROM without where clause, this command can not be rolled back.
+This command is faster than DELETE without where clause.
+Only regular data tables without foreign key constraints can be truncated
+(except if referential integrity is disabled for this database or for this table).
+Linked tables can't be truncated.
+If RESTART IDENTITY is specified next values for auto-incremented columns are restarted.
+
+This command commits an open transaction in this connection.
+","
+TRUNCATE TABLE TEST
+"
+
+"Commands (Other)","CHECKPOINT","
+CHECKPOINT
+","
+Flushes the data to disk.
+
+Admin rights are required to execute this command.
+","
+CHECKPOINT
+"
+
+"Commands (Other)","CHECKPOINT SYNC","
+CHECKPOINT SYNC
+","
+Flushes the data to disk and forces all system buffers be written
+to the underlying device.
+
+Admin rights are required to execute this command.
+","
+CHECKPOINT SYNC
+"
+
+"Commands (Other)","COMMIT","
+COMMIT [ WORK ]
+","
+Commits a transaction.
+","
+COMMIT
+"
+
+"Commands (Other)","COMMIT TRANSACTION","
+COMMIT TRANSACTION transactionName
+","
+Sets the resolution of an in-doubt transaction to 'commit'.
+
+Admin rights are required to execute this command.
+This command is part of the 2-phase-commit protocol.
+","
+COMMIT TRANSACTION XID_TEST
+"
+
+"Commands (Other)","GRANT RIGHT","
+GRANT { SELECT | INSERT | UPDATE | DELETE | ALL } [,...] ON
+{ { SCHEMA schemaName } | { tableName [,...] } }
+TO { PUBLIC | userName | roleName }
+","
+Grants rights for a table to a user or role.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+GRANT SELECT ON TEST TO READONLY
+"
+
+"Commands (Other)","GRANT ALTER ANY SCHEMA","
+GRANT ALTER ANY SCHEMA TO userName
+","
+Grant schema altering rights to a user.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+GRANT ALTER ANY SCHEMA TO Bob
+"
+
+"Commands (Other)","GRANT ROLE","
+GRANT roleName TO { PUBLIC | userName | roleName }
+","
+Grants a role to a user or role.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+GRANT READONLY TO PUBLIC
+"
+
+"Commands (Other)","HELP","
+HELP [ anything [...] ]
+","
+Displays the help pages of SQL commands or keywords.
+","
+HELP SELECT
+"
+
+"Commands (Other)","PREPARE COMMIT","
+PREPARE COMMIT newTransactionName
+","
+Prepares committing a transaction.
+This command is part of the 2-phase-commit protocol.
+","
+PREPARE COMMIT XID_TEST
+"
+
+"Commands (Other)","REVOKE RIGHT","
+REVOKE { SELECT | INSERT | UPDATE | DELETE | ALL } [,...] ON
+{ { SCHEMA schemaName } | { tableName [,...] } }
+FROM { PUBLIC | userName | roleName }
+","
+Removes rights for a table from a user or role.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+REVOKE SELECT ON TEST FROM READONLY
+"
+
+"Commands (Other)","REVOKE ROLE","
+REVOKE roleName FROM { PUBLIC | userName | roleName }
+","
+Removes a role from a user or role.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+REVOKE READONLY FROM TOM
+"
+
+"Commands (Other)","ROLLBACK","
+ROLLBACK [ TO SAVEPOINT savepointName ]
+","
+Rolls back a transaction. If a savepoint name is used, the transaction is only
+rolled back to the specified savepoint.
+","
+ROLLBACK
+"
+
+"Commands (Other)","ROLLBACK TRANSACTION","
+ROLLBACK TRANSACTION transactionName
+","
+Sets the resolution of an in-doubt transaction to 'rollback'.
+
+Admin rights are required to execute this command.
+This command is part of the 2-phase-commit protocol.
+","
+ROLLBACK TRANSACTION XID_TEST
+"
+
+"Commands (Other)","SAVEPOINT","
+SAVEPOINT savepointName
+","
+Create a new savepoint. See also ROLLBACK.
+Savepoints are only valid until the transaction is committed or rolled back.
+","
+SAVEPOINT HALF_DONE
+"
+
+"Commands (Other)","SET @","
+SET @variableName [ = ] expression
+","
+Updates a user-defined variable.
+Variables are not persisted and session scoped, that means only visible from within the session in which they are defined.
+This command does not commit a transaction, and rollback does not affect it.
+","
+SET @TOTAL=0
+"
+
+"Commands (Other)","SET ALLOW_LITERALS","
+SET ALLOW_LITERALS { NONE | ALL | NUMBERS }
+","
+This setting can help solve the SQL injection problem. By default, text and
+number literals are allowed in SQL statements. However, this enables SQL
+injection if the application dynamically builds SQL statements. SQL injection is
+not possible if user data is set using parameters ('?').
+
+NONE means literals of any kind are not allowed, only parameters and constants
+are allowed. NUMBERS mean only numerical and boolean literals are allowed. ALL
+means all literals are allowed (default).
+
+See also CREATE CONSTANT.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is persistent.
+This setting can be appended to the database URL: ""jdbc:h2:test;ALLOW_LITERALS=NONE""
+","
+SET ALLOW_LITERALS NONE
+"
+
+"Commands (Other)","SET AUTOCOMMIT","
+SET AUTOCOMMIT { TRUE | ON | FALSE | OFF }
+","
+Switches auto commit on or off.
+This setting can be appended to the database URL: ""jdbc:h2:test;AUTOCOMMIT=OFF"" -
+however this will not work as expected when using a connection pool
+(the connection pool manager will re-enable autocommit when returning
+the connection to the pool, so autocommit will only be disabled the first
+time the connection is used.
+","
+SET AUTOCOMMIT OFF
+"
+
+"Commands (Other)","SET CACHE_SIZE","
+SET CACHE_SIZE int
+","
+Sets the size of the cache in KB (each KB being 1024 bytes) for the current database.
+The default is 65536 per available GB of RAM, i.e. 64 MB per GB.
+The value is rounded to the next higher power of two.
+Depending on the virtual machine, the actual memory required may be higher.
+
+This setting is persistent and affects all connections as there is only one cache per database.
+Using a very small value (specially 0) will reduce performance a lot.
+This setting only affects the database engine (the server in a client/server environment;
+in embedded mode, the database engine is in the same process as the application).
+It has no effect for in-memory databases.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is persistent.
+This setting can be appended to the database URL: ""jdbc:h2:test;CACHE_SIZE=8192""
+","
+SET CACHE_SIZE 8192
+"
+
+"Commands (Other)","SET CLUSTER","
+SET CLUSTER serverListString
+","
+This command should not be used directly by an application, the statement is
+executed automatically by the system. The behavior may change in future
+releases. Sets the cluster server list. An empty string switches off the cluster
+mode. Switching on the cluster mode requires admin rights, but any user can
+switch it off (this is automatically done when the client detects the other
+server is not responding).
+
+This command is effective immediately, but does not commit an open transaction.
+","
+SET CLUSTER ''
+"
+
+"Commands (Other)","SET BINARY_COLLATION","
+SET BINARY_COLLATION { UNSIGNED | SIGNED }
+","
+Sets the collation used for comparing BINARY columns, the default is SIGNED
+for version 1.3 and older, and UNSIGNED for version 1.4 and newer.
+This command can only be executed if there are no tables defined.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+This setting is persistent.
+","
+SET BINARY_COLLATION SIGNED
+"
+
+"Commands (Other)","SET UUID_COLLATION","
+SET UUID_COLLATION { UNSIGNED | SIGNED }
+","
+Sets the collation used for comparing UUID columns, the default is SIGNED.
+This command can only be executed if there are no tables defined.
+
+SIGNED means signed comparison between first 64 bits of compared values treated as long values
+and if they are equal a signed comparison of the last 64 bits of compared values treated as long values.
+See also Java ""UUID.compareTo()"".
+UNSIGNED means RFC 4122 compatible unsigned comparison.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+This setting is persistent.
+","
+SET UUID_COLLATION UNSIGNED
+"
+
+"Commands (Other)","SET BUILTIN_ALIAS_OVERRIDE","
+SET BUILTIN_ALIAS_OVERRIDE { TRUE | FALSE }
+","
+Allows the overriding of the builtin system date/time functions
+for unit testing purposes.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+SET BUILTIN_ALIAS_OVERRIDE TRUE
+"
+
+"Commands (Other)","SET COLLATION","
+SET [ DATABASE ] COLLATION
+{ OFF | collationName
+    [ STRENGTH { PRIMARY | SECONDARY | TERTIARY | IDENTICAL } ] }
+","
+Sets the collation used for comparing strings.
+This command can only be executed if there are no tables defined.
+See ""java.text.Collator"" for details about the supported collations and the STRENGTH
+(PRIMARY is usually case- and umlaut-insensitive; SECONDARY is case-insensitive but umlaut-sensitive;
+TERTIARY is both case- and umlaut-sensitive; IDENTICAL is sensitive to all differences and only affects ordering).
+
+The ICU4J collator is used if it is in the classpath.
+It is also used if the collation name starts with ICU4J_
+(in that case, the ICU4J must be in the classpath, otherwise an exception is thrown).
+The default collator is used if the collation name starts with DEFAULT_
+(even if ICU4J is in the classpath).
+The charset collator is used if the collation name starts with CHARSET_ (e.g. CHARSET_CP500). This collator sorts
+strings according to the binary representation in the given charset.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+This setting is persistent.
+This setting can be appended to the database URL: ""jdbc:h2:test;COLLATION='ENGLISH'""
+","
+SET COLLATION ENGLISH
+SET COLLATION CHARSET_CP500
+"
+
+"Commands (Other)","SET COMPRESS_LOB","
+SET COMPRESS_LOB { NO | LZF | DEFLATE }
+","
+This feature is only available for the PageStore storage engine.
+For the MVStore engine (the default for H2 version 1.4.x),
+append "";COMPRESS=TRUE"" to the database URL instead.
+
+Sets the compression algorithm for BLOB and CLOB data. Compression is usually
+slower, but needs less disk space. LZF is faster but uses more space.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is persistent.
+","
+SET COMPRESS_LOB LZF
+"
+
+"Commands (Other)","SET DATABASE_EVENT_LISTENER","
+SET DATABASE_EVENT_LISTENER classNameString
+","
+Sets the event listener class. An empty string ('') means no listener should be
+used. This setting is not persistent.
+
+Admin rights are required to execute this command, except if it is set when
+opening the database (in this case it is reset just after opening the database).
+This setting can be appended to the database URL: ""jdbc:h2:test;DATABASE_EVENT_LISTENER='sample.MyListener'""
+","
+SET DATABASE_EVENT_LISTENER 'sample.MyListener'
+"
+
+"Commands (Other)","SET DB_CLOSE_DELAY","
+SET DB_CLOSE_DELAY int
+","
+Sets the delay for closing a database if all connections are closed.
+The value -1 means the database is never closed until the close delay is set to some other value or SHUTDOWN is called.
+The value 0 means no delay (default; the database is closed if the last connection to it is closed).
+Values 1 and larger mean the number of seconds the database is left open after closing the last connection.
+
+If the application exits normally or System.exit is called, the database is closed immediately, even if a delay is set.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is persistent.
+This setting can be appended to the database URL: ""jdbc:h2:test;DB_CLOSE_DELAY=-1""
+","
+SET DB_CLOSE_DELAY -1
+"
+
+"Commands (Other)","SET DEFAULT_LOCK_TIMEOUT","
+SET DEFAULT LOCK_TIMEOUT int
+","
+Sets the default lock timeout (in milliseconds) in this database that is used
+for the new sessions. The default value for this setting is 1000 (one second).
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is persistent.
+","
+SET DEFAULT_LOCK_TIMEOUT 5000
+"
+
+"Commands (Other)","SET DEFAULT_TABLE_TYPE","
+SET DEFAULT_TABLE_TYPE { MEMORY | CACHED }
+","
+Sets the default table storage type that is used when creating new tables.
+Memory tables are kept fully in the main memory (including indexes), however
+the data is still stored in the database file. The size of memory tables is
+limited by the memory. The default is CACHED.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is persistent.
+It has no effect for in-memory databases.
+","
+SET DEFAULT_TABLE_TYPE MEMORY
+"
+
+"Commands (Other)","SET EXCLUSIVE","
+SET EXCLUSIVE { 0 | 1 | 2 }
+","
+Switched the database to exclusive mode (1, 2) and back to normal mode (0).
+
+In exclusive mode, new connections are rejected, and operations by
+other connections are paused until the exclusive mode is disabled.
+When using the value 1, existing connections stay open.
+When using the value 2, all existing connections are closed
+(and current transactions are rolled back) except the connection
+that executes SET EXCLUSIVE.
+Only the connection that set the exclusive mode can disable it.
+When the connection is closed, it is automatically disabled.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+","
+SET EXCLUSIVE 1
+"
+
+"Commands (Other)","SET IGNORECASE","
+SET IGNORECASE { TRUE | FALSE }
+","
+If IGNORECASE is enabled, text columns in newly created tables will be
+case-insensitive. Already existing tables are not affected. The effect of
+case-insensitive columns is similar to using a collation with strength PRIMARY.
+Case-insensitive columns are compared faster than when using a collation.
+String literals and parameters are however still considered case sensitive even if this option is set.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is persistent.
+This setting can be appended to the database URL: ""jdbc:h2:test;IGNORECASE=TRUE""
+","
+SET IGNORECASE TRUE
+"
+
+"Commands (Other)","SET JAVA_OBJECT_SERIALIZER","
+SET JAVA_OBJECT_SERIALIZER
+{ null | className }
+","
+Sets the object used to serialize and deserialize java objects being stored in column of type OTHER.
+The serializer class must be public and implement ""org.h2.api.JavaObjectSerializer"".
+Inner classes are not supported.
+The class must be available in the classpath of the database engine
+(when using the server mode, it must be both in the classpath of the server and the client).
+This command can only be executed if there are no tables defined.
+
+Admin rights are required to execute this command.
+This command commits an open transaction in this connection.
+This setting is persistent.
+This setting can be appended to the database URL: ""jdbc:h2:test;JAVA_OBJECT_SERIALIZER='com.acme.SerializerClassName'""
+","
+SET JAVA_OBJECT_SERIALIZER 'com.acme.SerializerClassName'
+"
+
+"Commands (Other)","SET LAZY_QUERY_EXECUTION","
+SET LAZY_QUERY_EXECUTION int
+","
+Sets the lazy query execution mode. The values 0, 1 are supported.
+
+If true, then large results are retrieved in chunks.
+
+Note that not all queries support this feature, queries which do not are processed normally.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is not persistent.
+This setting can be appended to the database URL: ""jdbc:h2:test;LAZY_QUERY_EXECUTION=1""
+","
+SET LAZY_QUERY_EXECUTION 1
+"
+
+"Commands (Other)","SET LOG","
+SET LOG int
+","
+Sets the transaction log mode. The values 0, 1, and 2 are supported, the default is 2.
+This setting affects all connections.
+
+LOG 0 means the transaction log is disabled completely. It is the fastest mode,
+but also the most dangerous: if the process is killed while the database is open in this mode,
+the data might be lost. It must only be used if this is not a problem, for example when
+initially loading a database, or when running tests.
+
+LOG 1 means the transaction log is enabled, but FileDescriptor.sync is disabled.
+This setting is about half as fast as with LOG 0. This setting is useful if no protection
+against power failure is required, but the data must be protected against killing the process.
+
+LOG 2 (the default) means the transaction log is enabled, and FileDescriptor.sync is called
+for each checkpoint. This setting is about half as fast as LOG 1. Depending on the
+file system, this will also protect against power failure in the majority if cases.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is not persistent.
+This setting can be appended to the database URL: ""jdbc:h2:test;LOG=0""
+","
+SET LOG 1
+"
+
+"Commands (Other)","SET LOCK_MODE","
+SET LOCK_MODE int
+","
+Sets the lock mode. The values 0, 1, 2, and 3 are supported. The default is 3
+(READ_COMMITTED). This setting affects all connections.
+
+The value 0 means no locking (should only be used for testing; also known as
+READ_UNCOMMITTED). Please note that using SET LOCK_MODE 0 while at the same time
+using multiple connections may result in inconsistent transactions.
+
+The value 1 means table level locking (also known as SERIALIZABLE).
+
+The value 2 means table level locking with garbage collection (if the
+application does not close all connections).
+
+The value 3 means table level locking, but read locks are released immediately
+(default; also known as READ_COMMITTED).
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is persistent.
+This setting can be appended to the database URL: ""jdbc:h2:test;LOCK_MODE=3""
+","
+SET LOCK_MODE 1
+"
+
+"Commands (Other)","SET LOCK_TIMEOUT","
+SET LOCK_TIMEOUT int
+","
+Sets the lock timeout (in milliseconds) for the current session. The default
+value for this setting is 1000 (one second).
+
+This command does not commit a transaction, and rollback does not affect it.
+This setting can be appended to the database URL: ""jdbc:h2:test;LOCK_TIMEOUT=10000""
+","
+SET LOCK_TIMEOUT 1000
+"
+
+"Commands (Other)","SET MAX_LENGTH_INPLACE_LOB","
+SET MAX_LENGTH_INPLACE_LOB int
+","
+Sets the maximum size of an in-place LOB object.
+
+This is the maximum length of an LOB that is stored with the record itself,
+and the default value is 128.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is persistent.
+","
+SET MAX_LENGTH_INPLACE_LOB 128
+"
+
+"Commands (Other)","SET MAX_LOG_SIZE","
+SET MAX_LOG_SIZE int
+","
+Sets the maximum size of the transaction log, in megabytes.
+If the log is larger, and if there is no open transaction, the transaction log is truncated.
+If there is an open transaction, the transaction log will continue to grow however.
+The default max size is 16 MB.
+This setting has no effect for in-memory databases.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is persistent.
+","
+SET MAX_LOG_SIZE 2
+"
+
+"Commands (Other)","SET MAX_MEMORY_ROWS","
+SET MAX_MEMORY_ROWS int
+","
+The maximum number of rows in a result set that are kept in-memory. If more rows
+are read, then the rows are buffered to disk.
+The default is 40000 per GB of available RAM.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is persistent.
+It has no effect for in-memory databases.
+","
+SET MAX_MEMORY_ROWS 1000
+"
+
+"Commands (Other)","SET MAX_MEMORY_UNDO","
+SET MAX_MEMORY_UNDO int
+","
+The maximum number of undo records per a session that are kept in-memory.
+If a transaction is larger, the records are buffered to disk.
+The default value is 50000.
+Changes to tables without a primary key can not be buffered to disk.
+This setting is not supported when using multi-version concurrency.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is persistent.
+It has no effect for in-memory databases.
+","
+SET MAX_MEMORY_UNDO 1000
+"
+
+"Commands (Other)","SET MAX_OPERATION_MEMORY","
+SET MAX_OPERATION_MEMORY int
+","
+Sets the maximum memory used for large operations (delete and insert), in bytes.
+Operations that use more memory are buffered to disk, slowing down the
+operation. The default max size is 100000. 0 means no limit.
+
+This setting is not persistent.
+Admin rights are required to execute this command, as it affects all connections.
+It has no effect for in-memory databases.
+This setting can be appended to the database URL: ""jdbc:h2:test;MAX_OPERATION_MEMORY=10000""
+","
+SET MAX_OPERATION_MEMORY 0
+"
+
+"Commands (Other)","SET MODE","
+SET MODE { REGULAR | DB2 | DERBY | HSQLDB | MSSQLSERVER | MYSQL | ORACLE | POSTGRESQL }
+","
+Changes to another database compatibility mode. For details, see Compatibility
+Modes in the feature section.
+
+This setting is not persistent.
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting can be appended to the database URL: ""jdbc:h2:test;MODE=MYSQL""
+","
+SET MODE HSQLDB
+"
+
+"Commands (Other)","SET MULTI_THREADED","
+SET MULTI_THREADED { 0 | 1 }
+","
+Enabled (1) or disabled (0) multi-threading inside the database engine.
+MULTI_THREADED is enabled by default with default MVStore storage engine.
+MULTI_THREADED is disabled by default when using PageStore storage engine, enabling this with PageStore is experimental only.
+
+This is a global setting, which means it is not possible to open multiple databases with different modes at the same time in the same virtual machine.
+This setting is not persistent, however the value is kept until the virtual machine exits or it is changed.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting can be appended to the database URL: ""jdbc:h2:test;MULTI_THREADED=1""
+","
+SET MULTI_THREADED 1
+"
+
+"Commands (Other)","SET OPTIMIZE_REUSE_RESULTS","
+SET OPTIMIZE_REUSE_RESULTS { 0 | 1 }
+","
+Enabled (1) or disabled (0) the result reuse optimization. If enabled,
+subqueries and views used as subqueries are only re-run if the data in one of
+the tables was changed. This option is enabled by default.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting can be appended to the database URL: ""jdbc:h2:test;OPTIMIZE_REUSE_RESULTS=0""
+","
+SET OPTIMIZE_REUSE_RESULTS 0
+"
+
+"Commands (Other)","SET PASSWORD","
+SET PASSWORD string
+","
+Changes the password of the current user. The password must be in single quotes.
+It is case sensitive and can contain spaces.
+
+This command commits an open transaction in this connection.
+","
+SET PASSWORD 'abcstzri!.5'
+"
+
+"Commands (Other)","SET QUERY_STATISTICS","
+SET QUERY_STATISTICS { TRUE | FALSE }
+","
+Disabled or enables query statistics gathering for the whole database.
+The statistics are reflected in the INFORMATION_SCHEMA.QUERY_STATISTICS meta-table.
+
+This setting is not persistent.
+This command commits an open transaction in this connection.
+Admin rights are required to execute this command, as it affects all connections.
+","
+SET QUERY_STATISTICS FALSE
+"
+
+"Commands (Other)","SET QUERY_STATISTICS_MAX_ENTRIES","
+SET QUERY_STATISTICS int
+","
+Set the maximum number of entries in query statistics meta-table.
+Default value is 100.
+
+This setting is not persistent.
+This command commits an open transaction in this connection.
+Admin rights are required to execute this command, as it affects all connections.
+","
+SET QUERY_STATISTICS_MAX_ENTRIES 500
+"
+
+"Commands (Other)","SET QUERY_TIMEOUT","
+SET QUERY_TIMEOUT int
+","
+Set the query timeout of the current session to the given value. The timeout is
+in milliseconds. All kinds of statements will throw an exception if they take
+longer than the given value. The default timeout is 0, meaning no timeout.
+
+This command does not commit a transaction, and rollback does not affect it.
+","
+SET QUERY_TIMEOUT 10000
+"
+
+"Commands (Other)","SET REFERENTIAL_INTEGRITY","
+SET REFERENTIAL_INTEGRITY { TRUE | FALSE }
+","
+Disabled or enables referential integrity checking for the whole database.
+Enabling it does not check existing data. Use ALTER TABLE SET to disable it only
+for one table.
+
+This setting is not persistent.
+This command commits an open transaction in this connection.
+Admin rights are required to execute this command, as it affects all connections.
+","
+SET REFERENTIAL_INTEGRITY FALSE
+"
+
+"Commands (Other)","SET RETENTION_TIME","
+SET RETENTION_TIME int
+","
+This property is only used when using the MVStore storage engine.
+How long to retain old, persisted data, in milliseconds.
+The default is 45000 (45 seconds), 0 means overwrite data as early as possible.
+It is assumed that a file system and hard disk will flush all write buffers within this time.
+Using a lower value might be dangerous, unless the file system and hard disk flush the buffers earlier.
+To manually flush the buffers, use CHECKPOINT SYNC,
+however please note that according to various tests this does not always work as expected
+depending on the operating system and hardware.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting is persistent.
+This setting can be appended to the database URL: ""jdbc:h2:test;RETENTION_TIME=0""
+","
+SET RETENTION_TIME 0
+"
+
+"Commands (Other)","SET SALT HASH","
+SET SALT bytes HASH bytes
+","
+Sets the password salt and hash for the current user. The password must be in
+single quotes. It is case sensitive and can contain spaces.
+
+This command commits an open transaction in this connection.
+","
+SET SALT '00' HASH '1122'
+"
+
+"Commands (Other)","SET SCHEMA","
+SET SCHEMA schemaName
+","
+Changes the default schema of the current connection. The default schema is used
+in statements where no schema is set explicitly. The default schema for new
+connections is PUBLIC.
+
+This command does not commit a transaction, and rollback does not affect it.
+This setting can be appended to the database URL: ""jdbc:h2:test;SCHEMA=ABC""
+","
+SET SCHEMA INFORMATION_SCHEMA
+"
+
+"Commands (Other)","SET SCHEMA_SEARCH_PATH","
+SET SCHEMA_SEARCH_PATH schemaName [,...]
+","
+Changes the schema search path of the current connection. The default schema is
+used in statements where no schema is set explicitly. The default schema for new
+connections is PUBLIC.
+
+This command does not commit a transaction, and rollback does not affect it.
+This setting can be appended to the database URL: ""jdbc:h2:test;SCHEMA_SEARCH_PATH=ABC,DEF""
+","
+SET SCHEMA_SEARCH_PATH INFORMATION_SCHEMA, PUBLIC
+"
+
+"Commands (Other)","SET THROTTLE","
+SET THROTTLE int
+","
+Sets the throttle for the current connection. The value is the number of
+milliseconds delay after each 50 ms. The default value is 0 (throttling
+disabled).
+
+This command does not commit a transaction, and rollback does not affect it.
+This setting can be appended to the database URL: ""jdbc:h2:test;THROTTLE=50""
+","
+SET THROTTLE 200
+"
+
+"Commands (Other)","SET TRACE_LEVEL","
+SET { TRACE_LEVEL_FILE | TRACE_LEVEL_SYSTEM_OUT } int
+","
+Sets the trace level for file the file or system out stream. Levels are: 0=off,
+1=error, 2=info, 3=debug. The default level is 1 for file and 0 for system out.
+To use SLF4J, append "";TRACE_LEVEL_FILE=4"" to the database URL when opening the database.
+
+This setting is not persistent.
+Admin rights are required to execute this command, as it affects all connections.
+This command does not commit a transaction, and rollback does not affect it.
+This setting can be appended to the database URL: ""jdbc:h2:test;TRACE_LEVEL_SYSTEM_OUT=3""
+","
+SET TRACE_LEVEL_SYSTEM_OUT 3
+"
+
+"Commands (Other)","SET TRACE_MAX_FILE_SIZE","
+SET TRACE_MAX_FILE_SIZE int
+","
+Sets the maximum trace file size. If the file exceeds the limit, the file is
+renamed to .old and a new file is created. If another .old file exists, it is
+deleted. The default max size is 16 MB.
+
+This setting is persistent.
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting can be appended to the database URL: ""jdbc:h2:test;TRACE_MAX_FILE_SIZE=3""
+","
+SET TRACE_MAX_FILE_SIZE 10
+"
+
+"Commands (Other)","SET UNDO_LOG","
+SET UNDO_LOG int
+","
+Enables (1) or disables (0) the per session undo log. The undo log is enabled by
+default. When disabled, transactions can not be rolled back. This setting should
+only be used for bulk operations that don't need to be atomic.
+
+This command commits an open transaction in this connection.
+","
+SET UNDO_LOG 0
+"
+
+"Commands (Other)","SET WRITE_DELAY","
+SET WRITE_DELAY int
+","
+Set the maximum delay between a commit and flushing the log, in milliseconds.
+This setting is persistent. The default is 500 ms.
+
+Admin rights are required to execute this command, as it affects all connections.
+This command commits an open transaction in this connection.
+This setting can be appended to the database URL: ""jdbc:h2:test;WRITE_DELAY=0""
+","
+SET WRITE_DELAY 2000
+"
+
+"Commands (Other)","SHUTDOWN","
+SHUTDOWN [ IMMEDIATELY | COMPACT | DEFRAG ]
+","
+This statement closes all open connections to the database and closes the
+database. This command is usually not required, as the database is
+closed automatically when the last connection to it is closed.
+
+If no option is used, then the database is closed normally.
+All connections are closed, open transactions are rolled back.
+
+SHUTDOWN COMPACT fully compacts the database (re-creating the database may further reduce the database size).
+If the database is closed normally (using SHUTDOWN or by closing all connections), then the database is also compacted,
+but only for at most the time defined by the database setting ""h2.maxCompactTime"" in milliseconds (see there).
+
+SHUTDOWN IMMEDIATELY closes the database files without any cleanup and without compacting.
+
+SHUTDOWN DEFRAG re-orders the pages when closing the database so that table scans are faster. In case of MVStore it is currently equivalent to COMPACT.
+
+Admin rights are required to execute this command.
+","
+SHUTDOWN COMPACT
+"
+
+"Literals","Value","
+string | dollarQuotedString | numeric | dateAndTime | boolean | bytes
+    | interval | array | null
+","
+A literal value of any data type, or null.
+","
+10
+"
+
+"Literals","Array","
+ARRAY '[' [ expression, [,...] ] ']'
+","
+An array of values.
+","
+ARRAY[1, 2]
+ARRAY[1]
+ARRAY[]
+"
+
+"Literals","Boolean","
+TRUE | FALSE
+","
+A boolean value.
+","
+TRUE
+"
+
+"Literals","Bytes","
+X'hex'
+","
+A binary value. The hex value is not case sensitive.
+","
+X'01FF'
+"
+
+"Literals","Date","
+DATE 'yyyy-MM-dd'
+","
+A date literal. The limitations are the same as for the Java data type
+""java.sql.Date"", but for compatibility with other databases the suggested minimum
+and maximum years are 0001 and 9999.
+","
+DATE '2004-12-31'
+"
+
+"Literals","Date and time","
+date | time | timestamp | timestampWithTimeZone
+","
+A literal value of any date-time data type.
+","
+TIMESTAMP '1999-01-31 10:00:00'
+"
+
+"Literals","Decimal","
+[ + | - ] { { number [ . number ] } | { . number } }
+[ E [ + | - ] expNumber [...] ] ]
+","
+A decimal number with fixed precision and scale.
+Internally, ""java.lang.BigDecimal"" is used.
+To ensure the floating point representation is used, use CAST(X AS DOUBLE).
+There are some special decimal values: to represent positive infinity, use ""POWER(0, -1)"";
+for negative infinity, use ""(-POWER(0, -1))""; for -0.0, use ""(-CAST(0 AS DOUBLE))"";
+for ""NaN"" (not a number), use ""SQRT(-1)"".
+","
+SELECT -1600.05
+SELECT CAST(0 AS DOUBLE)
+SELECT -1.4e-10
+"
+
+"Literals","Dollar Quoted String","
+$$anythingExceptTwoDollarSigns$$
+","
+A string starts and ends with two dollar signs. Two dollar signs are not allowed
+within the text. A whitespace is required before the first set of dollar signs.
+No escaping is required within the text.
+","
+$$John's car$$
+"
+
+"Literals","Hex Number","
+[ + | - ] 0x hex
+","
+A number written in hexadecimal notation.
+","
+0xff
+"
+
+"Literals","Int","
+[ + | - ] number
+","
+The maximum integer number is 2147483647, the minimum is -2147483648.
+","
+10
+"
+
+"Literals","Long","
+[ + | - ] number
+","
+Long numbers are between -9223372036854775808 and 9223372036854775807.
+","
+100000
+"
+
+"Literals","Null","
+NULL
+","
+NULL is a value without data type and means 'unknown value'.
+","
+NULL
+"
+
+"Literals","Number","
+digit [...]
+","
+The maximum length of the number depends on the data type used.
+","
+100
+"
+
+"Literals","Numeric","
+decimal | int | long | hexNumber
+","
+The data type of a numeric value is always the lowest possible for the given value.
+If the number contains a dot this is decimal; otherwise it is int, long, or decimal (depending on the value).
+","
+SELECT -1600.05
+SELECT CAST(0 AS DOUBLE)
+SELECT -1.4e-10
+"
+
+"Literals","String","
+'anythingExceptSingleQuote'
+","
+A string starts and ends with a single quote. Two single quotes can be used to
+create a single quote inside a string.
+","
+'John''s car'
+"
+
+"Literals","Time","
+TIME [ WITHOUT TIME ZONE ] 'hh:mm:ss[.nnnnnnnnn]'
+","
+A time literal. A value is between 0:00:00 and 23:59:59.999999999
+and has nanosecond resolution.
+","
+TIME '23:59:59'
+"
+
+"Literals","Timestamp","
+TIMESTAMP [ WITHOUT TIME ZONE ] 'yyyy-MM-dd hh:mm:ss[.nnnnnnnnn]'
+","
+A timestamp literal. The limitations are the same as for the Java data type
+""java.sql.Timestamp"", but for compatibility with other databases the suggested
+minimum and maximum years are 0001 and 9999.
+","
+TIMESTAMP '2005-12-31 23:59:59'
+"
+
+"Literals","Timestamp with time zone","
+TIMESTAMP WITH TIME ZONE 'yyyy-MM-dd hh:mm:ss[.nnnnnnnnn]
+[Z | { - | + } timeZoneOffsetString | timeZoneNameString ]'
+","
+A timestamp with time zone literal.
+If name of time zone is specified it will be converted to time zone offset.
+","
+TIMESTAMP WITH TIME ZONE '2005-12-31 23:59:59Z'
+TIMESTAMP WITH TIME ZONE '2005-12-31 23:59:59-10:00'
+TIMESTAMP WITH TIME ZONE '2005-12-31 23:59:59.123+05'
+TIMESTAMP WITH TIME ZONE '2005-12-31 23:59:59.123456789 Europe/London'
+"
+
+"Literals","Interval","
+intervalYear | intervalMonth | intervalDay | intervalHour | intervalMinute
+    | intervalSecond | intervalYearToMonth | intervalDayToHour
+    | intervalDayToMinute | intervalDayToSecond | intervalHourToMinute
+    | intervalHourToSecond | intervalMinuteToSecond
+","
+An interval literal.
+","
+INTERVAL '1-2' YEAR TO MONTH
+"
+
+"Literals","INTERVAL YEAR","
+INTERVAL [-|+] '[-|+]yearInt' YEAR
+","
+An INTERVAL YEAR literal.
+","
+INTERVAL '10' YEAR
+"
+
+"Literals","INTERVAL MONTH","
+INTERVAL [-|+] '[-|+]monthInt' MONTH
+","
+An INTERVAL MONTH literal.
+","
+INTERVAL '10' MONTH
+"
+
+"Literals","INTERVAL DAY","
+INTERVAL [-|+] '[-|+]dayInt' DAY
+","
+An INTERVAL DAY literal.
+","
+INTERVAL '10' DAY
+"
+
+"Literals","INTERVAL HOUR","
+INTERVAL [-|+] '[-|+]hourInt' HOUR
+","
+An INTERVAL HOUR literal.
+","
+INTERVAL '10' HOUR
+"
+
+"Literals","INTERVAL MINUTE","
+INTERVAL [-|+] '[-|+]minuteInt' MINUTE
+","
+An INTERVAL MINUTE literal.
+","
+INTERVAL '10' MINUTE
+"
+
+"Literals","INTERVAL SECOND","
+INTERVAL [-|+] '[-|+]secondInt[.nnnnnnnnn]' SECOND
+","
+An INTERVAL SECOND literal.
+","
+INTERVAL '10.123' SECOND
+"
+
+"Literals","INTERVAL YEAR TO MONTH","
+INTERVAL [-|+] '[-|+]yearInt-monthInt' YEAR TO MONTH
+","
+An INTERVAL YEAR TO MONTH literal.
+","
+INTERVAL '1-6' YEAR TO MONTH
+"
+
+"Literals","INTERVAL DAY TO HOUR","
+INTERVAL [-|+] '[-|+]dayInt hoursInt' DAY TO HOUR
+","
+An INTERVAL DAY TO HOUR literal.
+","
+INTERVAL '10 11' DAY TO HOUR
+"
+
+"Literals","INTERVAL DAY TO MINUTE","
+INTERVAL [-|+] '[-|+]dayInt hh:mm' DAY TO MINUTE
+","
+An INTERVAL DAY TO MINUTE literal.
+","
+INTERVAL '10 11:12' DAY TO MINUTE
+"
+
+"Literals","INTERVAL DAY TO SECOND","
+INTERVAL [-|+] '[-|+]dayInt hh:mm:ss[.nnnnnnnnn]' DAY TO SECOND
+","
+An INTERVAL DAY TO SECOND literal.
+","
+INTERVAL '10 11:12:13.123' DAY TO SECOND
+"
+
+"Literals","INTERVAL HOUR TO MINUTE","
+INTERVAL [-|+] '[-|+]hh:mm' HOUR TO MINUTE
+","
+An INTERVAL HOUR TO MINUTE literal.
+","
+INTERVAL '10:11' HOUR TO MINUTE
+"
+
+"Literals","INTERVAL HOUR TO SECOND","
+INTERVAL [-|+] '[-|+]hh:mm:ss[.nnnnnnnnn]' HOUR TO SECOND
+","
+An INTERVAL HOUR TO SECOND literal.
+","
+INTERVAL '10:11:12.123' HOUR TO SECOND
+"
+
+"Literals","INTERVAL MINUTE TO SECOND","
+INTERVAL [-|+] '[-|+]mm:ss[.nnnnnnnnn]' MINUTE TO SECOND
+","
+An INTERVAL MINUTE TO SECOND literal.
+","
+INTERVAL '11:12.123' MINUTE TO SECOND
+"
+
+"Datetime fields","Datetime field","
+yearField | monthField | dayOfMonthField
+    | hourField | minuteField | secondField
+    | millisecondField | microsecondField | nanosecondField
+    | timezoneHourField | timezoneMinuteField
+    | dayOfWeekField | isoWeekYearField | isoDayOfWeekField
+    | weekOfYearField | isoWeekOfYearField
+    | quarterField | dayOfYearField | epochField
+","
+Fields for EXTRACT, DATEADD, and DATEDIFF functions.
+","
+YEAR
+"
+
+"Datetime fields","Year field","
+YEAR | YYYY | YY | SQL_TSI_YEAR
+","
+Year.
+","
+YEAR
+"
+
+"Datetime fields","Month field","
+MONTH | MM | M | SQL_TSI_MONTH
+","
+Month (1-12).
+","
+MONTH
+"
+
+"Datetime fields","Day of month field","
+DAY | DD | D | SQL_TSI_DAY
+","
+Day of month (1-31).
+","
+DAY
+"
+
+"Datetime fields","Hour field","
+HOUR | HH | SQL_TSI_HOUR
+","
+Hour (0-23).
+","
+HOUR
+"
+
+"Datetime fields","Minute field","
+MINUTE | MI | N | SQL_TSI_MINUTE
+","
+Minute (0-59).
+","
+MINUTE
+"
+
+"Datetime fields","Second field","
+SECOND | SS | S | SQL_TSI_SECOND
+","
+Second (0-59).
+","
+SECOND
+"
+
+"Datetime fields","Millisecond field","
+MILLISECOND | MS
+","
+Millisecond (0-999).
+","
+MILLISECOND
+"
+
+"Datetime fields","Microsecond field","
+MICROSECOND | MCS
+","
+Microsecond (0-999999).
+","
+MICROSECOND
+"
+
+"Datetime fields","Nanosecond field","
+NANOSECOND | NS
+","
+Nanosecond (0-999999999).
+","
+NANOSECOND
+"
+
+"Datetime fields","Timezone hour field","
+TIMEZONE_HOUR
+","
+Timezone hour (from -18 to +18).
+","
+TIMEZONE_HOUR
+"
+
+"Datetime fields","Timezone minute field","
+TIMEZONE_MINUTE
+","
+Timezone minute (from -59 to +59).
+","
+TIMEZONE_MINUTE
+"
+
+"Datetime fields","Day of week field","
+DAY_OF_WEEK | DAYOFWEEK | DOW
+","
+Day of week (1-7). Sunday is 1.
+","
+DAY_OF_WEEK
+"
+
+"Datetime fields","ISO week year field","
+ISO_YEAR | ISOYEAR
+","
+Returns the ISO week year from a date/time value.
+","
+ISO_YEAR
+"
+
+"Datetime fields","ISO day of week field","
+ISO_DAY_OF_WEEK | ISODOW
+","
+ISO day of week (1-7). Monday is 1.
+","
+ISO_DAY_OF_WEEK
+"
+
+"Datetime fields","Week of year field","
+WEEK | WW | W | SQL_TSI_WEEK
+","
+Week of year (1-53).
+EXTRACT function uses local rules to get number of week in year.
+DATEDIFF function uses Sunday as a first day of week.
+","
+WEEK
+"
+
+"Datetime fields","ISO week of year field","
+ISO_WEEK
+","
+ISO week of year (1-53).
+ISO definition is used when first week of year should have at least four days
+and week is started with Monday.
+","
+ISO_WEEK
+"
+
+"Datetime fields","Quarter field","
+QUARTER
+","
+Quarter (1-4).
+","
+QUARTER
+"
+
+"Datetime fields","Day of year field","
+DAYOFYEAR | DAY_OF_YEAR | DOY | DY
+","
+Day of year (1-366).
+","
+DAYOFYEAR
+"
+
+"Datetime fields","Epoch field","
+EPOCH
+","
+For TIMESTAMP values number of seconds since 1970-01-01 00:00:00 in local time zone.
+For TIMESTAMP WITH TIME ZONE values number of seconds since 1970-01-01 00:00:00 in UTC time zone.
+For DATE values number of seconds since 1970-01-01.
+For TIME values number of seconds since midnight.
+","
+EPOCH
+"
+
+"Other Grammar","Alias","
+name
+","
+An alias is a name that is only valid in the context of the statement.
+","
+A
+"
+
+"Other Grammar","And Condition","
+condition [ { AND condition } [...] ]
+","
+Value or condition.
+","
+ID=1 AND NAME='Hi'
+"
+
+"Other Grammar","Case","
+CASE expression { WHEN expression THEN expression } [...]
+[ ELSE expression ] END
+","
+Returns the first expression where the value is equal to the test expression. If
+no else part is specified, return NULL.
+","
+CASE CNT WHEN 0 THEN 'No' WHEN 1 THEN 'One' ELSE 'Some' END
+"
+
+"Other Grammar","Case When","
+CASE { WHEN expression THEN expression} [...]
+[ ELSE expression ] END
+","
+Returns the first expression where the condition is true. If no else part is
+specified, return NULL.
+","
+CASE WHEN CNT<10 THEN 'Low' ELSE 'High' END
+"
+
+"Other Grammar","Cipher","
+AES
+","
+Only the algorithm AES (""AES-128"") is supported currently.
+","
+AES
+"
+
+"Other Grammar","Column Definition","
+dataType [ VISIBLE | INVISIBLE ]
+[ { DEFAULT expression
+    | AS computedColumnExpression
+    | GENERATED {ALWAYS | BY DEFAULT} AS IDENTITY [(sequenceOptions)]} ]
+[ ON UPDATE expression ] [ [ NOT ] NULL ]
+[ { AUTO_INCREMENT | IDENTITY } [ ( startInt [, incrementInt ] ) ] ]
+[ SELECTIVITY selectivity ] [ COMMENT expression ]
+[ PRIMARY KEY [ HASH ] | UNIQUE ] [ CHECK condition ]
+","
+Default expressions are used if no explicit value was used when adding a row.
+The computed column expression is evaluated and assigned whenever the row changes.
+On update column expression is used if row is updated,
+at least one column have a new value that is different from its previous value
+and value for this column is not set explicitly in update statement.
+
+Identity, auto-increment, or generated as identity columns are columns with a sequence as the default.
+The column declared as the identity columns with IDENTITY data type or with IDENTITY () clause
+is implicitly the primary key column of this table.
+AUTO_INCREMENT and GENERATED clauses do not create the primary key constraint.
+GENERATED ALWAYS is accepted by treated in the same way as GENERATED BY DEFAULT.
+
+The invisible column will not be displayed as a result of SELECT * query.
+Otherwise, it works as normal column.
+
+The options PRIMARY KEY, UNIQUE, and CHECK are not supported for ALTER statements.
+
+Check constraints can reference columns of the table,
+and they can reference objects that exist while the statement is executed.
+Conditions are only checked when a row is added or modified
+in the table where the constraint exists.
+
+","
+CREATE TABLE TEST(ID INT PRIMARY KEY, NAME VARCHAR(255) DEFAULT '');
+CREATE TABLE TEST(ID BIGINT IDENTITY);
+CREATE TABLE TEST(QUANTITY INT, PRICE DECIMAL, AMOUNT DECIMAL AS QUANTITY*PRICE);
+"
+
+"Other Grammar","Comments","
+-- anythingUntilEndOfLine | // anythingUntilEndOfLine | /* anythingUntilEndComment */
+","
+Comments can be used anywhere in a command and are ignored by the database. Line
+comments end with a newline. Block comments cannot be nested, but can be
+multiple lines long.
+","
+// This is a comment
+"
+
+"Other Grammar","Compare","
+<> | <= | >= | = | < | > | != | &&
+","
+Comparison operator. The operator != is the same as <>.
+The operator ""&&"" means overlapping; it can only be used with geometry types.
+","
+<>
+"
+
+"Other Grammar","Condition","
+operand [ conditionRightHandSide ] | NOT condition | EXISTS ( select )
+","
+Boolean value or condition.
+","
+ID<>2
+"
+
+"Other Grammar","Condition Right Hand Side","
+compare { { { ALL | ANY | SOME } ( select ) } | operand }
+    | IS [ NOT ] NULL
+    | IS [ NOT ] [ DISTINCT FROM ] operand
+    | BETWEEN operand AND operand
+    | IN ( { select | expression [,...] } )
+    | [ NOT ] [ LIKE | ILIKE ] operand [ ESCAPE string ]
+    | [ NOT ] REGEXP operand
+","
+The right hand side of a condition.
+
+Quantified comparison predicate ALL returns TRUE if specified comparison operation between
+left size of condition and each row from a subquery returns TRUE, including case when there are no rows.
+ALL predicate returns FALSE if at least one such comparison returns FALSE.
+Otherwise it returns NULL.
+
+Quantified comparison predicates ANY and SOME return TRUE if specified comparison operation between
+left size of condition and at least one row from a subquery returns TRUE.
+ANY and SOME predicates return FALSE if all such comparisons return FALSE.
+Otherwise it returns NULL.
+Note that these predicates have priority over ANY and SOME aggregate functions with subquery on the right side.
+Use parentheses around aggregate function.
+
+The conditions ""IS [ NOT ]"" and ""IS [ NOT ] DISTINCT FROM"" are null-safe, meaning
+NULL is considered the same as NULL, and the condition never evaluates to NULL.
+
+When comparing with LIKE, the wildcards characters are ""_"" (any one character)
+and ""%"" (any characters). The database uses an index when comparing with LIKE
+except if the operand starts with a wildcard. To search for the characters ""%"" and
+""_"", the characters need to be escaped. The default escape character is "" \ "" (backslash).
+To select no escape character, use ""ESCAPE ''"" (empty string).
+At most one escape character is allowed.
+Each character that follows the escape character in the pattern needs to match exactly.
+Patterns that end with an escape character are invalid and the expression returns NULL.
+
+ILIKE does a case-insensitive compare.
+
+When comparing with REGEXP, regular expression matching is used.
+See Java ""Matcher.find"" for details.
+","
+VALUE > 10
+A IS NOT DISTINCT FROM B
+LIKE 'Jo%'
+"
+
+"Other Grammar","Constraint","
+[ constraintNameDefinition ]
+{ CHECK expression
+    | UNIQUE ( columnName [,...] )
+    | referentialConstraint
+    | PRIMARY KEY [ HASH ] ( columnName [,...] ) }
+","
+Defines a constraint.
+The check condition must evaluate to TRUE, FALSE or NULL.
+TRUE and NULL mean the operation is to be permitted,
+and FALSE means the operation is to be rejected.
+To prevent NULL in a column, use NOT NULL instead of a check constraint.
+","
+PRIMARY KEY(ID, NAME)
+"
+
+"Other Grammar","Constraint Name Definition","
+CONSTRAINT [ IF NOT EXISTS ] newConstraintName
+","
+Defines a constraint name.
+","
+CONSTRAINT CONST_ID
+"
+
+"Other Grammar","Csv Options","
+charsetString [, fieldSepString [, fieldDelimString [, escString [, nullString]]]]]
+    | optionString
+","
+Optional parameters for CSVREAD and CSVWRITE.
+Instead of setting the options one by one, all options can be
+combined into a space separated key-value pairs, as follows:
+""STRINGDECODE('charset=UTF-8 escape=\"" fieldDelimiter=\"" fieldSeparator=, ' ||""
+""'lineComment=# lineSeparator=\n null= rowSeparator=')"".
+The following options are supported:
+
+""caseSensitiveColumnNames"" (true or false; disabled by default),
+
+""charset"" (for example 'UTF-8'),
+
+""escape"" (the character that escapes the field delimiter),
+
+""fieldDelimiter"" (a double quote by default),
+
+""fieldSeparator"" (a comma by default),
+
+""lineComment"" (disabled by default),
+
+""lineSeparator"" (the line separator used for writing; ignored for reading),
+
+""null"", Support reading existing CSV files that contain explicit ""null"" delimiters.
+Note that an empty, unquoted values are also treated as null.
+
+""preserveWhitespace"" (true or false; disabled by default),
+
+""writeColumnHeader"" (true or false; enabled by default).
+
+For a newline or other special character, use STRINGDECODE as in the example above.
+A space needs to be escaped with a backslash (""'\ '""), and
+a backslash needs to be escaped with another backslash (""'\\'"").
+All other characters are not to be escaped, that means
+newline and tab characters are written as such.
+","
+CALL CSVWRITE('test2.csv', 'SELECT * FROM TEST', 'charset=UTF-8 fieldSeparator=|');
+"
+
+"Other Grammar","Data Type","
+intType | booleanType | tinyintType | smallintType | bigintType | identityType
+    | decimalType | doubleType | realType | dateType | timeType | timestampType
+    | timestampWithTimeZoneType | binaryType | otherType | varcharType
+    | varcharIgnorecaseType | charType | blobType | clobType | uuidType
+    | arrayType | enumType | intervalType
+","
+A data type definition.
+","
+INT
+"
+
+"Other Grammar","Digit","
+0-9
+","
+A digit.
+","
+0
+"
+
+"Other Grammar","Expression","
+andCondition [ { OR andCondition } [...] ]
+","
+Value or condition.
+","
+ID=1 OR NAME='Hi'
+"
+
+"Other Grammar","Factor","
+term [ { { * | / | % } term } [...] ]
+","
+A value or a numeric factor.
+","
+ID * 10
+"
+
+"Other Grammar","Hex","
+{ { digit | a-f | A-F } { digit | a-f | A-F } } [...]
+","
+The hexadecimal representation of a number or of bytes. Two characters are one
+byte.
+","
+cafe
+"
+
+"Other Grammar","Index Column","
+columnName [ ASC | DESC ] [ NULLS { FIRST | LAST } ]
+","
+Indexes this column in ascending or descending order. Usually it is not required
+to specify the order; however doing so will speed up large queries that order
+the column in the same way.
+","
+NAME
+"
+
+"Other Grammar","Insert columns and source","
+{ [ ( columnName [,...] ) ]
+    { insertValues | [ DIRECT ] [ SORTED ] select | DEFAULT VALUES } }
+    | { SET { columnName = { DEFAULT | expression } } [,...] }
+","
+Names of columns and their values for INSERT statement.
+","
+(ID, NAME) VALUES (1, 'Test')
+"
+
+"Other Grammar","Insert values","
+VALUES { DEFAULT|expression | [ROW] ({DEFAULT|expression} [,...]) }, [,...]
+","
+Values for INSERT statement.
+","
+VALUES (1, 'Test')
+"
+
+"Other Grammar","Merge when clause","
+mergeWhenMatchedClause|mergeWhenNotMatchedClause
+","
+WHEN MATCHED or WHEN NOT MATCHED clause for MERGE USING command.
+","
+WHEN MATCHED THEN DELETE
+"
+
+"Other Grammar","Merge when matched clause","
+WHEN MATCHED [ AND expression ] THEN
+UPDATE SET setClauseList
+    | DELETE
+    | {UPDATE SET setClauseList [ WHERE expression ] DELETE [ WHERE expression ]}
+","
+WHEN MATCHED clause for MERGE USING command.
+
+If both UPDATE and DELETE are specified, DELETE can delete only rows that were updated,
+WHERE condition in DELETE clause can be used to specify which updated rows should be deleted.
+This condition checks values in updated row.
+","
+WHEN MATCHED THEN UPDATE SET VALUE = S.VALUE
+WHEN MATCHED THEN DELETE
+"
+
+"Other Grammar","Merge when not matched clause","
+WHEN NOT MATCHED [ AND expression ] THEN INSERT insertColumnsAndSource
+","
+WHEN NOT MATCHED clause for MERGE USING command.
+","
+WHEN NOT MATCHED THEN INSERT (ID, NAME) VALUES (S.ID, S.NAME)
+"
+
+"Other Grammar","Name","
+{ { A-Z|_ } [ { A-Z|_|0-9 } [...] ] } | quotedName
+","
+Names are not case sensitive. There is no maximum name length.
+","
+TEST
+"
+
+"Other Grammar","Operand","
+summand [ { || summand } [...] ]
+","
+A value or a concatenation of values.
+In the default mode, the result is NULL if either parameter is NULL.
+","
+'Hi' || ' Eva'
+"
+
+"Other Grammar","Order","
+{ int | expression } [ ASC | DESC ] [ NULLS { FIRST | LAST } ]
+","
+Sorts the result by the given column number, or by an expression. If the
+expression is a single parameter, then the value is interpreted as a column
+number. Negative column numbers reverse the sort order.
+","
+NAME DESC NULLS LAST
+"
+
+"Other Grammar","Quoted Name","
+""anythingExceptDoubleQuote""
+","
+Quoted names are case sensitive, and can contain spaces. There is no maximum
+name length. Two double quotes can be used to create a single double quote
+inside an identifier.
+","
+""FirstName""
+"
+
+"Other Grammar","Referential Constraint","
+FOREIGN KEY ( columnName [,...] )
+REFERENCES [ refTableName ] [ ( refColumnName [,...] ) ]
+[ ON DELETE referentialAction ] [ ON UPDATE referentialAction ]
+","
+Defines a referential constraint.
+If the table name is not specified, then the same table is referenced.
+RESTRICT is the default action.
+If the referenced columns are not specified, then the primary key columns are used.
+The required indexes are automatically created if required.
+Some tables may not be referenced, such as metadata tables.
+","
+FOREIGN KEY(ID) REFERENCES TEST(ID)
+"
+
+"Other Grammar","Referential Action","
+CASCADE | RESTRICT | NO ACTION | SET { DEFAULT | NULL }
+","
+The action CASCADE will cause conflicting rows in the referencing (child) table to be deleted or updated.
+RESTRICT is the default action.
+As this database does not support deferred checking, RESTRICT and NO ACTION will both throw an exception if the constraint is violated.
+The action SET DEFAULT will set the column in the referencing (child) table to the default value, while SET NULL will set it to NULL.
+","
+FOREIGN KEY(ID) REFERENCES TEST(ID) ON UPDATE CASCADE
+"
+
+"Other Grammar","Script Compression Encryption","
+[ COMPRESSION { DEFLATE | LZF | ZIP | GZIP } ]
+[ CIPHER cipher PASSWORD string ]
+","
+The compression and encryption algorithm to use for script files.
+When using encryption, only DEFLATE and LZF are supported.
+LZF is faster but uses more space.
+","
+COMPRESSION LZF
+"
+
+"Other Grammar","Row value expression","
+ROW (expression, [,...])
+    | ( [ expression, expression [,...] ] )
+    | expression
+","
+A row value expression.
+","
+ROW (1)
+(1, 2)
+1
+"
+
+"Other Grammar","Select Expression","
+wildcardExpression | expression [ [ AS ] columnAlias ]
+","
+An expression in a SELECT statement.
+","
+ID AS VALUE
+"
+
+"Other Grammar","Sequence options","
+[ START WITH long ]
+[ INCREMENT BY long ]
+[ MINVALUE long | NOMINVALUE | NO MINVALUE ]
+[ MAXVALUE long | NOMAXVALUE | NO MAXVALUE ]
+[ CYCLE long | NOCYCLE | NO CYCLE ]
+[ CACHE long | NOCACHE | NO CACHE ]
+","
+Options of a sequence.
+","
+START WITH 1
+"
+
+"Other Grammar","Set clause list","
+{ { columnName = { DEFAULT | expression } } [,...] }
+    | { ( columnName [,...] ) = {rowValueExpression|(select)} }
+","
+List of SET clauses.
+","
+NAME = 'Test', VALUE = 2
+(A, B) = (1, 2)
+(A, B) = (SELECT X, Y FROM OTHER T2 WHERE T1.ID = T2.ID)
+"
+
+"Other Grammar","Summand","
+factor [ { { + | - } factor } [...] ]
+","
+A value or a numeric sum.
+
+Please note the text concatenation operator is ""||"".
+","
+ID + 20
+"
+
+"Other Grammar","Table Expression","
+{ [ schemaName. ] tableName | ( select ) | valuesExpression }
+[ [ AS ] newTableAlias [ ( columnName [,...] ) ] ]
+[ USE INDEX ([ indexName [,...] ]) ]
+[ { { LEFT | RIGHT } [ OUTER ] | [ INNER ] | CROSS | NATURAL }
+    JOIN tableExpression [ ON expression ] ]
+","
+Joins a table. The join expression is not supported for cross and natural joins.
+A natural join is an inner join, where the condition is automatically on the
+columns with the same name.
+","
+TEST AS T LEFT JOIN TEST AS T1 ON T.ID = T1.ID
+"
+
+"Other Grammar","Within group specification","
+WITHIN GROUP (ORDER BY {expression [ASC|DESC]} [,...])
+","
+Group specification for ordered set functions.
+","
+WITHIN GROUP (ORDER BY ID DESC)
+"
+
+"Other Grammar","Wildcard expression","
+{* | tableAlias.*} [EXCEPT ([tableAlias.]columnName, [,...])]
+","
+A wildcard expression in a SELECT statement.
+A wildcard expression represents all visible columns. Some columns can be excluded with optional EXCEPT clause.
+","
+*
+* EXCEPT (DATA)
+"
+
+"Other Grammar","Window name or specification","
+windowName | windowSpecification
+","
+A window name or inline specification for a window function or aggregate.
+
+Window functions in H2 may require a lot of memory for large queries.
+","
+W1
+(ORDER BY ID)
+"
+
+"Other Grammar","Window specification","
+([existingWindowName]
+[PARTITION BY expression [,...]] [ORDER BY order [,...]]
+[windowFrame])
+","
+A window specification for a window, window function or aggregate.
+
+If name of an existing window is specified its clauses are used by default.
+
+Optional window partition clause separates rows into independent partitions.
+Each partition is processed separately.
+If this clause is not present there is one implicit partition with all rows.
+
+Optional window order clause specifies order of rows in the partition.
+If some rows have the same order position they are considered as a group of rows in optional window frame clause.
+
+Optional window frame clause specifies which rows are processed by a window function,
+see its documentation for a more details.
+","
+()
+(W1 ORDER BY ID)
+(PARTITION BY CATEGORY)
+(PARTITION BY CATEGORY ORDER BY NAME, ID)
+(ORDER BY Y RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE TIES)
+"
+
+"Other Grammar","Window frame","
+ROWS|RANGE|GROUP
+{windowFramePreceding|BETWEEN windowFrameBound AND windowFrameBound}
+[EXCLUDE {CURRENT ROW|GROUP|TIES|NO OTHERS}]
+","
+A window frame clause.
+May be specified only for aggregates and FIRST_VALUE(), LAST_VALUE(), and NTH_VALUE() window functions.
+
+If this clause is not specified for an aggregate or window function that supports this clause
+the default window frame depends on window order clause.
+If window order clause is also not specified
+the default window frame contains all the rows in the partition.
+If window order clause is specified
+the default window frame contains all preceding rows and all rows from the current group.
+
+Window frame unit determines how rows or groups of rows are selected and counted.
+If ROWS is specified rows are not grouped in any way and relative numbers of rows are used in bounds.
+If RANGE is specified rows are grouped according window order clause,
+preceding and following values mean the difference between value in the current row and in the target rows,
+and CURRENT ROW in bound specification means current group of rows.
+If GROUPS is specified rows are grouped according window order clause,
+preceding and following values means relative number of groups of rows,
+and CURRENT ROW in bound specification means current group of rows.
+
+If only window frame preceding clause is specified it is treated as
+BETWEEN windowFramePreceding AND CURRENT ROW.
+
+Optional window frame exclusion clause specifies rows that should be excluded from the frame.
+EXCLUDE CURRENT ROW excludes only the current row regardless the window frame unit.
+EXCLUDE GROUP excludes the whole current group of rows, including the current row.
+EXCLUDE TIES excludes the current group of rows, but not the current row.
+EXCLUDE NO OTHERS is default and it does not exclude anything.
+","
+ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE TIES
+"
+
+"Other Grammar","Window frame preceding","
+UNBOUNDED PRECEDING|value PRECEDING|CURRENT ROW
+","
+A window frame preceding clause.
+If value is specified it should not be negative.
+","
+UNBOUNDED PRECEDING
+1 PRECEDING
+CURRENT ROW
+"
+
+"Other Grammar","Window frame bound","
+UNBOUNDED PRECEDING|value PRECEDING|CURRENT ROW
+    |value FOLLOWING|UNBOUNDED FOLLOWING
+","
+A window frame bound clause.
+If value is specified it should not be negative.
+","
+UNBOUNDED PRECEDING
+UNBOUNDED FOLLOWING
+1 FOLLOWING
+CURRENT ROW
+"
+
+"Other Grammar","Term","
+value
+    | column
+    | ?[ int ]
+    | NEXT VALUE FOR sequenceName
+    | function
+    | { - | + } term
+    | ( expression )
+    | select
+    | case
+    | caseWhen
+    | userDefinedFunctionName
+","
+A value. Parameters can be indexed, for example ""?1"" meaning the first parameter.
+","
+'Hello'
+"
+
+"Other Grammar","Column","
+[[schemaName.]tableAlias.] { columnName | _ROWID_ }
+","
+A column name with optional table alias and schema.
+_ROWID_ can be used to access unique row identifier.
+","
+ID
+"
+
+"Data Types","INT Type","
+INT | INTEGER | MEDIUMINT | INT4 | SIGNED
+","
+Possible values: -2147483648 to 2147483647.
+
+Mapped to ""java.lang.Integer"".
+","
+INT
+"
+
+"Data Types","BOOLEAN Type","
+BOOLEAN | BIT | BOOL
+","
+Possible values: TRUE and FALSE.
+
+Mapped to ""java.lang.Boolean"".
+","
+BOOLEAN
+"
+
+"Data Types","TINYINT Type","
+TINYINT
+","
+Possible values are: -128 to 127.
+
+Mapped to ""java.lang.Byte"".
+","
+TINYINT
+"
+
+"Data Types","SMALLINT Type","
+SMALLINT | INT2 | YEAR
+","
+Possible values: -32768 to 32767.
+
+Mapped to ""java.lang.Short"".
+","
+SMALLINT
+"
+
+"Data Types","BIGINT Type","
+BIGINT | INT8
+","
+Possible values: -9223372036854775808 to 9223372036854775807.
+
+Mapped to ""java.lang.Long"".
+","
+BIGINT
+"
+
+"Data Types","IDENTITY Type","
+IDENTITY
+","
+Auto-Increment value. Possible values: -9223372036854775808 to
+9223372036854775807. Used values are never re-used, even when the transaction is
+rolled back.
+
+Mapped to ""java.lang.Long"".
+","
+IDENTITY
+"
+
+"Data Types","DECIMAL Type","
+{ DECIMAL | NUMBER | DEC | NUMERIC } ( precisionInt [ , scaleInt ] )
+","
+Data type with fixed precision and scale. This data type is recommended for
+storing currency values.
+
+Mapped to ""java.math.BigDecimal"".
+","
+DECIMAL(20, 2)
+"
+
+"Data Types","DOUBLE Type","
+{ DOUBLE [ PRECISION ] | FLOAT [ ( precisionInt ) ] | FLOAT8 }
+","
+A floating point number. Should not be used to represent currency values, because
+of rounding problems.
+If precision value is specified for FLOAT type name, it should be from 25 to 53.
+
+Mapped to ""java.lang.Double"".
+","
+DOUBLE
+"
+
+"Data Types","REAL Type","
+{ REAL | FLOAT ( precisionInt ) | FLOAT4 }
+","
+A single precision floating point number. Should not be used to represent currency
+values, because of rounding problems.
+Precision value for FLOAT type name should be from 0 to 24.
+
+Mapped to ""java.lang.Float"".
+","
+REAL
+"
+
+"Data Types","TIME Type","
+TIME [ ( precisionInt ) ] [ WITHOUT TIME ZONE ]
+","
+The time data type. The format is hh:mm:ss[.nnnnnnnnn].
+If fractional seconds precision is specified it should be from 0 to 9, 0 is default.
+
+Mapped to ""java.sql.Time"". When converted to a ""java.sql.Date"", the date is set to ""1970-01-01"".
+""java.time.LocalTime"" is also supported on Java 8 and later versions.
+Use ""java.time.LocalTime"" or ""String"" instead of ""java.sql.Time"" when non-zero precision is needed.
+Cast from higher fractional seconds precision to lower fractional seconds precision performs round half up;
+if result of rounding is higher than maximum supported value 23:59:59.999999999 it is saturated to 23:59:59.999999999.
+","
+TIME
+TIME(9)
+"
+
+"Data Types","DATE Type","
+DATE
+","
+The date data type. The format is yyyy-MM-dd.
+
+Mapped to ""java.sql.Date"", with the time set to ""00:00:00""
+(or to the next possible time if midnight doesn't exist for the given date and timezone due to a daylight saving change).
+""java.time.LocalDate"" is also supported on Java 8 and later versions.
+","
+DATE
+"
+
+"Data Types","TIMESTAMP Type","
+{ TIMESTAMP [ ( precisionInt ) ] [ WITHOUT TIME ZONE ]
+    | DATETIME [ ( precisionInt ) ] | SMALLDATETIME }
+","
+The timestamp data type. The format is yyyy-MM-dd hh:mm:ss[.nnnnnnnnn].
+Stored internally as a BCD-encoded date, and nanoseconds since midnight.
+If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
+Fractional seconds precision of SMALLDATETIME is always 0 and cannot be specified.
+
+Mapped to ""java.sql.Timestamp"" (""java.util.Date"" may be used too).
+""java.time.LocalDateTime"" is also supported on Java 8 and later versions.
+Cast from higher fractional seconds precision to lower fractional seconds precision performs round half up.
+","
+TIMESTAMP
+TIMESTAMP(9)
+"
+
+"Data Types","TIMESTAMP WITH TIME ZONE Type","
+TIMESTAMP [ ( precisionInt ) ] WITH TIME ZONE
+","
+The timestamp with time zone data type.
+Stored internally as a BCD-encoded date, nanoseconds since midnight, and time zone offset in minutes.
+If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
+
+Mapped to ""org.h2.api.TimestampWithTimeZone"".
+""java.time.OffsetDateTime"" and ""java.time.Instant"" are also supported on Java 8 and later versions.
+
+Values of this data type are compared by UTC values. It means that ""2010-01-01 10:00:00+01"" is greater than ""2010-01-01 11:00:00+03"".
+
+Conversion to ""TIMESTAMP"" uses time zone offset to get UTC time and converts it to local time using the system time zone.
+Conversion from ""TIMESTAMP"" does the same operations in reverse and sets time zone offset to offset of the system time zone.
+Cast from higher fractional seconds precision to lower fractional seconds precision performs round half up.
+","
+TIMESTAMP WITH TIME ZONE
+TIMESTAMP(9) WITH TIME ZONE
+"
+
+"Data Types","BINARY Type","
+{ BINARY | VARBINARY | BINARY VARYING
+    | LONGVARBINARY | RAW | BYTEA }
+[ ( precisionInt ) ]
+","
+Represents a byte array. For very long arrays, use BLOB.
+The maximum size is 2 GB, but the whole object is kept in
+memory when using this data type. The precision is a size constraint;
+only the actual data is persisted. For large text data BLOB or CLOB
+should be used.
+
+Mapped to byte[].
+","
+BINARY(1000)
+"
+
+"Data Types","OTHER Type","
+OTHER
+","
+This type allows storing serialized Java objects. Internally, a byte array is used.
+Serialization and deserialization is done on the client side only.
+Deserialization is only done when ""getObject"" is called.
+Java operations cannot be executed inside the database engine for security reasons.
+Use ""PreparedStatement.setObject"" to store values.
+
+Mapped to ""java.lang.Object"" (or any subclass).
+","
+OTHER
+"
+
+"Data Types","VARCHAR Type","
+{ VARCHAR | CHARACTER VARYING | LONGVARCHAR | VARCHAR2 | NVARCHAR
+    | NVARCHAR2 | VARCHAR_CASESENSITIVE} [ ( precisionInt ) ]
+","
+A Unicode String.
+Use two single quotes ('') to create a quote.
+
+The maximum precision is ""Integer.MAX_VALUE"".
+The precision is a size constraint; only the actual data is persisted.
+
+The whole text is loaded into memory when using this data type.
+For large text data CLOB should be used; see there for details.
+
+Mapped to ""java.lang.String"".
+","
+VARCHAR(255)
+"
+
+"Data Types","VARCHAR_IGNORECASE Type","
+VARCHAR_IGNORECASE [ ( precisionInt ) ]
+","
+Same as VARCHAR, but not case sensitive when comparing.
+Stored in mixed case.
+
+The maximum precision is ""Integer.MAX_VALUE"".
+The precision is a size constraint; only the actual data is persisted.
+
+The whole text is loaded into memory when using this data type.
+For large text data CLOB should be used; see there for details.
+
+Mapped to ""java.lang.String"".
+","
+VARCHAR_IGNORECASE
+"
+
+"Data Types","CHAR Type","
+{ CHAR | CHARACTER | NCHAR } [ ( precisionInt ) ]
+","
+A Unicode String.
+This type is supported for compatibility with other databases and older applications.
+The difference to VARCHAR is that trailing spaces are ignored and not persisted.
+
+The maximum precision is ""Integer.MAX_VALUE"".
+The precision is a size constraint; only the actual data is persisted.
+
+The whole text is kept in memory when using this data type.
+For large text data CLOB should be used; see there for details.
+
+Mapped to ""java.lang.String"".
+","
+CHAR(10)
+"
+
+"Data Types","BLOB Type","
+{ BLOB | BINARY LARGE OBJECT
+    | TINYBLOB | MEDIUMBLOB | LONGBLOB | IMAGE | OID }
+[ ( precisionInt [K|M|G|T|P]) ]
+","
+Like BINARY, but intended for very large values such as files or images. Unlike
+when using BINARY, large objects are not kept fully in-memory. Use
+""PreparedStatement.setBinaryStream"" to store values. See also CLOB and
+Advanced / Large Objects.
+
+Mapped to ""java.sql.Blob"" (""java.io.InputStream"" is also supported).
+","
+BLOB
+BLOB(10K)
+"
+
+"Data Types","CLOB Type","
+{ CLOB | CHARACTER LARGE OBJECT
+    | TINYTEXT | TEXT | MEDIUMTEXT | LONGTEXT | NTEXT | NCLOB }
+[ ( precisionInt [K|M|G|T|P] [CHARACTERS|OCTETS]) ]
+","
+CLOB is like VARCHAR, but intended for very large values. Unlike when using
+VARCHAR, large CLOB objects are not kept fully in-memory; instead, they are streamed.
+CLOB should be used for documents and texts with arbitrary size such as XML or
+HTML documents, text files, or memo fields of unlimited size. Use
+""PreparedStatement.setCharacterStream"" to store values. See also Advanced / Large Objects.
+
+VARCHAR should be used for text with relatively short average size (for example
+shorter than 200 characters). Short CLOB values are stored inline, but there is
+an overhead compared to VARCHAR.
+
+Precision, if any, should be specified in characters, CHARACTERS and OCTETS units have no effect in H2.
+
+Mapped to ""java.sql.Clob"" (""java.io.Reader"" is also supported).
+","
+CLOB
+CLOB(10K)
+"
+
+"Data Types","UUID Type","
+UUID
+","
+Universally unique identifier. This is a 128 bit value.
+To store values, use ""PreparedStatement.setBytes"",
+""setString"", or ""setObject(uuid)"" (where ""uuid"" is a ""java.util.UUID"").
+""ResultSet.getObject"" will return a ""java.util.UUID"".
+
+Please note that using an index on randomly generated data will
+result on poor performance once there are millions of rows in a table.
+The reason is that the cache behavior is very bad with randomly distributed data.
+This is a problem for any database system.
+
+For details, see the documentation of ""java.util.UUID"".
+","
+UUID
+"
+
+"Data Types","ARRAY Type","
+ARRAY
+","
+An array of values.
+Mapped to ""java.lang.Object[]"" (arrays of any non-primitive type are also supported).
+
+Use a value list (1, 2) or ""PreparedStatement.setObject(.., new Object[] {..})"" to store values,
+and ""ResultSet.getObject(..)"" or ""ResultSet.getArray(..)"" to retrieve the values.
+","
+ARRAY
+"
+
+"Data Types","ENUM Type","
+{ ENUM (string [, ... ]) }
+","
+A type with enumerated values.
+Mapped to ""java.lang.Integer"".
+
+The first provided value is mapped to 0, the
+second mapped to 1, and so on.
+
+Duplicate and empty values are not permitted.
+","
+
+ENUM('clubs', 'diamonds', 'hearts', 'spades')
+"
+"Data Types","GEOMETRY Type","
+GEOMETRY
+    [({ GEOMETRY |
+    { POINT
+    | LINESTRING
+    | POLYGON
+    | MULTIPOINT
+    | MULTILINESTRING
+    | MULTIPOLYGON
+    | GEOMETRYCOLLECTION } [Z|M|ZM]}
+    [, sridInt] )]
+","
+A spatial geometry type.
+If additional constraints are not specified this type accepts all supported types of geometries.
+A constraint with required geometry type and dimension system can be set by specifying name of the type and
+dimension system. A whitespace between them is optional.
+2D dimension system does not have a name and assumed if only a geometry type name is specified.
+POINT means 2D point, POINT Z or POINTZ means 3D point.
+GEOMETRY constraint means no restrictions on type or dimension system of geometry.
+A constraint with required spatial reference system identifier (SRID) can be set by specifying this identifier.
+
+Mapped to ""org.locationtech.jts.geom.Geometry"" if JTS library is in classpath and to ""java.lang.String"" otherwise.
+May be represented in textual format using the WKT (well-known text) or EWKT (extended well-known text) format.
+Values are stored internally in EWKB (extended well-known binary) format.
+Only a subset of EWKB and EWKT features is supported.
+Supported objects are POINT, LINESTRING, POLYGON, MULTIPOINT, MULTILINESTRING, MULTIPOLYGON, and GEOMETRYCOLLECTION.
+Supported dimension systems are 2D (XY), Z (XYZ), M (XYM), and ZM (XYZM).
+SRID (spatial reference system identifier) is supported.
+
+Use a quoted string containing a WKT/EWKT formatted string or ""PreparedStatement.setObject()"" to store values,
+and ""ResultSet.getObject(..)"" or ""ResultSet.getString(..)"" to retrieve the values.
+","
+GEOMETRY
+GEOMETRY(POINT)
+GEOMETRY(POINT Z)
+GEOMETRY(POINT Z, 4326)
+GEOMETRY(GEOMETRY, 4326)
+"
+
+"Data Types","INTERVAL Type","
+intervalYearType | intervalMonthType | intervalDayType
+    | intervalHourType| intervalMinuteType | intervalSecondType
+    | intervalYearToMonthType | intervalDayToHourType
+    | intervalDayToMinuteType | intervalDayToSecondType
+    | intervalHourToMinuteType | intervalHourToSecondType
+    | intervalMinuteToSecondType
+","
+Interval data type.
+There are two classes of intervals. Year-month intervals can store years and months.
+Day-time intervals can store days, hours, minutes, and seconds.
+Year-month intervals are comparable only with another year-month intervals.
+Day-time intervals are comparable only with another day-time intervals.
+
+Mapped to ""org.h2.api.Interval"".
+","
+INTERVAL DAY TO SECOND
+"
+
+"Interval Data Types","INTERVAL YEAR Type","
+INTERVAL YEAR [ ( precisionInt ) ]
+","
+Interval data type.
+If precision is specified it should be from 1 to 18, 2 is default.
+
+Mapped to ""org.h2.api.Interval"".
+""java.time.Period"" is also supported on Java 8 and later versions.
+","
+INTERVAL YEAR
+"
+
+"Interval Data Types","INTERVAL MONTH Type","
+INTERVAL MONTH [ ( precisionInt ) ]
+","
+Interval data type.
+If precision is specified it should be from 1 to 18, 2 is default.
+
+Mapped to ""org.h2.api.Interval"".
+""java.time.Period"" is also supported on Java 8 and later versions.
+","
+INTERVAL MONTH
+"
+
+"Interval Data Types","INTERVAL DAY Type","
+INTERVAL DAY [ ( precisionInt ) ]
+","
+Interval data type.
+If precision is specified it should be from 1 to 18, 2 is default.
+
+Mapped to ""org.h2.api.Interval"".
+""java.time.Duration"" is also supported on Java 8 and later versions.
+","
+INTERVAL DAY
+"
+
+"Interval Data Types","INTERVAL HOUR Type","
+INTERVAL HOUR [ ( precisionInt ) ]
+","
+Interval data type.
+If precision is specified it should be from 1 to 18, 2 is default.
+
+Mapped to ""org.h2.api.Interval"".
+""java.time.Duration"" is also supported on Java 8 and later versions.
+","
+INTERVAL HOUR
+"
+
+"Interval Data Types","INTERVAL MINUTE Type","
+INTERVAL MINUTE [ ( precisionInt ) ]
+","
+Interval data type.
+If precision is specified it should be from 1 to 18, 2 is default.
+
+Mapped to ""org.h2.api.Interval"".
+""java.time.Duration"" is also supported on Java 8 and later versions.
+","
+INTERVAL MINUTE
+"
+
+"Interval Data Types","INTERVAL SECOND Type","
+INTERVAL SECOND [ ( precisionInt [, fractionalPrecisionInt ] ) ]
+","
+Interval data type.
+If precision is specified it should be from 1 to 18, 2 is default.
+If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
+
+Mapped to ""org.h2.api.Interval"".
+""java.time.Duration"" is also supported on Java 8 and later versions.
+","
+INTERVAL SECOND
+"
+
+"Interval Data Types","INTERVAL YEAR TO MONTH Type","
+INTERVAL YEAR [ ( precisionInt ) ] TO MONTH
+","
+Interval data type.
+If leading field precision is specified it should be from 1 to 18, 2 is default.
+
+Mapped to ""org.h2.api.Interval"".
+""java.time.Period"" is also supported on Java 8 and later versions.
+","
+INTERVAL YEAR TO MONTH
+"
+
+"Interval Data Types","INTERVAL DAY TO HOUR Type","
+INTERVAL DAY [ ( precisionInt ) ] TO HOUR
+","
+Interval data type.
+If leading field precision is specified it should be from 1 to 18, 2 is default.
+
+Mapped to ""org.h2.api.Interval"".
+""java.time.Duration"" is also supported on Java 8 and later versions.
+","
+INTERVAL DAY TO HOUR
+"
+
+"Interval Data Types","INTERVAL DAY TO MINUTE Type","
+INTERVAL DAY [ ( precisionInt ) ] TO MINUTE
+","
+Interval data type.
+If leading field precision is specified it should be from 1 to 18, 2 is default.
+
+Mapped to ""org.h2.api.Interval"".
+""java.time.Duration"" is also supported on Java 8 and later versions.
+","
+INTERVAL DAY TO MINUTE
+"
+
+"Interval Data Types","INTERVAL DAY TO SECOND Type","
+INTERVAL DAY [ ( precisionInt ) ] TO SECOND [ ( fractionalPrecisionInt ) ]
+","
+Interval data type.
+If leading field precision is specified it should be from 1 to 18, 2 is default.
+If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
+
+Mapped to ""org.h2.api.Interval"".
+""java.time.Duration"" is also supported on Java 8 and later versions.
+","
+INTERVAL DAY TO SECOND
+"
+
+"Interval Data Types","INTERVAL HOUR TO MINUTE Type","
+INTERVAL HOUR [ ( precisionInt ) ] TO MINUTE
+","
+Interval data type.
+If leading field precision is specified it should be from 1 to 18, 2 is default.
+
+Mapped to ""org.h2.api.Interval"".
+""java.time.Duration"" is also supported on Java 8 and later versions.
+","
+INTERVAL HOUR TO MINUTE
+"
+
+"Interval Data Types","INTERVAL HOUR TO SECOND Type","
+INTERVAL HOUR [ ( precisionInt ) ] TO SECOND [ ( fractionalPrecisionInt ) ]
+","
+Interval data type.
+If leading field precision is specified it should be from 1 to 18, 2 is default.
+If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
+
+Mapped to ""org.h2.api.Interval"".
+""java.time.Duration"" is also supported on Java 8 and later versions.
+","
+INTERVAL HOUR TO SECOND
+"
+
+"Interval Data Types","INTERVAL MINUTE TO SECOND Type","
+INTERVAL MINUTE [ ( precisionInt ) ] TO SECOND [ ( fractionalPrecisionInt ) ]
+","
+Interval data type.
+If leading field precision is specified it should be from 1 to 18, 2 is default.
+If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
+
+Mapped to ""org.h2.api.Interval"".
+""java.time.Duration"" is also supported on Java 8 and later versions.
+","
+INTERVAL MINUTE TO SECOND
+"
+
+"Functions (Aggregate)","AVG","
+AVG ( [ DISTINCT|ALL ] { numeric } )
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+The average (mean) value.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+The returned value is of the same data type as the parameter.
+","
+AVG(X)
+"
+
+"Functions (Aggregate)","BIT_AND","
+BIT_AND(expression)
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+The bitwise AND of all non-null values.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+","
+BIT_AND(ID)
+"
+
+"Functions (Aggregate)","BIT_OR","
+BIT_OR(expression)
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+The bitwise OR of all non-null values.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+","
+BIT_OR(ID)
+"
+
+"Functions (Aggregate)","EVERY","
+{EVERY|BOOL_AND}(boolean)
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+Returns true if all expressions are true.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+","
+EVERY(ID>10)
+"
+
+"Functions (Aggregate)","ANY","
+{ANY|SOME|BOOL_OR}(boolean)
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+Returns true if any expression is true.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+
+Note that if ANY or SOME aggregate function is placed on the right side of comparison operation
+and argument of this function is a subquery additional parentheses around aggregate function are required,
+otherwise it will be parsed as quantified comparison predicate.
+","
+ANY(NAME LIKE 'W%')
+A = (ANY((SELECT B FROM T)))
+"
+
+"Functions (Aggregate)","COUNT","
+COUNT( { * | { [ DISTINCT|ALL ] expression } } )
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+The count of all row, or of the non-null values.
+This method returns a long.
+If no rows are selected, the result is 0.
+Aggregates are only allowed in select statements.
+","
+COUNT(*)
+"
+
+"Functions (Aggregate)","LISTAGG","
+{ LISTAGG ( [ DISTINCT|ALL ] string [, separatorString] [ ON OVERFLOW ERROR ] )
+    withinGroupSpecification }
+| { GROUP_CONCAT ( [ DISTINCT|ALL ] string
+    [ ORDER BY { expression [ ASC | DESC ] } [,...] ]
+    [ SEPARATOR separatorString ] ) }
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+Concatenates strings with a separator.
+Separator must be the same for all rows in the same group.
+The default separator is a ',' (without space).
+This method returns a string.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+","
+LISTAGG(NAME, ', ') WITHIN GROUP (ORDER BY ID)
+LISTAGG(ID, ', ') WITHIN GROUP (ORDER BY ID) OVER (ORDER BY ID)
+"
+
+"Functions (Aggregate)","ARRAY_AGG","
+ARRAY_AGG ( [ DISTINCT|ALL ] string
+[ ORDER BY { expression [ ASC | DESC ] } [,...] ] )
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+Aggregate the value into an array.
+This method returns an array.
+If no rows are selected, the result is NULL.
+If ORDER BY is not specified order of values is not determined.
+When this aggregate is used with OVER clause that contains ORDER BY subclause
+it does not enforce exact order of values.
+This aggregate needs additional own ORDER BY clause to make it deterministic.
+Aggregates are only allowed in select statements.
+","
+ARRAY_AGG(NAME ORDER BY ID)
+ARRAY_AGG(ID ORDER BY ID) OVER (ORDER BY ID)
+"
+
+"Functions (Aggregate)","MAX","
+MAX(value)
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+The highest value.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+The returned value is of the same data type as the parameter.
+","
+MAX(NAME)
+"
+
+"Functions (Aggregate)","MIN","
+MIN(value)
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+The lowest value.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+The returned value is of the same data type as the parameter.
+","
+MIN(NAME)
+"
+
+"Functions (Aggregate)","SUM","
+SUM( [ DISTINCT|ALL ] { numeric } )
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+The sum of all values.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+The data type of the returned value depends on the parameter data type like this:
+""BOOLEAN, TINYINT, SMALLINT, INT -> BIGINT, BIGINT -> DECIMAL, REAL -> DOUBLE""
+","
+SUM(X)
+"
+
+"Functions (Aggregate)","SELECTIVITY","
+SELECTIVITY(value)
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+Estimates the selectivity (0-100) of a value.
+The value is defined as (100 * distinctCount / rowCount).
+The selectivity of 0 rows is 0 (unknown).
+Up to 10000 values are kept in memory.
+Aggregates are only allowed in select statements.
+","
+SELECT SELECTIVITY(FIRSTNAME), SELECTIVITY(NAME) FROM TEST WHERE ROWNUM()<20000
+"
+
+"Functions (Aggregate)","STDDEV_POP","
+STDDEV_POP( [ DISTINCT|ALL ] numeric )
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+The population standard deviation.
+This method returns a double.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+","
+STDDEV_POP(X)
+"
+
+"Functions (Aggregate)","STDDEV_SAMP","
+STDDEV_SAMP( [ DISTINCT|ALL ] numeric )
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+The sample standard deviation.
+This method returns a double.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+","
+STDDEV(X)
+"
+
+"Functions (Aggregate)","VAR_POP","
+VAR_POP( [ DISTINCT|ALL ] numeric )
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+The population variance (square of the population standard deviation).
+This method returns a double.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+","
+VAR_POP(X)
+"
+
+"Functions (Aggregate)","VAR_SAMP","
+VAR_SAMP( [ DISTINCT|ALL ] numeric )
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+The sample variance (square of the sample standard deviation).
+This method returns a double.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+","
+VAR_SAMP(X)
+"
+
+"Functions (Aggregate)","RANK aggregate","
+RANK(value [,...])
+withinGroupSpecification
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+Returns the rank of the hypothetical row in specified collection of rows.
+The rank of a row is the number of rows that precede this row plus 1.
+If two or more rows have the same values in ORDER BY columns, these rows get the same rank from the first row with the same values.
+It means that gaps in ranks are possible.
+","
+SELECT RANK(5) WITHIN GROUP (ORDER BY V) FROM TEST;
+"
+
+"Functions (Aggregate)","DENSE_RANK aggregate","
+DENSE_RANK(value [,...])
+withinGroupSpecification
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+Returns the dense rank of the hypothetical row in specified collection of rows.
+The rank of a row is the number of groups of rows with the same values in ORDER BY columns that precede group with this row plus 1.
+If two or more rows have the same values in ORDER BY columns, these rows get the same rank.
+Gaps in ranks are not possible.
+","
+SELECT DENSE_RANK(5) WITHIN GROUP (ORDER BY V) FROM TEST;
+"
+
+"Functions (Aggregate)","PERCENT_RANK aggregate","
+PERCENT_RANK(value [,...])
+withinGroupSpecification
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+Returns the relative rank of the hypothetical row in specified collection of rows.
+The relative rank is calculated as (RANK - 1) / (NR - 1),
+where RANK is a rank of the row and NR is a total number of rows in the collection including hypothetical row.
+","
+SELECT PERCENT_RANK(5) WITHIN GROUP (ORDER BY V) FROM TEST;
+"
+
+"Functions (Aggregate)","CUME_DIST aggregate","
+CUME_DIST(value [,...])
+withinGroupSpecification
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+Returns the relative rank of the hypothetical row in specified collection of rows.
+The relative rank is calculated as NP / NR
+where NP is a number of rows that precede the current row or have the same values in ORDER BY columns
+and NR is a total number of rows in the collection including hypothetical row.
+","
+SELECT CUME_DIST(5) WITHIN GROUP (ORDER BY V) FROM TEST;
+"
+
+"Functions (Aggregate)","PERCENTILE_CONT","
+PERCENTILE_CONT(numeric) WITHIN GROUP (ORDER BY value [ASC|DESC])
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+Return percentile of values from the group with interpolation.
+Interpolation is only supported for numeric, date-time, and interval data types.
+Argument must be between 0 and 1 inclusive.
+Argument must be the same for all rows in the same group.
+If argument is NULL, the result is NULL.
+NULL values are ignored in the calculation.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+","
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY V)
+"
+
+"Functions (Aggregate)","PERCENTILE_DISC","
+PERCENTILE_DISC(numeric) WITHIN GROUP (ORDER BY value [ASC|DESC])
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+Return percentile of values from the group.
+Interpolation is not performed.
+Argument must be between 0 and 1 inclusive.
+Argument must be the same for all rows in the same group.
+If argument is NULL, the result is NULL.
+NULL values are ignored in the calculation.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+","
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY V)
+"
+
+"Functions (Aggregate)","MEDIAN","
+MEDIAN( [ DISTINCT|ALL ] value )
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+The value separating the higher half of a values from the lower half.
+Returns the middle value or an interpolated value between two middle values if number of values is even.
+Interpolation is only supported for numeric, date-time, and interval data types.
+NULL values are ignored in the calculation.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+","
+MEDIAN(X)
+"
+
+"Functions (Aggregate)","MODE","
+{ MODE( value ) [ ORDER BY expression [ ASC | DESC ] ] }
+    | { MODE() WITHIN GROUP (ORDER BY expression [ ASC | DESC ]) }
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+Returns the value that occurs with the greatest frequency.
+If there are multiple values with the same frequency only one value will be returned.
+In this situation value will be chosen based on optional ORDER BY clause
+that should specify exactly the same expression as argument of this function.
+Use ascending order to get smallest value or descending order to get largest value
+from multiple values with the same frequency.
+If this clause is not specified the exact chosen value is not determined in this situation.
+NULL values are ignored in the calculation.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+","
+MODE(X)
+MODE(X ORDER BY X)
+MODE() WITHIN GROUP (ORDER BY X)
+"
+
+"Functions (Aggregate)","ENVELOPE","
+ENVELOPE( value )
+[FILTER (WHERE expression)] [OVER windowNameOrSpecification]
+","
+Returns the minimum bounding box that encloses all specified GEOMETRY values.
+Only 2D coordinate plane is supported.
+NULL values are ignored in the calculation.
+If no rows are selected, the result is NULL.
+Aggregates are only allowed in select statements.
+","
+ENVELOPE(X)
+"
+
+"Functions (Numeric)","ABS","
+ABS( { numeric | interval } )
+","
+Returns the absolute value of a specified value.
+The returned value is of the same data type as the parameter.
+
+Note that TINYINT, SMALLINT, INT, and BIGINT data types cannot represent absolute values
+of their minimum negative values, because they have more negative values than positive.
+For example, for INT data type allowed values are from -2147483648 to 2147483647.
+ABS(-2147483648) should be 2147483648, but this value is not allowed for this data type.
+It leads to an exception.
+To avoid it cast argument of this function to a higher data type.
+","
+ABS(VALUE)
+ABS(CAST(VALUE AS BIGINT))
+"
+
+"Functions (Numeric)","ACOS","
+ACOS(numeric)
+","
+Calculate the arc cosine.
+See also Java ""Math.acos"".
+This method returns a double.
+","
+ACOS(D)
+"
+
+"Functions (Numeric)","ASIN","
+ASIN(numeric)
+","
+Calculate the arc sine.
+See also Java ""Math.asin"".
+This method returns a double.
+","
+ASIN(D)
+"
+
+"Functions (Numeric)","ATAN","
+ATAN(numeric)
+","
+Calculate the arc tangent.
+See also Java ""Math.atan"".
+This method returns a double.
+","
+ATAN(D)
+"
+
+"Functions (Numeric)","COS","
+COS(numeric)
+","
+Calculate the trigonometric cosine.
+See also Java ""Math.cos"".
+This method returns a double.
+","
+COS(ANGLE)
+"
+
+"Functions (Numeric)","COSH","
+COSH(numeric)
+","
+Calculate the hyperbolic cosine.
+See also Java ""Math.cosh"".
+This method returns a double.
+","
+COSH(X)
+"
+
+"Functions (Numeric)","COT","
+COT(numeric)
+","
+Calculate the trigonometric cotangent (""1/TAN(ANGLE)"").
+See also Java ""Math.*"" functions.
+This method returns a double.
+","
+COT(ANGLE)
+"
+
+"Functions (Numeric)","SIN","
+SIN(numeric)
+","
+Calculate the trigonometric sine.
+See also Java ""Math.sin"".
+This method returns a double.
+","
+SIN(ANGLE)
+"
+
+"Functions (Numeric)","SINH","
+SINH(numeric)
+","
+Calculate the hyperbolic sine.
+See also Java ""Math.sinh"".
+This method returns a double.
+","
+SINH(ANGLE)
+"
+
+"Functions (Numeric)","TAN","
+TAN(numeric)
+","
+Calculate the trigonometric tangent.
+See also Java ""Math.tan"".
+This method returns a double.
+","
+TAN(ANGLE)
+"
+
+"Functions (Numeric)","TANH","
+TANH(numeric)
+","
+Calculate the hyperbolic tangent.
+See also Java ""Math.tanh"".
+This method returns a double.
+","
+TANH(X)
+"
+
+"Functions (Numeric)","ATAN2","
+ATAN2(numeric, numeric)
+","
+Calculate the angle when converting the rectangular coordinates to polar coordinates.
+See also Java ""Math.atan2"".
+This method returns a double.
+","
+ATAN2(X, Y)
+"
+
+"Functions (Numeric)","BITAND","
+BITAND(long, long)
+","
+The bitwise AND operation.
+This method returns a long.
+See also Java operator &.
+","
+BITAND(A, B)
+"
+
+"Functions (Numeric)","BITGET","
+BITGET(long, int)
+","
+Returns true if and only if the first parameter has a bit set in the
+position specified by the second parameter.
+This method returns a boolean.
+The second parameter is zero-indexed; the least significant bit has position 0.
+","
+BITGET(A, 1)
+"
+
+"Functions (Numeric)","BITOR","
+BITOR(long, long)
+","
+The bitwise OR operation.
+This method returns a long.
+See also Java operator |.
+","
+BITOR(A, B)
+"
+
+"Functions (Numeric)","BITXOR","
+BITXOR(long, long)
+","
+The bitwise XOR operation.
+This method returns a long.
+See also Java operator ^.
+","
+BITXOR(A, B)
+"
+
+"Functions (Numeric)","MOD","
+MOD(long, long)
+","
+The modulo operation.
+This method returns a long.
+See also Java operator %.
+","
+MOD(A, B)
+"
+
+"Functions (Numeric)","CEILING","
+{ CEILING | CEIL } (numeric)
+","
+See also Java ""Math.ceil"".
+This method returns a double.
+","
+CEIL(A)
+"
+
+"Functions (Numeric)","DEGREES","
+DEGREES(numeric)
+","
+See also Java ""Math.toDegrees"".
+This method returns a double.
+","
+DEGREES(A)
+"
+
+"Functions (Numeric)","EXP","
+EXP(numeric)
+","
+See also Java ""Math.exp"".
+This method returns a double.
+","
+EXP(A)
+"
+
+"Functions (Numeric)","FLOOR","
+FLOOR(numeric)
+","
+See also Java ""Math.floor"".
+This method returns a double.
+","
+FLOOR(A)
+"
+
+"Functions (Numeric)","LN","
+{LN|LOG}(numeric)
+","
+Calculates the natural (base e) logarithm as a double value.
+In the PostgreSQL mode, LOG(x) is base 10.
+See also Java ""Math.log"".
+","
+LN(A)
+"
+
+"Functions (Numeric)","LOG10","
+LOG10(numeric)
+","
+Calculates the base 10 logarithm as a double value.
+See also Java ""Math.log10"".
+","
+LOG10(A)
+"
+
+"Functions (Numeric)","ORA_HASH","
+ORA_HASH(expression [, bucketLong [, seedLong]])
+","
+Computes a hash value.
+Optional bucket argument determines the maximum returned value.
+This argument should be between 0 and 4294967295, default is 4294967295.
+Optional seed argument is combined with the given expression to return the different values for the same expression.
+This argument should be between 0 and 4294967295, default is 0.
+This method returns a long value between 0 and the specified or default bucket value inclusive.
+","
+ORA_HASH(A)
+"
+
+"Functions (Numeric)","RADIANS","
+RADIANS(numeric)
+","
+See also Java ""Math.toRadians"".
+This method returns a double.
+","
+RADIANS(A)
+"
+
+"Functions (Numeric)","SQRT","
+SQRT(numeric)
+","
+See also Java ""Math.sqrt"".
+This method returns a double.
+","
+SQRT(A)
+"
+
+"Functions (Numeric)","PI","
+PI()
+","
+See also Java ""Math.PI"".
+This method returns a double.
+","
+PI()
+"
+
+"Functions (Numeric)","POWER","
+POWER(numeric, numeric)
+","
+See also Java ""Math.pow"".
+This method returns a double.
+","
+POWER(A, B)
+"
+
+"Functions (Numeric)","RAND","
+{ RAND | RANDOM } ( [ int ] )
+","
+Calling the function without parameter returns the next a pseudo random number.
+Calling it with an parameter seeds the session's random number generator.
+This method returns a double between 0 (including) and 1 (excluding).
+","
+RAND()
+"
+
+"Functions (Numeric)","RANDOM_UUID","
+{ RANDOM_UUID | UUID } ()
+","
+Returns a new UUID with 122 pseudo random bits.
+
+Please note that using an index on randomly generated data will
+result on poor performance once there are millions of rows in a table.
+The reason is that the cache behavior is very bad with randomly distributed data.
+This is a problem for any database system.
+","
+RANDOM_UUID()
+"
+
+"Functions (Numeric)","ROUND","
+ROUND(numeric [, digitsInt])
+","
+Rounds to a number of digits, or to the nearest long if the number of digits if not set.
+This method returns a numeric (the same type as the input).
+","
+ROUND(VALUE, 2)
+"
+
+"Functions (Numeric)","ROUNDMAGIC","
+ROUNDMAGIC(numeric)
+","
+This function rounds numbers in a good way, but it is slow.
+It has a special handling for numbers around 0.
+Only numbers smaller or equal +/-1000000000000 are supported.
+The value is converted to a String internally, and then the last 4 characters are checked.
+'000x' becomes '0000' and '999x' becomes '999999', which is rounded automatically.
+This method returns a double.
+","
+ROUNDMAGIC(VALUE/3*3)
+"
+
+"Functions (Numeric)","SECURE_RAND","
+SECURE_RAND(int)
+","
+Generates a number of cryptographically secure random numbers.
+This method returns bytes.
+","
+CALL SECURE_RAND(16)
+"
+
+"Functions (Numeric)","SIGN","
+SIGN( { numeric | interval } )
+","
+Returns -1 if the value is smaller than 0, 0 if zero, and otherwise 1.
+","
+SIGN(VALUE)
+"
+
+"Functions (Numeric)","ENCRYPT","
+ENCRYPT(algorithmString, keyBytes, dataBytes)
+","
+Encrypts data using a key.
+The supported algorithm is AES.
+The block size is 16 bytes.
+This method returns bytes.
+","
+CALL ENCRYPT('AES', '00', STRINGTOUTF8('Test'))
+"
+
+"Functions (Numeric)","DECRYPT","
+DECRYPT(algorithmString, keyBytes, dataBytes)
+","
+Decrypts data using a key.
+The supported algorithm is AES.
+The block size is 16 bytes.
+This method returns bytes.
+","
+CALL TRIM(CHAR(0) FROM UTF8TOSTRING(
+    DECRYPT('AES', '00', '3fabb4de8f1ee2e97d7793bab2db1116')))
+"
+
+"Functions (Numeric)","HASH","
+HASH(algorithmString, expression [, iterationInt])
+","
+Calculate the hash value using an algorithm, and repeat this process for a number of iterations.
+Currently, the only algorithm supported is SHA256.
+This method returns bytes.
+","
+CALL HASH('SHA256', STRINGTOUTF8('Password'), 1000)
+"
+
+"Functions (Numeric)","TRUNCATE","
+{ TRUNC | TRUNCATE } ( { {numeric, digitsInt}
+    | timestamp | timestampWithTimeZone | date | timestampString } )
+","
+Truncates to a number of digits (to the next value closer to 0).
+This method returns a double.
+When used with a timestamp, truncates a timestamp to a date (day) value.
+When used with a date, truncates a date to a date (day) value less time part.
+When used with a timestamp as string, truncates a timestamp to a date (day) value.
+","
+TRUNCATE(VALUE, 2)
+"
+
+"Functions (Numeric)","COMPRESS","
+COMPRESS(dataBytes [, algorithmString])
+","
+Compresses the data using the specified compression algorithm.
+Supported algorithms are: LZF (faster but lower compression; default), and DEFLATE (higher compression).
+Compression does not always reduce size. Very small objects and objects with little redundancy may get larger.
+This method returns bytes.
+","
+COMPRESS(STRINGTOUTF8('Test'))
+"
+
+"Functions (Numeric)","EXPAND","
+EXPAND(bytes)
+","
+Expands data that was compressed using the COMPRESS function.
+This method returns bytes.
+","
+UTF8TOSTRING(EXPAND(COMPRESS(STRINGTOUTF8('Test'))))
+"
+
+"Functions (Numeric)","ZERO","
+ZERO()
+","
+Returns the value 0. This function can be used even if numeric literals are disabled.
+","
+ZERO()
+"
+
+"Functions (String)","ASCII","
+ASCII(string)
+","
+Returns the ASCII value of the first character in the string.
+This method returns an int.
+","
+ASCII('Hi')
+"
+"Functions (String)","BIT_LENGTH","
+BIT_LENGTH(string)
+","
+Returns the number of bits in a string.
+This method returns a long.
+For BLOB, CLOB, BYTES and JAVA_OBJECT, the precision is used. Each character needs 16 bits.
+","
+BIT_LENGTH(NAME)
+"
+
+"Functions (String)","LENGTH","
+{ LENGTH | CHAR_LENGTH | CHARACTER_LENGTH } ( string )
+","
+Returns the number of characters in a string.
+This method returns a long.
+For BLOB, CLOB, BYTES and JAVA_OBJECT, the precision is used.
+","
+LENGTH(NAME)
+"
+
+"Functions (String)","OCTET_LENGTH","
+OCTET_LENGTH(string)
+","
+Returns the number of bytes in a string.
+This method returns a long.
+For BLOB, CLOB, BYTES and JAVA_OBJECT, the precision is used.
+Each character needs 2 bytes.
+","
+OCTET_LENGTH(NAME)
+"
+
+"Functions (String)","CHAR","
+{ CHAR | CHR } ( int )
+","
+Returns the character that represents the ASCII value.
+This method returns a string.
+","
+CHAR(65)
+"
+
+"Functions (String)","CONCAT","
+CONCAT(string, string [,...])
+","
+Combines strings.
+Unlike with the operator ""||"", NULL parameters are ignored,
+and do not cause the result to become NULL.
+This method returns a string.
+","
+CONCAT(NAME, '!')
+"
+
+"Functions (String)","CONCAT_WS","
+CONCAT_WS(separatorString, string, string [,...])
+","
+Combines strings with separator.
+Unlike with the operator ""||"", NULL parameters are ignored,
+and do not cause the result to become NULL.
+This method returns a string.
+","
+CONCAT_WS(',', NAME, '!')
+"
+
+"Functions (String)","DIFFERENCE","
+DIFFERENCE(string, string)
+","
+Returns the difference between the sounds of two strings.
+The difference is calculated as a number of matched characters
+in the same positions in SOUNDEX representations of arguments.
+This method returns an int between 0 and 4 inclusive, or null if any of its parameters is null.
+Note that value of 0 means that strings are not similar to each other.
+Value of 4 means that strings are fully similar to each other (have the same SOUNDEX representation).
+","
+DIFFERENCE(T1.NAME, T2.NAME)
+"
+
+"Functions (String)","HEXTORAW","
+HEXTORAW(string)
+","
+Converts a hex representation of a string to a string.
+4 hex characters per string character are used.
+","
+HEXTORAW(DATA)
+"
+
+"Functions (String)","RAWTOHEX","
+RAWTOHEX(string)
+","
+Converts a string to the hex representation.
+4 hex characters per string character are used.
+This method returns a string.
+","
+RAWTOHEX(DATA)
+"
+
+"Functions (String)","INSTR","
+INSTR(string, searchString, [, startInt])
+","
+Returns the location of a search string in a string.
+If a start position is used, the characters before it are ignored.
+If position is negative, the rightmost location is returned.
+0 is returned if the search string is not found.
+Please note this function is case sensitive, even if the parameters are not.
+","
+INSTR(EMAIL,'@')
+"
+
+"Functions (String)","INSERT Function","
+INSERT(originalString, startInt, lengthInt, addString)
+","
+Inserts a additional string into the original string at a specified start position.
+The length specifies the number of characters that are removed at the start position in the original string.
+This method returns a string.
+","
+INSERT(NAME, 1, 1, ' ')
+"
+
+"Functions (String)","LOWER","
+{ LOWER | LCASE } ( string )
+","
+Converts a string to lowercase.
+","
+LOWER(NAME)
+"
+
+"Functions (String)","UPPER","
+{ UPPER | UCASE } ( string )
+","
+Converts a string to uppercase.
+","
+UPPER(NAME)
+"
+
+"Functions (String)","LEFT","
+LEFT(string, int)
+","
+Returns the leftmost number of characters.
+","
+LEFT(NAME, 3)
+"
+
+"Functions (String)","RIGHT","
+RIGHT(string, int)
+","
+Returns the rightmost number of characters.
+","
+RIGHT(NAME, 3)
+"
+
+"Functions (String)","LOCATE","
+LOCATE(searchString, string [, startInt])
+","
+Returns the location of a search string in a string.
+If a start position is used, the characters before it are ignored.
+If position is negative, the rightmost location is returned.
+0 is returned if the search string is not found.
+","
+LOCATE('.', NAME)
+"
+
+"Functions (String)","POSITION","
+POSITION(searchString, string)
+","
+Returns the location of a search string in a string. See also LOCATE.
+","
+POSITION('.', NAME)
+"
+
+"Functions (String)","LPAD","
+LPAD(string, int[, paddingString])
+","
+Left pad the string to the specified length.
+If the length is shorter than the string, it will be truncated at the end.
+If the padding string is not set, spaces will be used.
+","
+LPAD(AMOUNT, 10, '*')
+"
+
+"Functions (String)","RPAD","
+RPAD(string, int[, paddingString])
+","
+Right pad the string to the specified length.
+If the length is shorter than the string, it will be truncated.
+If the padding string is not set, spaces will be used.
+","
+RPAD(TEXT, 10, '-')
+"
+
+"Functions (String)","LTRIM","
+LTRIM(string)
+","
+Removes all leading spaces from a string.
+","
+LTRIM(NAME)
+"
+
+"Functions (String)","RTRIM","
+RTRIM(string)
+","
+Removes all trailing spaces from a string.
+","
+RTRIM(NAME)
+"
+
+"Functions (String)","TRIM","
+TRIM ( [ [ LEADING | TRAILING | BOTH ] [ string ] FROM ] string )
+","
+Removes all leading spaces, trailing spaces, or spaces at both ends, from a string.
+Other characters can be removed as well.
+","
+TRIM(BOTH '_' FROM NAME)
+"
+
+"Functions (String)","REGEXP_REPLACE","
+REGEXP_REPLACE(inputString, regexString, replacementString [, flagsString])
+","
+Replaces each substring that matches a regular expression.
+For details, see the Java ""String.replaceAll()"" method.
+If any parameter is null (except optional flagsString parameter), the result is null.
+
+Flags values limited to 'i', 'c', 'n', 'm'. Other symbols causes exception.
+Multiple symbols could be uses in one flagsString parameter (like 'im').
+Later flags overrides first ones, for example 'ic' equivalent to case sensitive matching 'c'.
+
+'i' enables case insensitive matching (Pattern.CASE_INSENSITIVE)
+
+'c' disables case insensitive matching (Pattern.CASE_INSENSITIVE)
+
+'n' allows the period to match the newline character (Pattern.DOTALL)
+
+'m' enables multiline mode (Pattern.MULTILINE)
+
+","
+REGEXP_REPLACE('Hello    World', ' +', ' ')
+REGEXP_REPLACE('Hello WWWWorld', 'w+', 'W', 'i')
+"
+
+"Functions (String)","REGEXP_LIKE","
+REGEXP_LIKE(inputString, regexString [, flagsString])
+","
+Matches string to a regular expression.
+For details, see the Java ""Matcher.find()"" method.
+If any parameter is null (except optional flagsString parameter), the result is null.
+
+Flags values limited to 'i', 'c', 'n', 'm'. Other symbols causes exception.
+Multiple symbols could be uses in one flagsString parameter (like 'im').
+Later flags overrides first ones, for example 'ic' equivalent to case sensitive matching 'c'.
+
+'i' enables case insensitive matching (Pattern.CASE_INSENSITIVE)
+
+'c' disables case insensitive matching (Pattern.CASE_INSENSITIVE)
+
+'n' allows the period to match the newline character (Pattern.DOTALL)
+
+'m' enables multiline mode (Pattern.MULTILINE)
+
+","
+REGEXP_LIKE('Hello    World', '[A-Z ]*', 'i')
+"
+
+"Functions (String)","REPEAT","
+REPEAT(string, int)
+","
+Returns a string repeated some number of times.
+","
+REPEAT(NAME || ' ', 10)
+"
+
+"Functions (String)","REPLACE","
+REPLACE(string, searchString [, replacementString])
+","
+Replaces all occurrences of a search string in a text with another string.
+If no replacement is specified, the search string is removed from the original string.
+If any parameter is null, the result is null.
+","
+REPLACE(NAME, ' ')
+"
+
+"Functions (String)","SOUNDEX","
+SOUNDEX(string)
+","
+Returns a four character code representing the sound of a string.
+This method returns a string, or null if parameter is null.
+See https://en.wikipedia.org/wiki/Soundex for more information.
+","
+SOUNDEX(NAME)
+"
+
+"Functions (String)","SPACE","
+SPACE(int)
+","
+Returns a string consisting of a number of spaces.
+","
+SPACE(80)
+"
+
+"Functions (String)","STRINGDECODE","
+STRINGDECODE(string)
+","
+Converts a encoded string using the Java string literal encoding format.
+Special characters are \b, \t, \n, \f, \r, \"", \\, \<octal>, \u<unicode>.
+This method returns a string.
+","
+CALL STRINGENCODE(STRINGDECODE('Lines 1\nLine 2'))
+"
+
+"Functions (String)","STRINGENCODE","
+STRINGENCODE(string)
+","
+Encodes special characters in a string using the Java string literal encoding format.
+Special characters are \b, \t, \n, \f, \r, \"", \\, \<octal>, \u<unicode>.
+This method returns a string.
+","
+CALL STRINGENCODE(STRINGDECODE('Lines 1\nLine 2'))
+"
+
+"Functions (String)","STRINGTOUTF8","
+STRINGTOUTF8(string)
+","
+Encodes a string to a byte array using the UTF8 encoding format.
+This method returns bytes.
+","
+CALL UTF8TOSTRING(STRINGTOUTF8('This is a test'))
+"
+
+"Functions (String)","SUBSTRING","
+{ SUBSTRING | SUBSTR } ( string, startInt [, lengthInt ] )
+","
+Returns a substring of a string starting at a position.
+If the start index is negative, then the start index is relative to the end of the string.
+The length is optional.
+Also supported is: ""SUBSTRING(string [FROM start] [FOR length])"".
+","
+CALL SUBSTR('[Hello]', 2, 5);
+CALL SUBSTR('Hello World', -5);
+"
+
+"Functions (String)","UTF8TOSTRING","
+UTF8TOSTRING(bytes)
+","
+Decodes a byte array in the UTF8 format to a string.
+","
+CALL UTF8TOSTRING(STRINGTOUTF8('This is a test'))
+"
+
+"Functions (String)","XMLATTR","
+XMLATTR(nameString, valueString)
+","
+Creates an XML attribute element of the form ""name=value"".
+The value is encoded as XML text.
+This method returns a string.
+","
+CALL XMLNODE('a', XMLATTR('href', 'http://h2database.com'))
+"
+
+"Functions (String)","XMLNODE","
+XMLNODE(elementString [, attributesString [, contentString [, indentBoolean]]])
+","
+Create an XML node element.
+An empty or null attribute string means no attributes are set.
+An empty or null content string means the node is empty.
+The content is indented by default if it contains a newline.
+This method returns a string.
+","
+CALL XMLNODE('a', XMLATTR('href', 'http://h2database.com'), 'H2')
+"
+
+"Functions (String)","XMLCOMMENT","
+XMLCOMMENT(commentString)
+","
+Creates an XML comment.
+Two dashes (""--"") are converted to ""- -"".
+This method returns a string.
+","
+CALL XMLCOMMENT('Test')
+"
+
+"Functions (String)","XMLCDATA","
+XMLCDATA(valueString)
+","
+Creates an XML CDATA element.
+If the value contains ""]]>"", an XML text element is created instead.
+This method returns a string.
+","
+CALL XMLCDATA('data')
+"
+
+"Functions (String)","XMLSTARTDOC","
+XMLSTARTDOC()
+","
+Returns the XML declaration.
+The result is always ""<?xml version=""1.0""?>"".
+","
+CALL XMLSTARTDOC()
+"
+
+"Functions (String)","XMLTEXT","
+XMLTEXT(valueString [, escapeNewlineBoolean])
+","
+Creates an XML text element.
+If enabled, newline and linefeed is converted to an XML entity (&#).
+This method returns a string.
+","
+CALL XMLTEXT('test')
+"
+
+"Functions (String)","TO_CHAR","
+TO_CHAR(value [, formatString[, nlsParamString]])
+","
+Oracle-compatible TO_CHAR function that can format a timestamp, a number, or text.
+","
+CALL TO_CHAR(TIMESTAMP '2010-01-01 00:00:00', 'DD MON, YYYY')
+"
+
+"Functions (String)","TRANSLATE","
+TRANSLATE(value, searchString, replacementString)
+","
+Oracle-compatible TRANSLATE function that replaces a sequence of characters in a string with another set of characters.
+","
+CALL TRANSLATE('Hello world', 'eo', 'EO')
+"
+
+"Functions (Time and Date)","CURRENT_DATE","
+{ CURRENT_DATE | CURDATE() | SYSDATE | TODAY }
+","
+Returns the current date.
+These methods always return the same value within a transaction (default)
+or within a command depending on database mode.
+","
+CURRENT_DATE
+"
+
+"Functions (Time and Date)","CURRENT_TIME","
+CURRENT_TIME [ (int) ]
+","
+Returns the current time.
+The returned value does not have time zone information, because TIME WITH TIME ZONE data type is not supported in H2.
+If fractional seconds precision is specified it should be from 0 to 9, 0 is default.
+The specified value can be used only to limit precision of a result.
+The actual maximum available precision depends on operating system and JVM and can be 3 (milliseconds) or higher.
+Higher precision is not available before Java 9.
+These methods always return the same value within a transaction (default)
+or within a command depending on database mode.
+","
+CURRENT_TIME
+CURRENT_TIME(9)
+"
+
+"Functions (Time and Date)","CURRENT_TIMESTAMP","
+CURRENT_TIMESTAMP [ (int) ]
+","
+Returns the current timestamp with time zone.
+Time zone offset is set to a current time zone offset.
+If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
+The specified value can be used only to limit precision of a result.
+The actual maximum available precision depends on operating system and JVM and can be 3 (milliseconds) or higher.
+Higher precision is not available before Java 9.
+This method always returns the same value within a transaction (default)
+or within a command depending on database mode.
+","
+CURRENT_TIMESTAMP
+CURRENT_TIMESTAMP(9)
+"
+
+"Functions (Time and Date)","LOCALTIME","
+{ LOCALTIME [ (int) ] | CURTIME([ int ]) }
+","
+Returns the current time.
+If fractional seconds precision is specified it should be from 0 to 9, 0 is default.
+The specified value can be used only to limit precision of a result.
+The actual maximum available precision depends on operating system and JVM and can be 3 (milliseconds) or higher.
+Higher precision is not available before Java 9.
+These methods always return the same value within a transaction (default)
+or within a command depending on database mode.
+","
+LOCALTIME
+LOCALTIME(9)
+"
+
+"Functions (Time and Date)","LOCALTIMESTAMP","
+{ LOCALTIMESTAMP [ (int) ] | NOW( [ int ] ) }
+","
+Returns the current timestamp without time zone.
+If fractional seconds precision is specified it should be from 0 to 9, 6 is default.
+The specified value can be used only to limit precision of a result.
+The actual maximum available precision depends on operating system and JVM and can be 3 (milliseconds) or higher.
+Higher precision is not available before Java 9.
+These methods always return the same value within a transaction (default)
+or within a command depending on database mode.
+","
+LOCALTIMESTAMP
+LOCALTIMESTAMP(9)
+"
+
+"Functions (Time and Date)","DATEADD","
+{ DATEADD| TIMESTAMPADD } (datetimeField, addIntLong, dateAndTime)
+","
+Adds units to a date-time value. The datetimeField indicates the unit.
+Use negative values to subtract units.
+addIntLong may be a long value when manipulating milliseconds,
+microseconds, or nanoseconds otherwise its range is restricted to int.
+This method returns a value with the same type as specified value if unit is compatible with this value.
+If specified field is a HOUR, MINUTE, SECOND, MILLISECOND, etc and value is a DATE value DATEADD returns combined TIMESTAMP.
+Fields DAY, MONTH, YEAR, WEEK, etc are not allowed for TIME values.
+Fields TIMEZONE_HOUR and TIMEZONE_MINUTE are only allowed for TIMESTAMP WITH TIME ZONE values.
+","
+DATEADD(MONTH, 1, DATE '2001-01-31')
+"
+
+"Functions (Time and Date)","DATEDIFF","
+{ DATEDIFF | TIMESTAMPDIFF } (datetimeField, aDateAndTime, bDateAndTime)
+","
+Returns the number of crossed unit boundaries between two date/time values.
+This method returns a long.
+The datetimeField indicates the unit.
+Only TIMEZONE_HOUR and TIMEZONE_MINUTE fields use the time zone offset component.
+With all other fields if date/time values have time zone offset component it is ignored.
+","
+DATEDIFF(YEAR, T1.CREATED, T2.CREATED)
+"
+
+"Functions (Time and Date)","DAYNAME","
+DAYNAME(dateAndTime)
+","
+Returns the name of the day (in English).
+","
+DAYNAME(CREATED)
+"
+
+"Functions (Time and Date)","DAY_OF_MONTH","
+DAY_OF_MONTH(dateAndTime|interval)
+","
+Returns the day of the month (1-31).
+","
+DAY_OF_MONTH(CREATED)
+"
+
+"Functions (Time and Date)","DAY_OF_WEEK","
+DAY_OF_WEEK(dateAndTime)
+","
+Returns the day of the week (1 means Sunday).
+","
+DAY_OF_WEEK(CREATED)
+"
+
+"Functions (Time and Date)","ISO_DAY_OF_WEEK","
+ISO_DAY_OF_WEEK(dateAndTime)
+","
+Returns the ISO day of the week (1 means Monday).
+","
+ISO_DAY_OF_WEEK(CREATED)
+"
+
+"Functions (Time and Date)","DAY_OF_YEAR","
+DAY_OF_YEAR(dateAndTime|interval)
+","
+Returns the day of the year (1-366).
+","
+DAY_OF_YEAR(CREATED)
+"
+
+"Functions (Time and Date)","EXTRACT","
+EXTRACT ( datetimeField FROM { dateAndTime | interval })
+","
+Returns a value of the specific time unit from a date/time value.
+This method returns a numeric value with EPOCH field and
+an int for all other fields.
+","
+EXTRACT(SECOND FROM CURRENT_TIMESTAMP)
+"
+
+"Functions (Time and Date)","FORMATDATETIME","
+FORMATDATETIME ( dateAndTime, formatString
+[ , localeString [ , timeZoneString ] ] )
+","
+Formats a date, time or timestamp as a string.
+The most important format characters are:
+y year, M month, d day, H hour, m minute, s second.
+For details of the format, see ""java.text.SimpleDateFormat"".
+timeZoneString may be specified if dateAndTime is a DATE, TIME or TIMESTAMP.
+timeZoneString is ignored if dateAndTime is TIMESTAMP WITH TIME ZONE.
+This method returns a string.
+","
+CALL FORMATDATETIME(TIMESTAMP '2001-02-03 04:05:06',
+    'EEE, d MMM yyyy HH:mm:ss z', 'en', 'GMT')
+"
+
+"Functions (Time and Date)","HOUR","
+HOUR(dateAndTime|interval)
+","
+Returns the hour (0-23) from a date/time value.
+","
+HOUR(CREATED)
+"
+
+"Functions (Time and Date)","MINUTE","
+MINUTE(dateAndTime|interval)
+","
+Returns the minute (0-59) from a date/time value.
+","
+MINUTE(CREATED)
+"
+
+"Functions (Time and Date)","MONTH","
+MONTH(dateAndTime|interval)
+","
+Returns the month (1-12) from a date/time value.
+","
+MONTH(CREATED)
+"
+
+"Functions (Time and Date)","MONTHNAME","
+MONTHNAME(dateAndTime)
+","
+Returns the name of the month (in English).
+","
+MONTHNAME(CREATED)
+"
+
+"Functions (Time and Date)","PARSEDATETIME","
+PARSEDATETIME(string, formatString
+[, localeString [, timeZoneString]])
+","
+Parses a string and returns a timestamp.
+The most important format characters are:
+y year, M month, d day, H hour, m minute, s second.
+For details of the format, see ""java.text.SimpleDateFormat"".
+","
+CALL PARSEDATETIME('Sat, 3 Feb 2001 03:05:06 GMT',
+    'EEE, d MMM yyyy HH:mm:ss z', 'en', 'GMT')
+"
+
+"Functions (Time and Date)","QUARTER","
+QUARTER(dateAndTime)
+","
+Returns the quarter (1-4) from a date/time value.
+","
+QUARTER(CREATED)
+"
+
+"Functions (Time and Date)","SECOND","
+SECOND(dateAndTime)
+","
+Returns the second (0-59) from a date/time value.
+","
+SECOND(CREATED|interval)
+"
+
+"Functions (Time and Date)","WEEK","
+WEEK(dateAndTime)
+","
+Returns the week (1-53) from a date/time value.
+This method uses the current system locale.
+","
+WEEK(CREATED)
+"
+
+"Functions (Time and Date)","ISO_WEEK","
+ISO_WEEK(dateAndTime)
+","
+Returns the ISO week (1-53) from a date/time value.
+This function uses the ISO definition when
+first week of year should have at least four days
+and week is started with Monday.
+","
+ISO_WEEK(CREATED)
+"
+
+"Functions (Time and Date)","YEAR","
+YEAR(dateAndTime|interval)
+","
+Returns the year from a date/time value.
+","
+YEAR(CREATED)
+"
+
+"Functions (Time and Date)","ISO_YEAR","
+ISO_YEAR(dateAndTime)
+","
+Returns the ISO week year from a date/time value.
+","
+ISO_YEAR(CREATED)
+"
+
+"Functions (System)","ARRAY_GET","
+ARRAY_GET(arrayExpression, indexExpression)
+","
+Returns element at the specified 1-based index from an array.
+Returns NULL if there is no such element or array is NULL.
+","
+CALL ARRAY_GET(ARRAY['Hello', 'World'], 2)
+"
+
+"Functions (System)","ARRAY_LENGTH","
+ARRAY_LENGTH(arrayExpression)
+","
+Returns the length of an array.
+Returns NULL if the specified array is NULL.
+","
+CALL ARRAY_LENGTH(ARRAY['Hello', 'World'])
+"
+
+"Functions (System)","ARRAY_CONTAINS","
+ARRAY_CONTAINS(arrayExpression, value)
+","
+Returns a boolean TRUE if the array contains the value or FALSE if it does not contain it.
+Returns NULL if the specified array is NULL.
+","
+CALL ARRAY_CONTAINS(ARRAY['Hello', 'World'], 'Hello')
+"
+
+"Functions (System)","ARRAY_CAT","
+ARRAY_CAT(arrayExpression, arrayExpression)
+","
+Returns the concatenation of two arrays.
+Returns NULL if any parameter is NULL.
+","
+CALL ARRAY_CAT(ARRAY[1, 2], ARRAY[3, 4])
+"
+
+"Functions (System)","ARRAY_APPEND","
+ARRAY_APPEND(arrayExpression, value)
+","
+Append an element to the end of an array.
+Returns NULL if any parameter is NULL.
+","
+CALL ARRAY_APPEND(ARRAY[1, 2], 3)
+"
+
+"Functions (System)","ARRAY_SLICE","
+ARRAY_SLICE(arrayExpression, lowerBoundInt, upperBoundInt)
+","
+Returns elements from the array as specified by the lower and upper bound parameters.
+Both parameters are inclusive and the first element has index 1, i.e. ARRAY_SLICE(a, 2, 2) has only the second element.
+Returns NULL if any parameter is NULL or if an index is out of bounds.
+","
+CALL ARRAY_SLICE(ARRAY[1, 2, 3, 4], 1, 3)
+"
+
+"Functions (System)","AUTOCOMMIT","
+AUTOCOMMIT()
+","
+Returns true if auto commit is switched on for this session.
+","
+AUTOCOMMIT()
+"
+
+"Functions (System)","CANCEL_SESSION","
+CANCEL_SESSION(sessionInt)
+","
+Cancels the currently executing statement of another session.
+The method only works if the multithreaded kernel is enabled (see SET MULTI_THREADED).
+Returns true if the statement was canceled, false if the session is closed or no statement is currently executing.
+
+Admin rights are required to execute this command.
+","
+CANCEL_SESSION(3)
+"
+
+"Functions (System)","CASEWHEN Function","
+CASEWHEN(boolean, aValue, bValue)
+","
+Returns 'a' if the boolean expression is true, otherwise 'b'.
+Returns the same data type as the parameter.
+","
+CASEWHEN(ID=1, 'A', 'B')
+"
+
+"Functions (System)","CAST","
+CAST(value AS dataType)
+","
+Converts a value to another data type. The following conversion rules are used:
+When converting a number to a boolean, 0 is false and every other value is true.
+When converting a boolean to a number, false is 0 and true is 1.
+When converting a number to a number of another type, the value is checked for overflow.
+When converting a number to binary, the number of bytes matches the precision.
+When converting a string to binary, it is hex encoded (every byte two characters);
+a hex string can be converted to a number by first converting it to binary.
+If a direct conversion is not possible, the value is first converted to a string.
+Note that some data types may need explicitly specified precision to avoid overflow or rounding.
+","
+CAST(NAME AS INT);
+CAST(65535 AS BINARY);
+CAST(CAST('FFFF' AS BINARY) AS INT);
+CAST(TIMESTAMP '2010-01-01 10:40:00.123456' AS TIME(6))
+"
+
+"Functions (System)","COALESCE","
+{ COALESCE | NVL } (aValue, bValue [,...])
+","
+Returns the first value that is not null.
+","
+COALESCE(A, B, C)
+"
+
+"Functions (System)","CONVERT","
+CONVERT(value, dataType)
+","
+Converts a value to another data type.
+","
+CONVERT(NAME, INT)
+"
+
+"Functions (System)","CURRVAL","
+CURRVAL( [ schemaName, ] sequenceString )
+","
+Returns the current (last) value of the sequence, independent of the session.
+If the sequence was just created, the method returns (start - interval).
+If the schema name is not set, the current schema is used.
+If the schema name is not set, the sequence name is converted to uppercase (for compatibility).
+This method returns a long.
+","
+CURRVAL('TEST_SEQ')
+"
+
+"Functions (System)","CSVREAD","
+CSVREAD(fileNameString [, columnsString [, csvOptions ] ] )
+","
+Returns the result set of reading the CSV (comma separated values) file.
+For each parameter, NULL means the default value should be used.
+
+If the column names are specified (a list of column names separated with the
+fieldSeparator), those are used, otherwise (or if they are set to NULL) the first line of
+the file is interpreted as the column names.
+In that case, column names that contain no special characters (only letters, '_',
+and digits; similar to the rule for Java identifiers) are considered case insensitive.
+Other column names are case sensitive, that means you need to use quoted identifiers
+(see below).
+
+The default charset is the default value for this system, and the default field separator
+is a comma. Missing unquoted values as well as data that matches nullString is
+parsed as NULL. All columns of type VARCHAR.
+
+The BOM (the byte-order-mark) character 0xfeff at the beginning of the file is ignored.
+
+This function can be used like a table: ""SELECT * FROM CSVREAD(...)"".
+
+Instead of a file, an URL may be used, for example
+""jar:file:///c:/temp/example.zip!/org/example/nested.csv"".
+To read a stream from the classpath, use the prefix ""classpath:"".
+To read from HTTP, use the prefix ""http:"" (as in a browser).
+
+For performance reason, CSVREAD should not be used inside a join.
+Instead, import the data first (possibly into a temporary table) and then use the table.
+
+Admin rights are required to execute this command.
+","
+CALL CSVREAD('test.csv');
+-- Read a file containing the columns ID, NAME with
+CALL CSVREAD('test2.csv', 'ID|NAME', 'charset=UTF-8 fieldSeparator=|');
+SELECT * FROM CSVREAD('data/test.csv', null, 'rowSeparator=;');
+-- Read a tab-separated file
+SELECT * FROM CSVREAD('data/test.tsv', null, 'rowSeparator=' || CHAR(9));
+SELECT ""Last Name"" FROM CSVREAD('address.csv');
+SELECT ""Last Name"" FROM CSVREAD('classpath:/org/acme/data/address.csv');
+"
+
+"Functions (System)","CSVWRITE","
+CSVWRITE ( fileNameString, queryString [, csvOptions [, lineSepString] ] )
+","
+Writes a CSV (comma separated values). The file is overwritten if it exists.
+If only a file name is specified, it will be written to the current working directory.
+For each parameter, NULL means the default value should be used.
+The default charset is the default value for this system, and the default field separator is a comma.
+
+The values are converted to text using the default string representation;
+if another conversion is required you need to change the select statement accordingly.
+The parameter nullString is used when writing NULL (by default nothing is written
+when NULL appears). The default line separator is the default value for this
+system (system property ""line.separator"").
+
+The returned value is the number or rows written.
+Admin rights are required to execute this command.
+","
+CALL CSVWRITE('data/test.csv', 'SELECT * FROM TEST');
+CALL CSVWRITE('data/test2.csv', 'SELECT * FROM TEST', 'charset=UTF-8 fieldSeparator=|');
+-- Write a tab-separated file
+CALL CSVWRITE('data/test.tsv', 'SELECT * FROM TEST', 'charset=UTF-8 fieldSeparator=' || CHAR(9));
+"
+
+"Functions (System)","DATABASE","
+DATABASE()
+","
+Returns the name of the database.
+","
+CALL DATABASE();
+"
+
+"Functions (System)","DATABASE_PATH","
+DATABASE_PATH()
+","
+Returns the directory of the database files and the database name, if it is file based.
+Returns NULL otherwise.
+","
+CALL DATABASE_PATH();
+"
+
+"Functions (System)","DECODE","
+DECODE(value, whenValue, thenValue [,...])
+","
+Returns the first matching value. NULL is considered to match NULL.
+If no match was found, then NULL or the last parameter (if the parameter count is even) is returned.
+This function is provided for Oracle compatibility (see there for details).
+","
+CALL DECODE(RAND()>0.5, 0, 'Red', 1, 'Black');
+"
+
+"Functions (System)","DISK_SPACE_USED","
+DISK_SPACE_USED(tableNameString)
+","
+Returns the approximate amount of space used by the table specified.
+Does not currently take into account indexes or LOB's.
+This function may be expensive since it has to load every page in the table.
+","
+CALL DISK_SPACE_USED('my_table');
+"
+
+"Functions (System)","SIGNAL","
+SIGNAL(sqlStateString, messageString)
+","
+Throw an SQLException with the passed SQLState and reason.
+","
+CALL SIGNAL('23505', 'Duplicate user ID: ' || user_id);
+"
+
+"Functions (System)","ESTIMATED_ENVELOPE","
+ESTIMATED_ENVELOPE(tableNameString, columnNameString)
+","
+Returns the estimated minimum bounding box that encloses all specified GEOMETRY values.
+Only 2D coordinate plane is supported.
+NULL values are ignored.
+This function is only supported by MVStore engine.
+Column must have a spatial index.
+This function is fast, but estimation may include uncommitted data (including data from other transactions),
+may return approximate bounds, or be different with actual value due to other reasons.
+Use with caution.
+If estimation is not available this function returns NULL.
+For accurate and reliable result use ESTIMATE aggregate function instead.
+","
+CALL ESTIMATED_ENVELOPE('MY_TABLE', 'GEOMETRY_COLUMN');
+"
+
+"Functions (System)","FILE_READ","
+FILE_READ(fileNameString [,encodingString])
+","
+Returns the contents of a file. If only one parameter is supplied, the data are
+returned as a BLOB. If two parameters are used, the data is returned as a CLOB
+(text). The second parameter is the character set to use, NULL meaning the
+default character set for this system.
+
+File names and URLs are supported.
+To read a stream from the classpath, use the prefix ""classpath:"".
+
+Admin rights are required to execute this command.
+","
+SELECT LENGTH(FILE_READ('~/.h2.server.properties')) LEN;
+SELECT FILE_READ('http://localhost:8182/stylesheet.css', NULL) CSS;
+"
+
+"Functions (System)","FILE_WRITE","
+FILE_WRITE(blobValue, fileNameString)
+","
+Write the supplied parameter into a file. Return the number of bytes written.
+
+Write access to folder, and admin rights are required to execute this command.
+","
+SELECT FILE_WRITE('Hello world', '/tmp/hello.txt')) LEN;
+"
+
+"Functions (System)","GREATEST","
+GREATEST(aValue, bValue [,...])
+","
+Returns the largest value that is not NULL, or NULL if all values are NULL.
+","
+CALL GREATEST(1, 2, 3);
+"
+
+"Functions (System)","IDENTITY","
+IDENTITY()
+","
+Returns the last inserted identity value for this session.
+This value changes whenever a new sequence number was generated,
+even within a trigger or Java function. See also SCOPE_IDENTITY.
+This method returns a long.
+","
+CALL IDENTITY();
+"
+
+"Functions (System)","IFNULL","
+IFNULL(aValue, bValue)
+","
+Returns the value of 'a' if it is not null, otherwise 'b'.
+","
+CALL IFNULL(NULL, '');
+"
+
+"Functions (System)","LEAST","
+LEAST(aValue, bValue [,...])
+","
+Returns the smallest value that is not NULL, or NULL if all values are NULL.
+","
+CALL LEAST(1, 2, 3);
+"
+
+"Functions (System)","LOCK_MODE","
+LOCK_MODE()
+","
+Returns the current lock mode. See SET LOCK_MODE.
+This method returns an int.
+","
+CALL LOCK_MODE();
+"
+
+"Functions (System)","LOCK_TIMEOUT","
+LOCK_TIMEOUT()
+","
+Returns the lock timeout of the current session (in milliseconds).
+","
+LOCK_TIMEOUT()
+"
+
+"Functions (System)","LINK_SCHEMA","
+LINK_SCHEMA(targetSchemaString, driverString, urlString,
+userString, passwordString, sourceSchemaString)
+","
+Creates table links for all tables in a schema.
+If tables with the same name already exist, they are dropped first.
+The target schema is created automatically if it does not yet exist.
+The driver name may be empty if the driver is already loaded.
+The list of tables linked is returned in the form of a result set.
+Admin rights are required to execute this command.
+","
+CALL LINK_SCHEMA('TEST2', '', 'jdbc:h2:test2', 'sa', 'sa', 'PUBLIC');
+"
+
+"Functions (System)","MEMORY_FREE","
+MEMORY_FREE()
+","
+Returns the free memory in KB (where 1024 bytes is a KB).
+This method returns an int.
+The garbage is run before returning the value.
+Admin rights are required to execute this command.
+","
+MEMORY_FREE()
+"
+
+"Functions (System)","MEMORY_USED","
+MEMORY_USED()
+","
+Returns the used memory in KB (where 1024 bytes is a KB).
+This method returns an int.
+The garbage is run before returning the value.
+Admin rights are required to execute this command.
+","
+MEMORY_USED()
+"
+
+"Functions (System)","NEXTVAL","
+NEXTVAL ( [ schemaName, ] sequenceString )
+","
+Returns the next value of the sequence.
+Used values are never re-used, even when the transaction is rolled back.
+If the schema name is not set, the current schema is used, and the sequence name is converted to uppercase (for compatibility).
+This method returns a long.
+","
+NEXTVAL('TEST_SEQ')
+"
+
+"Functions (System)","NULLIF","
+NULLIF(aValue, bValue)
+","
+Returns NULL if 'a' is equals to 'b', otherwise 'a'.
+","
+NULLIF(A, B)
+"
+
+"Functions (System)","NVL2","
+NVL2(testValue, aValue, bValue)
+","
+If the test value is null, then 'b' is returned. Otherwise, 'a' is returned.
+The data type of the returned value is the data type of 'a' if this is a text type.
+","
+NVL2(X, 'not null', 'null')
+"
+
+"Functions (System)","READONLY","
+READONLY()
+","
+Returns true if the database is read-only.
+","
+READONLY()
+"
+
+"Functions (System)","ROWNUM","
+ROWNUM()
+","
+Returns the number of the current row.
+This method returns a long value.
+It is supported for SELECT statements, as well as for DELETE and UPDATE.
+The first row has the row number 1, and is calculated before ordering and grouping the result set,
+but after evaluating index conditions (even when the index conditions are specified in an outer query).
+Use the ROW_NUMBER() OVER () function to get row numbers after grouping or in specified order.
+","
+SELECT ROWNUM(), * FROM TEST;
+SELECT ROWNUM(), * FROM (SELECT * FROM TEST ORDER BY NAME);
+SELECT ID FROM (SELECT T.*, ROWNUM AS R FROM TEST T) WHERE R BETWEEN 2 AND 3;
+"
+
+"Functions (System)","SCHEMA","
+SCHEMA()
+","
+Returns the name of the default schema for this session.
+","
+CALL SCHEMA()
+"
+
+"Functions (System)","SCOPE_IDENTITY","
+SCOPE_IDENTITY()
+","
+Returns the last inserted identity value for this session for the current scope
+(the current statement).
+Changes within triggers and Java functions are ignored. See also IDENTITY().
+This method returns a long.
+","
+CALL SCOPE_IDENTITY();
+"
+
+"Functions (System)","SESSION_ID","
+SESSION_ID()
+","
+Returns the unique session id number for the current database connection.
+This id stays the same while the connection is open.
+This method returns an int.
+The database engine may re-use a session id after the connection is closed.
+","
+CALL SESSION_ID()
+"
+
+"Functions (System)","SET","
+SET(@variableName, value)
+","
+Updates a variable with the given value.
+The new value is returned.
+When used in a query, the value is updated in the order the rows are read.
+When used in a subquery, not all rows might be read depending on the query plan.
+This can be used to implement running totals / cumulative sums.
+","
+SELECT X, SET(@I, IFNULL(@I, 0)+X) RUNNING_TOTAL FROM SYSTEM_RANGE(1, 10)
+"
+
+"Functions (System)","TABLE","
+{ TABLE | TABLE_DISTINCT }
+( { name dataType = array|rowValueExpression } [,...] )
+","
+Returns the result set. TABLE_DISTINCT removes duplicate rows.
+","
+SELECT * FROM TABLE(VALUE INT = ARRAY[1, 2]);
+SELECT * FROM TABLE(ID INT=(1, 2), NAME VARCHAR=('Hello', 'World'));
+"
+
+"Functions (System)","TRANSACTION_ID","
+TRANSACTION_ID()
+","
+Returns the current transaction id for this session.
+This method returns NULL if there is no uncommitted change, or if the database is not persisted.
+Otherwise a value of the following form is returned:
+""logFileId-position-sessionId"".
+This method returns a string.
+The value is unique across database restarts (values are not re-used).
+","
+CALL TRANSACTION_ID()
+"
+
+"Functions (System)","TRUNCATE_VALUE","
+TRUNCATE_VALUE(value, precisionInt, forceBoolean)
+","
+Truncate a value to the required precision.
+The precision of the returned value may be a bit larger than requested,
+because fixed precision values are not truncated (unlike the numeric TRUNCATE method).
+Unlike CAST, the truncating a decimal value may lose precision if the force flag is set to true.
+The method returns a value with the same data type as the first parameter.
+","
+CALL TRUNCATE_VALUE(X, 10, TRUE);
+"
+
+"Functions (System)","UNNEST","
+UNNEST(array, [,...]) [WITH ORDINALITY]
+","
+Returns the result set.
+Number of columns is equal to number of arguments,
+plus one additional column with row number if WITH ORDINALITY is specified.
+Number of rows is equal to length of longest specified array.
+If multiple arguments are specified and they have different length, cells with missing values will contain null values.
+","
+SELECT * FROM UNNEST(ARRAY['a', 'b', 'c']);
+"
+
+"Functions (System)","USER","
+{ USER | CURRENT_USER } ()
+","
+Returns the name of the current user of this session.
+","
+CURRENT_USER()
+"
+
+"Functions (System)","H2VERSION","
+H2VERSION()
+","
+Returns the H2 version as a String.
+","
+H2VERSION()
+"
+
+"Functions (Window)","ROW_NUMBER","
+ROW_NUMBER() OVER windowNameOrSpecification
+","
+Returns the number of the current row starting with 1.
+Window frame clause is not allowed for this function.
+
+Window functions in H2 may require a lot of memory for large queries.
+","
+SELECT ROW_NUMBER() OVER (), * FROM TEST;
+SELECT ROW_NUMBER() OVER (ORDER BY ID), * FROM TEST;
+SELECT ROW_NUMBER() OVER (PARTITION BY CATEGORY ORDER BY ID), * FROM TEST;
+"
+
+"Functions (Window)","RANK","
+RANK() OVER windowNameOrSpecification
+","
+Returns the rank of the current row.
+The rank of a row is the number of rows that precede this row plus 1.
+If two or more rows have the same values in ORDER BY columns, these rows get the same rank from the first row with the same values.
+It means that gaps in ranks are possible.
+This function requires window order clause.
+Window frame clause is not allowed for this function.
+
+Window functions in H2 may require a lot of memory for large queries.
+","
+SELECT RANK() OVER (ORDER BY ID), * FROM TEST;
+SELECT RANK() OVER (PARTITION BY CATEGORY ORDER BY ID), * FROM TEST;
+"
+
+"Functions (Window)","DENSE_RANK","
+DENSE_RANK() OVER windowNameOrSpecification
+","
+Returns the dense rank of the current row.
+The rank of a row is the number of groups of rows with the same values in ORDER BY columns that precede group with this row plus 1.
+If two or more rows have the same values in ORDER BY columns, these rows get the same rank.
+Gaps in ranks are not possible.
+This function requires window order clause.
+Window frame clause is not allowed for this function.
+
+Window functions in H2 may require a lot of memory for large queries.
+","
+SELECT DENSE_RANK() OVER (ORDER BY ID), * FROM TEST;
+SELECT DENSE_RANK() OVER (PARTITION BY CATEGORY ORDER BY ID), * FROM TEST;
+"
+
+"Functions (Window)","PERCENT_RANK","
+PERCENT_RANK() OVER windowNameOrSpecification
+","
+Returns the relative rank of the current row.
+The relative rank is calculated as (RANK - 1) / (NR - 1),
+where RANK is a rank of the row and NR is a number of rows in window partition with this row.
+Note that result is always 0 if window order clause is not specified.
+Window frame clause is not allowed for this function.
+
+Window functions in H2 may require a lot of memory for large queries.
+","
+SELECT PERCENT_RANK() OVER (ORDER BY ID), * FROM TEST;
+SELECT PERCENT_RANK() OVER (PARTITION BY CATEGORY ORDER BY ID), * FROM TEST;
+"
+
+"Functions (Window)","CUME_DIST","
+CUME_DIST() OVER windowNameOrSpecification
+","
+Returns the relative rank of the current row.
+The relative rank is calculated as NP / NR
+where NP is a number of rows that precede the current row or have the same values in ORDER BY columns
+and NR is a number of rows in window partition with this row.
+Note that result is always 1 if window order clause is not specified.
+Window frame clause is not allowed for this function.
+
+Window functions in H2 may require a lot of memory for large queries.
+","
+SELECT CUME_DIST() OVER (ORDER BY ID), * FROM TEST;
+SELECT CUME_DIST() OVER (PARTITION BY CATEGORY ORDER BY ID), * FROM TEST;
+"
+
+"Functions (Window)","NTILE","
+NTILE(long) OVER windowNameOrSpecification
+","
+Distributes the rows into a specified number of groups.
+Number of groups should be a positive long value.
+NTILE returns the 1-based number of the group to which the current row belongs.
+First groups will have more rows if number of rows is not divisible by number of groups.
+For example, if 5 rows are distributed into 2 groups this function returns 1 for the first 3 row and 2 for the last 2 rows.
+This function requires window order clause.
+Window frame clause is not allowed for this function.
+
+Window functions in H2 may require a lot of memory for large queries.
+","
+SELECT NTILE(10) OVER (ORDER BY ID), * FROM TEST;
+SELECT NTILE(5) OVER (PARTITION BY CATEGORY ORDER BY ID), * FROM TEST;
+"
+
+"Functions (Window)","LEAD","
+LEAD(value [, offsetInt [, defaultValue]]) [{RESPECT|IGNORE} NULLS]
+OVER windowNameOrSpecification
+","
+Returns the value in a next row with specified offset relative to the current row.
+Offset must be non-negative.
+If IGNORE NULLS is specified rows with null values in selected expression are skipped.
+If number of considered rows is less than specified relative number this function returns NULL
+or the specified default value, if any.
+If offset is 0 the value from the current row is returned unconditionally.
+This function requires window order clause.
+Window frame clause is not allowed for this function.
+
+Window functions in H2 may require a lot of memory for large queries.
+","
+SELECT LEAD(X) OVER (ORDER BY ID), * FROM TEST;
+SELECT LEAD(X, 2, 0) IGNORE NULLS OVER (
+    PARTITION BY CATEGORY ORDER BY ID
+), * FROM TEST;
+"
+
+"Functions (Window)","LAG","
+LAG(value [, offsetInt [, defaultValue]]) [{RESPECT|IGNORE} NULLS]
+OVER windowNameOrSpecification
+","
+Returns the value in a previous row with specified offset relative to the current row.
+Offset must be non-negative.
+If IGNORE NULLS is specified rows with null values in selected expression are skipped.
+If number of considered rows is less than specified relative number this function returns NULL
+or the specified default value, if any.
+If offset is 0 the value from the current row is returned unconditionally.
+This function requires window order clause.
+Window frame clause is not allowed for this function.
+
+Window functions in H2 may require a lot of memory for large queries.
+","
+SELECT LAG(X) OVER (ORDER BY ID), * FROM TEST;
+SELECT LAG(X, 2, 0) IGNORE NULLS OVER (
+    PARTITION BY CATEGORY ORDER BY ID
+), * FROM TEST;
+"
+
+"Functions (Window)","FIRST_VALUE","
+FIRST_VALUE(value) [{RESPECT|IGNORE} NULLS]
+OVER windowNameOrSpecification
+","
+Returns the first value in a window.
+If IGNORE NULLS is specified null values are skipped and the function returns first non-null value, if any.
+
+Window functions in H2 may require a lot of memory for large queries.
+","
+SELECT FIRST_VALUE(X) OVER (ORDER BY ID), * FROM TEST;
+SELECT FIRST_VALUE(X) IGNORE NULLS OVER (PARTITION BY CATEGORY ORDER BY ID), * FROM TEST;
+"
+
+"Functions (Window)","LAST_VALUE","
+LAST_VALUE(value) [{RESPECT|IGNORE} NULLS]
+OVER windowNameOrSpecification
+","
+Returns the last value in a window.
+If IGNORE NULLS is specified null values are skipped and the function returns last non-null value before them, if any;
+if there is no non-null value it returns NULL.
+Note that the last value is actually a value in the current group of rows
+if window order clause is specified and window frame clause is not specified.
+
+Window functions in H2 may require a lot of memory for large queries.
+","
+SELECT LAST_VALUE(X) OVER (ORDER BY ID), * FROM TEST;
+SELECT LAST_VALUE(X) IGNORE NULLS OVER (
+    PARTITION BY CATEGORY ORDER BY ID
+    RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+), * FROM TEST;
+"
+
+"Functions (Window)","NTH_VALUE","
+NTH_VALUE(value, nInt) [FROM {FIRST|LAST}] [{RESPECT|IGNORE} NULLS]
+OVER windowNameOrSpecification
+","
+Returns the value in a row with a specified relative number in a window.
+Relative row number must be positive.
+If FROM LAST is specified rows a counted backwards from the last row.
+If IGNORE NULLS is specified rows with null values in selected expression are skipped.
+If number of considered rows is less than specified relative number this function returns NULL.
+Note that the last row is actually a last row in the current group of rows
+if window order clause is specified and window frame clause is not specified.
+
+Window functions in H2 may require a lot of memory for large queries.
+","
+SELECT NTH_VALUE(X) OVER (ORDER BY ID), * FROM TEST;
+SELECT NTH_VALUE(X) IGNORE NULLS OVER (
+    PARTITION BY CATEGORY ORDER BY ID
+    RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+), * FROM TEST;
+"
+
+"Functions (Window)","RATIO_TO_REPORT","
+RATIO_TO_REPORT(value)
+OVER windowNameOrSpecification
+","
+Returns the ratio of a value to the sum of all values.
+If argument is NULL or sum of all values is 0, then the value of function is NULL.
+Window ordering and window frame clauses are not allowed for this function.
+
+Window functions in H2 may require a lot of memory for large queries.
+","
+SELECT X, RATIO_TO_REPORT(X) OVER (PARTITION BY CATEGORY), CATEGORY FROM TEST;
+"
+
+"System Tables","Information Schema","
+INFORMATION_SCHEMA
+","
+To get the list of system tables, execute the statement SELECT * FROM
+INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'INFORMATION_SCHEMA'
+","
+
+"
+"System Tables","Range Table","
+SYSTEM_RANGE(start, end)
+","
+Contains all values from start to end (this is a dynamic table).
+","
+SYSTEM_RANGE(0, 100)
+"

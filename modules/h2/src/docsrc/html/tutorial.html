@@ -1,0 +1,1502 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+and the EPL 1.0 (http://h2database.com/html/license.html).
+Initial Developer: H2 Group
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>
+Tutorial
+</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<!-- [search] { -->
+<script type="text/javascript" src="navigation.js"></script>
+</head><body onload="frameMe();">
+<table class="content"><tr class="content"><td class="content"><div class="contentDiv">
+<!-- } -->
+
+<h1 id="tutorial_index">Tutorial</h1>
+<a href="#tutorial_starting_h2_console">
+    Starting and Using the H2 Console</a><br />
+<a href="#console_syntax">
+    Special H2 Console Syntax</a><br />
+<a href="#console_settings">
+    Settings of the H2 Console</a><br />
+<a href="#connecting_using_jdbc">
+    Connecting to a Database using JDBC</a><br />
+<a href="#creating_new_databases">
+    Creating New Databases</a><br />
+<a href="#using_server">
+    Using the Server</a><br />
+<a href="#using_hibernate">
+    Using Hibernate</a><br />
+<a href="#using_toplink">
+    Using TopLink and Glassfish</a><br />
+<a href="#using_eclipselink">
+    Using EclipseLink</a><br />
+<a href="#using_activemq">
+    Using Apache ActiveMQ</a><br />
+<a href="#using_netbeans">
+    Using H2 within NetBeans</a><br />
+<a href="#using_jooq">
+    Using H2 with jOOQ</a><br />
+<a href="#web_applications">
+    Using Databases in Web Applications</a><br />
+<a href="#android">
+    Android</a><br />
+<a href="#csv">
+    CSV (Comma Separated Values) Support</a><br />
+<a href="#upgrade_backup_restore">
+    Upgrade, Backup, and Restore</a><br />
+<a href="#command_line_tools">
+    Command Line Tools</a><br />
+<a href="#shell_tool">
+    The Shell Tool</a><br />
+<a href="#open_office">
+    Using OpenOffice Base</a><br />
+<a href="#web_start">
+    Java Web Start / JNLP</a><br />
+<a href="#connection_pool">
+    Using a Connection Pool</a><br />
+<a href="#fulltext">
+    Fulltext Search</a><br />
+<a href="#user_defined_variables">
+    User-Defined Variables</a><br />
+<a href="#date_time">
+    Date and Time</a><br />
+<a href="#spring">
+    Using Spring</a><br />
+<a href="#osgi">
+    OSGi</a><br />
+<a href="#jmx">
+    Java Management Extension (JMX)</a><br />
+
+<h2 id="tutorial_starting_h2_console">Starting and Using the H2 Console</h2>
+<p>
+The H2 Console application lets you access a database using a browser.
+This can be a H2 database, or another database that supports the JDBC API.
+</p>
+<img src="images/console-2.png"
+    width="535" height="179"
+    alt="Web Browser - H2 Console Server - H2 Database" />
+<p>
+This is a client/server application, so both a server and a client (a browser) are required to run it.
+</p><p>
+Depending on your platform and environment, there are multiple ways to start the H2 Console:
+</p>
+<table class="main">
+<tr><th>OS</th><th>Start</th></tr>
+<tr>
+    <td>Windows</td>
+    <td>
+    Click [Start], [All Programs], [H2], and [H2 Console (Command Line)]<br />
+    An icon will be added to the system tray:
+    <img src="images/db-64-t.png"
+        width="32" height="32"
+        alt="H2 database icon" /><br />
+    If you don't get the window and the system tray icon,
+    then maybe Java is not installed correctly (in this case, try another way to start the application).
+    A browser window should open and point to the login page at <code>http://localhost:8082</code>.
+    </td>
+</tr>
+<tr>
+    <td>Windows</td>
+    <td>
+    Open a file browser, navigate to <code>h2/bin</code>, and
+    double click on <code>h2.bat</code>.<br />
+    A console window appears. If there is a problem, you will see an error message
+    in this window. A browser window will open and point to the login page
+    (URL: <code>http://localhost:8082</code>).
+    </td>
+</tr>
+<tr>
+    <td>Any</td>
+    <td>
+    Double click on the <code>h2*.jar</code> file.
+    This only works if the <code>.jar</code> suffix is associated with Java.
+    </td>
+</tr>
+<tr>
+    <td>Any</td>
+    <td>
+    Open a console window, navigate to the directory <code>h2/bin</code>, and type:
+    <pre>java -jar h2*.jar</pre>
+    </td>
+</tr>
+</table>
+<p>
+If the console startup procedure is unable to locate the default system web browser,
+an error message may be displayed. It is possible to explicitly tell H2 which
+program/script to use when opening a system web browser by setting either the BROWSER
+environment variable, or the h2.browser java property.
+</p>
+
+<h3>Firewall</h3>
+<p>
+If you start the server, you may get a security warning from the firewall (if you have installed one).
+If you don't want other computers in the network to access the application on your machine, you can
+let the firewall block those connections. The connection from the local machine will still work.
+Only if you want other computers to access the database on this computer, you need allow remote connections
+in the firewall.
+</p>
+<p>
+It has been reported that when using Kaspersky 7.0 with firewall, the H2 Console is very slow when
+connecting over the IP address. A workaround is to connect using 'localhost'.
+</p>
+<p>
+A small firewall is already built into the server: other computers may not connect to the server by default.
+To change this, go to 'Preferences' and select 'Allow connections from other computers'.
+</p>
+
+<h3>Testing Java</h3>
+<p>
+To find out which version of Java is installed, open a command prompt and type:
+</p>
+<pre>
+java -version
+</pre>
+<p>
+If you get an error message, you may need to add the Java binary directory to the path environment variable.
+</p>
+
+<h3>Error Message 'Port may be in use'</h3>
+<p>
+You can only start one instance of the H2 Console,
+otherwise you will get the following error message:
+"The Web server could not be started. Possible cause: another server is already running...".
+It is possible to start multiple console applications on the same computer (using different ports),
+but this is usually not required as the console supports multiple concurrent connections.
+</p>
+
+<h3>Using another Port</h3>
+<p>
+If the default port of the H2 Console is already in use by another application,
+then a different port needs to be configured. The settings are stored in a properties file.
+For details, see <a href="#console_settings">Settings of the H2 Console</a>.
+The relevant entry is <code>webPort</code>.
+</p>
+<p>
+If no port is specified for the TCP and PG servers, each service will try to listen on its default port.
+If the default port is already in use, a random port is used.
+</p>
+
+<h3>Connecting to the Server using a Browser</h3>
+<p>
+If the server started successfully, you can connect to it using a web browser.
+Javascript needs to be enabled.
+If you started the server on the same computer as the browser, open the URL <code>http://localhost:8082</code>.
+If you want to connect to the application from another computer, you need to provide the IP address of the server, for example:
+<code>http://192.168.0.2:8082</code>.
+If you enabled TLS on the server side, the URL needs to start with <code>https://</code>.
+</p>
+
+<h3>Multiple Concurrent Sessions</h3>
+<p>
+Multiple concurrent browser sessions are supported. As that the database objects reside on the server,
+the amount of concurrent work is limited by the memory available to the server application.
+</p>
+
+<h3>Login</h3>
+<p>
+At the login page, you need to provide connection information to connect to a database.
+Set the JDBC driver class of your database, the JDBC URL, user name, and password.
+If you are done, click [Connect].
+</p><p>
+You can save and reuse previously saved settings. The settings are stored in a properties file
+(see <a href="#console_settings">Settings of the H2 Console</a>).
+</p>
+
+<h3>Error Messages</h3>
+<p>
+Error messages in are shown in red. You can show/hide the stack trace of the exception
+by clicking on the message.
+</p>
+
+<h3>Adding Database Drivers</h3>
+<p>
+To register additional JDBC drivers (MySQL, PostgreSQL, HSQLDB,...),
+add the jar file names to the environment variables <code>H2DRIVERS</code> or <code>CLASSPATH</code>.
+Example (Windows): to add the HSQLDB JDBC driver
+<code>C:\Programs\hsqldb\lib\hsqldb.jar</code>, set the environment variable
+<code>H2DRIVERS</code> to
+<code>C:\Programs\hsqldb\lib\hsqldb.jar</code>.
+</p><p>
+Multiple drivers can be set; entries need to be separated by <code>;</code> (Windows)
+or <code>:</code> (other operating systems).
+Spaces in the path names are supported. The settings must not be quoted.
+</p>
+
+<h3>Using the H2 Console</h3>
+<p>
+The H2 Console application has three main panels: the toolbar on top, the tree on the left, and the query/result panel on the right.
+The database objects (for example, tables) are listed on the left.
+Type a SQL command in the query panel and click [Run]. The result appears just below the command.
+</p>
+
+<h3>Inserting Table Names or Column Names</h3>
+<p>
+To insert table and column names into the script, click on the item in the tree.
+If you click on a table while the query is empty, then <code>SELECT * FROM ...</code> is added.
+While typing a query, the table that was used is expanded in the tree.
+For example if you type <code>SELECT * FROM TEST T WHERE T.</code> then the table TEST is expanded.
+</p>
+
+<h3>Disconnecting and Stopping the Application</h3>
+<p>
+To log out of the database, click [Disconnect] in the toolbar panel.
+However, the server is still running and ready to accept new sessions.
+</p><p>
+To stop the server, right click on the system tray icon and select [Exit].
+If you don't have the system tray icon,
+navigate to [Preferences] and click [Shutdown],
+press [Ctrl]+[C] in the console where the server was started (Windows),
+or close the console window.
+</p>
+
+<h2 id="console_syntax">Special H2 Console Syntax</h2>
+<p>
+The H2 Console supports a few built-in commands.
+Those are interpreted within the H2 Console, so they work with any database.
+Built-in commands need to be at the beginning of a statement (before any remarks),
+otherwise they are not parsed correctly. If in doubt, add <code>;</code> before the command.
+</p>
+<table class="main">
+    <tr>
+        <th>Command(s)</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @autocommit_true;<br />
+            @autocommit_false;
+        </td>
+        <td>
+            Enable or disable autocommit.
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @cancel;
+        </td>
+        <td>
+            Cancel the currently running statement.
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @columns null null TEST;<br />
+            @index_info&nbsp;null&nbsp;null&nbsp;TEST;<br />
+            @tables;<br />
+            @tables null null TEST;<br />
+        </td>
+        <td>
+            Call the corresponding <code>DatabaseMetaData.get</code> method.
+            Patterns are case sensitive (usually identifiers are uppercase).
+            For information about the parameters, see the Javadoc documentation.
+            Missing parameters at the end of the line are set to null. The complete list of metadata commands is:
+            <code>
+            @attributes, @best_row_identifier, @catalogs, @columns,
+            @column_privileges, @cross_references, @exported_keys,
+            @imported_keys, @index_info,  @primary_keys, @procedures,
+            @procedure_columns, @schemas, @super_tables, @super_types,
+            @tables, @table_privileges, @table_types, @type_info, @udts,
+            @version_columns
+            </code>
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @edit select * from test;
+        </td>
+        <td>
+            Use an updatable result set.
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @generated&nbsp;insert&nbsp;into&nbsp;test()&nbsp;values();
+        </td>
+        <td>
+            Show the result of <code>Statement.getGeneratedKeys()</code>.
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @history;
+        </td>
+        <td>
+            List the command history.
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @info;
+        </td>
+        <td>
+            Display the result of various <code>Connection</code> and <code>DatabaseMetaData</code> methods.
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @list select * from test;
+        </td>
+        <td>
+            Show the result set in list format (each column on its own line, with row numbers).
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @loop 1000 select ?, ?/*rnd*/;<br />
+            @loop 1000 @statement select ?;
+        </td>
+        <td>
+            Run the statement this many times.
+            Parameters (<code>?</code>) are set using a loop from 0 up to x - 1.
+            Random values are used for each <code>?/*rnd*/</code>.
+            A Statement object is used instead of a PreparedStatement if <code>@statement</code> is used.
+            Result sets are read until <code>ResultSet.next()</code> returns <code>false</code>.
+            Timing information is printed.
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @maxrows&nbsp;20;
+        </td>
+        <td>
+            Set the maximum number of rows to display.
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @memory;
+        </td>
+        <td>
+            Show the used and free memory. This will call <code>System.gc()</code>.
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @meta&nbsp;select&nbsp;1;
+        </td>
+        <td>
+            List the <code>ResultSetMetaData</code> after running the query.
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @parameter_meta&nbsp;select&nbsp;?;
+        </td>
+        <td>
+            Show the result of the <code>PreparedStatement.getParameterMetaData()</code> calls.
+            The statement is not executed.
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @prof_start;<br />
+            call&nbsp;hash('SHA256',&nbsp;'',&nbsp;1000000);<br />
+            @prof_stop;
+        </td>
+        <td>
+            Start/stop the built-in profiling tool.
+            The top 3 stack traces of the statement(s) between start and stop are listed
+            (if there are 3).
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @prof_start;<br />
+            @sleep 10;<br />
+            @prof_stop;
+        </td>
+        <td>
+            Sleep for a number of seconds. Used to profile a long running query or
+            operation that is running in another session (but in the same process).
+        </td>
+    </tr>
+    <tr>
+        <td class="notranslate">
+            @transaction_isolation;<br />
+            @transaction_isolation&nbsp;2;
+        </td>
+        <td>
+            Display (without parameters) or change
+            (with parameters 1, 2, 4, 8) the transaction isolation level.
+        </td>
+    </tr>
+</table>
+
+<h2 id="console_settings">Settings of the H2 Console</h2>
+<p>
+The settings of the H2 Console are stored in a configuration file
+called <code>.h2.server.properties</code> in you user home directory.
+For Windows installations, the user home directory is usually
+<code>C:\Documents and Settings\[username]</code> or
+<code>C:\Users\[username]</code>.
+The configuration file contains the settings of the application and is automatically created when the H2 Console is first started.
+Supported settings are:
+</p>
+<ul><li><code>webAllowOthers</code>: allow other computers to connect.
+</li><li><code>webPort</code>: the port of the H2 Console
+</li><li><code>webSSL</code>: use encrypted TLS (HTTPS) connections.
+</li><li><code>webAdminPassword</code>: password to access preferences and tools of H2 Console.
+</li></ul>
+<p>
+In addition to those settings, the properties of the last recently used connection
+are listed in the form
+<code>&lt;number&gt;=&lt;name&gt;|&lt;driver&gt;|&lt;url&gt;|&lt;user&gt;</code>
+using the escape character <code>\</code>.
+Example:
+<code>1=Generic H2 (Embedded)|org.h2.Driver|jdbc\:h2\:~/test|sa</code>
+</p>
+
+<h2 id="connecting_using_jdbc">Connecting to a Database using JDBC</h2>
+<p>
+To connect to a database, a Java application first needs to load the database driver,
+and then get a connection. A simple way to do that is using the following code:
+</p>
+<pre>
+import java.sql.*;
+public class Test {
+    public static void main(String[] a)
+            throws Exception {
+        Connection conn = DriverManager.
+            getConnection("jdbc:h2:~/test", "sa", "");
+        // add application code here
+        conn.close();
+    }
+}
+</pre>
+<p>
+This code opens a connection (using <code>DriverManager.getConnection()</code>).
+The driver name is <code>"org.h2.Driver"</code>.
+The database URL always needs to start with <code>jdbc:h2:</code>
+to be recognized by this database. The second parameter in the <code>getConnection()</code> call
+is the user name (<code>sa</code> for System Administrator in this example). The third parameter is the password.
+In this database, user names are not case sensitive, but passwords are.
+</p>
+
+<h2 id="creating_new_databases">Creating New Databases</h2>
+<p>
+By default, if the database specified in the <a href="features.html#database_url">embedded</a> URL does not yet exist,
+a new (empty) database is created automatically.
+The user that created the database automatically becomes the administrator of this database.
+</p>
+<p>
+Auto-creation of databases can be disabled, see
+<a href="features.html#database_only_if_exists">Opening a Database Only if it Already Exists</a>.
+</p>
+<p>
+H2 Console does not allow creation of databases unless a browser window is opened by Console during its
+startup or from its icon in the system tray and remote access is not enabled.
+A context menu of the tray icon can also be used to create a new database.
+</p>
+<p>
+You can also create a new local database from a command line with a Shell tool:
+</p>
+<pre>
+&gt; java -cp h2-*.jar org.h2.tools.Shell
+
+Welcome to H2 Shell
+Exit with Ctrl+C
+[Enter]   jdbc:h2:mem:2
+URL       jdbc:h2:./path/to/database
+[Enter]   org.h2.Driver
+Driver
+[Enter]   sa
+User      your_username
+Password  (hidden)
+Type the same password again to confirm database creation.
+Password  (hidden)
+Connected
+
+sql&gt; quit
+Connection closed
+</pre>
+<p>
+By default remote creation of databases from a TCP connection or a web interface is not allowed.
+It's not recommended to enable remote creation of databases due to security reasons.
+User who creates a new database becomes its administrator and therefore gets the same access to your JVM as H2 has
+and the same access to your operating system as Java and your system account allows.
+It's recommended to create all databases locally using an embedded URL, local H2 Console, or the Shell tool.
+</p>
+<p>
+If you really need to allow remote database creation, you can pass <code>-ifNotExists</code> parameter to
+TCP, PG, or Web servers (but not to the Console tool).
+Its combination with <code>-tcpAllowOthers</code>, <code>-pgAllowOthers</code>, or <code>-webAllowOthers</code>
+effectively creates a remote security hole in your system, if you use it, always guard your ports with a firewall
+or some other solution and use such combination of settings only in trusted networks.
+</p>
+<p>
+H2 Servlet also supports such option.
+When you use it always protect the servlet with security constraints,
+see <a href="#usingH2ConsoleServlet">Using the H2 Console Servlet</a> for example;
+don't forget to uncomment and adjust security configuration for your needs.
+</p>
+
+<h2 id="using_server">Using the Server</h2>
+<p>
+H2 currently supports three server: a web server (for the H2 Console),
+a TCP server (for client/server connections) and an PG server (for PostgreSQL clients).
+Please note that only the web server supports browser connections.
+The servers can be started in different ways, one is using the <code>Server</code> tool.
+Starting the server doesn't open a database - databases are opened as soon as a client connects.
+</p>
+
+<h3>Starting the Server Tool from Command Line</h3>
+<p>
+To start the <code>Server</code> tool from the command line with the default settings, run:
+</p>
+<pre>
+java -cp h2*.jar org.h2.tools.Server
+</pre>
+<p>
+This will start the tool with the default options. To get the list of options and default values, run:
+</p>
+<pre>
+java -cp h2*.jar org.h2.tools.Server -?
+</pre>
+<p>
+There are options available to use other ports, and start or not start parts.
+</p>
+
+<h3>Connecting to the TCP Server</h3>
+<p>
+To remotely connect to a database using the TCP server, use the following driver and database URL:
+</p>
+<ul>
+<li>JDBC driver class: <code>org.h2.Driver</code>
+</li><li>Database URL: <code>jdbc:h2:tcp://localhost/~/test</code>
+</li></ul>
+<p>
+For details about the database URL, see also in Features.
+Please note that you can't connection with a web browser to this URL.
+You can only connect using a H2 client (over JDBC).
+</p>
+
+<h3>Starting the TCP Server within an Application</h3>
+<p>
+Servers can also be started and stopped from within an application. Sample code:
+</p>
+<pre>
+import org.h2.tools.Server;
+...
+// start the TCP Server
+Server server = Server.createTcpServer(args).start();
+...
+// stop the TCP Server
+server.stop();
+</pre>
+
+<h3>Stopping a TCP Server from Another Process</h3>
+<p>
+The TCP server can be stopped from another process.
+To stop the server from the command line, run:
+</p>
+<pre>
+java org.h2.tools.Server -tcpShutdown tcp://localhost:9092
+</pre>
+<p>
+To stop the server from a user application, use the following code:
+</p>
+<pre>
+org.h2.tools.Server.shutdownTcpServer("tcp://localhost:9094");
+</pre>
+<p>
+This function will only stop the TCP server.
+If other server were started in the same process, they will continue to run.
+To avoid recovery when the databases are opened the next time,
+all connections to the databases should be closed before calling this method.
+To stop a remote server, remote connections must be enabled on the server.
+Shutting down a TCP server can be protected using the option <code>-tcpPassword</code>
+(the same password must be used to start and stop the TCP server).
+</p>
+
+<h2 id="using_hibernate">Using Hibernate</h2>
+<p>
+This database supports Hibernate version 3.1 and newer. You can use the HSQLDB Dialect,
+or the native H2 Dialect.
+</p>
+<p>
+When using Hibernate, try to use the <code>H2Dialect</code> if possible.
+When using the <code>H2Dialect</code>,
+compatibility modes such as <code>MODE=MySQL</code> are not supported.
+When using such a compatibility mode, use the Hibernate dialect for the
+corresponding database instead of the <code>H2Dialect</code>;
+but please note H2 does not support all features of all databases.
+</p>
+
+<h2 id="using_toplink">Using TopLink and Glassfish</h2>
+<p>
+To use H2 with Glassfish (or Sun AS), set the Datasource Classname to
+<code>org.h2.jdbcx.JdbcDataSource</code>. You can set this in the GUI
+at Application Server - Resources - JDBC - Connection Pools,
+or by editing the file <code>sun-resources.xml</code>: at element
+<code>jdbc-connection-pool</code>, set the attribute
+<code>datasource-classname</code> to <code>org.h2.jdbcx.JdbcDataSource</code>.
+</p>
+<p>
+The H2 database is compatible with HSQLDB and PostgreSQL.
+To take advantage of H2 specific features, use the <code>H2Platform</code>.
+The source code of this platform is included in H2 at
+<code>src/tools/oracle/toplink/essentials/platform/database/DatabasePlatform.java.txt</code>.
+You will need to copy this file to your application, and rename it to .java.
+To enable it, change the following setting in persistence.xml:
+</p>
+<pre>
+&lt;property
+    name="toplink.target-database"
+    value="oracle.toplink.essentials.platform.database.H2Platform"/&gt;
+</pre>
+<p>
+In old versions of Glassfish, the property name is <code>toplink.platform.class.name</code>.
+</p>
+<p>
+To use H2 within Glassfish, copy the h2*.jar to the directory <code>glassfish/glassfish/lib</code>.
+</p>
+
+<h2 id="using_eclipselink">Using EclipseLink</h2>
+<p>
+To use H2 in EclipseLink, use the platform class <code>org.eclipse.persistence.platform.database.H2Platform</code>.
+If this platform is not available in your version of EclipseLink, you can use the OraclePlatform instead in many case.
+See also <a href="http://wiki.eclipse.org/EclipseLink/Development/Incubator/Extensions/H2Platform">H2Platform</a>.
+</p>
+
+<h2 id="using_activemq">Using Apache ActiveMQ</h2>
+<p>
+When using H2 as the backend database for Apache ActiveMQ, please use the <code>TransactDatabaseLocker</code>
+instead of the default locking mechanism. Otherwise the database file will grow without bounds. The problem is that the
+default locking mechanism uses an uncommitted <code>UPDATE</code> transaction, which keeps the transaction log
+from shrinking (causes the database file to grow). Instead of using an <code>UPDATE</code> statement, the <code>TransactDatabaseLocker</code> uses
+<code>SELECT ... FOR UPDATE</code> which is not problematic.
+To use it, change the ApacheMQ configuration element <code>&lt;jdbcPersistenceAdapter&gt;</code> element,  property
+<code>databaseLocker="org.apache.activemq.store.jdbc.adapter.TransactDatabaseLocker"</code>.
+However, using the MVCC mode will again result in the same problem. Therefore, please do not use the MVCC mode in this case.
+Another (more dangerous) solution is to set <code>useDatabaseLock</code> to false.
+</p>
+
+<h2 id="using_netbeans">Using H2 within NetBeans</h2>
+<p>
+There is a known issue when using the Netbeans SQL Execution Window:
+before executing a query, another query in the form <code>SELECT COUNT(*) FROM &lt;query&gt;</code> is run.
+This is a problem for queries that modify state, such as <code>SELECT SEQ.NEXTVAL</code>.
+In this case, two sequence values are allocated instead of just one.
+</p>
+
+<h2 id="using_jooq">Using H2 with jOOQ</h2>
+<p>
+jOOQ adds a thin layer on top of JDBC, allowing for type-safe SQL construction,
+including advanced SQL, stored procedures and advanced data types.
+jOOQ takes your database schema as a base for code generation.
+If this is your example schema:
+</p>
+<pre>
+CREATE TABLE USER (ID INT, NAME VARCHAR(50));
+</pre>
+<p>
+then run the jOOQ code generator on the command line using this command:
+</p>
+<pre>
+java -cp jooq.jar;jooq-meta.jar;jooq-codegen.jar;h2-1.3.158.jar;.
+org.jooq.util.GenerationTool /codegen.xml
+</pre>
+<p>
+...where <code>codegen.xml</code> is on the classpath and contains this information
+</p>
+<pre>
+&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+&lt;configuration xmlns="http://www.jooq.org/xsd/jooq-codegen-2.3.0.xsd">
+    &lt;jdbc>
+        &lt;driver>org.h2.Driver&lt;/driver>
+        &lt;url>jdbc:h2:~/test&lt;/url>
+        &lt;user>sa&lt;/user>
+        &lt;password>&lt;/password>
+    &lt;/jdbc>
+    &lt;generator>
+        &lt;name>org.jooq.util.DefaultGenerator&lt;/name>
+        &lt;database>
+            &lt;name>org.jooq.util.h2.H2Database&lt;/name>
+            &lt;includes>.*&lt;/includes>
+            &lt;excludes>&lt;/excludes>
+            &lt;inputSchema>PUBLIC&lt;/inputSchema>
+        &lt;/database>
+        &lt;generate>&lt;/generate>
+        &lt;target>
+            &lt;packageName>org.jooq.h2.generated&lt;/packageName>
+            &lt;directory>./src&lt;/directory>
+        &lt;/target>
+    &lt;/generator>
+&lt;/configuration>
+</pre>
+<p>
+Using the generated source, you can query the database as follows:
+</p>
+<pre>
+Factory create = new H2Factory(connection);
+Result&lt;UserRecord&gt; result =
+create.selectFrom(USER)
+    .where(NAME.like("Johnny%"))
+    .orderBy(ID)
+    .fetch();
+</pre>
+<p>
+See more details on <a href="http://www.jooq.org">jOOQ Homepage</a>
+and in the <a href="http://www.jooq.org/tutorial.php">jOOQ Tutorial</a>
+</p>
+
+<h2 id="web_applications">Using Databases in Web Applications</h2>
+<p>
+There are multiple ways to access a database from within web
+applications. Here are some examples if you use Tomcat or JBoss.
+</p>
+
+<h3>Embedded Mode</h3>
+<p>
+The (currently) simplest solution is to use the database in the
+embedded mode, that means open a connection in your application when
+it starts (a good solution is using a Servlet Listener, see below), or
+when a session starts. A database can be accessed from multiple
+sessions and applications at the same time, as long as they run in the
+same process. Most Servlet Containers (for example Tomcat) are just
+using one process, so this is not a problem (unless you run Tomcat in
+clustered mode). Tomcat uses multiple threads and multiple
+classloaders. If multiple applications access the same database at the
+same time, you need to put the database jar in the <code>shared/lib</code> or
+<code>server/lib</code> directory. It is a good idea to open the database when the
+web application starts, and close it when the web application stops.
+If using multiple applications, only one (any) of them needs to do
+that. In the application, an idea is to use one connection per
+Session, or even one connection per request (action). Those
+connections should be closed after use if possible (but it's not that
+bad if they don't get closed).
+</p>
+
+<h3>Server Mode</h3>
+<p>
+The server mode is similar, but it allows you to run the server in another process.
+</p>
+
+<h3>Using a Servlet Listener to Start and Stop a Database</h3>
+<p>
+Add the h2*.jar file to your web application, and
+add the following snippet to your web.xml file (between the
+<code>context-param</code> and the <code>filter</code> section):
+</p>
+<pre>
+&lt;listener&gt;
+    &lt;listener-class&gt;org.h2.server.web.DbStarter&lt;/listener-class&gt;
+&lt;/listener&gt;
+</pre>
+<p>
+For details on how to access the database, see the file <code>DbStarter.java</code>.
+By default this tool opens an embedded connection
+using the database URL <code>jdbc:h2:~/test</code>,
+user name <code>sa</code>, and password <code>sa</code>.
+If you want to use this connection within your servlet, you can access as follows:
+</p>
+<pre>
+Connection conn = getServletContext().getAttribute("connection");
+</pre>
+<p>
+<code>DbStarter</code> can also start the TCP server, however this is disabled by default.
+To enable it, use the parameter <code>db.tcpServer</code> in the file <code>web.xml</code>.
+Here is the complete list of options.
+These options need to be placed between the <code>description</code> tag
+and the <code>listener</code> / <code>filter</code> tags:
+</p>
+<pre>
+&lt;context-param&gt;
+    &lt;param-name&gt;db.url&lt;/param-name&gt;
+    &lt;param-value&gt;jdbc:h2:~/test&lt;/param-value&gt;
+&lt;/context-param&gt;
+&lt;context-param&gt;
+    &lt;param-name&gt;db.user&lt;/param-name&gt;
+    &lt;param-value&gt;sa&lt;/param-value&gt;
+&lt;/context-param&gt;
+&lt;context-param&gt;
+    &lt;param-name&gt;db.password&lt;/param-name&gt;
+    &lt;param-value&gt;sa&lt;/param-value&gt;
+&lt;/context-param&gt;
+&lt;context-param&gt;
+    &lt;param-name&gt;db.tcpServer&lt;/param-name&gt;
+    &lt;param-value&gt;-tcpAllowOthers&lt;/param-value&gt;
+&lt;/context-param&gt;
+</pre>
+<p>
+When the web application is stopped, the database connection will be closed automatically.
+If the TCP server is started within the <code>DbStarter</code>, it will also be stopped automatically.
+</p>
+
+<h3 id="usingH2ConsoleServlet">Using the H2 Console Servlet</h3>
+<p>
+The H2 Console is a standalone application and includes its own web server, but it can be
+used as a servlet as well. To do that, include the <code>h2*.jar</code> file in your application, and
+add the following configuration to your <code>web.xml</code>:
+</p>
+<pre>
+&lt;servlet&gt;
+    &lt;servlet-name&gt;H2Console&lt;/servlet-name&gt;
+    &lt;servlet-class&gt;org.h2.server.web.WebServlet&lt;/servlet-class&gt;
+    &lt;!--
+    &lt;init-param&gt;
+        &lt;param-name&gt;webAllowOthers&lt;/param-name&gt;
+        &lt;param-value&gt;&lt;/param-value&gt;
+    &lt;/init-param&gt;
+    &lt;init-param&gt;
+        &lt;param-name&gt;trace&lt;/param-name&gt;
+        &lt;param-value&gt;&lt;/param-value&gt;
+    &lt;/init-param&gt;
+    --&gt;
+    &lt;load-on-startup&gt;1&lt;/load-on-startup&gt;
+&lt;/servlet&gt;
+&lt;servlet-mapping&gt;
+    &lt;servlet-name&gt;H2Console&lt;/servlet-name&gt;
+    &lt;url-pattern&gt;/console/*&lt;/url-pattern&gt;
+&lt;/servlet-mapping&gt;
+&lt;!--
+&lt;security-role&gt;
+    &lt;role-name&gt;admin&lt;/role-name&gt;
+&lt;/security-role&gt;
+&lt;security-constraint&gt;
+    &lt;web-resource-collection&gt;
+        &lt;web-resource-name&gt;H2 Console&lt;/web-resource-name&gt;
+        &lt;url-pattern&gt;/console/*&lt;/url-pattern&gt;
+    &lt;/web-resource-collection&gt;
+    &lt;auth-constraint&gt;
+        &lt;role-name&gt;admin&lt;/role-name&gt;
+    &lt;/auth-constraint&gt;
+&lt;/security-constraint&gt;
+--&gt;
+</pre>
+<p>
+For details, see also <code>src/tools/WEB-INF/web.xml</code>.
+</p>
+<p>
+To create a web application with just the H2 Console, run the following command:
+</p>
+<pre>
+build warConsole
+</pre>
+
+<h2 id="android">Android</h2>
+<p>
+You can use this database on an Android device (using the Dalvik VM) instead of or in addition to SQLite.
+So far, only very few tests and benchmarks were run, but it seems that performance is similar to SQLite,
+except for opening and closing a database, which is not yet optimized in H2
+(H2 takes about 0.2 seconds, and SQLite about 0.02 seconds).
+Read operations seem to be a bit faster than SQLite, and write operations seem to be slower.
+So far, only very few tests have been run, and everything seems to work as expected.
+Fulltext search was not yet tested, however the native fulltext search should work.
+</p>
+<p>
+Reasons to use H2 instead of SQLite are:
+</p>
+<ul><li>Full Unicode support including UPPER() and LOWER().
+</li><li>Streaming API for BLOB and CLOB data.
+</li><li>Fulltext search.
+</li><li>Multiple connections.
+</li><li>User defined functions and triggers.
+</li><li>Database file encryption.
+</li><li>Reading and writing CSV files (this feature can be used outside the database as well).
+</li><li>Referential integrity and check constraints.
+</li><li>Better data type and SQL support.
+</li><li>In-memory databases, read-only databases, linked tables.
+</li><li>Better compatibility with other databases which simplifies porting applications.
+</li><li>Possibly better performance (so far for read operations).
+</li><li>Server mode (accessing a database on a different machine over TCP/IP).
+</li></ul>
+<p>
+Currently only the JDBC API is supported (it is planned to support the Android database API in future releases).
+Both the regular H2 jar file and the smaller <code>h2small-*.jar</code> can be used.
+To create the smaller jar file, run the command <code>./build.sh jarSmall</code> (Linux / Mac OS)
+or <code>build.bat jarSmall</code> (Windows).
+</p>
+<p>
+The database files needs to be stored in a place that is accessible for the application.
+Example:
+</p>
+<pre>
+String url = "jdbc:h2:/data/data/" +
+    "com.example.hello" +
+    "/data/hello" +
+    ";FILE_LOCK=FS" +
+    ";PAGE_SIZE=1024" +
+    ";CACHE_SIZE=8192";
+conn = DriverManager.getConnection(url);
+...
+</pre>
+<p>
+Limitations: Using a connection pool is currently not supported, because the required <code>javax.sql.</code> classes are not available on Android.
+</p>
+
+<h2 id="csv">CSV (Comma Separated Values) Support</h2>
+<p>
+The CSV file support can be used inside the database using the functions
+<code>CSVREAD</code> and <code>CSVWRITE</code>,
+or it can be used outside the database as a standalone tool.
+</p>
+
+<h3>Reading a CSV File from Within a Database</h3>
+<p>
+A CSV file can be read using the function <code>CSVREAD</code>. Example:
+</p>
+<pre>
+SELECT * FROM CSVREAD('test.csv');
+</pre>
+<p>
+Please note for performance reason, <code>CSVREAD</code> should not be used inside a join.
+Instead, import the data first (possibly into a temporary table), create the required indexes
+if necessary, and then query this table.
+</p>
+
+<h3>Importing Data from a CSV File</h3>
+<p>
+A fast way to load or import data (sometimes called 'bulk load') from a CSV file is
+to combine table creation with import.
+Optionally, the column names and data types can be set when creating the table.
+Another option is to use <code>INSERT INTO ... SELECT</code>.
+</p>
+<pre>
+CREATE TABLE TEST AS SELECT * FROM CSVREAD('test.csv');
+CREATE TABLE TEST(ID INT PRIMARY KEY, NAME VARCHAR(255))
+    AS SELECT * FROM CSVREAD('test.csv');
+</pre>
+
+<h3>Writing a CSV File from Within a Database</h3>
+<p>
+The built-in function <code>CSVWRITE</code> can be used to create a CSV file from a query.
+Example:
+</p>
+<pre>
+CREATE TABLE TEST(ID INT, NAME VARCHAR);
+INSERT INTO TEST VALUES(1, 'Hello'), (2, 'World');
+CALL CSVWRITE('test.csv', 'SELECT * FROM TEST');
+</pre>
+
+<h3>Writing a CSV File from a Java Application</h3>
+<p>
+The <code>Csv</code> tool can be used in a Java application even when not using a database at all.
+Example:
+</p>
+<pre>
+import java.sql.*;
+import org.h2.tools.Csv;
+import org.h2.tools.SimpleResultSet;
+public class TestCsv {
+    public static void main(String[] args) throws Exception {
+        SimpleResultSet rs = new SimpleResultSet();
+        rs.addColumn("NAME", Types.VARCHAR, 255, 0);
+        rs.addColumn("EMAIL", Types.VARCHAR, 255, 0);
+        rs.addRow("Bob Meier", "bob.meier@abcde.abc");
+        rs.addRow("John Jones", "john.jones@abcde.abc");
+        new Csv().write("data/test.csv", rs, null);
+    }
+}
+</pre>
+
+<h3>Reading a CSV File from a Java Application</h3>
+<p>
+It is possible to read a CSV file without opening a database.
+Example:
+</p>
+<pre>
+import java.sql.*;
+import org.h2.tools.Csv;
+public class TestCsv {
+    public static void main(String[] args) throws Exception {
+        ResultSet rs = new Csv().read("data/test.csv", null, null);
+        ResultSetMetaData meta = rs.getMetaData();
+        while (rs.next()) {
+            for (int i = 0; i &lt; meta.getColumnCount(); i++) {
+                System.out.println(
+                    meta.getColumnLabel(i + 1) + ": " +
+                    rs.getString(i + 1));
+            }
+            System.out.println();
+        }
+        rs.close();
+    }
+}
+</pre>
+
+<h2 id="upgrade_backup_restore">Upgrade, Backup, and Restore</h2>
+
+<h3>Database Upgrade</h3>
+<p>
+The recommended way to upgrade from one version of the database engine to the next
+version is to create a backup of the database (in the form of a SQL script) using the old engine,
+and then execute the SQL script using the new engine.
+</p>
+
+<h3>Backup using the Script Tool</h3>
+<p>
+The recommended way to backup a database is to create a compressed SQL script file.
+This will result in a small, human readable, and database version independent backup.
+Creating the script will also verify the checksums of the database file.
+The <code>Script</code> tool is ran as follows:
+</p>
+<pre>
+java org.h2.tools.Script -url jdbc:h2:~/test -user sa -script test.zip -options compression zip
+</pre>
+<p>
+It is also possible to use the SQL command <code>SCRIPT</code> to create the backup of the database.
+For more information about the options, see the SQL command <code>SCRIPT</code>.
+The backup can be done remotely, however the file will be created on the server side.
+The built in FTP server could be used to retrieve the file from the server.
+</p>
+
+<h3>Restore from a Script</h3>
+<p>
+To restore a database from a SQL script file, you can use the <code>RunScript</code> tool:
+</p>
+<pre>
+java org.h2.tools.RunScript -url jdbc:h2:~/test -user sa -script test.zip -options compression zip
+</pre>
+<p>
+For more information about the options, see the SQL command <code>RUNSCRIPT</code>.
+The restore can be done remotely, however the file needs to be on the server side.
+The built in FTP server could be used to copy the file to the server.
+It is also possible to use the SQL command <code>RUNSCRIPT</code> to execute a SQL script.
+SQL script files may contain references to other script files, in the form of
+<code>RUNSCRIPT</code> commands. However, when using the server mode, the references script files
+need to be available on the server side.
+</p>
+
+<h3>Online Backup</h3>
+<p>
+The <code>BACKUP</code> SQL statement and the <code>Backup</code> tool both create a zip file
+with the database file. However, the contents of this file are not human readable.
+</p><p>
+The resulting backup is transactionally consistent, meaning the consistency and atomicity rules apply.
+</p>
+<pre>
+BACKUP TO 'backup.zip'
+</pre>
+<p>
+The <code>Backup</code> tool (<code>org.h2.tools.Backup</code>) can not be used to create a online backup;
+the database must not be in use while running this program.
+</p>
+<p>
+Creating a backup by copying the database files while the database is running is not supported,
+except if the file systems support creating snapshots.
+With other file systems, it can't be guaranteed that the data is copied in the right order.
+</p>
+
+<h2 id="command_line_tools">Command Line Tools</h2>
+<p>
+This database comes with a number of command line tools. To get more information about a tool,
+start it with the parameter '-?', for example:
+</p>
+<pre>
+java -cp h2*.jar org.h2.tools.Backup -?
+</pre>
+<p>
+The command line tools are:
+</p>
+<ul><li><code>Backup</code> creates a backup of a database.
+</li><li><code>ChangeFileEncryption</code> allows changing the file encryption password or algorithm of a database.
+</li><li><code>Console</code> starts the browser based H2 Console.
+</li><li><code>ConvertTraceFile</code> converts a .trace.db file to a Java application and SQL script.
+</li><li><code>CreateCluster</code> creates a cluster from a standalone database.
+</li><li><code>DeleteDbFiles</code> deletes all files belonging to a database.
+</li><li><code>Recover</code> helps recovering a corrupted database.
+</li><li><code>Restore</code> restores a backup of a database.
+</li><li><code>RunScript</code> runs a SQL script against a database.
+</li><li><code>Script</code> allows converting a database to a SQL script for backup or migration.
+</li><li><code>Server</code> is used in the server mode to start a H2 server.
+</li><li><code>Shell</code> is a command line database tool.
+</li></ul>
+<p>
+The tools can also be called from an application by calling the main or another public method.
+For details, see the Javadoc documentation.
+</p>
+
+<h2 id="shell_tool">The Shell Tool</h2>
+<p>
+The Shell tool is a simple interactive command line tool. To start it, type:
+</p>
+<pre>
+java -cp h2*.jar org.h2.tools.Shell
+</pre>
+<p>
+You will be asked for a database URL, JDBC driver, user name, and password.
+The connection setting can also be set as command line parameters.
+After connecting, you will get the list of options.
+The built-in commands don't need to end with a semicolon, but
+SQL statements are only executed if the line ends with a semicolon <code>;</code>.
+This allows to enter multi-line statements:
+</p>
+<pre>
+sql&gt; select * from test
+...&gt; where id = 0;
+</pre>
+<p>
+By default, results are printed as a table. For results with many column, consider using the list mode:
+</p>
+<pre>
+sql&gt; list
+Result list mode is now on
+sql&gt; select * from test;
+ID  : 1
+NAME: Hello
+
+ID  : 2
+NAME: World
+(2 rows, 0 ms)
+</pre>
+
+<h2 id="open_office">Using OpenOffice Base</h2>
+<p>
+OpenOffice.org Base supports database access over the JDBC API. To connect to a H2 database
+using OpenOffice Base, you first need to add the JDBC driver to OpenOffice.
+The steps to connect to a H2 database are:
+</p>
+<ul><li>Start OpenOffice Writer, go to [Tools], [Options]
+</li><li>Make sure you have selected a Java runtime environment in OpenOffice.org / Java
+</li><li>Click [Class Path...], [Add Archive...]
+</li><li>Select your h2 jar file (location is up to you, could be wherever you choose)
+</li><li>Click [OK] (as much as needed), stop OpenOffice (including the Quickstarter)
+</li><li>Start OpenOffice Base
+</li><li>Connect to an existing database; select [JDBC]; [Next]
+</li><li>Example datasource URL: <code>jdbc:h2:~/test</code>
+</li><li>JDBC driver class: <code>org.h2.Driver</code>
+</li></ul>
+<p>
+Now you can access the database stored in the current users home directory.
+</p>
+<p>
+To use H2 in NeoOffice (OpenOffice without X11):
+</p>
+<ul><li>In NeoOffice, go to [NeoOffice], [Preferences]
+</li><li>Look for the page under [NeoOffice], [Java]
+</li><li>Click [Class Path], [Add Archive...]
+</li><li>Select your h2 jar file (location is up to you, could be wherever you choose)
+</li><li>Click [OK] (as much as needed), restart NeoOffice.
+</li></ul>
+<p>
+Now, when creating a new database using the "Database Wizard" :
+</p>
+<ul><li>Click [File], [New], [Database].
+</li><li>Select [Connect to existing database] and the select [JDBC]. Click next.
+</li><li>Example datasource URL: <code>jdbc:h2:~/test</code>
+</li><li>JDBC driver class: <code>org.h2.Driver</code>
+</li></ul>
+<p>
+Another solution to use H2 in NeoOffice is:
+</p>
+<ul><li>Package the h2 jar within an extension package
+</li><li>Install it as a Java extension in NeoOffice
+</li></ul>
+<p>
+This can be done by create it using the NetBeans OpenOffice plugin.
+See also <a href="http://wiki.services.openoffice.org/wiki/Extensions_development_java">Extensions Development</a>.
+</p>
+
+<h2 id="web_start">Java Web Start / JNLP</h2>
+<p>
+When using Java Web Start / JNLP (Java Network Launch Protocol), permissions tags must be set in the .jnlp file,
+and the application .jar file must be signed. Otherwise, when trying to write to the file system, the following
+exception will occur: <code>java.security.AccessControlException</code>:
+access denied (<code>java.io.FilePermission ... read</code>).
+Example permission tags:
+</p>
+<pre>
+&lt;security&gt;
+    &lt;all-permissions/&gt;
+&lt;/security&gt;
+</pre>
+
+<h2 id="connection_pool">Using a Connection Pool</h2>
+<p>
+For H2, opening a connection is fast if the database is already open.
+Still, using a connection pool improves performance if you open and close connections a lot.
+A simple connection pool is included in H2. It is based on the
+<a href="http://www.source-code.biz/miniconnectionpoolmanager/">Mini Connection Pool Manager</a>
+from Christian d'Heureuse. There are other, more complex, open source connection pools available,
+for example the <a href="http://commons.apache.org/proper/commons-dbcp/">Apache Commons DBCP</a>.
+For H2, it is about twice as faster to get a connection from the built-in connection pool than to get
+one using <code>DriverManager.getConnection()</code>.The build-in connection pool is used as follows:
+</p>
+<pre>
+import java.sql.*;
+import org.h2.jdbcx.JdbcConnectionPool;
+public class Test {
+    public static void main(String[] args) throws Exception {
+        JdbcConnectionPool cp = JdbcConnectionPool.create(
+            "jdbc:h2:~/test", "sa", "sa");
+        for (int i = 0; i &lt; args.length; i++) {
+            Connection conn = cp.getConnection();
+            conn.createStatement().execute(args[i]);
+            conn.close();
+        }
+        cp.dispose();
+    }
+}
+</pre>
+
+<h2 id="fulltext">Fulltext Search</h2>
+<p>
+H2 includes two fulltext search implementations. One is using Apache Lucene,
+and the other (the native implementation) stores the index data in special
+tables in the database.
+</p>
+
+<h3>Using the Native Fulltext Search</h3>
+<p>
+To initialize, call:
+</p>
+<pre>
+CREATE ALIAS IF NOT EXISTS FT_INIT FOR "org.h2.fulltext.FullText.init";
+CALL FT_INIT();
+</pre>
+<p>
+You need to initialize it in each database where you want to use it.
+Afterwards, you can create a fulltext index for a table using:
+</p>
+<pre>
+CREATE TABLE TEST(ID INT PRIMARY KEY, NAME VARCHAR);
+INSERT INTO TEST VALUES(1, 'Hello World');
+CALL FT_CREATE_INDEX('PUBLIC', 'TEST', NULL);
+</pre>
+<p>
+PUBLIC is the schema name, TEST is the table name. The list of column names (comma separated) is optional,
+in this case all columns are indexed. The index is updated in realtime.
+To search the index, use the following query:
+</p>
+<pre>
+SELECT * FROM FT_SEARCH('Hello', 0, 0);
+</pre>
+<p>
+This will produce a result set that contains the query needed to retrieve the data:
+</p>
+<pre>
+QUERY: "PUBLIC"."TEST" WHERE "ID"=1
+</pre>
+<p>
+To drop an index on a table:
+</p>
+<pre>
+CALL FT_DROP_INDEX('PUBLIC', 'TEST');
+</pre>
+<p>
+To get the raw data, use <code>FT_SEARCH_DATA('Hello', 0, 0);</code>.
+The result contains the columns <code>SCHEMA</code> (the schema name),
+<code>TABLE</code> (the table name),
+<code>COLUMNS</code> (an array of column names), and
+<code>KEYS</code> (an array of objects).
+To join a table, use a join as in:
+<code>SELECT T.* FROM FT_SEARCH_DATA('Hello', 0, 0) FT, TEST T
+WHERE FT.TABLE='TEST' AND T.ID=FT.KEYS[0];</code>
+</p>
+<p>
+You can also call the index from within a Java application:
+</p>
+<pre>
+org.h2.fulltext.FullText.search(conn, text, limit, offset);
+org.h2.fulltext.FullText.searchData(conn, text, limit, offset);
+</pre>
+
+<h3>Using the Apache Lucene Fulltext Search</h3>
+<p>
+To use the Apache Lucene full text search, you need the Lucene library in the classpath.
+Apache Lucene 5.5.5 or later version up to 7.7.1 is required.
+Newer versions may also work, but were not tested.
+How to do that depends on the application; if you use the H2 Console, you can add the Lucene
+jar file to the environment variables <code>H2DRIVERS</code> or
+<code>CLASSPATH</code>.
+To initialize the Lucene fulltext search in a database, call:
+</p>
+<pre>
+CREATE ALIAS IF NOT EXISTS FTL_INIT FOR "org.h2.fulltext.FullTextLucene.init";
+CALL FTL_INIT();
+</pre>
+<p>
+You need to initialize it in each database where you want to use it.
+Afterwards, you can create a full text index for a table using:
+</p>
+<pre>
+CREATE TABLE TEST(ID INT PRIMARY KEY, NAME VARCHAR);
+INSERT INTO TEST VALUES(1, 'Hello World');
+CALL FTL_CREATE_INDEX('PUBLIC', 'TEST', NULL);
+</pre>
+<p>
+PUBLIC is the schema name, TEST is the table name. The list of column names (comma separated) is optional,
+in this case all columns are indexed. The index is updated in realtime. To search the index,
+use the following query:
+</p>
+<pre>
+SELECT * FROM FTL_SEARCH('Hello', 0, 0);
+</pre>
+<p>
+This will produce a result set that contains the query needed to retrieve the data:
+</p>
+<pre>
+QUERY: "PUBLIC"."TEST" WHERE "ID"=1
+</pre>
+<p>
+To drop an index on a table
+(be warned that this will re-index all of the full-text indices for the entire database):
+</p>
+<pre>
+CALL FTL_DROP_INDEX('PUBLIC', 'TEST');
+</pre>
+<p>
+To get the raw data, use <code>FTL_SEARCH_DATA('Hello', 0, 0);</code>.
+The result contains the columns <code>SCHEMA</code> (the schema name),
+<code>TABLE</code> (the table name),
+<code>COLUMNS</code> (an array of column names),
+and <code>KEYS</code> (an array of objects). To join a table, use a join as in:
+<code>SELECT T.* FROM FTL_SEARCH_DATA('Hello', 0, 0) FT, TEST T
+WHERE FT.TABLE='TEST' AND T.ID=FT.KEYS[0];</code>
+</p>
+<p>
+You can also call the index from within a Java application:
+</p>
+<pre>
+org.h2.fulltext.FullTextLucene.search(conn, text, limit, offset);
+org.h2.fulltext.FullTextLucene.searchData(conn, text, limit, offset);
+</pre>
+<p>
+The Lucene fulltext search supports searching in specific column only.
+Column names must be uppercase (except if the original columns are double quoted).
+For column names starting with an underscore (_), another underscore needs to be added.
+Example:
+</p>
+<pre>
+CREATE ALIAS IF NOT EXISTS FTL_INIT FOR "org.h2.fulltext.FullTextLucene.init";
+CALL FTL_INIT();
+DROP TABLE IF EXISTS TEST;
+CREATE TABLE TEST(ID INT PRIMARY KEY, FIRST_NAME VARCHAR, LAST_NAME VARCHAR);
+CALL FTL_CREATE_INDEX('PUBLIC', 'TEST', NULL);
+INSERT INTO TEST VALUES(1, 'John', 'Wayne');
+INSERT INTO TEST VALUES(2, 'Elton', 'John');
+SELECT * FROM FTL_SEARCH_DATA('John', 0, 0);
+SELECT * FROM FTL_SEARCH_DATA('LAST_NAME:John', 0, 0);
+CALL FTL_DROP_ALL();
+</pre>
+
+<h2 id="user_defined_variables">User-Defined Variables</h2>
+<p>
+This database supports user-defined variables. Variables start with <code>@</code> and can be used wherever
+expressions or parameters are allowed. Variables are not persisted and session scoped, that means only visible
+from within the session in which they are defined. A value is usually assigned using the SET command:
+</p>
+<pre>
+SET @USER = 'Joe';
+</pre>
+<p>
+The value can also be changed using the SET() method. This is useful in queries:
+</p>
+<pre>
+SET @TOTAL = NULL;
+SELECT X, SET(@TOTAL, IFNULL(@TOTAL, 1.) * X) F FROM SYSTEM_RANGE(1, 50);
+</pre>
+<p>
+Variables that are not set evaluate to <code>NULL</code>.
+The data type of a user-defined variable is the data type
+of the value assigned to it, that means it is not necessary (or possible) to declare variable names before using them.
+There are no restrictions on the assigned values; large objects (LOBs) are supported as well.
+Rolling back a transaction does not affect the value of a user-defined variable.
+</p>
+
+<h2 id="date_time">Date and Time</h2>
+<p>
+Date, time and timestamp values support ISO 8601 formatting, including time zone:
+</p>
+<pre>
+CALL TIMESTAMP '2008-01-01 12:00:00+01:00';
+</pre>
+<p>
+If the time zone is not set, the value is parsed using the current time zone setting of the system.
+Date and time information is stored in H2 database files with or without time zone information depending on used data type.
+</p>
+<ul>
+<li>
+With TIMESTAMP data type if the database is opened using another system time zone, the date and time will be the same.
+That means if you store the value '2000-01-01 12:00:00' in one time zone, then close the database
+and open the database again in a different time zone, you will also get '2000-01-01 12:00:00'.
+Please note that changing the time zone after the H2 driver is loaded is not supported.
+</li>
+<li>
+With TIMESTAMP WITH TIME ZONE data type time zone offset is stored and if you store the value
+'2008-01-01 12:00:00+01:00' it remains the same even if you close and reopen the database with a different time zone.
+If you store the value with specified time zone name like '2008-01-01 12:00:00 Europe/Berlin' this name will be
+converted to time zone offset.
+Names of time zones are not stored.
+</li>
+</ul>
+
+<h2 id="spring">Using Spring</h2>
+<h3>Using the TCP Server</h3>
+<p>
+Use the following configuration to start and stop the H2 TCP server using the Spring Framework:
+</p>
+<pre>
+&lt;bean id = "org.h2.tools.Server"
+            class="org.h2.tools.Server"
+            factory-method="createTcpServer"
+            init-method="start"
+            destroy-method="stop"&gt;
+    &lt;constructor-arg value="-tcp,-tcpAllowOthers,-tcpPort,8043" /&gt;
+&lt;/bean&gt;
+</pre>
+<p>
+The <code>destroy-method</code> will help prevent exceptions on hot-redeployment or when restarting the server.
+</p>
+
+<h2 id="osgi">OSGi</h2>
+<p>
+The standard H2 jar can be dropped in as a bundle in an OSGi container.
+H2 implements the JDBC Service defined in OSGi Service Platform Release 4 Version 4.2 Enterprise Specification.
+The H2 Data Source Factory service is registered with the following properties:
+<code>OSGI_JDBC_DRIVER_CLASS=org.h2.Driver</code>
+and <code>OSGI_JDBC_DRIVER_NAME=H2 JDBC Driver</code>.
+The <code>OSGI_JDBC_DRIVER_VERSION</code>
+property reflects the version of the driver as is.
+</p>
+<p>
+The following standard configuration properties are supported:
+<code>JDBC_USER, JDBC_PASSWORD, JDBC_DESCRIPTION, JDBC_DATASOURCE_NAME, JDBC_NETWORK_PROTOCOL, JDBC_URL, JDBC_SERVER_NAME, JDBC_PORT_NUMBER</code>.
+Any other standard property will be rejected.
+Non-standard properties will be passed on to H2 in the connection URL.
+</p>
+
+<h2 id="jmx">Java Management Extension (JMX)</h2>
+<p>
+Management over JMX is supported, but not enabled by default.
+To enable JMX, append <code>;JMX=TRUE</code> to the database URL when opening the database.
+Various tools support JMX, one such tool is the <code>jconsole</code>.
+When opening the <code>jconsole</code>, connect to the process where the database is open
+(when using the server mode, you need to connect to the server process). Then go to the <code>MBeans</code> section.
+Under <code>org.h2</code> you will find one entry per database. The object name of the entry
+is the database short name, plus the path (each colon is replaced with an underscore character).
+</p>
+<p>
+The following attributes and operations are supported:
+</p>
+<ul><li><code>CacheSize</code>: the cache size currently in use in KB.
+</li><li><code>CacheSizeMax</code> (read/write): the maximum cache size in KB.
+</li><li><code>Exclusive</code>: whether this database is open in exclusive mode or not.
+</li><li><code>FileReadCount</code>: the number of file read operations since the database was opened.
+</li><li><code>FileSize</code>: the file size in KB.
+</li><li><code>FileWriteCount</code>: the number of file write operations since the database was opened.
+</li><li><code>FileWriteCountTotal</code>: the number of file write operations since the database was created.
+</li><li><code>LogMode</code> (read/write): the current transaction log mode. See <code>SET LOG</code> for details.
+</li><li><code>Mode</code>: the compatibility mode (<code>REGULAR</code> if no compatibility mode is used).
+</li><li><code>MultiThreaded</code>: true if multi-threaded is enabled.
+</li><li><code>Mvcc</code>: true if <code>MVCC</code> is enabled.
+</li><li><code>ReadOnly</code>: true if the database is read-only.
+</li><li><code>TraceLevel</code> (read/write): the file trace level.
+</li><li><code>Version</code>: the database version in use.
+</li><li><code>listSettings</code>: list the database settings.
+</li><li><code>listSessions</code>: list the open sessions, including currently executing statement (if any) and locked tables (if any).
+</li></ul>
+<p>
+To enable JMX, you may need to set the system properties <code>com.sun.management.jmxremote</code> and
+<code>com.sun.management.jmxremote.port</code> as required by the JVM.
+</p>
+<!-- [close] { --></div></td></tr></table><!-- } --><!-- analytics --></body></html>
+

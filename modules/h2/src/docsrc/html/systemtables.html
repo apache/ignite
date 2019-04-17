@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+and the EPL 1.0 (http://h2database.com/html/license.html).
+Initial Developer: H2 Group
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head><meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>
+System Tables
+</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<!-- [search] { -->
+<script type="text/javascript" src="navigation.js"></script>
+</head><body onload="frameMe();">
+<table class="content"><tr class="content"><td class="content"><div class="contentDiv">
+<!-- } -->
+
+<h1>System Tables</h1>
+
+<p class="notranslate">
+<a href="#information_schema">Information Schema</a><br />
+<a href="#range_table">Range Table</a><br />
+</p>
+
+<h2 id="information_schema" class="notranslate">Information Schema</h2>
+<p>
+The system tables in the schema <code>INFORMATION_SCHEMA</code> contain the meta data
+of all tables in the database as well as the current settings.
+</p>
+<c:forEach var="item" items="informationSchema">
+<h3 class="notranslate">${item.topic}</h3>
+<p class="notranslate">${item.syntax}</p>
+</c:forEach>
+
+<h2 id="range_table" class="notranslate">Range Table</h2>
+<p>
+The range table is a dynamic system table that contains all values from a start to an end value.
+Non-zero step value may be also specified, default is 1.
+Start value, end value, and optional step value are converted to BIGINT data type.
+The table contains one column called X.
+If start value is greater than end value and step is positive the result is empty.
+If start value is less than end value and step is negative the result is empty too.
+If start value is equal to end value the result contains only start value.
+Start value, start value plus step, start value plus step multiplied by two and so on are included in result.
+If step is positive the last value is less than or equal to the specified end value.
+If step in negative the last value is greater than or equal to the specified end value.
+The table is used as follows:
+</p>
+<p>Examples:</p>
+<pre>
+SELECT X FROM SYSTEM_RANGE(1, 10);
+-- 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+SELECT X FROM SYSTEM_RANGE(1, 10, 2);
+-- 1, 3, 5, 7, 9
+SELECT X FROM SYSTEM_RANGE(1, 10, -1);
+-- No rows
+SELECT X FROM SYSTEM_RANGE(10, 2, -2);
+-- 10, 8, 6, 4, 2
+</pre>
+
+<!-- [close] { --></div></td></tr></table><!-- } --><!-- analytics --></body></html>
