@@ -48,12 +48,15 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -78,12 +81,15 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.String.format;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
@@ -139,10 +145,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * Executor to disallow running code that modifies data in idxCacheStores concurrently with cleanup of file page
      * store.
      */
-    private final LongOperationAsyncExecutor cleanupAsyncExecutor = new LongOperationAsyncExecutor();
+    private final LongOperationAsyncExecutor cleanupAsyncExecutor;
 
     /** */
-    private final Map<Integer, CacheStoreHolder> idxCacheStores = new IdxCacheStores<>(cleanupAsyncExecutor);
+    private final Map<Integer, CacheStoreHolder> idxCacheStores;
 
     /** */
     private final IgniteConfiguration igniteCfg;
@@ -180,6 +186,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     public FilePageStoreManager(GridKernalContext ctx) {
         igniteCfg = ctx.config();
+
+        this.cleanupAsyncExecutor =
+            new LongOperationAsyncExecutor(ctx.igniteInstanceName(), ctx.config().getGridLogger());
+
+        this.idxCacheStores = new IdxCacheStores<>(cleanupAsyncExecutor);
 
         DataStorageConfiguration dsCfg = igniteCfg.getDataStorageConfiguration();
 
@@ -308,6 +319,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             log.debug("Stopping page store manager.");
 
         cleanupPageStoreIfMatch(p -> true, false);
+    }
+
+    /**
+     * Cancels asynchronous file storage cleanup task, if any exists.
+     */
+    public void cancelCleanupTask() {
+        cleanupAsyncExecutor.cancelAsyncTasks();
     }
 
     /** {@inheritDoc} */
@@ -722,7 +740,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param partId Partition id.
      */
     @NotNull private File getPartitionFile(File cacheWorkDir, int partId) {
-        return new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId));
+        return new File(cacheWorkDir, format(PART_FILE_TEMPLATE, partId));
     }
 
     /** {@inheritDoc} */
@@ -1247,6 +1265,22 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /** */
         private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 
+        /** */
+        private final String igniteInstanceName;
+
+        /** */
+        private final IgniteLogger log;
+
+        /** */
+        private Set<GridWorker> workers = new GridConcurrentHashSet<>();
+
+        /** */
+        public LongOperationAsyncExecutor(String igniteInstanceName, IgniteLogger log) {
+            this.igniteInstanceName = igniteInstanceName;
+
+            this.log = log;
+        }
+
         /**
          * Executes long operation in dedicated thread. Uses write lock as such operations can't run
          * simultaneously.
@@ -1254,16 +1288,24 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
          * @param runnable long operation
          */
         public void async(Runnable runnable) {
-            Thread asyncTask = new Thread(() -> {
-                readWriteLock.writeLock().lock();
+            GridWorker worker = new GridWorker(igniteInstanceName, "asyncFileStoreCleanupTask", log) {
+                @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+                    readWriteLock.writeLock().lock();
 
-                try {
-                    runnable.run();
+                    try {
+                        runnable.run();
+                    }
+                    finally {
+                        readWriteLock.writeLock().unlock();
+
+                        workers.remove(this);
+                    }
                 }
-                finally {
-                    readWriteLock.writeLock().unlock();
-                }
-            });
+            };
+
+            workers.add(worker);
+
+            Thread asyncTask = new IgniteThread(worker);
 
             asyncTask.start();
         }
@@ -1284,6 +1326,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             }
             finally {
                 readWriteLock.readLock().unlock();
+            }
+        }
+
+        /**
+         * Cancels async tasks.
+         */
+        public void cancelAsyncTasks() {
+            for (GridWorker worker : workers) {
+                try {
+                    worker.cancel();
+                }
+                catch (Exception e) {
+                    log.warning(format("Failed to cancel grid runnable [%s]: %s", worker.toString(), e.getMessage()));
+                }
             }
         }
     }

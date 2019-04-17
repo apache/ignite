@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -55,7 +57,10 @@ public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implem
     private static class FilePageStoreManagerChild extends FilePageStoreManager {
         /** */
         static class LongOperationAsyncExecutorChild extends LongOperationAsyncExecutor {
-            /* No-op */
+            /** */
+            public LongOperationAsyncExecutorChild(String igniteInstanceName, IgniteLogger logger) {
+                super(igniteInstanceName, logger);
+            }
         }
 
         /**
@@ -154,7 +159,6 @@ public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implem
     /** */
     private final LogListener logLsnr = new MessageOrderLogListener(
         Arrays.asList(
-            "Page memory .*? has invalidated.",
             "Cache stores cleanup started asynchronously",
             "Cleanup cache stores .*? cleanFiles=true\\]"
         ),
@@ -238,7 +242,7 @@ public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implem
     @Test
     public void testLongOperationAsyncExecutor() throws Throwable {
         FilePageStoreManagerChild.LongOperationAsyncExecutorChild executor =
-            new FilePageStoreManagerChild.LongOperationAsyncExecutorChild();
+            new FilePageStoreManagerChild.LongOperationAsyncExecutorChild("test", new NullLogger());
 
         final AtomicInteger ai = new AtomicInteger(1);
 
