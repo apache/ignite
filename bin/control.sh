@@ -56,23 +56,24 @@ if [ "${DEFAULT_CONFIG:-}" == "" ]; then
 fi
 
 #
-#Adding parameters from the environment, if they are not specified
+#Adding parameters from the environment,
+#if they are defined with the IGNITE_ prefix in uppercase
 #
-if [[ -n "${IGNITE_SSL_CIPHER_SUITES:-}" && $@ != *' --ssl-cipher-suites '* ]]; then
-        set -- "$@" "--ssl-cipher-suites $IGNITE_SSL_CIPHER_SUITES"
-fi
+function setParam(){
+VAR=''
+for PAR in host port user ping-interval ping-timeout ssl-protocol ssl-cipher-suites ssl-key-algorithm keystore-type keystore truststore-type truststore
+do
+    varname="IGNITE_`echo ${PAR} | tr [:lower:] [:upper:]`"
+    if [[ -n "${!varname:-}" && $@ != *" --${PAR}"* ]]; then
+        eval "VAR='$VAR --${PAR} ${!varname}'"
+    fi
+done
+eval "$1='${VAR}'"
+}
+ENVPARAMS=''
+setParam ENVPARAMS $@
+set -- "$@" "$ENVPARAMS"
 
-if [[ -n "${IGNITE_KEYSTORE:-}" && $@ != *' --keystore '* ]]; then
-        set -- "$@" "--keystore $IGNITE_KEYSTORE"
-fi
-
-if [[ -n "${IGNITE_TRUSTSTORE:-}" && $@ != *' --truststore '* ]]; then
-        set -- "$@" "--truststore $IGNITE_TRUSTSTORE"
-fi
-
-if [[ -n "${IGNITE_USER:-}" && $@ != *' --user '* ]]; then
-        set -- "$@" "--user $IGNITE_USER"
-fi
 
 #
 # Set IGNITE_LIBS.
