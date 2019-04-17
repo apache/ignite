@@ -36,12 +36,14 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.cluster.СlusterReadOnlyModeCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
@@ -229,6 +231,19 @@ public class DmlBatchSender {
                 assert rowNum != null;
 
                 cntPerRow[rowNum] = Statement.EXECUTE_FAILED;
+            }
+
+            СlusterReadOnlyModeCheckedException roEx = U.cause(e, СlusterReadOnlyModeCheckedException.class);
+
+            if (roEx != null) {
+                SQLException sqlEx = new SQLException(
+                    roEx.getMessage(),
+                    SqlStateCode.CLUSTER_READ_ONLY_MODE_ENABLED,
+                    IgniteQueryErrorCode.CLUSTER_READ_ONLY_MODE_ENABLED,
+                    e
+                );
+
+                return new DmlPageProcessingResult(0, null, sqlEx);
             }
 
             return new DmlPageProcessingResult(0, null,

@@ -10776,6 +10776,63 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Check's that target exception {@code t} have cause instance of {@code causeClass} class.
+     *
+     * @param t Target exception.
+     * @param causeClass Cause class.
+     * @return {@code True} if {@code causeClass} is a cause of target exception {@code t}, and {@code False} otherwise.
+     */
+    public static boolean hasCause(Throwable t, Class<? extends Throwable> causeClass) {
+        return hasCause(t, causeClass, null);
+    }
+
+    /**
+     * Check's that target exception {@code t} have cause instance of {@code causeClass} class with {@code msg} message.
+     *
+     * @param t Target exception.
+     * @param causeClass Cause class.
+     * @param msg Message in {@code causeClass} exception. If {@code msg} is {@code null}, then message check will be
+     * ignored.
+     * @return {@code True} if {@code causeClass} is a cause of target exception {@code t}, and {@code False} otherwise.
+     */
+    public static boolean hasCause(Throwable t, Class<? extends Throwable> causeClass, @Nullable String msg) {
+        assert t != null;
+        assert causeClass != null;
+
+        Throwable c = cause(t, causeClass);
+
+        if (c != null) {
+            if (msg != null)
+                return msg.equals(c.getMessage());
+            else
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check's that target exception {@code t} have cause instance of {@code causeClass} class.
+     *
+     * @param t Target exception.
+     * @param causeClass Cause class.
+     * @return Instance of {@code causeClass} class, if found, and {@code null} otherwise.
+     */
+    public static @Nullable <E extends Throwable> E cause(Throwable t, Class<E> causeClass) {
+        assert t != null;
+        assert causeClass != null;
+
+        while (t != null) {
+            if (causeClass.isAssignableFrom(t.getClass()))
+                return (E)t;
+
+            t = t.getCause();
+        }
+
+        return null;
+    }
+
+    /**
      * Execute operation on data in parallel.
      *
      * @param parallelismLvl Number of threads on which it should be executed.

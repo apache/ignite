@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+
 /**
  * SQL state codes.
  */
@@ -72,6 +75,9 @@ public final class SqlStateCode {
 
     /** Internal error. */
     public static final String INTERNAL_ERROR = "50000";  // Generic value for custom "50" class.
+
+    /** Read only mode enabled on cluster. {@link IgniteCluster#readOnly()}  */
+    public static final String CLUSTER_READ_ONLY_MODE_ENABLED = "55W08";
 
     /** Query canceled. */
     public static final String QUERY_CANCELLED = "57014";
