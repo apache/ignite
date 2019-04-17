@@ -87,6 +87,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -5998,6 +5999,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testGetOutTx() throws Exception {
         checkGetOutTx(false, false);
     }
@@ -6006,6 +6008,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testGetOutTxAsyncOld() throws Exception {
         checkGetOutTx(true, true);
     }
@@ -6014,6 +6017,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testGetOutTxAsync() throws Exception {
         checkGetOutTx(true, false);
     }

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -65,6 +66,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
      * @throws Exception if failed.
      */
     @Test
+    @Ignore
     public void testReadThroughWithExpirePolicy() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
@@ -108,6 +110,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
      * @throws Exception if failed.
      */
     @Test
+    @Ignore
     public void testReadThroughExpirePolicyConfigured() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
@@ -203,6 +206,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
      * @throws Exception if failed.
      */
     @Test
+    @Ignore
     public void testReadThroughSkipStore() throws Exception {
         Ignite ig = testedGrid();
 
