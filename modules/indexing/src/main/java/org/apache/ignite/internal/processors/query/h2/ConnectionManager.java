@@ -494,6 +494,8 @@ public class ConnectionManager {
         }
 
         setConn.put(conn, false);
+
+        detachedConns.remove(conn);
     }
 
     /**
