@@ -17,28 +17,14 @@
 
 package org.apache.ignite.ml.tree.performance;
 
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.apache.ignite.ml.nn.performance.MnistMLPTestUtil;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressor;
-import org.apache.ignite.ml.util.MnistUtils;
-import org.junit.Test;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests {@link DecisionTreeClassificationTrainer} on the MNIST dataset using locally stored data. For manual run.
  */
 public class DecisionTreeMNISTTest {
     /** Tests on the MNIST dataset. For manual run. */
-    @Test
+/*    @Test
     public void testMNIST() throws IOException {
         Map<Integer, MnistUtils.MnistLabeledImage> trainingSet = new HashMap<>();
 
@@ -74,5 +60,5 @@ public class DecisionTreeMNISTTest {
         double accuracy = 1.0 * correctAnswers / (correctAnswers + incorrectAnswers);
 
         assertTrue(accuracy > 0.8);
-    }
+    }*/
 }

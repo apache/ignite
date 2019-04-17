@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.preprocessing.standardscaling;
 
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * The preprocessing function that makes standard scaling, transforms features to make {@code mean} equal to {@code 0}
@@ -33,7 +33,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class StandardScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
+public class StandardScalerPreprocessor<K, V> implements Preprocessor<K, V> {
     /** */
     private static final long serialVersionUID = -5977957318991608203L;
 
@@ -43,7 +43,7 @@ public class StandardScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, 
     private final double[] sigmas;
 
     /** Base preprocessor. */
-    private final IgniteBiFunction<K, V, Vector> basePreprocessor;
+    private final Preprocessor<K, V> basePreprocessor;
 
     /**
      * Constructs a new instance of standardscaling preprocessor.
@@ -53,7 +53,7 @@ public class StandardScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, 
      * @param basePreprocessor Base preprocessor.
      */
     public StandardScalerPreprocessor(double[] means, double[] sigmas,
-        IgniteBiFunction<K, V, Vector> basePreprocessor) {
+                                      Preprocessor<K, V> basePreprocessor) {
         assert means.length == sigmas.length;
 
         this.means = means;
@@ -68,8 +68,8 @@ public class StandardScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, 
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public Vector apply(K k, V v) {
-        Vector res = basePreprocessor.apply(k, v);
+    @Override public LabeledVector apply(K k, V v) {
+        LabeledVector res = basePreprocessor.apply(k, v);
 
         assert res.size() == means.length;
 

@@ -17,14 +17,15 @@
 
 package org.apache.ignite.ml.dataset.primitive;
 
-import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.junit.Test;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -35,19 +36,21 @@ public class SimpleDatasetTest {
     /** Basic test for SimpleDataset features. IMPL NOTE derived from LocalDatasetExample. */
     @Test
     public void basicTest() throws Exception {
-        Map<Integer, DataPoint> dataPoints = new HashMap<Integer, DataPoint>() {{
-            put(1, new DataPoint(42, 10000));
-            put(2, new DataPoint(32, 64000));
-            put(3, new DataPoint(53, 120000));
-            put(4, new DataPoint(24, 70000));
+        Map<Integer, Vector> dataPoints = new HashMap<Integer, Vector>() {{
+            put(5, VectorUtils.of(42, 10000));
+            put(6, VectorUtils.of(32, 64000));
+            put(7,  VectorUtils.of(53, 120000));
+            put(8,  VectorUtils.of(24, 70000));
         }};
+
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>();
 
         // Creates a local simple dataset containing features and providing standard dataset API.
         try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
             dataPoints,
             2,
             TestUtils.testEnvBuilder(),
-            new FeatureLabelExtractorWrapper<>((k, v) -> VectorUtils.of(v.getAge(), v.getSalary()).labeled(0.0))
+            vectorizer
         )) {
             assertArrayEquals("Mean values.", new double[] {37.75, 66000.0}, dataset.mean(), 0);
 
@@ -74,36 +77,6 @@ public class SimpleDatasetTest {
             for (double[] row : corr)
                 assertArrayEquals("Correlation matrix row " + rowCorr,
                     corrExp[rowCorr++], row, 0);
-        }
-    }
-
-    /** */
-    private static class DataPoint {
-        /** Age. */
-        private final double age;
-
-        /** Salary. */
-        private final double salary;
-
-        /**
-         * Constructs a new instance of person.
-         *
-         * @param age Age.
-         * @param salary Salary.
-         */
-        DataPoint(double age, double salary) {
-            this.age = age;
-            this.salary = salary;
-        }
-
-        /** */
-        double getAge() {
-            return age;
-        }
-
-        /** */
-        double getSalary() {
-            return salary;
         }
     }
 }
