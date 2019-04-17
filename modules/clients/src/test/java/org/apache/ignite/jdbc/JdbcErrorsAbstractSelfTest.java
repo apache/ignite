@@ -38,6 +38,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -736,6 +737,29 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
         checkSqlErrorMessage("alter table test drop column", "42000",
             "Failed to parse query. Syntax error in SQL statement \"ALTER TABLE TEST DROP COLUMN [*]");
+    }
+
+    /** */
+    @Test
+    public void testUpdatesRejectedInReadOnlyMode() throws Exception {
+        try (Connection conn = getConnection()) {
+            try (Statement statement = conn.createStatement()) {
+                statement.executeUpdate("CREATE TABLE TEST_READ_ONLY (ID LONG PRIMARY KEY, VAL LONG)");
+            }
+        }
+
+        G.allGrids().get(0).cluster().readOnly(true);
+
+        try {
+            checkErrorState((conn) -> {
+                try (Statement statement = conn.createStatement()) {
+                    statement.executeUpdate("INSERT INTO TEST_READ_ONLY VALUES (1, 2)");
+                }
+            }, "55W08", "Failed to execute DML statement. Cluster in read-only mode");
+        }
+        finally {
+            G.allGrids().get(0).cluster().readOnly(false);
+        }
     }
 
     /**
