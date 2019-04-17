@@ -185,32 +185,123 @@ public class IgniteCacheUpdateDecimalSqlQuerySelfTest extends GridCommonAbstract
 
 
     @Test
-    public void testDeleteDecimalInlineIndex() {
+    public void testSelectDecimalComplexKey() {
         execute("CREATE TABLE TEST_TABLE (" +
             "ID DECIMAL(19, 1)," +
             "VALUE DECIMAL(19,1)," +
             "PRIMARY KEY (ID)) with \"template=partitioned, wrap_value=false, wrap_key=true, key_type=" + DecWrapper.class.getName() + "\"");
 
-        Object one = 1.0d;
+        Stream.of(1, 1L, 1d, "1", "1.0", new BigDecimal("1.0"), new BigDecimal("1"))
+            .forEach((Object one) -> {
 
-        IgniteCache<Object, Object> tab = grid(0).cache("SQL_PUBLIC_TEST_TABLE");
+                IgniteCache<Object, Object> tab = grid(0).cache("SQL_PUBLIC_TEST_TABLE");
 
-        tab.clear();
+                tab.clear();
 
-        tab.put(new DecWrapper("1"), new BigDecimal("42"));
-        tab.put(new DecWrapper("2"), new BigDecimal("77"));
+                tab.put(new DecWrapper("1"), new BigDecimal("42"));
+                tab.put(new DecWrapper("2"), new BigDecimal("77"));
 
-        List<List<?>> actual = execute("SELECT\n" +
-            "ID,\n" +
-            "VALUE\n" +
-            "FROM PUBLIC.TEST_TABLE\n" +
-//            "WHERE (ID >= ?1 and ID <= ?1)", new BigDecimal("1.00000"));
-            "WHERE id = ?", new BigDecimal("1.0000"));
-        List<List<?>> expRows = Collections.singletonList(asList(new BigDecimal(1), new BigDecimal(42)));
+                List<List<?>> actual = execute("SELECT\n" +
+                    "ID,\n" +
+                    "VALUE\n" +
+                    "FROM PUBLIC.TEST_TABLE\n" +
+                    "WHERE id = ?", one);
+                List<List<?>> expRows = Collections.singletonList(asList(new BigDecimal(1), new BigDecimal(42)));
 
-        assertEqualsCollections("Argument of class " + one.getClass().getSimpleName() + " is converted incorrectly",
-            expRows, actual);
+                assertEqualsCollections("Argument " + one + " of class " + one.getClass().getSimpleName() + " is converted incorrectly",
+                    expRows, actual);
+            });
     }
+
+
+    @Test
+    public void testSelectDecimalPkHashIndex() {
+        execute("CREATE TABLE TEST_TABLE (" +
+            "ID DECIMAL(19, 1)," +
+            "VALUE DECIMAL(19,1)," +
+            "PRIMARY KEY (ID)) with \"template=partitioned, wrap_value=false, wrap_key=true, key_type=" + DecWrapper.class.getName() + "\"");
+
+        Stream.of( "1", "1.0", "1.000000")
+            .forEach((String one) -> {
+                IgniteCache<Object, Object> tab = grid(0).cache("SQL_PUBLIC_TEST_TABLE");
+
+                tab.clear();
+
+                tab.put(new DecWrapper("1"), new BigDecimal("42"));
+                tab.put(new DecWrapper("2"), new BigDecimal("77"));
+
+                List<List<?>> actual = execute("SELECT\n" +
+                    "ID,\n" +
+                    "VALUE\n" +
+                    "FROM PUBLIC.TEST_TABLE\n" +
+                    "WHERE _key = ?", new DecWrapper(one));
+                List<List<?>> expRows = Collections.singletonList(asList(new BigDecimal(1), new BigDecimal(42)));
+
+                assertEqualsCollections("Argument " + one + " of class " + one.getClass().getSimpleName() + " is converted incorrectly",
+                    expRows, actual);
+            });
+    }
+
+    @Test
+    public void testSelectDecimalSecondaryIndex() {
+        execute("CREATE TABLE TEST_TABLE (" +
+            "ID DECIMAL(19, 1)," +
+            "VALUE DECIMAL(19,1)," +
+            "PRIMARY KEY (ID)) with \"template=partitioned, wrap_value=false, wrap_key=true, key_type=" + DecWrapper.class.getName() + "\"");
+
+        execute("CREATE INDEX VAL_IDX ON TEST_TABLE(VALUE)");
+
+        Stream.of("42", "42.0", "42.0000")
+            .forEach((String one) -> {
+                IgniteCache<Object, Object> tab = grid(0).cache("SQL_PUBLIC_TEST_TABLE");
+
+                tab.clear();
+
+                tab.put(new DecWrapper("1"), new BigDecimal("42"));
+                tab.put(new DecWrapper("2"), new BigDecimal("77"));
+
+                List<List<?>> actual = execute("SELECT\n" +
+                    "ID,\n" +
+                    "VALUE\n" +
+                    "FROM PUBLIC.TEST_TABLE\n" +
+                    "WHERE value = ?", new BigDecimal(one));
+                List<List<?>> expRows = Collections.singletonList(asList(new BigDecimal(1), new BigDecimal(42)));
+
+                assertEqualsCollections("Argument " + one + " of class " + one.getClass().getSimpleName() + " is converted incorrectly",
+                    expRows, actual);
+            });
+    }
+
+    @Test
+    public void testSelectDecimalSecondaryIndexComplexValue() {
+        execute("CREATE TABLE TEST_TABLE (" +
+            "ID DECIMAL(19, 1)," +
+            "VALUE DECIMAL(19,1)," +
+            "PRIMARY KEY (ID)) with \"template=partitioned, wrap_value=true, value_type=" + ValWrapper.class.getName() + "\"");
+
+        execute("CREATE INDEX VAL_IDX ON TEST_TABLE(VALUE)");
+
+        Stream.of("42", "42.0", "42.0000")
+            .forEach((String one) -> {
+                IgniteCache<Object, Object> tab = grid(0).cache("SQL_PUBLIC_TEST_TABLE");
+
+                tab.clear();
+
+                tab.put(new BigDecimal("1"), new ValWrapper("42"));
+                tab.put(new BigDecimal("2"), new ValWrapper("77"));
+
+                List<List<?>> actual = execute("SELECT\n" +
+                    "ID,\n" +
+                    "VALUE\n" +
+                    "FROM PUBLIC.TEST_TABLE\n" +
+                    "WHERE value = ?", new BigDecimal(one));
+                List<List<?>> expRows = Collections.singletonList(asList(new BigDecimal(1), new BigDecimal(42)));
+
+                assertEqualsCollections("Argument " + one + " of class " + one.getClass().getSimpleName() + " is converted incorrectly",
+                    expRows, actual);
+            });
+    }
+
 
     /**
      * Check fast delete type conversions in case of delete by "key = ? and val = ?".
@@ -302,7 +393,20 @@ public class IgniteCacheUpdateDecimalSqlQuerySelfTest extends GridCommonAbstract
         }
 
         public DecWrapper() {
-
+            // No-op.
         }
     }
+
+    public static class ValWrapper{
+        public BigDecimal value;
+
+        public ValWrapper(String valStr) {
+            value = new BigDecimal(valStr);
+        }
+
+        public ValWrapper() {
+            // No-op.
+        }
+    }
+
 }
