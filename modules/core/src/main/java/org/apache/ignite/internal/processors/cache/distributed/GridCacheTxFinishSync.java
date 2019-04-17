@@ -65,9 +65,16 @@ public class GridCacheTxFinishSync<K, V> {
         ThreadFinishSync threadSync = threadMap.get(threadId);
 
         if (threadSync == null)
-            threadSync = F.addIfAbsent(threadMap, threadId, new ThreadFinishSync(threadId));
+            threadMap.put(threadId, threadSync = new ThreadFinishSync(threadId));
 
-        threadSync.onSend(nodeId);
+        synchronized (threadSync) {
+            //thread has to create new ThreadFinishSync
+            //if other thread executing onAckReceived method removed previous threadSync object
+            if (threadMap.get(threadId) == null)
+                threadMap.put(threadId, threadSync = new ThreadFinishSync(threadId));
+
+            threadSync.onSend(nodeId);
+        }
     }
 
     /**
@@ -144,31 +151,29 @@ public class GridCacheTxFinishSync<K, V> {
          * @param nodeId Node ID request being sent to.
          */
         public void onSend(UUID nodeId) {
-            synchronized (this) {
-                TxFinishSync sync = nodeMap.get(nodeId);
+            TxFinishSync sync = nodeMap.get(nodeId);
 
-                if (sync == null) {
-                    sync = new TxFinishSync(nodeId, threadId);
+            if (sync == null) {
+                sync = new TxFinishSync(nodeId, threadId);
 
-                    TxFinishSync old = nodeMap.put(nodeId, sync);
+                TxFinishSync old = nodeMap.put(nodeId, sync);
 
-                    assert old == null : "Only user thread can add sync objects to the map.";
+                assert old == null : "Only user thread can add sync objects to the map.";
 
-                    // Recheck discovery only if added new sync.
-                    if (cctx.discovery().node(nodeId) == null) {
-                        sync.onNodeLeft();
+                // Recheck discovery only if added new sync.
+                if (cctx.discovery().node(nodeId) == null) {
+                    sync.onNodeLeft();
 
-                        nodeMap.remove(nodeId);
-                    }
-                    else if (cctx.kernalContext().clientDisconnected()) {
-                        sync.onDisconnected(cctx.kernalContext().cluster().clientReconnectFuture());
-
-                        nodeMap.remove(nodeId);
-                    }
+                    nodeMap.remove(nodeId);
                 }
+                else if (cctx.kernalContext().clientDisconnected()) {
+                    sync.onDisconnected(cctx.kernalContext().cluster().clientReconnectFuture());
 
-                sync.onSend();
+                    nodeMap.remove(nodeId);
+                }
             }
+
+            sync.onSend();
         }
 
         /**
