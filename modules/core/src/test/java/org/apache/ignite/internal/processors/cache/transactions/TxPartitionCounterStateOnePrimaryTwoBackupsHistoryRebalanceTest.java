@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
@@ -48,5 +46,19 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest ext
 
         // Expecting only one historical rebalance for test scenario.
         assertEquals("WAL rebalance must happen exactly 1 time", 1, histRebCnt);
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore
+    @Override public void testMissingUpdateBetweenMultipleCheckpoints() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore
+    @Override public void testCommitReorderWithRollbackNoRebalanceAfterRestart() throws Exception {
+        // No-op.
     }
 }

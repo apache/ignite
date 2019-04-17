@@ -456,8 +456,8 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean notEmpty() {
-        return get() > 0 || !sequential();
+    @Override public synchronized boolean empty() {
+        return get() == 0 && sequential();
     }
 
     /** {@inheritDoc} */

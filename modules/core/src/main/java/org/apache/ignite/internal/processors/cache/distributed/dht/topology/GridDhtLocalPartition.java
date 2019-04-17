@@ -360,6 +360,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
+        // TODO FIXME delegate to update counter.
         return store.isEmpty() && internalSize() == 0;
     }
 
@@ -406,7 +407,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (state() == MOVING) {
             if (rmvQueue.sizex() >= rmvQueueMaxSize)
                 LT.warn(log, "Deferred delete buffer is exceeded " +
-                    "[part=" + this + ", size=" + rmvQueueMaxSize + ']');
+                    "[grpId=" + this.grp.groupId() + ", partId=" + id() + ", size=" + rmvQueueMaxSize + ']');
 
             return;
         }
@@ -1061,24 +1062,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return {@code True} if partition is not empty.
-     */
-    public boolean notEmpty() {
-        PartitionUpdateCounter cntr = store.partUpdateCounter();
-
-        return cntr != null && cntr.notEmpty();
-    }
-
-    /**
-     * @return {@code True} if partition has no missed updates.
-     */
-    public boolean hasNoMissedUpdates() {
-        PartitionUpdateCounter cntr = store.partUpdateCounter();
-
-        return cntr == null || cntr.sequential();
-    }
-
-    /**
      * @param val Update counter value.
      */
     public void updateCounter(long val) {
@@ -1166,7 +1149,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 try {
                     CacheDataRow row = it0.next();
 
-                    // Do not clear fresh rows in case of single partition clearing.
+                    // Do not clear fresh rows in case of partition reloading.
                     if (row.version().compareTo(clearVer) >= 0 && (state() == MOVING && clear))
                         continue;
 
@@ -1336,7 +1319,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             "state", state(),
             "reservations", reservations(),
             "empty", isEmpty(),
-            "createTime", U.format(createTime));
+            "createTime", U.format(createTime),
+            "cntr", dataStore().partUpdateCounter());
     }
 
     /** {@inheritDoc} */

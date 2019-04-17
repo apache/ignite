@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePeekMode;
@@ -34,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -92,10 +95,15 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
 
     /**
+     * Tests reproduces the problem: if partition was marked for clear on rebalance, it should never be selected for
+     * historical rebalance or only partial data defined by counter range will be loaded.
+     *
      * @param skipCheckpoint Skip checkpoint.
+     *
+     * @throws Exception
      */
     private void doTestPrepareCommitReorder(boolean skipCheckpoint) throws Exception {
-        T2<Ignite, List<Ignite>> txTop = runScenario(skipCheckpoint).get(PARTITION_ID);
+        T2<Ignite, List<Ignite>> txTop = runTest(skipCheckpoint).get(PARTITION_ID);
 
         waitForTopology(SERVERS_CNT);
 
@@ -160,7 +168,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
      * @param skipCheckpoint Skip checkpoint.
      */
     private void doTestPrepareCommitReorder_2(boolean skipCheckpoint) throws Exception {
-        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runScenario(skipCheckpoint);
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runTest(skipCheckpoint);
 
         T2<Ignite, List<Ignite>> txTop = txTops.get(PARTITION_ID);
 
@@ -171,6 +179,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
         waitForTopology(SERVERS_CNT);
 
+        // If not wait for PME backup might not switch to primary.
         awaitPartitionMapExchange();
 
         PartitionUpdateCounter cntr2 = counter(PARTITION_ID, backupName);
@@ -180,12 +189,13 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         assertEquals(TOTAL, cntr2.reserved());
         assertTrue(cntr2.sequential());
 
-        // TODO FIXME: If not wait for PME backup might not switch to primary.
         assertEquals("Backup has not all committed transactions", TOTAL, client.cache(DEFAULT_CACHE_NAME).size());
 
         TestRecordingCommunicationSpi.stopBlockAll();
 
-        TestRecordingCommunicationSpi.spi(grid(backupName)).blockMessages((node, msg) -> {
+        TestRecordingCommunicationSpi backupSpi = TestRecordingCommunicationSpi.spi(grid(backupName));
+
+        backupSpi.blockMessages((node, msg) -> {
             if (msg instanceof GridDhtPartitionSupplyMessage) {
                 GridDhtPartitionSupplyMessage m0 = (GridDhtPartitionSupplyMessage)msg;
 
@@ -198,7 +208,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         // Restart primary during rebalance.
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
             try {
-                TestRecordingCommunicationSpi.spi(grid(backupName)).waitForBlocked();
+                backupSpi.waitForBlocked();
             }
             catch (InterruptedException e) {
                 fail("Unexpected interruption");
@@ -206,7 +216,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
             stopGrid(skipCheckpoint, primaryName);
 
-            TestRecordingCommunicationSpi.spi(grid(backupName)).stopBlock();
+            backupSpi.stopBlock();
 
             try {
                 startGrid(primaryName);
@@ -219,8 +229,13 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         }, 1);
 
         // Trigger rebalance.
-        startGrid(primaryName);
+        IgniteEx prim = startGrid(primaryName);
 
+        //doSleep(5000);
+
+        System.out.println();
+
+        // Wait for restart.
         fut.get();
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
@@ -424,7 +439,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
      *
      * @param skipCheckpoint Skip checkpoint.
      */
-    private Map<Integer, T2<Ignite, List<Ignite>>> runScenario(boolean skipCheckpoint) throws Exception {
+    private Map<Integer, T2<Ignite, List<Ignite>>> runTest(boolean skipCheckpoint) throws Exception {
         return super.runOnPartition(PARTITION_ID, null, BACKUPS, SERVERS_CNT,
             new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
                 private Map<Integer, T2<Ignite, List<Ignite>>> txTop;

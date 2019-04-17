@@ -417,9 +417,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     if (hasNonEmptyOwning)
                         break;
 
-                    if (locPart.updateCounter() > 0) {
-                        assert locPart.hasNoMissedUpdates() : locPart; // Safe to use LWM here.
-
+                    if (!locPart.isEmpty()) {
                         hasNonEmptyOwning = true;
 
                         break;

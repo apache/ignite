@@ -2221,9 +2221,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         continue;
 
                     if (!newOwners.contains(ctx.localNodeId())) {
-                        boolean wasMoving = locPart.state() == MOVING;
-
-                        rebalancePartition(part, !haveHistory.contains(part) || wasMoving);
+                        rebalancePartition(part, !haveHistory.contains(part));
 
                         result.computeIfAbsent(ctx.localNodeId(), n -> new HashSet<>()).add(part);
                     }

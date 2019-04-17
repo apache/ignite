@@ -277,7 +277,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         histSupplier = ctx.discovery().node(nodeId);
                 }
 
-                if (histSupplier != null) {
+                // If partition is clearing or already cleared we need full rebalance even if supplier is exists.
+                // (it still could be used for other demanders)
+                boolean forceFullRebalance = part.fullSize() == 0 || part.isClearing();
+
+                if (histSupplier != null && !forceFullRebalance) {
                     assert grp.persistenceEnabled();
                     assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 
@@ -291,6 +295,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         );
                     }
 
+                    // TODO FIXME initialUpdateCounter is not needed for history calculation, remove it.
+                    // LWM is enough to calculcate required history on coordinator as maxCntr - lwm.
                     msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);
                 }
                 else {

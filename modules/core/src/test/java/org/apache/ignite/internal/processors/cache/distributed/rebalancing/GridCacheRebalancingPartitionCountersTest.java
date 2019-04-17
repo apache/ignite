@@ -53,6 +53,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setFailureDetectionTimeout(1000000000L)
                 .setConsistentId(igniteInstanceName)
                 .setDataStorageConfiguration(
                     new DataStorageConfiguration()

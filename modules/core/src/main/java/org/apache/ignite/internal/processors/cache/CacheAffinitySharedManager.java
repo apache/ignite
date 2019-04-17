@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -70,7 +69,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -264,10 +262,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @param top Topology.
      * @param checkGrpId Group ID.
-     * @param singleMsg
      */
-    void checkRebalanceState(GridDhtPartitionTopology top, Integer checkGrpId,
-        @Nullable GridDhtPartitionsSingleMessage singleMsg) {
+    void checkRebalanceState(GridDhtPartitionTopology top, Integer checkGrpId) {
         CacheAffinityChangeMessage msg = null;
 
         synchronized (mux) {
@@ -295,18 +291,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                             break;
                         }
-                        else {
-                            Map<Integer, T4<UUID, GridDhtPartitionState, GridDhtPartitionState, GridDhtPartitionState>> map =
-                                waitInfo.finishedGrps.computeIfAbsent(checkGrpId, k -> new HashMap<>());
-
-                            map.put(part, new T4<>(waitNode,
-                                top.partitionState(cctx.localNode().id(), part),
-                                top.partitionState(waitNode, part),
-                                singleMsg == null ? null : singleMsg.partitions().get(checkGrpId).get(part)
-                            ));
-
+                        else
                             it.remove();
-                        }
                     }
                 }
 
@@ -314,25 +300,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     waitInfo.waitGrps.remove(checkGrpId);
 
                     if (waitInfo.waitGrps.isEmpty()) {
-                        StringBuilder b = new StringBuilder();
-                        b.append("Affinity change initialized, dumping waitInfo topVer=").append(waitInfo.topVer).append("\n");
-
-                        for (Map.Entry<Integer, Map<Integer, T4<UUID, GridDhtPartitionState, GridDhtPartitionState, GridDhtPartitionState>>> entry : waitInfo.finishedGrps.entrySet()) {
-                            Map<Integer, T4<UUID, GridDhtPartitionState, GridDhtPartitionState, GridDhtPartitionState>> val = entry.getValue();
-                            for (Map.Entry<Integer, T4<UUID, GridDhtPartitionState, GridDhtPartitionState, GridDhtPartitionState>> entry2 : val.entrySet()) {
-                                b.append("finished grpId=").append(entry.getKey()).
-                                    append(", partId=").append(entry2.getKey()).
-                                    append(", waitNode=").append(entry2.getValue().get1()).
-                                    append(", locState=").append(entry2.getValue().get2()).
-                                    append(", rmtState=").append(entry2.getValue().get3()).
-                                    append(", beforeRmtState=").append(entry2.getValue().get3());
-
-                                b.append("\n");
-                            }
-                        }
-
-                        log.error(b.toString(), new Exception());
-
                         msg = affinityChangeMessage(waitInfo);
 
                         waitInfo = null;
@@ -2903,10 +2870,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         /** */
         private final Map<Integer, IgniteUuid> deploymentIds = new ConcurrentHashMap<>();
-
-        /** */
-        private final Map<Integer, Map<Integer,
-            T4<UUID, GridDhtPartitionState, GridDhtPartitionState, GridDhtPartitionState>>> finishedGrps = new ConcurrentHashMap<>();
 
         /**
          * @param topVer Topology version.

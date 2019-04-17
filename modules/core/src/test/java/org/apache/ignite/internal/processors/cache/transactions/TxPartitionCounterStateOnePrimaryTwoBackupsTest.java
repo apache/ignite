@@ -349,7 +349,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * 5. Restart backup1 without triggering checkpoint on stop.
      * <p>
      *
-     * Pass condition: backup1 after restart has sequential update counter.
+     * Pass condition: backup1 after restart has sequential update counter. No rebalance is expected.
+     * The test states necessity of storing gaps between checkpoints.
      *
      * @throws Exception If failed.
      */
@@ -836,7 +837,9 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         awaitPartitionMapExchange();
 
-        int size = grid(0).cache(DEFAULT_CACHE_NAME).size();
+        Ignite backup2 = txTops.get(PARTITION_ID).get2().get(1);
+
+        int size = backup2.cache(DEFAULT_CACHE_NAME).size();
 
         assertEquals(sizes[0] + sizes[1] + PRELOAD_KEYS_CNT, size); // Txs must be committed on last remaining backup.
 

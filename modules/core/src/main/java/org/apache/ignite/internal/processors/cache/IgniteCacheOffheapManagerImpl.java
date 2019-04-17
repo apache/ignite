@@ -1458,6 +1458,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public boolean init() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public int partId() {
             return partId;
         }
@@ -2941,8 +2946,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             rowStore().setRowCacheCleaner(rowCacheCleaner);
         }
 
-        /** {@inheritDoc} */
-        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] gaps) {
+        /**
+         * @param size Size to init.
+         * @param updCntr Update counter.
+         * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
+         * @param gaps Gaps.
+         */
+        public void restoreState(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] gaps) {
             pCntr.init(updCntr, gaps);
 
             storageSize.set(size);

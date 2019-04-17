@@ -9753,7 +9753,7 @@ public abstract class IgniteUtils {
     public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
 
-        return arrayList(c, c.size(), p);
+        return arrayList(c.iterator(), c.size(), p);
     }
 
     /**
@@ -9772,14 +9772,16 @@ public abstract class IgniteUtils {
      * @param p Optional filters.
      * @return Resulting array list.
      */
-    public static <T extends R, R> List<R> arrayList(Iterable<T> c, int cap,
+    public static <T extends R, R> List<R> arrayList(Iterator<T> c, int cap,
         @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
         assert cap >= 0;
 
         List<R> list = new ArrayList<>(cap);
 
-        for (T t : c) {
+        while (c.hasNext()) {
+            T t = c.next();
+
             if (F.isAll(t, p))
                 list.add(t);
         }

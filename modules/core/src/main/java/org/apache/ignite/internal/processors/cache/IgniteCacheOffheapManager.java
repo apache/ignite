@@ -588,6 +588,13 @@ public interface IgniteCacheOffheapManager {
      */
     interface CacheDataStore {
         /**
+         * Initialize data store if it exists.
+         *
+         * @return {@code True} if initialized.
+         */
+        boolean init();
+
+        /**
          * @return Partition ID.
          */
         int partId();
@@ -596,14 +603,6 @@ public interface IgniteCacheOffheapManager {
          * @return Store name.
          */
         String name();
-
-        /**
-         * @param size Size to init.
-         * @param updCntr Update counter.
-         * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
-         * @param gaps Gaps.
-         */
-        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] gaps);
 
         /**
          * @param cacheId Cache ID.

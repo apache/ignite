@@ -499,10 +499,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
 
-                // Triggers initialization of existing(having datafile) partition before aquiring cp readlock.
-                // Partition will not be reset to zero.
-                // TODO FIXME bad naming
-                // onPartitionInitialCounterUpdated(p, 0, delta);
+                // Triggers initialization of existing(having datafile) partition before acquiring cp read lock.
+                part.dataStore().init();
 
                 ctx.database().checkpointReadLock();
 
@@ -1534,7 +1532,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private PendingEntriesTree pendingTree;
 
         /** */
-        private volatile CacheDataStore delegate;
+        private volatile CacheDataStoreImpl delegate;
 
         /**
          * Cache id which should be throttled.
@@ -1576,7 +1574,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @throws IgniteCheckedException If failed.
          */
         private CacheDataStore init0(boolean checkExists) throws IgniteCheckedException {
-            CacheDataStore delegate0 = delegate;
+            CacheDataStoreImpl delegate0 = delegate;
 
             if (delegate0 != null)
                 return delegate0;
@@ -1738,7 +1736,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                                 byte[] data = link == 0 ? null : partStorage.readRow(link);
 
-                                delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes, data);
+                                delegate0.restoreState(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes, data);
 
                                 globalRemoveId().setIfGreater(io.getGlobalRemoveId(pageAddr));
                             }
@@ -1913,6 +1911,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public boolean init() {
+            try {
+                return init0(true) != null;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
         @Override public int partId() {
             return partId;
         }
@@ -2024,11 +2032,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] gaps) {
-            throw new IllegalStateException("Should be never called.");
         }
 
         /** {@inheritDoc} */

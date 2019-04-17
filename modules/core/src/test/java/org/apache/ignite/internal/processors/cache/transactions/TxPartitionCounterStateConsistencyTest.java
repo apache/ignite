@@ -39,11 +39,8 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.GridCachePreloader;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -193,7 +190,11 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             List<Integer> primaryKeys = primaryKeys(cache, 10_000);
 
-            long stop = U.currentTimeMillis() + 60_000;
+            List<Ignite> backups = backupNodes(primaryKeys.get(0), DEFAULT_CACHE_NAME);
+
+            assertFalse(backups.contains(prim));
+
+            long stop = U.currentTimeMillis() + 120_000;
 
             Random r = new Random();
 
@@ -203,7 +204,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
                 while (U.currentTimeMillis() < stop) {
                     doSleep(5_000);
 
-                    Ignite restartNode = grid(1);
+                    Ignite restartNode = grid(1 + r.nextInt(backups.size()));
 
                     assertFalse(prim == restartNode);
 
@@ -236,65 +237,78 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         }
     }
 
-    @Override protected long getPartitionMapExchangeTimeout() {
-        return 1200000000;
-    }
-
     /**
-     * @param r Random.
-     * @param near Near node.
-     * @param primaryKeys Primary keys.
-     * @param cache Cache.
-     * @param stop Time to stop.
+     * Tests reproduces the problem: if partition is fully rebalanced it should always be cleared first,
+     * or removal on supplier will not be visible on demander, causing partition desync.
      *
-     * @return Finish future.
+     * @throws Exception
      */
-    private IgniteInternalFuture<?> doRandomUpdates(Random r, Ignite near, List<Integer> primaryKeys,
-        IgniteCache<Object, Object> cache, long stop) throws Exception {
-        LongAdder puts = new LongAdder();
-        LongAdder removes = new LongAdder();
+    @Test
+    public void testPartitionConsistencyCancelledRebalanceCoordinatorIsDemander() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
-        final int max = 100;
+        try {
+            backups = 2;
 
-        return multithreadedAsync(() -> {
-            while (U.currentTimeMillis() < stop) {
-                int rangeStart = r.nextInt(primaryKeys.size() - max);
-                int range = 5 + r.nextInt(max - 5);
+            Ignite crd = startGridsMultiThreaded(SERVER_NODES);
 
-                List<Integer> keys = primaryKeys.subList(rangeStart, rangeStart + range);
+            int[] primaryParts = crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(crd.cluster().localNode());
 
-                try(Transaction tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
-                    List<Integer> insertedKeys = new ArrayList<>();
+            IgniteCache<Object, Object> cache = crd.cache(DEFAULT_CACHE_NAME);
 
-                    for (Integer key : keys) {
-                        cache.put(key, key);
-                        insertedKeys.add(key);
+            List<Integer> p1Keys = partitionKeys(cache, primaryParts[0], 2, 0);
+            List<Integer> p2Keys = partitionKeys(cache, primaryParts[1], 2, 0);
 
-                        puts.increment();
+            cache.put(p1Keys.get(0), 0); // Will be historically rebalanced.
+            cache.put(p1Keys.get(1), 1);
 
-                        boolean rmv = r.nextFloat() < 0.4;
-                        if (rmv) {
-                            key = insertedKeys.get(r.nextInt(insertedKeys.size()));
+            forceCheckpoint();
 
-                            cache.remove(key);
+            Ignite backup = backupNode(p1Keys.get(0), DEFAULT_CACHE_NAME);
 
-                            insertedKeys.remove(key);
+            assertSame(backup, backupNode(p2Keys.get(0), DEFAULT_CACHE_NAME));
 
-                            removes.increment();
-                        }
+            stopGrid(true, backup.name());
+
+            cache.remove(p1Keys.get(1));
+            cache.put(p2Keys.get(1), 1); // Will be fully rebalanced.
+
+            TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(crd);
+
+            // Prevent rebalance completion.
+            spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    String name = (String)node.attributes().get(ATTR_IGNITE_INSTANCE_NAME);
+
+                    if (name.equals(backup.name()) && msg instanceof GridDhtPartitionSupplyMessage) {
+                        GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
+
+                        Map<Integer, CacheEntryInfoCollection> infos =  U.field(msg0, "infos");
+
+                        return infos.keySet().contains(primaryParts[0]); // Delay historical rebalance.
                     }
 
-                    tx.commit();
+                    return false;
                 }
-                catch (Exception e) {
-                    assertTrue(X.getFullStackTrace(e), X.hasCause(e, ClusterTopologyException.class) ||
-                        X.hasCause(e, TransactionRollbackException.class));
-                }
-            }
+            });
 
-            log.info("TX: puts=" + puts.sum() + ", removes=" + removes.sum() + ", size=" + cache.size());
+            IgniteEx backup2 = startGrid(backup.name());
 
-        }, Runtime.getRuntime().availableProcessors() * 2, "tx-update-thread");
+            spi.stopBlock();
+
+            // While message is delayed topology version shouldn't change to ideal.
+            awaitPartitionMapExchange();
+
+            assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL);
+            System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+        }
+    }
+
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return 1200000000;
     }
 
     @Override protected long getTestTimeout() {
@@ -302,7 +316,8 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     }
 
     /**
-     * Test scenario when deferred removal queue is cleared during rebalance leading to inconsistencies.
+     * Tests reproduces the problem: deferred removal queue should never be cleared during rebalance
+     * OR rebalanced entries could undo deletion causing inconsistency.
      */
     @Test
     public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_RemoveQueueCleared() throws Exception {
@@ -369,11 +384,16 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     }
 
     /**
-     * Test scenario when moving partition is not cleared on specific scenario.
+     * Tests reproduces the problem: if partition is selected for full rebalancing it should always be cleared first
+     * OR deletes on supplier will not be visible on demander causing partition desync.
+     *
+     * TODO FIXME if partitions was partially historically rebalanced, it could be historically rebalanced again
+     * without clear.
+     *
+     * @throws Exception
      */
     @Test
     public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_MovingPartitionNotCleared() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL, "1000");
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
         try {
@@ -423,16 +443,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             IgniteEx backup2 = startGrid(backup.name());
 
-//            assertTrue("Failed to wait for ideal affinity", GridTestUtils.waitForCondition(() -> {
-//                GridCachePreloader preloader =
-//                    backup2.context().cache().internalCache(DEFAULT_CACHE_NAME).context().preloader();
-//
-//                GridDhtPartitionDemander.RebalanceFuture rebalanceFut =
-//                    (GridDhtPartitionDemander.RebalanceFuture)preloader.rebalanceFuture();
-//
-//                return rebalanceFut.topologyVersion().equals(new AffinityTopologyVersion(5, 1));
-//            }, 30_000));
-
             spi.stopBlock();
 
             // While message is delayed topology version shouldn't change to ideal.
@@ -447,11 +457,13 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     }
 
     /**
-     * Test scenario when moving partition is not cleared on specific scenario.
+     * Tests reproduces the problem: in-place update in tree during rebalance in partition was not handled as update
+     * causing missed WAL record which has to be processed on recovery.
+     *
+     * @throws Exception
      */
     @Test
     public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_CheckpointDuringRebalance() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL, "1000");
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
         try {
@@ -569,6 +581,64 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         }
 
         assertEquals(exp, cntr);
+        assertTrue(ops.isEmpty());
+    }
+
+    /**
+     * @param r Random.
+     * @param near Near node.
+     * @param primaryKeys Primary keys.
+     * @param cache Cache.
+     * @param stop Time to stop.
+     *
+     * @return Finish future.
+     */
+    private IgniteInternalFuture<?> doRandomUpdates(Random r, Ignite near, List<Integer> primaryKeys,
+        IgniteCache<Object, Object> cache, long stop) throws Exception {
+        LongAdder puts = new LongAdder();
+        LongAdder removes = new LongAdder();
+
+        final int max = 100;
+
+        return multithreadedAsync(() -> {
+            while (U.currentTimeMillis() < stop) {
+                int rangeStart = r.nextInt(primaryKeys.size() - max);
+                int range = 5 + r.nextInt(max - 5);
+
+                List<Integer> keys = primaryKeys.subList(rangeStart, rangeStart + range);
+
+                try(Transaction tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+                    List<Integer> insertedKeys = new ArrayList<>();
+
+                    for (Integer key : keys) {
+                        cache.put(key, key);
+                        insertedKeys.add(key);
+
+                        puts.increment();
+
+                        boolean rmv = r.nextFloat() < 0.4;
+                        if (rmv) {
+                            key = insertedKeys.get(r.nextInt(insertedKeys.size()));
+
+                            cache.remove(key);
+
+                            insertedKeys.remove(key);
+
+                            removes.increment();
+                        }
+                    }
+
+                    tx.commit();
+                }
+                catch (Exception e) {
+                    assertTrue(X.getFullStackTrace(e), X.hasCause(e, ClusterTopologyException.class) ||
+                        X.hasCause(e, TransactionRollbackException.class));
+                }
+            }
+
+            log.info("TX: puts=" + puts.sum() + ", removes=" + removes.sum() + ", size=" + cache.size());
+
+        }, Runtime.getRuntime().availableProcessors() * 2, "tx-update-thread");
     }
 
     /** */
