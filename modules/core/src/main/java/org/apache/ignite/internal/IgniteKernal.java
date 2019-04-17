@@ -2010,7 +2010,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         m.a("  ^-- ").a(regCfg.getName()).a(" [");
         m.a("initSize=").a(U.readableSize(regCfg.getInitialSize(), false));
         m.a(", maxSize=").a(U.readableSize(regCfg.getMaxSize(), false));
-        m.a(", persistence=" + regCfg.isPersistenceEnabled()).a(']');
+        m.a(", persistence=" + regCfg.isPersistenceEnabled());
+        m.a(", lazyMemoryAllocation=" + regCfg.isLazyMemoryAllocation()).a(']');
 
         return m.toString();
     }
