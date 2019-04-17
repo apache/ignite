@@ -23,7 +23,6 @@ namespace Apache.Ignite.Examples.Datagrid
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.ExamplesDll.Binary;
 
     /// <summary>
     /// This example works with cache entirely in binary mode: no classes or configurations are needed.

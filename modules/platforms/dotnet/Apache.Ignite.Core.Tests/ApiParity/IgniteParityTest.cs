@@ -38,8 +38,6 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         /** Members that are missing on .NET side and should be added in future. */
         private static readonly string[] MissingMembers =
         {
-            "version", // IGNITE-7101
-            
             "createCaches",   // IGNITE-7100
             "orCreateCaches", // IGNITE-7100
             "destroyCaches",  // IGNITE-7100

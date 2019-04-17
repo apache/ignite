@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.InvalidEnvironmentException;
+import org.apache.ignite.internal.processors.cache.persistence.CorruptedPersistenceException;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception to distinguish {@link BPlusTree} tree broken invariants.
  */
-public class CorruptedTreeException extends IgniteCheckedException implements InvalidEnvironmentException {
+public class CorruptedTreeException extends IgniteCheckedException implements CorruptedPersistenceException {
     /** */
     private static final long serialVersionUID = 0L;
 
