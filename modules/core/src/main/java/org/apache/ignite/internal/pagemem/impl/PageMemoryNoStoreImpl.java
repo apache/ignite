@@ -471,10 +471,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     @Override public long readLock(int cacheId, long pageId, long page) {
         assert !stopped;
 
-        Segment seg = segment(PageIdUtils.pageIndex(pageId));
-
         if (rwLock.readLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
-            return seg.page(page);
+            return segment(PageIdUtils.pageIndex(pageId)).page(page);
 
         return 0L;
     }
@@ -483,10 +481,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     @Override public long readLockForce(int cacheId, long pageId, long page) {
         assert !stopped;
 
-        Segment seg = segment(PageIdUtils.pageIndex(pageId));
-
         if (rwLock.readLock(page + LOCK_OFFSET, -1))
-            return seg.page(page);
+            return segment(PageIdUtils.pageIndex(pageId)).page(page);
 
         return 0L;
     }
@@ -502,10 +498,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     @Override public long writeLock(int cacheId, long pageId, long page) {
         assert !stopped;
 
-        Segment seg = segment(PageIdUtils.pageIndex(pageId));
-
         if (rwLock.writeLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
-            return seg.page(page);
+            return segment(PageIdUtils.pageIndex(pageId)).page(page);
 
         return 0L;
     }
@@ -514,10 +508,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     @Override public long tryWriteLock(int cacheId, long pageId, long page) {
         assert !stopped;
 
-        Segment seg = segment(PageIdUtils.pageIndex(pageId));
-
         if (rwLock.tryWriteLock(page  + LOCK_OFFSET, PageIdUtils.tag(pageId)))
-            return seg.page(page);
+            return segment(PageIdUtils.pageIndex(pageId)).page(page);
 
         return 0L;
     }
