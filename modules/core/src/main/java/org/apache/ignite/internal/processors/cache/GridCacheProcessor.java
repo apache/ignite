@@ -2362,18 +2362,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion exchTopVer,
         boolean disabledAfterStart
     ) throws IgniteCheckedException {
-/*
-        if (reqNearCfg != null) {
-            if (desc.cacheConfiguration().getNearConfiguration() == null
-                && desc.cacheConfiguration().getCacheMode() != REPLICATED)
-                desc.cacheConfiguration().setNearConfiguration(reqNearCfg);
-        }
-*/
-
         desc = enricher().enrich(desc,
             desc.cacheConfiguration().getCacheMode() == LOCAL || isLocalAffinity(desc.cacheConfiguration()));
-
-        //reqNearCfg = desc.cacheConfiguration().getNearConfiguration();
 
         CacheConfiguration startCfg = desc.cacheConfiguration();
 
