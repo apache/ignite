@@ -1813,6 +1813,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
                 U.clearClassCache();
                 MarshallerExclusions.clearCache();
                 BinaryEnumCache.clear();
+                serializedObj.clear();
             }
 
             Thread.currentThread().setContextClassLoader(clsLdr);
@@ -2138,6 +2139,16 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         }
 
         assert !stopGridErr : "Error occurred on grid stop (see log for more details).";
+    }
+
+    /**
+     * @return If {@code true} serialized objects placed to {@link #serializedObj}
+     * are not cleared after each test execution.
+     *
+     * Setting this flag to true is need when some serialized objects are need to be shared between all tests in class.
+     */
+    protected boolean keepSerializedObjects() {
+        return false;
     }
 
     /**

@@ -25,6 +25,8 @@ import org.apache.ignite.internal.processors.authentication.AuthenticationOnNotA
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNPEOnStartTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationSerializationOnDiscoveryTest;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationSerializationOnExchangeTest;
 import org.apache.ignite.internal.processors.cache.CacheDataRegionConfigurationTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsManageTest;
@@ -102,6 +104,9 @@ public class IgniteCacheTestSuite7 {
 
         GridTestUtils.addTestIfNeeded(suite, TransactionIntegrityWithPrimaryIndexCorruptionTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheDataLossOnPartitionMoveTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, CacheConfigurationSerializationOnDiscoveryTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheConfigurationSerializationOnExchangeTest.class, ignoredTests);
 
         return suite;
     }
