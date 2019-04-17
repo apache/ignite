@@ -17,6 +17,8 @@
 
 package org.apache.ignite.examples.ml.clustering;
 
+import java.io.FileNotFoundException;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -30,9 +32,6 @@ import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import javax.cache.Cache;
-import java.io.FileNotFoundException;
 
 /**
  * Run KMeans clustering algorithm ({@link KMeansTrainer}) over distributed dataset.
@@ -61,12 +60,14 @@ public class KMeansClusterizationExample {
             try {
                 dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+
                 KMeansTrainer trainer = new KMeansTrainer();
 
                 KMeansModel mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+                    vectorizer
                 );
 
                 System.out.println(">>> KMeans centroids");
