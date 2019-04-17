@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.security.IgniteSecurityProcessor.ATTR_GRID_SEC_PROC_CLASS;
 
 /**
- * No operation Ignite Security Processor.
+ * No operation IgniteSecurity.
  */
 public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements IgniteSecurity {
     /** No operation security context. */
@@ -114,7 +114,7 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     }
 
     /**
-     * Validates that remote node's grid security processor class is undefined.
+     * Validates that remote the node's grid security processor class is undefined.
      *
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.

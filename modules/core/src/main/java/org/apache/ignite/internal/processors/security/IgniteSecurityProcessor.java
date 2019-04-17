@@ -45,7 +45,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
- * Default Grid security Manager implementation.
+ * Default IgniteSecurity implementation.
  */
 public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Internal attribute name constant. */
@@ -63,7 +63,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Must use JDK marshaller for Security Subject. */
     private final JdkMarshaller marsh;
 
-    /** Map of security contexts. Key is node's id. */
+    /** Map of security contexts. Key is the node's id. */
     private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
 
     /**

@@ -93,7 +93,7 @@ public class SecurityUtils {
     }
 
     /**
-     * Getting node's security context.
+     * Gets the node's security context.
      *
      * @param marsh Marshaller.
      * @param ldr Class loader.
