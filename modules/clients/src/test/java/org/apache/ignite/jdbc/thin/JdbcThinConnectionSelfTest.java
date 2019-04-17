@@ -90,16 +90,10 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         "jdbc:ignite:thin://127.0.0.1";
 
     /** URL with best effort affinity flag. */
-    private String urlWithBestEffortAffinityFlag = url +
-        (affinityAwareness ?
-            "?affinityAwareness=true" :
-            "?affinityAwareness=false");
+    private String urlWithBestEffortAffinityFlag = url + "?affinityAwareness=" + affinityAwareness;
 
     /** URL with best effort affinity flag and semicolon as delimeter. */
-    private String urlWithBestEffortAffinityFlagSemicolon = url +
-        (affinityAwareness ?
-            ";affinityAwareness=true" :
-            ";affinityAwareness=false");
+    private String urlWithBestEffortAffinityFlagSemicolon = url + ";affinityAwareness=" + affinityAwareness;
 
     /** Nodes count. */
     private int nodesCnt = affinityAwareness ? 4 : 2;

@@ -48,8 +48,10 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -116,11 +118,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        if (stmt != null && !stmt.isClosed()) {
-            stmt.close();
-
-            assert stmt.isClosed();
-        }
+        U.closeQuiet(stmt);
 
         conn.close();
 
@@ -133,7 +131,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testExecuteQueries() throws Exception {
         checkNodesUsage(null, "select * from Person where _key = 1", 1, 1,
             false);
@@ -150,20 +148,31 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testExecuteParametrizedQueries() throws Exception {
+        // Use case 1.
         PreparedStatement ps = conn.prepareStatement("select * from Person where _key = ?");
+
         ps.setInt(1, 2);
+
         checkNodesUsage(ps, null, 1, 1, false);
 
+        // Use case 2.
         ps = conn.prepareStatement("select * from Person where _key = ? or _key = ?");
+
         ps.setInt(1, 1);
+
         ps.setInt(2, 2);
+
         checkNodesUsage(ps, null, 2, 2, false);
 
+        // Use case 3.
         ps = conn.prepareStatement("select * from Person where _key in (?, ?)");
+
         ps.setInt(1, 1);
+
         ps.setInt(2, 2);
+
         checkNodesUsage(ps, null, 2, 2, false);
     }
 
@@ -172,7 +181,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testUpdateQueries() throws Exception {
         checkNodesUsage(null, "update Person set firstName = 'TestFirstName' where _key = 1",
             1, 1, true);
@@ -189,25 +198,33 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testUpdateParametrizedQueries() throws Exception {
+        // Use case 1.
         PreparedStatement ps = conn.prepareStatement(
             "update Person set firstName = 'TestFirstName' where _key = ?");
+
         ps.setInt(1, 2);
-        checkNodesUsage(ps, null,
-            1, 1, true);
 
+        checkNodesUsage(ps, null, 1, 1, true);
+
+        // Use case 2.
         ps = conn.prepareStatement("update Person set firstName = 'TestFirstName' where _key = ? or _key = ?");
-        ps.setInt(1, 1);
-        ps.setInt(2, 2);
-        checkNodesUsage(ps, null,
-            2, 2, true);
 
-        ps = conn.prepareStatement("update Person set firstName = 'TestFirstName' where _key in (?, ?)");
         ps.setInt(1, 1);
+
         ps.setInt(2, 2);
-        checkNodesUsage(ps, null,
-            2, 2, true);
+
+        checkNodesUsage(ps, null, 2, 2, true);
+
+        // Use case 3.
+        ps = conn.prepareStatement("update Person set firstName = 'TestFirstName' where _key in (?, ?)");
+
+        ps.setInt(1, 1);
+
+        ps.setInt(2, 2);
+
+        checkNodesUsage(ps, null, 2, 2, true);
     }
 
     /**
@@ -215,7 +232,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testDeleteQueries() throws Exception {
         // In case of simple query like "delete from Person where _key = 1" fast update logic is used,
         // so parition result is not calculated on the server side - nothing to check.
@@ -232,23 +249,28 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testDeleteParametrizedQueries() throws Exception {
         // In case of simple query like "delete from Person where _key = ?" fast update logic is used,
         // so parition result is not calculated on the server side - nothing to check.
 
-        PreparedStatement ps = conn.prepareStatement(
-            "delete from Person where _key = ? or _key = ?");
-        ps.setInt(1, 1000);
-        ps.setInt(2, 2000);
-        checkNodesUsage(ps, null,
-            2, 0, true);
+        // Use case 1.
+        PreparedStatement ps = conn.prepareStatement("delete from Person where _key = ? or _key = ?");
 
-        ps = conn.prepareStatement("delete from Person where _key in (?, ?)");
         ps.setInt(1, 1000);
+
         ps.setInt(2, 2000);
-        checkNodesUsage(ps, null,
-            2, 0, true);
+
+        checkNodesUsage(ps, null, 2, 0, true);
+
+        // Use case 2.
+        ps = conn.prepareStatement("delete from Person where _key in (?, ?)");
+
+        ps.setInt(1, 1000);
+
+        ps.setInt(2, 2000);
+
+        checkNodesUsage(ps, null, 2, 0, true);
     }
 
     /**
@@ -257,7 +279,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testQueryWithNullPartitionResponseBasedOnAllNode() throws Exception {
         verifyPartitionResultIsNull("select * from Person where age > 15", 85);
     }
@@ -268,7 +290,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testQueryWithNullPartitionResponseBasedOnNoneNode() throws Exception {
         verifyPartitionResultIsNull("select * from Person where _key = 1 and _key = 2", 0);
     }
@@ -279,7 +301,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testCacheWithNonRendezvousAffinityFunction() throws Exception {
         final String cacheName = "cacheWithCustomAffinityFunction";
 
@@ -299,7 +321,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testCacheWithCustomNodeFilter() throws Exception {
         final String cacheName = "cacheWithCustomNodeFilter";
 
@@ -319,7 +341,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testCacheWithRendezvousCustomPartitionsCount() throws Exception {
         final String cacheName = "cacheWithRendezvousCustomPartitionsCount";
 
@@ -341,7 +363,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testChangeTopologyDetectionWithinPartitionDistributionResponse() throws Exception {
         final String sqlQry = "select * from Person where _key = 1";
 
@@ -364,7 +386,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testChangeTopologyDetectionWithinQueryExecutionResponse() throws Exception {
         final String sqlQry = "select * from Person where _key = 1";
 
@@ -388,7 +410,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testChangeTopologyDetectionWithinBestEffortAffinityUnrelatedQuery() throws Exception {
         final String sqlQry = "select * from Person where _key = 1";
 
@@ -410,7 +432,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testBestEffortAffinityIsSkippedIfItIsSwitchedOff() throws Exception {
         Connection conn = DriverManager.getConnection(
             "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=false");
@@ -435,7 +457,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testBestEffortAffinityIsSkippedByDefault() throws Exception {
         Connection conn = DriverManager.getConnection(
             "jdbc:ignite:thin://127.0.0.1:10800..10802");
@@ -460,7 +482,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testAffinityCacheStoresSchemaBindedQuries() throws Exception {
         final String cacheName = "yacc";
 
@@ -497,7 +519,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testAffinityCacheCompactsPartitonDestributions() throws Exception {
         final String cacheName = "yaccc";
 
@@ -538,7 +560,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testReconnect() throws Exception {
         checkNodesUsage(null, "select * from Person where _key = 3", 1, 1,
             false);
@@ -559,7 +581,6 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
         for(int i = 0; i < NODES_CNT; i++)
             startGrid(i);
 
-        // TODO: 09.04.19 proper way to do this?
         stopGrid(4);
         stopGrid(5);
         stopGrid(6);
