@@ -397,6 +397,7 @@ public class IgniteConfiguration {
     private TransactionConfiguration txCfg = new TransactionConfiguration();
 
     /** */
+    @Deprecated
     private PluginConfiguration[] pluginCfgs;
 
     /** Flag indicating whether cache sanity check is enabled. */
@@ -2850,6 +2851,7 @@ public class IgniteConfiguration {
      * @return Plugin configurations.
      * @see PluginProvider
      */
+    @Deprecated
     public PluginConfiguration[] getPluginConfigurations() {
         return pluginCfgs;
     }
@@ -2860,7 +2862,10 @@ public class IgniteConfiguration {
      * @param pluginCfgs Plugin configurations.
      * @return {@code this} for chaining.
      * @see PluginProvider
+     * @deprecated Since {@link PluginProvider}s can be setted explicitly via {@link #setPlugins(PluginProvider[])}
+     * it's preferable to store {@link PluginConfiguration} as a part of {@link PluginProvider}.
      */
+    @Deprecated
     public IgniteConfiguration setPluginConfigurations(PluginConfiguration... pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
 
