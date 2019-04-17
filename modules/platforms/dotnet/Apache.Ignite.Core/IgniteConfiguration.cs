@@ -574,7 +574,7 @@ namespace Apache.Ignite.Core
             if (DataStorageConfiguration != null)
             {
                 writer.WriteBoolean(true);
-                DataStorageConfiguration.Write(writer);
+                DataStorageConfiguration.Write(writer, srvVer);
             }
             else
             {
@@ -863,7 +863,7 @@ namespace Apache.Ignite.Core
             // Data storage.
             if (r.ReadBoolean())
             {
-                DataStorageConfiguration = new DataStorageConfiguration(r);
+                DataStorageConfiguration = new DataStorageConfiguration(r, srvVer);
             }
 
             // SSL context factory.
