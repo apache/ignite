@@ -756,6 +756,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         cctx.cleanup();
+
+        cachesInfo.cleanupRemovedCache(cctx.name());
     }
 
     /**
@@ -776,6 +778,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 U.error(log, "Failed to unregister MBean for cache group: " + grp.name(), e);
             }
         }
+
+        cachesInfo.cleanupRemovedGroup(grp.groupId());
     }
 
     /**

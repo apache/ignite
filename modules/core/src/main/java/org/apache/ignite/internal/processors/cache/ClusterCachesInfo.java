@@ -91,10 +91,18 @@ class ClusterCachesInfo {
     private final GridKernalContext ctx;
 
     /** Dynamic caches. */
-    private final ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, DynamicCacheDescriptor> removedCaches = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGrps = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, CacheGroupDescriptor> removedCacheGrps = new ConcurrentHashMap<>();
+
+    /** Dynamic caches. */
+    private final ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches
+        = new BackedUpConcurrentHashMap<>(removedCaches);
+
+    /** */
+    private final ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGrps
+        = new BackedUpConcurrentHashMap<>(removedCacheGrps);
 
     /** Cache templates. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
@@ -740,15 +748,19 @@ class ClusterCachesInfo {
         String cacheName,
         DynamicCacheDescriptor desc
     ) {
-        DynamicCacheDescriptor old = registeredCaches.remove(cacheName);
+        DynamicCacheDescriptor old = registeredCaches.get(cacheName);
+
+        assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
+
+        removedCaches.put(cacheName, old);
+
+        registeredCaches.remove(cacheName);
 
         if (req.restart()) {
             IgniteUuid restartId = req.restartId();
 
             restartingCaches.put(cacheName, restartId == null ? NULL_OBJECT : restartId);
         }
-
-        assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
 
         ctx.discovery().removeCacheFilter(cacheName);
 
@@ -761,6 +773,8 @@ class ClusterCachesInfo {
         grpDesc.onCacheStopped(desc.cacheName(), desc.cacheId());
 
         if (!grpDesc.hasCaches()) {
+            removedCacheGrps.put(grpDesc.groupId(), grpDesc);
+
             registeredCacheGrps.remove(grpDesc.groupId());
 
             ctx.discovery().removeCacheGroup(grpDesc);
@@ -1492,6 +1506,20 @@ class ClusterCachesInfo {
         registeredCaches.clear();
         registeredCacheGrps.clear();
         ctx.discovery().cleanCachesAndGroups();
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    public void cleanupRemovedCache(String cacheName) {
+        removedCaches.remove(cacheName);
+    }
+
+    /**
+     * @param grpId Group ID.
+     */
+    public void cleanupRemovedGroup(int grpId) {
+        removedCacheGrps.remove(grpId);
     }
 
     /**
@@ -2505,5 +2533,30 @@ class ClusterCachesInfo {
 
         /** */
         private final List<IgniteCheckedException> errs = new ArrayList<>();
+    }
+
+    /**
+     *
+     */
+    private static class BackedUpConcurrentHashMap<K, V> extends ConcurrentHashMap<K, V> {
+        /** Backup map. */
+        private final ConcurrentMap<K, V> backupMap;
+
+        /**
+         * @param backupMap Backup map.
+         */
+        public BackedUpConcurrentHashMap(ConcurrentMap<K, V> backupMap) {
+            this.backupMap = backupMap;
+        }
+
+        /** {@inheritDoc} */
+        @Override public V get(Object key) {
+            V value = super.get(key);
+
+            if (value == null)
+                return backupMap.get(key);
+
+            return value;
+        }
     }
 }
