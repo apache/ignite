@@ -78,8 +78,8 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                 Integer latest = entry.getValue().latest;
 
                 Integer res = raw ?
-                    cache.withConsistency().getEntry(key).getValue() :
-                    cache.withConsistency().get(key);
+                    cache.withConsistencyCheck().getEntry(key).getValue() :
+                    cache.withConsistencyCheck().get(key);
 
                 assertEquals(latest, res);
 
@@ -103,13 +103,13 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
 
         try {
             if (raw) {
-                Collection<CacheEntry<Integer, Integer>> res = cache.withConsistency().getEntries(keys);
+                Collection<CacheEntry<Integer, Integer>> res = cache.withConsistencyCheck().getEntries(keys);
 
                 for (CacheEntry<Integer, Integer> entry : res)
                     assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
             }
             else {
-                Map<Integer, Integer> res = cache.withConsistency().getAll(keys);
+                Map<Integer, Integer> res = cache.withConsistencyCheck().getAll(keys);
 
                 for (Map.Entry<Integer, Integer> entry : res.entrySet())
                     assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
@@ -137,8 +137,8 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                 Integer key = entry.getKey() * -1; // Negative.
 
                 Object res = raw ?
-                    cache.withConsistency().getEntry(key) :
-                    cache.withConsistency().get(key);
+                    cache.withConsistencyCheck().getEntry(key) :
+                    cache.withConsistencyCheck().get(key);
 
                 assertEquals(null, res);
             }

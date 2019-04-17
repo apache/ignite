@@ -232,7 +232,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withConsistency() {
+    @Override public IgniteCache<K, V> withConsistencyCheck() {
         CacheOperationGate opGate = onEnter();
 
         try {

@@ -138,11 +138,18 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * Gets an instance of {@code IgniteCache} that will be allowed to execute cache operations (read, write)
-     * regardless of cache cocsistency policy.
+     * with forced backup nodes consistency check on each read attempt.
+     *
+     * Consistency check means that each backup node will be checked to have the same entry as primary node has.
+     * In case consistency violation found:
+     * - values across the topology will be replaced by latest versioned value:
+     * -- automaticaly for OPTIMISTIC || READ_COMMITTED transactions
+     * -- at commit() for PESSIMISTIC && !READ_COMMITTED transactions
+     * - consistency violation event will be recorded in case it's configured as recordable
      *
      * @return Cache with explicit consistency check on each read.
      */
-    public IgniteCache<K, V> withConsistency();
+    public IgniteCache<K, V> withConsistencyCheck();
 
     /**
      * Returns cache that will operate with binary objects.

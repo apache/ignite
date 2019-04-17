@@ -74,8 +74,8 @@ public class OperationRestrictionsCacheConsistencyTest extends AbstractCacheCons
 
                             try {
                                 Integer res = raw ?
-                                    cache.withConsistency().getEntry(key).getValue() :
-                                    cache.withConsistency().get(key);
+                                    cache.withConsistencyCheck().getEntry(key).getValue() :
+                                    cache.withConsistencyCheck().get(key);
 
                                 assertTrue(isolation == TransactionIsolation.READ_COMMITTED);
 
@@ -116,14 +116,14 @@ public class OperationRestrictionsCacheConsistencyTest extends AbstractCacheCons
                             Integer key = entry.getKey();
 
                             if (ThreadLocalRandom.current().nextBoolean())
-                                cache.withConsistency().put(key, updated);
+                                cache.withConsistencyCheck().put(key, updated);
                             else
                                 cache.put(key, updated);
 
                             try {
                                 Integer res = raw ?
-                                    cache.withConsistency().getEntry(key).getValue() :
-                                    cache.withConsistency().get(key);
+                                    cache.withConsistencyCheck().getEntry(key).getValue() :
+                                    cache.withConsistencyCheck().get(key);
 
                                 fail("Should not happen." + res);
                             }
@@ -156,13 +156,13 @@ public class OperationRestrictionsCacheConsistencyTest extends AbstractCacheCons
                             key = entry.getKey();
 
                             res = raw ?
-                                cache.withConsistency().getEntry(key).getValue() :
-                                cache.withConsistency().get(key);
+                                cache.withConsistencyCheck().getEntry(key).getValue() :
+                                cache.withConsistencyCheck().get(key);
 
                             assertTrue(res > 0);
 
                             if (ThreadLocalRandom.current().nextBoolean())
-                                cache.withConsistency().put(key, updated);
+                                cache.withConsistencyCheck().put(key, updated);
                             else
                                 cache.put(key, updated);
 

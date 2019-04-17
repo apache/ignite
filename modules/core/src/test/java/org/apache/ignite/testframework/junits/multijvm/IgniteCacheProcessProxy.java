@@ -140,7 +140,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withConsistency() {
+    @Override public IgniteCache<K, V> withConsistencyCheck() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
