@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
+import org.apache.ignite.internal.processors.cache.GridCacheLongRunningTransactionDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
@@ -101,6 +102,8 @@ public class IgniteCacheTestSuite9 {
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsCacheSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsManagerSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsMetricsLocalMXBeanImplSelfTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, GridCacheLongRunningTransactionDiagnosticsTest.class, ignoredTests);
 
         return suite;
     }

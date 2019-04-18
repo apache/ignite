@@ -34,14 +34,14 @@ import org.apache.ignite.internal.ThreadPoolMXBeanAdapter;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
-import org.apache.ignite.internal.processors.cluster.BaselineConfigurationMXBeanImpl;
+import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanImpl;
 import org.apache.ignite.internal.stat.IoStatisticsMetricsLocalMXBeanImpl;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl;
 import org.apache.ignite.internal.worker.WorkersControlMXBeanImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
-import org.apache.ignite.mxbean.BaselineConfigurationMXBean;
+import org.apache.ignite.mxbean.BaselineAutoAdjustMXBean;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.DataStorageMXBean;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
@@ -150,8 +150,9 @@ public class IgniteMBeansManager {
         registerMBean("DataStorage", dataStorageMXBean.getClass().getSimpleName(), dataStorageMXBean, DataStorageMXBean.class);
 
         // Baseline configuration
-        BaselineConfigurationMXBean baselineConfigurationMXBean = new BaselineConfigurationMXBeanImpl(ctx);
-        registerMBean("Baseline", baselineConfigurationMXBean.getClass().getSimpleName(), baselineConfigurationMXBean, BaselineConfigurationMXBean.class);
+        BaselineAutoAdjustMXBean baselineAutoAdjustMXBean = new BaselineAutoAdjustMXBeanImpl(ctx);
+        registerMBean("Baseline", baselineAutoAdjustMXBean.getClass().getSimpleName(), baselineAutoAdjustMXBean,
+            BaselineAutoAdjustMXBean.class);
 
         // Executors
         registerExecutorMBean("GridUtilityCacheExecutor", utilityCachePool);

@@ -136,8 +136,8 @@
         <zookeeper.version>3.4.13</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
 
-        <!-- Plugin versions -->
-        <maven.javadoc.plugin.version>2.10.1</maven.javadoc.plugin.version>
+        <!-- Maven plugins versions -->
+        <maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
@@ -804,7 +804,7 @@
                     <plugin>
                         <groupId>org.apache.rat</groupId>
                         <artifactId>apache-rat-plugin</artifactId>
-                        <version>0.11</version>
+                        <version>0.12</version>
                         <configuration>
                             <addDefaultLicenseMatchers>false</addDefaultLicenseMatchers>
                             <licenses>
@@ -1244,7 +1244,7 @@
                                             <pluginExecutionFilter>
                                                 <groupId>org.codehaus.mojo</groupId>
                                                 <artifactId>flatten-maven-plugin</artifactId>
-                                                <versionRange>[1.0.0-beta-3,)</versionRange>
+                                                <versionRange>1.0.1</versionRange>
                                                 <goals>
                                                     <goal>flatten</goal>
                                                 </goals>

@@ -21,7 +21,8 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -53,21 +54,23 @@ public class CacheBasedLabelPairCursorTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testIterate() {
-        IgniteCache<Integer, Integer> data = ignite.createCache(UUID.randomUUID().toString());
+        IgniteCache<Integer, double[]> data = ignite.createCache(UUID.randomUUID().toString());
 
         for (int i = 0; i < 1000; i++)
-            data.put(i, i);
+            data.put(i, new double[] { i, i});
 
-        LabelPairCursor<Integer> cursor = new CacheBasedLabelPairCursor<>(
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+
+
+        LabelPairCursor<Double> cursor = new CacheBasedLabelPairCursor<>(
             data,
-            (k, v) -> v % 2 == 0,
-            (k, v) -> VectorUtils.of(v),
-            (k, v) -> v,
-            vec -> (int)vec.get(0)
+            (k, v) -> v[1] % 2 == 0,
+            vectorizer,
+            vec -> vec.get(0)
         );
 
         int cnt = 0;
-        for (LabelPair<Integer> e : cursor) {
+        for (LabelPair<Double> e : cursor) {
             assertEquals(e.getPrediction(), e.getTruth());
             cnt++;
         }

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,6 +47,8 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -4175,7 +4175,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     @Test
     public void testEvictExpired() throws Exception {
-        final IgniteCache<String, Integer> cache = jcache();
+        final IgniteCache<String, Integer> cache = jcache(0);
 
         final String key = primaryKeysForCache(cache, 1).get(0);
 
@@ -4556,7 +4556,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
-    @Test
+    @Test(timeout = 10050000)
     public void testLocalEvict() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -4586,7 +4586,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key1))
-                assertEquals((Integer)1, peek(jcache(i), key1));
+                assertEquals("node name = " + grid(i).name(), (Integer)1, peek(jcache(i), key1));
 
             if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key2))
                 assertEquals((Integer)2, peek(jcache(i), key2));

@@ -17,11 +17,13 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.PriorityQueue;
+import org.apache.commons.math3.util.Pair;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.apache.ignite.ml.selection.scoring.metric.AbstractMetrics;
 import org.apache.ignite.ml.selection.scoring.metric.exceptions.UnknownClassLabelException;
-
-import java.util.Iterator;
 
 /**
  * Binary classification metrics calculator.
@@ -33,6 +35,9 @@ public class BinaryClassificationMetrics extends AbstractMetrics<BinaryClassific
 
     /** Negative class label. Default value is 0.0. */
     private double negativeClsLb;
+
+    /** This flag enabels ROC AUC calculation that is hard for perfromance due to internal implementation. */
+    private boolean enableROCAUC;
 
     {
         metric = BinaryClassificationMetricValues::accuracy;
@@ -48,6 +53,12 @@ public class BinaryClassificationMetrics extends AbstractMetrics<BinaryClassific
         long tn = 0;
         long fp = 0;
         long fn = 0;
+        double rocauc = Double.NaN;
+
+        // for ROC AUC calculation
+        long pos = 0;
+        long neg = 0;
+        PriorityQueue<Pair<Double, Double>> queue = new PriorityQueue<>(Comparator.comparingDouble(Pair::getKey));
 
         while (iter.hasNext()) {
             LabelPair<Double> e = iter.next();
@@ -64,9 +75,26 @@ public class BinaryClassificationMetrics extends AbstractMetrics<BinaryClassific
             else if (truth == positiveClsLb && prediction == negativeClsLb) fn++;
             else if (truth == negativeClsLb && prediction == negativeClsLb) tn++;
             else if (truth == negativeClsLb && prediction == positiveClsLb) fp++;
+
+
+            if(enableROCAUC) {
+                queue.add(new Pair<>(prediction, truth));
+
+                if (truth == positiveClsLb)
+                    pos++;
+                else if (truth == negativeClsLb)
+                    neg++;
+                else
+                    throw new UnknownClassLabelException(truth, positiveClsLb, negativeClsLb);
+            }
+
         }
 
-        return new BinaryClassificationMetricValues(tp, tn, fp, fn);
+        if (enableROCAUC)
+            rocauc = ROCAUC.calculateROCAUC(queue, pos, neg, positiveClsLb);
+
+
+        return new BinaryClassificationMetricValues(tp, tn, fp, fn, rocauc);
     }
 
     /** */
@@ -92,6 +120,19 @@ public class BinaryClassificationMetrics extends AbstractMetrics<BinaryClassific
             this.negativeClsLb = negativeClsLb;
         return this;
     }
+
+    /** */
+    public BinaryClassificationMetrics withEnablingROCAUC(boolean enableROCAUC) {
+        this.enableROCAUC = this.enableROCAUC;
+        return this;
+    }
+
+
+    /** */
+    public boolean isROCAUCenabled() {
+        return enableROCAUC;
+    }
+
 
     /** {@inheritDoc} */
     @Override public String name() {

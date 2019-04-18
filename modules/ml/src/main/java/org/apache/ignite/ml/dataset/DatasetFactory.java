@@ -17,9 +17,10 @@
 
 package org.apache.ignite.ml.dataset;
 
+import java.io.Serializable;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
@@ -31,9 +32,7 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-
-import java.io.Serializable;
-import java.util.Map;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Factory providing a client facing API that allows to construct basic and the most frequently used types of dataset.
@@ -191,7 +190,7 @@ public class DatasetFactory {
         DatasetBuilder<K, V> datasetBuilder,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        Vectorizer<K, V, CO, ?> featureExtractor) {
+        Preprocessor<K, V> featureExtractor) {
         return create(
             datasetBuilder,
             envBuilder,
@@ -220,7 +219,7 @@ public class DatasetFactory {
         IgniteCache<K, V> upstreamCache,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        Vectorizer<K, V, CO, ?> featureExtractor) {
+        Preprocessor<K, V> featureExtractor) {
         return createSimpleDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             envBuilder,
@@ -248,7 +247,7 @@ public class DatasetFactory {
         DatasetBuilder<K, V> datasetBuilder,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        Vectorizer<K, V, CO, double[]> vectorizer) {
+        Preprocessor<K, V> vectorizer) {
         return create(
             datasetBuilder,
             envBuilder,
@@ -278,7 +277,7 @@ public class DatasetFactory {
         IgniteCache<K, V> upstreamCache,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        Vectorizer<K, V, CO, double[]> vectorizer) {
+        Preprocessor<K, V> vectorizer) {
         return createSimpleLabeledDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             envBuilder,
@@ -302,7 +301,7 @@ public class DatasetFactory {
     public static <K, V, CO extends Serializable> SimpleDataset<EmptyContext> createSimpleDataset(
         DatasetBuilder<K, V> datasetBuilder,
         LearningEnvironmentBuilder envBuilder,
-        Vectorizer<K, V, CO, ?> featureExtractor) {
+        Preprocessor<K, V> featureExtractor) {
         return createSimpleDataset(
             datasetBuilder,
             envBuilder,
@@ -328,7 +327,7 @@ public class DatasetFactory {
         Ignite ignite,
         IgniteCache<K, V> upstreamCache,
         LearningEnvironmentBuilder envBuilder,
-        Vectorizer<K, V, CO, ?> featureExtractor) {
+        Preprocessor<K, V> featureExtractor) {
         return createSimpleDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             envBuilder,
@@ -351,7 +350,7 @@ public class DatasetFactory {
     public static <K, V, CO extends Serializable> SimpleDataset<EmptyContext> createSimpleDataset(
         Ignite ignite,
         IgniteCache<K, V> upstreamCache,
-        Vectorizer<K, V, CO, ?> featureExtractor) {
+        Preprocessor<K, V> featureExtractor) {
         return createSimpleDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             LearningEnvironmentBuilder.defaultBuilder(),
@@ -375,7 +374,7 @@ public class DatasetFactory {
     public static <K, V, CO extends Serializable> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(
         DatasetBuilder<K, V> datasetBuilder,
         LearningEnvironmentBuilder envBuilder,
-        Vectorizer<K, V, CO, double[]> vectorizer) {
+        Preprocessor<K, V> vectorizer) {
         return createSimpleLabeledDataset(
             datasetBuilder,
             envBuilder,
@@ -402,7 +401,7 @@ public class DatasetFactory {
         Ignite ignite,
         LearningEnvironmentBuilder envBuilder,
         IgniteCache<K, V> upstreamCache,
-        Vectorizer<K, V, CO, double[]> vectorizer) {
+        Preprocessor<K, V> vectorizer) {
         return createSimpleLabeledDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             envBuilder,
@@ -459,7 +458,7 @@ public class DatasetFactory {
         int partitions,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        Vectorizer<K, V, CO, ?> featureExtractor) {
+        Preprocessor<K, V> featureExtractor) {
         return createSimpleDataset(
             new LocalDatasetBuilder<>(upstreamMap, partitions),
             envBuilder,
@@ -489,7 +488,7 @@ public class DatasetFactory {
         int partitions,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        Vectorizer<K, V, CO, double[]> vectorizer) {
+        Preprocessor<K, V> vectorizer) {
         return createSimpleLabeledDataset(
             new LocalDatasetBuilder<>(upstreamMap, partitions),
             envBuilder,
@@ -512,9 +511,9 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V, CO extends Serializable> SimpleDataset<EmptyContext> createSimpleDataset(Map<K, V> upstreamMap,
-        int partitions,
-        LearningEnvironmentBuilder envBuilder,
-        Vectorizer<K, V, CO, ?> featureExtractor) {
+                                                                                                  int partitions,
+                                                                                                  LearningEnvironmentBuilder envBuilder,
+                                                                                                  Preprocessor<K, V> featureExtractor) {
         return createSimpleDataset(
             new LocalDatasetBuilder<>(upstreamMap, partitions),
             envBuilder,
@@ -539,7 +538,7 @@ public class DatasetFactory {
     public static <K, V, CO extends Serializable> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(
         Map<K, V> upstreamMap,
         LearningEnvironmentBuilder envBuilder,
-        int partitions, Vectorizer<K, V, CO, double[]> vectorizer) {
+        int partitions, Preprocessor<K, V> vectorizer) {
         return createSimpleLabeledDataset(
             new LocalDatasetBuilder<>(upstreamMap, partitions),
             envBuilder,

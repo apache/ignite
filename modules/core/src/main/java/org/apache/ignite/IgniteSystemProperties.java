@@ -943,9 +943,9 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD = "IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD";
 
     /**
-     * When set to {@code true}, WAL will be automatically disabled during rebalancing if there is no partition in
+     * When set to {@code false}, WAL will not be automatically disabled during rebalancing if there is no partition in
      * OWNING state.
-     * Default is {@code false}.
+     * Default is {@code true}.
      */
     public static final String IGNITE_DISABLE_WAL_DURING_REBALANCING = "IGNITE_DISABLE_WAL_DURING_REBALANCING";
 
@@ -1173,6 +1173,16 @@ public final class IgniteSystemProperties {
      * when this system property is set.
      */
     public static final String IGNITE_KEEP_STATIC_CACHE_CONFIGURATION = "IGNITE_KEEP_STATIC_CACHE_CONFIGURATION";
+
+    /** Enable backward compatible to use 'IGNITE' as SQL system schema. */
+    public static final String IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE = "IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE";
+
+    /**
+     * Shows if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread.
+     */
+    public static final String IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED = "IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED";
 
     /**
      * Enforces singleton.

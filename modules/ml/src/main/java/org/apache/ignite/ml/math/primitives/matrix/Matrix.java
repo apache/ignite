@@ -508,7 +508,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     /**
      * Destroys matrix if managed outside of JVM. It's a no-op in all other cases.
      */
-    public default void destroy() {
+    @Override public default void destroy() {
         // No-op.
     }
 
@@ -535,4 +535,9 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return Inverse of this matrix
      */
     public Matrix inverse();
+
+    /** {@inheritDoc} */
+    @Override default boolean isNumeric() {
+        return true;
+    }
 }

@@ -1,0 +1,81 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'encryption'
+-var model = '$ctrl.clonedCluster.encryptionSpi'
+
+panel-collapsible(ng-show='$ctrl.available("2.7.0")' ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Encryption
+    panel-description Encryption features for an Ignite
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__dropdown({
+                    label: 'Encryption SPI:',
+                    model: `${model}.kind`,
+                    name: '"encryptionSpi"',
+                    placeholder: 'Disabled',
+                    options: '[\
+                            {value: null, label: "Disabled"},\
+                            {value: "Keystore", label: "Keystore"},\
+                            {value: "Custom", label: "Custom"}\
+                        ]',
+                    tip: 'Provides an ability to save an intermediate job state\
+                        <ul>\
+                            <li>Disabled - Encryption disabled</li>\
+                            <li>Keystore - Base on JDK provided cipher algorithm implementations</li>\
+                            <li>Custom - Custom encryption SPI implementation</li>\
+                        </ul>'
+                })
+            .pc-form-grid-col-60(ng-if-start=`${model}.kind === "Keystore"`)
+                +form-field__text({
+                    label: 'Key store path:',
+                    model: `${model}.Keystore.keyStorePath`,
+                    name: '"EncryptionKeyStorePath"',
+                    placeholder: 'Path to master key store file',
+                    tip: 'Path to master key store file'
+                })
+            .pc-form-grid-col-60
+                +form-field__number({
+                    label: 'Key size:',
+                    model: `${model}.Keystore.keySize`,
+                    name: '"EncryptionKeySize"',
+                    placeholder: '256',
+                    min: '1',
+                    tip: 'Encryption key size'
+                })
+            .pc-form-grid-col-60(ng-if-end)
+                +form-field__text({
+                    label: 'Master key name:',
+                    model: `${model}.Keystore.masterKeyName`,
+                    name: '"EncryptionMasterKeyName"',
+                    placeholder: 'ignite.master.key',
+                    tip: 'Mater key name'
+                })
+            .pc-form-grid-col-60(ng-if=`${model}.kind === "Custom"`)
+                +form-field__java-class({
+                    label: 'Class:',
+                    model: `${model}.Custom.className`,
+                    name: '"EncryptionClassName"',
+                    required: true,
+                    tip: 'Custom encryption SPI implementation class name',
+                    validationActive: true
+                })
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterEncryption')

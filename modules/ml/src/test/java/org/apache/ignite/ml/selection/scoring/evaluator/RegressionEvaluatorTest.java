@@ -66,16 +66,15 @@ public class RegressionEvaluatorTest extends TrainerTest {
 
         KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 
-        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
         KNNRegressionModel mdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+            vectorizer
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance());
 
-        double score = Evaluator.evaluate(data, mdl, featureExtractor, lbExtractor,
+        double score = Evaluator.evaluate(data, mdl, vectorizer,
             new RegressionMetrics()
                 .withMetric(RegressionMetricValues::rss)
         );
@@ -111,17 +110,16 @@ public class RegressionEvaluatorTest extends TrainerTest {
         TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
             .split(0.5);
 
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
         KNNRegressionModel mdl = (KNNRegressionModel) trainer.fit(
             data,
             split.getTestFilter(),
             parts,
-            new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+            vectorizer
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance());
 
-        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
-        double score = Evaluator.evaluate(data, split.getTrainFilter(), mdl, featureExtractor, lbExtractor,
+        double score = Evaluator.evaluate(data, split.getTrainFilter(), mdl, vectorizer,
             new RegressionMetrics()
                 .withMetric(RegressionMetricValues::rss)
         );

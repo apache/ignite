@@ -26,6 +26,12 @@ import org.apache.ignite.internal.util.typedef.F;
  * SQL keyword constants.
  */
 public class SqlKeyword {
+    /** Keyword: KILL. */
+    public static final String KILL = "KILL";
+
+    /** Keyword: QUERY. */
+    public static final String QUERY = "QUERY";
+
     /** Keyword: ALTER. */
     public static final String ALTER = "ALTER";
 
@@ -283,6 +289,18 @@ public class SqlKeyword {
 
     /** Keyword: PASSWORD. */
     public static final String PASSWORD = "PASSWORD";
+
+    /** Keyword: SHOW. */
+    public static final String SHOW = "SHOW";
+
+    /** Keyword: HELP. */
+    public static final String HELP = "HELP";
+
+    /** Keyword: GRANT. */
+    public static final String GRANT = "GRANT";
+
+    /** Keyword: REVOKE. */
+    public static final String REVOKE = "REVOKE";
 
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;

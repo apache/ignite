@@ -185,7 +185,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         @Override public void evaluate() throws Throwable {
             assert getName() != null : "getName returned null";
 
-            runTestCase(base);
+            runTest(base);
         }
     };
 
@@ -545,44 +545,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     private void resolveWorkDirectory() throws Exception {
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Do not annotate with Before in overriding methods.</p>
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @Before} annotation.
-     */
-    @Deprecated
-    @Override protected void setUp() throws Exception {
-        stopGridErr = false;
-
-        clsLdr = Thread.currentThread().getContextClassLoader();
-
-        // Change it to the class one.
-        Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-
-        // Clear log throttle.
-        LT.clear();
-
-        info(">>> Starting test: " + testDescription() + " <<<");
-
-        try {
-            beforeTest();
-        }
-        catch (Exception | Error t) {
-            try {
-                tearDown();
-            }
-            catch (Exception e) {
-                log.error("Failed to tear down test after exception was thrown in beforeTest (will ignore)", e);
-            }
-
-            throw t;
-        }
-
-        ts = System.currentTimeMillis();
     }
 
     /** */
@@ -1797,33 +1759,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Do not annotate with After in overriding methods.</p>
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @After} annotation.
-     */
-    @Deprecated
-    @Override protected void tearDown() throws Exception {
-        long dur = System.currentTimeMillis() - ts;
-
-        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
-
-        try {
-            afterTest();
-        }
-        finally {
-            serializedObj.clear();
-
-            Thread.currentThread().setContextClassLoader(clsLdr);
-
-            clsLdr = null;
-
-            cleanReferences();
-        }
-    }
-
     /** */
     private void afterLastTest() throws Exception {
         info(">>> Stopping test class: " + testClassDescription() + " <<<");
@@ -1860,6 +1795,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         U.clearClassCache();
         MarshallerExclusions.clearCache();
         BinaryEnumCache.clear();
+        serializedObj.clear();
 
         if (err!= null)
             throw err;
@@ -2102,60 +2038,142 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         return new IgniteTestResources(cfg);
     }
 
-    /** {@inheritDoc} */
-    @Override void runTest(Statement testRoutine) throws Throwable {
-        final AtomicReference<Throwable> ex = new AtomicReference<>();
+    /** Runs test with the provided scenario. */
+    private void runTest(Statement testRoutine) throws Throwable {
+        setUp();
+        
+        try {
+            final AtomicReference<Throwable> ex = new AtomicReference<>();
 
-        Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
-            @Override public void run() {
-                try {
-                    testRoutine.evaluate();
-                }
-                catch (Throwable e) {
-                    IgniteClosure<Throwable, Throwable> hnd = errorHandler();
+            Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
+                @Override public void run() {
+                    try {
+                        testRoutine.evaluate();
+                    }
+                    catch (Throwable e) {
+                        IgniteClosure<Throwable, Throwable> hnd = errorHandler();
 
-                    ex.set(hnd != null ? hnd.apply(e) : e);
+                        ex.set(hnd != null ? hnd.apply(e) : e);
+                    }
                 }
+            });
+
+            runner.start();
+
+            runner.join(isDebug() ? 0 : getTestTimeout());
+
+            if (runner.isAlive()) {
+                U.error(log,
+                    "Test has been timed out and will be interrupted (threads dump will be taken before interruption) [" +
+                        "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
+
+                List<Ignite> nodes = IgnitionEx.allGridsx();
+
+                for (Ignite node : nodes)
+                    ((IgniteKernal)node).dumpDebugInfo();
+
+                // We dump threads to stdout, because we can loose logs in case
+                // the build is cancelled on TeamCity.
+                U.dumpThreads(null);
+
+                U.dumpThreads(log);
+
+                U.interrupt(runner);
+
+                U.join(runner, log);
+
+                throw new TimeoutException("Test has been timed out [test=" + getName() + ", timeout=" +
+                    getTestTimeout() + ']');
             }
-        });
 
-        runner.start();
+            Throwable t = ex.get();
 
-        runner.join(isDebug() ? 0 : getTestTimeout());
+            if (t != null) {
+                U.error(log, "Test failed.", t);
 
-        if (runner.isAlive()) {
-            U.error(log,
-                "Test has been timed out and will be interrupted (threads dump will be taken before interruption) [" +
-                    "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
+                throw t;
+            }
 
-            List<Ignite> nodes = IgnitionEx.allGridsx();
-
-            for (Ignite node : nodes)
-                ((IgniteKernal)node).dumpDebugInfo();
-
-            // We dump threads to stdout, because we can loose logs in case
-            // the build is cancelled on TeamCity.
-            U.dumpThreads(null);
-
-            U.dumpThreads(log);
-
-            U.interrupt(runner);
-
-            U.join(runner, log);
-
-            throw new TimeoutException("Test has been timed out [test=" + getName() + ", timeout=" +
-                getTestTimeout() + ']');
+            assert !stopGridErr : "Error occurred on grid stop (see log for more details).";
         }
+        finally {
+            try {
+                tearDown();
+            }
+            catch (Exception e) {
+                log.error("Failed to execute tear down after test (will ignore)", e);
+            }
+        }
+    }
 
-        Throwable t = ex.get();
+    /**
+     * Runs before each test.
+     *
+     * @throws Exception If failed.
+     */
+    private void setUp() throws Exception {
+        stopGridErr = false;
 
-        if (t != null) {
-            U.error(log, "Test failed.", t);
+        clsLdr = Thread.currentThread().getContextClassLoader();
+
+        // Change it to the class one.
+        Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+
+        // Clear log throttle.
+        LT.clear();
+
+        info(">>> Starting test: " + testDescription() + " <<<");
+
+        try {
+            beforeTest();
+        }
+        catch (Exception | Error t) {
+            try {
+                tearDown();
+            }
+            catch (Exception e) {
+                log.error("Failed to tear down test after exception was thrown in beforeTest (will ignore)", e);
+            }
 
             throw t;
         }
 
-        assert !stopGridErr : "Error occurred on grid stop (see log for more details).";
+        ts = System.currentTimeMillis();
+    }
+
+    /**
+     * Runs after each test.
+     *
+     * @throws Exception If failed.
+     */
+    private void tearDown() throws Exception {
+        long dur = System.currentTimeMillis() - ts;
+
+        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+
+        try {
+            afterTest();
+        }
+        finally {
+            if (!keepSerializedObjects())
+                serializedObj.clear();
+
+            Thread.currentThread().setContextClassLoader(clsLdr);
+
+            clsLdr = null;
+
+            cleanReferences();
+        }
+    }
+
+    /**
+     * @return If {@code true} serialized objects placed to {@link #serializedObj}
+     * are not cleared after each test execution.
+     *
+     * Setting this flag to true is need when some serialized objects are need to be shared between all tests in class.
+     */
+    protected boolean keepSerializedObjects() {
+        return false;
     }
 
     /**
@@ -2404,7 +2422,9 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         protected Object readResolve() throws ObjectStreamException {
             Object res = serializedObj.get(uuid);
 
-            assert res != null;
+            assert res != null
+                : "Failed to find serializable proxy with uuid=" + uuid
+                    + ". Try to set test property keepSerializedObjects to 'true' if object was removed after test";
 
             return res;
         }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.math.primitives.vector.impl;
 
+import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
@@ -35,6 +36,14 @@ import org.apache.ignite.ml.math.primitives.vector.storage.DenseVectorStorage;
  * to keep the entire data set.
  */
 public class DenseVector extends AbstractVector {
+    /**
+     * @param data Data.
+     */
+    public DenseVector(Serializable[] data) {
+        assert data != null;
+        setStorage(new DenseVectorStorage(data));
+    }
+
     /**
      * @param size Vector cardinality.
      */
