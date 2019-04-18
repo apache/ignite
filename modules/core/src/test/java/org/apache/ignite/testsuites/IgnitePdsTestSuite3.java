@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsNodeJoinWithCachesStopping;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPartitionFilesDestroyTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest;
@@ -86,5 +87,7 @@ public class IgnitePdsTestSuite3 extends TestSuite {
         suite.addTestSuite(IgniteWalFlushFsyncWithMmapBufferSelfTest.class);
 
         suite.addTestSuite(CorruptedCheckpointReservationTest.class);
+
+        suite.addTestSuite(IgnitePdsNodeJoinWithCachesStopping.class);
     }
 }

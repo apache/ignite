@@ -1028,7 +1028,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private CacheStoreHolder getHolder(int grpId) throws IgniteCheckedException {
         try {
             return idxCacheStores.computeIfAbsent(grpId, (key) -> {
-                CacheGroupDescriptor gDesc = cctx.cache().cacheGroupDescriptors().get(grpId);
+                CacheGroupDescriptor gDesc = cctx.cache().cacheGroupDescriptor(grpId);
 
                 CacheStoreHolder holder0 = null;
 

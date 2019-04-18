@@ -88,6 +88,18 @@ class ClusterCachesInfo {
     /** */
     private final GridKernalContext ctx;
 
+    /**
+     * Map contains cache descriptors that were removed from {@link #registeredCaches} due to cache stop request.
+     * Such descriptors will be removed from the map only after whole cache stop process is finished.
+     */
+    private final ConcurrentMap<String, DynamicCacheDescriptor> markedForDeletionCaches = new ConcurrentHashMap<>();
+
+    /**
+     * Map contains cache group descriptors that were removed from {@link #registeredCacheGrps} due to cache stop request.
+     * Such descriptors will be removed from the map only after whole cache stop process is finished.
+     */
+    private final ConcurrentMap<Integer, CacheGroupDescriptor> markedForDeletionCacheGrps = new ConcurrentHashMap<>();
+
     /** Dynamic caches. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
 
@@ -726,15 +738,19 @@ class ClusterCachesInfo {
         String cacheName,
         DynamicCacheDescriptor desc
     ) {
-        DynamicCacheDescriptor old = registeredCaches.remove(cacheName);
+        DynamicCacheDescriptor old = registeredCaches.get(cacheName);
+
+        assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
+
+        markedForDeletionCaches.put(cacheName, old);
+
+        registeredCaches.remove(cacheName);
 
         if (req.restart()) {
             IgniteUuid restartId = req.restartId();
 
             restartingCaches.put(cacheName, restartId == null ? NULL_OBJECT : restartId);
         }
-
-        assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
 
         ctx.discovery().removeCacheFilter(cacheName);
 
@@ -747,6 +763,8 @@ class ClusterCachesInfo {
         grpDesc.onCacheStopped(desc.cacheName(), desc.cacheId());
 
         if (!grpDesc.hasCaches()) {
+            markedForDeletionCacheGrps.put(grpDesc.groupId(), grpDesc);
+
             registeredCacheGrps.remove(grpDesc.groupId());
 
             ctx.discovery().removeCacheGroup(grpDesc);
@@ -1418,6 +1436,34 @@ class ClusterCachesInfo {
         registeredCaches.clear();
         registeredCacheGrps.clear();
         ctx.discovery().cleanCachesAndGroups();
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    public void cleanupRemovedCache(String cacheName) {
+        markedForDeletionCaches.remove(cacheName);
+    }
+
+    /**
+     * @param grpId Group ID.
+     */
+    public void cleanupRemovedGroup(int grpId) {
+        markedForDeletionCacheGrps.remove(grpId);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    public @Nullable DynamicCacheDescriptor markedForDeletionCacheDesc(String cacheName) {
+        return markedForDeletionCaches.get(cacheName);
+    }
+
+    /**
+     * @param grpId Group id.
+     */
+    public @Nullable CacheGroupDescriptor markedForDeletionCacheGroupDesc(int grpId) {
+        return markedForDeletionCacheGrps.get(grpId);
     }
 
     /**
