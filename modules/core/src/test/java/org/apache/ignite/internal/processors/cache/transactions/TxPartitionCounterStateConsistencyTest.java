@@ -175,7 +175,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      * Test primary-backup partitions consistency while restarting random backup nodes under load.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11704")
+    //@Ignore("https://issues.apache.org/jira/browse/IGNITE-11704")
     public void testPartitionConsistencyWithBackupsRestart() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
@@ -196,9 +196,13 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             assertFalse(backups.contains(prim));
 
-            long stop = U.currentTimeMillis() + 120_000;
+            long stop = U.currentTimeMillis() + 3 * 60_000;
 
-            Random r = new Random();
+            long seed = System.nanoTime();
+
+            log.info("Seed: " + seed);
+
+            Random r = new Random(seed);
 
             assertTrue(prim == grid(0));
 
