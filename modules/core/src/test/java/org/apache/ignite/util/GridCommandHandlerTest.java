@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -224,7 +225,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override public String getTestIgniteInstanceName() {
-        return "bltTest";
+        return "gridCommandHandlerTest";
     }
 
     /** {@inheritDoc} */
@@ -432,6 +433,48 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals("(Coordinator: ConsistentId=" +
             grid(0).cluster().localNode().consistentId() + ", Order=4)", crdStr);
 
+    }
+
+    /**
+     * Very basic tests for running the command in different enviroment which other command are running in.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFindAndDeleteGarbage() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        injectTestSystemOut();
+
+        ignite.createCaches(Arrays.asList(
+            new CacheConfiguration<>("garbage1").setGroupName("groupGarbage"),
+            new CacheConfiguration<>("garbage2").setGroupName("groupGarbage")));
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage", "--port", "11212"));
+
+        assertTrue(testOut.toString().contains("garbage not found"));
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage", "--port", "11212"));
+
+        assertTrue(testOut.toString().contains("garbage not found"));
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
+            ignite(0).localNode().id().toString(), "--port", "11212"));
+
+        assertTrue(testOut.toString().contains("garbage not found"));
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
+            "groupGarbage", "--port", "11212"));
+
+        assertTrue(testOut.toString().contains("garbage not found"));
     }
 
     /**
@@ -1273,7 +1316,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
 
-        assertTrue(testOut.toString().contains("Node not found for consistent ID: bltTest2"));
+        assertTrue(testOut.toString(), testOut.toString().contains("Node not found for consistent ID:"));
+        assertTrue(testOut.toString(), testOut.toString().contains(getTestIgniteInstanceName()));
+        assertFalse(testOut.toString(), testOut.toString().contains(getTestIgniteInstanceName() + "1"));
     }
 
     /**
@@ -1291,7 +1336,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 assertTrue(cmd.text(), output.contains(cmd.toString()));
 
                 for (CommandArg arg : CommandArgFactory.getArgs(cmd))
-                    assertTrue(cmd + " " + arg, output.contains(arg.toString()));
+                        assertTrue(cmd + " " + arg, output.contains(arg.toString()));
 
             }
         }
@@ -1305,7 +1350,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         for (CacheCommand cmd : CacheCommand.values()) {
             for (CommandArg arg : CommandArgFactory.getArgs(cmd))
-                assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
+                    assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
         }
     }
 
@@ -1841,8 +1886,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String outputStr = testOut.toString();
 
-        assertTrue(outputStr.contains("idle_verify failed on 1 node."));
-        assertTrue(outputStr.contains("idle_verify check has finished, no conflicts have been found."));
+        assertTrue(outputStr, outputStr.contains("idle_verify failed on 1 node."));
+        assertTrue(outputStr, outputStr.contains("idle_verify check has finished, no conflicts have been found."));
     }
 
     /** */
