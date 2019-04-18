@@ -41,10 +41,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 @SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
-
-    /** Signals that tests should start in best effort affinity mode. */
-    public static boolean bestEffortAffinity;
-
     /**
      * @param r Runnable to check support.
      */
