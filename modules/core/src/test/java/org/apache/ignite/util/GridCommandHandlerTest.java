@@ -68,8 +68,8 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.commandline.Commands;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.Commands;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheCommandList;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -428,6 +428,48 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals("(Coordinator: ConsistentId=" +
             grid(0).cluster().localNode().consistentId() + ", Order=4)", crdStr);
 
+    }
+
+    /**
+     * Very basic tests for running the command in different enviroment which other command are running in.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFindAndDeleteGarbage() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        injectTestSystemOut();
+
+        ignite.createCaches(Arrays.asList(
+            new CacheConfiguration<>("garbage1").setGroupName("groupGarbage"),
+            new CacheConfiguration<>("garbarge2").setGroupName("groupGarbage")));
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage", "--port", "11212"));
+
+        assertTrue(testOut.toString().contains("garbage not found"));
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage", "--port", "11212"));
+
+        assertTrue(testOut.toString().contains("garbage not found"));
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
+            ignite(0).localNode().id().toString(), "--port", "11212"));
+
+        assertTrue(testOut.toString().contains("garbage not found"));
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
+            "groupGarbage", "--port", "11212"));
+
+        assertTrue(testOut.toString().contains("garbage not found"));
     }
 
     /**

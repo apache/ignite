@@ -483,8 +483,11 @@ public class CacheCommands extends Command<CacheArguments> {
         printErrors(taskRes.exceptions(), "Scanning for garbage failed on nodes:");
 
         for (Map.Entry<UUID, VisorFindAndDeleteGarbargeInPersistenceJobResult> nodeEntry : taskRes.result().entrySet()) {
-            if (!nodeEntry.getValue().hasGarbarge())
+            if (!nodeEntry.getValue().hasGarbarge()) {
+                logger.log("Node "+ nodeEntry.getKey() + " - garbage not found.");
+
                 continue;
+            }
 
             logger.log("Garbarge found on node " + nodeEntry.getKey() + ":");
 
