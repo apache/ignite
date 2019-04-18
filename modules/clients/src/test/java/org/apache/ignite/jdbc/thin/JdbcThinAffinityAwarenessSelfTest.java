@@ -56,10 +56,10 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- * Jdbc thin best effort affinity test.
+ * Jdbc thin affinity awareness test.
  */
 @SuppressWarnings({"ThrowableNotThrown"})
-public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest {
+public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true";
 
@@ -297,7 +297,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
 
 
     /**
-     * Check that in case of non-rendezvous affinity function, client side best effort affinity is skipped.
+     * Check that in case of non-rendezvous affinity function, client side affinity awareness is skipped.
      *
      * @throws Exception If failed.
      */
@@ -317,7 +317,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
     }
 
     /**
-     * Check that in case of custom filters, client side best effort affinity is skipped.
+     * Check that in case of custom filters, client side affinity awareness is skipped.
      *
      * @throws Exception If failed.
      */
@@ -337,7 +337,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
     }
 
     /**
-     * Check that best effort functionality works fine for custom partitions count.
+     * Check that affinity awareness functionality works fine for custom partitions count.
      *
      * @throws Exception If failed.
      */
@@ -406,12 +406,12 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
 
     /**
      * Check that affinity cache is invalidated in case of changing topology,
-     * detected during best-effort-affinity-unrelated-query response retrieval.
+     * detected during affinity-awareness-unrelated-query response retrieval.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testChangeTopologyDetectionWithinBestEffortAffinityUnrelatedQuery() throws Exception {
+    public void testChangeTopologyDetectionWithinAffinityAwarenessUnrelatedQuery() throws Exception {
         final String sqlQry = "select * from Person where _key = 1";
 
         ResultSet rs = stmt.executeQuery(sqlQry);
@@ -428,12 +428,12 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
     }
 
     /**
-     * Check that client side best effort affinity optimizations are skipped if affinityAwareness is switched off.
+     * Check that client side affinity awareness optimizations are skipped if affinityAwareness is switched off.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testBestEffortAffinityIsSkippedIfItIsSwitchedOff() throws Exception {
+    public void testAffinityAwarenessIsSkippedIfItIsSwitchedOff() throws Exception {
         Connection conn = DriverManager.getConnection(
             "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=false");
 
@@ -453,12 +453,12 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
     }
 
     /**
-     * Check that client side best effort affinity optimizations are skipped by default.
+     * Check that client side affinity awareness optimizations are skipped by default.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testBestEffortAffinityIsSkippedByDefault() throws Exception {
+    public void testAffinityAwarenessIsSkippedByDefault() throws Exception {
         Connection conn = DriverManager.getConnection(
             "jdbc:ignite:thin://127.0.0.1:10800..10802");
 
@@ -556,7 +556,7 @@ public class JdbcThinBestEffortAffinitySelfTest extends JdbcThinAbstractSelfTest
     }
 
     /**
-     * Check that best effort affinity works fine after reconnection.
+     * Check that affinity awareness works fine after reconnection.
      *
      * @throws Exception If failed.
      */

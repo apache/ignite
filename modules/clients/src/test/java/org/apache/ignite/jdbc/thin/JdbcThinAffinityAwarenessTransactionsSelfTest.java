@@ -37,9 +37,9 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
- * Jdbc thin transactional best effort affinity test.
+ * Jdbc thin transactional affinity awareness test.
  */
-public class JdbcThinBestEffortAffinityTransactionsSelfTest extends JdbcThinAbstractSelfTest {
+public class JdbcThinAffinityAwarenessTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true";
 

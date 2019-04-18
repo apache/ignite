@@ -597,9 +597,9 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @return True if best effort affinity supported, false otherwise.
+     * @return True if affinity awareness supported, false otherwise.
      */
-    boolean isBestEffortAffinitySupported() {
+    boolean isAffinityAwarenessSupported() {
         assert srvProtoVer != null;
 
         return srvProtoVer.compareTo(VER_2_8_0) >= 0;

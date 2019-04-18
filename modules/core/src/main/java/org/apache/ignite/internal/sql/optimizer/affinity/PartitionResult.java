@@ -37,13 +37,13 @@ public class PartitionResult {
     /** Affinity function. */
     private final PartitionTableAffinityDescriptor aff;
 
-    /** Affinity topology version. Used within Jdbc thin best effort affinity. */
+    /** Affinity topology version. Used within Jdbc thin affinity awareness. */
     private final AffinityTopologyVersion topVer;
 
-    /** Cache name. Used within Jdbc thin best effort affinity. */
+    /** Cache name. Used within Jdbc thin affinity awareness. */
     private final String cacheName;
 
-    /** Partitions count. Used within Jdbc thin best effort affinity. */
+    /** Partitions count. Used within Jdbc thin affinity awareness. */
     private final int partsCnt;
 
     /**
@@ -158,12 +158,12 @@ public class PartitionResult {
     }
 
     /**
-     * @return True if applicable to jdbc thin client side best effort affinity:
+     * @return True if applicable to jdbc thin client side affinity awareness:
      *   1. Rendezvous affinity function without map filters was used;
      *   2. Partition result tree neither PartitoinAllNode nor PartitionNoneNode;
      */
-    public boolean isClientBestEffortAffinityApplicable() {
-        return aff != null && aff.isClientBestEffortAffinityApplicable() &&
+    public boolean isClientAffinityAwarenessApplicable() {
+        return aff != null && aff.isClientAffinityAwarenessApplicable() &&
             !(tree instanceof PartitionNoneNode) && !(tree instanceof PartitionAllNode);
     }
 

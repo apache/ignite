@@ -226,7 +226,7 @@ public class JdbcThinConnection implements Connection {
         HostAndPortRange[] srvs = connProps.getAddresses();
 
         if (affinityAwareness)
-            connectInBestEffortAffinityMode(srvs);
+            connectInAffinityAwarenessMode(srvs);
         else
             connectInCommonMode(srvs);
     }
@@ -972,12 +972,12 @@ public class JdbcThinConnection implements Connection {
         if (parts.size() == 1)
             return Collections.singletonList(cacheDistr[parts.iterator().next()]);
         else {
-            List<UUID> bestEffortAffinityNodeIds = new ArrayList<>();
+            List<UUID> affinityAwarenessNodeIds = new ArrayList<>();
 
             for (int part : parts)
-                bestEffortAffinityNodeIds.add(cacheDistr[part]);
+                affinityAwarenessNodeIds.add(cacheDistr[part]);
 
-            return bestEffortAffinityNodeIds;
+            return affinityAwarenessNodeIds;
         }
     }
 
@@ -1545,7 +1545,7 @@ public class JdbcThinConnection implements Connection {
      * or if endpoints versions are not the same.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
-    private void connectInBestEffortAffinityMode(HostAndPortRange[] srvs) throws SQLException {
+    private void connectInAffinityAwarenessMode(HostAndPortRange[] srvs) throws SQLException {
         List<Exception> exceptions = null;
 
         IgniteProductVersion prevIgniteEnpointVer = null;
@@ -1562,7 +1562,7 @@ public class JdbcThinConnection implements Connection {
                             JdbcThinTcpIo cliIo =
                                 new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), 0);
 
-                            if (!cliIo.isBestEffortAffinitySupported()) {
+                            if (!cliIo.isAffinityAwarenessSupported()) {
                                 throw new SQLException("Failed to connect to Ignite node [url=" +
                                     connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
                                     "Node doesn't support best affort affinity mode.",
@@ -1573,7 +1573,7 @@ public class JdbcThinConnection implements Connection {
                                 // TODO: 13.02.19 IGNITE-11321 JDBC Thin: implement nodes multi version support.
                                 throw new SQLException("Failed to connect to Ignite node [url=" +
                                     connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
-                                    "Different versions of nodes are not supported in best effort affinity mode.",
+                                    "Different versions of nodes are not supported in affinity awareness mode.",
                                     SqlStateCode.INTERNAL_ERROR);
                             }
 

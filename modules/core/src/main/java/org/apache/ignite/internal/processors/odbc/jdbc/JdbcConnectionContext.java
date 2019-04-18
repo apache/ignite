@@ -61,7 +61,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.7.0: adds maximum length for columns feature.*/
     static final ClientListenerProtocolVersion VER_2_7_0 = ClientListenerProtocolVersion.create(2, 7, 0);
 
-    /** Version 2.8.0: adds query id in order to implement cancel feature, best effort affinity support: IEP-23.*/
+    /** Version 2.8.0: adds query id in order to implement cancel feature, affinity awareness support: IEP-23.*/
     static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
     /** Current version. */

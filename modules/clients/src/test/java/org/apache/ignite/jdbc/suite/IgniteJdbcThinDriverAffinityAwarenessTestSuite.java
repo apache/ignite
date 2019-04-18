@@ -29,7 +29,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * JDBC Thin driver test suite to run in best efford affinity mode.
+ * JDBC Thin driver test suite to run in affinity awareness mode.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -39,10 +39,10 @@ import org.junit.runners.Suite;
     JdbcThinAffinityAwarenessSelfTest.class,
     JdbcThinAffinityAwarenessTransactionsSelfTest.class,
 })
-public class IgniteJdbcThinDriverBestEffortAffinityTestSuite {
+public class IgniteJdbcThinDriverAffinityAwarenessTestSuite {
 
     /**
-     * Setup best effort affinity mode.
+     * Setup affinity awareness mode.
      */
     @BeforeClass
     public static void setupAffinityAwareness() {

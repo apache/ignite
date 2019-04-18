@@ -640,7 +640,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 if (cur.isQuery())
                     res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext(),
-                        isClientBestEffortAffinityApplicable(req.partitionResponseRequest(), partRes) ?
+                        isClientAffinityAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
                             partRes :
                             null);
                 else {
@@ -652,7 +652,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                             ", res=" + S.toString(List.class, items) + ']';
 
                     res = new JdbcQueryExecuteResult(cur.cursorId(), (Long)items.get(0).get(0),
-                        isClientBestEffortAffinityApplicable(req.partitionResponseRequest(), partRes) ?
+                        isClientAffinityAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
                             partRes :
                             null);
                 }
@@ -1472,13 +1472,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /**
      * @param partResRequested Boolean flag that signals whether client requested partiton result.
      * @param partRes Direved partition result.
-     * @return True if applicable to jdbc thin client side best effort affinity:
+     * @return True if applicable to jdbc thin client side affinity awareness:
      *   1. Partitoin result was requested;
      *   2. Partition result either null or
      *     a. Rendezvous affinity function without map filters was used;
      *     b. Partition result tree neither PartitoinAllNode nor PartitionNoneNode;
      */
-    private static boolean isClientBestEffortAffinityApplicable(boolean partResRequested, PartitionResult partRes) {
-        return partResRequested && (partRes == null || partRes.isClientBestEffortAffinityApplicable());
+    private static boolean isClientAffinityAwarenessApplicable(boolean partResRequested, PartitionResult partRes) {
+        return partResRequested && (partRes == null || partRes.isClientAffinityAwarenessApplicable());
     }
 }
