@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -47,6 +48,8 @@ import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
 import org.h2.engine.DbObject;
@@ -65,6 +68,7 @@ import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
 import org.h2.value.DataType;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -149,6 +153,9 @@ public class GridH2Table extends TableBase {
     /** Table version. The version is changed when exclusive lock is acquired (DDL operation is started). */
     private final AtomicLong ver = new AtomicLong();
 
+    /** Table statistics. */
+    private volatile TableStatistics tblStats;
+
     /**
      * Creates table.
      *
@@ -207,6 +214,8 @@ public class GridH2Table extends TableBase {
         sysIdxsCnt = idxs.size();
 
         lock = new ReentrantReadWriteLock();
+
+        tblStats = new TableStatistics();
     }
 
     /**
@@ -1375,6 +1384,13 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * @return Table statistics.
+     */
+    @NotNull TableStatistics tableStatistics() {
+        return tblStats;
+    }
+
+    /**
      *
      */
     private static class SessionLock {
@@ -1421,6 +1437,64 @@ public class GridH2Table extends TableBase {
          */
         long version() {
             return ver;
+        }
+    }
+
+    /**
+     * Table statistics.
+     */
+    public class TableStatistics {
+        /** */
+        private volatile long rowCntStats;
+
+        /** */
+        private volatile long lastSeenTblRowCnt;
+
+        /**
+         * @return Row count statistics.
+         */
+        public long getRowCountStatistics() {
+            QueryContext qctx = rowDescriptor().indexing().queryContextRegistry().getThreadLocal();
+
+            assert qctx != null;
+
+            if (!qctx.local())
+                return 10_000; // Fallback to the previous behavior for distributed queries.
+
+            long curTblRowCnt = getRowCountApproximation();
+
+            // If a table size hasn't been changed since the last call - return the previous value.
+            if (lastSeenTblRowCnt == curTblRowCnt)
+                return rowCntStats;
+
+            lastSeenTblRowCnt = curTblRowCnt;
+
+            GridCacheContext cctx = cacheInfo().cacheContext();
+
+            if (cctx == null) // Cache is not started.
+                return 0;
+
+            // Calculate new row count statistics.
+            long cnt = 0;
+
+            if (cctx.isReplicated())
+                cnt = getRowCountApproximation(); // Count all entries for replicated caches.
+            else {
+                // Consider only primary partitions for partitioned caches.
+                IndexingQueryFilter f = qctx.filter();
+                IndexingQueryCacheFilter filter = f != null ? f.forCache(cacheName()) : null;
+
+                for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
+                    int part = store.partId();
+
+                    if (filter == null || filter.applyPartition(part))
+                        cnt += store.cacheSize(cctx.cacheId());
+                }
+            }
+
+            rowCntStats = cnt;
+
+            return cnt;
         }
     }
 }
