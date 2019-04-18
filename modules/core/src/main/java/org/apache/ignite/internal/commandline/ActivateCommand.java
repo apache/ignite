@@ -21,7 +21,6 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientFactory;
 
 public class ActivateCommand extends Command<Void> {
     @Override public Void arg() {
@@ -35,7 +34,7 @@ public class ActivateCommand extends Command<Void> {
      * @throws GridClientException If failed to activate.
      */
     @Override public Object execute(GridClientConfiguration cfg, CommandLogger logger) throws Exception {
-        try (GridClient client = GridClientFactory.start(cfg)){
+        try (GridClient client = startClient(cfg)){
             GridClientClusterState state = client.state();
 
             state.active(true);

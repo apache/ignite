@@ -20,7 +20,6 @@ package org.apache.ignite.internal.commandline;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientFactory;
 
 public class StateCommand extends Command<Void> {
     /**
@@ -30,7 +29,7 @@ public class StateCommand extends Command<Void> {
      * @throws Exception If failed to print state.
      */
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
-        try (GridClient client = GridClientFactory.start(clientCfg)){
+        try (GridClient client = startClient(clientCfg)){
             GridClientClusterState state = client.state();
 
             logger.log("Cluster is " + (state.active() ? "active" : "inactive"));

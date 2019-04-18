@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -60,7 +59,7 @@ public class WalCommands extends Command<T2<String, String>> {
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         this.logger = logger;
 
-        try (GridClient client = GridClientFactory.start(clientCfg)) {
+        try (GridClient client = startClient(clientCfg)) {
             switch (walAct) {
                 case WAL_DELETE:
                     deleteUnusedWalSegments(client, walArgs, clientCfg);

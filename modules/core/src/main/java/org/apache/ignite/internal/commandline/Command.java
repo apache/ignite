@@ -20,12 +20,24 @@
 
 package org.apache.ignite.internal.commandline;
 
+import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientFactory;
 
 public abstract class Command<T> {
     protected ConnectionAndSslParameters common;
 
     public abstract Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception;
+
+    protected GridClient startClient(GridClientConfiguration clientCfg) throws Exception {
+        GridClient client = GridClientFactory.start(clientCfg);
+
+        // If connection is unsuccessful, fail before doing any operations:
+        if (!client.connected())
+            client.throwLastError();
+
+        return client;
+    }
 
     protected String confirmationPrompt0() {
         return null;

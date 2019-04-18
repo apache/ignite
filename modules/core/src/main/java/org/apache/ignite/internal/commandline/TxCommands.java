@@ -26,7 +26,6 @@ import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
@@ -53,7 +52,7 @@ public class TxCommands extends Command<VisorTxTaskArg> {
      */
     @Override
     public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
-        try (GridClient client = GridClientFactory.start(clientCfg)) {
+        try (GridClient client = startClient(clientCfg)) {
             Map<ClusterNode, VisorTxTaskResult> res = executeTask(client, VisorTxTask.class, args, clientCfg);
 
             if (res.isEmpty())

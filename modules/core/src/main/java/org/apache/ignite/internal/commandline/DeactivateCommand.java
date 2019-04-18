@@ -20,7 +20,6 @@ package org.apache.ignite.internal.commandline;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientFactory;
 
 public class DeactivateCommand extends Command<Void> {
     @Override public String confirmationPrompt0() {
@@ -34,7 +33,7 @@ public class DeactivateCommand extends Command<Void> {
      * @throws Exception If failed to deactivate.
      */
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
-        try (GridClient client = GridClientFactory.start(clientCfg)){
+        try (GridClient client = startClient(clientCfg)){
             GridClientClusterState state = client.state();
 
             state.active(false);

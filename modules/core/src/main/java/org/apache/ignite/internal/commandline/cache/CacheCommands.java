@@ -30,7 +30,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -82,7 +81,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import static org.apache.ignite.internal.commandline.CommandArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.CommandHandler.NULL;
 import static org.apache.ignite.internal.commandline.CommandHandler.ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG;
-import static org.apache.ignite.internal.commandline.CommandLogger.g;
 import static org.apache.ignite.internal.commandline.CommandLogger.j;
 import static org.apache.ignite.internal.commandline.CommandLogger.op;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
@@ -148,7 +146,7 @@ public class CacheCommands extends Command<CacheArguments> {
             return null;
         }
 
-        try (GridClient client = GridClientFactory.start(clientCfg)) {
+        try (GridClient client = startClient(clientCfg)) {
             switch (cacheArgs.command()) {
                 case IDLE_VERIFY:
                     cacheIdleVerify(client, cacheArgs, clientCfg);
@@ -527,7 +525,7 @@ public class CacheCommands extends Command<CacheArguments> {
         usageCache(LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
         usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
-            op(or(g(EXCLUDE_CACHES, CACHES), g(CACHE_FILTER, or(CacheFilterEnum.values())), CACHES)));
+            op(EXCLUDE_CACHES, CACHES), op(CACHE_FILTER, or(CacheFilterEnum.values())), op(CACHES));
         usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or(NODE_ID, CommandHandler.NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, CACHES);

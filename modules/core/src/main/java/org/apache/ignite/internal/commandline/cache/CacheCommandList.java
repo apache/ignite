@@ -25,6 +25,9 @@ import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
+
 /**
  *
  */
@@ -51,7 +54,11 @@ public enum CacheCommandList {
      * Validates indexes attempting to read each indexed entry.
      */
     VALIDATE_INDEXES("validate_indexes", ValidateIndexesCommandArg.class,
-        "Validate indexes on an idle cluster and print out the keys that are missing in the indexes."),
+        "Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. " +
+            "Cache filtering options configure the set of caches that will be processed by " + IDLE_VERIFY + " command. " +
+            "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
+            "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently filtered by cache name " +
+            "regexps, by cache type and after all by exclude regexps."),
 
     /**
      * Prints info about contended keys (the keys concurrently locked from multiple transactions).

@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.baseline.AutoAdjustCommandArg;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
@@ -60,7 +59,7 @@ public class BaselineCommand extends Command<BaselineArguments> {
      * @throws Exception If failed to execute baseline action.
      */
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
-        try (GridClient client = GridClientFactory.start(clientCfg)){
+        try (GridClient client = startClient(clientCfg)){
             VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, toVisorArguments(baselineArgs), clientCfg);
 
             baselinePrint0(res, logger);

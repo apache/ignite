@@ -170,6 +170,8 @@ public class CommandHandler {
 
             ConnectionAndSslParameters args = command.commonArguments();
 
+            boolean suppliedAuth = !F.isEmpty(args.getUserName()) && !F.isEmpty(args.getPassword());
+
             GridClientConfiguration clientCfg = getClientConfiguration(args);
 
             while (tryConnectAgain) {
@@ -180,7 +182,9 @@ public class CommandHandler {
                 }
                 catch (Throwable e) {
                     if (tryConnectMaxCount > 0 && isAuthError(e)) {
-                        logger.log("Authentication error, try connection again.");
+                        logger.log(suppliedAuth ?
+                            "Authentication error, please try again." :
+                            "This cluster requires authentication.");
 
                         String user = clientCfg.getSecurityCredentialsProvider() == null ?
                             requestDataFromConsole("user: ") :
@@ -189,6 +193,8 @@ public class CommandHandler {
                         clientCfg = getClientConfiguration(user, new String(requestPasswordFromConsole("password: ")),  args);
 
                         tryConnectAgain = true;
+
+                        suppliedAuth = true;
 
                         tryConnectMaxCount--;
                     }
