@@ -174,4 +174,9 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
                 return Collections.emptyList();
         }
     }
+
+    /** {@inheritDoc} */
+    @Override protected boolean keepSerializedObjects() {
+        return true;
+    }
 }

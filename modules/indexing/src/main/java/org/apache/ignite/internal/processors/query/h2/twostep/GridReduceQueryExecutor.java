@@ -622,11 +622,7 @@ public class GridReduceQueryExecutor {
 
                 final long qryReqId0 = qryReqId;
 
-                cancel.set(new Runnable() {
-                    @Override public void run() {
-                        send(finalNodes, new GridQueryCancelRequest(qryReqId0), null, false);
-                    }
-                });
+                cancel.set(() -> send(finalNodes, new GridQueryCancelRequest(qryReqId0), null, true));
 
                 boolean retry = false;
 
@@ -898,12 +894,10 @@ public class GridReduceQueryExecutor {
 
             final Collection<ClusterNode> finalNodes = nodes;
 
-            cancel.set(new Runnable() {
-                @Override public void run() {
-                    r.future().onCancelled();
+            cancel.set(() -> {
+                r.future().onCancelled();
 
-                    send(finalNodes, new GridQueryCancelRequest(reqId), null, false);
-                }
+                send(finalNodes, new GridQueryCancelRequest(reqId), null, true);
             });
 
             // send() logs the debug message
@@ -977,12 +971,12 @@ public class GridReduceQueryExecutor {
     void releaseRemoteResources(Collection<ClusterNode> nodes, ReduceQueryRun r, long qryReqId,
         boolean distributedJoins, MvccQueryTracker mvccTracker) {
         if (distributedJoins)
-            send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
+            send(nodes, new GridQueryCancelRequest(qryReqId), null, true);
 
         for (ReduceIndex idx : r.indexes()) {
             if (!idx.fetchedAll()) {
                 if (!distributedJoins) // cancel request has been already sent for distributed join.
-                    send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
+                    send(nodes, new GridQueryCancelRequest(qryReqId), null, true);
 
                 r.setStateOnException(ctx.localNodeId(),
                     new CacheException("Query is canceled.", new QueryCancelledException()));

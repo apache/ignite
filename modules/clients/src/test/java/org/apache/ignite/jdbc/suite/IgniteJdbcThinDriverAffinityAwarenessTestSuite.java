@@ -18,8 +18,8 @@
 package org.apache.ignite.jdbc.suite;
 
 import org.apache.ignite.jdbc.thin.JdbcThinAbstractSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinBestEffortAffinitySelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinBestEffortAffinityTransactionsSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinAffinityAwarenessSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinAffinityAwarenessTransactionsSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
@@ -36,16 +36,16 @@ import org.junit.runners.Suite;
     JdbcThinConnectionSelfTest.class,
     JdbcThinTcpIoTest.class,
     JdbcThinStatementSelfTest.class,
-    JdbcThinBestEffortAffinitySelfTest.class,
-    JdbcThinBestEffortAffinityTransactionsSelfTest.class,
+    JdbcThinAffinityAwarenessSelfTest.class,
+    JdbcThinAffinityAwarenessTransactionsSelfTest.class,
 })
-public class IgniteJdbcThinDriverBestEffordAffinityTestSuite {
+public class IgniteJdbcThinDriverBestEffortAffinityTestSuite {
 
     /**
      * Setup best effort affinity mode.
      */
     @BeforeClass
-    public static void setupBestEffortAffinity() {
+    public static void setupAffinityAwareness() {
         GridTestUtils.setFieldValue(JdbcThinAbstractSelfTest.class, "affinityAwareness", true);
     }
 }

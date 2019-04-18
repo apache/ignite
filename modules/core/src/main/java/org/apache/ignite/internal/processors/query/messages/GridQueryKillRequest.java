@@ -13,9 +13,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep.messages;
+package org.apache.ignite.internal.processors.query.messages;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -24,44 +25,66 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Cancel map part of query request.
+ * Query kill request.
  */
-public class GridQueryCancelRequest implements Message {
+public class GridQueryKillRequest implements Message {
+    /** */
+    public static final short TYPE_CODE = 172;
+
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private long qryReqId;
+    /** Request id. */
+    private long reqId;
+
+    /** Query id on a node. */
+    private long nodeQryId;
+
+    /** Async response flag. */
+    private boolean asyncRes;
 
     /**
      * Default constructor.
      */
-    public GridQueryCancelRequest() {
+    public GridQueryKillRequest() {
         // No-op.
     }
 
     /**
-     * @param qryReqId Query request ID.
+     * @param reqId Request id.
+     * @param nodeQryId Query ID on a node.
+     * @param asyncRes {@code true} in case reposnse should be send asynchronous.
      */
-    public GridQueryCancelRequest(long qryReqId) {
-        this.qryReqId = qryReqId;
+    public GridQueryKillRequest(long reqId, long nodeQryId, boolean asyncRes) {
+        this.reqId = reqId;
+        this.nodeQryId = nodeQryId;
+        this.asyncRes = asyncRes;
     }
 
     /**
-     * @return Query request ID.
+     * @return Request id.
      */
-    public long queryRequestId() {
-        return qryReqId;
+    public long requestId() {
+        return reqId;
+    }
+
+    /**
+     * @return Query id on a node.
+     */
+    public long nodeQryId() {
+        return nodeQryId;
+    }
+
+    /**
+     * @return {@code true} in case response should be send back asynchronous.
+     */
+    public boolean asyncResponse() {
+        return asyncRes;
     }
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridQueryCancelRequest.class, this);
     }
 
     /** {@inheritDoc} */
@@ -77,11 +100,22 @@ public class GridQueryCancelRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("qryReqId", qryReqId))
+                if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
 
+            case 1:
+                if (!writer.writeLong("nodeQryId", nodeQryId))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if(!writer.writeBoolean("asyncRes", asyncRes))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -96,25 +130,45 @@ public class GridQueryCancelRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                qryReqId = reader.readLong("qryReqId");
+                reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
+            case 1:
+                nodeQryId = reader.readLong("nodeQryId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                asyncRes = reader.readBoolean("asyncRes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
-        return reader.afterMessageRead(GridQueryCancelRequest.class);
+        return reader.afterMessageRead(GridQueryKillRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 106;
+        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridQueryKillRequest.class, this);
     }
 }

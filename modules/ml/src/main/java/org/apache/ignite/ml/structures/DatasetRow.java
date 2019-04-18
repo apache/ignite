@@ -113,7 +113,6 @@ public class DatasetRow<V extends Vector> implements Serializable, Externalizabl
      *
      * @param idx Dataset row index to set value at.
      * @param val Value to set.
-     * @return This dataset row.
      * @throws IndexException Throw if index is out of bounds.
      */
     public void set(int idx, double val) {
