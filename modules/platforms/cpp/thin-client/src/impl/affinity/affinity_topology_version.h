@@ -15,73 +15,69 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_THIN_PROTOCOL_VERSION
-#define _IGNITE_IMPL_THIN_PROTOCOL_VERSION
+#ifndef _IGNITE_IMPL_THIN_AFFINITY_TOPOLOGY_VERSION
+#define _IGNITE_IMPL_THIN_AFFINITY_TOPOLOGY_VERSION
 
 #include <stdint.h>
-
-#include <string>
 
 namespace ignite
 {
     namespace impl
     {
+        namespace binary
+        {
+            // Forward declaration.
+            class BinaryReaderImpl;
+        }
+
         namespace thin
         {
-            /** Protocol version. */
-            class ProtocolVersion
+            /** Affinity topology version. */
+            class AffinityTopologyVersion
             {
             public:
                 /**
-                 * Parse string and extract protocol version.
-                 *
-                 * @throw IgniteException if version can not be parsed.
-                 * @param version Version string to parse.
-                 * @return Protocol version.
-                 */
-                static ProtocolVersion FromString(const std::string& version);
-
-                /**
-                 * Convert to string value.
-                 *
-                 * @return Protocol version.
-                 */
-                std::string ToString() const;
-
-                /**
                  * Default constructor.
                  */
-                ProtocolVersion();
+                AffinityTopologyVersion() :
+                    vmajor(0),
+                    vminor(0)
+                {
+                    // No-op.
+                }
 
                 /**
                  * Constructor.
                  *
                  * @param vmajor Major version part.
                  * @param vminor Minor version part.
-                 * @param vmaintenance Maintenance version part.
                  */
-                ProtocolVersion(int16_t vmajor, int16_t vminor, int16_t vmaintenance);
+                AffinityTopologyVersion(int64_t vmajor, int32_t vminor) :
+                    vmajor(vmajor),
+                    vminor(vminor)
+                {
+                    // No-op.
+                }
 
                 /**
                  * Get major part.
                  *
                  * @return Major part.
                  */
-                int16_t GetMajor() const;
+                int64_t GetMajor() const
+                {
+                    return vmajor;
+                }
 
                 /**
                  * Get minor part.
                  *
                  * @return Minor part.
                  */
-                int16_t GetMinor() const;
-
-                /**
-                 * Get maintenance part.
-                 *
-                 * @return Maintenance part.
-                 */
-                int16_t GetMaintenance() const;
+                int32_t GetMinor() const
+                {
+                    return vminor;
+                }
 
                 /**
                  * Compare to another value.
@@ -89,7 +85,21 @@ namespace ignite
                  * @param other Instance to compare to.
                  * @return Zero if equals, negative number if less and positive if more.
                  */
-                int32_t Compare(const ProtocolVersion& other) const;
+                int64_t Compare(const AffinityTopologyVersion& other) const
+                {
+                    int64_t res = vmajor - other.vmajor;
+
+                    if (res == 0)
+                        res = vminor - other.vminor;
+
+                    return res;
+                }
+
+                /**
+                 * Read using provided reader.
+                 * @param reader Reader.
+                 */
+                void Read(binary::BinaryReaderImpl &reader);
 
                 /**
                  * Comparison operator.
@@ -98,7 +108,10 @@ namespace ignite
                  * @param val2 Second value.
                  * @return True if equal.
                  */
-                friend bool operator==(const ProtocolVersion& val1, const ProtocolVersion& val2);
+                friend bool operator==(const AffinityTopologyVersion& val1, const AffinityTopologyVersion& val2)
+                {
+                    return val1.Compare(val2) == 0;
+                }
 
                 /**
                  * Comparison operator.
@@ -107,7 +120,10 @@ namespace ignite
                  * @param val2 Second value.
                  * @return True if not equal.
                  */
-                friend bool operator!=(const ProtocolVersion& val1, const ProtocolVersion& val2);
+                friend bool operator!=(const AffinityTopologyVersion& val1, const AffinityTopologyVersion& val2)
+                {
+                    return val1.Compare(val2) != 0;
+                }
 
                 /**
                  * Comparison operator.
@@ -116,7 +132,10 @@ namespace ignite
                  * @param val2 Second value.
                  * @return True if less.
                  */
-                friend bool operator<(const ProtocolVersion& val1, const ProtocolVersion& val2);
+                friend bool operator<(const AffinityTopologyVersion& val1, const AffinityTopologyVersion& val2)
+                {
+                    return val1.Compare(val2) < 0;
+                }
 
                 /**
                  * Comparison operator.
@@ -125,7 +144,10 @@ namespace ignite
                  * @param val2 Second value.
                  * @return True if less or equal.
                  */
-                friend bool operator<=(const ProtocolVersion& val1, const ProtocolVersion& val2);
+                friend bool operator<=(const AffinityTopologyVersion& val1, const AffinityTopologyVersion& val2)
+                {
+                    return val1.Compare(val2) <= 0;
+                }
 
                 /**
                  * Comparison operator.
@@ -134,7 +156,10 @@ namespace ignite
                  * @param val2 Second value.
                  * @return True if greater.
                  */
-                friend bool operator>(const ProtocolVersion& val1, const ProtocolVersion& val2);
+                friend bool operator>(const AffinityTopologyVersion& val1, const AffinityTopologyVersion& val2)
+                {
+                    return val1.Compare(val2) > 0;
+                }
 
                 /**
                  * Comparison operator.
@@ -143,20 +168,20 @@ namespace ignite
                  * @param val2 Second value.
                  * @return True if greater or equal.
                  */
-                friend bool operator>=(const ProtocolVersion& val1, const ProtocolVersion& val2);
+                friend bool operator>=(const AffinityTopologyVersion& val1, const AffinityTopologyVersion& val2)
+                {
+                    return val1.Compare(val2) >= 0;
+                }
 
             private:
                 /** Major part. */
-                int16_t vmajor;
+                int64_t vmajor;
 
                 /** Minor part. */
-                int16_t vminor;
-
-                /** Maintenance part. */
-                int16_t vmaintenance;
+                int32_t vminor;
             };
         }
     }
 }
 
-#endif //_IGNITE_IMPL_THIN_PROTOCOL_VERSION
+#endif //_IGNITE_IMPL_THIN_AFFINITY_TOPOLOGY_VERSION

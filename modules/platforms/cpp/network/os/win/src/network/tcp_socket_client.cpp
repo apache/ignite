@@ -61,6 +61,8 @@ namespace ignite
                 }
             }
 
+            InternalClose();
+
             addrinfo hints = { 0 };
 
             hints.ai_family = AF_UNSPEC;

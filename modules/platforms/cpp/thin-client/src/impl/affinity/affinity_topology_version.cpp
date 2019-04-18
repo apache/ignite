@@ -15,32 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+#include <ignite/impl/binary/binary_reader_impl.h>
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+#include "impl/affinity/affinity_topology_version.h"
 
-/**
- * Int response.
- */
-public class ClientIntResponse extends ClientResponse {
-    /** */
-    private final int val;
-
-    /**
-     * Constructor.
-     *
-     * @param reqId Request id.
-     */
-    public ClientIntResponse(long reqId, int val) {
-        super(reqId);
-
-        this.val = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
-        super.encode(ctx, writer);
-
-        writer.writeInt(val);
+namespace ignite
+{
+    namespace impl
+    {
+        namespace thin
+        {
+            void AffinityTopologyVersion::Read(binary::BinaryReaderImpl& reader)
+            {
+                vmajor = reader.ReadInt64();
+                vminor = reader.ReadInt32();
+            }
+        }
     }
 }
+
