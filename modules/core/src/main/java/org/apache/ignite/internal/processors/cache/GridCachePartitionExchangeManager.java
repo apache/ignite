@@ -2120,7 +2120,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     catch (Exception e) {
                                         U.error(
                                             diagnosticLog,
-                                            "Could not get thread dump from transaction owner near node: " + e.getMessage()
+                                            "Could not get thread dump from transaction owner near node: ",
+                                            e
                                         );
                                     }
 
@@ -2138,7 +2139,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             });
                     }
                     catch (Exception e) {
-                        U.error(diagnosticLog, "Could not send dump request to transaction owner near node: " + e.getMessage());
+                        U.error(diagnosticLog, "Could not send dump request to transaction owner near node: ", e);
                     }
                 }
                 else {
