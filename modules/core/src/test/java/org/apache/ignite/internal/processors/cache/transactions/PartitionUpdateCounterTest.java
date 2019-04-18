@@ -203,7 +203,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         PartitionUpdateCounter pc = newCounter();
 
         int i;
-        for (i = 1; i <= PartitionUpdateCounterImpl.MAX_GAPS; i++)
+        for (i = 1; i <= PartitionUpdateCounterImpl.MAX_MISSED_UPDATES; i++)
             pc.update(i * 3, i * 3 + 1);
 
         i++;

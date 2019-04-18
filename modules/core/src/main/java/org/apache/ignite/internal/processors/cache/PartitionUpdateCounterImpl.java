@@ -28,7 +28,6 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
@@ -45,14 +44,12 @@ import org.jetbrains.annotations.Nullable;
  * TODO describe shrink mechanism.
  */
 public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
-    /** Max allowed gaps. */
-    public static final int MAX_GAPS = 10_000;
+    /** Max allowed gaps. Overflow will trigger critical failure handler to prevent OOM.
+     * TODO FIXME define optimal size. */
+    public static final int MAX_MISSED_UPDATES = 10_000;
 
-    /** */
+    /** Counter updates serialization version. */
     private static final byte VERSION = 1;
-
-    /** */
-    private IgniteLogger log;
 
     /** Queue of counter update tasks. */
     private TreeSet<Item> queue = new TreeSet<>();
@@ -60,23 +57,24 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     /** Counter of applied updates in partition. */
     private final AtomicLong cntr = new AtomicLong();
 
-    /** Counter of pending updates in partition. Updated on primary node and during exchange (set as max upd cntr).
-     * TODO FIXME consider moving reserve counter outside. */
+    /** Counter of pending updates in partition. Updated on primary node and during exchange (set as max upd cntr). */
     private final AtomicLong reserveCntr = new AtomicLong();
 
-    /** Initial counter points to last sequential update after recovery. */
+    /** Initial counter points to last sequential update after WAL recovery. */
     private long initCntr;
 
     /**
+     * Restores counter state.
+     *
      * @param initUpdCntr Initial update counter.
-     * @param rawGapsData Byte array of holes raw data.
+     * @param cntrUpdData Byte array of counter updates in case some updates are missing before checkpoint.
      */
-    @Override public void init(long initUpdCntr, @Nullable byte[] rawGapsData) {
+    @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
         cntr.set(initUpdCntr);
 
         initCntr = initUpdCntr;
 
-        queue = fromBytes(rawGapsData);
+        queue = fromBytes(cntrUpdData);
     }
 
     /**
@@ -245,7 +243,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
      * @param item Adds update task to priority queue.
      */
     private boolean offer(Item item) {
-        if (queue.size() == MAX_GAPS) // Should trigger failure handler.
+        if (queue.size() == MAX_MISSED_UPDATES) // Should trigger failure handler.
             throw new IgniteException("Too many gaps [cntr=" + this + ']');
 
         return queue.add(item);

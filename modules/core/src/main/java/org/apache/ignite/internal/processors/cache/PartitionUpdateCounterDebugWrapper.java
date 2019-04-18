@@ -7,7 +7,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * TODO FIXME auto-enable with debug logging.
  */
 public class PartitionUpdateCounterDebugWrapper extends PartitionUpdateCounterImpl {
     /** */
@@ -35,8 +35,8 @@ public class PartitionUpdateCounterDebugWrapper extends PartitionUpdateCounterIm
     }
 
     /** {@inheritDoc} */
-    @Override public void init(long initUpdCntr, @Nullable byte[] rawGapsData) {
-        super.init(initUpdCntr, rawGapsData);
+    @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
+        super.init(initUpdCntr, cntrUpdData);
 
         if (doLogging)
             log.info("[op=init" +
@@ -47,7 +47,7 @@ public class PartitionUpdateCounterDebugWrapper extends PartitionUpdateCounterIm
                 ", syncMode=" + grp.config().getWriteSynchronizationMode() +
                 ", mode=" + grp.config().getCacheMode() +
                 ", partId=" + partId +
-                ", gapsLen=" + (rawGapsData != null ? rawGapsData.length : 0) +
+                ", gapsLen=" + (cntrUpdData != null ? cntrUpdData.length : 0) +
                 ", cur=" + toString() +
                 ']');
     }

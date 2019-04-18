@@ -1439,8 +1439,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
-            //pCntr = new PartitionUpdateCounterDebugWrapper(grp, partId, 0);
-            pCntr = new PartitionUpdateCounterImpl();
+            pCntr = grp.mvccEnabled() ? new PartitionUpdateCounterMvccImpl() : new PartitionUpdateCounterImpl();
         }
 
         /**
@@ -1557,11 +1556,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long getAndIncrementUpdateCounter(long delta) {
-            long reserve = pCntr.next(delta);
-
-            // log.info("TX: reserve=(" + reserve + "," + delta + "), partId=" + partId + ", cntr=" + pCntr);
-
-            return reserve;
+            return pCntr.reserve(delta);
         }
 
         /** {@inheritDoc} */

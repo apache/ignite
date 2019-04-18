@@ -434,7 +434,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             cctx.tm().prepareTx(this, entries);
 
             if (txState().mvccEnabled())
-                calculatePartitionUpdateCounters(true);
+                calculatePartitionUpdateCounters();
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -453,10 +453,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * Calculates partition update counters for current transaction. Each partition will be supplied with
      * pair (init, delta) values, where init - initial update counter, and delta - updates count made
      * by current transaction for a given partition.
-     *
-     * @param mvcc MVCC mode.
      */
-    public void calculatePartitionUpdateCounters(boolean mvcc) {
+    public void calculatePartitionUpdateCounters() {
         TxCounters counters = txCounters(false);
 
         if (counters != null && F.isEmpty(counters.updateCounters())) {
@@ -473,9 +471,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     continue;
 
                 PartitionUpdateCountersMessage msg = new PartitionUpdateCountersMessage(cacheId, partToCntrs.size());
-                GridCacheContext ctx0 = cctx.cacheContext(cacheId);
 
-                //assert ctx0 != null && ctx0.mvccEnabled();
+                GridCacheContext ctx0 = cctx.cacheContext(cacheId);
 
                 GridDhtPartitionTopology top = ctx0.topology();
 
@@ -495,15 +492,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         GridDhtLocalPartition part = top.localPartition(p);
 
-                        // LOST state is possible if tx is prepared in cache recovery mode cache.withCacheRecovery.
-                        // TODO need validation for recovery mode.
-                        assert part != null && (part.state() == OWNING || part.state() == LOST):
+                        // LOST state is possible if tx is prepared when cache is in recovery mode (withCacheRecovery).
+                        assert part != null && (part.state() == OWNING || part.state() == LOST && ctx0.isRecoveryMode()):
                             part == null ?
                                 "map=" + top.partitionMap(false) + ", lost=" + top.lostPartitions() :
                                 "part=" + part.toString();
 
-                        // TODO interface cleanup.
-                        msg.add(p, mvcc ? part.getAndIncrementUpdateCounter(cntr) : part.dataStore().reserve(cntr), cntr);
+                        msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
                     }
                 }
 

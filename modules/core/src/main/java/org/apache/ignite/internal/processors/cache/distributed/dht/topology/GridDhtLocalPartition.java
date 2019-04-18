@@ -989,6 +989,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * <p>
      * Used for atomic caches, during preloading, or isolated updates.
      *
+     * TODO FIXME merge logic.
+     *
      * @param cacheId ID of cache initiated counter update.
      * @param topVer Topology version for current operation.
      * @param init {@code True} if initial update.
@@ -1079,7 +1081,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Updates MVCC cache update counter on primary node.
+     * Increments cache update counter on primary node.
      *
      * @param delta Value to be added to update counter.
      * @return Update counter value before update.
@@ -1090,13 +1092,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Updates MVCC cache update counter on backup node.
-     *  @param start Start position
+     *
+     * @param start Start position
      * @param delta Delta.
      */
     public boolean updateCounter(long start, long delta) {
-//        if (id() == 0 && group().groupId() == CU.cacheId("default"))
-//            log.error("TX: node=" + ctx.gridConfig().getIgniteInstanceName() + ", cntr=" + store.partUpdateCounter() + ", start=" + start + ", delta=" + delta, new Exception());
-
         return store.updateCounter(start, delta);
     }
 
