@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.schema;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -105,9 +104,6 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         assert clo != null;
 
         List<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
-
-        if (cctx.group().mxBean() instanceof CacheGroupMetricsMXBeanImpl)
-            ((CacheGroupMetricsMXBeanImpl)(cctx.group().mxBean())).setIndexBuildCountPartitionsLeft(parts.size());
 
         if (parts.isEmpty())
             return;
@@ -225,8 +221,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         finally {
             part.release();
 
-            if (cctx.group().mxBean() instanceof CacheGroupMetricsMXBeanImpl)
-                ((CacheGroupMetricsMXBeanImpl)(cctx.group().mxBean())).decIndexBuildCountPartitionsLeft();
+            if (cctx.group().metrics0() != null)
+                cctx.group().metrics0().decIndexBuildCountPartitionsLeft();
         }
     }
 
@@ -326,6 +322,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 U.error(log, "Error during parallel index create/rebuild.", e);
 
                 stop = true;
+
+                if (cctx.group().metrics0() != null)
+                    cctx.group().metrics0().setIndexBuildCountPartitionsLeft(0);
             }
             finally {
                 fut.onDone(err);
