@@ -190,31 +190,11 @@ namespace ignite
     namespace binary
     {
         template<>
-        struct BinaryType<Func1>
+        struct BinaryType<Func1> : BinaryTypeDefaultAll<Func1>
         {
-            static int32_t GetTypeId()
-            {
-                return GetBinaryStringHashCode("Func1");
-            }
-
             static void GetTypeName(std::string& dst)
             {
                 dst = "Func1";
-            }
-
-            static int32_t GetFieldId(const char* name)
-            {
-                return GetBinaryStringHashCode(name);
-            }
-
-            static bool IsNull(const Func1& obj)
-            {
-                return false;
-            }
-
-            static void GetNull(Func1& dst)
-            {
-                dst = Func1(0, 0);
             }
 
             static void Write(BinaryWriter& writer, const Func1& obj)
@@ -233,31 +213,11 @@ namespace ignite
         };
 
         template<>
-        struct BinaryType<Func2>
+        struct BinaryType<Func2> : BinaryTypeDefaultAll<Func2>
         {
-            static int32_t GetTypeId()
-            {
-                return GetBinaryStringHashCode("Func2");
-            }
-
             static void GetTypeName(std::string& dst)
             {
                 dst = "Func2";
-            }
-
-            static int32_t GetFieldId(const char* name)
-            {
-                return GetBinaryStringHashCode(name);
-            }
-
-            static bool IsNull(const Func2& obj)
-            {
-                return false;
-            }
-
-            static void GetNull(Func2& dst)
-            {
-                dst = Func2(0, 0);
             }
 
             static void Write(BinaryWriter& writer, const Func2& obj)
@@ -276,31 +236,11 @@ namespace ignite
         };
 
         template<>
-        struct BinaryType<Func3>
+        struct BinaryType<Func3> : BinaryTypeDefaultAll<Func3>
         {
-            static int32_t GetTypeId()
-            {
-                return GetBinaryStringHashCode("Func3");
-            }
-
             static void GetTypeName(std::string& dst)
             {
                 dst = "Func3";
-            }
-
-            static int32_t GetFieldId(const char* name)
-            {
-                return GetBinaryStringHashCode(name);
-            }
-
-            static bool IsNull(const Func3& obj)
-            {
-                return false;
-            }
-
-            static void GetNull(Func3& dst)
-            {
-                dst = Func3(0, 0);
             }
 
             static void Write(BinaryWriter& writer, const Func3& obj)
