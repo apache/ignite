@@ -25,6 +25,15 @@ import junit.framework.TestSuite;
  * TestSuite generator to adapt suite to be run one-by-one with JUnit.
  */
 public class H2TestSuiteBuilder extends TestAll {
+    static {
+        System.setProperty("h2.clientTraceDirectory", "target/trace.db/");
+        System.setProperty("h2.maxMemoryRows", "100");
+
+        System.setProperty("h2.delayWrongPasswordMin", "0");
+        System.setProperty("h2.delayWrongPasswordMax", "0");
+        System.setProperty("h2.useThreadContextClassLoader", "true");
+    }
+
     /** Test suite. */
     private TestSuite suite;
 
