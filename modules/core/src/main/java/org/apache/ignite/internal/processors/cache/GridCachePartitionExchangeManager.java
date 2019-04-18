@@ -2141,7 +2141,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     catch (Exception e) {
                         U.warn(diagnosticLog, "Could not send dump request to transaction owner near node: " + e.getMessage());
                     }
-                } else {
+                }
+                else {
                     U.warn(
                         diagnosticLog,
                         "Could not send dump request to transaction owner near node: node does not support this feature."
