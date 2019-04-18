@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColo
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtAtomicEvictionNearReadersSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadOnheapSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedSupplyEventsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedUnloadEventsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePartitionedBackupNodeFailureRecoveryTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEvictionEventSelfTest;
@@ -159,6 +160,7 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(IgniteCacheServerNodeConcurrentStart.class);
 
         ignoredTests.add(GridCachePartitionedUnloadEventsSelfTest.class);
+        ignoredTests.add(GridCachePartitionedSupplyEventsSelfTest.class);
 
         ignoredTests.add(IgniteNoCustomEventsOnNodeStart.class);
         ignoredTests.add(CacheExchangeMessageDuplicatedStateTest.class);

@@ -66,6 +66,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 
@@ -473,6 +475,54 @@ public class CacheGroupContext {
                     cctx.localNode(),
                     "Cache unloading event.",
                     EVT_CACHE_REBALANCE_PART_UNLOADED,
+                    part,
+                    null,
+                    0,
+                    0));
+    }
+
+    /**
+     * Adds partition supply event.
+     *
+     * @param part Partition.
+     */
+    public void addRebalanceSupplyEvent(int part) {
+        if (!eventRecordable(EVT_CACHE_REBALANCE_PART_SUPPLIED))
+            LT.warn(log, "Added event without checking if event is recordable: " +
+                U.gridEventName(EVT_CACHE_REBALANCE_PART_SUPPLIED));
+
+        List<GridCacheContext> caches = this.caches;
+
+        for (GridCacheContext cctx : caches)
+            if (!cctx.config().isEventsDisabled())
+                cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                    cctx.localNode(),
+                    "Cache partition supplied event.",
+                    EVT_CACHE_REBALANCE_PART_SUPPLIED,
+                    part,
+                    null,
+                    0,
+                    0));
+    }
+
+    /**
+     * Adds partition supply event.
+     *
+     * @param part Partition.
+     */
+    public void addRebalanceMissEvent(int part) {
+        if (!eventRecordable(EVT_CACHE_REBALANCE_PART_MISSED))
+            LT.warn(log, "Added event without checking if event is recordable: " +
+                U.gridEventName(EVT_CACHE_REBALANCE_PART_MISSED));
+
+        List<GridCacheContext> caches = this.caches;
+
+        for (GridCacheContext cctx : caches)
+            if (!cctx.config().isEventsDisabled())
+                cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                    cctx.localNode(),
+                    "Cache partition missed event.",
+                    EVT_CACHE_REBALANCE_PART_MISSED,
                     part,
                     null,
                     0,
