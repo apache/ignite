@@ -2552,32 +2552,4 @@ class ClusterCachesInfo {
         /** */
         private final List<IgniteCheckedException> errs = new ArrayList<>();
     }
-
-    /**
-     *
-     */
-    private static class BackedUpConcurrentHashMap<K, V> extends ConcurrentHashMap<K, V> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Backup map. */
-        private final ConcurrentMap<K, V> backupMap;
-
-        /**
-         * @param backupMap Backup map.
-         */
-        public BackedUpConcurrentHashMap(ConcurrentMap<K, V> backupMap) {
-            this.backupMap = backupMap;
-        }
-
-        /** {@inheritDoc} */
-        @Override public V get(Object key) {
-            V value = super.get(key);
-
-            if (value == null)
-                return backupMap.get(key);
-
-            return value;
-        }
-    }
 }
