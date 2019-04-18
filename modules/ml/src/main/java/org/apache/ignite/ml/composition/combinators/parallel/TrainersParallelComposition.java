@@ -17,18 +17,16 @@
 
 package org.apache.ignite.ml.composition.combinators.parallel;
 
-import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.composition.CompositionUtils;
-import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.environment.parallelism.Promise;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
-
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.composition.CompositionUtils;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.environment.parallelism.Promise;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 /**
  * This class represents a parallel composition of trainers. Parallel composition of trainers is a trainer itself which
@@ -80,10 +78,10 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C extends Serializable> IgniteModel<I, List<O>> fit(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, L> extractor) {
+    @Override public <K, V> IgniteModel<I, List<O>> fit(DatasetBuilder<K, V> datasetBuilder,
+        Preprocessor<K, V> preprocessor) {
         List<IgniteSupplier<IgniteModel<I, O>>> tasks = trainers.stream()
-            .map(tr -> (IgniteSupplier<IgniteModel<I, O>>)(() -> tr.fit(datasetBuilder, extractor)))
+            .map(tr -> (IgniteSupplier<IgniteModel<I, O>>)(() -> tr.fit(datasetBuilder, preprocessor)))
             .collect(Collectors.toList());
 
         List<IgniteModel<I, O>> mdls = environment.parallelismStrategy().submit(tasks).stream()
@@ -94,9 +92,9 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C extends Serializable> IgniteModel<I, List<O>> update(IgniteModel<I, List<O>> mdl,
+    @Override public <K, V> IgniteModel<I, List<O>> update(IgniteModel<I, List<O>> mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, L> extractor) {
+        Preprocessor<K, V> preprocessor) {
         ModelsParallelComposition<I, O> typedMdl = (ModelsParallelComposition<I, O>)mdl;
 
         assert typedMdl.submodels().size() == trainers.size();
@@ -104,7 +102,7 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
 
         for (int i = 0; i < trainers.size(); i++) {
             int j = i;
-            tasks.add(() -> trainers.get(j).update(typedMdl.submodels().get(j), datasetBuilder, extractor));
+            tasks.add(() -> trainers.get(j).update(typedMdl.submodels().get(j), datasetBuilder, preprocessor));
         }
 
         List<IgniteModel<I, O>> mdls = environment.parallelismStrategy().submit(tasks).stream()
@@ -128,15 +126,15 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
 
     /**
      * This method is never called, instead of constructing logic of update from {@link
-     * DatasetTrainer#isUpdateable(IgniteModel)} and {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, Vectorizer)}
+     * DatasetTrainer#isUpdateable(IgniteModel)} and {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, Preprocessor)}
      * in this class we explicitly override update method.
      *
      * @param mdl Model.
      * @return Updated model.
      */
-    @Override protected <K, V, C extends Serializable> IgniteModel<I, List<O>> updateModel(IgniteModel<I, List<O>> mdl,
+    @Override protected <K, V> IgniteModel<I, List<O>> updateModel(IgniteModel<I, List<O>> mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, L> extractor) {
+        Preprocessor<K, V> preprocessor) {
         // Never called.
         throw new IllegalStateException();
     }
