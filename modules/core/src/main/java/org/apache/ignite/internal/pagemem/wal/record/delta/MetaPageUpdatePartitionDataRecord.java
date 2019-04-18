@@ -86,7 +86,6 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         this.allocatedIdxCandidate = in.readInt();
     }
 
-
     /**
      * @return Update counter.
      */
