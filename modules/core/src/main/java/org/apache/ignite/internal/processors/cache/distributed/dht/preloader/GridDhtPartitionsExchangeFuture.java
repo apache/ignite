@@ -2467,7 +2467,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         newCrdFut = null;
         exchangeLocE = null;
         exchangeGlobalExceptions.clear();
-        finishState.cleanUp();
+        if (finishState != null)
+            finishState.cleanUp();
     }
 
     /**
