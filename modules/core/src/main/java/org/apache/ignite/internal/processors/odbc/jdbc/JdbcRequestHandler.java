@@ -459,10 +459,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         writer.writeString(IgniteVersionUtils.VER.stage());
         writer.writeLong(IgniteVersionUtils.VER.revisionTimestamp());
         writer.writeByteArray(IgniteVersionUtils.VER.revisionHash());
-
-        // Write node id.
-        if (protocolVer.compareTo(VER_2_8_0) >= 0)
-            writer.writeUuid(ctx.localNodeId());
     }
 
     /**

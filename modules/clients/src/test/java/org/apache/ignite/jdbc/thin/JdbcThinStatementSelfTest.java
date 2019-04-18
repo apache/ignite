@@ -43,12 +43,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 @SuppressWarnings({"ThrowableNotThrown"})
 public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
-    private String url = bestEffortAffinity ?
-        "jdbc:ignite:thin://127.0.0.1:10800..10802" :
-        "jdbc:ignite:thin://127.0.0.1";
-
-    /** Nodes count. */
-    private int nodesCnt = bestEffortAffinity ? 4 : 3;
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
     /** SQL query. */
     private static final String SQL = "select * from Person where age > 30";
@@ -82,14 +77,14 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(nodesCnt);
+        startGridsMultiThreaded(3);
 
         fillCache();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        conn = DriverManager.getConnection(url);
+        conn = DriverManager.getConnection(URL);
 
         conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
