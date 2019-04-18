@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.math;
 
+import java.util.Arrays;
+import java.util.function.BiPredicate;
 import org.apache.ignite.ml.math.exceptions.NonSquareMatrixException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
@@ -26,9 +28,6 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.function.BiPredicate;
 
 /** Tests for BLAS operations (all operations are only available for local matrices and vectors). */
 public class BlasTest {
@@ -141,7 +140,7 @@ public class BlasTest {
     public void testSprSparseDense2() {
         double alpha = 3.0;
 
-        SparseVector v = new SparseVector(2, StorageConstants.RANDOM_ACCESS_MODE);
+        SparseVector v = new SparseVector(2);
         v.set(0, 1);
 
         DenseVector u = new DenseVector(new double[] {3.0, 13.0, 20.0, 0.0});
@@ -300,7 +299,7 @@ public class BlasTest {
      * @return Sparse local on-heap vector.
      */
     private static SparseVector sparseFromArray(double[] arr) {
-        SparseVector res = new SparseVector(2, StorageConstants.RANDOM_ACCESS_MODE);
+        SparseVector res = new SparseVector(2);
 
         for (int i = 0; i < arr.length; i++)
             res.setX(i, arr[i]);

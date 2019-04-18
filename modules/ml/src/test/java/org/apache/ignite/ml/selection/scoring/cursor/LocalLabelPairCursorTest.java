@@ -19,7 +19,8 @@ package org.apache.ignite.ml.selection.scoring.cursor;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.junit.Test;
 
@@ -32,21 +33,22 @@ public class LocalLabelPairCursorTest {
     /** */
     @Test
     public void testIterate() {
-        Map<Integer, Integer> data = new HashMap<>();
+        Map<Integer, double[]> data = new HashMap<>();
 
         for (int i = 0; i < 1000; i++)
-            data.put(i, i);
+            data.put(i, new double[] {i, i});
 
-        LabelPairCursor<Integer> cursor = new LocalLabelPairCursor<>(
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+
+        LabelPairCursor<Double> cursor = new LocalLabelPairCursor<>(
             data,
-            (k, v) -> v % 2 == 0,
-            (k, v) -> VectorUtils.of(v),
-            (k, v) -> v,
-            vec -> (int)vec.get(0)
+            (k, v) -> v[1] % 2 == 0,
+            vectorizer,
+            vec -> vec.get(0)
         );
 
         int cnt = 0;
-        for (LabelPair<Integer> e : cursor) {
+        for (LabelPair<Double> e : cursor) {
             assertEquals(e.getPrediction(), e.getTruth());
             cnt++;
         }

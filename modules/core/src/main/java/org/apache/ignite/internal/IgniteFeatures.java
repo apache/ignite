@@ -43,7 +43,10 @@ public enum IgniteFeatures {
     DATA_PACKET_COMPRESSION(3),
 
     /** Support of different rebalance size for nodes.  */
-    DIFFERENT_REBALANCE_POOL_SIZE(4);
+    DIFFERENT_REBALANCE_POOL_SIZE(4),
+
+    /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
+    SPLITTED_CACHE_CONFIGURATIONS(5);
 
     /**
      * Unique feature identifier.
@@ -87,11 +90,7 @@ public enum IgniteFeatures {
 
         int bitIdx = featureId & 0x7;
 
-        boolean res = (features[byteIdx] & (1 << bitIdx)) != 0;
-
-        assert res == BitSet.valueOf(features).get(featureId);
-
-        return res;
+        return (features[byteIdx] & (1 << bitIdx)) != 0;
     }
 
     /**

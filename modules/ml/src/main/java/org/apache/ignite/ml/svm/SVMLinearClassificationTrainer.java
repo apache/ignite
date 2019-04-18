@@ -17,26 +17,23 @@
 
 package org.apache.ignite.ml.svm;
 
+import java.util.Random;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.Serializable;
-import java.util.List;
-import java.util.Random;
 
 /**
  * Base class for a soft-margin SVM linear classification trainer based on the communication-efficient distributed dual
@@ -61,32 +58,35 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
      * Trains model based on the specified data.
      *
      * @param datasetBuilder Dataset builder.
-     * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
+     * @param preprocessor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
      * @return Model.
      */
-    @Override public <K, V, C extends Serializable> SVMLinearClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
+    @Override public <K, V> SVMLinearClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+                                                             Preprocessor<K, V> preprocessor) {
 
-        return updateModel(null, datasetBuilder, extractor);
+        return updateModel(null, datasetBuilder, preprocessor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C extends Serializable> SVMLinearClassificationModel updateModel(SVMLinearClassificationModel mdl,
-        DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
+    @Override protected <K, V> SVMLinearClassificationModel updateModel(SVMLinearClassificationModel mdl,
+                                                                        DatasetBuilder<K, V> datasetBuilder,
+                                                                        Preprocessor<K, V> preprocessor) {
 
         assert datasetBuilder != null;
 
-        IgniteFunction<Double, Double> patchedLbExtractor = lb -> {
+        IgniteFunction<Double, Double> lbTransformer = lb -> {
             if (lb == 0.0)
                 return -1.0;
             else
                 return lb;
         };
-        Vectorizer<K, V, C, Double> patchedVectorizer = patchVectorizer(extractor, patchedLbExtractor);
+
+        IgniteFunction<LabeledVector<Double>, LabeledVector<Double>> func = lv -> new LabeledVector<>(lv.features(), lbTransformer.apply(lv.label()));
+
+        PatchedPreprocessor<K, V, Double, Double> patchedPreprocessor = new PatchedPreprocessor<>(func, preprocessor);
 
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder =
-            new LabeledDatasetPartitionDataBuilderOnHeap<>(patchedVectorizer);
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(patchedPreprocessor);
 
         Vector weights;
 
@@ -122,19 +122,6 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
         return new SVMLinearClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
     }
 
-    /**
-     * Patch vetorizer by changing label value.
-     *
-     * @param vectorizer Vectorizer.
-     * @param lbMapper Label Mapper.
-     * @return Vectorizer.
-     */
-    private <V, C extends Serializable, K> Vectorizer<K, V, C, Double> patchVectorizer(Vectorizer<K, V, C, Double> vectorizer,
-        IgniteFunction<Double, Double> lbMapper) {
-
-        return new PatchedVectorizer<>(vectorizer, lbMapper);
-    }
-
     /** {@inheritDoc} */
     @Override public boolean isUpdateable(SVMLinearClassificationModel mdl) {
         return true;
@@ -151,7 +138,7 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
         int stateVectorSize = weights.size() + 1;
         Vector res = weights.isDense() ?
             new DenseVector(stateVectorSize) :
-            new SparseVector(stateVectorSize, StorageConstants.RANDOM_ACCESS_MODE);
+            new SparseVector(stateVectorSize);
 
         res.set(0, intercept);
         weights.nonZeroes().forEach(ith -> res.set(ith.index(), ith.get()));
@@ -350,53 +337,6 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
     public SVMLinearClassificationTrainer withSeed(long seed) {
         this.seed = seed;
         return this;
-    }
-
-    /**
-     * Wrapper for label patching.
-     */
-    private static class PatchedVectorizer<K, V, C extends Serializable> extends Vectorizer<K, V, C, Double> {
-        private final Vectorizer<K, V, C, Double> originalVectorizer;
-        private final IgniteFunction<Double, Double> labelMapping;
-
-        /**
-         * Create an instance of PatchedVectorizer.
-         *
-         * @param originalVectorizer Original vectorizer.
-         * @param labelMapping Label mapping.
-         */
-        public PatchedVectorizer(
-            Vectorizer<K, V, C, Double> originalVectorizer,
-            IgniteFunction<Double, Double> labelMapping) {
-            this.originalVectorizer = originalVectorizer;
-            this.labelMapping = labelMapping;
-        }
-
-        /** {@inheritDoc} */
-        @Override public LabeledVector<Double> apply(K key, V value) {
-            LabeledVector<Double> labeledVector = originalVectorizer.extract(key, value);
-            return labeledVector.features().labeled(labelMapping.apply(labeledVector.label()));
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Double feature(C coord, K key, V value) {
-            throw new IllegalStateException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Double label(C coord, K key, V value) {
-            throw new IllegalStateException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Double zero() {
-            throw new IllegalStateException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected List<C> allCoords(K key, V value) {
-            throw new IllegalStateException();
-        }
     }
 }
 

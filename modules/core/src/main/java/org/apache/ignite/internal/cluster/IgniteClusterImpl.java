@@ -51,9 +51,9 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.nodestart.IgniteRemoteStartSpecification;
 import org.apache.ignite.internal.util.nodestart.IgniteSshHelper;
@@ -71,6 +71,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
@@ -96,9 +97,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** Minimal IgniteProductVersion supporting BaselineTopology */
     private static final IgniteProductVersion MIN_BLT_SUPPORTING_VER = IgniteProductVersion.fromString("2.4.0");
 
-    /** Distributed baseline configuration. */
-    private DistributedBaselineConfiguration distributedBaselineConfiguration;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -115,10 +113,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         cfg = ctx.config();
 
         nodeLoc = new ClusterNodeLocalMapImpl(ctx);
-
-        distributedBaselineConfiguration = new DistributedBaselineConfiguration(
-            cfg, ctx.internalSubscriptionProcessor(), ctx.log(DistributedBaselineConfiguration.class)
-        );
     }
 
     /** {@inheritDoc} */
@@ -607,7 +601,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public boolean isBaselineAutoAdjustEnabled() {
-        return distributedBaselineConfiguration.isBaselineAutoAdjustEnabled();
+        return ctx.state().isBaselineAutoAdjustEnabled();
     }
 
     /** {@inheritDoc} */
@@ -624,11 +618,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            return new IgniteFutureImpl<>(
-                distributedBaselineConfiguration.updateBaselineAutoAdjustEnabledAsync(baselineAutoAdjustEnabled));
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            return ctx.state().baselineAutoAdjustEnabledAsync(baselineAutoAdjustEnabled);
         }
         finally {
             unguard();
@@ -637,7 +627,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public long baselineAutoAdjustTimeout() {
-        return distributedBaselineConfiguration.getBaselineAutoAdjustTimeout();
+        return ctx.state().baselineAutoAdjustTimeout();
     }
 
     /** {@inheritDoc} */
@@ -656,15 +646,16 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            return new IgniteFutureImpl<>(
-                distributedBaselineConfiguration.updateBaselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout));
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            return ctx.state().baselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout);
         }
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public BaselineAutoAdjustStatus baselineAutoAdjustStatus(){
+        return ctx.state().baselineAutoAdjustStatus();
     }
 
     /** {@inheritDoc} */
@@ -883,13 +874,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      */
     public void clientReconnectFuture(IgniteFuture<?> reconnecFut) {
         this.reconnecFut = reconnecFut;
-    }
-
-    /**
-     * @return Baseline configuration.
-     */
-    public DistributedBaselineConfiguration baselineConfiguration() {
-        return distributedBaselineConfiguration;
     }
 
     /** {@inheritDoc} */

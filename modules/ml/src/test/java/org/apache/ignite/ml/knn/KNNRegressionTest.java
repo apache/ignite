@@ -17,9 +17,11 @@
 
 package org.apache.ignite.ml.knn;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
@@ -29,9 +31,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -54,7 +53,7 @@ public class KNNRegressionTest extends TrainerTest {
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
@@ -99,7 +98,7 @@ public class KNNRegressionTest extends TrainerTest {
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(stgy);
@@ -130,19 +129,19 @@ public class KNNRegressionTest extends TrainerTest {
 
         KNNRegressionModel originalMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
 
         KNNRegressionModel updatedOnSameDataset = trainer.update(originalMdl,
             data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         KNNRegressionModel updatedOnEmptyDataset = trainer.update(originalMdl,
             new HashMap<Integer, double[]>(), parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Vector vector = new DenseVector(new double[] {0, 0, 0, 5.0, 0.0});
