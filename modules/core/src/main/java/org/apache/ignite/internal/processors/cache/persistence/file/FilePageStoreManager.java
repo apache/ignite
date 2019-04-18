@@ -1360,6 +1360,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param <V> value type
      */
     private static class IdxCacheStores<K, V> extends ConcurrentHashMap<K, V> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * Executor that wraps data adding and replacing operations.
          */
