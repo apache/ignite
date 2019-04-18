@@ -24,31 +24,48 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
 @SuppressWarnings("PublicField")
-class DistributedMetaStorageHistoryItem implements Serializable {
-    /** */
-    public static final DistributedMetaStorageHistoryItem[] EMPTY_ARRAY = {};
-
+final class DistributedMetaStorageHistoryItem implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    @GridToStringInclude
-    public final String key;
+    public static final DistributedMetaStorageHistoryItem[] EMPTY_ARRAY = {};
 
     /** */
     @GridToStringInclude
-    public final byte[] valBytes;
+    public final String[] keys;
+
+    /** */
+    @GridToStringInclude
+    public final byte[][] valBytesArray;
+
+    /** */
+    private transient long longHash;
 
     /** */
     public DistributedMetaStorageHistoryItem(String key, byte[] valBytes) {
-        this.key = key;
-        this.valBytes = valBytes;
+        keys = new String[] {key};
+        valBytesArray = new byte[][] {valBytes};
+    }
+
+    /** */
+    public DistributedMetaStorageHistoryItem(String[] keys, byte[][] valBytesArray) {
+        this.keys = keys;
+        this.valBytesArray = valBytesArray;
     }
 
     /** */
     public long estimateSize() {
+        int len = keys.length;
+
+        // 8L = 2 int sizes. Plus all int sizes of strings and byte arrays.
+        long size = 8L + 8L * len;
+
         // String encoding is ignored to make estimation faster. 2 "size" values added as well.
-        return 8 + key.length() * 2 + (valBytes == null ? 0 : valBytes.length);
+        for (int i = 0; i < len; i++)
+            size += keys[i].length() * 2 + (valBytesArray[i] == null ? 0 : valBytesArray[i].length);
+
+        return size;
     }
 
     /** {@inheritDoc} */
@@ -61,12 +78,39 @@ class DistributedMetaStorageHistoryItem implements Serializable {
 
         DistributedMetaStorageHistoryItem item = (DistributedMetaStorageHistoryItem)o;
 
-        return key.equals(item.key) && Arrays.equals(valBytes, item.valBytes);
+        return Arrays.equals(keys, item.keys) && Arrays.deepEquals(valBytesArray, item.valBytesArray);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return 31 * key.hashCode() + Arrays.hashCode(valBytes);
+        return 31 * Arrays.hashCode(keys) + Arrays.deepHashCode(valBytesArray);
+    }
+
+    /** Long hash. */
+    public long longHash() {
+        long hash = longHash;
+
+        if (hash == 0L) {
+            hash = 1L;
+
+            for (String key : keys)
+                hash = hash * 31L + key.hashCode();
+
+            for (byte[] valBytes : valBytesArray) {
+                if (valBytes == null)
+                    hash *= 31L;
+                else
+                    for (byte b : valBytes)
+                        hash = hash * 31L + b;
+            }
+
+            if (hash == 0L)
+                hash = 1L; // Avoid rehashing.
+
+            longHash = hash;
+        }
+
+        return hash;
     }
 
     /** {@inheritDoc} */

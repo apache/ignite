@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -107,6 +109,21 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
  * H2 utility methods.
  */
 public class H2Utils {
+    /**
+     * The default precision for a char/varchar value.
+     */
+    static final int STRING_DEFAULT_PRECISION = Integer.MAX_VALUE;
+
+    /**
+     * The default precision for a decimal value.
+     */
+    static final int DECIMAL_DEFAULT_PRECISION = 65535;
+
+    /**
+     * The default scale for a decimal value.
+     */
+    static final int DECIMAL_DEFAULT_SCALE = 32767;
+
     /** Dummy metadata for update result. */
     public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META =
         Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
@@ -359,6 +376,31 @@ public class H2Utils {
         }
 
         return meta;
+    }
+
+    /**
+     * Converts h2 parameters metadata to Ignite one.
+     *
+     * @param h2ParamsMeta parameters metadata returned by h2.
+     * @return Descriptions of the parameters.
+     */
+    public static List<JdbcParameterMeta> parametersMeta(ParameterMetaData h2ParamsMeta) throws IgniteCheckedException {
+        try {
+            int paramsSize = h2ParamsMeta.getParameterCount();
+
+            if (paramsSize == 0)
+                return Collections.emptyList();
+
+            ArrayList<JdbcParameterMeta> params = new ArrayList<>(paramsSize);
+
+            for (int i = 1; i <= paramsSize; i++)
+                params.add(new JdbcParameterMeta(h2ParamsMeta, i));
+
+            return params;
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException("Failed to get parameters metadata", e);
+        }
     }
 
     /**

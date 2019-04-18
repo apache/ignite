@@ -1401,7 +1401,7 @@ public final class GridCacheMvcc {
 
         for (GridCacheMvccCandidate c : col) {
             // Don't include reentries.
-            if ((!c.reentry() || (reentries && c.reentry())) && !U.containsObjectArray(excludeVers, c.version()))
+            if ((reentries || !c.reentry()) && !U.containsObjectArray(excludeVers, c.version()))
                 cands.add(c);
         }
 

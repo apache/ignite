@@ -77,6 +77,12 @@ namespace Apache.Ignite.Core
         ICompute GetCompute();
 
         /// <summary>
+        /// Gets Ignite version.
+        /// </summary>
+        /// <returns>Ignite node version.</returns>
+        IgniteProductVersion GetVersion();
+
+        /// <summary>
         /// Gets the cache instance for the given name to work with keys and values of specified types.
         /// <para/>
         /// You can get instances of ICache of the same name, but with different key/value types.

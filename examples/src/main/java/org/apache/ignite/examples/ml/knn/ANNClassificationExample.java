@@ -17,6 +17,9 @@
 
 package org.apache.ignite.examples.ml.knn;
 
+import java.util.Arrays;
+import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.commons.math3.util.Precision;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -26,17 +29,13 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-
-import javax.cache.Cache;
-import java.util.Arrays;
-import java.util.UUID;
 
 /**
  * Run ANN multi-class classification trainer ({@link ANNClassificationTrainer}) over distributed dataset.
@@ -76,7 +75,7 @@ public class ANNClassificationExample {
                 NNClassificationModel knnMdl = trainer.fit(
                     ignite,
                     dataCache,
-                    new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+                    new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
                 ).withK(5)
                     .withDistanceMeasure(new EuclideanDistance())
                     .withStrategy(NNStrategy.WEIGHTED);

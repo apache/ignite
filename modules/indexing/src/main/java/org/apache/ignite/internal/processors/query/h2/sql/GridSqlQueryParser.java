@@ -2392,18 +2392,6 @@ public class GridSqlQueryParser {
     /**
      * Check if passed statement is insert statement eligible for streaming.
      *
-     * @param nativeStmt Native statement.
-     * @return {@code True} if streamable insert.
-     */
-    public static boolean isStreamableInsertStatement(PreparedStatement nativeStmt) {
-        Prepared prep = prepared(nativeStmt);
-
-        return isStreamableInsertStatement(prep);
-    }
-
-    /**
-     * Check if passed statement is insert statement eligible for streaming.
-     *
      * @param prep Prepared statement.
      * @return {@code True} if streamable insert.
      */

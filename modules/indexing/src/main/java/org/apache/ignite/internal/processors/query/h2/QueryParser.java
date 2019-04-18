@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -64,6 +66,7 @@ import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
+import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -84,7 +87,7 @@ public class QueryParser {
     /** A pattern for commands having internal implementation in Ignite. */
     private static final Pattern INTERNAL_CMD_RE = Pattern.compile(
         "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user" +
-            "|show|help|grant|revoke",
+            "|^kill\\s+query|show|help|grant|revoke",
         Pattern.CASE_INSENSITIVE);
 
     /** Indexing. */
@@ -147,6 +150,7 @@ public class QueryParser {
                 qryDesc,
                 QueryParameters.fromQuery(qry),
                 null,
+                cached.parametersMeta(),
                 cached.select(),
                 cached.dml(),
                 cached.command()
@@ -161,7 +165,7 @@ public class QueryParser {
 
         // Add to cache if not multi-statement.
         if (parseRes.remainingQuery() == null) {
-            cached = new QueryParserCacheEntry(parseRes.select(), parseRes.dml(), parseRes.command());
+            cached = new QueryParserCacheEntry(parseRes.parametersMeta(), parseRes.select(), parseRes.dml(), parseRes.command());
 
             cache.put(qryDesc, cached);
         }
@@ -176,12 +180,11 @@ public class QueryParser {
      *
      * @param schemaName Schema name.
      * @param qry which sql text to parse.
-     * @param remainingAllowed Whether multiple statements are allowed.              
+     * @param remainingAllowed Whether multiple statements are allowed.
      * @return Command or {@code null} if cannot parse this query.
      */
     @SuppressWarnings("IfMayBeConditional")
-    @Nullable
-    private QueryParserResult parseNative(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
+    private @Nullable QueryParserResult parseNative(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
         String sql = qry.getSql();
 
         // Heuristic check for fast return.
@@ -205,7 +208,8 @@ public class QueryParser {
                 || nativeCmd instanceof SqlSetStreamingCommand
                 || nativeCmd instanceof SqlCreateUserCommand
                 || nativeCmd instanceof SqlAlterUserCommand
-                || nativeCmd instanceof SqlDropUserCommand)
+                || nativeCmd instanceof SqlDropUserCommand
+                || nativeCmd instanceof SqlKillQueryCommand)
             )
                 return null;
 
@@ -214,10 +218,10 @@ public class QueryParser {
             QueryDescriptor newPlanKey = queryDescriptor(schemaName, newQry);
 
             SqlFieldsQuery remainingQry = null;
-            
+
             if (!F.isEmpty(parser.remainingSql())) {
                 checkRemainingAllowed(remainingAllowed);
-                
+
                 remainingQry = cloneFieldsQuery(qry).setSql(parser.remainingSql()).setArgs(qry.getArgs());
             }
 
@@ -227,6 +231,7 @@ public class QueryParser {
                 newPlanKey,
                 QueryParameters.fromQuery(newQry),
                 remainingQry,
+                Collections.emptyList(), // Currently none of native statements supports parameters.
                 null,
                 null,
                 cmd
@@ -259,7 +264,7 @@ public class QueryParser {
      * @param schemaName Schema name.
      * @param qry Query.
      * @param batched Batched flag.
-     * @param remainingAllowed Whether multiple statements are allowed.              
+     * @param remainingAllowed Whether multiple statements are allowed.
      * @return Parsing result.
      */
     @SuppressWarnings("IfMayBeConditional")
@@ -300,10 +305,10 @@ public class QueryParser {
 
             // Get remaining query and check if it is allowed.
             SqlFieldsQuery remainingQry = null;
-            
+
             if (!F.isEmpty(prep.remainingSql())) {
                 checkRemainingAllowed(remainingAllowed);
-                
+
                 remainingQry = cloneFieldsQuery(qry).setSql(prep.remainingSql());
             }
 
@@ -338,6 +343,17 @@ public class QueryParser {
             if (remainingQry != null)
                 remainingQry.setArgs(remainingArgs);
 
+            final List<JdbcParameterMeta> paramsMeta;
+
+            try {
+                paramsMeta = H2Utils.parametersMeta(stmt.getParameterMetaData());
+
+                assert prepared.getParameters().size() == paramsMeta.size();
+            }
+            catch (IgniteCheckedException | SQLException e) {
+                throw new IgniteSQLException("Failed to get parameters metadata", IgniteQueryErrorCode.UNKNOWN, e);
+            }
+
             // Do actual parsing.
             if (CommandProcessor.isCommand(prepared)) {
                 GridSqlStatement cmdH2 = new GridSqlQueryParser(false).parse(prepared);
@@ -348,6 +364,7 @@ public class QueryParser {
                     newQryDesc,
                     QueryParameters.fromQuery(newQry),
                     remainingQry,
+                    paramsMeta,
                     null,
                     null,
                     cmd
@@ -360,6 +377,7 @@ public class QueryParser {
                     newQryDesc,
                     QueryParameters.fromQuery(newQry),
                     remainingQry,
+                    paramsMeta,
                     null,
                     null,
                     cmd
@@ -372,6 +390,7 @@ public class QueryParser {
                     newQryDesc,
                     QueryParameters.fromQuery(newQry),
                     remainingQry,
+                    paramsMeta,
                     null,
                     dml,
                     null
@@ -491,7 +510,6 @@ public class QueryParser {
                     twoStepQry,
                     forUpdateTwoStepQry,
                     meta,
-                    paramsCnt,
                     cacheIds,
                     mvccCacheId,
                     forUpdateQryOutTx,
@@ -502,6 +520,7 @@ public class QueryParser {
                     newQryDesc,
                     QueryParameters.fromQuery(newQry),
                     remainingQry,
+                    paramsMeta,
                     select,
                     null,
                     null
@@ -522,13 +541,13 @@ public class QueryParser {
 
     /**
      * Throw exception is multiple statements are not allowed.
-     * 
+     *
      * @param allowed Whether multiple statements are allowed.
      */
     private static void checkRemainingAllowed(boolean allowed) {
         if (allowed)
-            return; 
-        
+            return;
+
         throw new IgniteSQLException("Multiple statements queries are not supported.",
             IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
@@ -646,7 +665,6 @@ public class QueryParser {
 
         return new QueryParserResultDml(
             stmt,
-            prepared.getParameters().size(),
             mvccEnabled,
             streamTbl,
             plan

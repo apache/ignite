@@ -17,6 +17,10 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
@@ -32,14 +36,10 @@ import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Learning strategy for gradient boosting.
@@ -83,13 +83,13 @@ public class GDBLearningStrategy {
      * model based on gradient of loss-function for current models composition.
      *
      * @param datasetBuilder Dataset builder.
-     * @param vectorizer Upstream vectorizer.
+     * @param preprocessor Upstream preprocessor.
      * @return List of learned models.
      */
-    public <K, V, C extends Serializable> List<IgniteModel<Vector, Double>> learnModels(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> vectorizer) {
+    public <K, V> List<IgniteModel<Vector, Double>> learnModels(DatasetBuilder<K, V> datasetBuilder,
+                                                                Preprocessor<K, V> preprocessor) {
 
-        return update(null, datasetBuilder, vectorizer);
+        return update(null, datasetBuilder, preprocessor);
     }
 
     /**
@@ -98,20 +98,20 @@ public class GDBLearningStrategy {
      *
      * @param mdlToUpdate Learned model.
      * @param datasetBuilder Dataset builder.
-     * @param vectorizer Upstream vectorizer.
+     * @param preprocessor Upstream preprocessor.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated models list.
      */
-    public <K, V, C extends Serializable> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
-        DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> vectorizer) {
+    public <K, V> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
+                                                           DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
         if (trainerEnvironment == null)
             throw new IllegalStateException("Learning environment builder is not set.");
 
         List<IgniteModel<Vector, Double>> models = initLearningState(mdlToUpdate);
 
-        ConvergenceChecker<K, V, C> convCheck = checkConvergenceStgyFactory.create(sampleSize,
-            externalLbToInternalMapping, loss, datasetBuilder, vectorizer);
+        ConvergenceChecker<K, V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
+            externalLbToInternalMapping, loss, datasetBuilder, preprocessor);
 
         DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
         for (int i = 0; i < cntOfIterations; i++) {
@@ -122,10 +122,10 @@ public class GDBLearningStrategy {
             if (convCheck.isConverged(envBuilder, datasetBuilder, currComposition))
                 break;
 
-            Vectorizer<K, V, C, Double> extractor = new Vectorizer.VectorizerAdapter<K, V, C, Double>() {
+            Vectorizer<K, V, Serializable, Double> extractor = new Vectorizer.VectorizerAdapter<K, V, Serializable, Double>() {
                 /** {@inheritDoc} */
                 @Override public LabeledVector<Double> extract(K k, V v) {
-                    LabeledVector<Double> labeledVector = vectorizer.extract(k, v);
+                    LabeledVector<Double> labeledVector = preprocessor.apply(k, v);
                     Vector features = labeledVector.features();
                     Double realAnswer = externalLbToInternalMapping.apply(labeledVector.label());
                     Double mdlAnswer = currComposition.predict(features);
