@@ -189,9 +189,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Whether data page scan for queries is allowed. If not specified, server defines the default behaviour.",
         null, false);
 
-    /** Data page scan flag. */
+    /** Update batch size (the size of internal batches are used for INSERT/UPDATE/DELETE operation). */
     private IntegerProperty updateBatchSize = new IntegerProperty("updateBatchSize",
-        "Update internal bach size. Set to 1 to prevent deadlock on update where keys sequence are different " +
+        "Update bach size (the size of internal batches are used for INSERT/UPDATE/DELETE operation). " +
+            "Set to 1 to prevent deadlock on update where keys sequence are different " +
             "in several concurrent updates.", null, false, 1, Integer.MAX_VALUE);
 
     /** Properties array. */
