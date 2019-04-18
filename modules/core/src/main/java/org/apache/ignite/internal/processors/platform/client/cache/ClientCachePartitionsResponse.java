@@ -17,42 +17,47 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.ArrayList;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.platform.client.ClientAffinityTopologyVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
-import java.util.Map;
-
 /**
- * GetAll response.
+ * Client cache nodes partitions response.
  */
-class ClientCacheGetAllResponse extends ClientResponse {
-    /** Result. */
-    private final Map<Object, Object> res;
+class ClientCachePartitionsResponse extends ClientResponse {
+    /** Node partitions. */
+    private final ArrayList<ClientCacheAffinityAwarenessGroup> mappings;
+
+    /** Affinity version. */
+    private final ClientAffinityTopologyVersion affinityVer;
 
     /**
-     * Ctor.
-     *
      * @param requestId Request id.
-     * @param res Result.
+     * @param mappings Mappings for caches.
+     * @param affinityVer Affinity version.
      */
-    ClientCacheGetAllResponse(long requestId, Map<Object, Object> res) {
+    ClientCachePartitionsResponse(long requestId, ArrayList<ClientCacheAffinityAwarenessGroup> mappings,
+        ClientAffinityTopologyVersion affinityVer) {
         super(requestId);
 
-        assert res != null;
+        assert mappings != null;
 
-        this.res = res;
+        this.mappings = mappings;
+        this.affinityVer = affinityVer;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
-        super.encode(ctx, writer);
+        encode(ctx, writer, affinityVer);
 
-        writer.writeInt(res.size());
+        affinityVer.write(writer);
 
-        for (Map.Entry e : res.entrySet()) {
-            writer.writeObjectDetached(e.getKey());
-            writer.writeObjectDetached(e.getValue());
+        writer.writeInt(mappings.size());
+
+        for (ClientCacheAffinityAwarenessGroup mapping : mappings) {
+            mapping.write(writer);
         }
     }
 }

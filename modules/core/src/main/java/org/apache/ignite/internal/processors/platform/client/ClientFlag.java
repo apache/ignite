@@ -17,30 +17,37 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-
 /**
- * Int response.
+ * Client response flag.
  */
-public class ClientIntResponse extends ClientResponse {
-    /** */
-    private final int val;
+public class ClientFlag {
+    /**
+     * No-op constructor to prevent instantiation.
+     */
+    private ClientFlag () {
+        // No-op.
+    }
 
     /**
-     * Constructor.
-     *
-     * @param reqId Request id.
+     * @return Flags for response message.
+     * @param error Error flag.
+     * @param topologyChanged Affinity topology changed flag.
      */
-    public ClientIntResponse(long reqId, int val) {
-        super(reqId);
+    public static short makeFlags(boolean error, boolean topologyChanged) {
+        short flags = 0;
 
-        this.val = val;
+        if (error)
+            flags |= ClientFlag.ERROR;
+
+        if (topologyChanged)
+            flags |= ClientFlag.AFFINITY_TOPOLOGY_CHANGED;
+
+        return flags;
     }
 
-    /** {@inheritDoc} */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
-        super.encode(ctx, writer);
+    /** Error flag. */
+    public static final short ERROR = 1;
 
-        writer.writeInt(val);
-    }
+    /** Affinity topology change flag. */
+    public static final short AFFINITY_TOPOLOGY_CHANGED = 1 << 1;
 }

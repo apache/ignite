@@ -50,6 +50,22 @@ public:
     }
 
     template<typename K, typename V>
+    void PutWithRetry(cache::CacheClient<K,V>& cache, const K& key, const V& value)
+    {
+        try
+        {
+            cache.Put(key, value);
+        }
+        catch(const ignite::IgniteError& err)
+        {
+            if (err.GetCode() == ignite::IgniteError::IGNITE_ERR_NETWORK_FAILURE)
+            {
+                cache.Put(key, value);
+            }
+        }
+    }
+
+    template<typename K, typename V>
     void LocalPeek(cache::CacheClient<K,V>& cache, const K& key, V& value)
     {
         using namespace ignite::impl::thin;
@@ -67,11 +83,13 @@ public:
     void NumPartitionTest(int64_t num)
     {
         StartNode("node1");
+        StartNode("node2");
 
         boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
         IgniteClientConfiguration cfg;
-        cfg.SetEndPoints("127.0.0.1:11110..11120");
+        cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
+        cfg.SetAffinityAwareness(true);
 
         IgniteClient client = IgniteClient::Start(cfg);
 
@@ -88,7 +106,7 @@ public:
             int64_t val;
             LocalPeek(cache, static_cast<KeyType>(i * 39916801), val);
 
-            BOOST_CHECK_EQUAL(val, i * 5039);
+            BOOST_REQUIRE_EQUAL(val, i * 5039);
         }
     }
 
@@ -135,7 +153,7 @@ BOOST_AUTO_TEST_CASE(CacheClientGetCacheNonxisting)
 
     IgniteClient client = IgniteClient::Start(cfg);
 
-    BOOST_REQUIRE_THROW((client.GetCache<int32_t, std::string>("unknown")), ignite::IgniteError);
+    client.GetCache<int32_t, std::string>("unknown");
 }
 
 BOOST_AUTO_TEST_CASE(CacheClientGetOrCreateCacheExisting)
@@ -445,11 +463,13 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsDouble)
 BOOST_AUTO_TEST_CASE(CacheClientPartitionsString)
 {
     StartNode("node1");
+    StartNode("node2");
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     IgniteClientConfiguration cfg;
-    cfg.SetEndPoints("127.0.0.1:11110..11120");
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
+    cfg.SetAffinityAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -466,18 +486,20 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsString)
         int64_t val;
         LocalPeek(cache, ignite::common::LexicalCast<std::string>(i * 39916801), val);
 
-        BOOST_CHECK_EQUAL(val, i * 5039);
+        BOOST_REQUIRE_EQUAL(val, i * 5039);
     }
 }
 
 BOOST_AUTO_TEST_CASE(CacheClientPartitionsGuid)
 {
     StartNode("node1");
+    StartNode("node2");
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     IgniteClientConfiguration cfg;
-    cfg.SetEndPoints("127.0.0.1:11110..11120");
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
+    cfg.SetAffinityAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -494,18 +516,20 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsGuid)
         int64_t val;
         LocalPeek(cache, ignite::Guid(i * 406586897, i * 87178291199), val);
 
-        BOOST_CHECK_EQUAL(val, i * 5039);
+        BOOST_REQUIRE_EQUAL(val, i * 5039);
     }
 }
 
 BOOST_AUTO_TEST_CASE(CacheClientPartitionsComplexType)
 {
     StartNode("node1");
+    StartNode("node2");
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     IgniteClientConfiguration cfg;
-    cfg.SetEndPoints("127.0.0.1:11110..11120");
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
+    cfg.SetAffinityAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -538,18 +562,20 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsComplexType)
         int64_t val;
         LocalPeek(cache, key, val);
 
-        BOOST_CHECK_EQUAL(val, i * 5039);
+        BOOST_REQUIRE_EQUAL(val, i * 5039);
     }
 }
 
 BOOST_AUTO_TEST_CASE(CacheClientPartitionsDate)
 {
     StartNode("node1");
+    StartNode("node2");
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     IgniteClientConfiguration cfg;
-    cfg.SetEndPoints("127.0.0.1:11110..11120");
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
+    cfg.SetAffinityAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -580,18 +606,20 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsDate)
             std::abs(static_cast<int>(i * 39916801) % 60)),
             val);
 
-        BOOST_CHECK_EQUAL(val, i * 5039);
+        BOOST_REQUIRE_EQUAL(val, i * 5039);
     }
 }
 
 BOOST_AUTO_TEST_CASE(CacheClientPartitionsTime)
 {
     StartNode("node1");
+    StartNode("node2");
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     IgniteClientConfiguration cfg;
-    cfg.SetEndPoints("127.0.0.1:11110..11120");
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
+    cfg.SetAffinityAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -616,18 +644,20 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsTime)
             std::abs(static_cast<int>(i * 39916801) % 60)),
             val);
 
-        BOOST_CHECK_EQUAL(val, i * 5039);
+        BOOST_REQUIRE_EQUAL(val, i * 5039);
     }
 }
 
 BOOST_AUTO_TEST_CASE(CacheClientPartitionsTimestamp)
 {
     StartNode("node1");
+    StartNode("node2");
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
     IgniteClientConfiguration cfg;
-    cfg.SetEndPoints("127.0.0.1:11110..11120");
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
+    cfg.SetAffinityAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -660,7 +690,7 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsTimestamp)
             std::abs(static_cast<long>((i * 303595777) % 1000000000))),
             val);
 
-        BOOST_CHECK_EQUAL(val, i * 5039);
+        BOOST_REQUIRE_EQUAL(val, i * 5039);
     }
 }
 
@@ -794,7 +824,7 @@ BOOST_AUTO_TEST_CASE(CacheClientDefaultDynamicCache)
     IgniteClient client = IgniteClient::Start(cfg);
 
     cache::CacheClient<std::string, int64_t> cache =
-        client.CreateCache<std::string, int64_t>("defaultdynamic");
+        client.CreateCache<std::string, int64_t>("defaultdynamic1");
 
     cache.RefreshAffinityMapping();
 
@@ -806,25 +836,58 @@ BOOST_AUTO_TEST_CASE(CacheClientDefaultDynamicCache)
         int64_t val;
         LocalPeek(cache, ignite::common::LexicalCast<std::string>(i * 39916801), val);
 
-        BOOST_CHECK_EQUAL(val, i * 5039);
+        BOOST_REQUIRE_EQUAL(val, i * 5039);
     }
 }
 
-BOOST_AUTO_TEST_CASE(CacheClientDefaultDynamicCacheThreeNodes)
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsDefaultDynamicCacheThreeNodes)
 {
     StartNode("node1");
     StartNode("node2");
 
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
+
     IgniteClientConfiguration cfg;
-    cfg.SetEndPoints("127.0.0.1:11110..11120");
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
+    cfg.SetAffinityAwareness(true);
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<std::string, int64_t> cache =
+        client.CreateCache<std::string, int64_t>("defaultdynamic2");
+
+    // No-op, but should compile.
+    cache.RefreshAffinityMapping();
+
+    for (int64_t i = 1; i < 1000; ++i)
+        cache.Put(ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
+
+    for (int64_t i = 1; i < 1000; ++i)
+    {
+        int64_t val;
+        LocalPeek(cache, ignite::common::LexicalCast<std::string>(i * 39916801), val);
+
+        BOOST_REQUIRE_EQUAL(val, i * 5039);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsRebalance)
+{
+    StartNode("node1");
+    StartNode("node2");
+    StartNode("node3");
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
+
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112,127.0.0.1:11113");
+    cfg.SetAffinityAwareness(true);
 
     IgniteClient client = IgniteClient::Start(cfg);
 
     cache::CacheClient<std::string, int64_t> cache =
         client.CreateCache<std::string, int64_t>("defaultdynamic3");
 
-    cache.RefreshAffinityMapping();
-
     for (int64_t i = 1; i < 1000; ++i)
         cache.Put(ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
 
@@ -833,8 +896,58 @@ BOOST_AUTO_TEST_CASE(CacheClientDefaultDynamicCacheThreeNodes)
         int64_t val;
         LocalPeek(cache, ignite::common::LexicalCast<std::string>(i * 39916801), val);
 
-        BOOST_CHECK_EQUAL(val, i * 5039);
+        BOOST_REQUIRE_EQUAL(val, i * 5039);
     }
+
+    ignite::Ignition::Stop("node3", true);
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(3));
+
+    for (int64_t i = 1; i < 1000; ++i)
+        PutWithRetry(cache, ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
+
+    for (int64_t i = 1; i < 1000; ++i)
+    {
+        int64_t val;
+        LocalPeek(cache, ignite::common::LexicalCast<std::string>(i * 39916801), val);
+
+        BOOST_REQUIRE_EQUAL(val, i * 5039);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsDisabledThreeNodes)
+{
+    StartNode("node1");
+    StartNode("node2");
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
+
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<std::string, int64_t> cache =
+        client.CreateCache<std::string, int64_t>("defaultdynamic4");
+
+    // No-op, but should compile.
+    cache.RefreshAffinityMapping();
+
+    for (int64_t i = 1; i < 1000; ++i)
+        cache.Put(ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
+
+    int32_t cnt = 0;
+
+    for (int64_t i = 1; i < 1000; ++i)
+    {
+        int64_t val;
+        LocalPeek(cache, ignite::common::LexicalCast<std::string>(i * 39916801), val);
+
+        if (val == i * 5039)
+            ++cnt;
+    }
+
+    BOOST_REQUIRE_LT(cnt, 1000);
 }
 
 BOOST_AUTO_TEST_CASE(CacheClientGetAllContainers)
@@ -1870,6 +1983,54 @@ BOOST_AUTO_TEST_CASE(CacheClientGetAndPutIfAbsentComplexValue)
     BOOST_CHECK_EQUAL(valIn1.strField, valOut.strField);
     BOOST_CHECK_EQUAL(valIn1.objField.f1, valOut.objField.f1);
     BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut.objField.f2);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndPutIfAbsentComplexValuePtr)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, ignite::ComplexType*> cache = client.GetCache<int32_t, ignite::ComplexType*>("local");
+
+    int32_t key = 42;
+
+    ignite::ComplexType valIn1;
+    valIn1.i32Field = 123;
+    valIn1.strField = "Test value";
+    valIn1.objField.f1 = 42;
+    valIn1.objField.f2 = "Inner value";
+
+    ignite::ComplexType valIn2;
+    valIn2.i32Field = 4234;
+    valIn2.strField = "Some";
+    valIn2.objField.f1 = 654;
+    valIn2.objField.f2 = "Lorem";
+
+    ignite::ComplexType* valOut = cache.GetAndPutIfAbsent(key, &valIn1);
+
+    BOOST_CHECK(cache.ContainsKey(key));
+    BOOST_CHECK(valOut == 0);
+
+    cache.GetAndPutIfAbsent(key, &valIn2, valOut);
+
+    BOOST_CHECK_EQUAL(valIn1.i32Field, valOut->i32Field);
+    BOOST_CHECK_EQUAL(valIn1.strField, valOut->strField);
+    BOOST_CHECK_EQUAL(valIn1.objField.f1, valOut->objField.f1);
+    BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut->objField.f2);
+
+    delete valOut;
+
+    cache.Get(key, valOut);
+
+    BOOST_CHECK_EQUAL(valIn1.i32Field, valOut->i32Field);
+    BOOST_CHECK_EQUAL(valIn1.strField, valOut->strField);
+    BOOST_CHECK_EQUAL(valIn1.objField.f1, valOut->objField.f1);
+    BOOST_CHECK_EQUAL(valIn1.objField.f2, valOut->objField.f2);
+
+    delete valOut;
 }
 
 BOOST_AUTO_TEST_CASE(CacheClientGetAndPutIfAbsentComplexKey)

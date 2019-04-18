@@ -453,7 +453,11 @@ namespace ignite
                 int8_t hdr = stream->ReadInt8();
 
                 if (hdr == IGNITE_HDR_NULL)
+                {
                     res.clear();
+
+                    return;
+                }
 
                 if (hdr != IGNITE_TYPE_STRING)
                     ThrowOnInvalidHeader(IGNITE_TYPE_STRING, hdr);
