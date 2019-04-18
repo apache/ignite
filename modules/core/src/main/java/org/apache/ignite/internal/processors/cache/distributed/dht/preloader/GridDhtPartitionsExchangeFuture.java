@@ -5043,7 +5043,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
          * Cleans up resources to avoid excessive memory usage.
          */
         public void cleanUp() {
-            msg.cleanUp();
+            if (msg != null)
+                msg.cleanUp();
         }
     }
 
