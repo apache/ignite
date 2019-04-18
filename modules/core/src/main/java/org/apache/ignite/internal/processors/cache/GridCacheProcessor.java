@@ -5085,6 +5085,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Tries to find cache group descriptor either in registered cache groups
+     * or in marked for deletion collection if cache group is considered to be stopped.
+     *
+     * @param grpId Group id.
+     */
+    public CacheGroupDescriptor cacheGroupDescriptor(int grpId) {
+        CacheGroupDescriptor desc = cacheGroupDescriptors().get(grpId);
+
+        // Try to find descriptor if it was marked for deletion.
+        if (desc == null)
+            return cachesInfo.markedForDeletionCacheGroupDesc(grpId);
+
+        return desc;
+    }
+
+    /**
      * @param cacheId Cache ID.
      * @return Cache descriptor.
      */
