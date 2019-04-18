@@ -37,17 +37,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -70,11 +76,15 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.String.format;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
 
@@ -121,8 +131,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** Marshaller. */
     private static final Marshaller marshaller = new JdkMarshaller();
 
+    /**
+     * Executor to disallow running code that modifies data in idxCacheStores concurrently with cleanup of file page
+     * store.
+     */
+    private final LongOperationAsyncExecutor cleanupAsyncExecutor;
+
     /** */
-    private final Map<Integer, CacheStoreHolder> idxCacheStores = new ConcurrentHashMap<>();
+    private final Map<Integer, CacheStoreHolder> idxCacheStores;
 
     /** */
     private final IgniteConfiguration igniteCfg;
@@ -160,6 +176,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     public FilePageStoreManager(GridKernalContext ctx) {
         igniteCfg = ctx.config();
+
+        cleanupAsyncExecutor =
+            new LongOperationAsyncExecutor(ctx.igniteInstanceName(), ctx.config().getGridLogger());
+
+        idxCacheStores = new IdxCacheStores<>(cleanupAsyncExecutor);
 
         DataStorageConfiguration dsCfg = igniteCfg.getDataStorageConfiguration();
 
@@ -260,15 +281,25 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             .filter(e -> cacheGrpPred.test(e.getKey()))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        IgniteCheckedException ex = shutdown(filteredStores.values(), cleanFiles);
-
-        if (ex != null)
-            U.error(log, "Failed to gracefully stop page store managers", ex);
-
         idxCacheStores.entrySet().removeIf(e -> cacheGrpPred.test(e.getKey()));
 
-        U.log(log, "Cleanup cache stores [total=" + filteredStores.keySet().size() +
-            ", left=" + idxCacheStores.size() + ", cleanFiles=" + cleanFiles + ']');
+        Runnable doShutdown = () -> {
+            IgniteCheckedException ex = shutdown(filteredStores.values(), cleanFiles);
+
+            if (ex != null)
+                U.error(log, "Failed to gracefully stop page store managers", ex);
+
+            U.log(log, "Cleanup cache stores [total=" + filteredStores.keySet().size() +
+                ", left=" + idxCacheStores.size() + ", cleanFiles=" + cleanFiles + ']');
+        };
+
+        if (cleanFiles) {
+            cleanupAsyncExecutor.async(doShutdown);
+
+            U.log(log, "Cache stores cleanup started asynchronously");
+        }
+        else
+            doShutdown.run();
     }
 
     /** {@inheritDoc} */
@@ -277,6 +308,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             log.debug("Stopping page store manager.");
 
         cleanupPageStoreIfMatch(p -> true, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop0(boolean cancel) {
+        cleanupAsyncExecutor.awaitAsyncTaskCompletion(cancel);
     }
 
     /** {@inheritDoc} */
@@ -660,7 +696,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param partId Partition id.
      */
     @NotNull private File getPartitionFile(File cacheWorkDir, int partId) {
-        return new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId));
+        return new File(cacheWorkDir, format(PART_FILE_TEMPLATE, partId));
     }
 
     /** {@inheritDoc} */
@@ -1045,13 +1081,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
                 CacheStoreHolder holder0 = null;
 
-                if (gDesc != null) {
-                    if (CU.isPersistentCache(gDesc.config(), cctx.gridConfig().getDataStorageConfiguration())) {
-                        try {
-                            holder0 = initForCache(gDesc, gDesc.config());
-                        } catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
+                if (gDesc != null && CU.isPersistentCache(gDesc.config(), cctx.gridConfig().getDataStorageConfiguration())) {
+                    try {
+                        holder0 = initForCache(gDesc, gDesc.config());
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
                     }
                 }
 
@@ -1157,6 +1192,180 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         public CacheStoreHolder(PageStore idxStore, PageStore[] partStores) {
             this.idxStore = idxStore;
             this.partStores = partStores;
+        }
+    }
+
+    /**
+     * Synchronization wrapper for long operations that should be executed asynchronously
+     * and operations that can not be executed in parallel with long operation. Uses {@link ReadWriteLock}
+     * to provide such synchronization scenario.
+     */
+    protected static class LongOperationAsyncExecutor {
+        /** */
+        private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+
+        /** */
+        private final String igniteInstanceName;
+
+        /** */
+        private final IgniteLogger log;
+
+        /** */
+        private Set<GridWorker> workers = new GridConcurrentHashSet<>();
+
+        /** */
+        private static final AtomicLong workerCounter = new AtomicLong(0);
+
+        /** */
+        public LongOperationAsyncExecutor(String igniteInstanceName, IgniteLogger log) {
+            this.igniteInstanceName = igniteInstanceName;
+
+            this.log = log;
+        }
+
+        /**
+         * Executes long operation in dedicated thread. Uses write lock as such operations can't run
+         * simultaneously.
+         *
+         * @param runnable long operation
+         */
+        public void async(Runnable runnable) {
+            String workerName = "async-file-store-cleanup-task-" + workerCounter.getAndIncrement();
+
+            GridWorker worker = new GridWorker(igniteInstanceName, workerName, log) {
+                @Override protected void body() {
+                    readWriteLock.writeLock().lock();
+
+                    try {
+                        runnable.run();
+                    }
+                    finally {
+                        readWriteLock.writeLock().unlock();
+
+                        workers.remove(this);
+                    }
+                }
+            };
+
+            workers.add(worker);
+
+            Thread asyncTask = new IgniteThread(worker);
+
+            asyncTask.start();
+        }
+
+        /**
+         * Executes closure that can't run in parallel with long operation that is executed by
+         * {@link LongOperationAsyncExecutor#async}. Uses read lock as such closures can run in parallel with
+         * each other.
+         *
+         * @param closure closure.
+         * @param <T> return type.
+         * @return value that is returned by {@code closure}.
+         */
+        public <T> T afterAsyncCompletion(IgniteOutClosure<T> closure) {
+            readWriteLock.readLock().lock();
+            try {
+                return closure.apply();
+            }
+            finally {
+                readWriteLock.readLock().unlock();
+            }
+        }
+
+        /**
+         * Cancels async tasks.
+         */
+        public void awaitAsyncTaskCompletion(boolean cancel) {
+            for (GridWorker worker : workers) {
+                try {
+                    if (cancel)
+                        worker.cancel();
+
+                    worker.join();
+                }
+                catch (Exception e) {
+                    log.warning(format("Failed to cancel grid runnable [%s]: %s", worker.toString(), e.getMessage()));
+                }
+            }
+        }
+    }
+
+    /**
+     * Proxy class for {@link FilePageStoreManager#idxCacheStores} map that wraps data adding and replacing
+     * operations to disallow concurrent execution simultaneously with cleanup of file page storage. Wrapping
+     * of data removing operations is not needed.
+     *
+     * @param <K> key type
+     * @param <V> value type
+     */
+    private static class IdxCacheStores<K, V> extends ConcurrentHashMap<K, V> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * Executor that wraps data adding and replacing operations.
+         */
+        private final LongOperationAsyncExecutor longOperationAsyncExecutor;
+
+        /**
+         * Default constructor.
+         *
+         * @param longOperationAsyncExecutor executor that wraps data adding and replacing operations.
+         */
+        IdxCacheStores(LongOperationAsyncExecutor longOperationAsyncExecutor) {
+            super();
+
+            this.longOperationAsyncExecutor = longOperationAsyncExecutor;
+        }
+
+        /** {@inheritDoc} */
+        @Override public V put(K key, V val) {
+            return longOperationAsyncExecutor.afterAsyncCompletion(() -> super.put(key, val));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void putAll(Map<? extends K, ? extends V> m) {
+            longOperationAsyncExecutor.afterAsyncCompletion(() -> {
+                super.putAll(m);
+
+                return null;
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public V putIfAbsent(K key, V val) {
+            return longOperationAsyncExecutor.afterAsyncCompletion(() -> super.putIfAbsent(key, val));
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean replace(K key, V oldVal, V newVal) {
+            return longOperationAsyncExecutor.afterAsyncCompletion(() -> super.replace(key, oldVal, newVal));
+        }
+
+        /** {@inheritDoc} */
+        @Override public V replace(K key, V val) {
+            return longOperationAsyncExecutor.afterAsyncCompletion(() -> super.replace(key, val));
+        }
+
+        /** {@inheritDoc} */
+        @Override public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+            return longOperationAsyncExecutor.afterAsyncCompletion(() -> super.computeIfAbsent(key, mappingFunction));
+        }
+
+        /** {@inheritDoc} */
+        @Override public V computeIfPresent(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+            return longOperationAsyncExecutor.afterAsyncCompletion(() -> super.computeIfPresent(key, remappingFunction));
+        }
+
+        /** {@inheritDoc} */
+        @Override public V compute(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+            return longOperationAsyncExecutor.afterAsyncCompletion(() -> super.compute(key, remappingFunction));
+        }
+
+        /** {@inheritDoc} */
+        @Override public V merge(K key, V val, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+            return longOperationAsyncExecutor.afterAsyncCompletion(() -> super.merge(key, val, remappingFunction));
         }
     }
 }
