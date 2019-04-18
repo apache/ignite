@@ -18,15 +18,16 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.io.Serializable;
-import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
+import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
@@ -36,16 +37,6 @@ import org.jetbrains.annotations.Nullable;
  * Security processor provider for tests.
  */
 public class TestSecurityProcessorProvider implements PluginProvider {
-    /** Security plugin configuration. */
-    TestSecurityPluginConfiguration cfg;
-
-    /**
-     * @param cfg Plugin configuration.
-     */
-    public TestSecurityProcessorProvider(TestSecurityPluginConfiguration cfg) {
-        this.cfg = Objects.requireNonNull(cfg);
-    }
-
     /** {@inheritDoc} */
     @Override public String name() {
         return "TestSecurityProcessorProvider";
@@ -75,8 +66,29 @@ public class TestSecurityProcessorProvider implements PluginProvider {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public @Nullable Object createComponent(PluginContext ctx, Class cls) {
-        if (cls.isAssignableFrom(GridSecurityProcessor.class))
-            return cfg.build(((IgniteEx)ctx.grid()).context());
+        if (cls.isAssignableFrom(GridSecurityProcessor.class)) {
+            TestSecurityPluginConfiguration cfg = secProcBuilder(ctx);
+
+            return cfg != null ? cfg.build(((IgniteEx)ctx.grid()).context()) : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets security processor builder.
+     *
+     * @param ctx Context.
+     */
+    private TestSecurityPluginConfiguration secProcBuilder(PluginContext ctx){
+        IgniteConfiguration igniteCfg = ctx.igniteConfiguration();
+
+        if (igniteCfg.getPluginConfigurations() != null) {
+            for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
+                if (pluginCfg instanceof TestSecurityPluginConfiguration)
+                    return (TestSecurityPluginConfiguration)pluginCfg;
+            }
+        }
 
         return null;
     }
@@ -119,14 +131,5 @@ public class TestSecurityProcessorProvider implements PluginProvider {
     /** {@inheritDoc} */
     @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
         // No-op.
-    }
-
-    /**
-     * Gets plugin configuration.
-     *
-     * @return Plugin configuration.
-     */
-    public TestSecurityPluginConfiguration getConfiguration() {
-        return cfg;
     }
 }
