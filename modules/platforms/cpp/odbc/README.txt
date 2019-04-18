@@ -1,20 +1,20 @@
-Apache Ignite ODBC driver
+GridGain ODBC driver
 =======================================
 
-Apache Ignite provides ODBC driver that can be used to retrieve distributed 
+GridGain provides ODBC driver that can be used to retrieve distributed
 data from cache using standard SQL queries and native ODBC API.
 
 For more info on ODBC please refer to ODBC Programmer's Reference at
 https://msdn.microsoft.com/en-us/library/ms714177.aspx
 
-To use Apache Ignite ODBC driver you first need to build and install it for
+To use GridGain ODBC driver you first need to build and install it for
 your system. You can find driver installation instructions below. For build
 instruction please refer to $IGNITE_HOME/platforms/cpp/DEVNOTES.txt.
 
 Connection string and DSN arguments
 =======================================
 
-Apache Ignite ODBC driver supports and uses following connection string/DSN
+GridGain ODBC driver supports and uses following connection string/DSN
 arguments:
 
 1. Address of the node to connect to:
@@ -33,11 +33,11 @@ Installing ODBC driver on Linux
 =======================================
 
 To be able to build and install ODBC driver on Linux you first need to install
-ODBC Driver Manager. Apache Ignite ODBC driver has been tested with UnixODBC
+ODBC Driver Manager. GridGain ODBC driver has been tested with UnixODBC
 (http://www.unixodbc.org). 
 
-Once you have built and installed Ignite ODBC Driver i.e. libignite-odbc.so it
-is most likely placed to /usr/local/lib. To install and be able to use Ignite
+Once you have built and installed GridGain ODBC Driver i.e. libignite-odbc.so it
+is most likely placed to /usr/local/lib. To install and be able to use GridGain
 ODBC driver you should perfrom the following steps:
 
 1. Ensure linker is able to locate all dependencies of the ODBC driver. You
@@ -51,7 +51,7 @@ ODBC driver you should perfrom the following steps:
    and ensure that "Driver" parameter of the "Apache Ignite" section points
    to the right location where libignite-odbc.so is located.
 
-3. To install Apache Ignite ODBC driver use the following command:
+3. To install GridGain ODBC driver use the following command:
    $ odbcinst -i -d -f $IGNITE_HOME/platforms/cpp/odbc/install/ignite-odbc-install.ini
    To perform this command you most likely will need root privileges.
 
@@ -92,7 +92,7 @@ Thats it. Your driver/drivers are installed.
 After the installation
 =======================================
 
-Now Apache Ignite ODBC driver is installed and ready for use. You can connect
+Now GridGain ODBC driver is installed and ready for use. You can connect
 to it and use it like to any other ODBC driver.
 
 For further instruction on the usage of the ODBC driver please refer to the

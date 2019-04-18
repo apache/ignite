@@ -1,13 +1,13 @@
-Apache Ignite Yarn Module
+GridGain Yarn Module
 ------------------------
 
-Apache Ignite Yarn module provides integration Apache Ignite with Apache Hadoop Yarn.
+GridGain Yarn module provides integration GridGain with Apache Hadoop Yarn.
 
-Importing Apache Ignite Yarn Module In Maven Project
+Importing GridGain Yarn Module In Maven Project
 -------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add Cloud module
-dependency like this (replace '${ignite.version}' with actual Ignite version you are
+dependency like this (replace '${ignite.version}' with actual GridGain version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -18,7 +18,7 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-yarn</artifactId>
             <version>${ignite.version}</version>
         </dependency>

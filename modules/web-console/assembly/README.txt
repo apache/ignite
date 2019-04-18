@@ -2,7 +2,7 @@ Requirements
 -------------------------------------
 1. JDK 8 suitable for your platform.
 2. Supported browsers: Chrome, Firefox, Safari, Edge.
-3. Ignite cluster should be started with `ignite-rest-http` module in classpath.
+3. GridGain cluster should be started with `ignite-rest-http` module in classpath.
  For this copy `ignite-rest-http` folder from `libs\optional` to `libs` folder.
 
 How to run

@@ -1,5 +1,5 @@
-Apache Ignite Development Utils
+GridGain Development Utils
 ------------------------
 
-Special module contains Ignite development utilities. These utilities may be useful when analyzing PDS artifacts,
+Special module contains GridGain development utilities. These utilities may be useful when analyzing PDS artifacts,
 such as WAL or page storage, in field deployments.

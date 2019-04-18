@@ -1,10 +1,10 @@
-Apache Ignite Web Console Standalone Docker module
+GridGain Web Console Standalone Docker module
 ==================================================
-Apache Ignite Web Console Standalone Docker module provides Dockerfile and accompanying files
+GridGain Web Console Standalone Docker module provides Dockerfile and accompanying files
 for building docker image of Web Console.
 
 
-Ignite Web Console Standalone Docker Image Build Instructions
+GridGain Web Console Standalone Docker Image Build Instructions
 =============================================================
 1) Build ignite-web-console module
 
@@ -15,8 +15,8 @@ Ignite Web Console Standalone Docker Image Build Instructions
 
         cp -rf modules/web-console/web-agent/target/ignite-web-agent-*.zip docker/web-console/standalone
 
-3) Go to Apache Ignite Web Console Docker module directory and copy Apache
-   Ignite Web Console's frontend and backend directory
+3) Go to GridGain Web Console Docker module directory and copy GridGain
+   Web Console's frontend and backend directory
 
         cd docker/web-console/standalone
         cp -rf ../../../modules/web-console/backend ./

@@ -1,7 +1,7 @@
-Yardstick Ignite Benchmarks
+Yardstick GridGain Benchmarks
 ===========================
-Apache Ignite benchmarks are written on top of Yardstick Framework (https://github.com/gridgain/yardstick)
-and allow you to measure performance of various Apache Ignite components and modules.
+GridGain benchmarks are written on top of Yardstick Framework (https://github.com/gridgain/yardstick)
+and allow you to measure performance of various GridGain components and modules.
 
 The documentation below describes how to execute and configure already assembled benchmarks. If you need to add new
 benchmarks or build existing one then refer to instruction from `DEVNOTES.txt` in source directory.
@@ -10,7 +10,7 @@ Visit Yardstick Repository (https://github.com/gridgain/yardstick) for detailed 
 graphs generation and how the frameworks works.
 
 
-Running Ignite Benchmarks Locally
+Running GridGain Benchmarks Locally
 =================================
 
 The simplest way to start with benchmarking is to use one of the executable scripts available under `benchmarks\bin`
@@ -31,10 +31,10 @@ To get more information about available benchmarks and configuration parameters 
 to “Provided Benchmarks” and “Properties And Command Line Arguments” sections below.
 
 
-Running Ignite Benchmarks Remotely
+Running GridGain Benchmarks Remotely
 ==================================
 
-To benchmark Apache Ignite across several remote hosts the following steps need
+To benchmark GridGain across several remote hosts the following steps need
 to be done:
 
 1. Go to `config/ignite-remote-config.xml` and replace
@@ -53,7 +53,7 @@ Replace `localhost` occurrences in the same places in
 `config/benchmark-remote.properties` files if you plan to execute a full set of
 benchmarks available.
 
-3. Upload Ignite Yardstick Benchmarks to one of your DRIVERS host in its own working directory.
+3. Upload GridGain Yardstick Benchmarks to one of your DRIVERS host in its own working directory.
 
 4. Log in on the remote host that will be the DRIVER and execute the following command:
 
@@ -106,8 +106,8 @@ The following benchmarks are provided:
 
 Properties And Command Line Arguments
 =====================================
-Note that this section only describes configuration parameters specific to Ignite benchmarks, and not for Yardstick
-framework. To run Ignite benchmarks and generate graphs, you will need to run them using Yardstick framework scripts in
+Note that this section only describes configuration parameters specific to GridGain benchmarks, and not for Yardstick
+framework. To run GridGain benchmarks and generate graphs, you will need to run them using Yardstick framework scripts in
 `bin` folder.
 
 Refer to Yardstick Documentation (https://github.com/gridgain/yardstick) for common Yardstick properties
@@ -116,7 +116,7 @@ and command line arguments for running Yardstick scripts.
 The following Ignite benchmark properties can be defined in the benchmark configuration:
 
 * `-b <num>` or `--backups <num>` - Number of backups for every key
-* `-cfg <path>` or `--Config <path>` - Path to Ignite configuration file
+* `-cfg <path>` or `--Config <path>` - Path to GridGain configuration file
 * `-cs` or `--cacheStore` - Enable or disable cache store readThrough, writeThrough
 * `-cl` or `--client` - Client flag. Use this flag if you running more than one `DRIVER`, otherwise additional drivers
 would behave like a `servers`.
@@ -128,7 +128,7 @@ would behave like a `servers`.
 * `-rd or --restartdelay` - Restart delay in seconds
 * `-rs or --restartsleep` - Restart sleep in seconds
 * `-rth <host>` or `--restHost <host>` - REST TCP host
-* `-rtp <num>` or `--restPort <num>` - REST TCP port, indicates that a Ignite node is ready to process Ignite Clients
+* `-rtp <num>` or `--restPort <num>` - REST TCP port, indicates that a GridGain node is ready to process GridGain Clients
 * `-ss` or `--syncSend` - Flag indicating whether synchronous send is used in `TcpCommunicationSpi`
 * `-txc <value>` or `--txConcurrency <value>` - Cache transaction concurrency control, either `OPTIMISTIC` or
     `PESSIMISTIC` (defined in `CacheTxConcurrency`)

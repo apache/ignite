@@ -1,7 +1,7 @@
-Apache Ignite Camel Module
+GridGain Camel Module
 --------------------------
 
-Apache Ignite Camel provides a streamer to consume cache tuples from a Camel endpoint such as
+GridGain Camel provides a streamer to consume cache tuples from a Camel endpoint such as
 HTTP, TCP, File, FTP, AMQP, SNMP, databases, etc. For more information on available components,
 refer to http://camel.apache.org/components.html.
 
@@ -13,7 +13,7 @@ Importing the Camel module in a Maven project
 ---------------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add the Camel module
-dependency like this (replace '${ignite.version}' with actual Ignite version you are
+dependency like this (replace '${ignite.version}' with actual GridGain version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -24,7 +24,7 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-camel</artifactId>
             <version>${ignite.version}</version>
         </dependency>

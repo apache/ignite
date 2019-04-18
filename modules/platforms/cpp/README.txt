@@ -1,11 +1,11 @@
-Apache Ignite C++
+GridGain C++
 ==================================
 
-Apache Ignite C++ provides data grid functionality.
-Using Apache Ignite C++ APIs you can perform concurrent operations on
+GridGain C++ provides data grid functionality.
+Using GridGain C++ APIs you can perform concurrent operations on
 the data stored in cache.
 
-Apache Ignite C++ can access cluster and share data with .Net and
+GridGain C++ can access cluster and share data with .Net and
 Java applications using binary object format.
 
 Support for the following will be added in next releases:
@@ -28,23 +28,23 @@ Linux info
 
 Files list:
 
- * ignite - executable to start standalone Ignite C++ node.
- * libignite.so - Ignite C++ API library.
- * libignite-odbc.so - Ignite ODBC driver.
- * libignite-thin-client.so - Ignite C++ thin client library.
+ * ignite - executable to start standalone GridGain C++ node.
+ * libignite.so - GridGain C++ API library.
+ * libignite-odbc.so - GridGain ODBC driver.
+ * libignite-thin-client.so - GridGain C++ thin client library.
  
 Development:
 
- * IGNITE_HOME environment variable must be set to Ignite installation directory.
+ * IGNITE_HOME environment variable must be set to GridGain installation directory.
  * Once both libraries are built and installed, required headers are placed in the
    "/usr/local/include/ignite" directory.
- * Apache Ignite C++ depends on jni.h file located inside ${JAVA_HOME}/include directory.
+ * GridGain C++ depends on jni.h file located inside ${JAVA_HOME}/include directory.
    Add this directory to headers search path: "-I${JAVA_HOME}/include".
  * Library is placed in the "/usr/local/lib" directory. Link it to your project: "-lignite".
- * Ignite depends on "libjvm.so" library shipped with Java. Typically this library is
+ * GridGain depends on "libjvm.so" library shipped with Java. Typically this library is
    located inside $JAVA_HOME/jre/lib/amd64/server directory. Ensure that LD_LIBRARY_PATH
    environment variable points to this directory.
- * To start Apache Ignite as a standalone node use "ignite" binary.
+ * To start GridGain as a standalone node use "ignite" binary.
 
  
 Windows info
@@ -52,14 +52,14 @@ Windows info
 
 Files list:
 
- * ignite.exe - executable to start standalone Ignite C++ node.
- * ignite.core.dll - Ignite C++ API library.
- * ignite.odbc.dll - Ignite ODBC driver.
- * ignite.thin-client.dll - Ignite thin C++ client.
+ * ignite.exe - executable to start standalone GridGain C++ node.
+ * ignite.core.dll - GridGain C++ API library.
+ * ignite.odbc.dll - GridGain ODBC driver.
+ * ignite.thin-client.dll - GridGain thin C++ client.
  
 Development:
 
- * IGNITE_HOME environment variable must be set to Ignite installation directory.
+ * IGNITE_HOME environment variable must be set to GridGain installation directory.
  * Update Include Directories in Project Properties with paths to:
    * $(IGNITE_HOME)\platforms\cpp\common\include
    * $(IGNITE_HOME)\platforms\cpp\common\os\win\include
@@ -82,4 +82,4 @@ Development:
    ignite.thin-client.dll libraries. The easiest way to achieve this is to either make
    sure these files are in %PATH%, or to put them into the output directory of your
    project with help of PostBuild events.
- * To start Apache Ignite as a standalone node or Windows service use ignite.exe
+ * To start GridGain as a standalone node or Windows service use ignite.exe

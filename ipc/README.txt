@@ -1,4 +1,4 @@
-Apache Ignite IPC
+GridGain IPC
 -------------------
 
-Contains different Inter-process communication (IPC) implementations for Apache Ignite.
+Contains different Inter-process communication (IPC) implementations for GridGain.
