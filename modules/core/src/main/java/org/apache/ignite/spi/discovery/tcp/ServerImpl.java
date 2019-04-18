@@ -275,9 +275,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
 
-    /** Last listener future. */
-    private IgniteFuture<?> lastCustomEvtLsnrFut;
-
     /**
      * Maximum size of history of IDs of server nodes ever tried to join current topology (ever sent join request).
      */
@@ -568,7 +565,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
                         Collections.unmodifiableList(top));
 
-                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null);
+                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null).get();
                 }
             }
         }
@@ -2251,20 +2248,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static WorkersRegistry getWorkerRegistry(TcpDiscoverySpi spi) {
         return spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null;
-    }
-
-    /**
-     * Wait for all the listeners from previous discovery message to be completed.
-     */
-    private void waitForLastCustomEventListenerFuture() {
-        if (lastCustomEvtLsnrFut != null) {
-            try {
-                lastCustomEvtLsnrFut.get();
-            }
-            finally {
-                lastCustomEvtLsnrFut = null;
-            }
-        }
     }
 
     /**
@@ -4492,15 +4475,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
-            blockingSectionBegin();
-
-            try {
-                waitForLastCustomEventListenerFuture();
-            }
-            finally {
-                blockingSectionEnd();
-            }
-
             TcpDiscoveryNode node = msg.node();
 
             assert node != null;
@@ -5999,8 +5973,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         blockingSectionEnd();
                     }
                 }
-                else
-                    lastCustomEvtLsnrFut = fut;
 
                 if (msgObj.isMutable()) {
                     try {
@@ -7507,6 +7479,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         private MessageWorkerDiscoveryThread(GridWorker worker, IgniteLogger log) {
             super(worker, log);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridWorker worker() {
+            return worker;
         }
     }
 

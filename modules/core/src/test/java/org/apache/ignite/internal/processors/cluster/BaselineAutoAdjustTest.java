@@ -37,6 +37,11 @@ import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeTrue;
 
 /**
  *
@@ -46,7 +51,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_NAME = "TEST_NAME";
     /** */
-    private static int AUTO_ADJUST_TIMEOUT = 5000;
+    private static int autoAdjustTimeout = 5000;
 
     /**
      * @throws Exception if failed.
@@ -55,9 +60,10 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
     public void before() throws Exception {
         stopAllGrids();
 
-        cleanPersistenceDir();
+        if (isPersistent())
+            cleanPersistenceDir();
 
-        AUTO_ADJUST_TIMEOUT = 5000;
+        autoAdjustTimeout = 5000;
     }
 
     /**
@@ -67,7 +73,8 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
     public void after() throws Exception {
         stopAllGrids();
 
-        cleanPersistenceDir();
+        if (isPersistent())
+            cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -79,12 +86,17 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
         storageCfg.getDefaultDataRegionConfiguration()
-            .setPersistenceEnabled(true)
+            .setPersistenceEnabled(isPersistent())
             .setMaxSize(500L * 1024 * 1024);
 
         cfg.setDataStorageConfiguration(storageCfg);
 
         return cfg;
+    }
+
+    /** */
+    protected boolean isPersistent() {
+        return true;
     }
 
     /**
@@ -96,7 +108,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
+        ignite0.cluster().baselineAutoAdjustTimeout(autoAdjustTimeout);
 
         Set<Object> initBaseline = ignite0.cluster().currentBaselineTopology().stream()
             .map(BaselineNode::consistentId)
@@ -112,7 +124,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(
             () -> isCurrentBaselineFromOneNode(ignite0),
-            AUTO_ADJUST_TIMEOUT * 2
+            autoAdjustTimeout * 2
         ));
     }
 
@@ -125,7 +137,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
+        ignite0.cluster().baselineAutoAdjustTimeout(autoAdjustTimeout);
 
         Set<Object> initBaseline = ignite0.cluster().currentBaselineTopology().stream()
             .map(BaselineNode::consistentId)
@@ -133,11 +145,11 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        doSleep(AUTO_ADJUST_TIMEOUT / 2);
+        doSleep(autoAdjustTimeout / 2);
 
         stopGrid(2);
 
-        doSleep(AUTO_ADJUST_TIMEOUT / 2);
+        doSleep(autoAdjustTimeout / 2);
 
         Set<Object> twoNodeLeftBaseline = ignite0.cluster().currentBaselineTopology().stream()
             .map(BaselineNode::consistentId)
@@ -147,7 +159,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(
             () -> isCurrentBaselineFromOneNode(ignite0),
-            AUTO_ADJUST_TIMEOUT * 2
+            autoAdjustTimeout * 2
         ));
     }
 
@@ -160,7 +172,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
+        ignite0.cluster().baselineAutoAdjustTimeout(autoAdjustTimeout);
 
         Set<Object> initBaseline = ignite0.cluster().currentBaselineTopology().stream()
             .map(BaselineNode::consistentId)
@@ -168,11 +180,11 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        doSleep(AUTO_ADJUST_TIMEOUT / 2);
+        doSleep(autoAdjustTimeout / 2);
 
         stopGrid(0);
 
-        doSleep(AUTO_ADJUST_TIMEOUT / 2);
+        doSleep(autoAdjustTimeout / 2);
 
         Ignite ignite2 = ignite(2);
 
@@ -184,7 +196,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(
             () -> isCurrentBaselineFromOneNode(ignite2),
-            AUTO_ADJUST_TIMEOUT
+            autoAdjustTimeout
         ));
     }
 
@@ -197,7 +209,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
+        ignite0.cluster().baselineAutoAdjustTimeout(autoAdjustTimeout);
 
         assertTrue(isCurrentBaselineFromOneNode(ignite0));
 
@@ -207,7 +219,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(
             () -> ignite0.cluster().currentBaselineTopology().size() == 2,
-            AUTO_ADJUST_TIMEOUT * 2
+            autoAdjustTimeout * 10
         ));
     }
 
@@ -226,7 +238,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBaselineAutoAdjustDisabledAfterGridHasLostPart() throws Exception {
-        AUTO_ADJUST_TIMEOUT = 0;
+        autoAdjustTimeout = 0;
 
         Ignite ignite0 = startGrids(2);
 
@@ -236,7 +248,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
             .map(BaselineNode::consistentId)
             .collect(Collectors.toSet());
 
-        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
+        ignite0.cluster().baselineAutoAdjustTimeout(autoAdjustTimeout);
 
         IgniteCache<Object, Object> cache = ignite0.getOrCreateCache(new CacheConfiguration<>(TEST_NAME)
             .setBackups(0)
@@ -254,7 +266,13 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
             .map(BaselineNode::consistentId)
             .collect(Collectors.toSet());
 
-        assertEquals(initBaseline, baselineAfterNodeLeft);
+        if (isPersistent())
+            assertEquals(initBaseline, baselineAfterNodeLeft);
+        else {
+            assertThat(initBaseline, is(not(equalTo(baselineAfterNodeLeft))));
+
+            assertEquals(1, baselineAfterNodeLeft.size());
+        }
     }
 
     /**
@@ -266,7 +284,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
+        ignite0.cluster().baselineAutoAdjustTimeout(autoAdjustTimeout);
 
         Collection<BaselineNode> baselineNodes = ignite0.cluster().currentBaselineTopology();
 
@@ -282,13 +300,15 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBaselineAutoAdjustTriggeredAfterFirstEventRegardlessInitBaseline() throws Exception {
-        AUTO_ADJUST_TIMEOUT = 3000;
+        assumeTrue(isPersistent());
+
+        autoAdjustTimeout = 3000;
 
         Ignite ignite0 = startGrids(3);
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
+        ignite0.cluster().baselineAutoAdjustTimeout(autoAdjustTimeout);
 
         assertTrue(ignite0.cluster().isBaselineAutoAdjustEnabled());
 
@@ -313,9 +333,8 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
         Ignite finalIgnite = ignite0;
 
         assertTrue(waitForCondition(
-            () -> isCurrentBaselineFromOneNode(finalIgnite)
-            ,
-            AUTO_ADJUST_TIMEOUT * 2
+            () -> isCurrentBaselineFromOneNode(finalIgnite),
+            autoAdjustTimeout * 2
         ));
     }
 
@@ -329,17 +348,17 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        ignite0.cluster().baselineAutoAdjustTimeout(AUTO_ADJUST_TIMEOUT);
+        ignite0.cluster().baselineAutoAdjustTimeout(autoAdjustTimeout);
 
         assertTrue(ignite0.cluster().isBaselineAutoAdjustEnabled());
 
         stopGrid(1);
 
-        doSleep(AUTO_ADJUST_TIMEOUT / 2);
+        doSleep(autoAdjustTimeout / 2);
 
         IgniteEx igniteClient = startGrid(getConfiguration(getTestIgniteInstanceName(2)).setClientMode(true));
 
-        doSleep(AUTO_ADJUST_TIMEOUT / 2);
+        doSleep(autoAdjustTimeout / 2);
 
         igniteClient.close();
 
@@ -351,6 +370,8 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBaselineAutoAdjustDisableByDefaultBecauseNotNewCluster() throws Exception {
+        assumeTrue(isPersistent());
+
         //It emulate working cluster before auto-adjust feature was available.
         System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
         try {

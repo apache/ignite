@@ -518,7 +518,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             ExchangeActions exchActs = null;
 
-            if (evt.type() == EVT_NODE_JOINED && evt.eventNode().isLocal()) {
+            boolean locJoin = evt.type() == EVT_NODE_JOINED && evt.eventNode().isLocal();
+
+            if (locJoin) {
                 LocalJoinCachesContext locJoinCtx = cctx.cache().localJoinCachesContext();
 
                 if (locJoinCtx != null) {
@@ -527,6 +529,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     exchActs.localJoinContext(locJoinCtx);
                 }
             }
+
+            if (!n.isClient() && !n.isDaemon())
+                exchActs = cctx.kernalContext().state().autoAdjustExchangeActions(exchActs);
 
             exchFut = exchangeFuture(exchId, evt, cache, exchActs, null);
         }
