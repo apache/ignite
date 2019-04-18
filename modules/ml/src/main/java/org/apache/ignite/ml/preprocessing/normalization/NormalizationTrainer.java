@@ -19,9 +19,8 @@ package org.apache.ignite.ml.preprocessing.normalization;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Trainer of the Normalization preprocessor.
@@ -29,7 +28,7 @@ import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class NormalizationTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, Vector> {
+public class NormalizationTrainer<K, V> implements PreprocessingTrainer<K, V> {
     /**  Normalization in L^p space. Must be greater than 0. Default value is 2. */
     private int p = 2;
 
@@ -37,7 +36,7 @@ public class NormalizationTrainer<K, V> implements PreprocessingTrainer<K, V, Ve
     @Override public NormalizationPreprocessor<K, V> fit(
         LearningEnvironmentBuilder envBuilder,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> basePreprocessor) {
+        Preprocessor<K, V> basePreprocessor) {
         return new NormalizationPreprocessor<>(p, basePreprocessor);
     }
 

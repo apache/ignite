@@ -99,7 +99,7 @@ public class FraudDetectionExample {
         DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> trainer,
         Vectorizer<Integer, Vector, Integer, Double> vectorizer, TrainTestSplit<Integer, Vector> splitter) {
         System.out.println(">>> Start traininig.");
-        IgniteModel<Vector, Double> model = trainer.fit(
+        IgniteModel<Vector, Double> mdl = trainer.fit(
             ignite, dataCache,
             splitter.getTrainFilter(),
             vectorizer
@@ -109,7 +109,7 @@ public class FraudDetectionExample {
         BinaryClassificationMetricValues metricValues = Evaluator.evaluate(
             dataCache,
             splitter.getTestFilter(),
-            model,
+            mdl,
             vectorizer
         );
 

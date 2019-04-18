@@ -18,10 +18,10 @@
 import './style.scss';
 import controller from './controller';
 
+import templateUrl from './template.tpl.pug';
+
 export default {
-    template: `
-        <i ng-pluralize count="$ctrl.count" when="{'one': 'Showing: 1 row', 'other': 'Showing: {} rows'}"></i>
-    `,
+    templateUrl,
     controller,
     bindings: {
         gridApi: '<'

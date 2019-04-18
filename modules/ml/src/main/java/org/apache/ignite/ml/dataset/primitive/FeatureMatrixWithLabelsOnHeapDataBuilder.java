@@ -17,15 +17,14 @@
 
 package org.apache.ignite.ml.dataset.primitive;
 
-import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.tree.data.DecisionTreeData;
-
 import java.io.Serializable;
 import java.util.Iterator;
+import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
 
 /**
  * A partition {@code data} builder that makes {@link DecisionTreeData}.
@@ -41,15 +40,15 @@ public class FeatureMatrixWithLabelsOnHeapDataBuilder<K, V, C extends Serializab
     private static final long serialVersionUID = 6273736987424171813L;
 
     /** Function that extracts features and labels from an {@code upstream} data. */
-    private final Vectorizer<K, V, CO, Double> vectorizer;
+    private final Preprocessor<K, V> preprocessor;
 
     /**
      * Constructs a new instance of decision tree data builder.
      *
-     * @param vectorizer Function that extracts features with labels from an {@code upstream} data.
+     * @param preprocessor Function that extracts features with labels from an {@code upstream} data.
      */
-    public FeatureMatrixWithLabelsOnHeapDataBuilder(Vectorizer<K, V, CO, Double> vectorizer) {
-        this.vectorizer = vectorizer;
+    public FeatureMatrixWithLabelsOnHeapDataBuilder(Preprocessor<K, V> preprocessor) {
+        this.preprocessor = preprocessor;
     }
 
     /** {@inheritDoc} */
@@ -65,7 +64,7 @@ public class FeatureMatrixWithLabelsOnHeapDataBuilder<K, V, C extends Serializab
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
 
-            LabeledVector<Double> labeledVector = vectorizer.apply(entry.getKey(), entry.getValue());
+            LabeledVector<Double> labeledVector = preprocessor.apply(entry.getKey(), entry.getValue());
             features[ptr] = labeledVector.features().asArray();
             labels[ptr] = labeledVector.label();
 

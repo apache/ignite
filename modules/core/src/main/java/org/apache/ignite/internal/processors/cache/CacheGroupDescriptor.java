@@ -54,7 +54,7 @@ public class CacheGroupDescriptor {
 
     /** */
     @GridToStringExclude
-    private final CacheConfiguration<?, ?> cacheCfg;
+    private volatile CacheConfiguration<?, ?> cacheCfg;
 
     /** */
     @GridToStringInclude
@@ -71,6 +71,12 @@ public class CacheGroupDescriptor {
 
     /** Pending WAL change requests. */
     private final LinkedList<WalStateProposeMessage> walChangeReqs;
+
+    /** Cache config enrichment. */
+    private final CacheConfigurationEnrichment cacheCfgEnrichment;
+
+    /** Is configuration enriched. */
+    private volatile boolean cacheCfgEnriched;
 
     /**
      * @param cacheCfg Cache configuration.
@@ -95,7 +101,9 @@ public class CacheGroupDescriptor {
         Map<String, Integer> caches,
         boolean persistenceEnabled,
         boolean walEnabled,
-        @Nullable Collection<WalStateProposeMessage> walChangeReqs) {
+        @Nullable Collection<WalStateProposeMessage> walChangeReqs,
+        CacheConfigurationEnrichment cacheCfgEnrichment
+    ) {
         assert cacheCfg != null;
         assert grpId != 0;
 
@@ -109,6 +117,7 @@ public class CacheGroupDescriptor {
         this.persistenceEnabled = persistenceEnabled;
         this.walEnabled = walEnabled;
         this.walChangeReqs = walChangeReqs == null ? new LinkedList<>() : new LinkedList<>(walChangeReqs);
+        this.cacheCfgEnrichment = cacheCfgEnrichment;
     }
 
     /**
@@ -256,6 +265,13 @@ public class CacheGroupDescriptor {
     }
 
     /**
+     * @param cacheCfg Cache config.
+     */
+    public void config(CacheConfiguration cacheCfg) {
+        this.cacheCfg = cacheCfg;
+    }
+
+    /**
      * @return Group caches.
      */
     public Map<String, Integer> caches() {
@@ -306,6 +322,27 @@ public class CacheGroupDescriptor {
      */
     public boolean persistenceEnabled() {
         return persistenceEnabled;
+    }
+
+    /**
+     * @return Cache configuration enrichment.
+     */
+    public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
+        return cacheCfgEnrichment;
+    }
+
+    /**
+     * @return {@code True} if cache configuration is already enriched.
+     */
+    public boolean isConfigurationEnriched() {
+        return cacheCfgEnrichment == null || cacheCfgEnriched;
+    }
+
+    /**
+     * @param cacheCfgEnriched Is configuration enriched.
+     */
+    public void configurationEnriched(boolean cacheCfgEnriched) {
+        this.cacheCfgEnriched = cacheCfgEnriched;
     }
 
     /** {@inheritDoc} */
