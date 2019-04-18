@@ -758,12 +758,16 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
 
         private long header(long pageAbs) {
+            assert pageAbs >= pagesBase;
+
             long headerIdx = (pageAbs - pagesBase) / pageSize;
 
             return headerBase + (PAGE_OVERHEAD * headerIdx);
         }
 
         private long page(long headerAbs) {
+            assert headerAbs >= headerAbs;
+
             long pageIdx = (headerAbs - headerBase) / PAGE_OVERHEAD;
 
             return pagesBase + (pageSize * pageIdx);
