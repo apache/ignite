@@ -39,6 +39,9 @@ public class VisorFindAndDeleteGarbargeInPersistenceTaskArg extends IgniteDataTr
     /** Would be used  */
     private boolean deleteFoundGarbarge;
 
+    /** Nodes on which task will run. */
+    private Set<UUID> nodes;
+
     /**
      * Default constructor.
      */
@@ -52,6 +55,7 @@ public class VisorFindAndDeleteGarbargeInPersistenceTaskArg extends IgniteDataTr
     public VisorFindAndDeleteGarbargeInPersistenceTaskArg(Set<String> grpNames, boolean deleteFoundGarbarge, Set<UUID> nodes) {
         this.grpNames = grpNames;
         this.deleteFoundGarbarge = deleteFoundGarbarge;
+        this.nodes = nodes;
     }
 
     /**
@@ -61,6 +65,12 @@ public class VisorFindAndDeleteGarbargeInPersistenceTaskArg extends IgniteDataTr
         return grpNames;
     }
 
+    /**
+     * @return Nodes on which task will run. If {@code null}, task will run on all server nodes.
+     */
+    public Set<UUID> getNodes() {
+        return nodes;
+    }
 
     public boolean isDeleteFoundGarbarge() {
         return deleteFoundGarbarge;
@@ -70,12 +80,15 @@ public class VisorFindAndDeleteGarbargeInPersistenceTaskArg extends IgniteDataTr
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, grpNames);
         out.writeBoolean(deleteFoundGarbarge);
+        U.writeCollection(out, nodes);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         grpNames = U.readSet(in);
         deleteFoundGarbarge = in.readBoolean();
+
+        nodes = U.readSet(in);
     }
 
     /** {@inheritDoc} */

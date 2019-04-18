@@ -20,7 +20,6 @@ package org.apache.ignite.internal.visor.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,7 +68,7 @@ public class VisorFindAndDeleteGarbargeInPersistenceTask extends VisorMultiNodeT
         Collection<ClusterNode> srvNodes = ignite.cluster().forServers().nodes();
         Collection<UUID> ret = new ArrayList<>(srvNodes.size());
 
-        Set<UUID> nodeIds = arg.getNodes() != null ? new HashSet<>(arg.getNodes()) : null;
+        Set<UUID> nodeIds = arg.getArgument().getNodes();
 
         if (nodeIds == null) {
             for (ClusterNode node : srvNodes)

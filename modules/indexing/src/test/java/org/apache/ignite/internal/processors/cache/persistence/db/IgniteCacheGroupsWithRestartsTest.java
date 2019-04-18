@@ -17,22 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -43,7 +49,6 @@ import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersis
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -62,6 +67,8 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(gridName);
+
+        configuration.setConnectorConfiguration(new ConnectorConfiguration());
 
         DataStorageConfiguration cfg = new DataStorageConfiguration();
 
@@ -155,6 +162,24 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCleaningGarbargeAfterCacheDestroyedAndNodeStop() throws Exception {
+        testFindAndDeleteGarbage(this::executeTask);
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCleaningGarbargeAfterCacheDestroyedAndNodeStop_ControlConsoleUtil() throws Exception {
+        testFindAndDeleteGarbage(this::executeTaskViaControlConsoleUtil);
+    }
+
+    /**
+     * @param doFindAndRemove Do find and remove.
+     */
+    private void testFindAndDeleteGarbage(
+        BiFunction<IgniteEx, Boolean, VisorFindAndDeleteGarbargeInPersistenceTaskResult> doFindAndRemove
+    ) throws Exception {
         IgniteEx ignite = startGrids(3);
 
         prepareCachesAndData(ignite);
@@ -163,7 +188,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         assertNull(ignite.cachex(getCacheName(0)));
 
-        Thread.sleep(5_000); //waiting for cache.dat deletion
+        Thread.sleep(5_000); // waiting for cache.dat deletion
 
         stopGrid(2, true);
 
@@ -173,7 +198,9 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        VisorFindAndDeleteGarbargeInPersistenceJobResult result = executeTask(ex1, false);
+        VisorFindAndDeleteGarbargeInPersistenceTaskResult taskResult = doFindAndRemove.apply(ex1, false);
+
+        VisorFindAndDeleteGarbargeInPersistenceJobResult result = taskResult.result().get(ex1.localNode().id());
 
         Assert.assertTrue(result.hasGarbarge());
 
@@ -182,11 +209,11 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
             .get(CU.cacheId(getCacheName(0))) > 0);
 
         //removing garbage
-        result = executeTask(ex1, true);
+        result = doFindAndRemove.apply(ex1, true).result().get(ex1.localNode().id());
 
         Assert.assertTrue(result.hasGarbarge());
 
-        result = executeTask(ex1, false);
+        result = doFindAndRemove.apply(ex1, false).result().get(ex1.localNode().id());
 
         Assert.assertFalse(result.hasGarbarge());
     }
@@ -196,7 +223,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @param deleteFoundGarbarge If clearing mode should be used.
      * @return Result of task run.
      */
-    private VisorFindAndDeleteGarbargeInPersistenceJobResult executeTask(
+    private VisorFindAndDeleteGarbargeInPersistenceTaskResult executeTask(
         IgniteEx ignite,
         boolean deleteFoundGarbarge
     ) {
@@ -207,10 +234,32 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         VisorTaskArgument arg = new VisorTaskArgument(id, group, true);
 
-        VisorFindAndDeleteGarbargeInPersistenceTaskResult execute =
+        VisorFindAndDeleteGarbargeInPersistenceTaskResult result =
             ignite.compute().execute(VisorFindAndDeleteGarbargeInPersistenceTask.class, arg);
 
-        return execute.result().get(id);
+        return result;
+    }
+
+    /**
+     * @param ignite Ignite to execute task on.
+     * @param deleteFoundGarbarge If clearing mode should be used.
+     * @return Result of task run.
+     */
+    private VisorFindAndDeleteGarbargeInPersistenceTaskResult executeTaskViaControlConsoleUtil(
+        IgniteEx ignite,
+        boolean deleteFoundGarbarge
+    ) {
+        CommandHandler handler = new CommandHandler();
+
+        List<String> args = new ArrayList<>(Arrays.asList("--yes", "--port", "11212", "--cache", "find_garbage",
+            ignite.localNode().id().toString()));
+
+        if (deleteFoundGarbarge)
+            args.add(FindAndDeleteGarbageArg.DELETE.argName());
+
+        handler.execute(args);
+
+        return handler.getLastOperationResult();
     }
 
     /**

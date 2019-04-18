@@ -57,6 +57,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceJobResult;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTask;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTaskResult;
 import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
@@ -126,9 +127,6 @@ public class CacheCommands extends Command<CacheArguments> {
     /** Validate indexes task name. */
     private static final String VALIDATE_INDEXES_TASK = "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask";
 
-    /** Find and delete garbarge task name. */
-    private static final String FIND_AND_DELETE_GARBARGE_TASK = "org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTask";
-
     private CacheArguments cacheArgs;
 
     /**
@@ -159,9 +157,7 @@ public class CacheCommands extends Command<CacheArguments> {
                     break;
 
                 case FIND_AND_DELETE_GARBAGE:
-                    findAndDeleteGarbage(client, cacheArgs, clientCfg);
-
-                    break;
+                    return findAndDeleteGarbage(client, cacheArgs, clientCfg);
 
                 case CONTENTION:
                     cacheContention(client, cacheArgs, clientCfg);
@@ -464,7 +460,7 @@ public class CacheCommands extends Command<CacheArguments> {
      * @param cacheArgs Cache args.
      * @param clientCfg Client configuration.
      */
-    private void findAndDeleteGarbage(
+    private VisorFindAndDeleteGarbargeInPersistenceTaskResult findAndDeleteGarbage(
         GridClient client,
         CacheArguments cacheArgs,
         GridClientConfiguration clientCfg
@@ -475,8 +471,8 @@ public class CacheCommands extends Command<CacheArguments> {
             cacheArgs.nodeId() != null ? Collections.singleton(cacheArgs.nodeId()) : null
         );
 
-        VisorFindAndDeleteGarbargeInPersistenceTaskResult taskRes = executeTaskByNameOnNode(
-            client, FIND_AND_DELETE_GARBARGE_TASK, taskArg, null, clientCfg);
+        VisorFindAndDeleteGarbargeInPersistenceTaskResult taskRes = executeTask(
+            client, VisorFindAndDeleteGarbargeInPersistenceTask.class, taskArg, clientCfg);
 
         printErrors(taskRes.exceptions(), "Scanning for garbage failed on nodes:");
 
@@ -505,6 +501,8 @@ public class CacheCommands extends Command<CacheArguments> {
 
             logger.nl();
         }
+
+        return taskRes;
     }
 
     /** */

@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -221,7 +222,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override public String getTestIgniteInstanceName() {
-        return "bltTest";
+        return "gridCommandHandlerTest";
     }
 
     /** {@inheritDoc} */
@@ -1186,8 +1187,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
 
         assertTrue(testOut.toString(), testOut.toString().contains("Node not found for consistent ID:"));
-        assertTrue(testOut.toString(), testOut.toString().contains("bltTest"));
-        assertFalse(testOut.toString(), testOut.toString().contains("bltTest1"));
+        assertTrue(testOut.toString(), testOut.toString().contains(getTestIgniteInstanceName()));
+        assertFalse(testOut.toString(), testOut.toString().contains(getTestIgniteInstanceName() + "1"));
     }
 
     /**
