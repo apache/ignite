@@ -17,16 +17,24 @@
 
 package org.apache.ignite.testsuites;
 
-import org.h2.test.TestAllJunit;
+import junit.framework.Test;
+import org.h2.test.H2TestSuiteBuilder;
+import org.junit.internal.runners.SuiteMethod;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 /**
- * H2 database tests.
+ * H2 in-memory multi-threaded tests in lazy-mode.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    TestAllJunit.class
-})
-public class H2TestSuite {
+@RunWith(SuiteMethod.class)
+public class H2InMemoryMultiThreadLazyTestSuite {
+    /** */
+    public static Test suite() {
+        H2TestSuiteBuilder builder = new H2TestSuiteBuilder();
+
+        builder.memory = true;
+        builder.multiThreaded = true;
+        builder.lazy = true;
+
+        return builder.buildSuite(H2InMemoryMultiThreadLazyTestSuite.class, true);
+    }
 }
