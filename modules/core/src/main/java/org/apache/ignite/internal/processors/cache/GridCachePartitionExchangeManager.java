@@ -64,7 +64,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -2119,7 +2118,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         traceDump = strIgniteFut.get();
                                     }
                                     catch (Exception e) {
-                                        U.warn(
+                                        U.error(
                                             diagnosticLog,
                                             "Could not get thread dump from transaction owner near node: " + e.getMessage()
                                         );
@@ -2139,7 +2138,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             });
                     }
                     catch (Exception e) {
-                        U.warn(diagnosticLog, "Could not send dump request to transaction owner near node: " + e.getMessage());
+                        U.error(diagnosticLog, "Could not send dump request to transaction owner near node: " + e.getMessage());
                     }
                 }
                 else {
