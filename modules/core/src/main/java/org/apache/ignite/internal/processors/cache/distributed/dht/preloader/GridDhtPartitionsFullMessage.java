@@ -116,10 +116,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     private byte[] errsBytes;
 
     /** */
-    @GridDirectTransient
-    private transient boolean compress;
-
-    /** */
     private AffinityTopologyVersion resTopVer;
 
     /** */
@@ -179,7 +175,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         cp.topVer = topVer;
         cp.errs = errs;
         cp.errsBytes = errsBytes;
-        cp.compress = compress;
         cp.resTopVer = resTopVer;
         cp.joinedNodeAff = joinedNodeAff;
         cp.idealAffDiff = idealAffDiff;
@@ -246,13 +241,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /**
-     * @param compress {@code True} if it is possible to use compression for message.
-     */
-    public void compress(boolean compress) {
-        this.compress = compress;
-    }
-
-    /**
      * @return Local partitions.
      */
     public Map<Integer, GridDhtPartitionFullMap> partitions() {
@@ -285,7 +273,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             parts.put(grpId, fullMap);
 
             if (dupDataCache != null) {
-                assert compress;
+                assert compressed();
                 assert parts.containsKey(dupDataCache);
 
                 if (dupPartsData == null)
@@ -365,7 +353,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         try {
             byte[] marshalled = U.marshal(ctx, partsSizes);
 
-            if (compress)
+            if (compressed())
                 marshalled = U.zip(marshalled, ctx.gridConfig().getNetworkCompressionLevel());
 
             partsSizesBytes = marshalled;
@@ -452,7 +440,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                     @Override public byte[] apply(Object payload) throws IgniteCheckedException {
                         byte[] marshalled = U.marshal(ctx, payload);
 
-                        if(compress)
+                        if(compressed())
                             marshalled = U.zip(marshalled, ctx.gridConfig().getNetworkCompressionLevel());
 
                         return marshalled;
@@ -478,12 +466,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
             if (!F.isEmpty(errs) && errsBytes == null)
                 errsBytes = iterator.next();
-
-            if (compress) {
-                assert !compressed() : "Unexpected compressed state";
-
-                compressed(true);
-            }
         }
     }
 
