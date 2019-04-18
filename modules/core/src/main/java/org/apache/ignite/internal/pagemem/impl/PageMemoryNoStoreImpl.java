@@ -120,7 +120,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private static final int IDX_MASK = ~(-1 << IDX_BITS);
 
     /** Page size. */
-    private int sysPageSize;
+    private int pageSize;
 
     /** */
     private final IgniteLogger log;
@@ -197,11 +197,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         this.dataRegionCfg = dataRegionCfg;
         this.ctx = sharedCtx;
 
-        sysPageSize = pageSize + PAGE_OVERHEAD;
+        this.pageSize = pageSize;
 
-        assert sysPageSize % 8 == 0 : sysPageSize;
+        assert pageSize % 8 == 0 : pageSize;
 
-        totalPages = (int)(dataRegionCfg.getMaxSize() / sysPageSize);
+        totalPages = (int)(dataRegionCfg.getMaxSize() / (pageSize + PAGE_OVERHEAD));
 
         rwLock = new OffheapReadWriteLock(lockConcLvl);
     }
@@ -335,7 +335,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         writePageId(absPtr, pageId);
 
         // TODO pass an argument to decide whether the page should be cleaned.
-        GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD, (byte)0);
+        GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize, (byte)0);
 
         return pageId;
     }
@@ -351,12 +351,12 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public int pageSize() {
-        return sysPageSize - PAGE_OVERHEAD;
+        return pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public int systemPageSize() {
-        return sysPageSize;
+        return (pageSize + PAGE_OVERHEAD);
     }
 
     /** {@inheritDoc} */
@@ -748,7 +748,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             long limit = region.address() + region.size();
 
-            maxPages = (int)((limit - pagesBase) / sysPageSize);
+            maxPages = (int)((limit - pagesBase) / (pageSize + PAGE_OVERHEAD));
         }
 
         /**
@@ -779,7 +779,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         private long absolute(int pageIdx) {
             pageIdx &= IDX_MASK;
 
-            long off = ((long)pageIdx) * sysPageSize;
+            long off = ((long)pageIdx) * (pageSize + PAGE_OVERHEAD);
 
             return pagesBase + off;
         }
@@ -820,11 +820,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 long lastIdx = GridUnsafe.getLongVolatile(null, lastAllocatedIdxPtr);
 
                 // Check if we have enough space to allocate a page.
-                if (pagesBase + (lastIdx + 1) * sysPageSize > limit)
+                if (pagesBase + (lastIdx + 1) * (pageSize + PAGE_OVERHEAD) > limit)
                     return INVALID_REL_PTR;
 
                 if (GridUnsafe.compareAndSwapLong(null, lastAllocatedIdxPtr, lastIdx, lastIdx + 1)) {
-                    long absPtr = pagesBase + lastIdx * sysPageSize;
+                    long absPtr = pagesBase + lastIdx * (pageSize + PAGE_OVERHEAD);
 
                     assert lastIdx <= PageIdUtils.MAX_PAGE_NUM : lastIdx;
 
