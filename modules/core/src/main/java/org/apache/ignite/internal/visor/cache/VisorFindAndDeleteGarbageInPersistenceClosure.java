@@ -123,7 +123,10 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
                     continue;
                 }
 
-                grpIds.add(groupContext.groupId());
+                if (groupContext.sharedGroup())
+                    grpIds.add(groupContext.groupId());
+                else
+                    log.warning("Group[name=" + grpName + "] is not shared one, it couldn't contains garbage from destroyed caches.");
             }
 
             if (!missingCacheGroups.isEmpty()) {
