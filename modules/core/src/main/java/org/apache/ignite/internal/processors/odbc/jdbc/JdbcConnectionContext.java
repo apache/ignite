@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
@@ -59,7 +61,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.7.0: adds maximum length for columns feature.*/
     static final ClientListenerProtocolVersion VER_2_7_0 = ClientListenerProtocolVersion.create(2, 7, 0);
 
-    /** Version 2.8.0: adds query id in order to implement cancel feature.*/
+    /** Version 2.8.0: adds query id in order to implement cancel feature, affinity awareness support: IEP-23.*/
     static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
     /** Current version. */
@@ -85,6 +87,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /** Request handler. */
     private JdbcRequestHandler handler = null;
+
+    /** Last reported affinity topology version. */
+    private AtomicReference<AffinityTopologyVersion> lastAffinityTopVer = new AtomicReference<>();
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
@@ -200,9 +205,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         };
 
-        handler = new JdbcRequestHandler(ctx, busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
+        handler = new JdbcRequestHandler(busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode,
-            dataPageScanEnabled, actx, ver);
+            dataPageScanEnabled, actx, ver, this);
 
         handler.start();
     }
@@ -222,5 +227,26 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         handler.onDisconnect();
 
         super.onDisconnected();
+    }
+
+    /**
+     * @return Retrieves current affinity topology version and sets it as a last if it was changed, false otherwise.
+     */
+    public AffinityTopologyVersion getAffinityTopologyVersionIfChanged() {
+        while (true) {
+            AffinityTopologyVersion oldVer = lastAffinityTopVer.get();
+            AffinityTopologyVersion newVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+            boolean changed = oldVer == null || oldVer.compareTo(newVer) < 0;
+
+            if (changed) {
+                boolean success = lastAffinityTopVer.compareAndSet(oldVer, newVer);
+
+                if (!success)
+                    continue;
+            }
+
+            return changed ? newVer : null;
+        }
     }
 }

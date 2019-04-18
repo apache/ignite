@@ -14,43 +14,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.odbc.jdbc;
 
-package org.apache.ignite.internal.sql.optimizer.affinity;
-
-import java.util.Collection;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 
 /**
- * Node denoting all available partitions
+ * Jdbc result with IO.
  */
-public class PartitionAllNode implements PartitionNode {
-    /** Singleton. */
-    public static final PartitionAllNode INSTANCE = new PartitionAllNode();
+public final class JdbcResultWithIo {
+    /** JDBC response result. */
+    private final JdbcResult res;
+
+    /** Sticky cliIo. */
+    private final JdbcThinTcpIo cliIo;
 
     /**
      * Constructor.
+     *
+     * @param res JDBC response result.
+     * @param cliIo Ignite endpoint.
      */
-    private PartitionAllNode() {
-        // No-op.
+    public JdbcResultWithIo(JdbcResult res, JdbcThinTcpIo cliIo) {
+        this.res = res;
+        this.cliIo = cliIo;
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(PartitionClientContext cliCtx, Object... args) {
-        return null;
+    /**
+     * @return Response.
+     */
+    public <R extends JdbcResult> R response() {
+        return (R) res;
     }
 
-    /** {@inheritDoc} */
-    @Override public int joinGroup() {
-        return PartitionTableModel.GRP_NONE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(PartitionAllNode.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String cacheName() {
-        return null;
+    /**
+     * @return Cli io.
+     */
+    public JdbcThinTcpIo cliIo() {
+        return cliIo;
     }
 }
