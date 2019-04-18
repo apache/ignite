@@ -988,7 +988,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         // Rollback tx using kill task.
         VisorTxTaskArg arg =
-            new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, null, null, null);
+            new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, null, null, null, null);
 
         Map<ClusterNode, VisorTxTaskResult> res = client.compute(client.cluster().forPredicate(F.alwaysTrue())).
             execute(new VisorTxTask(), new VisorTaskArgument<>(client.cluster().localNode().id(), arg, false));

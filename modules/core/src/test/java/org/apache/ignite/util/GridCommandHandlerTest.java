@@ -86,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
@@ -106,6 +107,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionState;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 
@@ -582,7 +584,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         CountDownLatch lockLatch = new CountDownLatch(1);
         CountDownLatch unlockLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch);
+        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch, true);
 
         U.awaitQuiet(lockLatch);
 
@@ -718,6 +720,131 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         checkFutures();
+    }
+
+    /**
+     * Smoke test for --tx --info command.
+     */
+    public void testTransactionInfo() throws Exception {
+        Ignite ignite = startGridsMultiThreaded(5);
+
+        ignite.cluster().active(true);
+
+        Ignite client = startGrid("client");
+
+        client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL).setBackups(2).setWriteSynchronizationMode(FULL_SYNC));
+
+        for (Ignite ig : G.allGrids())
+            assertNotNull(ig.cache(DEFAULT_CACHE_NAME));
+
+        CountDownLatch lockLatch = new CountDownLatch(1);
+        CountDownLatch unlockLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch, false);
+
+        U.awaitQuiet(lockLatch);
+
+        doSleep(3000); // Should be more than enough for all transactions to appear in contexts.
+
+        Set<GridCacheVersion> nearXids = new HashSet<>();
+
+        for (int i = 0; i < 5; i++) {
+            IgniteEx grid = grid(i);
+
+            IgniteTxManager tm = grid.context().cache().context().tm();
+
+            for (IgniteInternalTx tx : tm.activeTransactions())
+                nearXids.add(tx.nearXidVersion());
+        }
+
+        injectTestSystemOut();
+
+        for (GridCacheVersion nearXid : nearXids)
+            assertEquals(EXIT_CODE_OK, execute("--tx", "--info", nearXid.toString()));
+
+        String out = testOut.toString();
+
+        for (GridCacheVersion nearXid : nearXids)
+            assertTrue(out.contains(nearXid.toString()));
+
+        unlockLatch.countDown();
+
+        fut.get();
+    }
+
+    /**
+     * Smoke test for historical mode of --tx --info command.
+     */
+    public void testTransactionHistoryInfo() throws Exception {
+        Ignite ignite = startGridsMultiThreaded(2);
+
+        ignite.cluster().active(true);
+
+        Ignite client = startGrid("client");
+
+        client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL).setBackups(2).setWriteSynchronizationMode(FULL_SYNC));
+
+        for (Ignite ig : G.allGrids())
+            assertNotNull(ig.cache(DEFAULT_CACHE_NAME));
+
+        CountDownLatch lockLatch = new CountDownLatch(1);
+        CountDownLatch unlockLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch, false);
+
+        U.awaitQuiet(lockLatch);
+
+        doSleep(3000); // Should be more than enough for all transactions to appear in contexts.
+
+        Set<GridCacheVersion> nearXids = new HashSet<>();
+
+        for (int i = 0; i < 2; i++) {
+            IgniteEx grid = grid(i);
+
+            IgniteTxManager tm = grid.context().cache().context().tm();
+
+            for (IgniteInternalTx tx : tm.activeTransactions())
+                nearXids.add(tx.nearXidVersion());
+        }
+
+        unlockLatch.countDown();
+
+        fut.get();
+
+        doSleep(3000); // Should be more than enough for all transactions to disappear from contexts after finish.
+
+        injectTestSystemOut();
+
+        boolean commitMatched = false;
+        boolean rollbackMatched = false;
+
+        for (GridCacheVersion nearXid : nearXids) {
+            assertEquals(EXIT_CODE_OK, execute("--tx", "--info", nearXid.toString()));
+
+            String out = testOut.toString();
+
+            testOut.reset();
+
+            assertTrue(out.contains("Transaction was found in completed versions history of the following nodes:"));
+
+            if (out.contains(TransactionState.COMMITTED.name())) {
+                commitMatched = true;
+
+                assertFalse(out.contains(TransactionState.ROLLED_BACK.name()));
+            }
+
+            if (out.contains(TransactionState.ROLLED_BACK.name())) {
+                rollbackMatched = true;
+
+                assertFalse(out.contains(TransactionState.COMMITTED.name()));
+            }
+
+        }
+
+        assertTrue(commitMatched);
+        assertTrue(rollbackMatched);
     }
 
     /**
@@ -2292,11 +2419,22 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param lockLatch Lock latch.
-     * @param unlockLatch Unlock latch.
+     * Starts several long transactions in order to test --tx command.
+     * Transactions will last until unlock latch is released: first transaction will wait for unlock latch directly,
+     * some others will wait for key lock acquisition.
+     *
+     * @param lockLatch Lock latch. Will be released inside body of the first transaction.
+     * @param unlockLatch Unlock latch. Should be released externally. First transaction won't be finished until unlock
+     * latch is released.
+     * @param topChangeBeforeUnlock <code>true</code> should be passed if cluster topology is expected to change between
+     * method call and unlock latch release. Commit of the first transaction will be asserted to fail in such case.
+     * @return Future to be completed after finish of all started transactions.
      */
-    private IgniteInternalFuture<?> startTransactions(CountDownLatch lockLatch,
-        CountDownLatch unlockLatch) throws Exception {
+    private IgniteInternalFuture<?> startTransactions(
+        CountDownLatch lockLatch,
+        CountDownLatch unlockLatch,
+        boolean topChangeBeforeUnlock
+    ) throws Exception {
         IgniteEx client = grid("client");
 
         AtomicInteger idx = new AtomicInteger();
@@ -2316,11 +2454,14 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                             tx.commit();
 
-                            fail("Commit must fail");
+                            if (topChangeBeforeUnlock)
+                                fail("Commit must fail");
                         }
                         catch (Exception e) {
-                            // No-op.
-                            assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                            if (topChangeBeforeUnlock)
+                                assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                            else
+                                throw e;
                         }
 
                         break;
