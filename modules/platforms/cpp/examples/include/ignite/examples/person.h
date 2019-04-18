@@ -109,7 +109,7 @@ namespace ignite
                 dst = "Person";
             }
 
-            static void Write(BinaryWriter& writer, const ignite::examples::Person& obj)
+            static void Write(BinaryWriter& writer, const examples::Person& obj)
             {
                 writer.WriteInt64("orgId", obj.orgId);
                 writer.WriteString("firstName", obj.firstName);
@@ -118,7 +118,7 @@ namespace ignite
                 writer.WriteDouble("salary", obj.salary);
             }
 
-            static void Read(BinaryReader& reader, ignite::examples::Person& dst)
+            static void Read(BinaryReader& reader, examples::Person& dst)
             {
                 dst.orgId = reader.ReadInt64("orgId");
                 dst.firstName = reader.ReadString("firstName");
@@ -136,13 +136,13 @@ namespace ignite
                 dst = "PersonKey";
             }
 
-            static void Write(BinaryWriter& writer, const ignite::examples::PersonKey& obj)
+            static void Write(BinaryWriter& writer, const examples::PersonKey& obj)
             {
                 writer.WriteInt64("id", obj.id);
                 writer.WriteInt64("orgIdAff", obj.orgIdAff);
             }
 
-            static void Read(BinaryReader& reader, ignite::examples::PersonKey& dst)
+            static void Read(BinaryReader& reader, examples::PersonKey& dst)
             {
                 dst.id = reader.ReadInt64("id");
                 dst.orgIdAff = reader.ReadInt64("orgIdAff");
