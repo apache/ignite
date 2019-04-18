@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Cluster
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Interface representing a single cluster node. Use <see cref="GetAttribute{T}"/> or
@@ -119,6 +120,11 @@ namespace Apache.Ignite.Core.Cluster
         /// <c>true</c> if this node is a client node, <c>false otherwise.</c>.
         /// </value>
         bool IsClient { get; }
+
+        /// <summary>
+        /// Gets an Ignite node version.
+        /// </summary>
+        IgniteProductVersion Version { get; }
 
         /// <summary>
         /// Gets metrics snapshot for this node. Note that node metrics are constantly updated
