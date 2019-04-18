@@ -17,11 +17,20 @@
 
 package org.apache.ignite.ml.clustering.kmeans;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
@@ -31,16 +40,11 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.util.MapUtil;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * The trainer for KMeans algorithm.
@@ -59,9 +63,9 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     private DistanceMeasure distance = new EuclideanDistance();
 
     /** {@inheritDoc} */
-    @Override public <K, V, C extends Serializable> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
-        return updateModel(null, datasetBuilder, extractor);
+    @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
+        Preprocessor<K, V> preprocessor) {
+        return updateModel(null, datasetBuilder, preprocessor);
     }
 
     /** {@inheritDoc} */
@@ -70,12 +74,12 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C extends Serializable> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
+    @Override protected <K, V> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
+        Preprocessor<K, V> preprocessor) {
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder =
-            new LabeledDatasetPartitionDataBuilderOnHeap<>(extractor);
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(preprocessor);
 
         Vector[] centers;
 

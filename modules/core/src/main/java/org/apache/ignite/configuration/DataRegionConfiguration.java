@@ -134,6 +134,14 @@ public final class DataRegionConfiguration implements Serializable {
     private long checkpointPageBufSize;
 
     /**
+     * If {@code true}, memory for {@code DataRegion} will be allocated only on the creation of the first cache
+     * belonged to this {@code DataRegion}.
+     *
+     * Default is {@code true}.
+     */
+    private boolean lazyMemoryAllocation = true;
+
+    /**
      * Gets data region name.
      *
      * @return Data region name.
@@ -429,6 +437,29 @@ public final class DataRegionConfiguration implements Serializable {
      */
     public DataRegionConfiguration setCheckpointPageBufferSize(long checkpointPageBufSize) {
         this.checkpointPageBufSize = checkpointPageBufSize;
+
+        return this;
+    }
+
+    /**
+     * @return {@code True} if memory for {@code DataRegion} will be allocated only on the creation of the first cache
+     * belonged to this {@code DataRegion}.
+     */
+    public boolean isLazyMemoryAllocation() {
+        return lazyMemoryAllocation;
+    }
+
+    /**
+     * Sets {@code lazyMemoryAllocation} flag value.
+     *
+     * If {@code true}, memory for {@code DataRegion} will be allocated only on the creation of the first cache
+     * belonged to this {@code DataRegion}.
+     *
+     * @param lazyMemoryAllocation Flag value.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setLazyMemoryAllocation(boolean lazyMemoryAllocation) {
+        this.lazyMemoryAllocation = lazyMemoryAllocation;
 
         return this;
     }

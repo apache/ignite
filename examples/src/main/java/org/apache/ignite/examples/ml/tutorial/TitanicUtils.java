@@ -17,18 +17,20 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
-
 import java.io.FileNotFoundException;
+import java.io.Serializable;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Locale;
 import java.util.Scanner;
 import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * The utility class.
@@ -41,9 +43,9 @@ public class TitanicUtils {
      * @return The filled cache.
      * @throws FileNotFoundException If data file is not found.
      */
-    public static IgniteCache<Integer, Object[]> readPassengers(Ignite ignite)
+    public static IgniteCache<Integer, Vector> readPassengers(Ignite ignite)
         throws FileNotFoundException {
-        IgniteCache<Integer, Object[]> cache = getCache(ignite);
+        IgniteCache<Integer, Vector> cache = getCache(ignite);
         Scanner scanner = new Scanner(IgniteUtils.resolveIgnitePath("examples/src/main/resources/datasets/titanic.csv"));
 
         int cnt = 0;
@@ -54,7 +56,7 @@ public class TitanicUtils {
                 continue;
             }
             String[] cells = row.split(";");
-            Object[] data = new Object[cells.length];
+            Serializable[] data = new Serializable[cells.length];
             NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
 
             for (int i = 0; i < cells.length; i++)
@@ -69,7 +71,47 @@ public class TitanicUtils {
                         data[i] = cells[i];
                     }
                 }
-            cache.put(cnt++, data);
+            cache.put(cnt++, new DenseVector(data));
+        }
+        return cache;
+    }
+
+    /**
+     * Read passengers data from csv file.
+     *
+     * @param ignite The ignite.
+     * @return The filled cache.
+     * @throws FileNotFoundException If data file is not found.
+     */
+    public static IgniteCache<Integer, Vector> readPassengersWithoutNulls(Ignite ignite)
+        throws FileNotFoundException {
+        IgniteCache<Integer, Vector> cache = getCache(ignite);
+        Scanner scanner = new Scanner(IgniteUtils.resolveIgnitePath("examples/src/main/resources/datasets/titanic_without_nulls.csv"));
+
+        int cnt = 0;
+        while (scanner.hasNextLine()) {
+            String row = scanner.nextLine();
+            if(cnt == 0) {
+                cnt++;
+                continue;
+            }
+            String[] cells = row.split(";");
+            Serializable[] data = new Serializable[cells.length];
+            NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
+
+            for (int i = 0; i < cells.length; i++)
+                try{
+                    data[i] = "".equals(cells[i]) ? Double.NaN : Double.valueOf(cells[i]);
+                } catch (java.lang.NumberFormatException e) {
+
+                    try {
+                        data[i] = format.parse(cells[i]).doubleValue();
+                    }
+                    catch (ParseException e1) {
+                        data[i] = cells[i];
+                    }
+                }
+            cache.put(cnt++, new DenseVector(data));
         }
         return cache;
     }
@@ -80,9 +122,9 @@ public class TitanicUtils {
      * @param ignite Ignite instance.
      * @return Filled Ignite Cache.
      */
-    private static IgniteCache<Integer, Object[]> getCache(Ignite ignite) {
+    private static IgniteCache<Integer, Vector> getCache(Ignite ignite) {
 
-        CacheConfiguration<Integer, Object[]> cacheConfiguration = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName("TUTORIAL_" + UUID.randomUUID());
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
 

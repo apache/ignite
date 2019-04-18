@@ -17,19 +17,17 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence.median;
 
+import java.util.Arrays;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-
-import java.io.Serializable;
-import java.util.Arrays;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Use median of median on partitions value of errors for estimating error on dataset. This algorithm may be less
@@ -38,7 +36,7 @@ import java.util.Arrays;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public class MedianOfMedianConvergenceChecker<K, V, C extends Serializable> extends ConvergenceChecker<K, V, C> {
+public class MedianOfMedianConvergenceChecker<K, V> extends ConvergenceChecker<K, V> {
     /** Serial version uid. */
     private static final long serialVersionUID = 4902502002933415287L;
 
@@ -49,13 +47,13 @@ public class MedianOfMedianConvergenceChecker<K, V, C extends Serializable> exte
      * @param lblMapping External label to internal mapping.
      * @param loss Loss function.
      * @param datasetBuilder Dataset builder.
-     * @param vectorizer Upstream vectorizer.
+     * @param preprocessor Upstream preprocessor.
      * @param precision Precision.
      */
     public MedianOfMedianConvergenceChecker(long sampleSize, IgniteFunction<Double, Double> lblMapping, Loss loss,
-        DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> vectorizer, double precision) {
+        DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor, double precision) {
 
-        super(sampleSize, lblMapping, loss, datasetBuilder, vectorizer, precision);
+        super(sampleSize, lblMapping, loss, datasetBuilder, preprocessor, precision);
     }
 
     /** {@inheritDoc} */

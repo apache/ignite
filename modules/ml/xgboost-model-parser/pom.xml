@@ -52,6 +52,11 @@
                         </goals>
                         <configuration>
                             <excludeTransitive>false</excludeTransitive>
+                            <excludeArtifactIds>
+                                fastutil,h2,ignite-shmem,annotations,arpack_combined_all,
+                                cache-api,commons-math3,commons-rng-client-api,commons-rng-core,
+                                commons-rng-simple,core,ignite-ml
+                            </excludeArtifactIds>
                         </configuration>
                     </execution>
                 </executions>

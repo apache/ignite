@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -67,7 +67,7 @@ public class GDBOnTreesRegressionTrainerExample {
                 Model<Vector, Double> mdl = trainer.fit(
                     ignite,
                     trainingSet,
-                    new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+                    new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
                 );
 
                 System.out.println(">>> ---------------------------------");
