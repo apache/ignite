@@ -41,6 +41,7 @@ public class H2TestSuiteBuilder extends TestAll {
      * Constructor.
      */
     public H2TestSuiteBuilder() {
+        travis = true;
         // Force test failure
         stopOnError = true;
 
