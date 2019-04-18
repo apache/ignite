@@ -77,9 +77,9 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /**
      * @param nodes List of ClusterNode
      * @param chromosomeKeys Primary keys for respective chromosomes
+     * @return computed jobs mapped on cluster nodes.
      */
     @Override public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
-
         Map<ComputeJob, ClusterNode> map = new HashMap<>();
         Affinity affinity = ignite.affinity(GAGridConstants.POPULATION_CACHE);
 
@@ -88,6 +88,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
             ClusterNode primary = affinity.mapKeyToNode(key);
             map.put(ajob, primary);
         }
+
         return map;
     }
 
