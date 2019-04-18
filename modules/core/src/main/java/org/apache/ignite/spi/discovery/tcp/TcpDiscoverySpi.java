@@ -2069,13 +2069,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             //Marshal unzipped joining node data if it was zipped but not whole cluster supports that.
             //It can be happened due to several nodes, including node without compression support, are trying to join cluster concurrently.
             if (!allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION) && dataPacket.isJoiningDataZipped())
-                dataPacket.marshalJoiningNodeData(
-                    dataBag,
-                    marshaller(),
-                    false,
-                    ignite.configuration().getNetworkCompressionLevel(),
-                    log
-                );
+                dataPacket.unzipData(log);
         }
 
         exchange.onExchange(dataBag);
