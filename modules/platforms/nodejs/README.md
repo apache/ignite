@@ -1,4 +1,4 @@
-# NodeJS Client for Apache Ignite #
+# NodeJS Client for GridGain #
 
 ## Installation ##
 
@@ -29,4 +29,4 @@ npm link
 npm link apache-ignite-client #linking examples (optional)
 ```
 
-For more information, see [Apache Ignite Node.JS Thin Client documentation](https://apacheignite.readme.io/docs/nodejs-thin-client).
+For more information, see [GridGain Node.JS Thin Client documentation](https://apacheignite.readme.io/docs/nodejs-thin-client).

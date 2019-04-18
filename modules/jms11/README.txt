@@ -1,14 +1,14 @@
-Apache Ignite JMS 1.1 Module
+GridGain JMS 1.1 Module
 ----------------------------
 
-Apache Ignite JMS 1.1 module provides a streamer to consume JMS queue and topic messages into
-Apache Ignite caches.
+GridGain JMS 1.1 module provides a streamer to consume JMS queue and topic messages into
+GridGain caches.
 
-Importing Apache Ignite JMS 1.1 Module In Maven Project
+Importing GridGain JMS 1.1 Module In Maven Project
 --------------------------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add the JMS 1.1 module
-dependency like this (replace '${ignite.version}' with actual Ignite version you are
+dependency like this (replace '${ignite.version}' with actual GridGain version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -19,7 +19,7 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-jms11</artifactId>
             <version>${ignite.version}</version>
         </dependency>

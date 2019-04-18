@@ -1,7 +1,7 @@
-Apache Ignite Spring Module
+GridGain Spring Module
 ---------------------------
 
-Apache Ignite Spring Data module provides an integration with Spring Data framework.
+GridGain Spring Data module provides an integration with Spring Data framework.
 
 To enable Spring Data module when starting a standalone node, move 'optional/ignite-spring-data' folder to
 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
@@ -22,7 +22,7 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-spring-data</artifactId>
             <version>${ignite.version}</version>
         </dependency>

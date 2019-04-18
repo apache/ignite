@@ -1,14 +1,14 @@
-Apache Ignite Storm Streamer Module
+GridGain Storm Streamer Module
 -----------------------------------
 
-Apache Ignite Storm Streamer module provides streaming via Storm to Ignite cache.
+GridGain Storm Streamer module provides streaming via Storm to GridGain cache.
 
-Starting data transfer to Ignite cache can be done with the following steps.
+Starting data transfer to GridGain cache can be done with the following steps.
 
-1. Import Ignite Storm Streamer Module In Maven Project
+1. Import GridGain Storm Streamer Module In Maven Project
 
 If you are using Maven to manage dependencies of your project, you can add Storm module
-dependency like this (replace '${ignite.version}' with actual Ignite version you are
+dependency like this (replace '${ignite.version}' with actual GridGain version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -19,7 +19,7 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-storm</artifactId>
             <version>${ignite.version}</version>
         </dependency>
@@ -28,7 +28,7 @@ interested in):
     ...
 </project>
 
-2. Create an Ignite configuration file (see example-ignite.xml) and make sure it is accessible from the streamer.
+2. Create an GridGain configuration file (see example-ignite.xml) and make sure it is accessible from the streamer.
 
 3. Make sure your key-value data input to the streamer is specified with the field named "ignite"
 (or a different one you configure with StormStreamer.setIgniteTupleField(...)).

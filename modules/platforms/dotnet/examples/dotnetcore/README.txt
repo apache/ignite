@@ -1,4 +1,4 @@
-Apache Ignite.NET Examples for .NET Core
+GridGain.NET Examples for .NET Core
 ========================================
 
 Cross-platform examples, run on Windows, Linux, macOS.
