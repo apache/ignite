@@ -401,12 +401,11 @@ void Initialize()
 
 int main()
 {
-    IgniteConfiguration cfg;
-
-    cfg.springCfgPath = "platforms/cpp/examples/query-example/config/query-example.xml";
-
     try
     {
+        IgniteConfiguration cfg;
+        cfg.springCfgPath = "platforms/cpp/examples/query-example/config/query-example.xml";
+
         // Start a node.
         Ignite ignite = Ignition::Start(cfg);
 
@@ -450,6 +449,12 @@ int main()
 
         // Stop node.
         Ignition::StopAll(false);
+
+        std::cout << std::endl;
+        std::cout << ">>> Example finished, press 'Enter' to exit ..." << std::endl;
+        std::cout << std::endl;
+
+        std::cin.get();
     }
     catch (IgniteError& err)
     {
@@ -457,12 +462,6 @@ int main()
 
         return err.GetCode();
     }
-
-    std::cout << std::endl;
-    std::cout << ">>> Example finished, press 'Enter' to exit ..." << std::endl;
-    std::cout << std::endl;
-
-    std::cin.get();
 
     return 0;
 }
