@@ -2714,7 +2714,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         WALIterator it = cctx.wal().replay(status.startPtr, recordTypePredicate);
 
         RestoreLogicalState restoreLogicalState =
-            new RestoreLogicalState(it, lastArchivedSegment, cacheGroupsPredicate, partitionRecoveryStates);
+            new RestoreLogicalState(status, it, lastArchivedSegment, cacheGroupsPredicate, partitionRecoveryStates);
 
         try {
             while (it.hasNextX()) {
