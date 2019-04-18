@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
@@ -406,6 +405,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     public void cleanupRemoveQueue() {
         if (state() == MOVING) {
             if (rmvQueue.sizex() >= rmvQueueMaxSize)
+                // TODO FIXME better message.
                 LT.warn(log, "Deferred delete buffer is exceeded " +
                     "[grpId=" + this.grp.groupId() + ", partId=" + id() + ", size=" + rmvQueueMaxSize + ']');
 
@@ -1150,6 +1150,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     CacheDataRow row = it0.next();
 
                     // Do not clear fresh rows in case of partition reloading.
+                    // This is required because updates are possible to moving partition which is currently cleared.
                     if (row.version().compareTo(clearVer) >= 0 && (state() == MOVING && clear))
                         continue;
 

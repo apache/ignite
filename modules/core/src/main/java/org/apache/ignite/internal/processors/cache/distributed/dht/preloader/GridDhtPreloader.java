@@ -279,7 +279,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 // If partition is clearing or already cleared we need full rebalance even if supplier is exists.
                 // (it still could be used for other demanders)
-                boolean forceFullRebalance = part.fullSize() == 0 || part.isClearing();
+                boolean forceFullRebalance = part.isClearing() || part.isEmpty();
 
                 if (histSupplier != null && !forceFullRebalance) {
                     assert grp.persistenceEnabled();

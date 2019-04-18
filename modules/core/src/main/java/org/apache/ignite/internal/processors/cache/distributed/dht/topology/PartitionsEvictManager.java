@@ -43,6 +43,7 @@ import static org.apache.ignite.IgniteSystemProperties.getLong;
 /**
  * Class that serves asynchronous part eviction process.
  * Multiple partition from group can be evicted at the same time.
+ * TODO FIXME better logging for evicting partitions.
  */
 public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /** Default eviction progress show frequency. */
