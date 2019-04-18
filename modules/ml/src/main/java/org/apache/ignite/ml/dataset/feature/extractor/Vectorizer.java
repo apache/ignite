@@ -17,19 +17,17 @@
 
 package org.apache.ignite.ml.dataset.feature.extractor;
 
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 /**
  * Class for extracting labeled vectors from upstream. This is an abstract class providing API for extracting feature
@@ -41,7 +39,7 @@ import java.util.stream.Collectors;
  * @param <C> Type of "coordinate" - index of feature value in upstream object.
  * @param <L> Type of label for resulting vectors.
  */
-public abstract class Vectorizer<K, V, C extends Serializable, L> implements FeatureLabelExtractor<K, V, L>, Serializable {
+public abstract class Vectorizer<K, V, C extends Serializable, L> implements FeatureLabelExtractor<K, V, L> {
     /** Label coordinate shortcut. */
     private LabelCoordinate lbCoordinateShortcut = null;
 
@@ -64,7 +62,7 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
      * @param value Value.
      * @return vector.
      */
-    public LabeledVector<L> apply(K key, V value) {
+    @Override public LabeledVector<L> apply(K key, V value) {
         L lbl = isLabeled() ? label(labelCoord(key, value), key, value) : zero();
 
         List<C> allCoords = null;
@@ -74,15 +72,15 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
                 .collect(Collectors.toList());
         }
 
-        int vectorLength = useAllValues ? allCoords.size() : extractionCoordinates.size();
-        A.ensure(vectorLength >= 0, "vectorLength >= 0");
+        int vectorLen = useAllValues ? allCoords.size() : extractionCoordinates.size();
+        A.ensure(vectorLen >= 0, "vectorLength >= 0");
 
         List<C> coordinatesForExtraction = useAllValues ? allCoords : extractionCoordinates;
-        Vector vector = createVector(vectorLength);
+        Vector vector = createVector(vectorLen);
         for (int i = 0; i < coordinatesForExtraction.size(); i++) {
-            Double feature = feature(coordinatesForExtraction.get(i), key, value);
+            Serializable feature = feature(coordinatesForExtraction.get(i), key, value);
             if (feature != null)
-                vector.set(i, feature);
+                vector.setRaw(i, feature);
         }
         return new LabeledVector<>(vector, lbl);
     }
@@ -174,18 +172,6 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
     }
 
     /**
-     * Map vectorizer answer. This method should be called after creating basic vectorizer.
-     * NOTE: function "func" should be on ignite servers.
-     *
-     * @param func mapper.
-     * @param <L1> Type of new label.
-     * @return mapped vectorizer.
-     */
-    public <L1> Vectorizer<K, V, C, L1> map(IgniteFunction<LabeledVector<L>, LabeledVector<L1>> func) {
-        return new MappedVectorizer<>(this, func);
-    }
-
-    /**
      * Shotrcuts for coordinates in feature vector.
      */
     public enum LabelCoordinate {
@@ -206,7 +192,7 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
      * @param value Value.
      * @return feature value.
      */
-    protected abstract Double feature(C coord, K key, V value);
+    protected abstract Serializable feature(C coord, K key, V value);
 
     /**
      * Extract label value by given coordinate.
@@ -242,37 +228,6 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
      */
     protected Vector createVector(int size) {
         return new DenseVector(size);
-    }
-
-    /**
-     * @param <K> Type of key.
-     * @param <V> Type of value.
-     * @param <C> Type of coordinates.
-     * @param <L0> Type of original label.
-     * @param <L1> Type of mapped label.
-     */
-    private static class MappedVectorizer<K, V, C extends Serializable, L0, L1> extends VectorizerAdapter<K, V, C, L1> {
-        /** Original vectorizer. */
-        protected final Vectorizer<K, V, C, L0> original;
-
-        /** Vectors mapping. */
-        private final IgniteFunction<LabeledVector<L0>, LabeledVector<L1>> mapping;
-
-        /**
-         * Creates an instance of MappedVectorizer.
-         */
-        public MappedVectorizer(Vectorizer<K, V, C, L0> original,
-            IgniteFunction<LabeledVector<L0>, LabeledVector<L1>> andThen) {
-
-            this.original = original;
-            this.mapping = andThen;
-        }
-
-        /** {@inheritDoc} */
-        @Override public LabeledVector<L1> apply(K key, V value) {
-            LabeledVector<L0> origVec = original.apply(key, value);
-            return mapping.apply(origVec);
-        }
     }
 
     /**
