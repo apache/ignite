@@ -669,6 +669,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         cctx.cleanup();
+
+        cachesInfo.cleanupRemovedCache(cctx.name());
     }
 
     /**
@@ -689,6 +691,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 U.error(log, "Failed to unregister MBean for cache group: " + grp.name(), e);
             }
         }
+
+        cachesInfo.cleanupRemovedGroup(grp.groupId());
     }
 
     /**
@@ -4709,6 +4713,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public Map<Integer, CacheGroupDescriptor> cacheGroupDescriptors() {
         return cachesInfo.registeredCacheGroups();
+    }
+
+    /**
+     * Tries to find cache group descriptor either in registered cache groups
+     * or in marked for deletion collection if cache group is considered to be stopped.
+     *
+     * @param grpId Group id.
+     */
+    public CacheGroupDescriptor cacheGroupDescriptor(int grpId) {
+        CacheGroupDescriptor desc = cacheGroupDescriptors().get(grpId);
+
+        // Try to find descriptor if it was marked for deletion.
+        if (desc == null)
+            return cachesInfo.markedForDeletionCacheGroupDesc(grpId);
+
+        return desc;
     }
 
     /**

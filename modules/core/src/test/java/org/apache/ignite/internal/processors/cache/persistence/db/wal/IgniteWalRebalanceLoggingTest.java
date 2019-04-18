@@ -78,6 +78,34 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test demonstrates this logs writing correct when cache destroyed immediately after creation.
+     *
+     * @throws Exception If failed.
+     */
+    public void testHistoricalRebalanceLogMsgOnCacheDestroy() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "1");
+
+        LogListener expMsgsLsnr = LogListener.
+            matches("Following partitions were reserved for potential history rebalance [grpId=1813188848," +
+                " grpName=cache_group2, parts=[0-7], grpId=1813188847, grpName=cache_group1, parts=[0-7]]").
+            andMatches("fullPartitions=[], histPartitions=[0-7]").build();
+
+        LogListener unexpectedMessagesLsnr =
+            LogListener.matches("Unable to perform historical rebalance").build();
+
+        checkFollowingPartitionsWereReservedForPotentialHistoryRebalanceMsg(expMsgsLsnr, unexpectedMessagesLsnr);
+
+        assertTrue(expMsgsLsnr.check());
+        assertFalse(unexpectedMessagesLsnr.check());
+
+        IgniteCache<Integer, String> cache1 = grid(0).getOrCreateCache("cache1");
+
+        cache1.destroy();
+
+        assertTrue(expMsgsLsnr.check());
+    }
+
+    /**
      * Check that in case of Historical rebalance we log appropriate messages.
      * <p>
      *     <b>Steps:</b>

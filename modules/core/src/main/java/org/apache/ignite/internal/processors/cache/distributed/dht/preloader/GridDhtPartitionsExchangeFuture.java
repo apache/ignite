@@ -3165,7 +3165,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         if (log.isInfoEnabled()) {
                             log.info("Historical rebalance is not possible because no suitable supplier exists " +
                                 "[nodeId=" + cctx.localNodeId() + ", grpId=" + top.groupId() +
-                                ", grpName=" + cctx.cache().cacheGroupDescriptors().get(top.groupId()).groupName() +
+                                ", grpName=" + cctx.cache().cacheGroupDescriptor(top.groupId()).groupName() +
                                 ", part=" + p + ", localHistCntr=" + localHistCntr + ", minCntr=" + minCntr);
                         }
                     }
@@ -3187,7 +3187,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         if (log.isInfoEnabled()) {
                             log.info("Historical rebalance is not possible because no suitable supplier exists " +
                                 "[nodeId=" + e0.getKey() + ", grpId=" + top.groupId() +
-                                ", grpName=" + cctx.cache().cacheGroupDescriptors().get(top.groupId()).groupName() +
+                                ", grpName=" + cctx.cache().cacheGroupDescriptor(top.groupId()).groupName() +
                                 ", part=" + p + ", histCntr=" + histCntr + ", minCntr=" + minCntr);
                         }
                     }
