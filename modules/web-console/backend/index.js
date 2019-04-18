@@ -23,7 +23,7 @@ const appPath = require('app-module-path');
 appPath.addPath(__dirname);
 appPath.addPath(path.join(__dirname, 'node_modules'));
 
-const { checkMongo, migrate, init } = require('./launch-tools');
+const { migrate, init } = require('./launch-tools');
 
 const injector = require('./injector');
 
