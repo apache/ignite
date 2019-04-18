@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultWithIo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlParseException;
@@ -109,9 +108,6 @@ public class JdbcThinStatement implements Statement {
 
     /** Current request Id. */
     private long currReqId;
-
-    /** Current cliIo. */
-    private JdbcThinTcpIo stickyIo;
 
     /** Cancelled flag. */
     private volatile boolean cancelled;
@@ -228,23 +224,19 @@ public class JdbcThinStatement implements Statement {
         JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
             maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()]));
 
-        JdbcResultWithIo resWithIo = conn.sendRequest(req, this, null);
-
-        JdbcResult res0 = resWithIo.response();
-
-        JdbcThinTcpIo stickyIo = resWithIo.cliIo();
+        JdbcResult res0 = conn.sendRequest(req, this);
 
         assert res0 != null;
 
         if (res0 instanceof JdbcBulkLoadAckResult)
-            res0 = sendFile((JdbcBulkLoadAckResult)res0, stickyIo);
+            res0 = sendFile((JdbcBulkLoadAckResult)res0);
 
         if (res0 instanceof JdbcQueryExecuteResult) {
             JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
             resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
                 res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
-                closeOnCompletion, stickyIo));
+                closeOnCompletion));
         }
         else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
             JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
@@ -263,13 +255,11 @@ public class JdbcThinStatement implements Statement {
                         firstRes = false;
 
                         resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, res.isLast(),
-                            res.items(), true, conn.autoCloseServerCursor(), -1, closeOnCompletion,
-                            stickyIo));
+                            res.items(), true, conn.autoCloseServerCursor(), -1, closeOnCompletion));
                     }
                     else {
                         resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize, false,
-                            null, true, conn.autoCloseServerCursor(), -1, closeOnCompletion,
-                            stickyIo));
+                            null, true, conn.autoCloseServerCursor(), -1, closeOnCompletion));
                     }
                 }
             }
@@ -297,7 +287,7 @@ public class JdbcThinStatement implements Statement {
     private JdbcThinResultSet resultSetForUpdate(long cnt) {
         return new JdbcThinResultSet(this, -1, pageSize,
             true, Collections.<List<Object>>emptyList(), false,
-            conn.autoCloseServerCursor(), cnt, closeOnCompletion, null);
+            conn.autoCloseServerCursor(), cnt, closeOnCompletion);
     }
 
     /**
@@ -308,7 +298,7 @@ public class JdbcThinStatement implements Statement {
      * @return Bulk load result.
      * @throws SQLException On error.
      */
-    private JdbcResult sendFile(JdbcBulkLoadAckResult cmdRes, JdbcThinTcpIo stickyIO) throws SQLException {
+    private JdbcResult sendFile(JdbcBulkLoadAckResult cmdRes) throws SQLException {
         String fileName = cmdRes.params().localFileName();
         int batchSize = cmdRes.params().packetSize();
 
@@ -335,7 +325,7 @@ public class JdbcThinStatement implements Statement {
                             batchNum++,
                             JdbcBulkLoadBatchRequest.CMD_CONTINUE,
                             readBytes == buf.length ? buf : Arrays.copyOf(buf, readBytes)),
-                        this, stickyIO).response();
+                        this);
 
                     if (!(res instanceof JdbcQueryExecuteResult))
                         throw new SQLException("Unknown response sent by the server: " + res);
@@ -350,7 +340,7 @@ public class JdbcThinStatement implements Statement {
                         cmdRes.cursorId(),
                         batchNum++,
                         JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF),
-                    this, stickyIO).response();
+                    this);
             }
         }
         catch (Exception e) {
@@ -362,7 +352,7 @@ public class JdbcThinStatement implements Statement {
                         cmdRes.cursorId(),
                         batchNum,
                         JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR),
-                    this, stickyIO);
+                    this);
             }
             catch (SQLException e1) {
                 throw new SQLException("Cannot send finalization request: " + e1.getMessage(), e);
@@ -417,8 +407,6 @@ public class JdbcThinStatement implements Statement {
 
         synchronized (cancellationMux) {
             currReqId = 0;
-
-            stickyIo = null;
 
             cancelled = false;
         }
@@ -512,8 +500,6 @@ public class JdbcThinStatement implements Statement {
 
         long reqId;
 
-        JdbcThinTcpIo cliIo;
-
         synchronized (cancellationMux) {
             if (isCancelled())
                 return;
@@ -525,12 +511,10 @@ public class JdbcThinStatement implements Statement {
 
             if (reqId != 0)
                 cancelled = true;
-
-            cliIo = stickyIo;
         }
 
         if (reqId != 0)
-            conn.sendQueryCancelRequest(new JdbcQueryCancelRequest(reqId), cliIo);
+            conn.sendQueryCancelRequest(new JdbcQueryCancelRequest(reqId));
     }
 
     /** {@inheritDoc} */
@@ -618,7 +602,7 @@ public class JdbcThinStatement implements Statement {
         if (fetchSize <= 0)
             throw new SQLException("Fetch size must be greater than zero.");
 
-        pageSize = fetchSize;
+        this.pageSize = fetchSize;
     }
 
     /** {@inheritDoc} */
@@ -716,7 +700,7 @@ public class JdbcThinStatement implements Statement {
             conn.getAutoCommit(), false);
 
         try {
-            JdbcBatchExecuteResult res = conn.sendRequest(req, this, null).response();
+            JdbcBatchExecuteResult res = conn.sendRequest(req, this);
 
             if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
                 throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),
@@ -968,16 +952,12 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
-     * Sets current request id and sticky IO.
-     *
-     * @param currReqId Current request Id.
-     * @param currCliIo Current ignite endpoint IO.
+     * @param currReqId Sets current request Id.
      */
-    void currentRequestMeta(long currReqId, JdbcThinTcpIo currCliIo) {
-        assert Thread.holdsLock(cancellationMux);
-
-        this.currReqId = currReqId;
-        stickyIo = currCliIo;
+    void currentRequestId(long currReqId) {
+        synchronized (cancellationMux) {
+            this.currReqId = currReqId;
+        }
     }
 
     /**
