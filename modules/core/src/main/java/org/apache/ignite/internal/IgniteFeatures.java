@@ -46,7 +46,7 @@ public enum IgniteFeatures {
     DIFFERENT_REBALANCE_POOL_SIZE(4),
 
     /** Support of cluster read-only mode. */
-    CLUSTER_READ_ONLY_MODE(6);
+    CLUSTER_READ_ONLY_MODE(7);
 
     /**
      * Unique feature identifier.
