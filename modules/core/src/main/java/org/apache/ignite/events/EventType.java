@@ -585,6 +585,26 @@ public interface EventType {
     public static final int EVT_CACHE_REBALANCE_PART_DATA_LOST = 86;
 
     /**
+     * Built-in event type: cache partition was fully sent to remote node.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheRebalancingEvent
+     */
+    public static final int EVT_CACHE_REBALANCE_PART_SUPPLIED = 87;
+
+    /**
+     * Built-in event type: cache partition was not sent to remote node.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheRebalancingEvent
+     */
+    public static final int EVT_CACHE_REBALANCE_PART_MISSED = 88;
+
+    /**
      * Built-in event type: query executed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -941,7 +961,9 @@ public interface EventType {
         EVT_CACHE_REBALANCE_PART_UNLOADED,
         EVT_CACHE_REBALANCE_OBJECT_LOADED,
         EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-        EVT_CACHE_REBALANCE_PART_DATA_LOST
+        EVT_CACHE_REBALANCE_PART_DATA_LOST,
+        EVT_CACHE_REBALANCE_PART_SUPPLIED,
+        EVT_CACHE_REBALANCE_PART_MISSED
     };
 
     /**
