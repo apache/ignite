@@ -17,28 +17,25 @@
 
 package org.apache.ignite.examples.ml.multiclass;
 
+import java.io.FileNotFoundException;
+import java.util.Arrays;
+import javax.cache.Cache;
 import org.apache.commons.math3.util.Precision;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.multiclass.MultiClassModel;
 import org.apache.ignite.ml.multiclass.OneVsRestTrainer;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import javax.cache.Cache;
-import java.io.FileNotFoundException;
-import java.util.Arrays;
 
 /**
  * Run One-vs-Rest multi-class classification trainer ({@link OneVsRestTrainer}) parametrized by binary SVM classifier
@@ -90,19 +87,16 @@ public class OneVsRestClassificationExample {
 
                 MinMaxScalerTrainer<Integer, Vector> minMaxScalerTrainer = new MinMaxScalerTrainer<>();
 
-                IgniteBiFunction<Integer, Vector, Vector> preprocessor = minMaxScalerTrainer.fit(
+                Preprocessor<Integer, Vector> preprocessor = minMaxScalerTrainer.fit(
                     ignite,
                     dataCache,
-                    CompositionUtils.asFeatureExtractor(new DummyVectorizer<Integer>().exclude(0)) //TODO: IGNITE-11504
+                    new DummyVectorizer<Integer>().labeled(0)
                 );
 
                 MultiClassModel<SVMLinearClassificationModel> mdlWithScaling = trainer.fit(
                     ignite,
                     dataCache,
-                    FeatureLabelExtractorWrapper.wrap(
-                        preprocessor,
-                        CompositionUtils.asLabelExtractor(new DummyVectorizer<Integer>().labeled(0)) //TODO: IGNITE-11504
-                    )
+                    preprocessor
                 );
 
                 System.out.println(">>> One-vs-Rest SVM Multi-class model with MinMaxScaling");

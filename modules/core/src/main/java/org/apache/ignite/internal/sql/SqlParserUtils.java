@@ -266,12 +266,18 @@ public class SqlParserUtils {
      *
      * @param lex Lexer.
      * @param expKeyword Expected keyword.
+     * @return {@code true} In case token mathes, {@code false} otherwise.
      */
-    static void skipIfMatchesOptionalKeyword(SqlLexer lex, String expKeyword) {
+    public static boolean skipIfMatchesOptionalKeyword(SqlLexer lex, String expKeyword) {
         SqlLexerToken nextTok = lex.lookAhead();
 
-        if (matchesKeyword(nextTok, expKeyword))
+        if (matchesKeyword(nextTok, expKeyword)) {
             lex.shift();
+
+            return true;
+        }
+
+        return false;
     }
 
     /**

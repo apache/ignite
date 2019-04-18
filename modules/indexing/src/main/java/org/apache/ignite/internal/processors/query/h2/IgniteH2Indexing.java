@@ -167,6 +167,7 @@ import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.FALSE;
+import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.TX_SIZE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
@@ -273,7 +274,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** H2 Connection manager. */
     private LongRunningQueryManager longRunningQryMgr;
-
 
     /**
      * @return Kernal context.
@@ -955,8 +955,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Long qryId = registerRunningQuery(qryDesc, null);
 
-        boolean fail = false;
-
         CommandResult res = null;
 
         try {
@@ -965,14 +963,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return res.cursor();
         }
         catch (IgniteCheckedException e) {
-            fail = true;
-
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qryDesc.sql() +
                 ", err=" + e.getMessage() + ']', e);
         }
         finally {
-            if (fail || (res != null && res.unregisterRunningQuery()))
-                runningQryMgr.unregister(qryId, fail);
+            if (res == null || res.unregisterRunningQuery())
+                runningQryMgr.unregister(qryId, res == null);
         }
     }
 
@@ -1149,10 +1145,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     cancel
                 );
 
-                return Collections.singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
+                return singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
                     @SuppressWarnings("NullableProblems")
                     @Override public Iterator<List<?>> iterator() {
-                        return new IgniteSingletonIterator<>(Collections.singletonList(updRes.counter()));
+                        return new IgniteSingletonIterator<>(singletonList(updRes.counter()));
                     }
                 }, cancel));
             }
@@ -1185,8 +1181,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean keepBinary,
         GridQueryCancel cancel
     ) {
-        if (cancel == null)
-            cancel = new GridQueryCancel();
+        assert cancel != null;
 
         // Register query.
         Long qryId = registerRunningQuery(qryDesc, cancel);
@@ -1242,7 +1237,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             cursor.fieldsMeta(select.meta());
 
-            return Collections.singletonList(cursor);
+            return singletonList(cursor);
         }
         catch (Exception e) {
             runningQryMgr.unregister(qryId, true);
@@ -2005,7 +2000,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         runningQryMgr = new RunningQueryManager(ctx);
         partExtractor = new PartitionExtractor(new H2PartitionResolver(this));
 
-        cmdProc = new CommandProcessor(ctx, schemaMgr, runningQryMgr);
+        cmdProc = new CommandProcessor(ctx, schemaMgr, this);
+        cmdProc.start();
 
         if (JdbcUtils.serializer != null)
             U.warn(log, "Custom H2 serialization is already configured, will override.");
@@ -2147,6 +2143,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         longRunningQryMgr.stop();
         connMgr.stop();
 
+        cmdProc.stop();
+
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
     }
@@ -2252,6 +2250,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         rdcQryExec.onDisconnected(reconnectFut);
+
+        cmdProc.onDisconnected();
     }
 
     /**
@@ -2354,6 +2354,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 try {
                     List<List<List<?>>> cur = plan.createRows(argss);
 
+                    //TODO: IGNITE-11176 - Need to support cancellation
                     ress = DmlUtils.processSelectResultBatched(plan, cur, qryParams.pageSize());
                 }
                 finally {
@@ -2409,8 +2410,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             for (UpdateResult res : ress) {
                 res.throwIfError();
 
-                QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-                    (Collections.singletonList(res.counter())), cancel, false);
+                QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(singletonList
+                    (singletonList(res.counter())), cancel, false);
 
                 resCur.fieldsMeta(UPDATE_RESULT_META);
 
@@ -2431,12 +2432,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             res.throwIfError();
 
-            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-                (Collections.singletonList(res.counter())), cancel, false);
+            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(singletonList
+                (singletonList(res.counter())), cancel, false);
 
             resCur.fieldsMeta(UPDATE_RESULT_META);
 
-            return Collections.singletonList(resCur);
+            return singletonList(resCur);
         }
     }
 
@@ -2625,6 +2626,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         int pageSize = loc ? 0 : qryParams.pageSize();
 
+        //TODO: IGNITE-11176 - Need to support cancellation
         return DmlUtils.processSelectResult(plan, cur, pageSize);
     }
 
@@ -2715,6 +2717,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     it = plan.iteratorForTransaction(connMgr, cur);
                 }
 
+                //TODO: IGNITE-11176 - Need to support cancellation
                 IgniteInternalFuture<Long> fut = tx.updateAsync(
                     cctx,
                     it,
@@ -2753,6 +2756,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (parts != null && parts.length == 0)
                 return new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
             else {
+                //TODO: IGNITE-11176 - Need to support cancellation
                 IgniteInternalFuture<Long> fut = tx.updateAsync(
                     cctx,
                     ids,
