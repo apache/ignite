@@ -17,16 +17,15 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Statistics aggregator for mean values and cluster probabilities computing.
@@ -82,7 +81,7 @@ class MeanWithClusterProbAggregator implements Serializable {
      * Aggregates statistics for means and cluster probabilities computing given dataset.
      *
      * @param dataset Dataset.
-     * @param countOfComponents
+     * @param countOfComponents Count of componets.
      */
     public static AggregatedStats aggreateStats(Dataset<EmptyContext, GmmPartitionData> dataset, int countOfComponents) {
         return new AggregatedStats(dataset.compute(

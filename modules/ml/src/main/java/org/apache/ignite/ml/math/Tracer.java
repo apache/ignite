@@ -340,7 +340,7 @@ public class Tracer {
      * @param generator Datastream generator.
      * @param limit Count of points that should be taken from dataset.
      * @param xIdx Index of dimension for abscissa representation.
-     * @throws IOException
+     * @throws IOException IOException.
      */
     public static void showRegressionDatasetInHtml(String name, DataStreamGenerator generator, int limit,
         int xIdx) throws IOException {
@@ -356,7 +356,7 @@ public class Tracer {
      * @param generator Datastream generator.
      * @param limit Count of points that should be taken from dataset.
      * @param xIdx Index of dimension for abscissa representation.
-     * @throws IOException
+     * @throws IOException IOException.
      */
     public static void showRegressionDatasetInHtml(DataStreamGenerator generator, int limit,
         int xIdx) throws IOException {
@@ -372,7 +372,7 @@ public class Tracer {
      * @param xIdx Index of dimension for abscissa representation.
      * @param yIdx Index of dimension for ordinate representation.
      * @param isLabeled if isLabeled == true then colors will be used for separate different classes on plane.
-     * @throws IOException
+     * @throws IOException IOException.
      */
     public static void showClassificationDatasetHtml(DataStreamGenerator generator, int limit,
         int xIdx, int yIdx, boolean isLabeled) throws IOException {
@@ -389,7 +389,7 @@ public class Tracer {
      * @param xIdx Index of dimension for abscissa representation.
      * @param yIdx Index of dimension for ordinate representation.
      * @param isLabeled if isLabeled == true then colors will be used for separate different classes on plane.
-     * @throws IOException
+     * @throws IOException IOException.
      */
     public static void showClassificationDatasetHtml(String name, DataStreamGenerator generator, int limit,
         int xIdx, int yIdx, boolean isLabeled) throws IOException {
@@ -415,7 +415,7 @@ public class Tracer {
      * @param xIndex Index of abscissa in vector.
      * @param yGetter Getter of ordinate value from vector.
      * @param colorGetter Getter of collor for showing.
-     * @throws IOException
+     * @throws IOException IOException.
      */
     private static void showVectorsHtml(String name, List<LabeledVector<Double>> values,
         int xIndex, Function<LabeledVector<Double>, Double> yGetter,

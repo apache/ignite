@@ -46,7 +46,6 @@ public class ConvergenceCheckerStub<K, V> extends ConvergenceChecker<K, V> {
      * @param externalLbToInternalMapping External label to internal mapping.
      * @param loss Loss function.
      * @param datasetBuilder Dataset builder.
-     * @param vectorizer Upstream vectorizer.
      */
     public ConvergenceCheckerStub(long sampleSize, IgniteFunction externalLbToInternalMapping, Loss loss,
         DatasetBuilder datasetBuilder, Preprocessor<K, V> preprocessor, double precision) {
