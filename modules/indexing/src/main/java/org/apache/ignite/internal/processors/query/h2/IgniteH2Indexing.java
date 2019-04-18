@@ -1227,6 +1227,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             cursor.fieldsMeta(select.meta());
 
+            cursor.partitionResult(select.twoStepQuery() != null ? select.twoStepQuery().derivedPartitions(): null);
+
             return singletonList(cursor);
         }
         catch (Exception e) {
@@ -1279,6 +1281,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(iter, cancel);
 
         cursor.fieldsMeta(select.meta());
+
+        cursor.partitionResult(select.twoStepQuery() != null ? select.twoStepQuery().derivedPartitions(): null);
 
         return cursor;
     }
@@ -1908,7 +1912,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         rdcQryExec.start(ctx, this);
 
         runningQryMgr = new RunningQueryManager(ctx);
-        partExtractor = new PartitionExtractor(new H2PartitionResolver(this));
+        partExtractor = new PartitionExtractor(new H2PartitionResolver(this), ctx);
 
         cmdProc = new CommandProcessor(ctx, schemaMgr, this);
         cmdProc.start();
@@ -2347,6 +2351,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             resCur.fieldsMeta(UPDATE_RESULT_META);
 
+            resCur.partitionResult(res.partitionResult());
+
             return singletonList(resCur);
         }
     }
@@ -2375,6 +2381,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Object[] errKeys = null;
 
         long items = 0;
+
+        PartitionResult partRes = null;
 
         GridCacheContext<?, ?> cctx = dml.plan().cacheContext();
 
@@ -2413,19 +2421,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             items += r.counter();
             errKeys = r.errorKeys();
+            partRes = r.partitionResult();
 
             if (F.isEmpty(errKeys))
                 break;
         }
 
-        if (F.isEmpty(errKeys)) {
+        if (F.isEmpty(errKeys) && partRes == null) {
             if (items == 1L)
                 return UpdateResult.ONE;
             else if (items == 0L)
                 return UpdateResult.ZERO;
         }
 
-        return new UpdateResult(items, errKeys);
+        return new UpdateResult(items, errKeys, partRes);
     }
 
     /**
@@ -2636,7 +2645,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     sequential
                 );
 
-                UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
+                UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY,
+                    plan.distributedPlan() != null ? plan.distributedPlan().derivedPartitions() : null);
 
                 if (commit)
                     toCommit.commit();
@@ -2664,7 +2674,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             );
 
             if (parts != null && parts.length == 0)
-                return new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
+                return new UpdateResult(0, X.EMPTY_OBJECT_ARRAY, distributedPlan.derivedPartitions());
             else {
                 //TODO: IGNITE-11176 - Need to support cancellation
                 IgniteInternalFuture<Long> fut = tx.updateAsync(
@@ -2679,7 +2689,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     timeout
                 );
 
-                UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
+                UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY,
+                    distributedPlan.derivedPartitions());
 
                 if (commit)
                     toCommit.commit();
