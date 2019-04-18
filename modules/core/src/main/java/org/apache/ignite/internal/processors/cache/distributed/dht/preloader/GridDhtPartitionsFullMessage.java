@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -99,11 +100,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** Serialized partitions that must be cleared and re-loaded. */
     private byte[] partsToReloadBytes;
-
-    /** Partitions sizes. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private Map<Integer, Map<Integer, Long>> partsSizes;
 
     /** Serialized partitions sizes. */
     private byte[] partsSizesBytes;
@@ -179,7 +175,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         cp.partHistSuppliersBytes = partHistSuppliersBytes;
         cp.partsToReload = partsToReload;
         cp.partsToReloadBytes = partsToReloadBytes;
-        cp.partsSizes = partsSizes;
         cp.partsSizesBytes = partsSizesBytes;
         cp.topVer = topVer;
         cp.errs = errs;
@@ -361,32 +356,40 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /**
-     * Adds partition sizes map for specified {@code grpId} to the current message.
+     * Supplies partition sizes map for all cache groups.
      *
-     * @param grpId Group id.
-     * @param partSizesMap Partition sizes map.
+     * @param ctx Cache context.
+     * @param partsSizes Partitions sizes map.
      */
-    public void addPartitionSizes(int grpId, Map<Integer, Long> partSizesMap) {
-        if (partSizesMap.isEmpty())
-            return;
+    public void partitionSizes(GridCacheSharedContext ctx, Map<Integer, Map<Integer, Long>> partsSizes) {
+        try {
+            byte[] marshalled = U.marshal(ctx, partsSizes);
 
-        if (partsSizes == null)
-            partsSizes = new HashMap<>();
+            if (compress)
+                marshalled = U.zip(marshalled, ctx.gridConfig().getNetworkCompressionLevel());
 
-        partsSizes.put(grpId, partSizesMap);
+            partsSizesBytes = marshalled;
+        }
+        catch (IgniteCheckedException ex) {
+            throw new IgniteException(ex);
+        }
     }
 
     /**
-     * Returns partition sizes map for specified {@code grpId}.
+     * Returns partition sizes map for all cache groups.
      *
-     * @param grpId Group id.
-     * @return Partition sizes map (partId, partSize).
+     * @param ctx Cache context.
+     * @return Partition sizes map (grpId, (partId, partSize)).
      */
-    public Map<Integer, Long> partitionSizes(int grpId) {
-        if (partsSizes == null)
-            return Collections.emptyMap();
-
-        return partsSizes.getOrDefault(grpId, Collections.emptyMap());
+    public Map<Integer, Map<Integer, Long>> partitionSizes(GridCacheSharedContext ctx) {
+        try {
+            return compressed()
+                ? U.unmarshalZip(ctx.marshaller(), partsSizesBytes, ctx.deploy().globalLoader())
+                : U.unmarshal(ctx, partsSizesBytes, ctx.deploy().globalLoader());
+        }
+        catch (IgniteCheckedException ex) {
+            throw new IgniteException(ex);
+        }
     }
 
     /**
@@ -435,9 +438,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             if (partsToReload != null && partsToReloadBytes == null)
                 objectsToMarshall.add(partsToReload);
 
-            if (partsSizes != null && partsSizesBytes == null)
-                objectsToMarshall.add(partsSizes);
-
             if (!F.isEmpty(errs) && errsBytes == null)
                 objectsToMarshall.add(errs);
 
@@ -472,9 +472,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
             if (partsToReload != null && partsToReloadBytes == null)
                 partsToReloadBytes = iterator.next();
-
-            if (partsSizes != null && partsSizesBytes == null)
-                partsSizesBytes = iterator.next();
 
             if (!F.isEmpty(errs) && errsBytes == null)
                 errsBytes = iterator.next();
@@ -526,9 +523,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (partsToReloadBytes != null && partsToReload == null)
             objectsToUnmarshall.add(partsToReloadBytes);
-
-        if (partsSizesBytes != null && partsSizes == null)
-            objectsToUnmarshall.add(partsSizesBytes);
 
         if (errsBytes != null && errs == null)
             objectsToUnmarshall.add(errsBytes);
@@ -591,9 +585,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (partsToReloadBytes != null && partsToReload == null)
             partsToReload = (IgniteDhtPartitionsToReloadMap)iterator.next();
 
-        if (partsSizesBytes != null && partsSizes == null)
-            partsSizes = (Map<Integer, Map<Integer, Long>>)iterator.next();
-
         if (errsBytes != null && errs == null)
             errs = (Map<UUID, Exception>)iterator.next();
 
@@ -611,9 +602,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if(partsToReload == null)
             partsToReload = new IgniteDhtPartitionsToReloadMap();
-
-        if(partsSizes == null)
-            partsSizes = new HashMap<>();
 
         if (errs == null)
             errs = new HashMap<>();
@@ -868,5 +856,19 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                     partitions().put(grpId, updMap);
             }
         }
+    }
+
+    /**
+     * Cleans up resources to avoid excessive memory usage.
+     */
+    public void cleanUp() {
+        partsBytes = null;
+        partCntrs2 = null;
+        partCntrsBytes = null;
+        partCntrsBytes2 = null;
+        partHistSuppliersBytes = null;
+        partsToReloadBytes = null;
+        partsSizesBytes = null;
+        errsBytes = null;
     }
 }
