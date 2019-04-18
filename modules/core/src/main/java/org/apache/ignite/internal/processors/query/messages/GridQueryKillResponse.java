@@ -13,9 +13,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep.messages;
+package org.apache.ignite.internal.processors.query.messages;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -24,44 +25,56 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Cancel map part of query request.
+ * Query kill response.
  */
-public class GridQueryCancelRequest implements Message {
+public class GridQueryKillResponse implements Message {
+    /** */
+    public static final short TYPE_CODE = 173;
+
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private long qryReqId;
+    /** Request id.*/
+    private long reqId;
+
+    /** Error text. */
+    private String errMsg;
+
 
     /**
      * Default constructor.
      */
-    public GridQueryCancelRequest() {
+    public GridQueryKillResponse() {
         // No-op.
     }
 
     /**
-     * @param qryReqId Query request ID.
+     * @param reqId Request id.
+     * @param errMsg Error message.
      */
-    public GridQueryCancelRequest(long qryReqId) {
-        this.qryReqId = qryReqId;
+    public GridQueryKillResponse(long reqId, String errMsg) {
+        this.reqId = reqId;
+        this.errMsg = errMsg;
     }
 
     /**
-     * @return Query request ID.
+     * @return Request id.
      */
-    public long queryRequestId() {
-        return qryReqId;
+    public long requestId() {
+        return reqId;
     }
+
+    /**
+     * @return Error text or {@code null} if no error.
+     */
+    public String error(){
+        return errMsg;
+    }
+
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridQueryCancelRequest.class, this);
     }
 
     /** {@inheritDoc} */
@@ -77,11 +90,15 @@ public class GridQueryCancelRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("qryReqId", qryReqId))
+                if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
+            case 1:
+                if (!writer.writeString("errMsg", errMsg))
+                    return false;
 
+                writer.incrementState();
         }
 
         return true;
@@ -96,25 +113,37 @@ public class GridQueryCancelRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                qryReqId = reader.readLong("qryReqId");
+                reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
+            case 1:
+                errMsg = reader.readString("errMsg");
+
+                if(!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
-        return reader.afterMessageRead(GridQueryCancelRequest.class);
+        return reader.afterMessageRead(GridQueryKillResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 106;
+        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridQueryKillResponse.class, this);
     }
 }
