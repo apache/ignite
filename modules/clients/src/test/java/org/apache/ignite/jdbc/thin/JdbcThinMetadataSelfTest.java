@@ -370,7 +370,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             while (rs.next()) {
                 String name = rs.getString("COLUMN_NAME");
 
-                assert names.remove(name) : "Unuxpected column name " + name;
+                assert names.remove(name) : "Unexpected column name " + name;
 
                 if ("NAME".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == VARCHAR;

@@ -1769,7 +1769,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String colNamePtrn) {
         Collection<ColumnInformation> infos = new ArrayList<>();
 
-        //Gather information about tables
+        // Gather information about tables.
         schemaMgr.dataTables().stream()
             .filter(t -> matches(t.getSchema().getName(), schemaNamePtrn))
             .filter(t -> matches(t.getName(), tblNamePtrn))

@@ -63,8 +63,10 @@ import static org.apache.ignite.internal.jdbc2.JdbcUtils.tableRow;
 public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** Driver name. */
     public static final String DRIVER_NAME = "Apache Ignite Thin JDBC Driver";
+
     /** Name of TABLE type. */
     public static final String TYPE_TABLE = "TABLE";
+
     /** Name of VIEW type. */
     public static final String TYPE_VIEW = "VIEW";
 
