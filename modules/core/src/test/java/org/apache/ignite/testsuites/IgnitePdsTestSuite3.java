@@ -21,6 +21,7 @@ import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithExpiryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsNodeJoinWithCachesStopping;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
@@ -59,5 +60,6 @@ public class IgnitePdsTestSuite3 extends TestSuite {
         // Rebalancing test
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsContinuousRestartTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsContinuousRestartTestWithExpiryPolicy.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsNodeJoinWithCachesStopping.class, ignoredTests);
     }
 }
