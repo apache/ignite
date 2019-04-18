@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.util;
 
+import com.sun.jna.Native;
+import com.sun.jna.NativeLong;
+import com.sun.jna.Platform;
+import com.sun.jna.ptr.PointerByReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -184,6 +188,22 @@ public abstract class GridUnsafe {
 
         NEW_DIRECT_BUF_CONSTRUCTOR = directBufCtor;
     }
+
+    static {
+        Native.register(Platform.C_LIBRARY_NAME);
+    }
+
+    public static native int posix_memalign(PointerByReference memptr, NativeLong alignment, NativeLong size);
+
+    public static final int POSIX_MADV_NORMAL     = 0;
+    public static final int POSIX_MADV_RANDOM     = 1;
+    public static final int POSIX_MADV_SEQUENTIAL = 2;
+    public static final int POSIX_MADV_WILLNEED   = 3;
+    public static final int POSIX_MADV_DONTNEED   = 4;
+
+    public static native int posix_madvise(long addr, long len, int advice);
+
+    public static native int getpagesize();
 
     /**
      * Ensure singleton.

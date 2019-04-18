@@ -1178,6 +1178,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED = "IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED";
 
     /**
+     *
+     */
+    public static final String IGNITE_OFF_HEAP_MEM_ADVICE = "IGNITE_OFF_HEAP_MEM_ADVICE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
