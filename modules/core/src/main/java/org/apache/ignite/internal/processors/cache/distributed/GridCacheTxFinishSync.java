@@ -27,7 +27,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -65,9 +64,16 @@ public class GridCacheTxFinishSync<K, V> {
         ThreadFinishSync threadSync = threadMap.get(threadId);
 
         if (threadSync == null)
-            threadSync = F.addIfAbsent(threadMap, threadId, new ThreadFinishSync(threadId));
+            threadMap.put(threadId, threadSync = new ThreadFinishSync(threadId));
 
-        threadSync.onSend(nodeId);
+        synchronized (threadSync) {
+            //thread has to create new ThreadFinishSync
+            //if other thread executing onAckReceived method removed previous threadSync object
+            if (threadMap.get(threadId) == null)
+                threadMap.put(threadId, threadSync = new ThreadFinishSync(threadId));
+
+            threadSync.onSend(nodeId);
+        }
     }
 
     /**
@@ -103,8 +109,14 @@ public class GridCacheTxFinishSync<K, V> {
     public void onAckReceived(UUID nodeId, long threadId) {
         ThreadFinishSync threadSync = threadMap.get(threadId);
 
-        if (threadSync != null)
+        if (threadSync != null) {
             threadSync.onReceive(nodeId);
+
+            synchronized (threadSync) {
+                if (threadSync.isEmpty())
+                    threadMap.remove(threadId);
+            }
+        }
     }
 
     /**
@@ -113,8 +125,14 @@ public class GridCacheTxFinishSync<K, V> {
      * @param nodeId Left node ID.
      */
     public void onNodeLeft(UUID nodeId) {
-        for (ThreadFinishSync threadSync : threadMap.values())
+        for (ThreadFinishSync threadSync : threadMap.values()) {
             threadSync.onNodeLeft(nodeId);
+
+            synchronized (threadSync) {
+                if (threadSync.isEmpty())
+                    threadMap.remove(threadSync);
+            }
+        }
     }
 
     /**
@@ -192,7 +210,7 @@ public class GridCacheTxFinishSync<K, V> {
          * @param nodeId Node ID response received from.
          */
         public void onReceive(UUID nodeId) {
-            TxFinishSync sync = nodeMap.get(nodeId);
+            TxFinishSync sync = nodeMap.remove(nodeId);
 
             if (sync != null)
                 sync.onReceive();
@@ -206,6 +224,13 @@ public class GridCacheTxFinishSync<K, V> {
 
             if (sync != null)
                 sync.onNodeLeft();
+        }
+
+        /**
+         *
+         */
+        private boolean isEmpty() {
+            return nodeMap.isEmpty();
         }
     }
 
