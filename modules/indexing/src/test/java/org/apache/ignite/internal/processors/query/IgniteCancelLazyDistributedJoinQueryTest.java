@@ -90,7 +90,7 @@ public class IgniteCancelLazyDistributedJoinQueryTest extends AbstractIndexingCo
     private void checkQueryCancel(final boolean cancelByCursor) throws Exception {
         final GridQueryCancel cancel = new GridQueryCancel();
 
-        final List<FieldsQueryCursor<List<?>>> curs = grid(0).context().query().querySqlFields(
+        List<FieldsQueryCursor<List<?>>> curs = grid(0).context().query().querySqlFields(
             null,
             new SqlFieldsQuery(
                 "SELECT t0.name, t1.name, t2.name " +
@@ -104,9 +104,13 @@ public class IgniteCancelLazyDistributedJoinQueryTest extends AbstractIndexingCo
             true,
             cancel);
 
-        Iterator<List<?>> it = curs.get(0).iterator();
+        assertEquals(1, curs.size());
 
-        AtomicInteger cnt = new AtomicInteger();
+        final FieldsQueryCursor<List<?>> cur = curs.get(0);
+
+        Iterator<List<?>> it = cur.iterator();
+
+        final AtomicInteger cnt = new AtomicInteger();
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
             try {
@@ -114,7 +118,7 @@ public class IgniteCancelLazyDistributedJoinQueryTest extends AbstractIndexingCo
                     U.sleep(1);
 
                 if (cancelByCursor)
-                    curs.get(0).close();
+                    cur.close();
                 else
                     cancel.cancel();
             }
