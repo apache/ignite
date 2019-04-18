@@ -22,7 +22,6 @@ import org.apache.ignite.ml.selection.paramgrid.ParameterSetGeneratorTest;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursorTest;
 import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursorTest;
 import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluatorTest;
-import org.apache.ignite.ml.selection.scoring.evaluator.EvaluatorTest;
 import org.apache.ignite.ml.selection.scoring.metric.classification.*;
 import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricsTest;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitterTest;
@@ -44,7 +43,6 @@ import org.junit.runners.Suite;
     FmeasureTest.class,
     SHA256UniformMapperTest.class,
     TrainTestDatasetSplitterTest.class,
-    EvaluatorTest.class,
     CacheBasedLabelPairCursorTest.class,
     BinaryClassificationMetricsTest.class,
     BinaryClassificationMetricsValuesTest.class,

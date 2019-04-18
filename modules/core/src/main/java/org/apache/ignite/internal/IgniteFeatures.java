@@ -45,8 +45,11 @@ public enum IgniteFeatures {
     /** Support of different rebalance size for nodes.  */
     DIFFERENT_REBALANCE_POOL_SIZE(4),
 
+    /** Support of splitted cache configurations to avoid broken deserialization on non-affinity nodes. */
+    SPLITTED_CACHE_CONFIGURATIONS(5),
+
     /** Displaying versbose transaction information: --info option of --tx control script command. */
-    TX_INFO_COMMAND(5);
+    TX_INFO_COMMAND(6);
 
     /**
      * Unique feature identifier.

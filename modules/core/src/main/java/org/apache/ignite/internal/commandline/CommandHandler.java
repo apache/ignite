@@ -55,6 +55,7 @@ import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
+import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
@@ -3090,6 +3091,8 @@ public class CommandHandler {
 
             boolean tryConnectAgain = true;
 
+            boolean suppliedAuth = !F.isEmpty(args.getUserName()) && !F.isEmpty(args.getPassword());
+
             int tryConnectMaxCount = 3;
 
             while (tryConnectAgain) {
@@ -3150,6 +3153,10 @@ public class CommandHandler {
                 }
 
                 try (GridClient client = GridClientFactory.start(clientCfg)) {
+                    // If connection is unsuccessful, fail before doing any operations:
+                    if (!client.connected())
+                        client.throwLastError();
+
                     switch (args.command()) {
                         case ACTIVATE:
                             activate(client);
@@ -3189,12 +3196,15 @@ public class CommandHandler {
                 }
                 catch (Throwable e) {
                     if (tryConnectMaxCount > 0 && isAuthError(e)) {
-                        log("Authentication error, try connection again.");
+                        log(suppliedAuth ?
+                            "Authentication error, please try again." : "This cluster requires authentication.");
 
                         if (F.isEmpty(args.getUserName()))
                             args.setUserName(requestDataFromConsole("user: "));
 
                         args.setPassword(new String(requestPasswordFromConsole("password: ")));
+
+                        suppliedAuth = true;
 
                         tryConnectAgain = true;
 
