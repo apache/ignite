@@ -49,6 +49,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Assume;
 import org.junit.Test;
 
@@ -286,17 +287,13 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
                             break;
                         }
-                        catch (TransactionRollbackException ignored) {
-                            // No-op.
-                        }
-                        catch (CacheException e) {
-                            assertTrue(X.getFullStackTrace(e),
-                                X.hasCause(e,
-                                    TransactionRollbackException.class,
-                                    ClusterTopologyException.class,
-                                    NodeStoppingException.class));
-                        }
                         catch (Exception e) {
+                            if (X.hasCause(e,
+                                TransactionRollbackException.class,
+                                ClusterTopologyException.class,
+                                NodeStoppingException.class))
+                                continue; // Expected types.
+
                             MvccFeatureChecker.assertMvccWriteConflict(e);
                         }
                     }
