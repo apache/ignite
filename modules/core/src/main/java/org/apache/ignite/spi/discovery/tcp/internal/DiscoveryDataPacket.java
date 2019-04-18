@@ -39,6 +39,8 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * and allows convenient way of converting it to and from {@link DiscoveryDataBag} objects.
  */
 public class DiscoveryDataPacket implements Serializable {
+    /** Local file header signature(read as a little-endian number). */
+    private static int ZIP_HEADER_SIGNATURE = 0x04034b50;
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -109,26 +111,33 @@ public class DiscoveryDataPacket implements Serializable {
     }
 
     /**
+     * @return {@code true} if joining node data was transferred via network in zipped format.
+     */
+    public boolean isJoiningDataZipped(){
+        for (Map.Entry<Integer, byte[]> entry : joiningNodeData.entrySet()) {
+            if (isZipped(entry.getValue()))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @param marsh Marsh.
      * @param clsLdr Class loader.
      * @param clientNode Client node.
      * @param log Logger.
      */
     public DiscoveryDataBag unmarshalGridData(
-            Marshaller marsh,
-            ClassLoader clsLdr,
-            boolean clientNode,
-            boolean isCompressionEnabled,
-            IgniteLogger log
+        Marshaller marsh,
+        ClassLoader clsLdr,
+        boolean clientNode,
+        IgniteLogger log
     ) {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
-        if (commonData != null && !commonData.isEmpty()) {
-            Map<Integer, Serializable> unmarshCommonData = unmarshalData(commonData, marsh, clsLdr, clientNode,
-                isCompressionEnabled, log);
-
-            dataBag.commonData(unmarshCommonData);
-        }
+        if (commonData != null && !commonData.isEmpty())
+            dataBag.commonData(unmarshalData(commonData, marsh, clsLdr, clientNode, log));
 
         if (nodeSpecificData != null && !nodeSpecificData.isEmpty()) {
             Map<UUID, Map<Integer, Serializable>> unmarshNodeSpecData = U.newLinkedHashMap(nodeSpecificData.size());
@@ -139,10 +148,10 @@ public class DiscoveryDataPacket implements Serializable {
                 if (nodeBinData == null || nodeBinData.isEmpty())
                     continue;
 
-                Map<Integer, Serializable> unmarshData = unmarshalData(nodeBinData, marsh, clsLdr, clientNode,
-                    isCompressionEnabled, log);
-
-                unmarshNodeSpecData.put(nodeBinEntry.getKey(), unmarshData);
+                unmarshNodeSpecData.put(
+                    nodeBinEntry.getKey(),
+                    unmarshalData(nodeBinData, marsh, clsLdr, clientNode, log)
+                );
             }
 
             dataBag.nodeSpecificData(unmarshNodeSpecData);
@@ -158,22 +167,15 @@ public class DiscoveryDataPacket implements Serializable {
      * @param log Logger.
      */
     public DiscoveryDataBag unmarshalJoiningNodeData(
-            Marshaller marsh,
-            ClassLoader clsLdr,
-            boolean clientNode,
-            boolean isCompressionEnabled,
-            IgniteLogger log
+        Marshaller marsh,
+        ClassLoader clsLdr,
+        boolean clientNode,
+        IgniteLogger log
     ) {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (joiningNodeData != null && !joiningNodeData.isEmpty()) {
-            unmarshalledJoiningNodeData = unmarshalData(
-                    joiningNodeData,
-                    marsh,
-                    clsLdr,
-                    clientNode,
-                    isCompressionEnabled,
-                    log);
+            unmarshalledJoiningNodeData = unmarshalData(joiningNodeData, marsh, clsLdr, clientNode, log);
 
             dataBag.joiningNodeData(unmarshalledJoiningNodeData);
         }
@@ -275,28 +277,27 @@ public class DiscoveryDataPacket implements Serializable {
      * @param log Logger.
      */
     private Map<Integer, Serializable> unmarshalData(
-            Map<Integer, byte[]> src,
-            Marshaller marsh,
-            ClassLoader clsLdr,
-            boolean clientNode,
-            boolean isCompressionEnabled,
-            IgniteLogger log
+        Map<Integer, byte[]> src,
+        Marshaller marsh,
+        ClassLoader clsLdr,
+        boolean clientNode,
+        IgniteLogger log
     ) {
         Map<Integer, Serializable> res = U.newHashMap(src.size());
 
         for (Map.Entry<Integer, byte[]> binEntry : src.entrySet()) {
             try {
-                Serializable compData = isCompressionEnabled ?
+                Serializable compData = isZipped(binEntry.getValue()) ?
                     U.unmarshalZip(marsh, binEntry.getValue(), clsLdr) :
                     U.unmarshal(marsh, binEntry.getValue(), clsLdr);
                 res.put(binEntry.getKey(), compData);
             }
             catch (IgniteCheckedException e) {
                 if (CONTINUOUS_PROC.ordinal() == binEntry.getKey() &&
-                        X.hasCause(e, ClassNotFoundException.class) && clientNode)
+                    X.hasCause(e, ClassNotFoundException.class) && clientNode)
                     U.warn(log, "Failed to unmarshal continuous query remote filter on client node. Can be ignored.");
                 else if (binEntry.getKey() < GridComponent.DiscoveryDataExchangeType.VALUES.length)
-                    U.error(log, "Failed to unmarshal discovery data for component: "  + binEntry.getKey(), e);
+                    U.error(log, "Failed to unmarshal discovery data for component: " + binEntry.getKey(), e);
                 else {
                     U.warn(log, "Failed to unmarshal discovery data." +
                         " Component " + binEntry.getKey() + " is not found.");
@@ -305,6 +306,27 @@ public class DiscoveryDataPacket implements Serializable {
         }
 
         return res;
+    }
+
+    /**
+     * @param value Value to check.
+     * @return {@code true} if value is zipped.
+     */
+    private boolean isZipped(byte[] value) {
+        return value != null && value.length > 3 && makeInt(value) == ZIP_HEADER_SIGNATURE;
+    }
+
+    /**
+     * Make int from first 4 bytes in little-endian byte order.
+     *
+     * @param b Source of bytes.
+     * @return Made int.
+     */
+    static private int makeInt(byte[] b) {
+        return (((b[3]) << 24) |
+            ((b[2] & 0xff) << 16) |
+            ((b[1] & 0xff) << 8) |
+            ((b[0] & 0xff)));
     }
 
     /**
