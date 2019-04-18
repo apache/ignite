@@ -52,7 +52,11 @@ public enum IgniteFeatures {
      * Support of providing thread dump of thread that started transaction. Used for dumping
      * long running transactions.
      */
-    TRANSACTION_OWNER_THREAD_DUMP_PROVIDING(6);
+    TRANSACTION_OWNER_THREAD_DUMP_PROVIDING(6),
+
+
+    /** Displaying versbose transaction information: --info option of --tx control script command. */
+    TX_INFO_COMMAND(7);
 
     /**
      * Unique feature identifier.
@@ -77,6 +81,7 @@ public enum IgniteFeatures {
      * Checks that feature supported by node.
      *
      * @param clusterNode Cluster node to check.
+     * @param feature Feature to check.
      * @return {@code True} if feature is declared to be supported by remote node.
      */
     public static boolean nodeSupports(ClusterNode clusterNode, IgniteFeatures feature) {
@@ -85,18 +90,29 @@ public enum IgniteFeatures {
         if (features == null)
             return false;
 
+        return nodeSupports(features, feature);
+    }
+
+    /**
+     * Checks that feature supported by node.
+     *
+     * @param featuresAttrBytes Byte array value of supported features node attribute.
+     * @param feature Feature to check.
+     * @return {@code True} if feature is declared to be supported by remote node.
+     */
+    public static boolean nodeSupports(byte[] featuresAttrBytes, IgniteFeatures feature) {
         int featureId = feature.getFeatureId();
 
         // Same as "BitSet.valueOf(features).get(featureId)"
 
         int byteIdx = featureId >>> 3;
 
-        if (byteIdx >= features.length)
+        if (byteIdx >= featuresAttrBytes.length)
             return false;
 
         int bitIdx = featureId & 0x7;
 
-        return (features[byteIdx] & (1 << bitIdx)) != 0;
+        return (featuresAttrBytes[byteIdx] & (1 << bitIdx)) != 0;
     }
 
     /**
