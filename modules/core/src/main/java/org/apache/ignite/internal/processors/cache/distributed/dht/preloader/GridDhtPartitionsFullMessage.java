@@ -382,6 +382,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Partition sizes map (grpId, (partId, partSize)).
      */
     public Map<Integer, Map<Integer, Long>> partitionSizes(GridCacheSharedContext ctx) {
+        if (partsSizesBytes == null)
+            return Collections.emptyMap();
+
         try {
             return compressed()
                 ? U.unmarshalZip(ctx.marshaller(), partsSizesBytes, ctx.deploy().globalLoader())
