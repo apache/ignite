@@ -744,11 +744,13 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             lastAllocatedIdxPtr = base;
 
-            base += pageSize;
+            pagesBase = base + pageSize;
 
-            pagesBase = base;
+            int nativePageSize = GridUnsafe.getpagesize();
 
-            assert pagesBase % pageSize == 0;
+            assert pageSize < nativePageSize ? nativePageSize % pageSize == 0 : pageSize % nativePageSize == 0;
+
+            assert pagesBase % GridUnsafe.getpagesize() == 0;
 
             GridUnsafe.putLong(lastAllocatedIdxPtr, 0);
 

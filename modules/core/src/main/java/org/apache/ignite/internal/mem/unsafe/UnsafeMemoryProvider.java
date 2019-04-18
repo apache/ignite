@@ -103,62 +103,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
         long chunkSize = sizes[regions.size()];
 
-        boolean advice = IgniteSystemProperties.getBoolean(IGNITE_OFF_HEAP_MEM_ADVICE, false);
-
-        long ptr;
-
-        PointerByReference refToPtr = new PointerByReference();
-
-        try {
-            int pageSize = GridUnsafe.getpagesize();
-
-            if (pageSize < 0)
-                pageSize = GridUnsafe.pageSize();
-
-            if (pageSize < 0){
-                U.warn(log,"Can not get native page size, use 4k as default.");
-
-                pageSize = 4096;
-            }
-
-            int ptrRes = GridUnsafe.posix_memalign(refToPtr, new NativeLong(pageSize), new NativeLong(chunkSize));
-
-            if (ptrRes != 0) {
-                U.error(log, "Failed to allocate next memory chunk: "
-                    + U.readableSize(chunkSize, true)
-                    + ", res:" + ptrRes);
-
-                return null;
-            }
-
-            ptr = Pointer.nativeValue(refToPtr.getValue());
-
-            if (advice) {
-                int adviceRes = GridUnsafe.posix_madvise(ptr, chunkSize, GridUnsafe.POSIX_MADV_RANDOM);
-
-                if (adviceRes < 0)
-                    U.error(log, "Failed to advice memory chunk: "
-                        + U.readableSize(chunkSize, true)
-                        + ", res:" + adviceRes);
-            }
-        }
-        catch (IllegalArgumentException e) {
-            String msg = "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true) +
-                ". Check if chunkSize is too large and 32-bit JVM is used.";
-
-            if (regions.isEmpty())
-                throw new IgniteException(msg, e);
-
-            U.error(log, msg);
-
-            return null;
-        }
-
-        if (ptr <= 0) {
-            U.error(log, "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true));
-
-            return null;
-        }
+        long ptr = allocate(chunkSize);
 
         DirectMemoryRegion region = new UnsafeChunk(ptr, chunkSize);
 
@@ -167,5 +112,90 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
         used++;
 
         return region;
+    }
+
+    /**
+     *
+     * @param chunkSize Chunk size.
+     * @return Offheap pointer to memory.
+     */
+    private long allocate(long chunkSize) {
+        long ptr;
+
+        if (U.isLinux() || U.isMacOs()) {
+            boolean advice = IgniteSystemProperties.getBoolean(IGNITE_OFF_HEAP_MEM_ADVICE, false);
+
+            PointerByReference refToPtr = new PointerByReference();
+
+            try {
+                int pageSize = GridUnsafe.getpagesize();
+
+                if (pageSize < 0)
+                    pageSize = GridUnsafe.pageSize();
+
+                if (pageSize < 0){
+                    U.warn(log,"Can not get native page size, use 4k as default.");
+
+                    pageSize = 4096;
+                }
+
+                int ptrRes = GridUnsafe.posix_memalign(refToPtr, new NativeLong(pageSize), new NativeLong(chunkSize));
+
+                if (ptrRes != 0) {
+                    U.error(log, "Failed to allocate next memory chunk: "
+                        + U.readableSize(chunkSize, true)
+                        + ", res:" + ptrRes);
+
+                    return -1;
+                }
+
+                ptr = Pointer.nativeValue(refToPtr.getValue());
+
+                if (advice) {
+                    int adviceRes = GridUnsafe.posix_madvise(ptr, chunkSize, GridUnsafe.POSIX_MADV_RANDOM);
+
+                    if (adviceRes < 0)
+                        U.error(log, "Failed to advice memory chunk: "
+                            + U.readableSize(chunkSize, true)
+                            + ", res:" + adviceRes);
+                }
+            }
+            catch (IllegalArgumentException e) {
+                String msg = "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true) +
+                    ". Check if chunkSize is too large and 32-bit JVM is used.";
+
+                if (regions.isEmpty())
+                    throw new IgniteException(msg, e);
+
+                U.error(log, msg);
+
+                return -1;
+            }
+
+        }
+        else {
+            try {
+                ptr = GridUnsafe.allocateMemory(chunkSize);
+            }
+            catch (IllegalArgumentException e) {
+                String msg = "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true) +
+                    ". Check if chunkSize is too large and 32-bit JVM is used.";
+
+                if (regions.isEmpty())
+                    throw new IgniteException(msg, e);
+
+                U.error(log, msg);
+
+                return -1;
+            }
+        }
+
+        if (ptr <= 0) {
+            U.error(log, "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true));
+
+            return -1;
+        }
+
+        return ptr;
     }
 }
