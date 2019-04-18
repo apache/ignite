@@ -28,7 +28,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -114,7 +113,7 @@ public class GridCacheTxFinishSync<K, V> {
             threadSync.onReceive(nodeId);
 
             synchronized (threadSync) {
-                if (threadSync.nodeMap.isEmpty())
+                if (threadSync.isEmpty())
                     threadMap.remove(threadId);
             }
         }
@@ -126,8 +125,14 @@ public class GridCacheTxFinishSync<K, V> {
      * @param nodeId Left node ID.
      */
     public void onNodeLeft(UUID nodeId) {
-        for (ThreadFinishSync threadSync : threadMap.values())
+        for (ThreadFinishSync threadSync : threadMap.values()) {
             threadSync.onNodeLeft(nodeId);
+
+            synchronized (threadSync) {
+                if (threadSync.isEmpty())
+                    threadMap.remove(threadSync);
+            }
+        }
     }
 
     /**
@@ -219,6 +224,13 @@ public class GridCacheTxFinishSync<K, V> {
 
             if (sync != null)
                 sync.onNodeLeft();
+        }
+
+        /**
+         *
+         */
+        private boolean isEmpty() {
+            return nodeMap.isEmpty();
         }
     }
 
