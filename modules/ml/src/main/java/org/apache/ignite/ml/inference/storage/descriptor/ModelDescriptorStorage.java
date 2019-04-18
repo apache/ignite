@@ -63,5 +63,5 @@ public interface ModelDescriptorStorage extends Iterable<IgniteBiTuple<String, M
      *
      * @return Iterator of pairs of model identifier and model descriptor.
      */
-    public Iterator<IgniteBiTuple<String, ModelDescriptor>> iterator();
+    @Override public Iterator<IgniteBiTuple<String, ModelDescriptor>> iterator();
 }

@@ -96,7 +96,7 @@ public class CrossOverJob extends ComputeJobAdapter {
     /**
      * Perform crossover operation
      */
-    public Object execute() throws IgniteException {
+    @Override public Object execute() throws IgniteException {
 
         if (this.crossOverRate > Math.random()) {
 
