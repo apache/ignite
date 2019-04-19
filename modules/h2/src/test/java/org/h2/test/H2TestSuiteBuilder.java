@@ -48,7 +48,7 @@ public class H2TestSuiteBuilder extends TestAll {
         // Defaults, copied from base class (TestAll).
         smallLog = big = networked = memory = ssl = false;
         diskResult = traceSystemOut = diskUndo = false;
-        traceTest = stopOnError = false;
+        traceTest = false;
         defrag = false;
         traceLevelFile = throttle = 0;
         cipher = null;
@@ -87,17 +87,14 @@ public class H2TestSuiteBuilder extends TestAll {
      */
     public TestSuite buildSuite(Class<?> suiteClass, boolean baseTests, boolean additionalTests, boolean utilTests) {
         suite = new TestSuite(suiteClass.getName()) {
+            /** {@inheritDoc} */
             @Override public void run(TestResult result) {
+                beforeTest0();
                 try {
-                    beforeTest();
-
                     super.run(result);
                 }
-                catch (SQLException e) {
-                    throw new AssertionError("Failed to start suite.", e);
-                }
                 finally {
-                    afterTest();
+                    afterTest0();
                 }
             }
         };
@@ -121,5 +118,34 @@ public class H2TestSuiteBuilder extends TestAll {
         suite = null;
 
         return suite0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeTest() throws SQLException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterTest() {
+        // No-op.
+    }
+
+    /**
+     * Release resources.
+     */
+    private void afterTest0() {
+        super.afterTest();
+    }
+
+    /**
+     * Init tests.
+     */
+    private void beforeTest0() {
+        try {
+            super.beforeTest();
+        }
+        catch (SQLException e) {
+            throw new AssertionError("Failed to start suite.", e);
+        }
     }
 }
