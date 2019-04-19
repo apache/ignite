@@ -15,22 +15,17 @@
  * limitations under the License.
  */
 
-const path = require('path');
-const fireUp = require('fire-up');
+'use strict';
 
-module.exports = fireUp.newInjector({
-    basePath: path.join(__dirname, '../'),
-    modules: [
-        './app/**/*.js',
-        './config/**/*.js',
-        './errors/**/*.js',
-        './middlewares/**/*.js',
-        './routes/**/*.js',
-        './services/**/*.js',
-        './test/app/*.js'
-    ],
-    use: [
-        'settings:mock',
-        'services/mails:mock'
-    ]
-});
+// Fire me up!
+
+module.exports = {
+    implements: 'services/mails:mock',
+    inject: ['services/mails']
+};
+
+module.exports.factory = (mails) => {
+    mails.send = () => Promise.resolve(true);
+
+    return mails;
+};

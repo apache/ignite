@@ -234,12 +234,12 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                 .then((user) => {
                     return spacesService.spaceIds(userId)
                         .then((spaceIds) => Promise.all([
-                            mongo.Cluster.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Cache.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.DomainModel.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Igfs.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Notebook.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Space.remove({owner: userId}).exec()
+                            mongo.Cluster.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.Cache.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.DomainModel.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.Igfs.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.Notebook.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.Space.deleteOne({owner: userId}).exec()
                         ]))
                         .catch((err) => console.error(`Failed to cleanup spaces [user=${user.username}, err=${err}`))
                         .then(() => user);

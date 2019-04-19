@@ -39,7 +39,7 @@ module.exports.factory = (mongo, spacesService, cachesService, errors) => {
      *
      * @param {RemoveResult} result - The results of remove operation.
      */
-    const convertRemoveStatus = ({result}) => ({rowsAffected: result.n});
+    const convertRemoveStatus = (result) => ({rowsAffected: result.n});
 
     const _updateCacheStore = (cacheStoreChanges) =>
         Promise.all(_.map(cacheStoreChanges, (change) => mongo.Cache.updateOne({_id: {$eq: change.cacheId}}, change.change, {}).exec()));
@@ -145,7 +145,7 @@ module.exports.factory = (mongo, spacesService, cachesService, errors) => {
      */
     const removeAllBySpaces = (spaceIds) => {
         return mongo.Cache.updateMany({space: {$in: spaceIds}}, {domains: []}).exec()
-            .then(() => mongo.DomainModel.remove({space: {$in: spaceIds}}).exec());
+            .then(() => mongo.DomainModel.deleteMany({space: {$in: spaceIds}}).exec());
     };
 
     class DomainsService {
@@ -226,7 +226,7 @@ module.exports.factory = (mongo, spacesService, cachesService, errors) => {
 
             return mongo.Cache.updateMany({domains: {$in: ids}}, {$pull: {domains: ids}}).exec()
                 .then(() => mongo.Cluster.updateMany({models: {$in: ids}}, {$pull: {models: ids}}).exec())
-                .then(() => mongo.DomainModel.remove({_id: {$in: ids}}).exec())
+                .then(() => mongo.DomainModel.deleteMany({_id: {$in: ids}}).exec())
                 .then(convertRemoveStatus);
         }
 

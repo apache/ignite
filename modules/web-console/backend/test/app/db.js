@@ -41,7 +41,7 @@ module.exports.factory = (mongo, mongoose) => {
     const prepareIgfss = () => mongo.Igfs.create(testIgfss);
 
     const drop = () => {
-        return Promise.all(_.map(mongoose.connection.collections, (collection) => collection.remove()));
+        return Promise.all(_.map(mongoose.connection.collections, (collection) => collection.deleteMany()));
     };
 
     const init = () => {

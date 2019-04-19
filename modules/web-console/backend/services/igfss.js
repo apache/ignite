@@ -38,7 +38,7 @@ module.exports.factory = (mongo, spacesService, errors) => {
      *
      * @param {RemoveResult} result - The results of remove operation.
      */
-    const convertRemoveStatus = ({result}) => ({rowsAffected: result.n});
+    const convertRemoveStatus = (result) => ({rowsAffected: result.n});
 
     /**
      * Update existing IGFS.
@@ -89,7 +89,7 @@ module.exports.factory = (mongo, spacesService, errors) => {
      */
     const removeAllBySpaces = (spaceIds) => {
         return mongo.Cluster.updateMany({space: {$in: spaceIds}}, {igfss: []}).exec()
-            .then(() => mongo.Igfs.remove({space: {$in: spaceIds}}).exec());
+            .then(() => mongo.Igfs.deleteMany({space: {$in: spaceIds}}).exec());
     };
 
     class IgfssService {
@@ -162,7 +162,7 @@ module.exports.factory = (mongo, spacesService, errors) => {
                 //     {$unset: {'serviceConfigurations.$.nodeFilter.IGFS.igfs': ''}}).exec())
                 // .then(() => mongo.Cluster.updateMany({ 'serviceConfigurations.nodeFilter.kind': 'IGFS', 'serviceConfigurations.nodeFilter.IGFS.igfs': igfsId},
                 //     {$unset: {'serviceConfigurations.$.nodeFilter': ''}}).exec())
-                .then(() => mongo.Igfs.remove({_id: {$in: ids}}).exec())
+                .then(() => mongo.Igfs.deleteMany({_id: {$in: ids}}).exec())
                 .then(convertRemoveStatus);
         }
 

@@ -38,7 +38,7 @@ module.exports.factory = (mongo, spacesService, errors) => {
      *
      * @param {RemoveResult} result - The results of remove operation.
      */
-    const convertRemoveStatus = ({result}) => ({rowsAffected: result.n});
+    const convertRemoveStatus = (result) => ({rowsAffected: result.n});
 
     /**
      * Update existing cache.
@@ -94,7 +94,7 @@ module.exports.factory = (mongo, spacesService, errors) => {
         return mongo.Cluster.updateMany({space: {$in: spaceIds}}, {caches: []}).exec()
             .then(() => mongo.Cluster.updateMany({space: {$in: spaceIds}}, {$pull: {checkpointSpi: {kind: 'Cache'}}}).exec())
             .then(() => mongo.DomainModel.updateMany({space: {$in: spaceIds}}, {caches: []}).exec())
-            .then(() => mongo.Cache.remove({space: {$in: spaceIds}}).exec());
+            .then(() => mongo.Cache.deleteMany({space: {$in: spaceIds}}).exec());
     };
 
     /**
@@ -193,7 +193,7 @@ module.exports.factory = (mongo, spacesService, errors) => {
                 // TODO WC-201 fix cleanup of cache on deletion for cluster service configuration.
                 // .then(() => mongo.Cluster.updateMany({'serviceConfigurations.cache': cacheId}, {$unset: {'serviceConfigurations.$.cache': ''}}).exec())
                 .then(() => mongo.DomainModel.updateMany({caches: {$in: ids}}, {$pull: {caches: {$in: ids}}}).exec())
-                .then(() => mongo.Cache.remove({_id: {$in: ids}}).exec())
+                .then(() => mongo.Cache.deleteMany({_id: {$in: ids}}).exec())
                 .then(convertRemoveStatus);
         }
 
