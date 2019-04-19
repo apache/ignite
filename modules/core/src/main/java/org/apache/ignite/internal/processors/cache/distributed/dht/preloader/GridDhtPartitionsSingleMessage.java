@@ -362,21 +362,23 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             if (err != null && errBytes == null)
                 errBytes0 = U.marshal(ctx, err);
 
-            try {
-                byte[] partsBytesZip = U.zip(partsBytes0);
-                byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
-                byte[] partHistCntrsBytesZip = U.zip(partHistCntrsBytes0);
-                byte[] partsSizesBytesZip = U.zip(partsSizesBytes0);
-                byte[] exBytesZip = U.zip(errBytes0);
+            if (compressed()) {
+                try {
+                    byte[] partsBytesZip = U.zip(partsBytes0);
+                    byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
+                    byte[] partHistCntrsBytesZip = U.zip(partHistCntrsBytes0);
+                    byte[] partsSizesBytesZip = U.zip(partsSizesBytes0);
+                    byte[] exBytesZip = U.zip(errBytes0);
 
-                partsBytes0 = partsBytesZip;
-                partCntrsBytes0 = partCntrsBytesZip;
-                partHistCntrsBytes0 = partHistCntrsBytesZip;
-                partsSizesBytes0 = partsSizesBytesZip;
-                errBytes0 = exBytesZip;
-            }
-            catch (IgniteCheckedException e) {
-                U.error(ctx.logger(getClass()), "Failed to compress partitions data: " + e, e);
+                    partsBytes0 = partsBytesZip;
+                    partCntrsBytes0 = partCntrsBytesZip;
+                    partHistCntrsBytes0 = partHistCntrsBytesZip;
+                    partsSizesBytes0 = partsSizesBytesZip;
+                    errBytes0 = exBytesZip;
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(ctx.logger(getClass()), "Failed to compress partitions data: " + e, e);
+                }
             }
 
             partsBytes = partsBytes0;
