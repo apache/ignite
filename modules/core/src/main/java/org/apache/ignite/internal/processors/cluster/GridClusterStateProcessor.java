@@ -1572,6 +1572,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     nodeId,
                     null,
                     true,
+                    oldState.readOnly(),
                     newBlt,
                     true,
                     System.currentTimeMillis()
@@ -1614,6 +1615,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ctx.localNodeId(),
                 null,
                 true,
+                clusterState.readOnly(),
                 blt,
                 true,
                 System.currentTimeMillis()
