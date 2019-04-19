@@ -893,7 +893,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
             }
         });
