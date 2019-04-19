@@ -17,19 +17,22 @@
 
 'use strict';
 
-const mongoose = require('mongoose');
-const mockgoose = require('mockgoose');
+const MongoMemoryServer = require('mongodb-memory-server').default;
 
 // Fire me up!
 
 module.exports = {
-    implements: 'mongoose:mock',
-    inject: []
+    implements: 'settings:mock',
+    inject: ['settings']
 };
 
-module.exports.factory = () => {
-    console.log(mongoose);
+module.exports.factory = (settings) => {
+    const mongoServer = new MongoMemoryServer();
 
-    return mockgoose(mongoose)
-        .then(() => mongoose);
+    return mongoServer.getConnectionString()
+        .then((mongoUrl) => {
+            settings.mongoUrl = mongoUrl;
+
+            return settings;
+        });
 };
