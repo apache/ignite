@@ -280,7 +280,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             if (connCtx == null)
                 currVer = ClientListenerProtocolVersion.create(0, 0, 0);
             else
-                currVer = connCtx.currentVersion();
+                currVer = connCtx.defaultVersion();
 
             writer.writeBoolean(false);
 

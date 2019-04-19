@@ -196,6 +196,10 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTe
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
+import org.apache.ignite.internal.processors.query.KillQueryFromClientTest;
+import org.apache.ignite.internal.processors.query.KillQueryFromNeighbourTest;
+import org.apache.ignite.internal.processors.query.KillQueryOnClientDisconnectTest;
+import org.apache.ignite.internal.processors.query.KillQueryTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
@@ -239,6 +243,7 @@ import org.apache.ignite.internal.processors.sql.SqlConnectorConfigurationValida
 import org.apache.ignite.internal.sql.SqlParserBulkLoadSelfTest;
 import org.apache.ignite.internal.sql.SqlParserCreateIndexSelfTest;
 import org.apache.ignite.internal.sql.SqlParserDropIndexSelfTest;
+import org.apache.ignite.internal.sql.SqlParserKillQuerySelfTest;
 import org.apache.ignite.internal.sql.SqlParserMultiStatementSelfTest;
 import org.apache.ignite.internal.sql.SqlParserSetStreamingSelfTest;
 import org.apache.ignite.internal.sql.SqlParserTransactionalKeywordsSelfTest;
@@ -269,6 +274,7 @@ import org.junit.runners.Suite;
     SqlParserTransactionalKeywordsSelfTest.class,
     SqlParserBulkLoadSelfTest.class,
     SqlParserSetStreamingSelfTest.class,
+    SqlParserKillQuerySelfTest.class,
     SqlParserMultiStatementSelfTest.class,
 
     SqlConnectorConfigurationValidationSelfTest.class,
@@ -556,7 +562,14 @@ import org.junit.runners.Suite;
     SqlQueryHistorySelfTest.class,
     SqlQueryHistoryFromClientSelfTest.class,
 
-    SqlIncompatibleDataTypeExceptionTest.class
+    SqlIncompatibleDataTypeExceptionTest.class,
+
+    //Cancellation of queries.
+    KillQueryTest.class,
+    KillQueryFromNeighbourTest.class,
+    KillQueryFromClientTest.class,
+    KillQueryOnClientDisconnectTest.class,
+
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }

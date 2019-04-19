@@ -349,6 +349,11 @@ public class GridClientImpl implements GridClient {
         return top;
     }
 
+    /** {@inheritDoc} */
+    @Override public void throwLastError() throws GridClientException {
+        top.nodes();
+    }
+
     /**
      * @return Connection manager.
      */

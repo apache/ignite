@@ -27,6 +27,8 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
@@ -78,18 +80,24 @@ public class PartitionExtractor {
     /** Maximum number of partitions to be used in case of between expression. */
     private final int maxPartsCntBetween;
 
+    /** Grid kernal context. */
+    private final GridKernalContext ctx;
+
     /**
      * Constructor.
      *
      * @param partResolver Partition resolver.
+     * @param ctx Grid kernal context.
      */
-    public PartitionExtractor(H2PartitionResolver partResolver) {
+    public PartitionExtractor(H2PartitionResolver partResolver, GridKernalContext ctx) {
         this.partResolver = partResolver;
 
         maxPartsCntBetween = Integer.getInteger(
             IgniteSystemProperties.IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN,
             DFLT_MAX_EXTRACTED_PARTS_FROM_BETWEEN
         );
+
+        this.ctx = ctx;
     }
 
     /**
@@ -120,7 +128,8 @@ public class PartitionExtractor {
             return null;
 
         // Done.
-        return new PartitionResult(tree, tblModel.joinGroupAffinity(tree.joinGroup()));
+        return new PartitionResult(tree, tblModel.joinGroupAffinity(tree.joinGroup()),
+            ctx.cache().context().exchange().readyAffinityVersion());
     }
 
     /**
@@ -155,6 +164,8 @@ public class PartitionExtractor {
         // Merge.
         PartitionNode tree = null;
 
+        AffinityTopologyVersion affinityTopVer = null;
+
         for (GridCacheSqlQuery qry : qrys) {
             PartitionResult qryRes = (PartitionResult)qry.derivedPartitions();
 
@@ -162,6 +173,12 @@ public class PartitionExtractor {
                 tree = qryRes.tree();
             else
                 tree = new PartitionCompositeNode(tree, qryRes.tree(), PartitionCompositeNodeOperator.OR);
+
+
+            if (affinityTopVer == null)
+                affinityTopVer = qryRes.topologyVersion();
+            else
+                assert affinityTopVer.equals(qryRes.topologyVersion());
         }
 
         // Optimize.
@@ -175,7 +192,12 @@ public class PartitionExtractor {
         // If there is no affinity, then we assume "NONE" result.
         assert aff != null || tree == PartitionNoneNode.INSTANCE;
 
-        return new PartitionResult(tree, aff);
+        // Affinity topology version expected to be the same for all partition results derived from map queries.
+        // TODO: 09.04.19 IGNITE-11507: SQL: Ensure that affinity topology version doesn't change
+        // TODO: during PartitionResult construction/application.
+        assert affinityTopVer != null;
+        
+        return new PartitionResult(tree, aff, affinityTopVer);
     }
 
     /**
