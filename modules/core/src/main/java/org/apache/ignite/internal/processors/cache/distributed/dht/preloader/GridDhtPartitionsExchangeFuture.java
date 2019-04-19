@@ -2399,6 +2399,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         newCrdFut = null;
         exchangeLocE = null;
         exchangeGlobalExceptions.clear();
+        if (finishState != null)
+            finishState.cleanUp();
     }
 
     /**
@@ -4083,6 +4085,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
             Integer grpId = entry.getKey();
 
+            Map<Integer, Map<Integer, Long>> partsSizes = msg.partitionSizes(cctx);
+
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
             if (grp != null) {
@@ -4093,7 +4097,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     entry.getValue(),
                     cntrMap,
                     msg.partsToReload(cctx.localNodeId(), grpId),
-                    msg.partitionSizes(grpId),
+                    partsSizes.getOrDefault(grpId, Collections.emptyMap()),
                     null);
             }
             else {
@@ -4901,6 +4905,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             this.crdId = crdId;
             this.resTopVer = resTopVer;
             this.msg = msg;
+        }
+
+        /**
+         * Cleans up resources to avoid excessive memory usage.
+         */
+        public void cleanUp() {
+            if (msg != null)
+                msg.cleanUp();
         }
     }
 
