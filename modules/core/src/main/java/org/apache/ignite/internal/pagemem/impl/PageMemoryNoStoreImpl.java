@@ -746,11 +746,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             pagesBase = base + pageSize;
 
-            int nativePageSize = GridUnsafe.getpagesize();
+            if (U.isLinux() || U.isMacOs()) {
+                int nativePageSize = GridUnsafe.getpagesize();
 
-            assert pageSize < nativePageSize ? nativePageSize % pageSize == 0 : pageSize % nativePageSize == 0;
-
-            assert pagesBase % GridUnsafe.getpagesize() == 0;
+                assert pageSize < nativePageSize ? nativePageSize % pageSize == 0 : pageSize % nativePageSize == 0;
+            }
 
             GridUnsafe.putLong(lastAllocatedIdxPtr, 0);
 
