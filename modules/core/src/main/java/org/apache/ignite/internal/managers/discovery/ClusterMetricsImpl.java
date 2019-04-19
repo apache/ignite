@@ -351,12 +351,12 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public boolean isReadOnlyMode() {
-        return ctx.cluster().get().readOnly();
+        return ctx.state().publicApiReadOnlyMode();
     }
 
     /** {@inheritDoc} */
     @Override public long getReadOnlyModeDuration() {
-        return ctx.cluster().get().readOnly() ?
+        return ctx.state().publicApiReadOnlyMode() ?
             U.currentTimeMillis() - ctx.state().readOnlyModeStateChangeTime() :
             0;
     }
@@ -369,7 +369,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     /** {@inheritDoc} */
     @Override public long getCurrentPmeDuration() {
         GridDhtPartitionsExchangeFuture future = ctx.cache().context().exchange().lastTopologyFuture();
-        
+
         return (future == null || future.isDone()) ?
             0 : TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - future.getStartTime());
     }

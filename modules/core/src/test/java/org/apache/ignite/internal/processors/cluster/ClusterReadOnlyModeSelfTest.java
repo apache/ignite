@@ -234,7 +234,7 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testReadOnlyFromClient() throws Exception {
-        startGrids(SERVER_NODES_COUNT);
+        startGrids(1);
         startGrid("client");
 
         grid(0).cluster().active(true);
