@@ -263,7 +263,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         long timePassed = U.currentTimeMillis() - startTime;
         long timeLeft = finishTime - System.currentTimeMillis();
 
-        assertTrue(finishRebalanceLatch.await(timeLeft + 2_000, TimeUnit.SECONDS));
+        assertTrue(finishRebalanceLatch.await(timeLeft + 12_000L, TimeUnit.SECONDS));
 
         System.out.println(
             "TimePassed:" + timePassed +
@@ -279,7 +279,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         long diff = finishTime - U.currentTimeMillis();
 
-        assertTrue("Expected less 5000, Actual:" + diff, Math.abs(diff) < 10_000);
+        assertTrue("Expected less 12_000L, Actual:" + diff, Math.abs(diff) < 12_000L);
     }
 
     /**

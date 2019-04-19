@@ -725,4 +725,17 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         return S.toString(GridDhtPartitionsFullMessage.class, this, "partCnt", parts != null ? parts.size() : 0,
             "super", super.toString());
     }
+
+    /**
+     * Cleans up resources to avoid excessive memory usage.
+     */
+    public void cleanUp() {
+        partsBytes = null;
+        partCntrs2 = null;
+        partCntrsBytes = null;
+        partCntrsBytes2 = null;
+        partHistSuppliersBytes = null;
+        partsToReloadBytes = null;
+        errsBytes = null;
+    }
 }

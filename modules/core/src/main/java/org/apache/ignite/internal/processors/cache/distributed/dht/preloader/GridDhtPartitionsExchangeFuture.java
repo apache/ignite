@@ -1739,6 +1739,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         pendingJoinMsg = null;
         exchCtx = null;
         newCrdFut = null;
+        if (finishState != null)
+            finishState.cleanUp();
     }
 
     /**
@@ -3731,6 +3733,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             this.crdId = crdId;
             this.resTopVer = resTopVer;
             this.msg = msg;
+        }
+
+        /**
+         * Cleans up resources to avoid excessive memory usage.
+         */
+        public void cleanUp() {
+            if (msg != null)
+                msg.cleanUp();
         }
     }
 
