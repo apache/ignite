@@ -81,8 +81,6 @@ class H2TestCase implements Test, Describable {
 
     /** {@inheritDoc} */
     @Override public Description getDescription() {
-        String className = test.getClass().getName();
-
-        return Description.createTestDescription(className, "test", className + "(" + test + ")[" + conf.toString() + "]");
+        return Description.createTestDescription(test.getClass(), "test[" + conf.toString() + "]");
     }
 }
