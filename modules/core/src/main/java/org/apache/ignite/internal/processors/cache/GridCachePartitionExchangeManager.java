@@ -49,6 +49,7 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -116,6 +117,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
@@ -1847,40 +1849,71 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 Ignite ignite = cctx.kernalContext().grid();
 
-                IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(nearNodeId));
+                ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);
 
-                try {
-                    compute
-                        .callAsync(new FetchActiveTxOwnerTraceClosure(txOwnerThreadId))
-                        .listen(new IgniteInClosure<IgniteFuture<String>>() {
-                            @Override public void apply(IgniteFuture<String> strIgniteFut) {
-                                String traceDump = null;
+                boolean doCompute = true;
 
-                                try {
-                                    traceDump = strIgniteFut.get();
-                                }
-                                catch (Exception e) {
-                                    U.warn(
-                                        diagnosticLog,
-                                        "Could not get thread dump from transaction owner near node: " + e.getMessage()
-                                    );
-                                }
+                //product versions are hardcoded in this version as IgniteFeatures is not supported here
+                IgniteProductVersion from2_4 = IgniteProductVersion.fromString("2.4.16");
+                IgniteProductVersion to2_4 = IgniteProductVersion.fromString("2.5.0");
 
-                                if (traceDump != null) {
-                                    U.warn(
-                                        diagnosticLog,
-                                        String.format(
-                                            "Dumping the near node thread that started transaction [xidVer=%s]\n%s",
-                                            tx.xidVersion().toString(),
-                                            traceDump
-                                        )
-                                    );
+                IgniteProductVersion from2_5 = IgniteProductVersion.fromString("2.5.8");
+                IgniteProductVersion to2_5 = IgniteProductVersion.fromString("2.6.0");
+
+                IgniteProductVersion from2_7 = IgniteProductVersion.fromString("2.7.4");
+
+                IgnitePredicate<ClusterNode> pred = (node) ->
+                    (node.version().compareTo(from2_4) >= 0 && node.version().compareTo(to2_4) < 0) ||
+                    (node.version().compareTo(from2_5) >= 0 && node.version().compareTo(to2_5) < 0) ||
+                    (node.version().compareTo(from2_7) >= 0);
+
+                for (ClusterNode node : nearNode.nodes())
+                    if (!pred.apply(node))
+                        doCompute = false;
+
+                if (doCompute) {
+                    IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(nearNodeId));
+
+                    try {
+                        compute
+                            .callAsync(new FetchActiveTxOwnerTraceClosure(txOwnerThreadId))
+                            .listen(new IgniteInClosure<IgniteFuture<String>>() {
+                                @Override public void apply(IgniteFuture<String> strIgniteFut) {
+                                    String traceDump = null;
+
+                                    try {
+                                        traceDump = strIgniteFut.get();
+                                    }
+                                    catch (Exception e) {
+                                        U.error(
+                                            diagnosticLog,
+                                            "Could not get thread dump from transaction owner near node: ",
+                                            e
+                                        );
+                                    }
+
+                                    if (traceDump != null) {
+                                        U.warn(
+                                            diagnosticLog,
+                                            String.format(
+                                                "Dumping the near node thread that started transaction [xidVer=%s]\n%s",
+                                                tx.xidVersion().toString(),
+                                                traceDump
+                                            )
+                                        );
+                                    }
                                 }
-                            }
-                        });
+                            });
+                    }
+                    catch (Exception e) {
+                        U.error(diagnosticLog, "Could not send dump request to transaction owner near node: ", e);
+                    }
                 }
-                catch (Exception e) {
-                    U.warn(diagnosticLog, "Could not send dump request to transaction owner near node: " + e.getMessage());
+                else {
+                    U.warn(
+                        diagnosticLog,
+                        "Could not send dump request to transaction owner near node: node does not support this feature."
+                    );
                 }
             }
         }
