@@ -1112,7 +1112,7 @@ kill -9 `jps -l | grep "org.h2.test." | cut -d " " -f 1`
         if (networked && server != null) {
             server.stop();
         }
-        FileUtils.deleteRecursive("trace.db", true);
+        FileUtils.deleteRecursive("target/trace.db", true);
         FileUtils.deleteRecursive(TestBase.BASE_TEST_DIR, true);
     }
 

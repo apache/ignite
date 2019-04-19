@@ -89,8 +89,9 @@ public class H2TestSuiteBuilder extends TestAll {
         suite = new TestSuite(suiteClass.getName()) {
             /** {@inheritDoc} */
             @Override public void run(TestResult result) {
-                beforeTest0();
                 try {
+                    beforeTest0();
+
                     super.run(result);
                 }
                 finally {
