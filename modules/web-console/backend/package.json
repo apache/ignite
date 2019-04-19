@@ -80,7 +80,7 @@
     "eslint-formatter-friendly": "^6.0.0",
     "mocha": "^6.1.4",
     "mocha-teamcity-reporter": "^2.5.2",
-    "mongodb-memory-server": "^5.0.4  ",
+    "mongodb-memory-server": "^5.0.4",
     "supertest": "3.0.0"
   }
 }
