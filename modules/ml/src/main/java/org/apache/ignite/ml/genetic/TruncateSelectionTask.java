@@ -112,7 +112,7 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
      * @param chromosomeKeys Primary keys for respective chromosomes.
      * @return Map of nodes to jobs.
      */
-    public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
+    @Override public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
         Map<ComputeJob, ClusterNode> map = new HashMap<>();
         Affinity affinity = ignite.affinity(GAGridConstants.POPULATION_CACHE);
 
@@ -135,7 +135,7 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
      * @param list List of ComputeJobResult.
      * @return Boolean value.
      */
-    public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
+    @Override public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
         return Boolean.TRUE;
     }
 
@@ -144,7 +144,7 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
      * @param rcvd List of ComputeJobResult.
      * @return ComputeJobResultPolicy.
      */
-    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         IgniteException err = res.getException();
 
         if (err != null)

@@ -45,7 +45,8 @@ namespace ignite
              * Constructs configuration with all parameters set to default values.
              */
             IgniteClientConfiguration() :
-                sslMode(SslMode::DISABLE)
+                sslMode(SslMode::DISABLE),
+                affinityAwareness(false)
             {
                 // No-op.
             }
@@ -61,9 +62,9 @@ namespace ignite
             }
 
             /**
-             * Set addressess of the remote servers to connect.
+             * Set addresses of the remote servers to connect.
              *
-             * The format of the addresse is: <host>[:<port>[..<port_range>]]. If port is not specified, default port
+             * The format of the addresses is: <host>[:<port>[..<port_range>]]. If port is not specified, default port
              * is used (10800). You can enlist several hosts separated by comma.
              *
              * For example: "localhost,example.com:12345,127.0.0.1:10800..10900,192.168.3.80:5893".
@@ -201,6 +202,34 @@ namespace ignite
                 this->sslCaFile = sslCaFile;
             }
 
+            /**
+             * Set Affinity Awareness.
+             *
+             * Enable or disable feature that enables thin client to consider data affinity when making requests
+             * to the cluster. It means, thin client is going to connect to all available cluster servers listed by
+             * SetEndPoints() method and try to send request to a node which stores related data.
+             *
+             * Disabled by default.
+             *
+             * @param enable Enable affinity awareness.
+             */
+            void SetAffinityAwareness(bool enable)
+            {
+                affinityAwareness = enable;
+            }
+
+            /**
+             * Get Affinity Awareness flag.
+             *
+             * @see SetAffinityAwareness() for details.
+             *
+             * @return @c true if affinity awareness is enabled and @c false otherwise.
+             */
+            bool IsAffinityAwareness() const
+            {
+                return affinityAwareness;
+            }
+
         private:
             /** Connection end points */
             std::string endPoints;
@@ -222,6 +251,9 @@ namespace ignite
 
             /** SSL client certificate authority path */
             std::string sslCaFile;
+
+            /** Affinity Awareness. */
+            bool affinityAwareness;
         };
     }
 }

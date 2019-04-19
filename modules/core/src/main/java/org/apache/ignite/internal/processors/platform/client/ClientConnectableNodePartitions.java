@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.platform.client;
 
 import java.util.Collection;
 import org.apache.ignite.binary.BinaryRawWriter;
