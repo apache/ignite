@@ -23,7 +23,7 @@ To use Apache Ignite License Generator Module in your project please add followi
              </goals>
              <configuration>
                  <resourceBundles>
-                     <resourceBundle>org.apache.ignite:ignite-apache-license-gen:${project.version}</resourceBundle>
+                     <resourceBundle>org.gridgain:ignite-apache-license-gen:${project.version}</resourceBundle>
                  </resourceBundles>
                  <excludeTransitive>true</excludeTransitive>
              </configuration>

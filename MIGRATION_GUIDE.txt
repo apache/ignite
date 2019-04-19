@@ -1,2 +1,0 @@
-Apache Ignite Migration Guide
-===========================
