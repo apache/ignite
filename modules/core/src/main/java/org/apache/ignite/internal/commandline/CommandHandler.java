@@ -864,8 +864,8 @@ public class CommandHandler {
 
         usageCache(LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
-        usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
-            op(EXCLUDE_CACHES, CACHES), op(CACHE_FILTER, or(CacheFilterEnum.values())), op(CACHES));
+        usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC), op(EXCLUDE_CACHES, CACHES),
+            op(CACHE_FILTER, or("ALL|USER|SYSTEM|PERSISTENT|NON_PERSISTENT")), op(CACHES));
         usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or(NODE_ID, NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, CACHES);
@@ -1931,9 +1931,8 @@ public class CommandHandler {
             case IDLE_VERIFY:
                 return "Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. " +
                     "Cache filtering options configure the set of caches that will be processed by " + IDLE_VERIFY + " command. " +
-                    "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
-                    "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently filtered by cache name " +
-                    "regexps, by cache type and after all by exclude regexps.";
+                    "Default value for the set of cache names (or cache group names) is all user cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
+                    "Therefore, the set of all caches is sequently filtered by cache name regexps, by cache type (if specified) and after that by exclude regexps.";
 
             case VALIDATE_INDEXES:
                 return "Validate indexes on an idle cluster and print out the keys that are missing in the indexes.";
