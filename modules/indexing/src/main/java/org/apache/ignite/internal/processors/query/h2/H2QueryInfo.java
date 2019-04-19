@@ -21,12 +21,18 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.function.BiFunction;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.command.Prepared;
+import org.h2.command.dml.Query;
+import org.h2.command.dml.Select;
+import org.h2.command.dml.SelectUnion;
 import org.h2.engine.Session;
 
 /**
@@ -54,6 +60,9 @@ public class H2QueryInfo {
     /** Lazy mode. */
     private final boolean lazy;
 
+    /** Prepared statement. */
+    private final PreparedStatement stmt;
+
     /**
      * @param type Query type.
      * @param stmt Query statement.
@@ -75,6 +84,7 @@ public class H2QueryInfo {
             enforceJoinOrder = s.isForceJoinOrder();
             distributedJoin = s.isJoinBatchEnabled();
             lazy = s.isLazyQueryExecution() || MapQueryLazyWorker.currentWorker() != null;
+            this.stmt = stmt;
         }
         catch (SQLException e) {
             throw new IgniteSQLException("Cannot collect query info", IgniteQueryErrorCode.UNKNOWN, e);
@@ -113,6 +123,10 @@ public class H2QueryInfo {
      * @param additionalInfo Additional query info.
      */
     public void printLogMessage(IgniteLogger log, ConnectionManager connMgr, String msg, String additionalInfo) {
+        Prepared prep = GridSqlQueryParser.prepared(stmt);
+
+        assert prep instanceof Query;
+
         StringBuilder msgSb = new StringBuilder(msg + " [");
 
         if (additionalInfo != null)
@@ -122,7 +136,8 @@ public class H2QueryInfo {
             .append(", type=").append(type)
             .append(", distributedJoin=").append(distributedJoin)
             .append(", enforceJoinOrder=").append(enforceJoinOrder)
-            .append(", lazy=").append(lazy);
+            .append(", lazy=").append(lazy)
+            .append(", scansCount=[").append(scanCounts((Query)prep)).append(']');
 
         msgSb.append(", sql='")
             .append(sql);
@@ -159,6 +174,49 @@ public class H2QueryInfo {
             log.warning("Cannot get plan for long query: " + sql, e);
 
             return "[error on calculate plan: " + e.getMessage() + ']';
+        }
+    }
+
+
+    /**
+     * Prints scanCount for all TableFilters of a query.
+     * @param qry H2 query.
+     * @return String representation of all scans count.
+     */
+    private static String scanCounts(Query qry) {
+        StringBuilder scanCnt = new StringBuilder();
+
+        printScanCounts(qry, scanCnt);
+
+        return scanCnt.toString();
+    }
+
+    /**
+     * @param qry H2 query.
+     * @param sb Output string builder.
+     */
+    private static void printScanCounts(Query qry, final StringBuilder sb) {
+        if (qry.isUnion()) {
+            SelectUnion union = (SelectUnion)qry;
+
+            printScanCounts(union.getLeft(), sb);
+            printScanCounts(union.getRight(), sb);
+        }
+        else {
+            Select select = (Select)qry;
+
+            select.getTopTableFilter().visit(f -> {
+                if (sb.length() > 0)
+                    sb.append(", ");
+
+                sb.append("[alias=").append(f.getTableAlias());
+
+                if (f.getTable() != null)
+                    sb.append(", table=").append(f.getTable().getName());
+
+                sb.append(", scan=").append(GridSqlQueryParser.TABLE_FILTER_SCAN_COUNT.get(f));
+                sb.append("]");
+            });
         }
     }
 
