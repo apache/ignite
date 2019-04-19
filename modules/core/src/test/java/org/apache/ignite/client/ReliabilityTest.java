@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client;
 
+import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -28,14 +29,19 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.Cache;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectName;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.thin.ClientServerError;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -124,6 +130,41 @@ public class ReliabilityTest {
             }
 
             assertTrue(igniteUnavailable);
+        }
+    }
+
+    /**
+     * Test single server failover.
+     */
+    @Test
+    public void testSingleServerFailover() throws Exception {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+                 .setAddresses(cluster.clientAddresses().iterator().next()))
+        ) {
+            ObjectName mbeanName = U.makeMBeanName(Ignition.allGrids().get(0).name(), "Clients",
+                ClientListenerProcessor.class.getSimpleName());
+
+            ClientProcessorMXBean mxBean = MBeanServerInvocationHandler.newProxyInstance(
+                ManagementFactory.getPlatformMBeanServer(), mbeanName, ClientProcessorMXBean.class,true);
+
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            // Before fail.
+            cache.put(0, 0);
+
+            // Fail.
+            mxBean.dropAllConnections();
+
+            try {
+                cache.put(0, 0);
+            }
+            catch (Exception expected) {
+                // No-op.
+            }
+
+            // Recover after fail.
+            cache.put(0, 0);
         }
     }
 
