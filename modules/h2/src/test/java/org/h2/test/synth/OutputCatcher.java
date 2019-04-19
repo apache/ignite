@@ -17,6 +17,7 @@ import org.h2.util.IOUtils;
 public class OutputCatcher extends Thread {
     private final InputStream in;
     private final LinkedList<String> list = new LinkedList<>();
+    private boolean done;
 
     public OutputCatcher(InputStream in) {
         this.in = in;
@@ -35,8 +36,10 @@ public class OutputCatcher extends Thread {
                 if (list.size() > 0) {
                     return list.removeFirst();
                 }
+                if (done)
+                    return null;
                 try {
-                    list.wait(wait);
+                    list.wait(5 * 1000);
                 } catch (InterruptedException e) {
                     // ignore
                 }
@@ -82,6 +85,11 @@ public class OutputCatcher extends Thread {
                     list.add(buff.toString());
                     list.notifyAll();
                 }
+            }
+
+            synchronized (list){
+                done = true;
+                list.notifyAll();
             }
         }
     }

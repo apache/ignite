@@ -386,7 +386,7 @@ public class FilePathDisk extends FilePath {
         String prefix = new File(fileName).getName();
         File dir;
         if (inTempDir) {
-            dir = new File(System.getProperty("java.io.tmpdir", "."));
+            dir = new File(System.getProperty("java.io.tmpdir", ".")).getAbsoluteFile();
         } else {
             dir = new File(fileName).getAbsoluteFile().getParentFile();
         }
