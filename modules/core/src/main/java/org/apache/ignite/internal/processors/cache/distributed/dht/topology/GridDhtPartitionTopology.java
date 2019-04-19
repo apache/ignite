@@ -292,6 +292,7 @@ public interface GridDhtPartitionTopology {
      * @param partsToReload Set of partitions that need to be reloaded.
      * @param msgTopVer Topology version from incoming message. This value is not null only for case message is not
      *      related to exchange. Value should be not less than previous 'Topology version from exchange'.
+     * @param exchFut Future which is not null for initial partition update on exchange.
      * @return {@code True} if local state was changed.
      */
     public boolean update(
@@ -300,7 +301,9 @@ public interface GridDhtPartitionTopology {
         @Nullable CachePartitionFullCountersMap cntrMap,
         Set<Integer> partsToReload,
         @Nullable Map<Integer, Long> partSizes,
-        @Nullable AffinityTopologyVersion msgTopVer);
+        @Nullable AffinityTopologyVersion msgTopVer,
+        @Nullable GridDhtPartitionsExchangeFuture exchFut
+    );
 
     /**
      * @param exchId Exchange ID.
@@ -425,9 +428,11 @@ public interface GridDhtPartitionTopology {
      * @param ownersByUpdCounters Map (partition, set of node IDs that have most actual state about partition
      *                            (update counter is maximal) and should hold OWNING state for such partition).
      * @param haveHistory Set of partitions which have WAL history to rebalance.
+     * @param exchFut Exchange future for operation.
      * @return Map (nodeId, set of partitions that should be rebalanced <b>fully</b> by this node).
      */
-    public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters, Set<Integer> haveHistory);
+    public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters, Set<Integer> haveHistory,
+        GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * Callback on exchange done.

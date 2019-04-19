@@ -510,6 +510,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             clientTop.fullUpdateCounters(),
                             Collections.<Integer>emptySet(),
                             null,
+                            null,
                             null
                         );
                     }
@@ -575,7 +576,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     -1,
                     false);
 
-                grp.topology().update(topVer, partMap, null, Collections.emptySet(), null, null);
+                grp.topology().update(topVer, partMap, null, Collections.emptySet(), null, null, null);
 
                 topFut.validate(grp, discoCache.allNodes());
             }

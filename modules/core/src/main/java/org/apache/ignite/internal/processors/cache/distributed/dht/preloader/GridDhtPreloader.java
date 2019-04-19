@@ -253,6 +253,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (part.state() == RENTING) {
                     if (part.reserve()) {
                         part.moving();
+
+                        if (exchFut != null)
+                            exchFut.addClearingPartition(grp, part.id());
+
                         part.clearAsync();
 
                         part.release();
@@ -277,11 +281,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         histSupplier = ctx.discovery().node(nodeId);
                 }
 
-                // If partition is clearing or already cleared we need full rebalance even if supplier is exists.
-                // (it still could be used for other demanders)
-                boolean forceFullRebalance = part.isClearing() || part.isEmpty();
-
-                if (histSupplier != null && !forceFullRebalance) {
+                // Clearing partition should always be fully reloaded.
+                if (histSupplier != null && !exchFut.isClearingPartition(grp, p)) {
                     assert grp.persistenceEnabled();
                     assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 

@@ -1755,7 +1755,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             null,
                             msg.partsToReload(cctx.localNodeId(), grpId),
                             msg.partitionSizes(grpId),
-                            msg.topologyVersion());
+                            msg.topologyVersion(),
+                            null);
                     }
                 }
 

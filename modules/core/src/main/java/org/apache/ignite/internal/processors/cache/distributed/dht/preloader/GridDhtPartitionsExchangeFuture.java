@@ -355,6 +355,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
     private T2<Long, UUID> discoveryLag;
 
+    /** */
+    private Map<Integer, Set<Integer>> clearingPartitions;
+
     /**
      * @param cctx Cache context.
      * @param busyLock Busy lock.
@@ -1054,6 +1057,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             clientTop.fullUpdateCounters(),
                             Collections.emptySet(),
                             null,
+                            null,
                             null);
                     }
                     finally {
@@ -1436,6 +1440,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
         }
+
+        clearingPartitions = new HashMap();
 
         timeBag.finishGlobalStage("WAL history reservation");
 
@@ -3152,7 +3158,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         top.globalPartSizes(partSizes);
 
-        Map<UUID, Set<Integer>> partitionsToRebalance = top.resetOwners(ownersByUpdCounters, haveHistory);
+        Map<UUID, Set<Integer>> partitionsToRebalance = top.resetOwners(ownersByUpdCounters, haveHistory, this);
 
         for (Map.Entry<UUID, Set<Integer>> e : partitionsToRebalance.entrySet()) {
             UUID nodeId = e.getKey();
@@ -4221,7 +4227,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             cntrMap,
                             msg.partsToReload(cctx.localNodeId(), grpId),
                             msg.partitionSizes(grpId),
-                            null);
+                            null,
+                            this);
                     }
                     else {
                         GridDhtPartitionTopology top = cctx.exchange().clientTopology(grpId, events().discoveryCache());
@@ -4234,7 +4241,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             cntrMap,
                             Collections.emptySet(),
                             null,
-                            null);
+                            null,
+                            this);
                     }
 
                     return null;
@@ -5010,6 +5018,31 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             return limit;
 
         return nextTimeout <= limit ? nextTimeout : limit;
+    }
+
+    /**
+     * If partition is clearing or already cleared we need full rebalance even if supplier is exists.
+     * (it still could be used for other demanders)
+     *
+     * @param grp Group.
+     * @param part Partition.
+     */
+    public boolean isClearingPartition(CacheGroupContext grp, int part) {
+        synchronized (mux) {
+            Set<Integer> parts = clearingPartitions.get(grp.groupId());
+
+            return parts != null && parts.contains(part);
+        }
+    }
+
+    /**
+     * @param grp Group.
+     * @param part Partition.
+     */
+    public void addClearingPartition(CacheGroupContext grp, int part) {
+        synchronized (mux) {
+            clearingPartitions.computeIfAbsent(grp.groupId(), k -> new HashSet()).add(part);
+        }
     }
 
     /**
