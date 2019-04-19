@@ -93,7 +93,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         4/*outbound messages queue size*/ +
         4/*total nodes*/ +
         8/*total jobs execution time*/ +
-        1/*cluster read-only mode*/;
+        1/*cluster read-only mode*/ +
+        8/*time change of cluster read-only mode*/;
 
     /** */
     private long lastUpdateTime = -1;
@@ -260,6 +261,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /** */
     private boolean readOnlyMode = false;
 
+    /** */
+    private long readOnlyModeDuration = -1;
+
     /**
      * Create empty snapshot.
      */
@@ -332,6 +336,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         rcvdBytesCnt = 0;
         outMesQueueSize = 0;
         heapTotal = 0;
+        readOnlyModeDuration = 0;
         totalNodes = nodes.size();
 
         for (ClusterNode node : nodes) {
@@ -409,6 +414,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             outMesQueueSize += m.getOutboundMessagesQueueSize();
 
             avgLoad += m.getCurrentCpuLoad();
+
+            readOnlyModeDuration = max(readOnlyModeDuration, m.getReadOnlyModeDuration());
         }
 
         curJobExecTime /= size;
@@ -426,6 +433,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
             nodeStartTime = oldestNodeMetrics.getNodeStartTime();
             startTime = oldestNodeMetrics.getStartTime();
+
+            readOnlyMode = oldestNodeMetrics.isReadOnlyMode();
         }
 
         Map<String, Collection<ClusterNode>> neighborhood = U.neighborhood(nodes);
@@ -969,6 +978,11 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         return readOnlyMode;
     }
 
+    /** {@inheritDoc} */
+    @Override public long getReadOnlyModeDuration() {
+        return readOnlyModeDuration;
+    }
+
     /**
      * Sets available processors.
      *
@@ -1213,6 +1227,15 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     }
 
     /**
+     * Sets duration of cluster in read-only mode.
+     *
+     * @param readOnlyModeChangeTime New cluster read-only mode.
+     */
+    public void setReadOnlyModeChangeTime(long readOnlyModeChangeTime) {
+        this.readOnlyModeDuration = readOnlyModeChangeTime;
+    }
+
+    /**
      * @param neighborhood Cluster neighborhood.
      * @return CPU count.
      */
@@ -1387,6 +1410,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         buf.putInt(metrics.getTotalNodes());
         buf.putLong(metrics.getTotalJobsExecutionTime());
         buf.put(fromBoolean(metrics.isReadOnlyMode()));
+        buf.putLong(metrics.getReadOnlyModeDuration());
 
         assert !buf.hasRemaining() : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual="
             + (buf.position() - off) + ']';
@@ -1470,10 +1494,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             metrics.setTotalJobsExecutionTime(0);
 
         // For compatibility with metrics serialized by old ignite versions.
-        if (buf.remaining() >= 1)
-            metrics.setReadOnlyMode(toBoolean(buf.get()));
-        else
-            metrics.setReadOnlyMode(false);
+        metrics.setReadOnlyMode(buf.remaining() >= 1 ? toBoolean(buf.get()) : false);
+        metrics.setReadOnlyModeChangeTime(buf.remaining() >= 8 ? buf.getLong() : 0);
 
         return metrics;
     }

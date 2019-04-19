@@ -198,6 +198,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
+    @Override public long readOnlyModeStateChangeTime() {
+        return globalState.readOnlyModeChangeTime();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean publicApiActiveState(boolean waitForTransition) {
         return publicApiActiveStateAsync(waitForTransition).get();
     }

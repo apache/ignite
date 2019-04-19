@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -47,6 +48,9 @@ public class DiscoveryDataClusterState implements Serializable {
 
     /** Flag indicating if the cluster in read-only mode. */
     private final boolean readOnly;
+
+    /** Read-only mode change time. */
+    private final long readOnlyChangeTime;
 
     /** Current cluster baseline topology. */
     @Nullable private final BaselineTopology baselineTopology;
@@ -147,6 +151,7 @@ public class DiscoveryDataClusterState implements Serializable {
         this.prevState = prevState;
         this.active = active;
         this.readOnly = readOnly;
+        this.readOnlyChangeTime = U.currentTimeMillis();
         this.baselineTopology = baselineTopology;
         this.transitionReqId = transitionReqId;
         this.transitionTopVer = transitionTopVer;
@@ -205,6 +210,13 @@ public class DiscoveryDataClusterState implements Serializable {
      */
     public boolean readOnly() {
         return readOnly;
+    }
+
+    /**
+     * @return Change time read-only mode.
+     */
+    public long readOnlyModeChangeTime() {
+        return readOnlyChangeTime;
     }
 
     /**

@@ -150,6 +150,7 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
         metrics.setTotalNodes(49);
         metrics.setTotalJobsExecutionTime(50);
         metrics.setReadOnlyMode(true);
+        metrics.setReadOnlyModeChangeTime(4242L);
 
         return metrics;
     }
@@ -208,6 +209,7 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
             obj.getHeapMemoryTotal() == obj1.getHeapMemoryTotal() &&
             obj.getTotalNodes() == obj1.getTotalNodes() &&
             obj.getTotalJobsExecutionTime() == obj1.getTotalJobsExecutionTime() &&
-            obj.isReadOnlyMode() == obj1.isReadOnlyMode();
+            obj.isReadOnlyMode() == obj1.isReadOnlyMode() &&
+            obj.getReadOnlyModeDuration() == obj1.getReadOnlyModeDuration();
     }
 }

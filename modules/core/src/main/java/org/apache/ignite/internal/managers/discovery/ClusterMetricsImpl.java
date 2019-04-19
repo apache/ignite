@@ -352,6 +352,13 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
+    @Override public long getReadOnlyModeDuration() {
+        return ctx.cluster().get().readOnly() ?
+            U.currentTimeMillis() - ctx.state().readOnlyModeStateChangeTime() :
+            0;
+    }
+
+    /** {@inheritDoc} */
     @Override public int getTotalNodes() {
         return 1;
     }

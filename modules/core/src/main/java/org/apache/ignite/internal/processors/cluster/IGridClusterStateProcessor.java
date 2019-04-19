@@ -52,6 +52,11 @@ public interface IGridClusterStateProcessor extends GridProcessor {
     boolean publicApiReadOnlyMode();
 
     /**
+     * @return Time change of read only mode to be used on public API.
+     */
+    long readOnlyModeStateChangeTime();
+
+    /**
      * @param discoCache Discovery data cache.
      * @return If transition is in progress returns future which is completed when transition finishes.
      */

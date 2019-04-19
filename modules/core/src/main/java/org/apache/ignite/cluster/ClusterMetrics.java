@@ -701,4 +701,11 @@ public interface ClusterMetrics {
      * @return {@code True} if cluster read-only mode enabled, and {@code False} otherwise.
      */
     public boolean isReadOnlyMode();
+
+    /**
+     * Gets duration of cluster in read-only mode.
+     *
+     * @return Duration of cluster in read-only mode in seconds, or {@code 0} if read-only mode disabled
+     */
+    public long getReadOnlyModeDuration();
 }
