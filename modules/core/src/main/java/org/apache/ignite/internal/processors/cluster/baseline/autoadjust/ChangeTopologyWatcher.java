@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -29,7 +28,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
-import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustData.NULL_BASELINE_DATA;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
@@ -69,14 +68,14 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
             ctx.log(BaselineAutoAdjustExecutor.class),
             cluster,
             ctx.getSystemExecutorService(),
-            this::isBaselineAutoAdjustEnabled
+            this::isTopologyWatcherEnabled
         ), ctx.log(BaselineAutoAdjustScheduler.class));
         this.discoveryMgr = ctx.discovery();
     }
 
     /** {@inheritDoc} */
     @Override public void onEvent(Event evt) {
-        if (!isBaselineAutoAdjustEnabled()) {
+        if (!isTopologyWatcherEnabled()) {
             synchronized (this) {
                 lastBaselineData = NULL_BASELINE_DATA;
             }
@@ -94,7 +93,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
 
             if (isLocalNodeCoordinator(discoveryMgr)) {
                 exchangeManager.affinityReadyFuture(new AffinityTopologyVersion(discoEvt.topologyVersion()))
-                    .listen((IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>)future -> {
+                    .listen(future -> {
                         if (future.error() != null)
                             return;
 
@@ -118,8 +117,9 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
     /**
      * @return {@code true} if auto-adjust baseline enabled.
      */
-    private boolean isBaselineAutoAdjustEnabled() {
-        return stateProcessor.clusterState().active() && baselineConfiguration.isBaselineAutoAdjustEnabled();
+    private boolean isTopologyWatcherEnabled() {
+        return stateProcessor.clusterState().active() && baselineConfiguration.isBaselineAutoAdjustEnabled()
+            && (CU.isPersistenceEnabled(cluster.ignite().configuration()) || cluster.baselineAutoAdjustTimeout() != 0L);
     }
 
     /**

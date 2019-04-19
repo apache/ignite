@@ -76,6 +76,9 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Execute cancel request. */
     static final byte QRY_CANCEL = 15;
 
+    /** Get cache partitions distributions. */
+    static final byte CACHE_PARTITIONS = 16;
+
     /** Request Id generator. */
     private static final AtomicLong REQ_ID_GENERATOR = new AtomicLong();
 
@@ -203,6 +206,11 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
             case QRY_CANCEL:
                 req = new JdbcQueryCancelRequest();
+
+                break;
+
+            case CACHE_PARTITIONS:
+                req = new JdbcCachePartitionsRequest();
 
                 break;
 

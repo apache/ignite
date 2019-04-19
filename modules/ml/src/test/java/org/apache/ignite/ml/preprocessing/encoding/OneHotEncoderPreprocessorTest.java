@@ -17,9 +17,14 @@
 
 package org.apache.ignite.ml.preprocessing.encoding;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.preprocessing.encoding.onehotencoder.OneHotEncoderPreprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
 import org.junit.Test;
@@ -34,13 +39,15 @@ public class OneHotEncoderPreprocessorTest {
     /** Tests {@code apply()} method. */
     @Test
     public void testApplyWithStringValues() {
-        String[][] data = new String[][]{
-            {"1", "Moscow", "A"},
-            {"2", "Moscow", "A"},
-            {"2", "Moscow", "B"},
+        Vector[] data = new Vector[]{
+            new DenseVector(new Serializable[] {"1", "Moscow", "A"}),
+            new DenseVector(new Serializable[] {"2", "Moscow", "A"}),
+            new DenseVector(new Serializable[] {"2", "Moscow", "B"}),
         };
 
-        OneHotEncoderPreprocessor<Integer, String[]> preprocessor = new OneHotEncoderPreprocessor<Integer, String[]>(
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2);
+
+        OneHotEncoderPreprocessor<Integer, Vector> preprocessor = new OneHotEncoderPreprocessor<Integer, Vector>(
             new HashMap[]{new HashMap() {
                 {
                     put("1", 1);
@@ -56,7 +63,7 @@ public class OneHotEncoderPreprocessorTest {
                     put("B", 1);
                 }
             }},
-            (k, v) -> v,
+            vectorizer,
             new HashSet() {
                 {
                     add(0);
@@ -72,27 +79,29 @@ public class OneHotEncoderPreprocessorTest {
         };
 
         for (int i = 0; i < data.length; i++)
-            assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).asArray(), 1e-8);
+            assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
     }
 
 
     /**  */
     @Test
     public void testOneCategorialFeature() {
-        String[][] data = new String[][]{
-            {"42"},
-            {"43"},
-            {"42"},
+        Vector[] data = new Vector[]{
+            new DenseVector(new Serializable[] {"42"}),
+            new DenseVector(new Serializable[] {"43"}),
+            new DenseVector(new Serializable[] {"42"}),
         };
 
-        OneHotEncoderPreprocessor<Integer, String[]> preprocessor = new OneHotEncoderPreprocessor<Integer, String[]>(
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0);
+
+        OneHotEncoderPreprocessor<Integer, Vector> preprocessor = new OneHotEncoderPreprocessor<Integer, Vector>(
             new HashMap[]{new HashMap() {
                 {
                     put("42", 0);
                     put("43", 1);
                 }
             }},
-            (k, v) -> v,
+            vectorizer,
             new HashSet() {
                 {
                     add(0);
@@ -106,18 +115,20 @@ public class OneHotEncoderPreprocessorTest {
         };
 
         for (int i = 0; i < data.length; i++)
-            assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).asArray(), 1e-8);
+            assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
     }
 
     /**  */
     @Test
     public void testTwoCategorialFeatureAndTwoDoubleFeatures() {
-        Object[][] data = new Object[][]{
-            {"42", 1.0, "M", 2.0},
-            {"43", 2.0, "F", 3.0},
-            {"42", 3.0, Double.NaN, 4.0},
-            {"42", 4.0, "F", 5.0},
+        Vector[] data = new Vector[]{
+            new DenseVector(new Serializable[]  {"42", 1.0, "M", 2.0}),
+            new DenseVector(new Serializable[]  {"43", 2.0, "F", 3.0}),
+            new DenseVector(new Serializable[] {"42", 3.0, Double.NaN, 4.0}),
+            new DenseVector(new Serializable[]  {"42", 4.0, "F", 5.0})
         };
+
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2, 3);
 
         HashMap[] encodingValues = new HashMap[4];
         encodingValues[0] = new HashMap() {
@@ -135,9 +146,9 @@ public class OneHotEncoderPreprocessorTest {
             }
         };
 
-        OneHotEncoderPreprocessor<Integer, Object[]> preprocessor = new OneHotEncoderPreprocessor<Integer, Object[]>(
+        OneHotEncoderPreprocessor<Integer, Vector> preprocessor = new OneHotEncoderPreprocessor<Integer, Vector>(
             encodingValues,
-            (k, v) -> v,
+            vectorizer,
             new HashSet() {
                 {
                     add(0);
@@ -153,7 +164,7 @@ public class OneHotEncoderPreprocessorTest {
         };
 
         for (int i = 0; i < data.length; i++)
-            assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).asArray(), 1e-8);
+            assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
     }
 
     /**
@@ -165,13 +176,16 @@ public class OneHotEncoderPreprocessorTest {
      */
     @Test
     public void testApplyWithUnknownGategorialValues() {
-        String[][] data = new String[][]{
-            {"1", "Moscow", "A"},
-            {"2", "Moscow", "A"},
-            {"2", "Moscow", "B"},
+        Vector[] data = new Vector[]{
+            new DenseVector(new Serializable[] {"1", "Moscow", "A"}),
+            new DenseVector(new Serializable[] {"2", "Moscow", "A"}),
+            new DenseVector(new Serializable[] {"2", "Moscow", "B"}),
         };
 
-        OneHotEncoderPreprocessor<Integer, String[]> preprocessor = new OneHotEncoderPreprocessor<Integer, String[]>(
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2);
+
+
+        OneHotEncoderPreprocessor<Integer, Vector> preprocessor = new OneHotEncoderPreprocessor<Integer, Vector>(
             new HashMap[]{new HashMap() {
                 {
                     put("2", 0);
@@ -186,7 +200,7 @@ public class OneHotEncoderPreprocessorTest {
                     put("B", 1);
                 }
             }},
-            (k, v) -> v,
+            vectorizer,
             new HashSet() {
                 {
                     add(0);
@@ -203,7 +217,7 @@ public class OneHotEncoderPreprocessorTest {
 
         try {
             for (int i = 0; i < data.length; i++)
-                assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).asArray(), 1e-8);
+                assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
 
             fail("UnknownCategorialFeatureValue");
         } catch (UnknownCategorialFeatureValue e) {

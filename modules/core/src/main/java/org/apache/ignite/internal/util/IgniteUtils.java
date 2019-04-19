@@ -296,7 +296,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 @SuppressWarnings({"UnusedReturnValue", "RedundantStringConstructorCall"})
 public abstract class IgniteUtils {
     /** */
-    private static final long GB = 1024L * 1024 * 1024;
+    public static final long GB = 1024L * 1024 * 1024;
 
     /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE = GB / 4;
@@ -11033,12 +11033,15 @@ public abstract class IgniteUtils {
     /**
      * @return {@code true} if local node is coordinator.
      */
-    public static boolean isLocalNodeCoordinator(GridDiscoveryManager discoveryManager) {
-        DiscoverySpi spi = discoveryManager.getInjectedDiscoverySpi();
+    public static boolean isLocalNodeCoordinator(GridDiscoveryManager discoMgr) {
+        if (discoMgr.localNode().isClient() || discoMgr.localNode().isDaemon())
+            return false;
+
+        DiscoverySpi spi = discoMgr.getInjectedDiscoverySpi();
 
         return spi instanceof TcpDiscoverySpi
             ? ((TcpDiscoverySpi)spi).isLocalNodeCoordinator()
-            : F.eq(discoveryManager.localNode(), U.oldest(discoveryManager.aliveServerNodes(), null));
+            : F.eq(discoMgr.localNode(), U.oldest(discoMgr.aliveServerNodes(), null));
     }
 
     /**

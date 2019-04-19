@@ -65,7 +65,7 @@ public class FitnessJob extends ComputeJobAdapter {
      *
      * @return Fitness score
      */
-    public Double execute() throws IgniteException {
+    @Override public Double execute() throws IgniteException {
 
         IgniteCache<Long, Chromosome> populationCache = ignite.cache(GAGridConstants.POPULATION_CACHE);
 

@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,6 +101,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Encryption key. */
     @Nullable private byte[] encKey;
 
+    /** Cache configuration enrichment. */
+    private CacheConfigurationEnrichment cacheCfgEnrichment;
+
     /**
      * @param reqId Unique request ID.
      * @param cacheName Cache stop name.
@@ -138,7 +142,12 @@ public class DynamicCacheChangeRequest implements Serializable {
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cfg.getName(), ctx.localNodeId());
 
         req.template(true);
-        req.startCacheConfiguration(cfg);
+
+        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = ctx.cache().backwardCompatibleSplitter().split(cfg);
+
+        req.startCacheConfiguration(splitCfg.get1());
+        req.cacheConfigurationEnrichment(splitCfg.get2());
+
         req.schema(new QuerySchema(cfg.getQueryEntities()));
         req.deploymentId(IgniteUuid.randomUuid());
 
@@ -455,6 +464,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     @Nullable public byte[] encryptionKey() {
         return encKey;
+    }
+
+    /**
+     * @return Cache configuration enrichment.
+     */
+    public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
+        return cacheCfgEnrichment;
+    }
+
+    /**
+     * @param cacheCfgEnrichment Cache config enrichment.
+     */
+    public void cacheConfigurationEnrichment(CacheConfigurationEnrichment cacheCfgEnrichment) {
+        this.cacheCfgEnrichment = cacheCfgEnrichment;
     }
 
     /** {@inheritDoc} */

@@ -1789,6 +1789,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         U.clearClassCache();
         MarshallerExclusions.clearCache();
         BinaryEnumCache.clear();
+        serializedObj.clear();
 
         if (err!= null)
             throw err;
@@ -2148,7 +2149,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             afterTest();
         }
         finally {
-            serializedObj.clear();
+            if (!keepSerializedObjects())
+                serializedObj.clear();
 
             Thread.currentThread().setContextClassLoader(clsLdr);
 
@@ -2156,6 +2158,16 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
             cleanReferences();
         }
+    }
+
+    /**
+     * @return If {@code true} serialized objects placed to {@link #serializedObj}
+     * are not cleared after each test execution.
+     *
+     * Setting this flag to true is need when some serialized objects are need to be shared between all tests in class.
+     */
+    protected boolean keepSerializedObjects() {
+        return false;
     }
 
     /**
@@ -2404,7 +2416,9 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         protected Object readResolve() throws ObjectStreamException {
             Object res = serializedObj.get(uuid);
 
-            assert res != null;
+            assert res != null
+                : "Failed to find serializable proxy with uuid=" + uuid
+                    + ". Try to set test property keepSerializedObjects to 'true' if object was removed after test";
 
             return res;
         }

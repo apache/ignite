@@ -1382,6 +1382,7 @@ namespace ignite
 
             /**
              * Perform SQL query.
+             * @deprecated Will be removed in future releases. Use SqlFieldsQuery instead.
              *
              * This method should only be used on the valid instance.
              *

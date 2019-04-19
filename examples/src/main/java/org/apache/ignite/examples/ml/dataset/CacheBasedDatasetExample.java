@@ -17,17 +17,19 @@
 
 package org.apache.ignite.examples.ml.dataset;
 
+import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.examples.ml.util.DatasetHelper;
 import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * Example that shows how to create dataset based on an existing Ignite Cache and then use it to calculate {@code mean}
@@ -46,15 +48,17 @@ public class CacheBasedDatasetExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Cache Based Dataset example started.");
 
-            IgniteCache<Integer, Person> persons = null;
+            IgniteCache<Integer, Vector> persons = null;
             try {
                 persons = createCache(ignite);
+
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(1, 2);
 
                 // Creates a cache based simple dataset containing features and providing standard dataset API.
                 try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
                     ignite,
                     persons,
-                    FeatureLabelExtractorWrapper.wrap((k, v) -> VectorUtils.of(v.getAge(), v.getSalary()))
+                    vectorizer
                 )) {
                     new DatasetHelper(dataset).describe();
                 }
@@ -68,18 +72,18 @@ public class CacheBasedDatasetExample {
     }
 
     /** */
-    private static IgniteCache<Integer, Person> createCache(Ignite ignite) {
-        CacheConfiguration<Integer, Person> cacheConfiguration = new CacheConfiguration<>();
+    private static IgniteCache<Integer, Vector> createCache(Ignite ignite) {
+        CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
 
         cacheConfiguration.setName("PERSONS");
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 2));
 
-        IgniteCache<Integer, Person> persons = ignite.createCache(cacheConfiguration);
+        IgniteCache<Integer, Vector> persons = ignite.createCache(cacheConfiguration);
 
-        persons.put(1, new Person("Mike", 42, 10000));
-        persons.put(2, new Person("John", 32, 64000));
-        persons.put(3, new Person("George", 53, 120000));
-        persons.put(4, new Person("Karl", 24, 70000));
+        persons.put(1, new DenseVector(new Serializable[]{"Mike", 42, 10000}));
+        persons.put(2, new DenseVector(new Serializable[]{"John", 32, 64000}));
+        persons.put(3, new DenseVector(new Serializable[]{"George", 53, 120000}));
+        persons.put(4, new DenseVector(new Serializable[]{"Karl", 24, 70000}));
 
         return persons;
     }

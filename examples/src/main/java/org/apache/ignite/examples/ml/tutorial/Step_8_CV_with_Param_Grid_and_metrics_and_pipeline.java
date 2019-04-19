@@ -22,9 +22,9 @@ import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.pipeline.Pipeline;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
@@ -71,43 +71,24 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
-                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+                IgniteCache<Integer, Vector> dataCache = TitanicUtils.readPassengers(ignite);
 
-                // Defines first preprocessor that extracts features from an upstream data.
-                // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare" .
-                IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
-                    double[] data = new double[]{
-                        (double) v[0],
-                        (double) v[4],
-                        (double) v[5],
-                        (double) v[6],
-                        (double) v[8],
-                    };
-                    data[0] = Double.isNaN(data[0]) ? 0 : data[0];
-                    data[1] = Double.isNaN(data[1]) ? 0 : data[1];
-                    data[2] = Double.isNaN(data[2]) ? 0 : data[2];
-                    data[3] = Double.isNaN(data[3]) ? 0 : data[3];
-                    data[4] = Double.isNaN(data[4]) ? 0 : data[4];
+                // Extracts "pclass", "sibsp", "parch", "age", "fare".
+                final Vectorizer<Integer, Vector, Integer, Double> vectorizer
+                    = new DummyVectorizer<Integer>(0, 4, 5, 6, 8).labeled(1);
 
-                    return VectorUtils.of(data);
-                };
-
-
-                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
-
-                TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
+                TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
                     .split(0.75);
 
-                Pipeline<Integer, Object[], Vector> pipeline = new Pipeline<Integer, Object[], Vector>()
-                    .addFeatureExtractor(featureExtractor)
-                    .addLabelExtractor(lbExtractor)
-                    .addPreprocessingTrainer(new ImputerTrainer<Integer, Object[]>())
-                    .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Object[]>())
+                Pipeline<Integer, Vector, Integer, Double> pipeline = new Pipeline<Integer, Vector, Integer, Double>()
+                    .addVectorizer(vectorizer)
+                    .addPreprocessingTrainer(new ImputerTrainer<Integer, Vector>())
+                    .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Vector>())
                     .addTrainer(new DecisionTreeClassificationTrainer(5, 0));
 
                 // Tune hyperparams with K-fold Cross-Validation on the split training set.
 
-                CrossValidation<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
+                CrossValidation<DecisionTreeNode, Double, Integer, Vector> scoreCalculator
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()
@@ -125,7 +106,6 @@ public class Step_8_CV_with_Param_Grid_and_metrics_and_pipeline {
                     ignite,
                     dataCache,
                     split.getTrainFilter(),
-                    lbExtractor,
                     3,
                     paramGrid
                 );

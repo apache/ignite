@@ -42,6 +42,7 @@
         <doxygen.exec>doxygen</doxygen.exec>
         <docfx.exec>docfx</docfx.exec>
         <git.exec>git</git.exec>
+        <javadoc.opts>-Xdoclint:none</javadoc.opts>
         <update.notifier.enabled.by.default>true</update.notifier.enabled.by.default>
 
         <!-- Dependency versions -->
@@ -135,11 +136,8 @@
         <zookeeper.version>3.4.13</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
 
-        <!-- Plugin versions -->
-        <maven.javadoc.plugin.version>2.10.1</maven.javadoc.plugin.version>
-
         <!-- Maven plugins versions -->
-        <maven.javadoc.plugin.version>3.0.0</maven.javadoc.plugin.version>
+        <maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
@@ -334,7 +332,7 @@
                         <use>true</use>
                         <author>false</author>
                         <version>false</version>
-                        <doclint>none</doclint>
+                        <additionalparam>${javadoc.opts}</additionalparam>
                         <links>
                             <link>http://hadoop.apache.org/docs/current/api/</link>
                         </links>

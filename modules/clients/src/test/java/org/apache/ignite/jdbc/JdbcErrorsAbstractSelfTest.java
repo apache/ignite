@@ -71,6 +71,11 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
             .setInterceptor(new TestCacheInterceptor()));
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean keepSerializedObjects() {
+        return true;
+    }
+
     /**
      * Test that H2 specific error codes get propagated to Ignite SQL exceptions.
      * @throws SQLException if failed.
