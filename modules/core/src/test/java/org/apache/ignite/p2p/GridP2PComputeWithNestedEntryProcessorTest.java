@@ -126,6 +126,8 @@ public class GridP2PComputeWithNestedEntryProcessorTest extends GridCommonAbstra
 
             createAndLoadCache(ignite);
 
+            awaitPartitionMapExchange();
+
             for (int i = 0; i < 10; i++) {
                 try (Ignite client = startGrid("client")) {
 
@@ -134,7 +136,7 @@ public class GridP2PComputeWithNestedEntryProcessorTest extends GridCommonAbstra
                     Integer key = primaryKey(ignite(1).cache(DEFAULT_CACHE_NAME));
 
                     for (Boolean res : runJob(client, 10_000, DEFAULT_CACHE_NAME, key)) {
-                        assertTrue(res);
+                        assertTrue(key >= ENTRIES || res);
                     }
 
                     scnaCacheData(cache);

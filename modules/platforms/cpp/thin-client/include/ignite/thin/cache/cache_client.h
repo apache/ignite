@@ -585,6 +585,8 @@ namespace ignite
                 /**
                  * Refresh affinity mapping.
                  *
+                 * @deprecated Does nothing since Apache Ignite 2.8. Affinity mapping is refreshed automatically now.
+                 *
                  * Retrieves affinity mapping information from remote server. This information uses to send data
                  * requests to the most appropriate nodes. This can lessen latency and improve overall performance.
                  *
@@ -593,7 +595,7 @@ namespace ignite
                  */
                 void RefreshAffinityMapping()
                 {
-                    proxy.RefreshAffinityMapping();
+                    // No-op.
                 }
 
             private:

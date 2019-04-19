@@ -44,7 +44,7 @@ public class StackedModel<IS, IA, O, AM extends IgniteModel<IA, O>> implements I
 
     /**
      * Construct instance of this class from {@link IgniteModel}.
-     * @param mdl
+     * @param mdl Model.
      */
     StackedModel(IgniteModel<IS, O> mdl) {
         this.mdl = mdl;

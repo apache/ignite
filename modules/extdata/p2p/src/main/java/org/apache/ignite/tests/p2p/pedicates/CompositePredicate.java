@@ -36,6 +36,7 @@ public class CompositePredicate<K> extends BinaryPredicate<K> implements Seriali
 
         for (BinaryPredicate predicate : predicates) {
             predicate.ignite = ignite;
+            predicate.log = log;
 
             if (!predicate.apply(bo))
                 return false;

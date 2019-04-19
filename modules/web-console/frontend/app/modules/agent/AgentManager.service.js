@@ -18,8 +18,8 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
-import {timer, BehaviorSubject, of, from} from 'rxjs';
-import {exhaustMap, first, pluck, tap, distinctUntilChanged, map, filter, expand, takeWhile, last} from 'rxjs/operators';
+import {BehaviorSubject} from 'rxjs';
+import {first, pluck, tap, distinctUntilChanged, map, filter} from 'rxjs/operators';
 
 import io from 'socket.io-client';
 
@@ -225,7 +225,7 @@ export default class AgentManager {
         if (!this.isDemoMode()) {
             this.connectionSbj.subscribe({
                 next: ({cluster}) => {
-                    const version = _.get(cluster, 'clusterVersion');
+                    const version = this.getClusterVersion(cluster);
 
                     if (_.isEmpty(version))
                         return;
@@ -238,6 +238,10 @@ export default class AgentManager {
 
     isDemoMode() {
         return this.$root.IgniteDemoMode;
+    }
+
+    getClusterVersion(cluster) {
+        return _.get(cluster, 'clusterVersion');
     }
 
     available(...sinceVersion) {
@@ -294,7 +298,7 @@ export default class AgentManager {
         if (!_.isNil(oldCluster)) {
             oldCluster.nids = newCluster.nids;
             oldCluster.addresses = newCluster.addresses;
-            oldCluster.clusterVersion = newCluster.clusterVersion;
+            oldCluster.clusterVersion = this.getClusterVersion(newCluster);
             oldCluster.active = newCluster.active;
 
             this.connectionSbj.next(state);

@@ -127,7 +127,8 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     public GridDhtPartitionsSingleMessage(GridDhtPartitionExchangeId exchId,
         boolean client,
         @Nullable GridCacheVersion lastVer,
-        boolean compress) {
+        boolean compress
+    ) {
         super(exchId, lastVer);
 
         this.client = client;
