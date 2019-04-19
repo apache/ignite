@@ -694,4 +694,11 @@ public interface ClusterMetrics {
      * @return Total number of nodes.
      */
     public int getTotalNodes();
+
+    /**
+     * Gets cluster read-only mode status.
+     *
+     * @return {@code True} if cluster read-only mode enabled, and {@code False} otherwise.
+     */
+    public boolean isReadOnlyMode();
 }

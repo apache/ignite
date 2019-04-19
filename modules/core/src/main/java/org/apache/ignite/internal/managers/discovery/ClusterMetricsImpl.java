@@ -347,6 +347,11 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isReadOnlyMode() {
+        return ctx.cluster().get().readOnly();
+    }
+
+    /** {@inheritDoc} */
     @Override public int getTotalNodes() {
         return 1;
     }

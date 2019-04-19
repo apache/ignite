@@ -92,7 +92,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         8/*received bytes count*/ +
         4/*outbound messages queue size*/ +
         4/*total nodes*/ +
-        8/*total jobs execution time*/;
+        8/*total jobs execution time*/ +
+        1/*cluster read-only mode*/;
 
     /** */
     private long lastUpdateTime = -1;
@@ -255,6 +256,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
     /** */
     private long totalJobsExecTime = -1;
+
+    /** */
+    private boolean readOnlyMode = false;
 
     /**
      * Create empty snapshot.
@@ -960,6 +964,11 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         return totalNodes;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean isReadOnlyMode() {
+        return readOnlyMode;
+    }
+
     /**
      * Sets available processors.
      *
@@ -1195,6 +1204,15 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     }
 
     /**
+     * Sets cluster read-only mode.
+     *
+     * @param readOnlyMode New cluster read-only mode.
+     */
+    public void setReadOnlyMode(boolean readOnlyMode) {
+        this.readOnlyMode = readOnlyMode;
+    }
+
+    /**
      * @param neighborhood Cluster neighborhood.
      * @return CPU count.
      */
@@ -1266,6 +1284,28 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             }
 
         return oldest;
+    }
+
+    /**
+     * Converts from byte to boolean.
+     *
+     * @param b Incoming byte.
+     * @return Converted boolean.
+     */
+    private static boolean toBoolean(byte b) {
+        assert b == 0 || b == 1 : "Invalid byte value. " + b;
+
+        return b == 1;
+    }
+
+    /**
+     * Converts from boolean to byte.
+     *
+     * @param b Incoming boolean.
+     * @return Converted byte.
+     */
+    private static byte fromBoolean(boolean b) {
+        return (byte)(b ? 1 : 0);
     }
 
     /**
@@ -1346,6 +1386,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         buf.putInt(metrics.getOutboundMessagesQueueSize());
         buf.putInt(metrics.getTotalNodes());
         buf.putLong(metrics.getTotalJobsExecutionTime());
+        buf.put(fromBoolean(metrics.isReadOnlyMode()));
 
         assert !buf.hasRemaining() : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual="
             + (buf.position() - off) + ']';
@@ -1427,6 +1468,12 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             metrics.setTotalJobsExecutionTime(buf.getLong());
         else
             metrics.setTotalJobsExecutionTime(0);
+
+        // For compatibility with metrics serialized by old ignite versions.
+        if (buf.remaining() >= 1)
+            metrics.setReadOnlyMode(toBoolean(buf.get()));
+        else
+            metrics.setReadOnlyMode(false);
 
         return metrics;
     }

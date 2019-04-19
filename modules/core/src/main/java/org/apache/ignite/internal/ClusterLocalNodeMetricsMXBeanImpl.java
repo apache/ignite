@@ -394,6 +394,11 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isReadOnlyMode() {
+        return node.metrics().isReadOnlyMode();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ClusterLocalNodeMetricsMXBeanImpl.class, this);
     }
