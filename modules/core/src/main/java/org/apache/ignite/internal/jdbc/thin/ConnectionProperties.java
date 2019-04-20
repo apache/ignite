@@ -395,14 +395,26 @@ public interface ConnectionProperties {
     public String getPassword();
 
     /**
-     * @return {@code True} if data page scan support is enabled for this connection, {@code false} if it's disabled
+     * @return {@code true} if data page scan support is enabled for this connection, {@code false} if it's disabled
      *     and {@code null} for server default.
      */
     @Nullable public Boolean isDataPageScanEnabled();
 
     /**
-     * @param dataPageScanEnabled {@code True} if data page scan support is enabled for this connection,
+     * @param dataPageScanEnabled {@code true} if data page scan support is enabled for this connection,
      *     if {@code false} then it's disabled, if {@code null} then server should use its default settings.
      */
     public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled);
+
+    /**
+     * @return {@code true} if jdbc thin affinity awareness is enabled for this connection,
+     * {@code false} if it's disabled.
+     */
+    public boolean isAffinityAwareness();
+
+    /**
+     * @param affinityAwareness {@code true} if jdbc thin affinity awareness is enabled
+     * for this connection, if {@code false} then it's disabled.
+     */
+    public void setAffinityAwareness(boolean affinityAwareness);
 }

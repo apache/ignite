@@ -196,7 +196,7 @@ int main()
         continuous::ContinuousQuery<int32_t, std::string> qry(MakeReference(listener), MakeReference(filter));
 
         {
-            // Continous query scope. Query is closed when scope is left.
+            // Continuous query scope. Query is closed when scope is left.
             continuous::ContinuousQueryHandle<int32_t, std::string> handle = cache.QueryContinuous(qry);
 
             // Add a few more keys and watch more query notifications.
