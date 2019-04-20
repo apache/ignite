@@ -25,6 +25,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginConfiguration;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessorProvider;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -60,7 +61,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
                     )
             )
             .setAuthenticationEnabled(true)
-            .setPluginConfigurations(secCfg);
+            .setPlugins(new TestSecurityProcessorProvider(secCfg));
     }
 
     /**

@@ -887,8 +887,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Ack configuration.
         ackSpis();
 
-        List<PluginProvider> plugins = cfg.getPlugins().length == 0 ?
-            U.allPluginProviders() : Arrays.asList(cfg.getPlugins());
+        List<PluginProvider> plugins = cfg.getPlugins() != null && cfg.getPlugins().length > 0 ?
+           Arrays.asList(cfg.getPlugins()) : U.allPluginProviders();
 
         // Spin out SPIs & managers.
         try {
