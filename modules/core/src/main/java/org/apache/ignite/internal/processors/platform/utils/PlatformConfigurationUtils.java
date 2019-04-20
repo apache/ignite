@@ -223,6 +223,7 @@ public class PlatformConfigurationUtils {
         ccfg.setMaxQueryIteratorsCount(in.readInt());
         ccfg.setQueryDetailMetricsSize(in.readInt());
         ccfg.setQueryParallelism(in.readInt());
+        ccfg.setDefaultQueryTimeout(in.readLong());
         ccfg.setSqlSchema(in.readString());
         ccfg.setEncryptionEnabled(in.readBoolean());
 
