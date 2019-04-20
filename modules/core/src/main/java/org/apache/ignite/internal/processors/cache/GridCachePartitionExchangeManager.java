@@ -3008,6 +3008,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     AffinityTopologyVersion resVer = null;
 
+                    boolean rebalanceRequired = rebTopVer == NONE;
+
                     try {
                         if (isCancelled())
                             break;
@@ -3152,8 +3154,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (grp.isLocal())
                                     continue;
 
-                                if (grp.preloader().rebalanceRequired(rebTopVer, exchFut))
-                                    rebTopVer = NONE;
+                                rebalanceRequired |= grp.preloader().rebalanceRequired(rebTopVer, exchFut);
 
                                 changed |= grp.topology().afterExchange(exchFut);
                             }
@@ -3167,10 +3168,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
 
                         // Schedule rebalance if force rebalance or force reassign occurs.
-                        if (exchFut == null)
-                            rebTopVer = NONE;
+                        rebalanceRequired |= exchFut == null;
 
-                        if (!cctx.kernalContext().clientNode() && rebTopVer.equals(NONE)) {
+                        if (!cctx.kernalContext().clientNode() && rebalanceRequired) {
                             assignsMap = new HashMap<>();
 
                             IgniteCacheSnapshotManager snp = cctx.snapshot();
@@ -3201,7 +3201,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         busy = false;
                     }
 
-                    if (assignsMap != null && rebTopVer.equals(NONE)) {
+                    if (assignsMap != null && rebalanceRequired) {
                         int size = assignsMap.size();
 
                         NavigableMap<Integer, List<Integer>> orderMap = new TreeMap<>();

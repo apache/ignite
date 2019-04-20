@@ -292,6 +292,9 @@ public class GridDhtPartitionDemander {
         if ((delay == 0 || force) && assignments != null) {
             final RebalanceFuture oldFut = rebalanceFut;
 
+            if (compareAssignments(assignments, oldFut))
+                return null;
+
             final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId);
 
             if (!grp.localWalEnabled())
@@ -413,6 +416,59 @@ public class GridDhtPartitionDemander {
         }
 
         return null;
+    }
+
+    /**
+     * @param assignments Rebalance assignment.
+     * @param oldFut Previous rebalance future.
+     */
+    private boolean compareAssignments(GridDhtPreloaderAssignments assignments, RebalanceFuture oldFut) {
+        if (oldFut.isInitial())
+            return false;
+
+        if (oldFut.remaining.size() < assignments.size())
+            return false;
+
+        for (ClusterNode rmtNode: assignments.keySet()) {
+            if (oldFut.remaining.get(rmtNode.id()) == null)
+                return false;
+
+            IgniteDhtDemandedPartitionsMap oldDemandMsgParts = oldFut.remaining.get(rmtNode.id());
+            IgniteDhtDemandedPartitionsMap demandMsgParts = assignments.get(rmtNode).partitions();
+
+            CachePartitionPartialCountersMap oldHistMap = oldDemandMsgParts.historicalMap();
+            CachePartitionPartialCountersMap histMap = demandMsgParts.historicalMap();
+
+            if (oldHistMap.size() < histMap.size())
+                return false;
+
+            Set<Integer> oldFullRebalanceParts = oldDemandMsgParts.fullSet();
+            Set<Integer> fullRebalanceParts = demandMsgParts.fullSet();
+
+            if (oldFullRebalanceParts.size() < fullRebalanceParts.size())
+                return false;
+
+            int j = 0;
+
+            for (int i = 0; i < histMap.size(); i++) {
+                while(oldHistMap.partitionAt(j) != histMap.partitionAt(i))
+                    j++;
+
+                if (oldHistMap.partitionAt(i) != histMap.partitionAt(i)
+                    || oldHistMap.initialUpdateCounterAt(i) != histMap.initialUpdateCounterAt(i)
+                    || oldHistMap.updateCounterAt(i) != histMap.updateCounterAt(i))
+                    return false;
+            }
+
+            for (Object obj : fullRebalanceParts) {
+                if (!oldFullRebalanceParts.contains(obj))
+                    return false;
+            }
+        }
+
+        log.info("Rebalance will not canceled for cache: " + grp.cacheOrGroupName());
+
+        return true;
     }
 
     /**
@@ -677,7 +733,7 @@ public class GridDhtPartitionDemander {
         }
 
         // Topology already changed (for the future that supply message based on).
-        if (topologyChanged(fut) || !fut.isActual(supplyMsg.rebalanceId())) {
+        if (/*topologyChanged(fut) ||*/ !fut.isActual(supplyMsg.rebalanceId())) {
             if (log.isDebugEnabled())
                 log.debug("Supply message ignored (topology changed) [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]");
 
