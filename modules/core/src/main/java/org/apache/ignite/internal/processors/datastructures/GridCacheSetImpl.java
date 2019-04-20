@@ -406,19 +406,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
     /** {@inheritDoc} */
     @Override public <V1> IgniteSet<V1> withKeepBinary() {
-        CacheOperationContext opCtx = new CacheOperationContext(
-            false,
-            null,
-            true,
-            null,
-            false,
-            null,
-            false,
-            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
-
-        ctx.operationContextPerCall(opCtx);
-
-        return new GridCacheSetProxy<>(ctx, (GridCacheSetImpl<V1>)this);
+        return (GridCacheSetImpl<V1>)this;
     }
 
     /**

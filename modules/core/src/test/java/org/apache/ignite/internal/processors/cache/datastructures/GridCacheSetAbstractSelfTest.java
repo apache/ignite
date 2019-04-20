@@ -73,7 +73,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     public static final String BINARY_SET = "BINARY_SET";
 
     /** Binary set mode. */
-    private static final boolean BINARY_SET_MODE = IgniteSystemProperties.getBoolean(BINARY_SET, true);
+    private static final boolean BINARY_SET_MODE = IgniteSystemProperties.getBoolean(BINARY_SET, false);
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
