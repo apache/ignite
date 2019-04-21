@@ -42,6 +42,7 @@ import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.Mem;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -747,7 +748,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             pagesBase = base + pageSize;
 
             if (U.isLinux() || U.isMacOs()) {
-                int nativePageSize = GridUnsafe.getpagesize();
+                int nativePageSize = Mem.getpagesize();
 
                 assert pageSize < nativePageSize ?
                     nativePageSize % pageSize == 0 : pageSize % nativePageSize == 0

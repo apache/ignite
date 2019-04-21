@@ -30,6 +30,7 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.UnsafeChunk;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.Mem;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OFF_HEAP_MEM_ADVICE;
@@ -128,7 +129,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
             PointerByReference refToPtr = new PointerByReference();
 
             try {
-                int pageSize = GridUnsafe.getpagesize();
+                int pageSize = Mem.getpagesize();
 
                 if (pageSize < 0)
                     pageSize = GridUnsafe.pageSize();
@@ -139,7 +140,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
                     pageSize = 4096;
                 }
 
-                int ptrRes = GridUnsafe.posix_memalign(refToPtr, new NativeLong(pageSize), new NativeLong(chunkSize));
+                int ptrRes = Mem.posix_memalign(refToPtr, new NativeLong(pageSize), new NativeLong(chunkSize));
 
                 if (ptrRes != 0) {
                     U.error(log, "Failed to allocate next memory chunk: "
@@ -152,7 +153,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
                 ptr = Pointer.nativeValue(refToPtr.getValue());
 
                 if (advice) {
-                    int adviceRes = GridUnsafe.posix_madvise(ptr, chunkSize, GridUnsafe.POSIX_MADV_RANDOM);
+                    int adviceRes = Mem.posix_madvise(ptr, chunkSize, Mem.POSIX_MADV_RANDOM);
 
                     if (adviceRes < 0)
                         U.error(log, "Failed to advice memory chunk: "
