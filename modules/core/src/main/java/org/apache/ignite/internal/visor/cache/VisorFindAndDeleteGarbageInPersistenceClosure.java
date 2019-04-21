@@ -109,6 +109,102 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
      *
      */
     private VisorFindAndDeleteGarbageInPersistenceJobResult call0() {
+        Set<Integer> grpIds = calcCacheGroupIds();
+
+        List<T2<CacheGroupContext, GridDhtLocalPartition>> partArgs = calcListOfPartitions(grpIds);
+
+        totalPartitions = partArgs.size();
+
+        List<Future<Map<Integer, Map<Integer, Long>>>> procPartFutures = new ArrayList<>();
+
+        for (final T2<CacheGroupContext, GridDhtLocalPartition> t2 : partArgs)
+            procPartFutures.add(calcExecutor.submit(new Callable<Map<Integer, Map<Integer, Long>>>() {
+                @Override public Map<Integer, Map<Integer, Long>> call() throws Exception {
+                    return processPartition(t2.get1(), t2.get2());
+                }
+            }));
+
+
+        Map<Integer, Map<Integer, Long>> grpIdToPartIdToGarbageCount = new HashMap<>();
+
+        int curPart = 0;
+
+        try {
+            for (; curPart < procPartFutures.size(); curPart++) {
+                Future<Map<Integer, Map<Integer, Long>>> fut = procPartFutures.get(curPart);
+
+                Map<Integer, Map<Integer, Long>> partRes = fut.get();
+
+                for (Map.Entry<Integer, Map<Integer, Long>> e : partRes.entrySet()) {
+                    Map<Integer, Long> map = grpIdToPartIdToGarbageCount.computeIfAbsent(e.getKey(), (x) -> new HashMap<>());
+
+                    for (Map.Entry<Integer, Long> entry : e.getValue().entrySet())
+                        map.compute(entry.getKey(), (k, v) -> (v == null ? 0 : v) + entry.getValue());
+                }
+            }
+
+            if (deleteGarbage)
+                cleanup(grpIdToPartIdToGarbageCount);
+
+            log.warning("VisorFindAndDeleteGarbageInPersistenceClosure finished: processed " + totalPartitions + " partitions.");
+        }
+        catch (InterruptedException | ExecutionException | IgniteCheckedException e) {
+            for (int j = curPart; j < procPartFutures.size(); j++)
+                procPartFutures.get(j).cancel(false);
+
+            throw unwrapFutureException(e);
+        }
+
+        return new VisorFindAndDeleteGarbageInPersistenceJobResult(grpIdToPartIdToGarbageCount);
+    }
+
+    /**
+     * By calling this method we would delete found garbarge in partitions and would try to
+     * cleanup indexes.
+     *
+     * @param grpIdToPartIdToGarbageCount GrpId -&gt; PartId -&gt; Garbage count.
+     */
+    private void cleanup(Map<Integer, Map<Integer, Long>> grpIdToPartIdToGarbageCount) throws IgniteCheckedException {
+        for (Map.Entry<Integer, Map<Integer, Long>> e : grpIdToPartIdToGarbageCount.entrySet()) {
+            int grpId = e.getKey();
+
+            CacheGroupContext groupContext = ignite.context().cache().cacheGroup(grpId);
+
+            assert groupContext != null;
+
+            for (Integer cacheId : e.getValue().keySet()) {
+                groupContext.offheap().stopCache(cacheId, true);
+
+                ((GridCacheOffheapManager)
+                    groupContext.offheap()).findAndCleanupLostIndexesForStoppedCache(cacheId);
+            }
+        }
+    }
+
+   /**
+    * @param grpIds Group ids to generate list of partitions for.
+    */
+   private List<T2<CacheGroupContext, GridDhtLocalPartition>> calcListOfPartitions(Set<Integer> grpIds) {
+        List<T2<CacheGroupContext, GridDhtLocalPartition>> partArgs = new ArrayList<>();
+
+        for (Integer grpId : grpIds) {
+            CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
+
+            List<GridDhtLocalPartition> parts = grpCtx.topology().localPartitions();
+
+            for (GridDhtLocalPartition part : parts)
+                partArgs.add(new T2<>(grpCtx, part));
+        }
+
+        // To decrease contention on same group.
+        Collections.shuffle(partArgs);
+        return partArgs;
+    }
+
+    /**
+     * @return Set of cache group ids to scan for garbage on.
+     */
+    private Set<Integer> calcCacheGroupIds() {
         Set<Integer> grpIds = new HashSet<>();
 
         Set<String> missingCacheGroups = new HashSet<>();
@@ -149,75 +245,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
             }
         }
 
-        List<Future<Map<Integer, Map<Integer, Long>>>> procPartFutures = new ArrayList<>();
-        List<T2<CacheGroupContext, GridDhtLocalPartition>> partArgs = new ArrayList<>();
-
-        for (Integer grpId : grpIds) {
-            CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
-
-            List<GridDhtLocalPartition> parts = grpCtx.topology().localPartitions();
-
-            for (GridDhtLocalPartition part : parts)
-                partArgs.add(new T2<>(grpCtx, part));
-        }
-
-        // To decrease contention on same group.
-        Collections.shuffle(partArgs);
-
-        totalPartitions = partArgs.size();
-
-        for (final T2<CacheGroupContext, GridDhtLocalPartition> t2 : partArgs)
-            procPartFutures.add(calcExecutor.submit(new Callable<Map<Integer, Map<Integer, Long>>>() {
-                @Override public Map<Integer, Map<Integer, Long>> call() throws Exception {
-                    return processPartition(t2.get1(), t2.get2());
-                }
-            }));
-
-        Map<Integer, Map<Integer, Long>> res = new HashMap<>();
-
-        int curPart = 0;
-
-        try {
-            for (; curPart < procPartFutures.size(); curPart++) {
-                Future<Map<Integer, Map<Integer, Long>>> fut = procPartFutures.get(curPart);
-
-                Map<Integer, Map<Integer, Long>> partRes = fut.get();
-
-                for (Map.Entry<Integer, Map<Integer, Long>> e : partRes.entrySet()) {
-                    Map<Integer, Long> map = res.computeIfAbsent(e.getKey(), (x) -> new HashMap<>());
-
-                    for (Map.Entry<Integer, Long> entry : e.getValue().entrySet())
-                        map.compute(entry.getKey(), (k, v) -> (v == null ? 0 : v) + entry.getValue());
-                }
-            }
-
-            if (deleteGarbage) {
-                for (Map.Entry<Integer, Map<Integer, Long>> e : res.entrySet()) {
-                    int grpId = e.getKey();
-
-                    CacheGroupContext groupContext = ignite.context().cache().cacheGroup(grpId);
-
-                    assert groupContext != null;
-
-                    for (Integer cacheId : e.getValue().keySet()) {
-                        groupContext.offheap().stopCache(cacheId, true);
-
-                        ((GridCacheOffheapManager)
-                            groupContext.offheap()).findAndCleanupLostIndexesForStoppedCache(cacheId);
-                    }
-                }
-            }
-
-            log.warning("VisorFindAndDeleteGarbageInPersistenceClosure finished: processed " + totalPartitions + " partitions.");
-        }
-        catch (InterruptedException | ExecutionException | IgniteCheckedException e) {
-            for (int j = curPart; j < procPartFutures.size(); j++)
-                procPartFutures.get(j).cancel(false);
-
-            throw unwrapFutureException(e);
-        }
-
-        return new VisorFindAndDeleteGarbageInPersistenceJobResult(res);
+        return grpIds;
     }
 
     /**
