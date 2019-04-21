@@ -103,6 +103,7 @@
         <lucene.version>7.4.0</lucene.version>
         <lz4.version>1.5.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
+        <maven.checkstyle.plugin.version>3.0.0</maven.checkstyle.plugin.version>
         <mockito.version>1.10.19</mockito.version>
         <mysql.connector.version>8.0.13</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
@@ -625,6 +626,38 @@
                         </execution>
                     </executions>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>${maven.checkstyle.plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>check-style</id>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                            <phase>validate</phase>
+                            <configuration>
+                                <consoleOutput>true</consoleOutput>
+                                <logViolationsToConsole>true</logViolationsToConsole>
+                                <failsOnError>true</failsOnError>
+                                <failOnViolation>true</failOnViolation>
+                                <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
+                                <configLocation>../checkstyle/checkstyle.xml</configLocation>
+                                <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
+                                <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                            </configuration>
+                        </execution>
+                    </executions>
+                    <dependencies>
+                        <dependency>
+                            <groupId>com.puppycrawl.tools</groupId>
+                            <artifactId>checkstyle</artifactId>
+                            <version>8.16</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -798,6 +831,18 @@
 
     <profiles>
         <profile>
+            <id>checkstyle</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>check-licenses</id>
             <build>
                 <plugins>
@@ -872,10 +917,7 @@
                                         <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                                         <!--special excludes-->
-                                        <exclude>idea/disabled_plugins.txt</exclude>
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
-                                        <exclude>idea/ignite_inspections.xml</exclude>
-                                        <exclude>idea/ignite_inspections_teamcity.xml</exclude>
                                         <exclude>**/DEVNOTES*.txt</exclude>
                                         <exclude>**/NOTICE*</exclude>
                                         <exclude>**/LICENSE*</exclude>
@@ -1275,6 +1317,5 @@
                 </pluginManagement>
             </build>
         </profile>
-
     </profiles>
 </project>
