@@ -778,7 +778,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         CountDownLatch lockLatch = new CountDownLatch(1);
         CountDownLatch unlockLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch, true);
+        IgniteInternalFuture<?> fut = startTransactions("testActiveTransactions", lockLatch, unlockLatch, true);
 
         U.awaitQuiet(lockLatch);
 
@@ -936,36 +936,40 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         CountDownLatch lockLatch = new CountDownLatch(1);
         CountDownLatch unlockLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch, false);
+        IgniteInternalFuture<?> fut = startTransactions("testTransactionInfo", lockLatch, unlockLatch, false);
 
-        U.awaitQuiet(lockLatch);
+        try {
 
-        doSleep(3000); // Should be more than enough for all transactions to appear in contexts.
+            U.awaitQuiet(lockLatch);
 
-        Set<GridCacheVersion> nearXids = new HashSet<>();
+            doSleep(3000); // Should be more than enough for all transactions to appear in contexts.
 
-        for (int i = 0; i < 5; i++) {
-            IgniteEx grid = grid(i);
+            Set<GridCacheVersion> nearXids = new HashSet<>();
 
-            IgniteTxManager tm = grid.context().cache().context().tm();
+            for (int i = 0; i < 5; i++) {
+                IgniteEx grid = grid(i);
 
-            for (IgniteInternalTx tx : tm.activeTransactions())
-                nearXids.add(tx.nearXidVersion());
+                IgniteTxManager tm = grid.context().cache().context().tm();
+
+                for (IgniteInternalTx tx : tm.activeTransactions())
+                    nearXids.add(tx.nearXidVersion());
+            }
+
+            injectTestSystemOut();
+
+            for (GridCacheVersion nearXid : nearXids)
+                assertEquals(EXIT_CODE_OK, execute("--tx", "--info", nearXid.toString()));
+
+            String out = testOut.toString();
+
+            for (GridCacheVersion nearXid : nearXids)
+                assertTrue(nearXid.toString(), out.contains(nearXid.toString()));
         }
+        finally {
+            unlockLatch.countDown();
 
-        injectTestSystemOut();
-
-        for (GridCacheVersion nearXid : nearXids)
-            assertEquals(EXIT_CODE_OK, execute("--tx", "--info", nearXid.toString()));
-
-        String out = testOut.toString();
-
-        for (GridCacheVersion nearXid : nearXids)
-            assertTrue(out.contains(nearXid.toString()));
-
-        unlockLatch.countDown();
-
-        fut.get();
+            fut.get();
+        }
     }
 
     /**
@@ -988,7 +992,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         CountDownLatch lockLatch = new CountDownLatch(1);
         CountDownLatch unlockLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch, false);
+        IgniteInternalFuture<?> fut = startTransactions("testTransactionHistoryInfo", lockLatch, unlockLatch, false);
 
         U.awaitQuiet(lockLatch);
 
@@ -1317,7 +1321,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
 
         assertTrue(testOut.toString(), testOut.toString().contains("Node not found for consistent ID:"));
-        assertTrue(testOut.toString(), testOut.toString().contains(getTestIgniteInstanceName()));
         assertFalse(testOut.toString(), testOut.toString().contains(getTestIgniteInstanceName() + "1"));
     }
 
@@ -1336,7 +1339,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 assertTrue(cmd.text(), output.contains(cmd.toString()));
 
                 for (CommandArg arg : CommandArgFactory.getArgs(cmd))
-                        assertTrue(cmd + " " + arg, output.contains(arg.toString()));
+                    assertTrue(cmd + " " + arg, output.contains(arg.toString()));
 
             }
         }
@@ -1350,7 +1353,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         for (CacheCommand cmd : CacheCommand.values()) {
             for (CommandArg arg : CommandArgFactory.getArgs(cmd))
-                    assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
+                assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
         }
     }
 
@@ -2666,6 +2669,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @return Future to be completed after finish of all started transactions.
      */
     private IgniteInternalFuture<?> startTransactions(
+        String testName,
         CountDownLatch lockLatch,
         CountDownLatch unlockLatch,
         boolean topChangeBeforeUnlock
@@ -2734,7 +2738,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                         break;
                 }
             }
-        }, 4, "tx-thread");
+        }, 4, "tx-thread-" + testName);
     }
 
     /** */
